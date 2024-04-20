@@ -1,0 +1,14 @@
+
+__pycache__
+
+*.obj
+*.o
+
+!/v8/**/*.lib
+!/v8/**/*.a
+
+/scripts/node_modules
+
+# macOS
+.DS_Store
+__MACOSX

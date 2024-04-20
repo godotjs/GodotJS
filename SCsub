@@ -1,0 +1,189 @@
+#!/usr/bin/env python
+import importlib.util
+import sys
+import os
+import io
+
+Import("env")
+Import("env_modules")
+
+def is_v8_available():
+    return env["platform"] != "web"
+
+javascript_engine = "v8" if is_v8_available() else "quickjs"
+
+print("javascript engine:", javascript_engine)
+
+# make these PreprocessorDefinitions publicly known for the convenience of IDE coding hints
+javascript_shared_defines = [
+    "JSB_WITH_V8="+         str(1 if javascript_engine == "v8" else 0),
+    "JSB_WITH_QUICKJS="+    str(1 if javascript_engine == "quickjs" else 0),
+
+    # enable to debug with Chrome devtools with the following link by default:
+    # devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1
+    "JSB_WITH_DEBUGGER=1",
+
+    # translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)
+    "JSB_WITH_SOURCEMAP=1",
+
+    # enable this to let all methods in `console` print with js stacktrace
+    "JSB_WITH_STACKTRACE_ALWAYS=0",
+
+    # NOTE
+    # JSB_WITH_LWS must be enabled if JSB_WITH_DEBUGGER is used.
+    # currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`
+    # `devtools` do not response the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`
+    # and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`
+    "JSB_WITH_LWS=1",
+
+    # lower log levels are completely skipped (at compile-time)
+    "JSB_MIN_LOG_LEVEL=Verbose",
+]
+
+# def write_file(filename, ostream: io.StringIO):
+def write_file(filename, ostream):
+    ostream.seek(0)
+    content = ostream.read()
+    if os.path.exists(filename):
+        with open(filename, "rt", encoding="utf-8") as input:
+            if input.read() == content:
+                print(f"generate {filename}: no diff")
+                return
+    with open(filename, "wt", encoding="utf-8") as output:
+        output.write(content)
+        print(f"generate {filename}")
+
+def generate_method_code(output, methodname, indent, filenames):
+    output.write(f"const char* GodotJSPorjectPreset::{methodname}(const String &p_filename, size_t& r_len)\n")
+    output.write("{\n")
+    output.write(indent+"static const char data[] = {\n")
+    positions = {}
+    cursor = 0
+    for sourcename in filenames:
+        targetname = filenames[sourcename]
+        if len(targetname) == 0:
+            targetname = os.path.basename(sourcename)
+        targetstart = cursor
+        newline = 0
+        output.write(indent+indent+"// target: "+targetname+"\n")
+        output.write(indent+indent)
+        with open(sourcename, "rb") as input:
+            bytes = input.read()
+            cursor += len(bytes)
+            positions[targetname] = (targetstart, cursor - targetstart)
+            for byte in bytes:
+                output.write(f"0x{byte:02x}, ")
+                newline += 1
+                if newline >= 64:
+                    newline = 0
+                    output.write("\n")
+                    output.write(indent+indent)
+        if newline != 0:
+            newline = 0
+            output.write("\n")
+    output.write("\n")
+    output.write(indent+"};\n")
+    for targetname in positions:
+        start = positions[targetname][0]
+        size = positions[targetname][1]
+        output.write(indent+f"if (p_filename == \"{targetname}\") {{ r_len = {size}; return data+{start}; }}\n")
+    output.write(indent+"r_len = 0;\n")
+    output.write(indent+"return nullptr;\n")
+    output.write("}\n")
+
+def generate_code(filenames):
+    indent = "    "
+    output = io.StringIO()
+    outfile = "weaver-editor/jsb_project_preset.cpp"
+    # with open(outfile, "wt", encoding="utf-8") as output:
+    if True:
+        output.write("// AUTO-GENERATED\n")
+        output.write("\n")
+        output.write("#include \"jsb_project_preset.h\"\n")
+        generate_method_code(output, "get_source", indent, filenames)
+    write_file(outfile, output)
+
+env_jsb = env_modules.Clone()
+
+env.Append(CPPDEFINES=javascript_shared_defines)
+env_jsb.Append(CPPDEFINES=javascript_shared_defines) # due to env_modules inherited from env before adding jsb preprocessors
+module_obj = []
+
+if javascript_engine == "v8":
+    # it seems godot always links MT_StaticRelease even if env["dev_build"]
+
+    if env["platform"] == "macos":
+        env.Append(LIBPATH=['#modules/jsb/v8/macos.arm64.release'])
+
+        # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will failed on `v8::ArrayBuffer::Allocator`
+        env.Append(LINKFLAGS=["-lv8_monolith"])
+    else:
+        env.Append(LIBS=[File("v8/windows.x86_64.release/v8_monolith.lib")])
+        env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
+    #TODO v8 builds on other platforms
+
+    if env["platform"] != "ios":
+        env_jsb.AppendUnique(CPPDEFINES=["V8_COMPRESS_POINTERS"])
+
+    env_jsb.Append(CPPDEFINES=["_ITERATOR_DEBUG_LEVEL=0"])
+    env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
+
+    # headers
+    # env_jsb is enough for compiler, but IDE lookup paths from `env`
+    if env.msvc and env["vsproj"]:
+        env.Append(CPPPATH=["#modules/jsb/v8/include"])
+    env_jsb.Append(CPPPATH=["v8/include"])
+else:
+    # quickjs is directly build from source
+    env_jsb.add_source_files(module_obj, "quickjs/*.c")
+    env_jsb.add_source_files(module_obj, "bridge-quickjs/*.cpp")
+    env_jsb.add_source_files(module_obj, "bridge-quickjs/extra/*.cpp")
+
+# lws
+if "JSB_WITH_LWS=1" in javascript_shared_defines:
+    if env["platform"] == "macos":
+        env_jsb.Append(CPPPATH=["lws/macos.arm64.release/include"])
+
+        env.Append(LIBPATH=['#modules/jsb/lws/macos.arm64.release'])
+        env.Append(LINKFLAGS=["-lwebsockets"])
+    elif env["platform"] == "windows":
+        if env.msvc and env["vsproj"]:
+            env.Append(CPPPATH=["#modules/jsb/lws/windows.x86_64.release/include"])
+        env_jsb.Append(CPPPATH=["lws/windows.x86_64.release/include"])
+
+        env.Append(LIBS=[File("lws/windows.x86_64.release/websockets.lib")])
+    #TODO lws builds on other platforms
+
+# common parts
+env_jsb.add_source_files(module_obj, ["register_types.cpp"])
+env_jsb.add_source_files(module_obj, "internal/*.cpp")
+env_jsb.add_source_files(module_obj, "weaver/*.cpp")
+
+# editor functionalities
+if env.editor_build:
+    generate_code({
+        # editor presets
+        "scripts/out/jsb.editor.codegen.js": "",
+        "scripts/out/jsb.editor.codegen.js.map": "",
+        "scripts/src/jsb.editor.main.ts": "",
+
+        "scripts/out/jsb.editor.main.js": "",
+        "scripts/out/jsb.editor.main.js.map": "",
+        "scripts/src/jsb.editor.codegen.ts": "",
+
+        "scripts/godot-typings/godot.minimal.d.ts": "",
+
+        "scripts/presets/package.json.txt": "package.json",
+        "scripts/presets/tsconfig.json.txt": "tsconfig.json",
+        "scripts/presets/gdignore.txt": ".gdignore",
+        # icon (from https://icons.getbootstrap.com/icons/filetype-js/)
+        "scripts/presets/filetype-js.svg": "",
+
+        # runtime presets
+        "scripts/out/jsb.core.js": "",
+        "scripts/out/jsb.core.js.map": "",
+        "scripts/src/jsb.core.ts": "",
+    })
+    env_jsb.add_source_files(module_obj, "weaver-editor/*.cpp")
+
+env.modules_sources += module_obj
