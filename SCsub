@@ -10,8 +10,11 @@ Import("env_modules")
 def is_v8_available():
     return env["platform"] != "web"
 
+module_path = os.path.dirname(os.path.abspath("jsb.h"))
+module_name = os.path.basename(module_path)
 javascript_engine = "v8" if is_v8_available() else "quickjs"
 
+print("compiling:", module_name)
 print("javascript engine:", javascript_engine)
 
 # make these PreprocessorDefinitions publicly known for the convenience of IDE coding hints
@@ -103,6 +106,20 @@ def generate_code(filenames):
         generate_method_code(output, "get_source", indent, filenames)
     write_file(outfile, output)
 
+def generate_jsb_gen_header():
+    output = io.StringIO()
+    if True:
+        output.write("// AUTO-GENERATED\n")
+        output.write("#ifndef JAVASCRIPT_GEN_H\n")
+        output.write("#define JAVASCRIPT_GEN_H\n")
+        output.write("\n")
+        output.write(f"#define JSB_MODULE_NAME {module_name}\n")
+        output.write(f"#define jsb_initialize_module initialize_{module_name}_module\n")
+        output.write(f"#define jsb_uninitialize_module uninitialize_{module_name}_module\n")
+        output.write("\n")
+        output.write("#endif\n")
+    write_file("jsb.gen.h", output)
+
 env_jsb = env_modules.Clone()
 
 env.Append(CPPDEFINES=javascript_shared_defines)
@@ -113,7 +130,7 @@ if javascript_engine == "v8":
     # it seems godot always links MT_StaticRelease even if env["dev_build"]
 
     if env["platform"] == "macos":
-        env.Append(LIBPATH=['#modules/jsb/v8/macos.arm64.release'])
+        env.Append(LIBPATH=[f'#modules/{module_name}/v8/macos.arm64.release'])
 
         # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will failed on `v8::ArrayBuffer::Allocator`
         env.Append(LINKFLAGS=["-lv8_monolith"])
@@ -131,7 +148,7 @@ if javascript_engine == "v8":
     # headers
     # env_jsb is enough for compiler, but IDE lookup paths from `env`
     if env.msvc and env["vsproj"]:
-        env.Append(CPPPATH=["#modules/jsb/v8/include"])
+        env.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
     env_jsb.Append(CPPPATH=["v8/include"])
 else:
     # quickjs is directly build from source
@@ -144,11 +161,11 @@ if "JSB_WITH_LWS=1" in javascript_shared_defines:
     if env["platform"] == "macos":
         env_jsb.Append(CPPPATH=["lws/macos.arm64.release/include"])
 
-        env.Append(LIBPATH=['#modules/jsb/lws/macos.arm64.release'])
+        env.Append(LIBPATH=[f'#modules/{module_name}/lws/macos.arm64.release'])
         env.Append(LINKFLAGS=["-lwebsockets"])
     elif env["platform"] == "windows":
         if env.msvc and env["vsproj"]:
-            env.Append(CPPPATH=["#modules/jsb/lws/windows.x86_64.release/include"])
+            env.Append(CPPPATH=[f"#modules/{module_name}/lws/windows.x86_64.release/include"])
         env_jsb.Append(CPPPATH=["lws/windows.x86_64.release/include"])
 
         env.Append(LIBS=[File("lws/windows.x86_64.release/websockets.lib")])
@@ -186,4 +203,5 @@ if env.editor_build:
     })
     env_jsb.add_source_files(module_obj, "weaver-editor/*.cpp")
 
+generate_jsb_gen_header()
 env.modules_sources += module_obj

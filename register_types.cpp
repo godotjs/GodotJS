@@ -12,7 +12,7 @@
 Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
 Ref<ResourceFormatSaverGodotJSScript> resource_saver_js;
 
-void initialize_GodotJS_module(ModuleInitializationLevel p_level)
+void jsb_initialize_module(ModuleInitializationLevel p_level)
 {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE)
     {
@@ -40,7 +40,7 @@ void initialize_GodotJS_module(ModuleInitializationLevel p_level)
     }
 }
 
-void uninitialize_GodotJS_module(ModuleInitializationLevel p_level)
+void jsb_uninitialize_module(ModuleInitializationLevel p_level)
 {
     if (p_level == MODULE_INITIALIZATION_LEVEL_CORE)
     {
