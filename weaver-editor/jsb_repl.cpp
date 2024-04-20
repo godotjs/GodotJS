@@ -9,6 +9,7 @@ GodotJSREPL::GodotJSREPL()
 {
     //TODO list all created realm instances in REPL, interact with the current selected one.
 
+    input_submitting_ = false;
     HBoxContainer* hbox = memnew(HBoxContainer);
     add_child(hbox);
     {
@@ -38,12 +39,12 @@ GodotJSREPL::GodotJSREPL()
     input_box_->set_clear_button_enabled(true);
     input_box_->set_visible(true);
     input_box_->connect("text_submitted", callable_mp(this, &GodotJSREPL::_input_submitted));
+    input_box_->connect("text_changed", callable_mp(this, &GodotJSREPL::_input_changed));
     add_child(input_box_);
 }
 
 GodotJSREPL::~GodotJSREPL()
 {
-
 }
 
 void GodotJSREPL::_notification(int p_what)
@@ -71,29 +72,52 @@ void GodotJSREPL::_clear_pressed()
     output_box_->clear();
 }
 
+void GodotJSREPL::_input_changed(const String &p_text)
+{
+    if (input_submitting_) return;
+    //TODO try to auto complete partial input
+}
+
 void GodotJSREPL::_input_submitted(const String &p_text)
 {
-    _add_line(p_text);
+    input_submitting_ = true;
+    add_line(p_text);
     input_box_->clear();
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
     const jsb::JSValueMove value = lang->eval_source(p_text, err);
-    _add_string(value.to_string());
+    add_string(value.to_string());
+    add_history(p_text);
+    input_submitting_ = false;
 }
 
-void GodotJSREPL::_add_line(const String &p_line)
+void GodotJSREPL::add_line(const String &p_line)
 {
     output_box_->add_text(p_line);
     output_box_->add_newline();
 }
 
-void GodotJSREPL::_add_string(const String &p_str)
+void GodotJSREPL::add_string(const String &p_str)
 {
     const Vector<String> lines = p_str.split("\n", true);
     const int line_count = lines.size();
     for (const String& line: lines)
     {
-        _add_line(line);
+        add_line(line);
+    }
+}
+
+void GodotJSREPL::write(jsb::internal::ELogSeverity::Type p_severity, const String& p_text)
+{
+    add_string(p_text);
+}
+
+void GodotJSREPL::add_history(const String &p_text)
+{
+    history_.append(p_text);
+    if (history_.size() > 10)
+    {
+        history_.remove_at(0);
     }
 }

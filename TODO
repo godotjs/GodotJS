@@ -1,7 +1,10 @@
 
 FEATS:
-✔ editor: install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
-✔ module: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
+    ✔ editor: install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
+    ✔ module: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
+    ☐ source-map: configurable in project settings
 
 ISSUES:
-☐ source-map: incorrect Ln:Col on bundle scripts
+    ☐ core: static functions not found after exposing
+    ☐ source-map: incorrect Ln:Col on bundle scripts
+

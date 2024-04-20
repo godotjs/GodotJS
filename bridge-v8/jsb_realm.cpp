@@ -7,6 +7,7 @@
 #include "jsb_ref.h"
 #include "jsb_v8_helper.h"
 #include "../internal/jsb_path_util.h"
+#include "../internal/jsb_console_output.h"
 
 //TODO
 #include "../weaver/jsb_callable_custom.h"
@@ -142,13 +143,15 @@ namespace jsb
         if (severity == internal::ELogSeverity::Trace) _generate_stacktrace(isolate, sb);
 #endif
 
+        const String& text = sb.as_string();
+        internal::IConsoleOutput::_write(severity, text);
         switch (severity)
         {
-        case internal::ELogSeverity::Assert: CRASH_NOW_MSG(sb.as_string()); return;
-        case internal::ELogSeverity::Error: ERR_FAIL_MSG(sb.as_string()); return;
-        case internal::ELogSeverity::Warning: WARN_PRINT(sb.as_string()); return;
+        case internal::ELogSeverity::Assert: CRASH_NOW_MSG(text); return;
+        case internal::ELogSeverity::Error: ERR_FAIL_MSG(text); return;
+        case internal::ELogSeverity::Warning: WARN_PRINT(text); return;
         case internal::ELogSeverity::Trace:
-        default: print_line(sb.as_string()); return;
+        default: print_line(text); return;
         }
     }
 
