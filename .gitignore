@@ -12,3 +12,7 @@ __pycache__
 # macOS
 .DS_Store
 __MACOSX
+
+# auto-generated sources
+/jsb.gen.h
+/weaver-editor/jsb_project_preset.cpp
