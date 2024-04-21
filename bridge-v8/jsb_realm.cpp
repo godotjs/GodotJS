@@ -830,7 +830,7 @@ namespace jsb
         }
 
         NativeClassID class_id;
-        NativeClassInfo& jclass_info = environment_->add_class(NativeClassInfo::GodotObject, p_class_info->name, &class_id);
+        NativeClassInfo& jclass_info = environment_->add_class(NativeClassType::GodotObject, p_class_info->name, &class_id);
 
         // construct type template
         {
@@ -1015,7 +1015,7 @@ namespace jsb
             {
                 return false;
             }
-            if (class_info->type == NativeClassInfo::GodotObject) r_cvar = (Object*) pointer;
+            if (class_info->type == NativeClassType::GodotObject) r_cvar = (Object*) pointer;
             else r_cvar = *(Variant*) pointer;
             return true;
         }
@@ -1128,7 +1128,7 @@ namespace jsb
                 {
                     return false;
                 }
-                if (class_info->type != NativeClassInfo::GodotPrimitive)
+                if (class_info->type != NativeClassType::GodotPrimitive)
                 {
                     return false;
                 }
@@ -1231,6 +1231,7 @@ namespace jsb
                 NativeClassID class_id;
                 if (NativeClassInfo* class_info = realm->_expose_godot_primitive_class(var_type, &class_id))
                 {
+                    jsb_check(class_info->type == NativeClassType::GodotPrimitive);
                     v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
                     r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
                     jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == kObjectFieldCount);
@@ -1238,7 +1239,8 @@ namespace jsb
                     // *(Variant*)pointer = p_cvar;
 
                     // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-                    realm->environment_->bind_object(class_id, (void*) memnew(Variant(p_cvar)), r_jval.As<v8::Object>());
+                    Environment* environment = realm->environment_.get();
+                    environment->bind_object(class_id, (void*) environment->alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
                 }
                 return false;

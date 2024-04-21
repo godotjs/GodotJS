@@ -230,6 +230,13 @@ namespace jsb
 
         isolate_->Dispose();
         isolate_ = nullptr;
+
+        // // cleanup variant pool
+        // for (int pool_index = variants_pool_.size() - 1; pool_index >= 0; --pool_index)
+        // {
+        //     memdelete(variants_pool_[pool_index]);
+        //     variants_pool_.remove_at(pool_index);
+        // }
     }
 
     void Environment::update()

@@ -11,6 +11,10 @@
 #include "core/os/thread.h"
 #include "core/os/os.h"
 
+#ifndef JSB_WITH_VARIANT_POOL
+#   define JSB_WITH_VARIANT_POOL 1
+#endif
+
 #ifndef JSB_MIN_LOG_LEVEL
 #   if DEV_ENABLED
 #       define JSB_MIN_LOG_LEVEL Verbose

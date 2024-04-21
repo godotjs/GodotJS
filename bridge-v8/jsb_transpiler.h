@@ -648,7 +648,7 @@ namespace jsb
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
             Environment* environment = Environment::wrap(isolate);
             const NativeClassInfo& jclass_info = environment->get_native_class(class_id);
-            jsb_check(jclass_info.type == NativeClassInfo::GodotObject);
+            jsb_check(jclass_info.type == NativeClassType::GodotObject);
             v8::Local<v8::Value> new_target = info.NewTarget();
             v8::Local<v8::Function> constructor = jclass_info.function_.Get(isolate);
 

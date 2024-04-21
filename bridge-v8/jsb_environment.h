@@ -11,6 +11,7 @@
 #include "jsb_timer_action.h"
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_timer_manager.h"
+
 #if JSB_WITH_SOURCEMAP
 #include "../internal/jsb_source_map_cache.h"
 #endif
@@ -77,6 +78,10 @@ namespace jsb
         HashMap<void*, NativeObjectID> objects_index_;
         HashSet<void*> persistent_objects_;
 
+#if JSB_WITH_VARIANT_POOL
+        PagedAllocator<Variant, false> variants_pool_;
+#endif
+
         // module_id => loader
         HashMap<String, class IModuleLoader*> module_loaders_;
         Vector<IModuleResolver*> module_resolvers_;
@@ -98,6 +103,46 @@ namespace jsb
 
         // replace position in the stacktrace with source map
         String handle_source_map(const String& p_stacktrace);
+
+#if JSB_WITH_VARIANT_POOL
+        jsb_force_inline Variant* alloc_variant(const Variant& p_templet)
+        {
+            Variant* rval = variants_pool_.alloc();
+            *rval = p_templet;
+            return rval;
+            // if (const int n = variants_pool_.size())
+            // {
+            //     Variant* ru = variants_pool_[n - 1];
+            //     variants_pool_.remove_at(n - 1);
+            //     *ru = p_templet;
+            //     return ru;
+            // }
+            // return memnew(Variant(p_templet));
+        }
+
+        jsb_force_inline Variant* alloc_variant()
+        {
+            return variants_pool_.alloc();
+            // if (const int n = variants_pool_.size())
+            // {
+            //     Variant* ru = variants_pool_[n - 1];
+            //     variants_pool_.remove_at(n - 1);
+            //     return ru;
+            // }
+            // return memnew(Variant);
+        }
+
+        jsb_force_inline void dealloc_variant(Variant* p_var)
+        {
+            // VariantInternal::clear(p_var);
+            // variants_pool_.append(p_var);
+            variants_pool_.free(p_var);
+        }
+#else
+        jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { return memnew(Variant(p_templet)); }
+        jsb_force_inline Variant* alloc_variant() { return memnew(Variant); }
+        jsb_force_inline void dealloc_variant(Variant* p_var) { memdelete(p_var); }
+#endif
 
         jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const
         {
@@ -235,13 +280,13 @@ namespace jsb
          * \param r_class_id
          * \return
          */
-        NativeClassInfo& add_class(NativeClassInfo::Type p_type, const StringName& p_class_name, NativeClassID* r_class_id = nullptr)
+        NativeClassInfo& add_class(NativeClassType::Type p_type, const StringName& p_class_name, NativeClassID* r_class_id = nullptr)
         {
             const NativeClassID class_id = native_classes_.add(NativeClassInfo());
             NativeClassInfo& class_info = native_classes_.get_value(class_id);
             class_info.type = p_type;
             class_info.name = p_class_name;
-            if (p_type == NativeClassInfo::GodotObject)
+            if (p_type == NativeClassType::GodotObject)
             {
                 jsb_check(!godot_classes_index_.has(p_class_name));
                 godot_classes_index_.insert(p_class_name, class_id);

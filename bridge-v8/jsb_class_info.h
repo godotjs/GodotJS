@@ -8,7 +8,7 @@ namespace jsb
     typedef void (*ConstructorFunc)(const v8::FunctionCallbackInfo<v8::Value>&);
     typedef void (*FinalizerFunc)(class Environment*, void*, bool /* p_persistent */);
 
-    struct NativeClassInfo
+    namespace NativeClassType
     {
         enum Type : uint8_t
         {
@@ -16,13 +16,17 @@ namespace jsb
             GodotObject,
             GodotPrimitive,
         };
+    }
+
+    struct NativeClassInfo
+    {
 
         // the func to release the exposed C++ (godot/variant/native) object
         // it's called when a JS value with this class type garbage collected by JS runtime
         FinalizerFunc finalizer;
 
         //TODO RESERVED FOR FUTURE USE
-        Type type;
+        NativeClassType::Type type;
 
         // *only if type == GodotObject*
         // godot_object_constructor use this name to look up classdb

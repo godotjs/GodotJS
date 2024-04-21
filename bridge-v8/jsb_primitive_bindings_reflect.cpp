@@ -222,7 +222,7 @@ namespace jsb
                     }
                 }
 
-                Variant* instance = memnew(Variant);
+                Variant* instance = environment->alloc_variant();
                 Callable::CallError err;
                 Variant::construct(TYPE, *instance, argv, argc, err);
 
@@ -234,7 +234,7 @@ namespace jsb
 
                 if (err.error != Callable::CallError::CALL_OK)
                 {
-                    memdelete(instance);
+                    environment->dealloc_variant(instance);
                     jsb_throw(isolate, "bad call");
                     return;
                 }
@@ -246,13 +246,13 @@ namespace jsb
             jsb_throw(isolate, "bad params");
         }
 
-        static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
+        static void finalizer(Environment* environment, void* pointer, bool p_persistent)
         {
             Variant* self = (Variant*) pointer;
             jsb_check(self->get_type() == TYPE);
             if (!p_persistent)
             {
-                memdelete(self);
+                environment->dealloc_variant(self);
             }
         }
 
@@ -409,7 +409,7 @@ namespace jsb
         {
             NativeClassID class_id;
             const StringName& class_name = p_env.type_name;
-            NativeClassInfo& class_info = p_env.environment->add_class(NativeClassInfo::GodotPrimitive, class_name, &class_id);
+            NativeClassInfo& class_info = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name, &class_id);
 
             v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Uint32::NewFromUnsigned(p_env.isolate, class_id));
             function_template->InstanceTemplate()->SetInternalFieldCount(kObjectFieldCount);
