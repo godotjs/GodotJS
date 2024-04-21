@@ -1047,13 +1047,12 @@ namespace jsb
         }
     }
 
-    jsb_force_inline bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Value>& r_jval)
+    /**
+     * @param p_godot_obj non-null godot object pointer
+     */
+    jsb_force_inline bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval)
     {
-        if (unlikely(!p_godot_obj))
-        {
-            r_jval = v8::Null(isolate);
-            return true;
-        }
+        jsb_check(p_godot_obj);
         Environment* environment = Environment::wrap(isolate);
         if (environment->get_object(p_godot_obj, r_jval))
         {
@@ -1068,7 +1067,7 @@ namespace jsb
         {
             v8::Local<v8::FunctionTemplate> jtemplate = jclass->template_.Get(isolate);
             r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
-            jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == kObjectFieldCount);
+            jsb_check(r_jval->InternalFieldCount() == kObjectFieldCount);
 
             if (p_godot_obj->is_ref_counted())
             {
@@ -1124,7 +1123,20 @@ namespace jsb
             }
         case Variant::OBJECT:
             {
-                return gd_obj_to_js(isolate, context, (Object*) p_cvar, r_jval);
+                //TODO is it OK in this way to transfer local handle to rval?
+                v8::Local<v8::Object> jobj;
+                Object* gd_obj = (Object*) p_cvar;
+                if (unlikely(!gd_obj))
+                {
+                    r_jval = v8::Null(isolate);
+                    return true;
+                }
+                if (gd_obj_to_js(isolate, context, gd_obj, jobj))
+                {
+                    r_jval = jobj;
+                    return true;
+                }
+                return false;
             }
         // math types
         case Variant::VECTOR2:
@@ -1300,13 +1312,10 @@ namespace jsb
         jsb_check(info.Data()->IsExternal());
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        v8::Local<v8::External> data = info.Data().As<v8::External>();
-        MethodBind* method_bind = (MethodBind*) data->Value();
+        const MethodBind* method_bind = (MethodBind*) info.Data().As<v8::External>()->Value();
         const int argc = info.Length();
 
         jsb_check(method_bind);
-        Callable::CallError error;
-
         Object* gd_object = nullptr;
         if (!method_bind->is_static())
         {
@@ -1321,6 +1330,13 @@ namespace jsb
 
             // `this` must be a gd object which already bound to javascript
             void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            //NOTE check null if internal field cleared when 'unbind_object', otherwise use 'check_object'
+            if (pointer == nullptr)
+            // if (!Environment::wrap(isolate)->check_object(pointer))
+            {
+                isolate->ThrowError("bad object");
+                return;
+            }
             jsb_check(Environment::wrap(isolate)->check_object(pointer));
             gd_object = (Object*) pointer;
         }
@@ -1345,6 +1361,7 @@ namespace jsb
         }
 
         // call godot method
+        Callable::CallError error;
         Variant crval = method_bind->call(gd_object, argv, argc, error);
 
         // don't forget to destruct all stack allocated variants
@@ -1402,7 +1419,7 @@ namespace jsb
         if (Engine::get_singleton()->has_singleton(type_name))
         if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(type_name))
         {
-            v8::Local<v8::Value> rval;
+            v8::Local<v8::Object> rval;
             JSB_LOG(Verbose, "exposing singleton object %s", (String) type_name);
             if (gd_obj_to_js(isolate, context, gd_singleton, rval))
             {
@@ -1541,7 +1558,7 @@ namespace jsb
             v8::Isolate* isolate = environment_->isolate_;
             v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Context> context = context_.Get(isolate);
-            v8::Local<v8::Object> obj = handle->ref_.Get(isolate).As<v8::Object>();
+            v8::Local<v8::Object> obj = handle->ref_.Get(isolate);
             const CharString name = ((String) p_method).utf8();
             v8::Local<v8::Value> find;
             if (obj->Get(context, v8::String::NewFromOneByte(isolate, (const uint8_t* ) name.ptr(), v8::NewStringType::kNormal, name.length()).ToLocalChecked()).ToLocal(&find) && find->IsFunction())
@@ -1637,7 +1654,7 @@ namespace jsb
             }
             const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
             jsb_check(js_func);
-            v8::Local<v8::Value> self = this->environment_->objects_.get_value(p_object_id).ref_.Get(isolate);
+            v8::Local<v8::Object> self = this->environment_->objects_.get_value(p_object_id).ref_.Get(isolate);
             return _call(js_func.object_.Get(isolate), self, p_args, p_argcount, r_error);
         }
 

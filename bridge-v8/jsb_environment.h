@@ -152,7 +152,7 @@ namespace jsb
 
         // whether the `p_pointer` registered in the object binding map
         // return true, and the corresponding JS value if `p_pointer` is valid
-        jsb_force_inline bool get_object(void* p_pointer, v8::Local<v8::Value>& r_unwrap) const
+        jsb_force_inline bool get_object(void* p_pointer, v8::Local<v8::Object>& r_unwrap) const
         {
             const HashMap<void*, internal::Index64>::ConstIterator& it = objects_index_.find(p_pointer);
             if (it != objects_index_.end())

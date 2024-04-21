@@ -98,30 +98,39 @@ namespace jsb
     template<> struct OperatorRegister<Vector4i> : OperatorRegister<Vector2> {};
     template<> struct OperatorRegister<Quaternion> : OperatorRegister<Vector2> {};
 
+    struct VariantInfoCollection
+    {
+        static Vector<FMethodInfo> methods;
+        static Vector<FGetSetInfo> getsets;
+
+        jsb_force_inline static const FGetSetInfo& get_setter(int p_index)
+        {
+            jsb_check(p_index >= 0 && p_index < getsets.size());
+            return getsets[p_index];
+        }
+
+        jsb_force_inline static const FMethodInfo& get_method(int p_index)
+        {
+            jsb_check(p_index >= 0 && p_index < methods.size());
+            return methods[p_index];
+        }
+
+        jsb_force_inline static void cleanup()
+        {
+            methods.clear();
+            getsets.clear();
+        }
+    };
+
     template<typename T>
     struct VariantBind
     {
         constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
 
-        static Vector<FMethodInfo> builtin_method_collection_;
-        static Vector<FGetSetInfo> builtin_getset_collection_;
-
-        jsb_force_inline static const FGetSetInfo& get_setter(int p_index)
-        {
-            jsb_check(p_index >= 0 && p_index < builtin_getset_collection_.size());
-            return builtin_getset_collection_[p_index];
-        }
-
-        jsb_force_inline static const FMethodInfo& get_method(int p_index)
-        {
-            jsb_check(p_index >= 0 && p_index < builtin_method_collection_.size());
-            return builtin_method_collection_[p_index];
-        }
-
         jsb_force_inline static int register_getset_method(const StringName& p_name)
         {
-            const int collection_index = builtin_getset_collection_.size();
-            builtin_getset_collection_.append({
+            const int collection_index = VariantInfoCollection::getsets.size();
+            VariantInfoCollection::getsets.append({
                 Variant::get_member_validated_setter(TYPE, p_name),
                 Variant::get_member_validated_getter(TYPE, p_name),
                 Variant::get_member_type(TYPE, p_name)});
@@ -130,9 +139,9 @@ namespace jsb
 
         jsb_force_inline static int register_builtin_method(const StringName& p_name)
         {
-            const int collection_index = builtin_method_collection_.size();
-            builtin_method_collection_.append({});
-            FMethodInfo& method_info = builtin_method_collection_.write[collection_index];
+            const int collection_index = VariantInfoCollection::methods.size();
+            VariantInfoCollection::methods.append({});
+            FMethodInfo& method_info = VariantInfoCollection::methods.write[collection_index];
             method_info.name = p_name;
             method_info.return_type = Variant::get_builtin_method_return_type(TYPE, p_name);
             const int argument_count = Variant::get_builtin_method_argument_count(TYPE, p_name);
@@ -168,9 +177,15 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             v8::Isolate::Scope isolate_scope(isolate);
+            if (!info.IsConstructCall())
+            {
+                jsb_throw(isolate, "bad constructor call");
+                return;
+            }
             v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
-            Environment* runtime = Environment::wrap(isolate);
+            const internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
+            Environment* environment = Environment::wrap(isolate);
+
             const int argc = info.Length();
 
             const int constructor_count = Variant::get_constructor_count(TYPE);
@@ -180,7 +195,7 @@ namespace jsb
                 bool argument_type_match = true;
                 for (int argument_index = 0; argument_index < argc; ++argument_index)
                 {
-                    Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, argument_index);
+                    const Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, argument_index);
                     if (!V8Helper::can_convert_strict(info[argument_index], argument_type))
                     {
                         argument_type_match = false;
@@ -199,7 +214,7 @@ namespace jsb
                 {
                     memnew_placement(&args[index], Variant);
                     argv[index] = &args[index];
-                    Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, index);
+                    const Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, index);
                     if (!Realm::js_to_gd_var(isolate, context, info[index], argument_type, args[index]))
                     {
                         // revert all constructors
@@ -228,7 +243,7 @@ namespace jsb
                     return;
                 }
 
-                runtime->bind_object(class_id, instance, self);
+                environment->bind_object(class_id, instance, self);
                 return;
             }
 
@@ -252,7 +267,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const FGetSetInfo& getset = get_setter(info.Data().As<v8::Int32>()->Value());
+            const FGetSetInfo& getset = VariantInfoCollection::get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
             construct_variant(value, getset.type);
@@ -275,7 +290,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const FGetSetInfo& getset = get_setter(info.Data().As<v8::Int32>()->Value());
+            const FGetSetInfo& getset = VariantInfoCollection::get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
             if (!Realm::js_to_gd_var(isolate, context, info[0], getset.type, value))
@@ -293,7 +308,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const FMethodInfo& method_info = get_method(info.Data().As<v8::Int32>()->Value());
+            const FMethodInfo& method_info = VariantInfoCollection::get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
 
             // prepare argv
@@ -346,7 +361,7 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const FMethodInfo& method_info = get_method(info.Data().As<v8::Int32>()->Value());
+            const FMethodInfo& method_info = VariantInfoCollection::get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
 
             // prepare argv
@@ -357,7 +372,7 @@ namespace jsb
             {
                 memnew_placement(&args[index], Variant);
                 argv[index] = &args[index];
-                Variant::Type type = method_info.argument_types[index];
+                const Variant::Type type = method_info.argument_types[index];
                 if (!Realm::js_to_gd_var(isolate, context, info[index], type, args[index]))
                 {
                     // revert all constructors
@@ -413,7 +428,7 @@ namespace jsb
                 Variant::get_member_list(TYPE, &members);
                 for (const StringName& name : members)
                 {
-                    v8::Local<v8::Integer> index = v8::Int32::New(p_env.isolate, register_getset_method(name));
+                    const v8::Local<v8::Integer> index = v8::Int32::New(p_env.isolate, register_getset_method(name));
                     prototype_template->SetAccessorProperty(V8Helper::to_string(p_env.isolate, name),
                         v8::FunctionTemplate::New(p_env.isolate, _getter, index),
                         v8::FunctionTemplate::New(p_env.isolate, _setter, index));
@@ -518,7 +533,7 @@ namespace jsb
         p_realm->RegisterPrimitiveType(PackedColorArray);
     }
 
-    template<typename T> Vector<FMethodInfo> VariantBind<T>::builtin_method_collection_;
-    template<typename T> Vector<FGetSetInfo> VariantBind<T>::builtin_getset_collection_;
+    Vector<FMethodInfo> VariantInfoCollection::methods;
+    Vector<FGetSetInfo> VariantInfoCollection::getsets;
 }
 #endif

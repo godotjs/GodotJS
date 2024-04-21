@@ -360,6 +360,13 @@ namespace jsb
         return false;
     }
 
+    jsb_force_inline static void clear_internal_field(v8::Isolate* isolate, const v8::Global<v8::Object>& p_obj)
+    {
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Object> obj = p_obj.Get(isolate);
+        obj->SetAlignedPointerInInternalField(kObjectFieldPointer, nullptr);
+    }
+
     void Environment::free_object(void* p_pointer, bool p_free)
     {
         jsb_check(Thread::get_caller_id() == thread_id_);
@@ -375,6 +382,8 @@ namespace jsb
         // remove index at first to make `free_object` safely reentrant
         if (is_persistent) persistent_objects_.erase(p_pointer);
         objects_index_.erase(p_pointer);
+        //NOTE if we clear the internal field here, only null check is required when using later (like the usage in '_godot_object_method')
+        clear_internal_field(isolate_, object_handle.ref_);
         object_handle.ref_.Reset();
 
         //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`

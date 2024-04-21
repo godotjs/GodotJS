@@ -22,7 +22,7 @@ namespace jsb
 
         // this reference is initially weak and hooked on v8 gc callback.
         // it becomes a strong reference after the `ref_count_` explicitly increased.
-        v8::Global<v8::Value> ref_;
+        v8::Global<v8::Object> ref_;
 
         uint32_t ref_count_;
     };
