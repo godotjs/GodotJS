@@ -9,12 +9,12 @@ JavaScript for Godot with V8
 * [ ] Support REPL in Godot Editor
 * [ ] Asynchronous module loading support (`import` function)
 * [x] Godot Object types binding
-* [ ] Godot Primitive types binding
-* [ ] Godot `ScriptLanguage` integrating
+* [x] Godot Primitive types binding
+* [ ] Godot `ScriptLanguage` integration
 * [ ] Multiple contexts for sandboxing script environments (not multi-threading)
 * [ ] Support hot-reload
 * [ ] Worker threads implementation
-* [ ] Seamlessly switch to QuickJS when targeting web platform
+* [ ] Seamlessly switch to QuickJS when targeting web
 * [x] Debug with Chrome devtools when using V8
 * [x] Support SourceMap
 
@@ -23,7 +23,7 @@ JavaScript for Godot with V8
 Download or clone the repo into Godot `modules` directory:
 ```sh
 cd YourGodotEngineSource/modules
-git lfs clone https://github.com/ialex32x/jsb.git
+git lfs clone https://github.com/ialex32x/GodotJS.git
 ```
 
 Compile and launch `Godot Editor`.
