@@ -8,6 +8,11 @@ FEATS:
     ☐ editor: confirm to overwrite if files exist when installing TS project presets
     ✔ core: Variant pool (no threading since environment scoped) @done(24-04-21 21:53)
     ☐ cpp: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
+    ☐ REPL: auto-complete when input text changed
+    ☐ REPL: object details (as JSON?)
+
+CHECK:
+    ☐ runtime: does preload work properly
 
 ISSUES:
     ☐ binding: static functions not found after exposing
