@@ -34,7 +34,7 @@ namespace jsb::internal
 
     public:
         // input string is `mappings` (not the whole json), example: `;;;AAAA,iCAA6B;AAC7B,MAAa,QAAQ;CAAI`
-        bool parse_mappings(const char* p_mapings, size_t p_len);
+        bool parse_mappings(const char* p_mappings, size_t p_len);
 
         // parse sourcemap json string
         bool parse(const String& p_source_map);

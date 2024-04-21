@@ -61,7 +61,7 @@ namespace jsb::internal
         return source_lines_.write[size - 1];
     }
 
-    bool SourceMap::parse_mappings(const char* p_mapings, size_t p_len)
+    bool SourceMap::parse_mappings(const char* p_mappings, size_t p_len)
     {
         source_lines_.clear();
         int line = 0;
@@ -72,19 +72,19 @@ namespace jsb::internal
         InternalPosition sp;
         while (cursor < p_len)
         {
-            const char ch = p_mapings[cursor];
+            const char ch = p_mappings[cursor];
             switch (ch)
             {
             case ';':
                 // new line
-                decode(line, p_mapings + pos, p_mapings + cursor, sp, accum_line, accum_column);
+                decode(line, p_mappings + pos, p_mappings + cursor, sp, accum_line, accum_column);
                 ++line;
                 pos = ++cursor;
                 break;
             case ',':
                 // new element
                 jsb_check(pos < cursor);
-                decode(line, p_mapings + pos, p_mapings + cursor, sp, accum_line, accum_column);
+                decode(line, p_mappings + pos, p_mappings + cursor, sp, accum_line, accum_column);
                 pos = ++cursor;
                 break;
             default: ++cursor; break;
@@ -92,7 +92,7 @@ namespace jsb::internal
         }
         if (pos < cursor)
         {
-            decode(line, p_mapings + pos, p_mapings + cursor, sp, accum_line, accum_column);
+            decode(line, p_mappings + pos, p_mappings + cursor, sp, accum_line, accum_column);
         }
         return true;
     }
@@ -129,7 +129,7 @@ namespace jsb::internal
             r_pos.index = xposition.source_index;
             r_pos.line = xposition.source_line;
             r_pos.column = xposition.source_column;
-            return true;;
+            return true;
         }
         // no matched position
         r_pos.index = r_pos.line = r_pos.column = 0;
