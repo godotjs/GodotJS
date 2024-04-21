@@ -10,6 +10,10 @@ FEATS:
     ☐ cpp: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
     ☐ REPL: auto-complete when input text changed
     ☐ REPL: object details (as JSON?)
+    ☐ lang: signal decalaration in scripts
+    ☐ lang: gd exported property in scripts
+    ☐ lang: onready gd var in scripts
+    ☐ lang: NodePath support 
 
 CHECK:
     ☐ runtime: does preload work properly
