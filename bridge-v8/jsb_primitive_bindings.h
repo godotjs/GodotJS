@@ -6,7 +6,7 @@
 #   define JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS 0
 #endif
 
-#define JSB_OPERATOR_NAME(op_code) "op_" #op_code
+#define JSB_OPERATOR_NAME(op_code) #op_code
 
 namespace jsb
 {
@@ -30,7 +30,8 @@ namespace jsb
         Callable::CallError err;
         Variant::construct(p_type, r_value, nullptr, 0, err);
 #else
-        r_value = VariantUtilityFunctions::type_convert({}, p_type);
+        static Variant dummy = {};
+        r_value = VariantUtilityFunctions::type_convert(dummy, p_type);
 #endif
     }
 
