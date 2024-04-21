@@ -1,5 +1,6 @@
 #include "jsb_editor_utility.h"
 
+#include "jsb_primitive_bindings.h"
 #include "core/core_constants.h"
 #if TOOLS_ENABLED
 
@@ -368,6 +369,61 @@ namespace jsb
         }
     }
 
+    template<typename TReturn>
+    struct Result
+    {
+        template<typename TLeft, typename TRight>
+        static void From(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
+        {
+            v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
+
+            set_field(context->GetIsolate(), context, obj, "name", op_name);
+            set_field(context->GetIsolate(), context, obj, "return_type", (int) GetTypeInfo<TReturn>::VARIANT_TYPE);
+            set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TLeft>::VARIANT_TYPE);
+            set_field(context->GetIsolate(), context, obj, "right_type", (int) GetTypeInfo<TRight>::VARIANT_TYPE);
+            const int len = operators->Length();
+            operators->Set(context, len, obj);
+        }
+    };
+
+    template<typename T>
+    struct OperatorRegister
+    {
+        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators) {}
+    };
+
+    using Number = double;
+
+#define JSB_OPERATOR2(OpName, Ret, Left, Right) Result<Ret>::From<Left, Right>(context, operators, JSB_OPERATOR_NAME(OpName))
+
+    template<> struct OperatorRegister<Vector2>
+    {
+        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
+        {
+            JSB_OPERATOR2(ADD, Vector2, Vector2, Vector2);
+            JSB_OPERATOR2(SUBTRACT, Vector2, Vector2, Vector2);
+            JSB_OPERATOR2(MULTIPLY, Vector2, Vector2, Vector2);
+            JSB_OPERATOR2(MULTIPLY, Vector2, Number, Vector2);
+            JSB_OPERATOR2(MULTIPLY, Vector2, Vector2, Number);
+            JSB_OPERATOR2(DIVIDE, Vector2, Vector2, Vector2);
+            JSB_OPERATOR2(DIVIDE, Vector2, Vector2, Number);
+        }
+    };
+
+    template<> struct OperatorRegister<Vector3>
+    {
+        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
+        {
+            JSB_OPERATOR2(ADD, Vector3, Vector3, Vector3);
+            JSB_OPERATOR2(SUBTRACT, Vector3, Vector3, Vector3);
+            JSB_OPERATOR2(MULTIPLY, Vector3, Vector3, Vector3);
+            JSB_OPERATOR2(MULTIPLY, Vector3, Number, Vector3);
+            JSB_OPERATOR2(MULTIPLY, Vector3, Vector3, Number);
+            JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Vector3);
+            JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Number);
+        }
+    };
+
     void JavaScriptEditorUtility::_get_classes(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -499,7 +555,9 @@ namespace jsb
 
         // operators
         {
-            //TODO
+            v8::Local<v8::Array> operators_obj = v8::Array::New(isolate);
+            set_field(isolate, context, class_info_obj, "operators", operators_obj);
+            OperatorRegister<T>::generate(context, operators_obj);
         }
 
         // enums

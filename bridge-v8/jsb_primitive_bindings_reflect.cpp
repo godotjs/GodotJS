@@ -72,8 +72,19 @@ namespace jsb
     };
 
 #define JSB_DEFINE_OPERATOR2(op_code) function_template->\
-    Set(V8Helper::to_string(p_env.isolate, "op_" #op_code), v8::FunctionTemplate::New(p_env.isolate, OperatorEvaluator2::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
-    JSB_LOG(Verbose, "generate %d: %s", Variant::OP_##op_code, "op_" #op_code)
+    Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, OperatorEvaluator2::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
+    JSB_LOG(Verbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+
+#define JSB_TYPE_OPERATORS_BEGIN(TypeName) \
+    template<>\
+    struct OperatorRegister<TypeName>\
+    {\
+        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template)\
+        {
+#define JSB_TYPE_OPERATORS_END() \
+        }\
+    };
+
 
     template<typename T>
     struct OperatorRegister
@@ -81,25 +92,7 @@ namespace jsb
         static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template) {}
     };
 
-    // Godot do not make operator list public, so we can only do it manually
-    template<>
-    struct OperatorRegister<Vector2>
-    {
-        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template)
-        {
-            JSB_DEFINE_OPERATOR2(ADD);
-            JSB_DEFINE_OPERATOR2(SUBTRACT);
-            JSB_DEFINE_OPERATOR2(MULTIPLY);
-            JSB_DEFINE_OPERATOR2(DIVIDE);
-        }
-    };
-
-    template<> struct OperatorRegister<Vector2i> : OperatorRegister<Vector2> {};
-    template<> struct OperatorRegister<Vector3> : OperatorRegister<Vector2> {};
-    template<> struct OperatorRegister<Vector3i> : OperatorRegister<Vector2> {};
-    template<> struct OperatorRegister<Vector4> : OperatorRegister<Vector2> {};
-    template<> struct OperatorRegister<Vector4i> : OperatorRegister<Vector2> {};
-    template<> struct OperatorRegister<Quaternion> : OperatorRegister<Vector2> {};
+    #include "jsb_primitive_operators.def.h"
 
     struct VariantInfoCollection
     {

@@ -3,8 +3,10 @@
 #include "jsb_pch.h"
 
 #ifndef JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS
-#define JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS 0
+#   define JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS 0
 #endif
+
+#define JSB_OPERATOR_NAME(op_code) "op_" #op_code
 
 namespace jsb
 {

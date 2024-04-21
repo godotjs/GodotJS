@@ -358,6 +358,12 @@ class ClassWriter extends IndentWriter {
         const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
         this.line(`constructor(${args})`);
     }
+    operator_(operator_info: jsb.editor.OperatorInfo) {
+        const return_type_name = PrimitiveTypeNames[operator_info.return_type];
+        const left_type_name = PrimitiveTypeNames[operator_info.left_type];
+        const right_type_name = PrimitiveTypeNames[operator_info.right_type];
+        this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
+    }
     method_(method_info: jsb.editor.MethodBind) {
         // some godot methods declared with special characters
         if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
@@ -657,6 +663,9 @@ export default class TSDCodeGen {
         }
         for (let method_info of cls.methods) {
             class_cg.method_(method_info);
+        }
+        for (let operator_info of cls.operators) {
+            class_cg.operator_(operator_info);
         }
         for (let property_info of cls.properties) {
             class_cg.primitive_property_(property_info);
