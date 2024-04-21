@@ -16,6 +16,55 @@ namespace jsb
 {
     namespace InternalTimerType { enum Type : uint8_t { Interval, Timeout, Immediate, }; }
 
+    /**
+     * @param p_godot_obj non-null godot object pointer
+     */
+    jsb_force_inline bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval)
+    {
+        jsb_check(p_godot_obj);
+        Environment* environment = Environment::wrap(isolate);
+        if (environment->get_object(p_godot_obj, r_jval))
+        {
+            return true;
+        }
+
+        // freshly bind existing gd object (not constructed in javascript)
+        const StringName& class_name = p_godot_obj->get_class_name();
+        Realm* realm = Realm::wrap(context);
+        NativeClassID jclass_id;
+        if (const NativeClassInfo* jclass = realm->_expose_godot_class(class_name, &jclass_id))
+        {
+            v8::Local<v8::FunctionTemplate> jtemplate = jclass->template_.Get(isolate);
+            r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+            jsb_check(r_jval->InternalFieldCount() == kObjectFieldCount);
+
+            if (p_godot_obj->is_ref_counted())
+            {
+                //NOTE in the case this godot object created by a godot method which returns a Ref<T>,
+                //     it's `refcount_init` will be zero after the object pointer assigned to a Variant.
+                //     we need to resurrect the object from this special state, or it will be a dangling pointer.
+                if (((RefCounted*) p_godot_obj)->init_ref())
+                {
+                    // great, it's resurrected.
+                }
+            }
+
+            // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
+            environment->bind_godot_object(jclass_id, p_godot_obj, r_jval.As<v8::Object>());
+            return true;
+        }
+        JSB_LOG(Error, "failed to expose godot class '%s'", class_name);
+        return false;
+    }
+
+    static const MethodInfo& get_method_info_recursively(const ClassDB::ClassInfo& p_class_info, const StringName& method_name)
+    {
+        const HashMap<StringName, MethodInfo>::ConstIterator method_it = p_class_info.virtual_methods_map.find(method_name);
+        if (method_it != p_class_info.virtual_methods_map.end()) return method_it->value;
+        jsb_check(p_class_info.inherits_ptr);
+        return get_method_info_recursively(*p_class_info.inherits_ptr, method_name);
+    }
+
     static void _generate_stacktrace(v8::Isolate* isolate, StringBuilder& sb)
     {
         v8::TryCatch try_catch(isolate);
@@ -155,16 +204,6 @@ namespace jsb
         }
     }
 
-    static jsb_force_inline String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_value)
-    {
-        if (p_value->IsString())
-        {
-            v8::String::Utf8Value decode(isolate, p_value);
-            return StringName(String(*decode, decode.length()));
-        }
-        return StringName();
-    }
-
     void Realm::_define(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -231,10 +270,10 @@ namespace jsb
         }
 
         // read parent module id from magic data
-        const String parent_id = to_string(isolate, info.Data());
-        const String module_id = to_string(isolate, arg0);
+        const String parent_id = V8Helper::to_string(isolate, info.Data());
+        const String module_id = V8Helper::to_string(isolate, arg0);
         Realm* realm = Realm::wrap(context);
-        if (JavaScriptModule* module = realm->_load_module(parent_id, module_id))
+        if (const JavaScriptModule* module = realm->_load_module(parent_id, module_id))
         {
             info.GetReturnValue().Set(module->exports);
         }
@@ -912,14 +951,28 @@ namespace jsb
         return &jclass_info;
     }
 
+    //TODO not fully implemented
     // translate js val into gd variant without any type hint
     bool Realm::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant& r_cvar)
     {
-        //TODO not implemented
         if (p_jval.IsEmpty() || p_jval->IsNullOrUndefined())
         {
             r_cvar = {};
             return true;
+        }
+        if (p_jval->IsBoolean())
+        {
+            r_cvar = p_jval->BooleanValue(isolate);
+            return true;
+        }
+        if (p_jval->IsInt32())
+        {
+            int32_t val;
+            if (p_jval->Int32Value(context).To(&val))
+            {
+                r_cvar = (int64_t) val;
+                return true;
+            }
         }
         if (p_jval->IsUint32())
         {
@@ -929,6 +982,42 @@ namespace jsb
                 r_cvar = (int64_t) val;
                 return true;
             }
+        }
+        if (p_jval->IsNumber())
+        {
+            double val;
+            if (p_jval->NumberValue(context).To(&val))
+            {
+                r_cvar = (double) val;
+                return true;
+            }
+        }
+        if (p_jval->IsString())
+        {
+            //TODO optimize with cache?
+            v8::String::Utf8Value str(isolate, p_jval);
+            r_cvar = String(*str, str.length());
+            return true;
+        }
+        if (p_jval->IsObject())
+        {
+            v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+            if (self->InternalFieldCount() != kObjectFieldCount)
+            {
+                return false;
+            }
+
+            //TODO check the class to make it safe to cast (space cheaper?)
+            //TODO or, add one more InternalField to ensure it (time cheaper?)
+            void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+            const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+            if (!class_info)
+            {
+                return false;
+            }
+            if (class_info->type == NativeClassInfo::GodotObject) r_cvar = (Object*) pointer;
+            else r_cvar = *(Variant*) pointer;
+            return true;
         }
         return false;
     }
@@ -1048,47 +1137,6 @@ namespace jsb
             }
         default: return false;
         }
-    }
-
-    /**
-     * @param p_godot_obj non-null godot object pointer
-     */
-    jsb_force_inline bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval)
-    {
-        jsb_check(p_godot_obj);
-        Environment* environment = Environment::wrap(isolate);
-        if (environment->get_object(p_godot_obj, r_jval))
-        {
-            return true;
-        }
-
-        // freshly bind existing gd object (not constructed in javascript)
-        const StringName& class_name = p_godot_obj->get_class_name();
-        Realm* realm = Realm::wrap(context);
-        NativeClassID jclass_id;
-        if (const NativeClassInfo* jclass = realm->_expose_godot_class(class_name, &jclass_id))
-        {
-            v8::Local<v8::FunctionTemplate> jtemplate = jclass->template_.Get(isolate);
-            r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
-            jsb_check(r_jval->InternalFieldCount() == kObjectFieldCount);
-
-            if (p_godot_obj->is_ref_counted())
-            {
-                //NOTE in the case this godot object created by a godot method which returns a Ref<T>,
-                //     it's `refcount_init` will be zero after the object pointer assigned to a Variant.
-                //     we need to resurrect the object from this special state, or it will be a dangling pointer.
-                if (((RefCounted*) p_godot_obj)->init_ref())
-                {
-                    // great, it's resurrected.
-                }
-            }
-
-            // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-            environment->bind_godot_object(jclass_id, p_godot_obj, r_jval.As<v8::Object>());
-            return true;
-        }
-        JSB_LOG(Error, "failed to expose godot class '%s'", class_name);
-        return false;
     }
 
     bool Realm::gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, v8::Local<v8::Value>& r_jval)
@@ -1225,14 +1273,6 @@ namespace jsb
             return;
         }
         info.GetReturnValue().Set(rval);
-    }
-
-    const MethodInfo& get_method_info_recursively(const ClassDB::ClassInfo& p_class_info, const StringName& method_name)
-    {
-        const HashMap<StringName, MethodInfo>::ConstIterator method_it = p_class_info.virtual_methods_map.find(method_name);
-        if (method_it != p_class_info.virtual_methods_map.end()) return method_it->value;
-        jsb_check(p_class_info.inherits_ptr);
-        return get_method_info_recursively(*p_class_info.inherits_ptr, method_name);
     }
 
     void Realm::_godot_object_virtual_method(const v8::FunctionCallbackInfo<v8::Value>& info)

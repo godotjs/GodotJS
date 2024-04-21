@@ -71,6 +71,16 @@ namespace jsb
             return str_gd;
         }
 
+        jsb_force_inline String to_string(v8::Isolate* isolate, const v8::Local<v8::String>& p_val)
+        {
+            return to_string(isolate, p_val.As<v8::Name>());
+        }
+
+        jsb_force_inline String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
+        {
+            return !p_val.IsEmpty() && (p_val->IsString() || p_val->IsSymbol()) ? to_string(isolate, p_val.As<v8::Name>()) : String();
+        }
+
         template<size_t N>
         jsb_force_inline v8::Local<v8::String> to_string(v8::Isolate* isolate, const char (&literal)[N])
         {

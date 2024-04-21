@@ -52,12 +52,15 @@ namespace jsb
                 return;
             }
             Variant ret;
+            const Variant::Type return_type = Variant::get_operator_return_type(op, left_type, right_type);
+            construct_variant(ret, return_type);
             func(&left, &right, &ret);
-            if (ret.get_type() != Variant::get_operator_return_type(op, left_type, right_type))
+            if (ret.get_type() != return_type)
             {
                 jsb_throw(isolate, "bad return");
                 return;
             }
+
             v8::Local<v8::Value> rval;
             if (!Realm::gd_var_to_js(isolate, context, ret, rval))
             {
