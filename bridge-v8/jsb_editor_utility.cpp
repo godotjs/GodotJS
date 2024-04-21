@@ -647,6 +647,11 @@ namespace jsb
         info.GetReturnValue().Set(array);
     }
 
+    void JavaScriptEditorUtility::_benchmark_dump(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        OS::get_singleton()->benchmark_dump();
+    }
+
     void JavaScriptEditorUtility::_delete_file(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();

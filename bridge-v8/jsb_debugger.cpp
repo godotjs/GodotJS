@@ -2,7 +2,6 @@
 #include "jsb_realm.h"
 #include "jsb_exception_info.h"
 #include "jsb_environment.h"
-
 #include "core/io/tcp_server.h"
 
 #if JSB_WITH_DEBUGGER
@@ -121,8 +120,8 @@ namespace jsb
 	            else { JSB_DEBUGGER_LOG(Debug, "receive text message: %s", String::utf8((const char*) recv_buffer_->get_data_array().ptr(), recv_buffer_->get_position())); }
 
 	            v8::Isolate* isolate = isolate_;
-	            v8::Isolate::Scope isolateScope(isolate);
-	            v8::HandleScope handleScope(isolate);
+	            v8::Isolate::Scope isolate_scope(isolate);
+	            v8::HandleScope handle_scope(isolate);
 	            v8::TryCatch try_catch(isolate);
 
 	            v8_inspector::StringView message(recv_buffer_->get_data_array().ptr(), recv_buffer_->get_position());
@@ -240,6 +239,8 @@ namespace jsb
 
 	    void init()
         {
+            JSB_BENCHMARK_SCOPE(JSDebugger, Init);
+
 	        v8::Isolate* isolate = isolate_;
 	        v8::Isolate::Scope isolateScope(isolate);
 	        v8::HandleScope handleScope(isolate);

@@ -13,6 +13,7 @@ namespace jsb
         static void _get_primitive_types(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _get_singletons(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _delete_file(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _benchmark_dump(const v8::FunctionCallbackInfo<v8::Value>& info);
     };
 }
 #endif

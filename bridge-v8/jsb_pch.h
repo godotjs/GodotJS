@@ -25,5 +25,6 @@
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_function_pointer.h"
 #include "../internal/jsb_typealias.h"
+#include "../internal/jsb_benchmark.h"
 
 #endif

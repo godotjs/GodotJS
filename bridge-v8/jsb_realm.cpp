@@ -555,6 +555,7 @@ namespace jsb
                 editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
                 editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
                 editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
+                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "benchmark_dump"), v8::Function::New(context, JavaScriptEditorUtility::_benchmark_dump).ToLocalChecked()).Check();
 
             }
 #endif
@@ -683,6 +684,8 @@ namespace jsb
     Realm::Realm(const std::shared_ptr<Environment>& runtime)
         : environment_(runtime)
     {
+        JSB_BENCHMARK_SCOPE(JSRealm, Construct);
+
         v8::Isolate* isolate = runtime->isolate_;
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
