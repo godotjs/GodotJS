@@ -382,8 +382,11 @@ namespace jsb
         // remove index at first to make `free_object` safely reentrant
         if (is_persistent) persistent_objects_.erase(p_pointer);
         objects_index_.erase(p_pointer);
-        //NOTE if we clear the internal field here, only null check is required when using later (like the usage in '_godot_object_method')
-        clear_internal_field(isolate_, object_handle.ref_);
+        if (!p_free)
+        {
+            //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
+            clear_internal_field(isolate_, object_handle.ref_);
+        }
         object_handle.ref_.Reset();
 
         //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`

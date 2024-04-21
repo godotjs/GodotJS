@@ -4,6 +4,8 @@ FEATS:
     ✔ module: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
     ☐ source-map: configurable in project settings
     ☐ binding: handle default argument values
+    ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)
+    ☐ editor: confirm to overwrite if files exist when installing TS project presets
 
 ISSUES:
     ☐ binding: static functions not found after exposing

@@ -3,6 +3,7 @@
 #include "core/core_constants.h"
 #if TOOLS_ENABLED
 
+// for windows api (like 'DeleteFileW')
 #if WINDOWS_ENABLED
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
@@ -131,6 +132,17 @@ namespace jsb
             Variant::Type type;
         };
 
+        struct FArgumentInfo
+        {
+            String name;
+            Variant::Type type;
+        };
+
+        struct FConstructorInfo
+        {
+            Vector<FArgumentInfo> arguments;
+        };
+
         void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const FPrimitiveGetSetInfo& property_info, const v8::Local<v8::Object>& object)
         {
             set_field(isolate, context, object, "name", property_name);
@@ -143,6 +155,21 @@ namespace jsb
             set_field(isolate, context, object, "type", property_info.type);
             set_field(isolate, context, object, "setter", property_info.setter);
             set_field(isolate, context, object, "getter", property_info.getter);
+        }
+
+        void build_constructor_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const FConstructorInfo& constructor_info, const v8::Local<v8::Object>& object)
+        {
+            const int argc = constructor_info.arguments.size();
+            v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argc);
+            for (int index = 0; index < argc; ++index)
+            {
+                const FArgumentInfo& argument_info = constructor_info.arguments[index];
+                v8::Local<v8::Object> arg_obj = v8::Object::New(isolate);
+                set_field(isolate, context, arg_obj, "name", argument_info.name);
+                set_field(isolate, context, arg_obj, "type", argument_info.type);
+                args_obj->Set(context, index, arg_obj);
+            }
+            set_field(isolate, context, object, "arguments", args_obj);
         }
 
         void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, MethodBind const* method_bind, const v8::Local<v8::Object>& object)
@@ -403,7 +430,23 @@ namespace jsb
 
         // constructors
         {
-            //TODO list all constructor overloads
+            const int constructor_count = Variant::get_constructor_count(TYPE);
+            v8::Local<v8::Array> constructors_obj = v8::Array::New(isolate, constructor_count);
+            set_field(isolate, context, class_info_obj, "constructors", constructors_obj);
+            for (int constructor_index = 0; constructor_index < constructor_count; ++constructor_index)
+            {
+                const int argc = Variant::get_constructor_argument_count(TYPE, constructor_index);
+                FConstructorInfo constructor_info;
+                for (int argument_index = 0; argument_index < argc; ++argument_index)
+                {
+                    const String argument_name = Variant::get_constructor_argument_name(TYPE, constructor_index, argument_index);
+                    const Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, argument_index);
+                    constructor_info.arguments.append({ argument_name, argument_type });
+                }
+                v8::Local<v8::Object> constructor_obj = v8::Object::New(isolate);
+                build_constructor_info(isolate, context, constructor_info, constructor_obj);
+                constructors_obj->Set(context, constructor_index, constructor_obj);
+            }
         }
 
         // properties (getset)

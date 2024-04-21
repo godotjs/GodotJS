@@ -1502,6 +1502,7 @@ namespace jsb
             return JSValueMove();
         }
 
+        r_err = OK;
         v8::Local<v8::Value> rval;
         if (!maybe.ToLocal(&rval))
         {

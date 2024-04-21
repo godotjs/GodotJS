@@ -226,6 +226,15 @@ declare namespace jsb {
             // arguments: Array<FieldInfo>;
         }
 
+        interface ArgumentInfo {
+            name: string;
+            type: VariantType;
+        }
+
+        interface ConstructorInfo {
+            arguments: Array<ArgumentInfo>
+        }
+
         interface BasicClassInfo {
             name: string;
             methods: Array<MethodBind>;
@@ -245,6 +254,7 @@ declare namespace jsb {
         interface PrimitiveClassInfo extends BasicClassInfo {
             name: string;
 
+            constructors: Array<ConstructorInfo>;
             // fields: Array<FieldInfo>;
             properties: Array<PrimitiveGetSetInfo>;
             // virtual_methods: Array<MethodInfo>;

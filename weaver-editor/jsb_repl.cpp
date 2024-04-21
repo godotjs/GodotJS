@@ -110,7 +110,10 @@ void GodotJSREPL::add_string(const String &p_str)
 
 void GodotJSREPL::write(jsb::internal::ELogSeverity::Type p_severity, const String& p_text)
 {
-    add_string(p_text);
+    if (input_submitting_)
+    {
+        add_string(p_text);
+    }
 }
 
 void GodotJSREPL::add_history(const String &p_text)
