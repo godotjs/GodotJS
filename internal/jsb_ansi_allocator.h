@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_ANSI_ALLOCATOR_H
-#define JAVASCRIPT_ANSI_ALLOCATOR_H
+#ifndef GODOTJS_ANSI_ALLOCATOR_H
+#define GODOTJS_ANSI_ALLOCATOR_H
 
 #include "core/os/memory.h"
 #include "jsb_macros.h"

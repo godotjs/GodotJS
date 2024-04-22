@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_CALLABLE_H
-#define JAVASCRIPT_CALLABLE_H
+#ifndef GODOTJS_CALLABLE_H
+#define GODOTJS_CALLABLE_H
 #include "../internal/jsb_macros.h"
 #include "jsb_bridge.h"
 

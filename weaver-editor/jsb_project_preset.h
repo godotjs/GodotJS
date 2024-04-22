@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_PROJECT_PRESET_H
-#define JAVASCRIPT_PROJECT_PRESET_H
+#ifndef GODOTJS_PROJECT_PRESET_H
+#define GODOTJS_PROJECT_PRESET_H
 
 #include "jsb_editor_macros.h"
 #include "core/string/ustring.h"

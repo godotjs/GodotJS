@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_FUNCTION_POINTER_H
-#define JAVASCRIPT_FUNCTION_POINTER_H
+#ifndef GODOTJS_FUNCTION_POINTER_H
+#define GODOTJS_FUNCTION_POINTER_H
 
 #include <cinttypes>
 #include "core/templates/vector.h"

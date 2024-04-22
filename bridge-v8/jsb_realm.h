@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_CONTEXT_H
-#define JAVASCRIPT_CONTEXT_H
+#ifndef GODOTJS_REALM_H
+#define GODOTJS_REALM_H
 
 #include "jsb_ref.h"
 #include "jsb_pch.h"

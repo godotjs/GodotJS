@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_TEMPLATE_H
-#define JAVASCRIPT_TEMPLATE_H
+#ifndef GODOTJS_TRANSPILER_H
+#define GODOTJS_TRANSPILER_H
 
 #include "jsb_pch.h"
 #include "jsb_environment.h"

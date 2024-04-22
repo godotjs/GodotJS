@@ -1,5 +1,5 @@
-﻿#ifndef JAVASCRIPT_CONSOLE_OUTPUT_H
-#define JAVASCRIPT_CONSOLE_OUTPUT_H
+﻿#ifndef GODOTJS_CONSOLE_OUTPUT_H
+#define GODOTJS_CONSOLE_OUTPUT_H
 #include "jsb_macros.h"
 
 namespace jsb

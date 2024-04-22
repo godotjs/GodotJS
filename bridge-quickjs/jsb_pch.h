@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_PCH_H
-#define JAVASCRIPT_PCH_H
+#ifndef GODOTJS_PCH_H
+#define GODOTJS_PCH_H
 
 #include "core/object/object.h"
 #include "core/string/print_string.h"

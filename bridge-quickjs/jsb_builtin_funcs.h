@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_BUILTIN_FUNCS_H
-#define JAVASCRIPT_BUILTIN_FUNCS_H
+#ifndef GODOTJS_BUILTIN_FUNCS_H
+#define GODOTJS_BUILTIN_FUNCS_H
 #include "jsb_pch.h"
 
 namespace jsb

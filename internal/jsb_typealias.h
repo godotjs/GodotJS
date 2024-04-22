@@ -1,5 +1,5 @@
-﻿#ifndef JAVASCRIPT_TYPE_ALIAS_H
-#define JAVASCRIPT_TYPE_ALIAS_H
+﻿#ifndef GODOTJS_TYPE_ALIAS_H
+#define GODOTJS_TYPE_ALIAS_H
 
 #include "jsb_sindex.h"
 

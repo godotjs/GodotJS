@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_PATH_UTIL_H
-#define JAVASCRIPT_PATH_UTIL_H
+#ifndef GODOTJS_PATH_UTIL_H
+#define GODOTJS_PATH_UTIL_H
 
 #include "core/string/ustring.h"
 

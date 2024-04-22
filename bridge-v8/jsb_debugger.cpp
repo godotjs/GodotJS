@@ -7,7 +7,7 @@
 #if JSB_WITH_DEBUGGER
 #if JSB_WITH_LWS
 #include "libwebsockets.h"
-#include "../internal/jsb_version.h"
+#include "../jsb_version.h"
 
 #define JSB_DEBUGGER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSDebugger, Severity, Format, ##__VA_ARGS__)
 
@@ -399,9 +399,9 @@ namespace jsb
 	                {
 	                    constexpr static char kJsonListFormat[] = \
                             "[{"
-                            "\"description\": \"" JSB_NAME "\","
+                            "\"description\": \"" JSB_MODULE_NAME_STRING "\","
                             "\"id\": \"0\","
-                            "\"title\": \"" JSB_NAME "\","
+                            "\"title\": \"" JSB_MODULE_NAME_STRING "\","
                             "\"type\": \"node\","
                             "\"webSocketDebuggerUrl\" : \"ws://localhost:%d\""
                             "}]";
@@ -414,9 +414,9 @@ namespace jsb
 	                {
 	                    constexpr static char kJsonVersionFormat[] = \
                             "{"
-                            "    \"Browser\": \"" JSB_NAME "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
+                            "    \"Browser\": \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
                             "    \"Protocol-Version\" : \"1.1\","
-                            "    \"User-Agent\" : \"" JSB_NAME "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
+                            "    \"User-Agent\" : \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
                             "    \"V8-Version\" : \"" V8_VERSION_STRING "\","
                             "	 \"webSocketDebuggerUrl\" : \"ws://localhost:%d\""
                             "}";

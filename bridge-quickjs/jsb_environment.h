@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_RUNTIME_H
-#define JAVASCRIPT_RUNTIME_H
+#ifndef GODOTJS_RUNTIME_H
+#define GODOTJS_RUNTIME_H
 
 #include "jsb_helpers.h"
 #include "jsb_pch.h"

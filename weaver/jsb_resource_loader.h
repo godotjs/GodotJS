@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_RESOURCE_LOADER_H
-#define JAVASCRIPT_RESOURCE_LOADER_H
+#ifndef GODOTJS_RESOURCE_LOADER_H
+#define GODOTJS_RESOURCE_LOADER_H
 
 #include "core/io/resource_loader.h"
 

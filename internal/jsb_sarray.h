@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_SARRAY_H
-#define JAVASCRIPT_SARRAY_H
+#ifndef GODOTJS_SARRAY_H
+#define GODOTJS_SARRAY_H
 
 #include <algorithm>
 

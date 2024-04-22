@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_PCH_H
-#define JAVASCRIPT_PCH_H
+#ifndef GODOTJS_PCH_H
+#define GODOTJS_PCH_H
 
 #include <v8.h>
 #include <v8-persistent-handle.h>

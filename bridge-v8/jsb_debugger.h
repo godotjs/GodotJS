@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_DEBUGGER_H
-#define JAVASCRIPT_DEBUGGER_H
+#ifndef GODOTJS_DEBUGGER_H
+#define GODOTJS_DEBUGGER_H
 #include "jsb_pch.h"
 
 #if JSB_WITH_DEBUGGER

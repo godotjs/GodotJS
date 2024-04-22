@@ -1,5 +1,5 @@
-﻿#ifndef JAVASCRIPT_VALUE_MOVE_H
-#define JAVASCRIPT_VALUE_MOVE_H
+﻿#ifndef GODOTJS_VALUE_MOVE_H
+#define GODOTJS_VALUE_MOVE_H
 #include "jsb_pch.h"
 
 namespace jsb
@@ -26,6 +26,7 @@ namespace jsb
         jsb_force_inline void ignore() const {}
         bool is_valid() const;
         String to_string() const;
+        // Vector<String> to_strings() const;
     };
 }
 #endif

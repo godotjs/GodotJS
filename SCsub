@@ -13,6 +13,7 @@ def is_v8_available():
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
 javascript_engine = "v8" if is_v8_available() else "quickjs"
+websocket_lib = "lws"
 
 print("compiling:", module_name)
 print("javascript engine:", javascript_engine)
@@ -37,7 +38,7 @@ javascript_shared_defines = [
     # currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`
     # `devtools` do not response the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`
     # and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`
-    "JSB_WITH_LWS=1",
+    "JSB_WITH_LWS="+ str(1 if websocket_lib == "lws" else 0),
 
     # lower log levels are completely skipped (at compile-time)
     "JSB_MIN_LOG_LEVEL=Verbose",
@@ -110,8 +111,8 @@ def generate_jsb_gen_header():
     output = io.StringIO()
     if True:
         output.write("// AUTO-GENERATED\n")
-        output.write("#ifndef JAVASCRIPT_GEN_H\n")
-        output.write("#define JAVASCRIPT_GEN_H\n")
+        output.write("#ifndef GODOTJS_GEN_H\n")
+        output.write("#define GODOTJS_GEN_H\n")
         output.write("\n")
         output.write(f"#define JSB_MODULE_NAME {module_name}\n")
         output.write(f"#define jsb_initialize_module initialize_{module_name}_module\n")
@@ -157,7 +158,7 @@ else:
     env_jsb.add_source_files(module_obj, "bridge-quickjs/extra/*.cpp")
 
 # lws
-if "JSB_WITH_LWS=1" in javascript_shared_defines:
+if websocket_lib == "lws":
     if env["platform"] == "macos":
         env_jsb.Append(CPPPATH=["lws/macos.arm64.release/include"])
 

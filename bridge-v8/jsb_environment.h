@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_RUNTIME_H
-#define JAVASCRIPT_RUNTIME_H
+#ifndef GODOTJS_ENVIRONMENT_H
+#define GODOTJS_ENVIRONMENT_H
 
 #include "jsb_pch.h"
 #include "jsb_array_buffer_allocator.h"

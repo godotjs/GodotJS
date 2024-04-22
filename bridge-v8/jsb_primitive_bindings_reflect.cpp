@@ -4,25 +4,13 @@
 #include "jsb_class_info.h"
 #include "jsb_transpiler.h"
 #include "jsb_v8_helper.h"
+#include "../internal/jsb_variant_info.h"
 
 #define RegisterPrimitiveType(TypeName) register_primitive_binding(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
+#define GlobalVariantInfoCollection ::jsb::internal::VariantInfoCollection::global
 
 namespace jsb
 {
-    struct FMethodInfo
-    {
-        StringName name;
-	    Vector<Variant::Type> argument_types;
-        Variant::Type return_type;
-    };
-
-    struct FGetSetInfo
-    {
-        Variant::ValidatedSetter setter_func;
-        Variant::ValidatedGetter getter_func;
-        Variant::Type type;
-    };
-
     struct OperatorEvaluator2
     {
         static void invoke(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -94,30 +82,6 @@ namespace jsb
 
     #include "jsb_primitive_operators.def.h"
 
-    struct VariantInfoCollection
-    {
-        static Vector<FMethodInfo> methods;
-        static Vector<FGetSetInfo> getsets;
-
-        jsb_force_inline static const FGetSetInfo& get_setter(int p_index)
-        {
-            jsb_check(p_index >= 0 && p_index < getsets.size());
-            return getsets[p_index];
-        }
-
-        jsb_force_inline static const FMethodInfo& get_method(int p_index)
-        {
-            jsb_check(p_index >= 0 && p_index < methods.size());
-            return methods[p_index];
-        }
-
-        jsb_force_inline static void cleanup()
-        {
-            methods.clear();
-            getsets.clear();
-        }
-    };
-
     template<typename T>
     struct VariantBind
     {
@@ -125,8 +89,8 @@ namespace jsb
 
         jsb_force_inline static int register_getset_method(const StringName& p_name)
         {
-            const int collection_index = VariantInfoCollection::getsets.size();
-            VariantInfoCollection::getsets.append({
+            const int collection_index = GlobalVariantInfoCollection.getsets.size();
+            GlobalVariantInfoCollection.getsets.append({
                 Variant::get_member_validated_setter(TYPE, p_name),
                 Variant::get_member_validated_getter(TYPE, p_name),
                 Variant::get_member_type(TYPE, p_name)});
@@ -135,9 +99,9 @@ namespace jsb
 
         jsb_force_inline static int register_builtin_method(const StringName& p_name)
         {
-            const int collection_index = VariantInfoCollection::methods.size();
-            VariantInfoCollection::methods.append({});
-            FMethodInfo& method_info = VariantInfoCollection::methods.write[collection_index];
+            const int collection_index = GlobalVariantInfoCollection.methods.size();
+            GlobalVariantInfoCollection.methods.append({});
+            internal::FMethodInfo& method_info = GlobalVariantInfoCollection.methods.write[collection_index];
             method_info.name = p_name;
             method_info.return_type = Variant::get_builtin_method_return_type(TYPE, p_name);
             const int argument_count = Variant::get_builtin_method_argument_count(TYPE, p_name);
@@ -263,7 +227,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const FGetSetInfo& getset = VariantInfoCollection::get_setter(info.Data().As<v8::Int32>()->Value());
+            const internal::FGetSetInfo& getset = GlobalVariantInfoCollection.get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
             construct_variant(value, getset.type);
@@ -286,7 +250,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const FGetSetInfo& getset = VariantInfoCollection::get_setter(info.Data().As<v8::Int32>()->Value());
+            const internal::FGetSetInfo& getset = GlobalVariantInfoCollection.get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
             if (!Realm::js_to_gd_var(isolate, context, info[0], getset.type, value))
@@ -304,7 +268,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const FMethodInfo& method_info = VariantInfoCollection::get_method(info.Data().As<v8::Int32>()->Value());
+            const internal::FMethodInfo& method_info = GlobalVariantInfoCollection.get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
 
             // prepare argv
@@ -357,7 +321,7 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const FMethodInfo& method_info = VariantInfoCollection::get_method(info.Data().As<v8::Int32>()->Value());
+            const internal::FMethodInfo& method_info = GlobalVariantInfoCollection.get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
 
             // prepare argv
@@ -528,8 +492,5 @@ namespace jsb
         p_realm->RegisterPrimitiveType(PackedVector3Array);
         p_realm->RegisterPrimitiveType(PackedColorArray);
     }
-
-    Vector<FMethodInfo> VariantInfoCollection::methods;
-    Vector<FGetSetInfo> VariantInfoCollection::getsets;
 }
 #endif

@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_GCOBJECT_H
-#define JAVASCRIPT_GCOBJECT_H
+#ifndef GODOTJS_GCOBJECT_H
+#define GODOTJS_GCOBJECT_H
 #include "jsb_pch.h"
 
 namespace jsb

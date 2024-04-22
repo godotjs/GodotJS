@@ -1,12 +1,13 @@
 
 // entry point (editor only)
 
-export function auto_complete(scope: any, pattern: string): Array<string> {
+export function auto_complete(pattern: string): Array<string> {
     let result: Array<string> = [];
     if (typeof pattern !== "string") {
         return result;
     }
     
+    let scope: any = null;
     let head = '';
     let index = pattern.lastIndexOf('.');
     let left = '';
@@ -15,9 +16,11 @@ export function auto_complete(scope: any, pattern: string): Array<string> {
         try {
             scope = eval(pattern.substring(0, index));
         } catch (e) {
-            scope = null;
+            return result;
         }
         pattern = pattern.substring(index + 1);
+    } else {
+        scope = globalThis;
     }
 
     for (let k in scope) {

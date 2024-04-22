@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_SOURCE_MAP_H
-#define JAVASCRIPT_SOURCE_MAP_H
+#ifndef GODOTJS_SOURCE_MAP_H
+#define GODOTJS_SOURCE_MAP_H
 #include "jsb_macros.h"
 
 namespace jsb::internal

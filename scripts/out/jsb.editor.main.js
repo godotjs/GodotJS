@@ -2,11 +2,12 @@
 // entry point (editor only)
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.auto_complete = void 0;
-function auto_complete(scope, pattern) {
+function auto_complete(pattern) {
     let result = [];
     if (typeof pattern !== "string") {
         return result;
     }
+    let scope = null;
     let head = '';
     let index = pattern.lastIndexOf('.');
     let left = '';
@@ -16,9 +17,12 @@ function auto_complete(scope, pattern) {
             scope = eval(pattern.substring(0, index));
         }
         catch (e) {
-            scope = null;
+            return result;
         }
         pattern = pattern.substring(index + 1);
+    }
+    else {
+        scope = globalThis;
     }
     for (let k in scope) {
         if (k.indexOf(pattern) == 0) {

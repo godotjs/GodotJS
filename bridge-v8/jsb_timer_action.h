@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_TIMER_ACTION_H
-#define JAVASCRIPT_TIMER_ACTION_H
+#ifndef GODOTJS_TIMER_ACTION_H
+#define GODOTJS_TIMER_ACTION_H
 
 #include "jsb_pch.h"
 

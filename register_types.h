@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_REGISTER_TYPES_H
-#define JAVASCRIPT_REGISTER_TYPES_H
+#ifndef GODOTJS_REGISTER_TYPES_H
+#define GODOTJS_REGISTER_TYPES_H
 
 #include "modules/register_module_types.h"
 #include "jsb.gen.h"

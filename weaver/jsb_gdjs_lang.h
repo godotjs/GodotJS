@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_LANGUAGE_H
-#define JAVASCRIPT_LANGUAGE_H
+#ifndef GODOTJS_LANGUAGE_H
+#define GODOTJS_LANGUAGE_H
 
 #include "core/object/script_language.h"
 #include "../internal/jsb_macros.h"

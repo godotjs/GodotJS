@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_RESOURCE_SAVER_H
-#define JAVASCRIPT_RESOURCE_SAVER_H
+#ifndef GODOTJS_RESOURCE_SAVER_H
+#define GODOTJS_RESOURCE_SAVER_H
 
 #include "core/io/resource_saver.h"
 

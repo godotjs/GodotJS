@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_SCRIPT_INSTANCE_H
-#define JAVASCRIPT_SCRIPT_INSTANCE_H
+#ifndef GODOTJS_SCRIPT_INSTANCE_H
+#define GODOTJS_SCRIPT_INSTANCE_H
 
 #include "core/object/script_language.h"
 #include "jsb_gdjs_script.h"

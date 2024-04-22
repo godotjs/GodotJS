@@ -1,5 +1,5 @@
-﻿#ifndef JAVASCRIPT_BENCHMARK_H
-#define JAVASCRIPT_BENCHMARK_H
+﻿#ifndef GODOTJS_BENCHMARK_H
+#define GODOTJS_BENCHMARK_H
 #include "jsb_macros.h"
 
 #define JSB_BENCHMARK_SCOPE(RegionName, DetailName) ::jsb::internal::Benchmark __Benchmark__##RegionName##DetailName(#RegionName "." #DetailName)

@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_EDITOR_PLUGINS_H
-#define JAVASCRIPT_EDITOR_PLUGINS_H
+#ifndef GODOTJS_EDITOR_PLUGINS_H
+#define GODOTJS_EDITOR_PLUGINS_H
 
 #include "jsb_editor_macros.h"
 #include "editor/editor_plugin.h"

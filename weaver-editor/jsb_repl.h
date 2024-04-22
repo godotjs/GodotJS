@@ -1,5 +1,5 @@
-﻿#ifndef JAVASCRIPT_REPL_H
-#define JAVASCRIPT_REPL_H
+﻿#ifndef GODOTJS_REPL_H
+#define GODOTJS_REPL_H
 #include "../internal/jsb_console_output.h"
 #include "scene/gui/box_container.h"
 

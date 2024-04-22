@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_FUNCTION_H
-#define JAVASCRIPT_FUNCTION_H
+#ifndef GODOTJS_FUNCTION_H
+#define GODOTJS_FUNCTION_H
 
 #include "jsb_pch.h"
 

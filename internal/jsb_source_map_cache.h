@@ -1,5 +1,5 @@
-﻿#ifndef JAVASCRIPT_SOURCE_MAP_CACHE_H
-#define JAVASCRIPT_SOURCE_MAP_CACHE_H
+﻿#ifndef GODOTJS_SOURCE_MAP_CACHE_H
+#define GODOTJS_SOURCE_MAP_CACHE_H
 
 #include "jsb_macros.h"
 #include "jsb_source_map.h"

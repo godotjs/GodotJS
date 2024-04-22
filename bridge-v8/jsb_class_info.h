@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_CLASS_INFO_H
-#define JAVASCRIPT_CLASS_INFO_H
+#ifndef GODOTJS_CLASS_INFO_H
+#define GODOTJS_CLASS_INFO_H
 
 #include "jsb_pch.h"
 

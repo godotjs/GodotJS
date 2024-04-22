@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_MODULE_LOADER_H
-#define JAVASCRIPT_MODULE_LOADER_H
+#ifndef GODOTJS_MODULE_LOADER_H
+#define GODOTJS_MODULE_LOADER_H
 
 #include "jsb_pch.h"
 #include "jsb_module.h"

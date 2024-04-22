@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_BRIDGE_EXPOSE_H
-#define JAVASCRIPT_BRIDGE_EXPOSE_H
+#ifndef GODOTJS_BRIDGE_EXPOSE_H
+#define GODOTJS_BRIDGE_EXPOSE_H
 
 // header for external use
 //...

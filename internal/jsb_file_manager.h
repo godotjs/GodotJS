@@ -1,5 +1,5 @@
-﻿// #ifndef JAVASCRIPT_FILE_MANAGER_H
-// #define JAVASCRIPT_FILE_MANAGER_H
+﻿// #ifndef GODOTJS_FILE_MANAGER_H
+// #define GODOTJS_FILE_MANAGER_H
 //
 // #include "jsb_sarray.h"
 // #include "jsb_sindex.h"

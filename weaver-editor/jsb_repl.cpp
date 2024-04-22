@@ -2,6 +2,7 @@
 
 #include "../weaver/jsb_gdjs_lang.h"
 #include "scene/gui/button.h"
+#include "scene/gui/item_list.h"
 #include "scene/gui/line_edit.h"
 #include "scene/gui/rich_text_label.h"
 
@@ -34,13 +35,18 @@ GodotJSREPL::GodotJSREPL()
     add_child(output_box_);
 
     input_box_ = memnew(LineEdit);
-    input_box_->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    input_box_->set_h_size_flags(SIZE_EXPAND_FILL);
     input_box_->set_placeholder(TTR("Enter expressions"));
     input_box_->set_clear_button_enabled(true);
     input_box_->set_visible(true);
     input_box_->connect("text_submitted", callable_mp(this, &GodotJSREPL::_input_submitted));
     input_box_->connect("text_changed", callable_mp(this, &GodotJSREPL::_input_changed));
     add_child(input_box_);
+
+    // candidate_list_ = memnew(ItemList);
+    // candidate_list_->set_v_size_flags(SIZE_EXPAND_FILL);
+    // candidate_list_->add_item("List Item 0");
+    // add_child(candidate_list_);
 }
 
 GodotJSREPL::~GodotJSREPL()
@@ -74,8 +80,7 @@ void GodotJSREPL::_clear_pressed()
 
 void GodotJSREPL::_input_changed(const String &p_text)
 {
-    if (input_submitting_) return;
-    //TODO try to auto complete partial input
+    // if (input_submitting_) return;
 }
 
 void GodotJSREPL::_input_submitted(const String &p_text)
@@ -101,7 +106,7 @@ void GodotJSREPL::add_line(const String &p_line)
 void GodotJSREPL::add_string(const String &p_str)
 {
     const Vector<String> lines = p_str.split("\n", true);
-    const int line_count = lines.size();
+    // const int line_count = lines.size();
     for (const String& line: lines)
     {
         add_line(line);

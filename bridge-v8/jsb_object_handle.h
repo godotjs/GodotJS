@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_PRIVATE_DATA_TYPE_H
-#define JAVASCRIPT_PRIVATE_DATA_TYPE_H
+#ifndef GODOTJS_OBJECT_HANDLE_H
+#define GODOTJS_OBJECT_HANDLE_H
 
 #include "jsb_class_info.h"
 #include "jsb_pch.h"

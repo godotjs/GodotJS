@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_MODULE_RESOLVER_H
-#define JAVASCRIPT_MODULE_RESOLVER_H
+#ifndef GODOTJS_MODULE_RESOLVER_H
+#define GODOTJS_MODULE_RESOLVER_H
 
 #include "jsb_pch.h"
 #include "jsb_module.h"

@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_TIMER_MANAGER_H
-#define JAVASCRIPT_TIMER_MANAGER_H
+#ifndef GODOTJS_TIMER_MANAGER_H
+#define GODOTJS_TIMER_MANAGER_H
 
 #include "jsb_macros.h"
 #include "jsb_sindex.h"

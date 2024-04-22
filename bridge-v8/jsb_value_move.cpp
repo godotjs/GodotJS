@@ -16,12 +16,58 @@ namespace jsb
         return realm_ && !value_.IsEmpty();
     }
 
+    Variant inspect_fallback(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
+    {
+        v8::Local<v8::String> str_value;
+        if (const v8::MaybeLocal<v8::String> maybe = p_val->ToDetailString(context); maybe.ToLocal(&str_value))
+        {
+            return V8Helper::to_string(isolate, str_value);
+        }
+        return {};
+    }
+
+    // plain JSObject
+    Variant inspect_plain_object(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& p_val)
+    {
+        // v8::Local<v8::String> str;
+        // if (v8::JSON::Stringify(context, p_val).ToLocal(&str))
+        // {
+        //     return V8Helper::to_string(isolate, str);
+        // }
+        return inspect_fallback(isolate, context, p_val);
+    }
+
+    Variant inspect(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
+    {
+        if (p_val->IsObject())
+        {
+            v8::Local<v8::Object> self = p_val.As<v8::Object>();
+            if (self->InternalFieldCount() != kObjectFieldCount)
+            {
+                return inspect_plain_object(isolate, context, self);
+            }
+
+            //TODO check the class to make it safe to cast (space cheaper?)
+            //TODO or, add one more InternalField to ensure it (time cheaper?)
+            void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+            const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+            if (!class_info || class_info->type == NativeClassType::None)
+            {
+                return vformat("Object:%s", uitos((uintptr_t) pointer));
+            }
+            if (class_info->type == NativeClassType::GodotPrimitive)
+            {
+                return ((Variant*) pointer)->to_json_string();
+            }
+            return vformat("%s:%s", class_info->name, uitos((uintptr_t) pointer));
+        }
+
+        return inspect_fallback(isolate, context, p_val);
+    }
+
     String JSValueMove::to_string() const
     {
-        if (!is_valid())
-        {
-            return String();
-        }
+        if (!is_valid()) return {};
 
         v8::Isolate* isolate = realm_->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -29,13 +75,41 @@ namespace jsb
         v8::Local<v8::Context> context = realm_->unwrap();
         v8::Context::Scope context_scope(context);
 
-        v8::Local<v8::Value> value = value_.Get(isolate);
-        v8::Local<v8::String> str_value;
-        if (const v8::MaybeLocal<v8::String> maybe = value->ToDetailString(context); maybe.ToLocal(&str_value))
-        {
-            return V8Helper::to_string(isolate, str_value);
-        }
-        return String();
+        return inspect(isolate, context, value_.Get(isolate));
     }
+
+    // Vector<String> JSValueMove::to_strings() const
+    // {
+    //     if (!is_valid()) return {};
+    //
+    //     v8::Isolate* isolate = realm_->get_isolate();
+    //     v8::Isolate::Scope isolate_scope(isolate);
+    //     v8::HandleScope handle_scope(isolate);
+    //     v8::Local<v8::Context> context = realm_->unwrap();
+    //     v8::Context::Scope context_scope(context);
+    //     v8::Local<v8::Value> value = value_.Get(isolate);
+    //     if (!value->IsArray())
+    //     {
+    //         return {};
+    //     }
+    //
+    //     v8::Local<v8::Array> array = value.As<v8::Array>();
+    //     const int len = (int) array->Length();
+    //     Vector<String> results;
+    //     results.resize_zeroed(len);
+    //     for (int index = 0; index < len; ++index)
+    //     {
+    //         v8::Local<v8::Value> out_value;
+    //         if (array->Get(context, index).ToLocal(&out_value))
+    //         {
+    //             v8::Local<v8::String> str_value;
+    //             if (const v8::MaybeLocal<v8::String> maybe = out_value->ToDetailString(context); maybe.ToLocal(&str_value))
+    //             {
+    //                 results.write[index] = V8Helper::to_string(isolate, str_value);
+    //             }
+    //         }
+    //     }
+    //     return results;
+    // }
 
 }

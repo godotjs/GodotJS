@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_EXCEPTION_INFO_H
-#define JAVASCRIPT_EXCEPTION_INFO_H
+#ifndef GODOTJS_EXCEPTION_INFO_H
+#define GODOTJS_EXCEPTION_INFO_H
 
 #include "jsb_pch.h"
 #include "jsb_environment.h"

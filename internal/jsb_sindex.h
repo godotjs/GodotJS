@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_INDEX_H
-#define JAVASCRIPT_INDEX_H
+#ifndef GODOTJS_INDEX_H
+#define GODOTJS_INDEX_H
 
 #include "jsb_macros.h"
 

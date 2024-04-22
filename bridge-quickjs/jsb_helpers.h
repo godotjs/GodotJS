@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_HELPERS_H
-#define JAVASCRIPT_HELPERS_H
+#ifndef GODOTJS_HELPERS_H
+#define GODOTJS_HELPERS_H
 #include "jsb_pch.h"
 namespace jsb
 {

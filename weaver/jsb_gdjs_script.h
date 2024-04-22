@@ -1,5 +1,5 @@
-#ifndef JAVASCRIPT_SCRIPT_H
-#define JAVASCRIPT_SCRIPT_H
+#ifndef GODOTJS_SCRIPT_H
+#define GODOTJS_SCRIPT_H
 
 #include "core/object/script_language.h"
 #include "jsb_weaver_consts.h"
