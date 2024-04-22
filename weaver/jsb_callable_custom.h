@@ -27,7 +27,7 @@ public:
         // return !_compare_equal(p_a, p_b) && p_a < p_b;
     }
 
-    GodotJSCallableCustom(ObjectID p_object_id, jsb::RealmID p_realm_id, jsb::RealmID p_callback_id)
+    GodotJSCallableCustom(ObjectID p_object_id, jsb::RealmID p_realm_id, jsb::ObjectCacheID p_callback_id)
     : object_id_(p_object_id), callback_id_(p_callback_id), realm_id_(p_realm_id)
     {}
 

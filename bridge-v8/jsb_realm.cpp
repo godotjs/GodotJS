@@ -121,7 +121,7 @@ namespace jsb
         }
         RealmID realm_id = realm->id();
         v8::Local<v8::Function> js_func = info[func_arg_index].As<v8::Function>();
-        const internal::Index32 callback_id = realm->get_cached_function(js_func);
+        const ObjectCacheID callback_id = realm->get_cached_function(js_func);
         Variant callable = Callable(memnew(GodotJSCallableCustom(caller_id, realm_id, callback_id)));
         v8::Local<v8::Value> rval;
         if (!gd_var_to_js(isolate, context, callable, rval))

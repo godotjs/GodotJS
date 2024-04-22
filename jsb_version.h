@@ -3,11 +3,6 @@
 
 #include "jsb.gen.h"
 
-#define JSB_STRINGIFY_2(a) #a
-#define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
-
-#define JSB_MODULE_NAME_STRING JSB_STRINGIFY(JSB_MODULE_NAME)
-
 #define JSB_MAJOR_VERSION 0
 #define JSB_MINOR_VERSION 1
 

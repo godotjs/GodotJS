@@ -9,6 +9,7 @@
 #include "libwebsockets.h"
 #include "../jsb_version.h"
 
+#define JSB_MODULE_NAME_STRING JSB_STRINGIFY(JSB_MODULE_NAME)
 #define JSB_DEBUGGER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSDebugger, Severity, Format, ##__VA_ARGS__)
 
 namespace jsb

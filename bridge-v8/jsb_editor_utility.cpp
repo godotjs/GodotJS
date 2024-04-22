@@ -12,8 +12,6 @@
 #   include <unistd.h>
 #endif
 
-#define JSB_STRINGIFY_2(a) #a
-#define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
 namespace jsb_private
 {
     //NOTE dummy functions only for compile-time check
