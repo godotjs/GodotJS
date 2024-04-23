@@ -86,8 +86,8 @@ ScriptInstance* GodotJSScript::instance_create(Object *p_this)
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
 
     instance->owner_ = p_this;
+    instance->script_ = Ref(this); // must set before 'set_script_instance'
     instance->owner_->set_script_instance(instance);
-    instance->script_ = Ref(this);
     instance->object_id_ = realm_->crossbind(p_this, gdjs_class_id_);
     return instance;
 }
@@ -150,6 +150,17 @@ bool GodotJSScript::has_script_signal(const StringName &p_signal) const
     return get_js_class_info().signals.has(p_signal);
 }
 
+void GodotJSScript::get_script_signal_list(List<MethodInfo> *r_signals) const
+{
+    for (const auto& it : get_js_class_info().signals)
+    {
+        //TODO details?
+        MethodInfo item = {};
+        item.name = it.key;
+        r_signals->push_back(item);
+    }
+}
+
 void GodotJSScript::get_script_method_list(List<MethodInfo> *p_list) const
 {
     for (const auto& it : get_js_class_info().methods)
@@ -169,17 +180,6 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo> *p_list) const
         PropertyInfo item = {};
         item.name = it.key;
         p_list->push_back(item);
-    }
-}
-
-void GodotJSScript::get_script_signal_list(List<MethodInfo> *r_signals) const
-{
-    for (const auto& it : get_js_class_info().signals)
-    {
-        //TODO details?
-        MethodInfo item = {};
-        item.name = it.key;
-        r_signals->push_back(item);
     }
 }
 

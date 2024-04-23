@@ -563,6 +563,14 @@ namespace jsb
                    return v8::Array::CallbackResult::kContinue;
                 }, &payload);
             }
+
+            for (const KeyValue<StringName, GodotJSMethodInfo>& pair : p_class_info.signals)
+            {
+                v8::Local<v8::String> signal_name_str = V8Helper::to_string(p_isolate, pair.key);
+                v8::Local<v8::Function> signal_func = v8::Function::New(p_context, _godot_signal, v8::Uint32::NewFromUnsigned(p_isolate, (uint32_t) environment_->add_string_name(pair.key))).ToLocalChecked();
+                prototype->SetAccessorProperty(signal_name_str, signal_func);
+                JSB_LOG(Verbose, "setup signal %s", pair.key);
+            }
         }
 
         //TODO iterator payload.properties to determine the type (func/prop/signal)
@@ -574,10 +582,15 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = context_.Get(isolate);
 
-        GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
+        const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         v8::Local<v8::Object> instance = constructor->CallAsConstructor(context, 0, nullptr).ToLocalChecked().As<v8::Object>();
         const NativeObjectID object_id = environment_->bind_godot_object(class_info.native_class_id, p_this, instance);
+        // for (const KeyValue<StringName, GodotJSMethodInfo>& pair : class_info.signals)
+        // {
+        //     v8::Local<v8::String> signal_name_str = V8Helper::to_string(isolate, pair.key);
+        //     v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, _godot_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) environment_->add_string_name(pair.key)));
+        // }
         JSB_LOG(Verbose, "[experimental] crossbinding %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
         return object_id;
     }
@@ -904,8 +917,8 @@ namespace jsb
             {
                 const StringName& name_str = pair.key;
                 // const MethodInfo& method_info = pair.value;
-                const CharString name = ((String) name_str).utf8();
-                v8::Local<v8::String> propkey_name = v8::String::NewFromUtf8(isolate, name.ptr(), v8::NewStringType::kNormal, name.length()).ToLocalChecked();
+                // const CharString name = ((String) name_str).utf8();
+                v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, name_str); // v8::String::NewFromUtf8(isolate, name.ptr(), v8::NewStringType::kNormal, name.length()).ToLocalChecked();
                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, _godot_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) environment_->add_string_name(pair.key)));
                 // object_template->Set(propkey_name, propval_func);
                 object_template->SetAccessorProperty(propkey_name, propval_func);
