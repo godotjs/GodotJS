@@ -2,8 +2,6 @@
 /**
  *
  */
-export function signal() {
-    return function (target: any, prop: any, descriptor: any) {
-        //TODO
-    }
+export function signal(target: any, key: string) {
+    jsb.internal.add_script_signal(target, key);
 }

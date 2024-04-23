@@ -4,10 +4,8 @@ exports.signal = void 0;
 /**
  *
  */
-function signal() {
-    return function (target, prop, descriptor) {
-        //TODO
-    };
+function signal(target, key) {
+    jsb.internal.add_script_signal(target, key);
 }
 exports.signal = signal;
 //# sourceMappingURL=jsb.core.js.map

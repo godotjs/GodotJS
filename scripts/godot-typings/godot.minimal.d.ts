@@ -15,6 +15,10 @@ declare namespace jsb {
      */
     function callable(fn: Function): godot.Callable;
 
+    namespace internal {
+        function add_script_signal(target: any, name: string);
+    }
+
     // type VariantType = godot.Variant.Type;
     enum VariantType {
         TYPE_NIL = 0,

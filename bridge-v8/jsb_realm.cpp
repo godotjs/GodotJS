@@ -565,12 +565,20 @@ namespace jsb
 
         // internal 'jsb'
         {
-            v8::Local<v8::Object> jenv = v8::Object::New(isolate);
+            v8::Local<v8::Object> jsb_obj = v8::Object::New(isolate);
 
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "jsb"), jenv).Check();
-            jenv->Set(context, v8::String::NewFromUtf8Literal(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, DEV_ENABLED)).Check();
-            jenv->Set(context, v8::String::NewFromUtf8Literal(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, TOOLS_ENABLED)).Check();
-            jenv->Set(context, v8::String::NewFromUtf8Literal(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
+            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "jsb"), jsb_obj).Check();
+            jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, DEV_ENABLED)).Check();
+            jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, TOOLS_ENABLED)).Check();
+            jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
+
+            // jsb.internal
+            {
+                v8::Local<v8::Object> internal_obj = v8::Object::New(isolate);
+
+                jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "internal"), internal_obj).Check();
+                internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
+            }
 
             {
                 v8::Local<v8::Object> ptypes = v8::Object::New(isolate);
@@ -579,39 +587,38 @@ namespace jsb
 #   define DEF(FieldName) ptypes->Set(context, v8::String::NewFromUtf8Literal(isolate, "TYPE_" #FieldName), v8::Int32::New(isolate, Variant::FieldName)).Check();
 #   include "jsb_variant_types.h"
 #pragma pop_macro("DEF")
-                jenv->Set(context, v8::String::NewFromUtf8Literal(isolate, "VariantType"), ptypes).Check();
+                jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "VariantType"), ptypes).Check();
             }
 
 #if TOOLS_ENABLED
             // internal 'jsb.editor'
             {
-                v8::Local<v8::Object> editor = v8::Object::New(isolate);
+                v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
 
-                jenv->Set(context, v8::String::NewFromUtf8Literal(isolate, "editor"), editor).Check();
-                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_classes"), v8::Function::New(context, JavaScriptEditorUtility::_get_classes).ToLocalChecked()).Check();
-                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_global_constants"), v8::Function::New(context, JavaScriptEditorUtility::_get_global_constants).ToLocalChecked()).Check();
-                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_singletons"), v8::Function::New(context, JavaScriptEditorUtility::_get_singletons).ToLocalChecked()).Check();
-                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
-                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
-                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
-                editor->Set(context, v8::String::NewFromUtf8Literal(isolate, "benchmark_dump"), v8::Function::New(context, JavaScriptEditorUtility::_benchmark_dump).ToLocalChecked()).Check();
-
+                jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "editor"), editor_obj).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_classes"), v8::Function::New(context, JavaScriptEditorUtility::_get_classes).ToLocalChecked()).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_global_constants"), v8::Function::New(context, JavaScriptEditorUtility::_get_global_constants).ToLocalChecked()).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_singletons"), v8::Function::New(context, JavaScriptEditorUtility::_get_singletons).ToLocalChecked()).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "benchmark_dump"), v8::Function::New(context, JavaScriptEditorUtility::_benchmark_dump).ToLocalChecked()).Check();
             }
 #endif
         }
 
         // minimal console functions support
         {
-            v8::Local<v8::Object> jconsole = v8::Object::New(isolate);
+            v8::Local<v8::Object> console_obj = v8::Object::New(isolate);
 
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "console"), jconsole).Check();
-            jconsole->Set(context, v8::String::NewFromUtf8Literal(isolate, "log"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Log)).ToLocalChecked()).Check();
-            jconsole->Set(context, v8::String::NewFromUtf8Literal(isolate, "info"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Info)).ToLocalChecked()).Check();
-            jconsole->Set(context, v8::String::NewFromUtf8Literal(isolate, "debug"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Debug)).ToLocalChecked()).Check();
-            jconsole->Set(context, v8::String::NewFromUtf8Literal(isolate, "warn"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Warning)).ToLocalChecked()).Check();
-            jconsole->Set(context, v8::String::NewFromUtf8Literal(isolate, "error"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Error)).ToLocalChecked()).Check();
-            jconsole->Set(context, v8::String::NewFromUtf8Literal(isolate, "assert"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Assert)).ToLocalChecked()).Check();
-            jconsole->Set(context, v8::String::NewFromUtf8Literal(isolate, "trace"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Trace)).ToLocalChecked()).Check();
+            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "console"), console_obj).Check();
+            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "log"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Log)).ToLocalChecked()).Check();
+            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "info"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Info)).ToLocalChecked()).Check();
+            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "debug"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Debug)).ToLocalChecked()).Check();
+            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "warn"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Warning)).ToLocalChecked()).Check();
+            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "error"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Error)).ToLocalChecked()).Check();
+            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "assert"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Assert)).ToLocalChecked()).Check();
+            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "trace"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Trace)).ToLocalChecked()).Check();
         }
 
         // the root 'require' function
@@ -635,11 +642,6 @@ namespace jsb
             self->Set(context, v8::String::NewFromUtf8Literal(isolate, "setTimeout"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout)).ToLocalChecked()).Check();
             self->Set(context, v8::String::NewFromUtf8Literal(isolate, "setImmediate"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate)).ToLocalChecked()).Check();
             self->Set(context, v8::String::NewFromUtf8Literal(isolate, "clearInterval"), v8::Function::New(context, _clear_timer).ToLocalChecked()).Check();
-        }
-
-        //TODO expose variant_utility.cpp (variant_utility.cpp get_utility_function_list/call_utility_function)
-        {
-
         }
     }
 
@@ -1707,6 +1709,12 @@ namespace jsb
         const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
         jsb_check(js_func);
         return _call(js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
+    }
+
+    // function add_script_signal(target: any, signal_name: string): void;
+    void Realm::_add_script_signal(const v8::FunctionCallbackInfo<v8::Value> &info)
+    {
+        //TODO
     }
 
 }
