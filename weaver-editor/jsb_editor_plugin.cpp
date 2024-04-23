@@ -9,6 +9,7 @@
 #include "scene/gui/popup_menu.h"
 #include "editor/editor_settings.h"
 #include "editor/gui/editor_toaster.h"
+#include "scene/gui/dialogs.h"
 
 enum
 {
@@ -34,7 +35,7 @@ void GodotJSEditorPlugin::_on_menu_pressed(int p_what)
 {
     switch (p_what)
     {
-    case MENU_ID_INSTALL_TS_PROJECT: install_ts_project(); break;
+    case MENU_ID_INSTALL_TS_PROJECT: try_install_ts_project(); break;
     case MENU_ID_GENERATE_GODOT_DTS: generate_godot_dts(); break;
     default: break;
     }
@@ -48,7 +49,35 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     menu->add_item(TTR("Generate Godot d.ts"), MENU_ID_GENERATE_GODOT_DTS);
     menu->connect("id_pressed", callable_mp(this, &GodotJSEditorPlugin::_on_menu_pressed));
 
+    confirm_dialog_ = memnew(ConfirmationDialog);
+    confirm_dialog_->set_autowrap(true);
+    add_child(confirm_dialog_);
+    confirm_dialog_->connect("confirmed", callable_mp(this, &GodotJSEditorPlugin::_on_confirm_overwrite));
+
     add_control_to_bottom_panel(memnew(GodotJSREPL), TTR("GodotJS"));
+
+    // config files
+    install_files_.push_back({ "tsconfig.json", "res://typescripts", false });
+    install_files_.push_back({ "package.json", "res://typescripts", false });
+    install_files_.push_back({ ".gdignore", "res://typescripts", false });
+
+    // type declaration files
+    install_files_.push_back({ "godot.minimal.d.ts", "res://typescripts/typings", false });
+
+    // ts source files
+    install_files_.push_back({ "jsb.core.ts", "res://typescripts/src/jsb", false });
+    install_files_.push_back({ "jsb.editor.codegen.ts", "res://typescripts/src/jsb", false });
+    install_files_.push_back({ "jsb.editor.main.ts", "res://typescripts/src/jsb", false });
+
+    // files which could be generated from ts source with tsc by the user
+    install_files_.push_back({ "jsb.core.js", "res://javascripts/jsb", false });
+    install_files_.push_back({ "jsb.editor.codegen.js", "res://javascripts/jsb", false });
+    install_files_.push_back({ "jsb.editor.main.js", "res://javascripts/jsb", false });
+
+    install_files_.push_back({ "jsb.core.js.map", "res://javascripts/jsb", true });
+    install_files_.push_back({ "jsb.editor.codegen.js.map", "res://javascripts/jsb", true });
+    install_files_.push_back({ "jsb.editor.main.js.map", "res://javascripts/jsb", true });
+    install_files_.push_back({ "filetype-js.svg", "res://javascripts/icon", true });
 }
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
@@ -71,33 +100,34 @@ Error GodotJSEditorPlugin::write_file(const String &p_target_dir, const String &
     return OK;
 }
 
-void GodotJSEditorPlugin::install_ts_project()
+void GodotJSEditorPlugin::try_install_ts_project()
 {
     // avoid overwriting existed ts project files
-    ERR_FAIL_COND_MSG(FileAccess::exists("res://typescripts/tsconfig.json"), "found an existed tsconfig.json, please delete it before installing the TS project presets.");
+    if (FileAccess::exists("res://typescripts/tsconfig.json"))
+    {
+        confirm_dialog_->set_text(TTR("Found an existed tsconfig.json, re-installing TS project will overwrite all preset files."));
+        confirm_dialog_->popup_centered();
+        return;
+    }
 
-    // config files
-    ERR_FAIL_COND(write_file("res://typescripts", "tsconfig.json") != OK);
-    ERR_FAIL_COND(write_file("res://typescripts", "package.json") != OK);
-    ERR_FAIL_COND(write_file("res://typescripts", ".gdignore") != OK);
+    install_ts_project(install_files_);
+}
 
-    // type declaration files
-    ERR_FAIL_COND(write_file("res://typescripts/typings", "godot.minimal.d.ts") != OK);
-
-    // ts source files
-    ERR_FAIL_COND(write_file("res://typescripts/src/jsb", "jsb.core.ts") != OK);
-    ERR_FAIL_COND(write_file("res://typescripts/src/jsb", "jsb.editor.codegen.ts") != OK);
-    ERR_FAIL_COND(write_file("res://typescripts/src/jsb", "jsb.editor.main.ts") != OK);
-
-    // optional files which could be generated from ts source with tsc by the user
-    ERR_FAIL_COND(write_file("res://javascripts/jsb", "jsb.core.js") != OK);
-    ERR_FAIL_COND(write_file("res://javascripts/jsb", "jsb.editor.codegen.js") != OK);
-    ERR_FAIL_COND(write_file("res://javascripts/jsb", "jsb.editor.main.js") != OK);
-
-    write_file("res://javascripts/jsb", "jsb.core.js.map");
-    write_file("res://javascripts/jsb", "jsb.editor.codegen.js.map");
-    write_file("res://javascripts/jsb", "jsb.editor.main.js.map");
-    write_file("res://javascripts/icon", "filetype-js.svg");
+void GodotJSEditorPlugin::install_ts_project(const Vector<InstallFileInfo>& p_files)
+{
+    for (const InstallFileInfo info: p_files)
+    {
+        const Error err = write_file(info.target_dir, info.source_name);
+        if (err != OK)
+        {
+            JSB_LOG(Warning, "failed to write file '%s' to '%s'", info.source_name, info.target_dir);
+            if (!info.optional)
+            {
+                return;
+            }
+        }
+        JSB_LOG(Verbose, "install file '%s' to '%s'", info.source_name, info.target_dir);
+    }
 
     generate_godot_dts();
     load_editor_entry_module();
@@ -125,4 +155,9 @@ void GodotJSEditorPlugin::load_editor_entry_module()
     jsb_check(lang);
     const Error err = lang->get_context()->load("jsb/jsb.editor.main");
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
+}
+
+void GodotJSEditorPlugin::_on_confirm_overwrite()
+{
+    install_ts_project(install_files_);
 }
