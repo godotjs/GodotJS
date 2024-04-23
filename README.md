@@ -1,22 +1,22 @@
 
-JavaScript for Godot with V8
+TypScript/JavaScript for Godot with V8
 
 > **NOTE** This project is still in the very early stage of development.
 
 ## Features
 * [x] Support on-demand binding
 * [x] Essential NodeJS compatibilities (`console` , `timers` and `CommonJS` modules)
-* [ ] Support REPL in Godot Editor
-* [ ] Asynchronous module loading support (`import` function)
 * [x] Godot Object types binding
 * [x] Godot Primitive types binding
-* [ ] Godot `ScriptLanguage` integration
-* [ ] Multiple contexts for sandboxing script environments (not multi-threading)
-* [ ] Support hot-reload
-* [ ] Worker threads implementation
-* [ ] Seamlessly switch to QuickJS when targeting web
 * [x] Debug with Chrome devtools when using V8
 * [x] Support SourceMap
+* [ ] Support REPL in Godot Editor
+* [ ] Godot `ScriptLanguage` integration
+* [ ] Support hot-reload
+* [ ] Asynchronous module loading support (`import` function)
+* [ ] Multiple contexts for sandboxing script environments (not multi-threading)
+* [ ] Worker threads implementation
+* [ ] Seamlessly switch to QuickJS when targeting web
 
 ## Get Started
 
@@ -78,7 +78,7 @@ Attach the compiled file to a Node:
 
 ## Debugger
 
-A debugger bridge is implemented. 
+A debugger bridge is implemented.
 Open `devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1` in `Chrome` to start debugging the javascript sources.
 
 > **NOTE** The listening port can be changed in `Project Settings > jsb > Debugger > Port`. A restart is required for it to take effect.
@@ -104,5 +104,5 @@ Open `devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws
 | --- | --- |
 | v8 | 12.4 |
 | quickjs | 2024-01-13 |
-| godot | 4.2 |
+| godot | 4.2.2-stable |
 | libwebsockets | 4.3.3-13-g6901c32a |

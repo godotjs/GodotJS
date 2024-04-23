@@ -1,19 +1,20 @@
 
 FEATS:
+    ☐ lang: signal decalaration in scripts
     ✔ editor: install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
     ✔ module: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
     ☐ source-map: configurable in project settings
     ☐ binding: handle default argument values
     ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)
-    ☐ editor: confirm to overwrite if files exist when installing TS project presets
+    ✔ editor: confirm to overwrite if files exist when installing TS project presets @done(24-04-23 10:55)
     ✔ core: Variant pool (no threading since environment scoped) @done(24-04-21 21:53)
     ☐ cpp: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
     ☐ REPL: auto-complete when input text changed
     ☐ REPL: object details (as JSON?)
-    ☐ lang: signal decalaration in scripts
+    ☐ REPL: completely re-implement in typescript if possible
     ☐ lang: gd exported property in scripts
     ☐ lang: onready gd var in scripts
-    ☐ lang: NodePath support 
+    ☐ lang: NodePath support
 
 CHECK:
     ☐ runtime: does preload work properly
