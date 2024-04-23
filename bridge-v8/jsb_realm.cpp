@@ -463,11 +463,12 @@ namespace jsb
             return;
         }
 
+        Environment* environment = environment_.get();
         v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
         v8::Local<v8::String> name_str = default_obj->Get(p_context, v8::String::NewFromUtf8Literal(p_isolate, "name")).ToLocalChecked().As<v8::String>();
-        v8::String::Utf8Value name(p_isolate, name_str);
+        // v8::String::Utf8Value name(p_isolate, name_str);
         v8::Local<v8::Value> class_id_val;
-        if (!default_obj->Get(p_context, environment_->get_symbol(Symbols::ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
+        if (!default_obj->Get(p_context, environment->get_symbol(Symbols::ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
         {
             // ignore a javascript which does not inherit from a native class (directly and indirectly both)
             return;
@@ -475,8 +476,8 @@ namespace jsb
 
         // unsafe
         const NativeClassID native_class_id = (NativeClassID) class_id_val->Uint32Value(p_context).ToChecked();
-        const NativeClassInfo& native_class_info = environment_->get_native_class(native_class_id);
-        GodotJSClassInfo* existed_class_info = environment_->find_gdjs_class(p_module.default_class_id);
+        const NativeClassInfo& native_class_info = environment->get_native_class(native_class_id);
+        GodotJSClassInfo* existed_class_info = environment->find_gdjs_class(p_module.default_class_id);
         if (existed_class_info)
         {
             existed_class_info->methods.clear();
@@ -486,12 +487,13 @@ namespace jsb
         else
         {
             GodotJSClassID gdjs_class_id;
-            existed_class_info = &environment_->add_gdjs_class(gdjs_class_id);
+            existed_class_info = &environment->add_gdjs_class(gdjs_class_id);
             p_module.default_class_id = gdjs_class_id;
             existed_class_info->module_id = p_module.id;
         }
+
         jsb_check(existed_class_info->module_id == p_module.id);
-        existed_class_info->js_class_name = String(*name, name.length());
+        existed_class_info->js_class_name = V8Helper::to_string(p_isolate, name_str); // String(*name, name.length());
         existed_class_info->native_class_id = native_class_id;
         existed_class_info->native_class_name = native_class_info.name;
         existed_class_info->js_class.Reset(p_isolate, default_obj);
@@ -503,12 +505,13 @@ namespace jsb
     {
         //TODO collect methods/signals/properties
         v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(p_isolate);
-        v8::Local<v8::Object> prototype = default_obj->Get(p_context, v8::String::NewFromUtf8Literal(p_isolate, "prototype")).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Object> prototype = default_obj->Get(p_context, V8Helper::to_string(p_isolate, "prototype")).ToLocalChecked().As<v8::Object>();
         v8::Local<v8::Array> property_names = prototype->GetPropertyNames(p_context, v8::KeyCollectionMode::kOwnOnly, v8::PropertyFilter::ALL_PROPERTIES, v8::IndexFilter::kSkipIndices, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
 
         v8::Isolate::Scope isolate_scope(p_isolate);
         v8::HandleScope handle_scope(p_isolate);
         v8::Context::Scope context_scope(p_context);
+        Environment* environment = Environment::wrap(p_isolate);;
 
         struct Payload
         {
@@ -517,6 +520,8 @@ namespace jsb
             GodotJSClassInfo& class_info;
             Vector<String> properties;
         } payload = { p_isolate, p_context, p_class_info, {}, };
+
+        // methods
         property_names->Iterate(p_context, [](uint32_t index, v8::Local<v8::Value> prop_name, void* data)
         {
             Payload& payload = *(Payload*) data;
@@ -541,6 +546,24 @@ namespace jsb
             }
             return v8::Array::CallbackResult::kContinue;
         }, &payload);
+
+        // signals
+        {
+            v8::Local<v8::Value> val_test;
+            if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
+            {
+                v8::Local<v8::Array> collection = val_test.As<v8::Array>();
+                collection->Iterate(p_context, [](uint32_t index, v8::Local<v8::Value> element, void* data)
+                {
+                    Payload& payload = *(Payload*) data;
+                    v8::Isolate* isolate = payload.isolate;
+                    const String signal = V8Helper::to_string(isolate, element);
+                    JSB_LOG(Verbose, "... signal: %s", signal);
+                    payload.class_info.signals.insert(signal, {});
+                   return v8::Array::CallbackResult::kContinue;
+                }, &payload);
+            }
+        }
 
         //TODO iterator payload.properties to determine the type (func/prop/signal)
     }
@@ -1714,7 +1737,40 @@ namespace jsb
     // function add_script_signal(target: any, signal_name: string): void;
     void Realm::_add_script_signal(const v8::FunctionCallbackInfo<v8::Value> &info)
     {
-        //TODO
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        if (info.Length() != 2 || !info[0]->IsObject() || !info[1]->IsString())
+        {
+            jsb_throw(isolate, "bad param");
+            return;
+        }
+        // target is Class.prototype
+        // __decorate([ jsb_core_1.signal ], TestClass.prototype, "test_signal", void 0);
+        v8::Local<v8::Object> target = info[0].As<v8::Object>();
+        v8::Local<v8::String> signal = info[1].As<v8::String>();
+        Environment* environment = Environment::wrap(isolate);
+        v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassSignals);
+        v8::Local<v8::Array> collection;
+        v8::Local<v8::Value> val_test;
+        uint32_t index;
+        if (v8::MaybeLocal<v8::Value> maybe = target->Get(context, symbol); !maybe.ToLocal(&val_test) || val_test->IsUndefined())
+        {
+            index = 0;
+            collection = v8::Array::New(isolate);
+            target->Set(context, symbol, collection);
+        }
+        else
+        {
+            jsb_check(val_test->IsArray());
+            collection = val_test.As<v8::Array>();
+            index = collection->Length();
+        }
+
+        collection->Set(context, index, signal);
+        JSB_LOG(Verbose, "script %s define signal %s",
+            V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
+            V8Helper::to_string(isolate, signal));
     }
 
 }

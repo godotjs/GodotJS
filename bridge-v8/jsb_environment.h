@@ -28,7 +28,7 @@ namespace jsb
         enum Type : uint8_t
         {
             ClassId,
-
+            ClassSignals, 
             kNum,
         };
     }
