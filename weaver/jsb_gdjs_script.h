@@ -19,88 +19,100 @@ private:
     bool valid_ = false;
     bool reloading_ = false;
 
+    HashSet<PlaceHolderScriptInstance*> placeholders;
+
     SelfList<GodotJSScript> script_list_;
-	RBSet<Object *> instances_;
+    RBSet<Object*> instances_;
     std::shared_ptr<jsb::Realm> realm_;
 
     String source_;
     String path_;
     GodotJSScript* base_ = nullptr;
     jsb::GodotJSClassID gdjs_class_id_;
+
+    //TODO we have realm_ shared pointer here. Thus, we can safely store GodotJSFunction here (v8 global handle)?
     HashMap<StringName, jsb::ObjectCacheID> cached_methods_;
+
+private:
+    // bool set_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, const Variant& p_value);
+    // bool get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const;
+    Variant call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
 
 public:
     GodotJSScript();
     virtual ~GodotJSScript() override;
 
     void attach_source(const std::shared_ptr<jsb::Realm>& p_context, const String& p_path, const String& p_source, jsb::GodotJSClassID p_class_id);
-    Variant call_js(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
 
     const jsb::GodotJSClassInfo& get_js_class_info() const;
 
 #pragma region Script Implementation
-	virtual bool can_instantiate() const override;
+    virtual bool can_instantiate() const override;
 
-	virtual Ref<Script> get_base_script() const override; //for script inheritance
-	virtual StringName get_global_name() const override;
-	virtual bool inherits_script(const Ref<Script> &p_script) const override;
+    virtual Ref<Script> get_base_script() const override; // for script inheritance
+    virtual StringName get_global_name() const override;
+    virtual bool inherits_script(const Ref<Script>& p_script) const override;
 
-	virtual StringName get_instance_base_type() const override; // this may not work in all scripts, will return empty if so
-	virtual ScriptInstance *instance_create(Object *p_this) override;
-	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this)  override { return nullptr; }
-	virtual bool instance_has(const Object *p_this) const override;
+    virtual StringName get_instance_base_type() const override; // this may not work in all scripts, will return empty if so
+    virtual ScriptInstance* instance_create(Object* p_this) override;
+    virtual PlaceHolderScriptInstance* placeholder_instance_create(Object* p_this) override;
+    virtual bool instance_has(const Object* p_this) const override;
 
-	virtual bool has_source_code() const override { return !source_.is_empty(); }
-	virtual String get_source_code() const override { return source_; }
-	virtual void set_source_code(const String &p_code) override;
-	virtual Error reload(bool p_keep_state = false) override;
+    virtual bool has_source_code() const override { return !source_.is_empty(); }
+    virtual String get_source_code() const override { return source_; }
+    virtual void set_source_code(const String& p_code) override;
+    virtual Error reload(bool p_keep_state = false) override;
 
 #ifdef TOOLS_ENABLED
-	virtual Vector<DocData::ClassDoc> get_documentation() const override;
-	virtual String get_class_icon_path() const override;
-	virtual PropertyInfo get_class_category() const override;
+    virtual Vector<DocData::ClassDoc> get_documentation() const override;
+    virtual String get_class_icon_path() const override;
+    virtual PropertyInfo get_class_category() const override;
 #endif // TOOLS_ENABLED
 
-	// TODO: In the next compat breakage rename to `*_script_*` to disambiguate from `Object::has_method()`.
-	virtual bool has_method(const StringName &p_method) const override;
-	virtual bool has_static_method(const StringName &p_method) const override;
+    // TODO: In the next compat breakage rename to `*_script_*` to disambiguate from `Object::has_method()`.
+    virtual bool has_method(const StringName& p_method) const override;
+    virtual bool has_static_method(const StringName& p_method) const override;
 
-	virtual MethodInfo get_method_info(const StringName &p_method) const override;
+    virtual MethodInfo get_method_info(const StringName& p_method) const override;
 
-	virtual bool is_tool() const override { return tool_; }
-	virtual bool is_valid() const override { return valid_; }
-	virtual bool is_abstract() const override;
+    virtual bool is_tool() const override { return tool_; }
+    virtual bool is_valid() const override { return valid_; }
+    virtual bool is_abstract() const override;
 
-	virtual ScriptLanguage* get_language() const override;
+    virtual ScriptLanguage* get_language() const override;
 
-	virtual bool has_script_signal(const StringName &p_signal) const override;
-	virtual void get_script_signal_list(List<MethodInfo> *r_signals) const override;
+    virtual bool has_script_signal(const StringName& p_signal) const override;
+    virtual void get_script_signal_list(List<MethodInfo>* r_signals) const override;
 
-	virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const override;
+    virtual bool get_property_default_value(const StringName& p_property, Variant& r_value) const override;
 
-	virtual void update_exports() override {} //editor tool
-	virtual void get_script_method_list(List<MethodInfo> *p_list) const override;
-	virtual void get_script_property_list(List<PropertyInfo> *p_list) const override;
+    virtual void update_exports() override;
 
-	virtual int get_member_line(const StringName &p_member) const override { return -1; }
+    //editor tool
+    virtual void get_script_method_list(List<MethodInfo>* p_list) const override;
+    virtual void get_script_property_list(List<PropertyInfo>* p_list) const override;
 
-	virtual void get_constants(HashMap<StringName, Variant> *p_constants) override {}
-	virtual void get_members(HashSet<StringName> *p_constants) override {}
+    virtual int get_member_line(const StringName& p_member) const override { return -1; }
 
-	virtual bool is_placeholder_fallback_enabled() const override { return false; }
+    virtual void get_constants(HashMap<StringName, Variant>* p_constants) override
+    {
+    }
+    virtual void get_members(HashSet<StringName>* p_constants) override
+    {
+    }
 
-	virtual const Variant get_rpc_config() const override;
+    virtual bool is_placeholder_fallback_enabled() const override { return false; }
+
+    virtual const Variant get_rpc_config() const override;
 #pragma endregion // Script Interface Implementation
 
 protected:
 #pragma region Script Implementation
 #ifdef TOOLS_ENABLED
-    virtual void _placeholder_erased(PlaceHolderScriptInstance *p_placeholder) override;
+    virtual void _placeholder_erased(PlaceHolderScriptInstance* p_placeholder) override;
 #endif
 #pragma endregion
 
-private:
-    // methods
 };
 
 #endif

@@ -6,7 +6,7 @@
 #include "jsb_gdjs_script_instance.h"
 #include "jsb_gdjs_script.h"
 
-GodotJSScriptLanguage *GodotJSScriptLanguage::singleton_ = nullptr;
+GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;
 
 GodotJSScriptLanguage::GodotJSScriptLanguage()
 {
@@ -31,11 +31,11 @@ void GodotJSScriptLanguage::init()
         realm_ = std::make_shared<jsb::Realm>(environment_);
 
         environment_->add_module_resolver<jsb::DefaultModuleResolver>()
-            .add_search_path("res://javascripts")
-            // // search path for editor only scripts
-            // .add_search_path(jsb::internal::PathUtil::combine(
-            //     jsb::internal::PathUtil::dirname(::OS::get_singleton()->get_executable_path()),
-            //     "../modules/jsb/scripts/out"));
+                    .add_search_path("res://javascripts")
+        // // search path for editor only scripts
+        // .add_search_path(jsb::internal::PathUtil::combine(
+        //     jsb::internal::PathUtil::dirname(::OS::get_singleton()->get_executable_path()),
+        //     "../modules/jsb/scripts/out"));
         ;
 
         if (FileAccess::exists("res://javascripts/jsb/jsb.editor.main.js"))
@@ -104,13 +104,13 @@ void GodotJSScriptLanguage::get_doc_comment_delimiters(List<String>* p_delimiter
     p_delimiters->push_back("///");
 }
 
-void GodotJSScriptLanguage::get_comment_delimiters(List<String> *p_delimiters) const
+void GodotJSScriptLanguage::get_comment_delimiters(List<String>* p_delimiters) const
 {
     p_delimiters->push_back("//");
     p_delimiters->push_back("/* */");
 }
 
-void GodotJSScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const
+void GodotJSScriptLanguage::get_string_delimiters(List<String>* p_delimiters) const
 {
     p_delimiters->push_back("' '");
     p_delimiters->push_back("\" \"");
@@ -168,7 +168,7 @@ void GodotJSScriptLanguage::reload_all_scripts()
     JSB_LOG(Verbose, "TODO");
 }
 
-void GodotJSScriptLanguage::reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload)
+void GodotJSScriptLanguage::reload_tool_script(const Ref<Script>& p_script, bool p_soft_reload)
 {
     //TODO
     JSB_LOG(Verbose, "TODO");
@@ -179,7 +179,15 @@ void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions
     p_extensions->push_back(JSB_RES_EXT);
 }
 
-jsb::JSValueMove GodotJSScriptLanguage::eval_source(const String &p_code, Error& r_err)
+jsb::JSValueMove GodotJSScriptLanguage::eval_source(const String& p_code, Error& r_err)
 {
     return realm_->eval_source(p_code.utf8(), "eval", r_err);
+}
+
+String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path) const
+{
+    if (r_icon_path) *r_icon_path = "res://javascripts/icon/filetype-js.svg";
+    //TODO threading issue
+    JSB_LOG(Verbose, "get_global_class_name %s (thread: %s)", p_path, Thread::is_main_thread() ? "main" : "background");
+    return {};
 }

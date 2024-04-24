@@ -225,6 +225,8 @@ namespace jsb
             if (is_persistent) persistent_objects_.erase(handle.pointer);
         }
 
+        string_name_cache_.clear();
+
         // cleanup all class templates
         native_classes_.clear();
 

@@ -58,8 +58,12 @@ namespace jsb
 
     struct GodotJSPropertyInfo
     {
+        Variant::Type type = Variant::NIL;
         StringName name;
-        //TODO
+        StringName class_name; // For classes
+        PropertyHint hint = PROPERTY_HINT_NONE;
+        String hint_string;
+        uint32_t usage = PROPERTY_USAGE_DEFAULT;
     };
 
     // exchanging internal javascript class (object) information with `JavaScript` class.

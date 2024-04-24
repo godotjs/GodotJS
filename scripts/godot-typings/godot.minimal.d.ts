@@ -15,8 +15,18 @@ declare namespace jsb {
      */
     function callable(fn: Function): godot.Callable;
 
+    interface ScriptPropertyInfo {
+        name: string;
+        type: jsb.VariantType;
+        class_?: Function;
+        hint?: number;
+        hint_string?: string;
+        usage?: number;
+    }
+
     namespace internal {
-        function add_script_signal(target: any, name: string);
+        function add_script_signal(target: any, name: string): void;
+        function add_script_property(target: any, details: ScriptPropertyInfo): void;
     }
 
     // type VariantType = godot.Variant.Type;

@@ -103,6 +103,8 @@ namespace jsb
         ObjectCacheID retain_function(NativeObjectID p_object_id, const StringName& p_method);
         bool release_function(ObjectCacheID p_func_id);
         Variant call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
+        bool get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val);
+        bool set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val);
 
         jsb_force_inline const JavaScriptModuleCache& get_module_cache() const { return module_cache_; }
 
@@ -178,7 +180,8 @@ namespace jsb
         JavaScriptModule* _load_module(const String& p_parent_id, const String& p_module_id);
         void _reload_module(const String& p_module_id);
 
-        static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, v8::Local<v8::Value>& r_jval);
+        static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, v8::Local<v8::Value>& r_jval) { return gd_var_to_js(isolate, context, p_cvar, p_cvar.get_type(), r_jval); }
+        static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, Variant::Type p_type, v8::Local<v8::Value>& r_jval);
         static bool js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar);
         static bool js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant& r_cvar);
 
@@ -193,11 +196,12 @@ namespace jsb
         static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _add_script_property(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         void _register_builtins(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self);
 
-        void _parse_script_class(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
-        void _parse_script_class_iterate(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);
+        static void _parse_script_class(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
+        static void _parse_script_class_iterate(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
         Variant _call(const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);

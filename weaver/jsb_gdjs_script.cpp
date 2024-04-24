@@ -14,6 +14,7 @@ GodotJSScript::GodotJSScript(): script_list_(this)
 
 GodotJSScript::~GodotJSScript()
 {
+    cached_methods_.clear();
 
     {
         const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
@@ -23,7 +24,8 @@ GodotJSScript::~GodotJSScript()
     }
 }
 
-bool GodotJSScript::can_instantiate() const {
+bool GodotJSScript::can_instantiate() const
+{
 #ifdef TOOLS_ENABLED
     return valid_ && (tool_ || ScriptServer::is_scripting_enabled());
 #else
@@ -31,7 +33,7 @@ bool GodotJSScript::can_instantiate() const {
 #endif
 }
 
-void GodotJSScript::set_source_code(const String &p_code)
+void GodotJSScript::set_source_code(const String& p_code)
 {
     if (source_ == p_code)
     {
@@ -56,14 +58,14 @@ StringName GodotJSScript::get_global_name() const
     return {};
 }
 
-bool GodotJSScript::inherits_script(const Ref<Script> &p_script) const
+bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
 {
     const Ref<GodotJSScript> type_check = p_script;
     if (type_check.is_null())
     {
         return false;
     }
-    const GodotJSScript *ptr = this;
+    const GodotJSScript* ptr = this;
     while (ptr)
     {
         if (ptr == p_script.ptr())
@@ -80,7 +82,7 @@ StringName GodotJSScript::get_instance_base_type() const
     return get_js_class_info().native_class_name;
 }
 
-ScriptInstance* GodotJSScript::instance_create(Object *p_this)
+ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 {
     //TODO multi-thread scripting not supported for now
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
@@ -121,12 +123,12 @@ PropertyInfo GodotJSScript::get_class_category() const
 }
 #endif // TOOLS_ENABLED
 
-bool GodotJSScript::has_method(const StringName &p_method) const
+bool GodotJSScript::has_method(const StringName& p_method) const
 {
     return get_js_class_info().methods.has(p_method);
 }
 
-MethodInfo GodotJSScript::get_method_info(const StringName &p_method) const
+MethodInfo GodotJSScript::get_method_info(const StringName& p_method) const
 {
     jsb_check(has_method(p_method));
     //TODO details?
@@ -145,12 +147,12 @@ ScriptLanguage* GodotJSScript::get_language() const
     return GodotJSScriptLanguage::get_singleton();
 }
 
-bool GodotJSScript::has_script_signal(const StringName &p_signal) const
+bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 {
     return get_js_class_info().signals.has(p_signal);
 }
 
-void GodotJSScript::get_script_signal_list(List<MethodInfo> *r_signals) const
+void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 {
     for (const auto& it : get_js_class_info().signals)
     {
@@ -161,7 +163,7 @@ void GodotJSScript::get_script_signal_list(List<MethodInfo> *r_signals) const
     }
 }
 
-void GodotJSScript::get_script_method_list(List<MethodInfo> *p_list) const
+void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 {
     for (const auto& it : get_js_class_info().methods)
     {
@@ -172,18 +174,22 @@ void GodotJSScript::get_script_method_list(List<MethodInfo> *p_list) const
     }
 }
 
-void GodotJSScript::get_script_property_list(List<PropertyInfo> *p_list) const
+void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 {
+#ifdef TOOLS_ENABLED
+    p_list->push_back(get_class_category());
+#endif
     for (const auto& it : get_js_class_info().properties)
     {
         //TODO details?
         PropertyInfo item = {};
-        item.name = it.key;
+        item.name = it.value.name;
+        item.type = it.value.type;
         p_list->push_back(item);
     }
 }
 
-bool GodotJSScript::get_property_default_value(const StringName &p_property, Variant &r_value) const
+bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
     //TODO
     return false;
@@ -195,20 +201,13 @@ const Variant GodotJSScript::get_rpc_config() const
     return {};
 }
 
-#ifdef TOOLS_ENABLED
-void GodotJSScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder)
-{
-    //TODO
-}
-#endif
-
-bool GodotJSScript::has_static_method(const StringName &p_method) const
+bool GodotJSScript::has_static_method(const StringName& p_method) const
 {
     //TODO
     return false;
 }
 
-bool GodotJSScript::instance_has(const Object *p_this) const
+bool GodotJSScript::instance_has(const Object* p_this) const
 {
     MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
     return instances_.has(const_cast<Object*>(p_this));
@@ -228,7 +227,7 @@ const jsb::GodotJSClassInfo& GodotJSScript::get_js_class_info() const
     return realm_->get_gdjs_class_info(gdjs_class_id_);
 }
 
-Variant GodotJSScript::call_js(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
+Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
 {
     jsb::ObjectCacheID func_id;
     if (const HashMap<StringName, jsb::ObjectCacheID>::Iterator& it = cached_methods_.find(p_method))
@@ -242,3 +241,56 @@ Variant GodotJSScript::call_js(jsb::NativeObjectID p_object_id, const StringName
     }
     return realm_->call_function(p_object_id, func_id, p_argv, p_argc, r_error);
 }
+//
+// bool GodotJSScript::get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const
+// {
+//     // realm_->get_
+//     return true;
+// }
+//
+// bool GodotJSScript::set_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, const Variant& p_value)
+// {
+//     return true;
+// }
+
+PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_this)
+{
+#ifdef TOOLS_ENABLED
+    PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(GodotJSScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
+    placeholders.insert(si);
+    update_exports();
+    // _update_exports(nullptr, false, si);
+    return si;
+#else
+    return nullptr;
+#endif
+}
+
+#ifdef TOOLS_ENABLED
+void GodotJSScript::_placeholder_erased(PlaceHolderScriptInstance* p_placeholder)
+{
+    placeholders.erase(p_placeholder);
+}
+#endif
+
+void GodotJSScript::update_exports()
+{
+#if TOOLS_ENABLED
+    //TODO
+    List<PropertyInfo> props;
+    HashMap<StringName, Variant> values;
+
+    props.push_back(get_class_category());
+
+    for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : get_js_class_info().properties) {
+        const jsb::GodotJSPropertyInfo &pi = pair.value;
+        props.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
+        values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
+    }
+
+    for (PlaceHolderScriptInstance *s : placeholders) {
+        s->update(props, values);
+    }
+#endif
+}
+

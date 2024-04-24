@@ -14,22 +14,23 @@ public:
     static bool _compare_equal(const CallableCustom* p_a, const CallableCustom* p_b)
     {
         // types are already ensured by `Callable::operator==` with the comparator function pointers before calling
-        const GodotJSCallableCustom* js_cc_a = (const GodotJSCallableCustom*) p_a;
-        const GodotJSCallableCustom* js_cc_b = (const GodotJSCallableCustom*) p_b;
+        const GodotJSCallableCustom* js_cc_a = (const GodotJSCallableCustom*)p_a;
+        const GodotJSCallableCustom* js_cc_b = (const GodotJSCallableCustom*)p_b;
         return js_cc_a->callback_id_ == js_cc_b->callback_id_;
     }
 
     static bool _compare_less(const CallableCustom* p_a, const CallableCustom* p_b)
     {
-        const GodotJSCallableCustom* js_cc_a = (const GodotJSCallableCustom*) p_a;
-        const GodotJSCallableCustom* js_cc_b = (const GodotJSCallableCustom*) p_b;
+        const GodotJSCallableCustom* js_cc_a = (const GodotJSCallableCustom*)p_a;
+        const GodotJSCallableCustom* js_cc_b = (const GodotJSCallableCustom*)p_b;
         return js_cc_a->callback_id_ < js_cc_b->callback_id_;
         // return !_compare_equal(p_a, p_b) && p_a < p_b;
     }
 
     GodotJSCallableCustom(ObjectID p_object_id, jsb::RealmID p_realm_id, jsb::ObjectCacheID p_callback_id)
-    : object_id_(p_object_id), callback_id_(p_callback_id), realm_id_(p_realm_id)
-    {}
+        : object_id_(p_object_id), callback_id_(p_callback_id), realm_id_(p_realm_id)
+    {
+    }
 
     virtual ~GodotJSCallableCustom() override;
 
