@@ -98,6 +98,7 @@ namespace jsb
         static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template)
         {
             JSB_DEFINE_OPERATOR2(EQUAL);
+            JSB_DEFINE_OPERATOR2(NOT_EQUAL);
             prototype_template->Set(V8Helper::to_string(p_env.isolate, "set_named"), v8::FunctionTemplate::New(p_env.isolate, set_named));
             prototype_template->Set(V8Helper::to_string(p_env.isolate, "get_named"), v8::FunctionTemplate::New(p_env.isolate, get_named));
         }

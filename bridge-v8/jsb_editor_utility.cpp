@@ -392,7 +392,7 @@ namespace jsb
 
     using Number = double;
 
-#define JSB_OPERATOR2(OpName, Ret, Left, Right) Result<Ret>::From<Left, Right>(context, operators, JSB_OPERATOR_NAME(OpName))
+#define JSB_OPERATOR2(OpName, Ret, Left, Right) { (void) sizeof(Variant::OP_##OpName); Result<Ret>::From<Left, Right>(context, operators, JSB_OPERATOR_NAME(OpName)); } (void) 0
 
     template<> struct OperatorRegister<Vector2>
     {
@@ -405,6 +405,8 @@ namespace jsb
             JSB_OPERATOR2(MULTIPLY, Vector2, Vector2, Number);
             JSB_OPERATOR2(DIVIDE, Vector2, Vector2, Vector2);
             JSB_OPERATOR2(DIVIDE, Vector2, Vector2, Number);
+            JSB_OPERATOR2(EQUAL, bool, Vector2, Vector2);
+            JSB_OPERATOR2(NOT_EQUAL, bool, Vector2, Vector2);
         }
     };
 
@@ -419,6 +421,8 @@ namespace jsb
             JSB_OPERATOR2(MULTIPLY, Vector3, Vector3, Number);
             JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Vector3);
             JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Number);
+            JSB_OPERATOR2(EQUAL, bool, Vector3, Vector3);
+            JSB_OPERATOR2(NOT_EQUAL, bool, Vector3, Vector3);
         }
     };
 
@@ -427,6 +431,7 @@ namespace jsb
         static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
         {
             JSB_OPERATOR2(EQUAL, bool, Dictionary, Dictionary);
+            JSB_OPERATOR2(NOT_EQUAL, bool, Dictionary, Dictionary);
         }
     };
 
@@ -435,6 +440,7 @@ namespace jsb
         static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
         {
             JSB_OPERATOR2(EQUAL, bool, Callable, Callable);
+            JSB_OPERATOR2(NOT_EQUAL, bool, Callable, Callable);
         }
     };
 
