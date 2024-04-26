@@ -1120,7 +1120,16 @@ namespace jsb
                 return true;
             }
             return false;
-
+        case Variant::STRING_NAME:
+        case Variant::NODE_PATH:
+            if (p_jval->IsString())
+            {
+                //TODO optimize with cache?
+                v8::String::Utf8Value str(isolate, p_jval);
+                r_cvar = String(*str, str.length());
+                return true;
+            }
+            goto FALLBACK_TO_VARIANT;
         case Variant::OBJECT:
             {
                 if (!p_jval->IsObject())
@@ -1157,8 +1166,6 @@ namespace jsb
 
         // misc types
         case Variant::COLOR:
-        case Variant::STRING_NAME:
-        case Variant::NODE_PATH:
         case Variant::RID:
         case Variant::CALLABLE:
         case Variant::SIGNAL:
@@ -1176,6 +1183,7 @@ namespace jsb
         case Variant::PACKED_VECTOR3_ARRAY:
         case Variant::PACKED_COLOR_ARRAY:
             {
+                FALLBACK_TO_VARIANT:
                 //TODO TEMP SOLUTION
                 if (!p_jval->IsObject())
                 {
@@ -1387,9 +1395,8 @@ namespace jsb
             if (!js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
-                const CharString raw_string = vformat("bad argument: %d", index).ascii();
+                v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
                 while (index >= 0) { args[index--].~Variant(); }
-                v8::Local<v8::String> error_message = v8::String::NewFromOneByte(isolate, (const uint8_t*) raw_string.ptr(), v8::NewStringType::kNormal, raw_string.length()).ToLocalChecked();
                 isolate->ThrowError(error_message);
                 return;
             }
@@ -1464,9 +1471,8 @@ namespace jsb
             if (!js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
-                const CharString raw_string = vformat("bad argument: %d", index).ascii();
+                v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
                 while (index >= 0) { args[index--].~Variant(); }
-                v8::Local<v8::String> error_message = v8::String::NewFromOneByte(isolate, (const uint8_t*) raw_string.ptr(), v8::NewStringType::kNormal, raw_string.length()).ToLocalChecked();
                 isolate->ThrowError(error_message);
                 return;
             }

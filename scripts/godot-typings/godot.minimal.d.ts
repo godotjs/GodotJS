@@ -1,5 +1,7 @@
 
 declare namespace jsb {
+    import { Callable as GDCallable, Object as GDObject } from "godot";
+
     const DEV_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
 
@@ -7,13 +9,13 @@ declare namespace jsb {
      * @todo not implemented yet
      * create godot Callable with a bound object `self`
      */
-    function callable(self: godot.Object, fn: Function): godot.Callable;
+    function callable(self: GDObject, fn: Function): GDCallable;
 
     /**
      * @todo not implemented yet
      * create godot Callable without a bound object
      */
-    function callable(fn: Function): godot.Callable;
+    function callable(fn: Function): GDCallable;
 
     interface ScriptPropertyInfo {
         name: string;
@@ -29,7 +31,6 @@ declare namespace jsb {
         function add_script_property(target: any, details: ScriptPropertyInfo): void;
     }
 
-    // type VariantType = godot.Variant.Type;
     enum VariantType {
         TYPE_NIL = 0,
         TYPE_BOOL = 1,

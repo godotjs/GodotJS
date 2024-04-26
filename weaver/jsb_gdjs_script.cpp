@@ -96,9 +96,13 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 
 Error GodotJSScript::reload(bool p_keep_state)
 {
+    if (!valid_)
+    {
+        return ERR_UNAVAILABLE;
+    }
+
     //TODO discard all cached methods?
     //TODO all `Callable` objects become invalid after reloading
-
     cached_methods_.clear();
     realm_->reload_module(get_js_class_info().module_id);
     return OK;

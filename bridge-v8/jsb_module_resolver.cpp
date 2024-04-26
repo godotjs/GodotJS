@@ -28,7 +28,7 @@ namespace jsb
         v8::Isolate* isolate = p_realm->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        v8::Local<v8::Context> context = p_realm->unwrap();
         v8::Context::Scope context_scope(context);
 
         jsb_check(p_realm->check(context));

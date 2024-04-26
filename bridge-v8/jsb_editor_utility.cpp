@@ -379,7 +379,7 @@ namespace jsb
             set_field(context->GetIsolate(), context, obj, "return_type", (int) GetTypeInfo<TReturn>::VARIANT_TYPE);
             set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TLeft>::VARIANT_TYPE);
             set_field(context->GetIsolate(), context, obj, "right_type", (int) GetTypeInfo<TRight>::VARIANT_TYPE);
-            const int len = operators->Length();
+            const uint32_t len = operators->Length();
             operators->Set(context, len, obj);
         }
     };
@@ -419,6 +419,14 @@ namespace jsb
             JSB_OPERATOR2(MULTIPLY, Vector3, Vector3, Number);
             JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Vector3);
             JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Number);
+        }
+    };
+
+    template<> struct OperatorRegister<Callable>
+    {
+        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
+        {
+            JSB_OPERATOR2(EQUAL, bool, Callable, Callable);
         }
     };
 
@@ -635,7 +643,7 @@ namespace jsb
         GeneratePrimitiveType(Projection);
         GeneratePrimitiveType(Color);
         // - StringName
-        // - NodePath
+        GeneratePrimitiveType(NodePath);
         GeneratePrimitiveType(RID);
         // - Object
         GeneratePrimitiveType(Callable);

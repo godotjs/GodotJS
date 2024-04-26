@@ -178,9 +178,8 @@ namespace jsb
                     if (!Realm::js_to_gd_var(isolate, context, info[index], argument_type, args[index]))
                     {
                         // revert all constructors
-                        const CharString raw_string = vformat("bad argument: %d", index).ascii();
+                        v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
                         while (index >= 0) { args[index--].~Variant(); }
-                        v8::Local<v8::String> error_message = v8::String::NewFromOneByte(isolate, (const uint8_t*) raw_string.ptr(), v8::NewStringType::kNormal, raw_string.length()).ToLocalChecked();
                         isolate->ThrowError(error_message);
                         return;
                     }
@@ -282,9 +281,8 @@ namespace jsb
                 if (!Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index]))
                 {
                     // revert all constructors
-                    const CharString raw_string = vformat("bad argument: %d", index).ascii();
+                    v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
                     while (index >= 0) { args[index--].~Variant(); }
-                    v8::Local<v8::String> error_message = v8::String::NewFromOneByte(isolate, (const uint8_t*) raw_string.ptr(), v8::NewStringType::kNormal, raw_string.length()).ToLocalChecked();
                     isolate->ThrowError(error_message);
                     return;
                 }
@@ -336,9 +334,8 @@ namespace jsb
                 if (!Realm::js_to_gd_var(isolate, context, info[index], type, args[index]))
                 {
                     // revert all constructors
-                    const CharString raw_string = vformat("bad argument: %d", index).ascii();
+                    v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
                     while (index >= 0) { args[index--].~Variant(); }
-                    v8::Local<v8::String> error_message = v8::String::NewFromOneByte(isolate, (const uint8_t*) raw_string.ptr(), v8::NewStringType::kNormal, raw_string.length()).ToLocalChecked();
                     isolate->ThrowError(error_message);
                     return;
                 }
@@ -475,7 +472,7 @@ namespace jsb
         p_realm->RegisterPrimitiveType(Projection);
         p_realm->RegisterPrimitiveType(Color);
         // - StringName
-        // - NodePath
+        p_realm->RegisterPrimitiveType(NodePath);
         p_realm->RegisterPrimitiveType(RID);
         // - Object
         p_realm->RegisterPrimitiveType(Callable);
