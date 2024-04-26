@@ -178,7 +178,7 @@ namespace jsb
         // return false if something wrong with an exception thrown
         // caller should handle the exception if it's not called from js
         JavaScriptModule* _load_module(const String& p_parent_id, const String& p_module_id);
-        void _reload_module(const String& p_module_id);
+        void reload_module(const StringName& p_module_id);
 
         static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, v8::Local<v8::Value>& r_jval) { return gd_var_to_js(isolate, context, p_cvar, p_cvar.get_type(), r_jval); }
         static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, Variant::Type p_type, v8::Local<v8::Value>& r_jval);

@@ -42,6 +42,9 @@ javascript_shared_defines = [
 
     # lower log levels are completely skipped (at compile-time)
     "JSB_MIN_LOG_LEVEL=Verbose",
+
+    # log with [source filename, line number, function name]
+    "JSB_LOG_WITH_SOURCE=0",
 ]
 
 # def write_file(filename, ostream: io.StringIO):

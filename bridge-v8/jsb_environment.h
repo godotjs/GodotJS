@@ -86,7 +86,7 @@ namespace jsb
 #endif
 
         // module_id => loader
-        HashMap<String, class IModuleLoader*> module_loaders_;
+        HashMap<StringName, class IModuleLoader*> module_loaders_;
         Vector<IModuleResolver*> module_resolvers_;
 
         uint64_t last_ticks_;
@@ -238,9 +238,9 @@ namespace jsb
 
         void update();
 
-        class IModuleLoader* find_module_loader(const String& p_module_id) const
+        class IModuleLoader* find_module_loader(const StringName& p_module_id) const
         {
-            HashMap<String, class IModuleLoader*>::ConstIterator it = module_loaders_.find(p_module_id);
+            const HashMap<StringName, class IModuleLoader*>::ConstIterator it = module_loaders_.find(p_module_id);
             if (it != module_loaders_.end())
             {
                 return it->value;
@@ -249,7 +249,7 @@ namespace jsb
         }
 
         template<typename T, typename... ArgumentTypes>
-        T& add_module_loader(const String& p_module_id, ArgumentTypes&&... p_args)
+        T& add_module_loader(const StringName& p_module_id, ArgumentTypes&&... p_args)
         {
             jsb_ensure(!module_loaders_.has(p_module_id));
             T* loader = memnew(T(std::forward<ArgumentTypes>(p_args)...));

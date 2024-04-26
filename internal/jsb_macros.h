@@ -23,10 +23,19 @@
 #   endif
 #endif
 
+#ifndef JSB_LOG_WITH_SOURCE
+#   define JSB_LOG_WITH_SOURCE 1
+#endif
+
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
 
-#define JSB_LOG_FORMAT(CategoryName, Severity, Format, ...) vformat("[" #CategoryName "][" #Severity "] " Format, ##__VA_ARGS__)
+#if JSB_LOG_WITH_SOURCE
+#   define JSB_LOG_FORMAT(CategoryName, Severity, Format, ...) vformat("[" #CategoryName "][" #Severity "][%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
+#else
+#   define JSB_LOG_FORMAT(CategoryName, Severity, Format, ...) vformat("[" #CategoryName "][" #Severity "] " Format, ##__VA_ARGS__)
+#endif
+
 #define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) \
     if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::JSB_MIN_LOG_LEVEL) \
     {\

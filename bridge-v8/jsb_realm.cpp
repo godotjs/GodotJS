@@ -216,8 +216,10 @@ namespace jsb
             isolate->ThrowError("bad param");
             return;
         }
-        const String module_id_str = V8Helper::to_string(v8::String::Value(isolate, info[0]));
-        if (module_id_str.is_empty())
+        Environment* environment = Environment::wrap(isolate);
+        const StringName module_id_str = environment->string_name_cache_.get_string_name(isolate, info[0].As<v8::String>());
+        // const StringName module_id_str = V8Helper::to_string(v8::String::Value(isolate, info[0]));
+        if ((const void*) module_id_str == nullptr)
         {
             isolate->ThrowError("bad module_id");
             return;
@@ -279,12 +281,15 @@ namespace jsb
         }
     }
 
-    void Realm::_reload_module(const String& p_module_id)
+    void Realm::reload_module(const StringName& p_module_id)
     {
         if (JavaScriptModule* existed_module = module_cache_.find(p_module_id))
         {
             if (!existed_module->path.is_empty())
             {
+                v8::Isolate* isolate = get_isolate();
+                v8::HandleScope handle_scope(isolate);
+
                 //TODO reload all related modules (search the module graph)
                 existed_module->reload_requested = true;
                 _load_module("", existed_module->id);
@@ -301,14 +306,15 @@ namespace jsb
         }
 
         v8::Isolate* isolate = environment_->isolate_;
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        v8::Local<v8::Context> context = context_.Get(isolate);
 
-        jsb_check(context == context_.Get(isolate));
+        jsb_check(isolate->GetCurrentContext().IsEmpty() || context == context_.Get(isolate));
         // find loader with the module id
         if (IModuleLoader* loader = environment_->find_module_loader(p_module_id))
         {
             jsb_checkf(!existed_module, "module loader does not support reloading");
-            JavaScriptModule& module = module_cache_.insert(p_module_id, false);
+            const StringName module_id_sn = p_module_id;
+            JavaScriptModule& module = module_cache_.insert(module_id_sn, false);
             v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
             v8::Local<v8::String> propkey_loaded = v8::String::NewFromUtf8Literal(isolate, "loaded");
 
@@ -320,7 +326,7 @@ namespace jsb
 
             // init the new module obj
             module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, false)).Check();
-            module.id = p_module_id;
+            module.id = module_id_sn;
             module.module.Reset(isolate, module_obj);
 
             //NOTE the loader should throw error if failed
@@ -1685,7 +1691,7 @@ namespace jsb
             {
                 v8::Isolate* isolate = get_isolate();
                 v8::HandleScope handle_scope(isolate);
-                const size_t r = function_refs_.erase(TWeakRef(get_isolate(), strong_ref.object_));
+                const size_t r = function_refs_.erase(TWeakRef(isolate, strong_ref.object_));
                 jsb_check(r != 0);
                 function_bank_.remove_at(p_func_id);
             }

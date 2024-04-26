@@ -52,9 +52,9 @@ namespace jsb
             return p_name == main_;
         }
 
-        jsb_force_inline JavaScriptModule& insert(const String& p_name, bool p_main_candidate)
+        jsb_force_inline JavaScriptModule& insert(const StringName& p_name, bool p_main_candidate)
         {
-            jsb_checkf(!p_name.is_empty(), "empty module name is not allowed");
+            jsb_checkf(!((String) p_name).is_empty(), "empty module name is not allowed");
             jsb_checkf(!find(p_name), "duplicated module name %s", p_name);
             if (p_main_candidate && !((const void*) main_))
             {

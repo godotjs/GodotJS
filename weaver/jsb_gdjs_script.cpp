@@ -100,7 +100,7 @@ Error GodotJSScript::reload(bool p_keep_state)
     //TODO all `Callable` objects become invalid after reloading
 
     cached_methods_.clear();
-    realm_->_reload_module(get_js_class_info().module_id);
+    realm_->reload_module(get_js_class_info().module_id);
     return OK;
 }
 

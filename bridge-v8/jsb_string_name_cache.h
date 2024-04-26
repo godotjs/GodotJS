@@ -40,6 +40,7 @@ namespace jsb
             }
             const StringNameID id = values_.add({ p_string_name, {} });
             name_index.insert(p_string_name, id);
+            JSB_LOG(Verbose, "new string name (plain) %s %d [slots:%d]", p_string_name, (uint32_t) id, values_.size());
             return id;
         }
 
@@ -62,6 +63,7 @@ namespace jsb
                 Slot& slot = values_[id];
                 slot.ref_ = TStrongRef(isolate, p_value);
                 value_index_.insert(std::pair(TWeakRef(isolate, p_value), id));
+                JSB_LOG(Verbose, "new string name pair (js) %s %d [slots:%d]", name, (uint32_t) id, values_.size());
                 return name;
             }
         }
@@ -75,6 +77,7 @@ namespace jsb
                 v8::Local<v8::String> str_val = V8Helper::to_string(isolate, p_name);
                 slot.ref_ = TStrongRef(isolate, str_val);
                 value_index_.insert(std::pair(TWeakRef(isolate, str_val), id));
+                JSB_LOG(Verbose, "new string name pair (cpp) %s %d [slots:%d]", p_name, (uint32_t) id, values_.size());
                 return str_val;
             }
             return slot.ref_.object_.Get(isolate);

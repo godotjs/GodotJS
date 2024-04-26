@@ -203,7 +203,7 @@ namespace jsb
         }
         module_resolvers_.clear();
 
-        for (KeyValue<String, IModuleLoader*>& pair : module_loaders_)
+        for (KeyValue<StringName, IModuleLoader*>& pair : module_loaders_)
         {
             memdelete(pair.value);
             pair.value = nullptr;
