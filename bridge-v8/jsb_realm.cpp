@@ -16,47 +16,6 @@ namespace jsb
 {
     namespace InternalTimerType { enum Type : uint8_t { Interval, Timeout, Immediate, }; }
 
-    /**
-     * @param p_godot_obj non-null godot object pointer
-     */
-    jsb_force_inline bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval)
-    {
-        jsb_check(p_godot_obj);
-        Environment* environment = Environment::wrap(isolate);
-        if (environment->get_object(p_godot_obj, r_jval))
-        {
-            return true;
-        }
-
-        // freshly bind existing gd object (not constructed in javascript)
-        const StringName& class_name = p_godot_obj->get_class_name();
-        Realm* realm = Realm::wrap(context);
-        NativeClassID jclass_id;
-        if (const NativeClassInfo* jclass = realm->_expose_godot_class(class_name, &jclass_id))
-        {
-            v8::Local<v8::FunctionTemplate> jtemplate = jclass->template_.Get(isolate);
-            r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
-            jsb_check(r_jval->InternalFieldCount() == kObjectFieldCount);
-
-            if (p_godot_obj->is_ref_counted())
-            {
-                //NOTE in the case this godot object created by a godot method which returns a Ref<T>,
-                //     it's `refcount_init` will be zero after the object pointer assigned to a Variant.
-                //     we need to resurrect the object from this special state, or it will be a dangling pointer.
-                if (((RefCounted*) p_godot_obj)->init_ref())
-                {
-                    // great, it's resurrected.
-                }
-            }
-
-            // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-            environment->bind_godot_object(jclass_id, p_godot_obj, r_jval.As<v8::Object>());
-            return true;
-        }
-        JSB_LOG(Error, "failed to expose godot class '%s'", class_name);
-        return false;
-    }
-
     static const MethodInfo& get_method_info_recursively(const ClassDB::ClassInfo& p_class_info, const StringName& method_name)
     {
         const HashMap<StringName, MethodInfo>::ConstIterator method_it = p_class_info.virtual_methods_map.find(method_name);
@@ -1018,6 +977,47 @@ namespace jsb
         return &jclass_info;
     }
 
+    /**
+     * @param p_godot_obj non-null godot object pointer
+     */
+    bool Realm::gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval)
+    {
+        jsb_check(p_godot_obj);
+        Environment* environment = Environment::wrap(isolate);
+        if (environment->get_object(p_godot_obj, r_jval))
+        {
+            return true;
+        }
+
+        // freshly bind existing gd object (not constructed in javascript)
+        const StringName& class_name = p_godot_obj->get_class_name();
+        Realm* realm = Realm::wrap(context);
+        NativeClassID jclass_id;
+        if (const NativeClassInfo* jclass = realm->_expose_godot_class(class_name, &jclass_id))
+        {
+            v8::Local<v8::FunctionTemplate> jtemplate = jclass->template_.Get(isolate);
+            r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+            jsb_check(r_jval->InternalFieldCount() == kObjectFieldCount);
+
+            if (p_godot_obj->is_ref_counted())
+            {
+                //NOTE in the case this godot object created by a godot method which returns a Ref<T>,
+                //     it's `refcount_init` will be zero after the object pointer assigned to a Variant.
+                //     we need to resurrect the object from this special state, or it will be a dangling pointer.
+                if (((RefCounted*) p_godot_obj)->init_ref())
+                {
+                    // great, it's resurrected.
+                }
+            }
+
+            // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
+            environment->bind_godot_object(jclass_id, p_godot_obj, r_jval.As<v8::Object>());
+            return true;
+        }
+        JSB_LOG(Error, "failed to expose godot class '%s'", class_name);
+        return false;
+    }
+
     //TODO not fully implemented
     // translate js val into gd variant without any type hint
     bool Realm::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant& r_cvar)
@@ -1061,11 +1061,20 @@ namespace jsb
         }
         if (p_jval->IsString())
         {
-            //TODO optimize with cache?
-            v8::String::Utf8Value str(isolate, p_jval);
-            r_cvar = String(*str, str.length());
+            // directly return from cached StringName only if it exists
+            StringName sn;
+            if (Environment::wrap(isolate)->string_name_cache_.try_get_string_name(isolate, p_jval, sn))
+            {
+                r_cvar = sn;
+                return true;
+            }
+            r_cvar = V8Helper::to_string(isolate, p_jval.As<v8::String>());
             return true;
         }
+        //TODO
+        // if (p_jval->IsFunction())
+        // {
+        // }
         if (p_jval->IsObject())
         {
             v8::Local<v8::Object> self = p_jval.As<v8::Object>();
@@ -1114,22 +1123,37 @@ namespace jsb
         case Variant::STRING:
             if (p_jval->IsString())
             {
-                //TODO optimize with cache?
-                v8::String::Utf8Value str(isolate, p_jval);
-                r_cvar = String(*str, str.length());
+                StringName sn;
+                if (Environment::wrap(isolate)->string_name_cache_.try_get_string_name(isolate, p_jval, sn))
+                {
+                    r_cvar = (String) sn;
+                    return true;
+                }
+                r_cvar = V8Helper::to_string(isolate, p_jval.As<v8::String>());
                 return true;
             }
             return false;
         case Variant::STRING_NAME:
+            // cache the JSValue and StringName pair because the expected type is StringName
+            if (p_jval->IsString())
+            {
+                r_cvar = Environment::wrap(isolate)->string_name_cache_.get_string_name(isolate, p_jval.As<v8::String>());
+                return true;
+            }
+            goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         case Variant::NODE_PATH:
             if (p_jval->IsString())
             {
-                //TODO optimize with cache?
-                v8::String::Utf8Value str(isolate, p_jval);
-                r_cvar = String(*str, str.length());
+                StringName sn;
+                if (Environment::wrap(isolate)->string_name_cache_.try_get_string_name(isolate, p_jval, sn))
+                {
+                    r_cvar = NodePath((String) sn);
+                    return true;
+                }
+                r_cvar = NodePath(V8Helper::to_string(isolate, p_jval));
                 return true;
             }
-            goto FALLBACK_TO_VARIANT;
+            goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         case Variant::OBJECT:
             {
                 if (!p_jval->IsObject())
@@ -1241,10 +1265,7 @@ namespace jsb
             }
         case Variant::STRING_NAME:
             {
-                //TODO losing type
-                const String raw_val2 = p_cvar;
-                const CharString repr_val = raw_val2.utf8();
-                r_jval = v8::String::NewFromUtf8(isolate, repr_val.get_data(), v8::NewStringType::kNormal, repr_val.length()).ToLocalChecked();
+                r_jval = Environment::wrap(isolate)->string_name_cache_.get_string_value(isolate, (StringName) p_cvar);
                 return true;
             }
         case Variant::OBJECT:

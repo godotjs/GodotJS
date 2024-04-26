@@ -422,6 +422,14 @@ namespace jsb
         }
     };
 
+    template<> struct OperatorRegister<Dictionary>
+    {
+        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
+        {
+            JSB_OPERATOR2(EQUAL, bool, Dictionary, Dictionary);
+        }
+    };
+
     template<> struct OperatorRegister<Callable>
     {
         static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)

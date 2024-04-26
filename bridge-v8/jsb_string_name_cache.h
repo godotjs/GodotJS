@@ -51,7 +51,7 @@ namespace jsb
 
         StringName get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value)
         {
-            StringName name = V8Helper::to_string(isolate, p_value);
+            const StringName name = V8Helper::to_string(isolate, p_value);
             if (const auto& it = value_index_.find(TWeakRef(isolate, p_value)); it != value_index_.end())
             {
                 const StringNameID id = it->second;
@@ -59,8 +59,14 @@ namespace jsb
             }
             else
             {
-                StringNameID id = get_string_id(name);
+                const StringNameID id = get_string_id(name);
                 Slot& slot = values_[id];
+#if DEV_ENABLED
+                if (slot.ref_ && slot.ref_ != TStrongRef(isolate, p_value))
+                {
+                    JSB_LOG(Warning, "replacing existed string name cache %s", name);
+                }
+#endif
                 slot.ref_ = TStrongRef(isolate, p_value);
                 value_index_.insert(std::pair(TWeakRef(isolate, p_value), id));
                 JSB_LOG(Verbose, "new string name pair (js) %s %d [slots:%d]", name, (uint32_t) id, values_.size());
@@ -68,9 +74,33 @@ namespace jsb
             }
         }
 
+        bool try_get_string_name(v8::Isolate* isolate, const v8::Local<v8::Value>& p_value, StringName& r_string_name)
+        {
+            if (p_value->IsString()) return try_get_string_name(isolate, p_value.As<v8::String>(), r_string_name);
+            r_string_name = {};
+            return false;
+        }
+
+        bool try_get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value, StringName& r_string_name)
+        {
+            if (const auto& it = value_index_.find(TWeakRef(isolate, p_value)); it != value_index_.end())
+            {
+                const StringNameID id = it->second;
+                r_string_name = values_[id].name_;
+                return true;
+            }
+            r_string_name = {};
+            return false;
+        }
+
+        bool is_string_value_cached(v8::Isolate* isolate, const v8::Local<v8::String>& p_value)
+        {
+            return value_index_.find(TWeakRef(isolate, p_value)) != value_index_.end();
+        }
+
         v8::Local<v8::String> get_string_value(v8::Isolate* isolate, const StringName& p_name)
         {
-            StringNameID id = get_string_id(p_name);
+            const StringNameID id = get_string_id(p_name);
             Slot& slot = values_[id];
             if (!slot.ref_)
             {

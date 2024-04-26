@@ -67,7 +67,7 @@ namespace jsb
     template<>\
     struct OperatorRegister<TypeName>\
     {\
-        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template)\
+        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template)\
         {
 #define JSB_TYPE_OPERATORS_END() \
         }\
@@ -77,10 +77,31 @@ namespace jsb
     template<typename T>
     struct OperatorRegister
     {
-        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template) {}
+        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template) {}
     };
 
     #include "jsb_primitive_operators.def.h"
+
+    template<>
+    struct OperatorRegister<Dictionary>
+    {
+        static void set_named(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            //TODO dictionary operator[] write
+        }
+
+        static void get_named(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            //TODO dictionary operator[] read
+        }
+
+        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template)
+        {
+            JSB_DEFINE_OPERATOR2(EQUAL);
+            prototype_template->Set(V8Helper::to_string(p_env.isolate, "set_named"), v8::FunctionTemplate::New(p_env.isolate, set_named));
+            prototype_template->Set(V8Helper::to_string(p_env.isolate, "get_named"), v8::FunctionTemplate::New(p_env.isolate, get_named));
+        }
+    };
 
     template<typename T>
     struct VariantBind
@@ -412,7 +433,7 @@ namespace jsb
 
             // operators
             {
-                OperatorRegister<T>::generate(p_env, function_template);
+                OperatorRegister<T>::generate(p_env, function_template, prototype_template);
             }
 
             // enums

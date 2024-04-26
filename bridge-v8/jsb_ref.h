@@ -47,6 +47,11 @@ namespace jsb
                 lhs.object_ == rhs.object_;
         }
 
+        jsb_force_inline friend bool operator!=(const TWeakRef& lhs, const TWeakRef& rhs)
+        {
+            return !(lhs == rhs);
+        }
+
         jsb_force_inline uint32_t hash() const
         {
             return (uint32_t) hash_;
@@ -91,6 +96,11 @@ namespace jsb
         {
             return // lhs.hash_ == rhs.hash_ &&
                 lhs.object_ == rhs.object_;
+        }
+
+        jsb_force_inline friend bool operator!=(const TStrongRef& lhs, const TStrongRef& rhs)
+        {
+            return !(lhs == rhs);
         }
 
         jsb_force_inline uint32_t hash() const
