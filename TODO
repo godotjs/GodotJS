@@ -11,15 +11,21 @@ FEATS:
     ☐ cpp: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
     ☐ REPL: auto-complete when input text changed
     ☐ REPL: object details (as JSON?)
-    ☐ REPL: completely re-implement in typescript if possible
-    ☐ lang: gd exported property in scripts
+    ☐ REPL: completely re-implement the bottom panel in typescript if possible
+    ✔ lang: gd exported property in scripts @done(24-04-27 20:58)
+    ☐ lang: default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) 
     ☐ lang: onready gd var in scripts
-    ☐ lang: NodePath support
+    ✔ lang: NodePath support @done(24-04-27 20:58)
+    ✔ lang: StringName support (treated as javascript string) @done(24-04-27 20:59)
 
 CHECK:
     ☐ runtime: does preload work properly
 
 ISSUES:
+    ☐ editor: unexpected reload prompt
+    ☐ editor: errors on script reloading
+    ☐ runtime: crash on calling ResourceLoader.load
+    ☐ runtime: no exception thrown (or log message output) when script 'call' failed  
     ☐ binding: static functions not found after exposing
     ☐ source-map: incorrect Ln:Col on bundle scripts
 
