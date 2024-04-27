@@ -43,17 +43,20 @@ namespace jsb
         v8::Global<v8::Function> function_;
     };
 
-    struct GodotJSMethodInfo
+    namespace GodotJSMethodFlags
     {
-        enum Flags : uint8_t
+        enum Type : uint8_t
         {
-            Nono = 0,
+            None = 0,
             Static = 1,
         };
+    }
 
-        Flags flags;
+    struct GodotJSMethodInfo
+    {
+        GodotJSMethodFlags::Type flags;
 
-        jsb_force_inline bool is_static() const { return flags & Static; }
+        jsb_force_inline bool is_static() const { return flags & GodotJSMethodFlags::Static; }
     };
 
     struct GodotJSPropertyInfo
