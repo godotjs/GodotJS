@@ -856,6 +856,7 @@ namespace jsb
 
         NativeClassID class_id;
         NativeClassInfo& jclass_info = environment_->add_class(NativeClassType::GodotObject, p_class_info->name, &class_id);
+        JSB_LOG(Verbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
 
         // construct type template
         {
@@ -865,7 +866,10 @@ namespace jsb
             jsb_check(context == context_.Get(isolate));
             v8::Local<v8::FunctionTemplate> function_template = ClassTemplate<Object>::create(isolate, class_id, jclass_info);
             v8::Local<v8::ObjectTemplate> object_template = function_template->PrototypeTemplate();
-            JSB_LOG(Verbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
+
+            //NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
+            const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);
+            v8::Local<v8::Template> template_for_static = is_singleton_class ? v8::Local<v8::Template>::Cast(object_template) : v8::Local<v8::Template>::Cast(function_template);
 
             // expose class methods
             for (const KeyValue<StringName, MethodBind*>& pair : p_class_info->method_map)
@@ -878,7 +882,7 @@ namespace jsb
 
                 if (method_bind->is_static())
                 {
-                    function_template->Set(propkey_name, propval_func);
+                    template_for_static->Set(propkey_name, propval_func);
                 }
                 else
                 {
@@ -930,11 +934,8 @@ namespace jsb
                     );
                     enum_consts.insert(enum_vname);
                 }
-                const CharString enum_name_str = ((String) pair.key).utf8();
-                function_template->Set(
-                    v8::String::NewFromUtf8(isolate, enum_name_str.ptr(), v8::NewStringType::kNormal, enum_name_str.length()).ToLocalChecked(),
-                    enum_obj
-                );
+
+                template_for_static->Set(V8Helper::to_string(isolate, pair.key), enum_obj);
             }
 
             // expose class constants
@@ -947,7 +948,7 @@ namespace jsb
                 const CharString const_name = const_name_str.utf8(); // utf-8 for better compatibilities
                 v8::Local<v8::String> prop_key = v8::String::NewFromUtf8(isolate, const_name.ptr(), v8::NewStringType::kNormal, const_name.length()).ToLocalChecked();
 
-                function_template->Set(prop_key, v8::Int32::New(isolate, V8Helper::jsb_downscale(const_value, pair.key)));
+                template_for_static->Set(prop_key, v8::Int32::New(isolate, V8Helper::jsb_downscale(const_value, pair.key)));
             }
 
             //TODO expose all available fields/properties etc.
@@ -1455,6 +1456,7 @@ namespace jsb
         const MethodBind* method_bind = (MethodBind*) info.Data().As<v8::External>()->Value();
         const int argc = info.Length();
 
+        jsb_checkf(Thread::get_caller_id() == Environment::wrap(isolate)->thread_id_, "multi-threaded call not supported yet");
         jsb_check(method_bind);
         Object* gd_object = nullptr;
         if (!method_bind->is_static())
@@ -1515,7 +1517,9 @@ namespace jsb
             return;
         }
         v8::Local<v8::Value> jrval;
-        if (gd_var_to_js(isolate, context, crval, jrval))
+        const Variant::Type return_type = method_bind->get_argument_type(-1);
+        jsb_check(return_type == method_bind->get_return_info().type);
+        if (gd_var_to_js(isolate, context, crval, return_type, jrval))
         {
             info.GetReturnValue().Set(jrval);
             return;
@@ -1727,13 +1731,8 @@ namespace jsb
         return false;
     }
 
-    Variant Realm::_call(const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
+    Variant Realm::_call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
     {
-        v8::Isolate* isolate = p_func->GetIsolate();
-        v8::Local<v8::Context> context = this->unwrap();
-        v8::Context::Scope context_scope(context);
-
-        v8::TryCatch try_catch_run(isolate);
         using LocalValue = v8::Local<v8::Value>;
         LocalValue* argv = jsb_stackalloc(LocalValue, p_argcount);
         for (int index = 0; index < p_argcount; ++index)
@@ -1747,7 +1746,10 @@ namespace jsb
                 return {};
             }
         }
+
+        v8::TryCatch try_catch_run(isolate);
         v8::MaybeLocal<v8::Value> rval = p_func->Call(context, p_self, p_argcount, argv);
+
         for (int index = 0; index < p_argcount; ++index)
         {
             argv[index].~LocalValue();
@@ -1825,6 +1827,7 @@ namespace jsb
 
     Variant Realm::call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
     {
+        jsb_checkf(Thread::get_caller_id() == environment_->thread_id_, "multi-threaded call not supported yet");
         if (!function_bank_.is_valid_index(p_func_id))
         {
             r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
@@ -1832,7 +1835,11 @@ namespace jsb
         }
 
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = this->unwrap();
+        v8::Context::Scope context_scope(context);
+
         if (p_object_id.is_valid())
         {
             // if object_id is nonzero but can't be found in `objects_` registry, it usually means that this invocation originally triggered by JS GC.
@@ -1846,12 +1853,12 @@ namespace jsb
             const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
             jsb_check(js_func);
             v8::Local<v8::Object> self = this->environment_->objects_.get_value(p_object_id).ref_.Get(isolate);
-            return _call(js_func.object_.Get(isolate), self, p_args, p_argcount, r_error);
+            return _call(isolate, context, js_func.object_.Get(isolate), self, p_args, p_argcount, r_error);
         }
 
         const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
         jsb_check(js_func);
-        return _call(js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
+        return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
     }
 
     // function add_script_property(target: any, name: string, details: ScriptPropertyInfo): void;
