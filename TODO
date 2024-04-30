@@ -17,15 +17,16 @@ FEATS:
     ☐ lang: onready gd var in scripts
     ✔ lang: NodePath support @done(24-04-27 20:58)
     ✔ lang: StringName support (treated as javascript string) @done(24-04-27 20:59)
-
-CHECK:
-    ☐ runtime: does preload work properly
+    ☐ binding: add `preload` support (behave like in GDScript)
 
 ISSUES:
     ☐ editor: unexpected reload prompt
     ☐ editor: errors on script reloading
-    ☐ runtime: crash on calling ResourceLoader.load
-    ☐ runtime: no exception thrown (or log message output) when script 'call' failed  
-    ☐ binding: static functions not found after exposing
+    ✔ runtime: crash on calling ResourceLoader.load @done(24-04-30 17:51)
+    ☐ runtime: exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52)
+    ✔ binding: can not access static members (nested enum, constants) of exposed godot singleton objects @done(24-04-30 17:53)
+    ✔ binding: static functions not found after exposing @done(24-04-30 17:52)
     ☐ source-map: incorrect Ln:Col on bundle scripts
 
+CHECKS:
+    
