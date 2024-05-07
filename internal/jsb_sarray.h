@@ -10,11 +10,15 @@
 #define JSB_AUTOWRAP_REVISION_INC 1
 #endif
 
+#ifndef JSB_SARRAY_DEBUG
+#define JSB_SARRAY_DEBUG DEV_ENABLED
+#endif
+
 namespace jsb::internal
 {
     //TODO use move-constructor if possible when resizing.
     //NOTE some types (like std::function) are not supported due to copy/move on resizing not implemented for now.
-    template <typename T, typename IndexType = Index64, typename TAllocator = AnsiAllocator>
+    template <typename T, typename IndexType = Index64, typename TAllocator = AnsiAllocator, bool kDebugging = false>
 	class SArray
 	{
         using RevisionType = typename IndexType::RevisionType;
@@ -29,11 +33,18 @@ namespace jsb::internal
 			int previous;
 			RevisionType revision;
 			T value;
-
+#if JSB_SARRAY_DEBUG
+		    bool has_value_;
+		    jsb_force_inline void reset_value() { has_value_ = false; }
+		    jsb_force_inline bool has_value() const { return has_value_; }
+		    jsb_force_inline void set_value(T&& p_value) { has_value_ = true; value = std::move(p_value); }
+		    jsb_force_inline void set_value(const T& p_value) { has_value_ = true; value = p_value; }
+#else
 		    jsb_force_inline void reset_value() { }
 		    jsb_force_inline bool has_value() const { return true; }
-		    jsb_force_inline void set_value(T&& p_value) { value = std::forward<T>(p_value); }
+		    jsb_force_inline void set_value(T&& p_value) { value = std::move(p_value); }
 		    jsb_force_inline void set_value(const T& p_value) { value = p_value; }
+#endif
 		};
 
 		using AllocatorType = typename TAllocator::template ForType<Slot>;
@@ -507,7 +518,11 @@ namespace jsb::internal
 				return;
 			}
 
-		    int new_capacity = std::max(std::max(current_size * 2, 4), expected_size);
+		    const int new_capacity = std::max(std::max(current_size * 2, 4), expected_size);
+		    if constexpr (kDebugging)
+		    {
+		        JSB_LOG(Debug, "grow to %d from %d", new_capacity, current_size);
+		    }
 		    allocator.resize(current_size, new_capacity);
 		    jsb_check(new_capacity == capacity());
 		    Slot* slots_base = get_data();
@@ -759,6 +774,7 @@ namespace jsb::internal
 
 	    jsb_force_inline static void construct_element(Slot& p_slot)
 		{
+		    jsb_check(!p_slot.has_value());
 		    if constexpr (!std::is_trivially_constructible_v<T>)
 		    {
 		        memnew_placement(&p_slot.value, T);
@@ -767,6 +783,7 @@ namespace jsb::internal
 
 		jsb_force_inline static void destruct_element(Slot& p_slot)
 		{
+		    jsb_check(p_slot.has_value());
 			if constexpr (!std::is_trivially_destructible_v<T>)
 			{
 				p_slot.value.ElementTypeTypedef::~ElementTypeTypedef();

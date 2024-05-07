@@ -63,7 +63,7 @@ namespace jsb
         HashMap<StringName, NativeClassID> godot_classes_index_;
 
         // all exposed native classes
-        internal::SArray<NativeClassInfo, NativeClassID> native_classes_;
+        internal::SArray<NativeClassInfo, NativeClassID, internal::AnsiAllocator, true> native_classes_;
 
         //TODO all exported default classes inherit native godot class (directly or indirectly)
         // they're only collected on a module loaded
