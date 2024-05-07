@@ -298,7 +298,7 @@ namespace jsb
         {
             handle.ref_count_ = 1;
         }
-        JSB_LOG(Verbose, "bind object %s(%d) addr:%s (id: %s)", (String) native_classes_.get_value(p_class_id).name, (uint32_t) p_class_id, uitos((uintptr_t) p_pointer), uitos((uint64_t) object_id));
+        JSB_LOG(Verbose, "bind object %s (id: %s) with class %s (%d)", uitos((uintptr_t) p_pointer), uitos((uint64_t) object_id), (String) native_classes_.get_value(p_class_id).name, (uint32_t) p_class_id);
         return object_id;
     }
 

@@ -471,6 +471,10 @@ namespace jsb
                 }
             }
 
+            jsb_check(class_info.template_ == function_template);
+            class_info.function_.Reset(p_env.isolate, function_template->GetFunction(p_env.context).ToLocalChecked());
+            jsb_check(!class_info.template_.IsEmpty());
+            jsb_check(!class_info.function_.IsEmpty());
             return class_id;
         }
     };

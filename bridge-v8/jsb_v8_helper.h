@@ -51,7 +51,7 @@ namespace jsb
         }
 
         /**
-         * Get a godot String with a utf-16 v8 string
+         * Convert a v8 utf-16 string to a godot String
          * @note crash if failed
         */
         jsb_force_inline static String to_string(const v8::String::Value& p_val)
@@ -62,23 +62,21 @@ namespace jsb
             return str_gd;
         }
 
-        jsb_force_inline static String to_string(v8::Isolate* isolate, const v8::Local<v8::Name>& p_val)
-        {
-            String str_gd;
-            const v8::String::Utf8Value exchange(isolate, p_val);
-            const Error err = str_gd.parse_utf8(*exchange, exchange.length());
-            jsb_check(err == OK);
-            return str_gd;
-        }
-
-        jsb_force_inline static String to_string(v8::Isolate* isolate, const v8::Local<v8::String>& p_val)
-        {
-            return to_string(isolate, p_val.As<v8::Name>());
-        }
-
+        /**
+         * Convert a javascript 'String/Symbol' value to a godot String
+         */
         jsb_force_inline static String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
         {
-            return !p_val.IsEmpty() && (p_val->IsString() || p_val->IsSymbol()) ? to_string(isolate, p_val.As<v8::Name>()) : String();
+            String str_gd;
+            if (!p_val.IsEmpty() && (p_val->IsString() || p_val->IsSymbol()))
+            {
+                if (const v8::String::Utf8Value exchange(isolate, p_val); *exchange)
+                {
+                    const Error err = str_gd.parse_utf8(*exchange, exchange.length());
+                    jsb_check(err == OK);
+                }
+            }
+            return str_gd;
         }
 
         template<size_t N>

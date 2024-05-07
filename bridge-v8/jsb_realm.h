@@ -161,15 +161,15 @@ namespace jsb
 
         static void _require(const v8::FunctionCallbackInfo<v8::Value>& info);
 
-        NativeClassInfo* _expose_godot_class(const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id = nullptr);
-        NativeClassInfo* _expose_godot_class(const StringName& p_class_name, NativeClassID* r_class_id = nullptr)
+        const NativeClassInfo* _expose_godot_class(const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id = nullptr);
+        const NativeClassInfo* _expose_godot_class(const StringName& p_class_name, NativeClassID* r_class_id = nullptr)
         {
             const HashMap<StringName, ClassDB::ClassInfo>::ConstIterator& it = ClassDB::classes.find(p_class_name);
             return it != ClassDB::classes.end() ? _expose_godot_class(&it->value, r_class_id) : nullptr;
         }
 
-        NativeClassInfo* _expose_godot_primitive_class(Variant::Type p_type, NativeClassID* r_class_id = nullptr);
-        NativeClassInfo* _expose_godot_primitive_class(const StringName& p_type_name, NativeClassID* r_class_id = nullptr)
+        const NativeClassInfo* _expose_godot_primitive_class(Variant::Type p_type, NativeClassID* r_class_id = nullptr);
+        const NativeClassInfo* _expose_godot_primitive_class(const StringName& p_type_name, NativeClassID* r_class_id = nullptr)
         {
             const HashMap<StringName, Variant::Type>::ConstIterator& it = godot_primitive_map_.find(p_type_name);
             return it != godot_primitive_map_.end() ? _expose_godot_primitive_class(it->value, r_class_id) : nullptr;
