@@ -6,37 +6,30 @@
 #include "jsb_realm.h"
 #include "jsb_object_handle.h"
 
-#if DEV_ENABLED
-#   define JSB_CLASS_BOILERPLATE_NAME(TemplateName, ClassName) \
-    if ((const void *) (ClassName)) \
-    {\
-        const CharString cname = String(ClassName).utf8();\
-        (TemplateName)->SetClassName(v8::String:: NewFromUtf8(isolate, cname.ptr(), v8::NewStringType::kNormal, cname.length()).ToLocalChecked());\
-    } (void)0
-#else
-#   define JSB_CLASS_BOILERPLATE_NAME(TemplateName, ClassName) (void) 0
-#endif
-
 #define JSB_CLASS_BOILERPLATE() \
-    jsb_force_inline static v8::Local<v8::FunctionTemplate> create(v8::Isolate* isolate, internal::Index32 class_id, NativeClassInfo& class_info)\
+    jsb_force_inline static v8::Local<v8::FunctionTemplate> create(Environment* env, internal::Index32 class_id)\
     {\
+        v8::Isolate* isolate = env->unwrap();\
         v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor, v8::Uint32::NewFromUnsigned(isolate, class_id));\
         template_->InstanceTemplate()->SetInternalFieldCount(kObjectFieldCount);\
+        NativeClassInfo& class_info = env->get_native_class(class_id);\
         class_info.finalizer = &finalizer;\
         class_info.template_.Reset(isolate, template_);\
-        JSB_CLASS_BOILERPLATE_NAME(template_, class_info.name);\
+        template_->SetClassName(env->get_string_name_cache().get_string_value(isolate, class_info.name));\
         return template_;\
     }
 
 #define JSB_CLASS_BOILERPLATE_ARGS() \
     template<typename...TArgs>\
-    jsb_force_inline static v8::Local<v8::FunctionTemplate> create(v8::Isolate* isolate, internal::Index32 class_id, NativeClassInfo& class_info)\
+    jsb_force_inline static v8::Local<v8::FunctionTemplate> create(Environment* env, internal::Index32 class_id)\
     {\
-        v8::Local<v8::FunctionTemplate> template_ =  v8::FunctionTemplate::New(isolate, &constructor<TArgs...>, v8::Uint32::NewFromUnsigned(isolate, class_id));\
+        v8::Isolate* isolate = env->unwrap();\
+        v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor<TArgs...>, v8::Uint32::NewFromUnsigned(isolate, class_id));\
         template_->InstanceTemplate()->SetInternalFieldCount(kObjectFieldCount);\
+        NativeClassInfo& class_info = env->get_native_class(class_id);\
         class_info.finalizer = &finalizer;\
         class_info.template_.Reset(isolate, template_);\
-        JSB_CLASS_BOILERPLATE_NAME(template_, class_info.name);\
+        template_->SetClassName(env->get_string_name_cache().get_string_value(isolate, class_info.name));\
         return template_;\
     }
 
@@ -642,7 +635,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            // v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");

@@ -390,15 +390,12 @@ namespace jsb
 
         static NativeClassID reflect_bind(const FBindingEnv& p_env)
         {
-            NativeClassID class_id;
             const StringName& class_name = p_env.type_name;
-            NativeClassInfo& class_info = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name, &class_id);
+            const NativeClassID class_id = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name);
 
             v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Uint32::NewFromUnsigned(p_env.isolate, class_id));
             function_template->InstanceTemplate()->SetInternalFieldCount(kObjectFieldCount);
-            class_info.finalizer = &finalizer;
-            class_info.template_.Reset(p_env.isolate, function_template);
-            function_template->SetClassName(V8Helper::to_string(p_env.isolate, class_info.name));
+            function_template->SetClassName(p_env.environment->get_string_name_cache().get_string_value(p_env.isolate, class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();
 
             // getsets
@@ -471,10 +468,15 @@ namespace jsb
                 }
             }
 
-            jsb_check(class_info.template_ == function_template);
-            class_info.function_.Reset(p_env.isolate, function_template->GetFunction(p_env.context).ToLocalChecked());
-            jsb_check(!class_info.template_.IsEmpty());
-            jsb_check(!class_info.function_.IsEmpty());
+            {
+                NativeClassInfo& class_info = p_env.environment->get_native_class(class_id);
+                class_info.finalizer = &finalizer;
+                class_info.template_.Reset(p_env.isolate, function_template);
+                class_info.function_.Reset(p_env.isolate, function_template->GetFunction(p_env.context).ToLocalChecked());
+                jsb_check(class_info.template_ == function_template);
+                jsb_check(!class_info.template_.IsEmpty());
+                jsb_check(!class_info.function_.IsEmpty());
+            }
             return class_id;
         }
     };

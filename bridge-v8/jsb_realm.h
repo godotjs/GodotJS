@@ -161,11 +161,11 @@ namespace jsb
 
         static void _require(const v8::FunctionCallbackInfo<v8::Value>& info);
 
-        const NativeClassInfo* _expose_godot_class(const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id = nullptr);
-        const NativeClassInfo* _expose_godot_class(const StringName& p_class_name, NativeClassID* r_class_id = nullptr)
+        NativeClassID _expose_godot_class(const ClassDB::ClassInfo* p_class_info);
+        NativeClassID _expose_godot_class(const StringName& p_class_name)
         {
             const HashMap<StringName, ClassDB::ClassInfo>::ConstIterator& it = ClassDB::classes.find(p_class_name);
-            return it != ClassDB::classes.end() ? _expose_godot_class(&it->value, r_class_id) : nullptr;
+            return it != ClassDB::classes.end() ? _expose_godot_class(&it->value) : NativeClassID();
         }
 
         const NativeClassInfo* _expose_godot_primitive_class(Variant::Type p_type, NativeClassID* r_class_id = nullptr);
@@ -201,8 +201,8 @@ namespace jsb
 
         void _register_builtins(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self);
 
-        static void _parse_script_class(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
-        static void _parse_script_class_iterate(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);
+        static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
+        static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);

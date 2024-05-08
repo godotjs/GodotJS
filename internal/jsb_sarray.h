@@ -16,8 +16,7 @@
 
 namespace jsb::internal
 {
-    //TODO use move-constructor if possible when resizing.
-    //NOTE some types (like std::function) are not supported due to copy/move on resizing not implemented for now.
+    //NOTE some types (like std::function) are not supported because copy/move on resizing is not implemented for now.
     template <typename T, typename IndexType = Index64, typename TAllocator = AnsiAllocator, bool kDebugging = false>
 	class SArray
 	{
@@ -54,6 +53,7 @@ namespace jsb::internal
 		int _free_index = -1;
 		int _first_index = -1;
 		int _last_index = -1;
+        int _address_locked = 0;
 		AllocatorType allocator;
 
 		jsb_force_inline Slot* get_data() const
@@ -62,6 +62,19 @@ namespace jsb::internal
 		}
 
 	public:
+        struct AddressScope
+        {
+			SArray* container_;
+
+            AddressScope(SArray* p_container) : container_(p_container) { container_->lock_address(); }
+            ~AddressScope() { if (container_) container_->unlock_address(); }
+
+            AddressScope(const AddressScope&) = delete;
+            AddressScope& operator=(const AddressScope&) = delete;
+
+            AddressScope(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; }
+            AddressScope& operator=(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; return *this; }
+        };
 		struct LowLevelAccess
 		{
 			jsb_force_inline bool is_valid_slot(int p_slot_index) const
@@ -115,6 +128,10 @@ namespace jsb::internal
 				}
 			}
 		}
+
+        jsb_force_inline AddressScope address_scope() { return AddressScope(this); }
+        jsb_force_inline void lock_address() { ++_address_locked; }
+        jsb_force_inline void unlock_address() { jsb_check(_address_locked > 0); --_address_locked; }
 
 		// 当前元素数量
 		jsb_force_inline int size() const { return _used_size; }
@@ -240,7 +257,7 @@ namespace jsb::internal
 	    jsb_force_inline bool is_valid_index(const IndexType& p_index) const
 		{
 		    const int index = p_index.get_index();
-		    if (index < 0 || index >= capacity() || get_data()[index].revision != p_index.get_revision())
+		    if (index < 0 || index >= capacity() || p_index.get_revision() == 0 || get_data()[index].revision != p_index.get_revision())
 		    {
 		        return false;
 		    }
@@ -381,6 +398,7 @@ namespace jsb::internal
 
 		jsb_force_inline T& get_value(const IndexType& p_index)
 		{
+			jsb_check(p_index.get_revision() != 0);
 			jsb_check(p_index.get_index() >= 0);
 			jsb_check(p_index.get_index() < capacity());
 			Slot& slot = get_data()[p_index.get_index()];
@@ -459,6 +477,7 @@ namespace jsb::internal
 
 		bool remove_at(const IndexType& p_index)
 		{
+		    jsb_check(_address_locked == 0);
 			if (p_index.get_index() < 0 || p_index.get_index() >= capacity())
 			{
 				return false;
@@ -511,6 +530,7 @@ namespace jsb::internal
 		void grow_if_needed(int p_extra_count)
 		{
 			jsb_check(p_extra_count > 0);
+		    jsb_check(_address_locked == 0);
 			const int current_size = capacity();
 			const int expected_size = _used_size + p_extra_count;
 			if (expected_size <= current_size)
@@ -529,6 +549,7 @@ namespace jsb::internal
 		    for (int i = current_size; i < new_capacity; ++i)
 		    {
 		        Slot& slot = slots_base[i];
+		        jsb_check(!slot.has_value());
 		        slot.next = _free_index;
 		        slot.revision = kInitialRevision;
 		        _free_index = i;

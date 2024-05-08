@@ -340,7 +340,7 @@ namespace jsb
                 {
                     return nullptr;
                 }
-                _parse_script_class(isolate, context, *existed_module);
+                _parse_script_class(this, context, *existed_module);
                 return existed_module;
             }
             else
@@ -398,7 +398,7 @@ namespace jsb
                     }
                 }
                 module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, true)).Check();
-                _parse_script_class(isolate, context, module);
+                _parse_script_class(this, context, module);
                 return &module;
             }
         }
@@ -408,30 +408,30 @@ namespace jsb
         return nullptr;
     }
 
-    void Realm::_parse_script_class(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module)
+    void Realm::_parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module)
     {
         // only classes in files of godot package system could be used as godot js script
         if (!p_module.path.begins_with("res://") || p_module.exports.IsEmpty())
         {
             return;
         }
-
-        v8::Local<v8::Value> exports_val = p_module.exports.Get(p_isolate);
+        v8::Isolate* isolate = p_realm->environment_->unwrap();
+        v8::Local<v8::Value> exports_val = p_module.exports.Get(isolate);
         if (!exports_val->IsObject())
         {
             return;
         }
         v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
         v8::Local<v8::Value> default_val;
-        if (!exports->Get(p_context, v8::String::NewFromUtf8Literal(p_isolate, "default")).ToLocal(&default_val)
+        if (!exports->Get(p_context, v8::String::NewFromUtf8Literal(isolate, "default")).ToLocal(&default_val)
             || !default_val->IsObject())
         {
             return;
         }
 
-        Environment* environment = Environment::wrap(p_isolate);
+        Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
-        v8::Local<v8::String> name_str = default_obj->Get(p_context, v8::String::NewFromUtf8Literal(p_isolate, "name")).ToLocalChecked().As<v8::String>();
+        v8::Local<v8::String> name_str = default_obj->Get(p_context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>();
         // v8::String::Utf8Value name(p_isolate, name_str);
         v8::Local<v8::Value> class_id_val;
         if (!default_obj->Get(p_context, environment->get_symbol(Symbols::ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
@@ -459,20 +459,23 @@ namespace jsb
         }
 
         jsb_check(existed_class_info->module_id == p_module.id);
-        existed_class_info->js_class_name = V8Helper::to_string(p_isolate, name_str); // String(*name, name.length());
+        existed_class_info->js_class_name = V8Helper::to_string(isolate, name_str); // String(*name, name.length());
         existed_class_info->native_class_id = native_class_id;
         existed_class_info->native_class_name = native_class_info.name;
-        existed_class_info->js_class.Reset(p_isolate, default_obj);
+        existed_class_info->js_class.Reset(isolate, default_obj);
         JSB_LOG(Verbose, "godot js class name %s (native: %s)", existed_class_info->js_class_name, existed_class_info->native_class_name);
-        _parse_script_class_iterate(p_isolate, p_context, *existed_class_info);
+        _parse_script_class_iterate(p_realm, p_context, *existed_class_info);
     }
 
-    void Realm::_parse_script_class_iterate(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info)
+    void Realm::_parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info)
     {
+        Environment* environment = p_realm->environment_.get();
+        const auto godot_js_classes_address_scope = environment->gdjs_classes_.address_scope();
+        v8::Isolate* isolate = environment->unwrap();
+
         //TODO collect methods/signals/properties
-        v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(p_isolate);
-        v8::Local<v8::Object> prototype = default_obj->Get(p_context, V8Helper::to_string(p_isolate, "prototype")).ToLocalChecked().As<v8::Object>();
-        Environment* environment = Environment::wrap(p_isolate);;
+        v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(isolate);
+        v8::Local<v8::Object> prototype = default_obj->Get(p_context, V8Helper::to_string(isolate, "prototype")).ToLocalChecked().As<v8::Object>();
 
         // methods
         {
@@ -481,7 +484,7 @@ namespace jsb
             for (uint32_t index = 0; index < len; ++index)
             {
                 const v8::Local<v8::Name> prop_name = property_names->Get(p_context, index).ToLocalChecked().As<v8::Name>();
-                const String name_s = V8Helper::to_string(p_isolate, prop_name);
+                const String name_s = V8Helper::to_string(isolate, prop_name);
                 if (name_s.is_empty() || name_s == "constructor") continue;
 
                 // check property type with 'GetOwnPropertyDescriptor' instead of direct 'Get' to avoid triggering code execution
@@ -489,7 +492,7 @@ namespace jsb
                 if (prototype->GetOwnPropertyDescriptor(p_context, prop_name).ToLocal(&prop_descriptor) && prop_descriptor->IsObject())
                 {
                     v8::Local<v8::Value> prop_val;
-                    if (prop_descriptor.As<v8::Object>()->Get(p_context, V8Helper::to_string(p_isolate, "value")).ToLocal(&prop_val) && prop_val->IsFunction())
+                    if (prop_descriptor.As<v8::Object>()->Get(p_context, V8Helper::to_string(isolate, "value")).ToLocal(&prop_val) && prop_val->IsFunction())
                     {
                             //TODO property categories
                             const StringName sname = name_s;
@@ -516,12 +519,12 @@ namespace jsb
                 {
                     v8::Local<v8::Value> element = collection->Get(p_context, index).ToLocalChecked();
                     jsb_check(element->IsString());
-                    const StringName signal = V8Helper::to_string(p_isolate, element);
+                    const StringName signal = V8Helper::to_string(isolate, element);
                     p_class_info.signals.insert(signal, {});
 
                     // instantiate a fake Signal property
                     const StringNameID string_id = environment->string_name_cache_.get_string_id(signal);
-                    v8::Local<v8::Function> signal_func = v8::Function::New(p_context, _godot_signal, v8::Uint32::NewFromUnsigned(p_isolate, (uint32_t) string_id)).ToLocalChecked();
+                    v8::Local<v8::Function> signal_func = v8::Function::New(p_context, _godot_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_id)).ToLocalChecked();
                     prototype->SetAccessorProperty(element.As<v8::Name>(), signal_func);
                     JSB_LOG(Verbose, "... signal %s (%d)", signal, (uint32_t) string_id);
                 }
@@ -542,8 +545,8 @@ namespace jsb
                     jsb_check(element->IsObject());
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     GodotJSPropertyInfo property_info;
-                    property_info.name = V8Helper::to_string(p_isolate, obj->Get(context, V8Helper::to_string(p_isolate, "name")).ToLocalChecked()); // string
-                    property_info.type = (Variant::Type) obj->Get(context, V8Helper::to_string(p_isolate, "type")).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, V8Helper::to_string(isolate, "name")).ToLocalChecked()); // string
+                    property_info.type = (Variant::Type) obj->Get(context, V8Helper::to_string(isolate, "type")).ToLocalChecked()->Int32Value(context).ToChecked(); // int
                     //TODO property details
                     p_class_info.properties.insert(property_info.name, property_info);
                     JSB_LOG(Verbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
@@ -560,6 +563,7 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = context_.Get(isolate);
 
+        const auto godot_js_class_info_address_scope = environment_->gdjs_classes_.address_scope();
         const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         v8::Local<v8::Object> instance = constructor->CallAsConstructor(context, 0, nullptr).ToLocalChecked().As<v8::Object>();
@@ -827,32 +831,22 @@ namespace jsb
         return &class_info;
     }
 
-    const NativeClassInfo* Realm::_expose_godot_class(const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id)
+    NativeClassID Realm::_expose_godot_class(const ClassDB::ClassInfo* p_class_info)
     {
-        if (!p_class_info)
-        {
-            if (r_class_id)
-            {
-                *r_class_id = NativeClassID::none();
-            }
-            return nullptr;
-        }
+        if (!p_class_info) return NativeClassID();
 
         NativeClassID class_id;
         if (const NativeClassInfo* cached_info = environment_->find_godot_class(p_class_info->name, class_id))
         {
-            if (r_class_id)
-            {
-                *r_class_id = class_id;
-            }
             JSB_LOG(Verbose, "return cached native class %s (%d) (for %s)", cached_info->name, (uint32_t) class_id, p_class_info->name);
             jsb_check(cached_info->name == p_class_info->name);
             jsb_check(!cached_info->template_.IsEmpty());
             jsb_check(!cached_info->function_.IsEmpty());
-            return cached_info;
+            return class_id;
         }
 
-        NativeClassInfo& jclass_info = environment_->add_class(NativeClassType::GodotObject, p_class_info->name, &class_id);
+        // const auto native_classes_address_scope = environment_->native_classes_.address_scope();
+        class_id = environment_->add_class(NativeClassType::GodotObject, p_class_info->name);
         JSB_LOG(Verbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
 
         // construct type template
@@ -861,7 +855,7 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
             jsb_check(context == context_.Get(isolate));
-            v8::Local<v8::FunctionTemplate> function_template = ClassTemplate<Object>::create(isolate, class_id, jclass_info);
+            v8::Local<v8::FunctionTemplate> function_template = ClassTemplate<Object>::create(environment_.get(), class_id);
             v8::Local<v8::ObjectTemplate> object_template = function_template->PrototypeTemplate();
 
             //NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
@@ -956,28 +950,25 @@ namespace jsb
             function_template->Set(class_id_symbol, v8::Uint32::NewFromUnsigned(isolate, class_id));
 
             // setup the prototype chain (inherit)
-            NativeClassID super_id;
-            if (const NativeClassInfo* jsuper_class = _expose_godot_class(p_class_info->inherits_ptr, &super_id))
+            if (const NativeClassID super_class_id = _expose_godot_class(p_class_info->inherits_ptr))
             {
-                v8::Local<v8::FunctionTemplate> base_template = jsuper_class->template_.Get(isolate);
+                v8::Local<v8::FunctionTemplate> base_template = environment_->get_native_class(super_class_id).template_.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
                 function_template->Inherit(base_template);
-                JSB_LOG(Verbose, "%s (%d) extends %s (%d)", p_class_info->name, (uint32_t) class_id, p_class_info->inherits_ptr->name, (uint32_t) super_id);
+                JSB_LOG(Verbose, "%s (%d) extends %s (%d)", p_class_info->name, (uint32_t) class_id, p_class_info->inherits_ptr->name, (uint32_t) super_class_id);
             }
-            jsb_check(function_template == jclass_info.template_);
-            v8::Local<v8::Function> function = function_template->GetFunction(context).ToLocalChecked();
-            jsb_check(!function.IsEmpty());
-            jclass_info.function_.Reset(isolate, function);
-            jsb_check(!jclass_info.function_.IsEmpty());
-            JSB_LOG(Verbose, "class info ready %s (%d)", p_class_info->name, (uint32_t) class_id);
+
+            {
+                NativeClassInfo& class_info = environment_->get_native_class(class_id);
+                jsb_check(function_template == class_info.template_);
+                v8::Local<v8::Function> function = function_template->GetFunction(context).ToLocalChecked();
+                class_info.function_.Reset(isolate, function);
+                jsb_check(!class_info.function_.IsEmpty());
+                JSB_LOG(Verbose, "class info ready %s (%d)", p_class_info->name, (uint32_t) class_id);
+            }
         } // end type template
 
-        if (r_class_id)
-        {
-            *r_class_id = class_id;
-        }
-        jsb_check(!jclass_info.function_.IsEmpty());
-        return &jclass_info;
+        return class_id;
     }
 
     /**
@@ -995,10 +986,9 @@ namespace jsb
         // freshly bind existing gd object (not constructed in javascript)
         const StringName& class_name = p_godot_obj->get_class_name();
         Realm* realm = Realm::wrap(context);
-        NativeClassID jclass_id;
-        if (const NativeClassInfo* jclass = realm->_expose_godot_class(class_name, &jclass_id))
+        if (const NativeClassID class_id = realm->_expose_godot_class(class_name))
         {
-            v8::Local<v8::FunctionTemplate> jtemplate = jclass->template_.Get(isolate);
+            v8::Local<v8::FunctionTemplate> jtemplate = realm->environment_->get_native_class(class_id).template_.Get(isolate);
             r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
             jsb_check(r_jval->InternalFieldCount() == kObjectFieldCount);
 
@@ -1014,7 +1004,7 @@ namespace jsb
             }
 
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-            environment->bind_godot_object(jclass_id, p_godot_obj, r_jval.As<v8::Object>());
+            environment->bind_godot_object(class_id, p_godot_obj, r_jval.As<v8::Object>());
             return true;
         }
         JSB_LOG(Error, "failed to expose godot class '%s'", class_name);
@@ -1603,12 +1593,13 @@ namespace jsb
         const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(type_name);
         if (it != ClassDB::classes.end())
         {
-            if (const NativeClassInfo* godot_class = realm->_expose_godot_class(&it->value))
+            if (const NativeClassID class_id = realm->_expose_godot_class(&it->value))
             {
-                jsb_check(godot_class->name == type_name);
-                jsb_check(!godot_class->template_.IsEmpty());
-                jsb_checkf(!godot_class->function_.IsEmpty(), "function_ not set for native class info %s", type_name);
-                info.GetReturnValue().Set(godot_class->function_.Get(isolate));
+                NativeClassInfo& godot_class = realm->environment_->get_native_class(class_id);
+                jsb_check(godot_class.name == type_name);
+                jsb_check(!godot_class.template_.IsEmpty());
+                jsb_checkf(!godot_class.function_.IsEmpty(), "function_ not set for native class info %s", type_name);
+                info.GetReturnValue().Set(godot_class.function_.Get(isolate));
                 return;
             }
         }

@@ -63,14 +63,12 @@ namespace jsb
         HashMap<StringName, NativeClassID> godot_classes_index_;
 
         // all exposed native classes
-        internal::SArray<NativeClassInfo, NativeClassID, internal::AnsiAllocator, true> native_classes_;
+        internal::SArray<NativeClassInfo, NativeClassID> native_classes_;
 
         //TODO all exported default classes inherit native godot class (directly or indirectly)
         // they're only collected on a module loaded
         internal::SArray<GodotJSClassInfo, GodotJSClassID> gdjs_classes_;
 
-        // internal::SArray<StringName, StringNameID> stringnames_;
-        // HashMap<StringName, StringNameID> stringnames_index_;
         StringNameCache string_name_cache_;
 
         // cpp objects should be added here since the gc callback is not guaranteed by v8
@@ -147,6 +145,8 @@ namespace jsb
         jsb_force_inline void dealloc_variant(Variant* p_var) { memdelete(p_var); }
 #endif
 
+        jsb_force_inline StringNameCache& get_string_name_cache() { return string_name_cache_; }
+
         jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const
         {
             return symbols_[p_type].Get(isolate_);
@@ -168,22 +168,9 @@ namespace jsb
         jsb_force_inline
         bool check(v8::Isolate* p_isolate) const { return p_isolate == isolate_; }
 
-        // jsb_force_inline StringNameID add_string_name(const StringName& p_string_name)
-        // {
-        //     if (const HashMap<StringName, StringNameID>::Iterator& it = stringnames_index_.find(p_string_name); it != stringnames_index_.end())
-        //     {
-        //         return it->value;
-        //     }
-        //     const StringNameID id = stringnames_.add(p_string_name);
-        //     stringnames_index_.insert(p_string_name, id);
-        //     return id;
-        // }
-        // jsb_force_inline const StringName& get_string_name(const StringNameID& p_string_name_id) const { return stringnames_[p_string_name_id]; }
-
         /**
          * \brief bind a C++ `p_pointer` with a JS `p_object`
          * \param p_class_id
-         * \param p_persistent keep a strong reference on pointer, usually used on binding singleton objects which are manually managed by native codes.
          */
         NativeObjectID bind_object(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, bool p_weakref = true);
 
@@ -282,10 +269,9 @@ namespace jsb
          * \brief
          * \param p_type category of the class, a GodotObject class is also registered in `godot_classes_index` map
          * \param p_class_name class_name must be unique if it's a GodotObject class
-         * \param r_class_id
          * \return
          */
-        NativeClassInfo& add_class(NativeClassType::Type p_type, const StringName& p_class_name, NativeClassID* r_class_id = nullptr)
+        NativeClassID add_class(NativeClassType::Type p_type, const StringName& p_class_name)
         {
             const NativeClassID class_id = native_classes_.add(NativeClassInfo());
             NativeClassInfo& class_info = native_classes_.get_value(class_id);
@@ -296,12 +282,8 @@ namespace jsb
                 jsb_check(!godot_classes_index_.has(p_class_name));
                 godot_classes_index_.insert(p_class_name, class_id);
             }
-            if (r_class_id)
-            {
-                *r_class_id = class_id;
-            }
             JSB_LOG(Verbose, "new class %s (%d)", p_class_name, (uint32_t) class_id);
-            return class_info;
+            return class_id;
         }
 
         jsb_force_inline const NativeClassInfo* find_godot_class(const StringName& p_name, NativeClassID& r_class_id) const
@@ -314,7 +296,9 @@ namespace jsb
             return nullptr;
         }
 
-        // [unsafe]
+        /**
+         * [unsafe] it's dangerous to hold the `NativeClassInfo` reference/pointer because the address is not ensured stable.
+         */
         jsb_force_inline NativeClassInfo& get_native_class(NativeClassID p_class_id) { return native_classes_.get_value(p_class_id); }
         jsb_force_inline const NativeClassInfo& get_native_class(NativeClassID p_class_id) const { return native_classes_.get_value(p_class_id); }
 
