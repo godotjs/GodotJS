@@ -10,8 +10,8 @@ TypScript/JavaScript for Godot with V8
 * [x] Godot Primitive types binding
 * [x] Debug with Chrome devtools when using V8
 * [x] Support SourceMap
-* [ ] Support REPL in Godot Editor
-* [ ] Godot `ScriptLanguage` integration
+* [x] Support REPL in Godot Editor
+* [x] Godot `ScriptLanguage` integration
 * [ ] Support hot-reload
 * [ ] Asynchronous module loading support (`import` function)
 * [ ] Multiple contexts for sandboxing script environments (not multi-threading)
@@ -20,7 +20,7 @@ TypScript/JavaScript for Godot with V8
 
 ## Get Started
 
-Download or clone the repo into Godot `modules` directory:
+Download or clone the repo into the `modules` directory of your Godot engine source:
 ```sh
 cd YourGodotEngineSource/modules
 git lfs clone https://github.com/ialex32x/GodotJS.git
@@ -28,93 +28,4 @@ git lfs clone https://github.com/ialex32x/GodotJS.git
 
 Compile and launch `Godot Editor`.
 
-Install TS project presets with `Godot Editor` menu item `Project > Tools > GodotJS > Install TS Project`.
-> All `jsb` premade config/scripts will be generated at `res://typescripts` and `res://javascripts` (the location will be configurable in a future version).
-> `d.ts` files of godot classes will also be generated at the same time.
-
-> **NOTE** The directory `typescripts` is automatically ignored in `Godot Editor`. Edit typescript source from the `typescripts` directory with any code editor (like VSCode).
-
-Since the `d.ts` files for godot classes are generated in the TS project, `IntelliSense` works perfectly in VSCode for better coding efficiency.
-
-![intellisense](./docs/assets/vscode_intellisense.png)
-
-Install javascript packages:
-```sh
-cd YourGodotProject/typescripts
-npm i
-```
-
-Write and compile your typescript source:
-```sh
-cd YourGodotProject/typescripts
-# remove the option `-w` if no continuous compilation required
-npx tsc -w
-```
-
-## GodotJS Scripts
-A javascript class can extend a Godot Object class (like GDScript):
-
-> This example is written in TypeScript.
-
-```ts
-import { Node, Signal } from "godot";
-import { signal } from "./jsb/jsb.core";
-
-export default class MyJSNode extends Node {
-    @signal
-    test!: Signal;
-
-    constructor() {
-        super();
-        console.log("my js node class");
-
-        this.test.connect(jsb.callable(this, this._on_test), 0);
-        this.test.emit();
-        this.test.disconnect(jsb.callable(this, this._on_test));
-    }
-
-    private _on_test() {
-
-    }
-
-    _ready() {
-        console.log("MyJSNode _ready");
-    }
-
-}
-```
-
-Attach the compiled file to a Node:
-
-![attach a script](./docs/assets/attach_script.png)
-
-## Debugger
-
-A debugger bridge is implemented.
-Open `devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1` in `Chrome` to start debugging the javascript sources.
-
-> **NOTE** The listening port can be changed in `Project Settings > jsb > Debugger > Port`. A restart is required for it to take effect.
-
-![20240319122550.png](./docs/assets/20240319122550.png)
-
-## Current State
-
-| Platform | V8 | QuickJS |
-| --- | --- | --- |
-| Windows x86_64 | WIP | TODO |
-| Windows x86_32 | UNPLANNED | UNPLANNED |
-| UWP | UNPLANNED | UNPLANNED |
-| Windows ARM64 | TODO | TODO |
-| Linux x86_64 | TODO | TODO |
-| Linux ARM64 | WIP | TODO |
-| MacOS x86_64 | TODO | TODO |
-| MacOS ARM64 | WIP | TODO |
-| WebAssembly | X | TODO |
-
-
-| Runtime | Version |
-| --- | --- |
-| v8 | 12.4 |
-| quickjs | 2024-01-13 |
-| godot | 4.2.2-stable |
-| libwebsockets | 4.3.3-13-g6901c32a |
+For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) and [Documents](./docs/get_started.md). 
