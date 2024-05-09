@@ -33,7 +33,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
             spt->attach_source(realm, p_path, code, module->default_class_id);
             return spt;
         }
-        JSB_LOG(Error, "no godot js class defined as default exported in module '%s'", p_path);
+        JSB_LOG(Warning, "no godot js class defined as default exported in module '%s'", p_path);
     }
 
     if (r_error) *r_error = FAILED;
@@ -47,13 +47,13 @@ void ResourceFormatLoaderGodotJSScript::get_recognized_extensions(List<String>* 
 
 bool ResourceFormatLoaderGodotJSScript::handles_type(const String& p_type) const
 {
-    return (p_type == "Script" || p_type == JSB_RES_TYPE);
+    return (p_type == "Script" || p_type == jsb_typename(GodotJSScript));
 }
 
 String ResourceFormatLoaderGodotJSScript::get_resource_type(const String& p_path) const
 {
     const String el = p_path.get_extension().to_lower();
-    return el == JSB_RES_EXT ? JSB_RES_TYPE : "";
+    return el == JSB_RES_EXT ? jsb_typename(GodotJSScript) : "";
 }
 
 void ResourceFormatLoaderGodotJSScript::get_dependencies(const String& p_path, List<String>* p_dependencies, bool p_add_types)

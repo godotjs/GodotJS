@@ -48,8 +48,8 @@ public:
     virtual void get_recognized_extensions(List<String>* p_extensions) const override;
 
 #pragma region DEFAULTLY AND PARTIALLY SUPPORTED
-    virtual String get_name() const override { return JSB_RES_TYPE; }
-    virtual String get_type() const override { return JSB_RES_TYPE; }
+    virtual String get_name() const override;
+    virtual String get_type() const override;
     virtual String get_extension() const override { return JSB_RES_EXT; }
 
     virtual bool is_using_templates() override { return true; }

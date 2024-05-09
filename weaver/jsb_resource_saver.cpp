@@ -9,7 +9,11 @@ Error ResourceFormatSaverGodotJSScript::save(const Ref<Resource>& p_resource, co
 
     Error err;
     const Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
-    ERR_FAIL_COND_V_MSG(err, err, "Cannot save " JSB_RES_TYPE " file '" + p_path + "'.");
+    if (err)
+    {
+        JSB_LOG(Error, "Cannot save %s file '%s'.", jsb_typename(GodotJSScript), p_path);
+        return err;
+    }
     file->store_string(sqscr->get_source_code());
     if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF)
     {

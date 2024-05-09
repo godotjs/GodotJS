@@ -192,3 +192,13 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
     JSB_LOG(Verbose, "get_global_class_name %s (thread: %s)", p_path, Thread::is_main_thread() ? "main" : "background");
     return {};
 }
+
+String GodotJSScriptLanguage::get_name() const
+{
+    return jsb_typename(GodotJSScript);
+}
+
+String GodotJSScriptLanguage::get_type() const
+{
+    return jsb_typename(GodotJSScript);
+}
