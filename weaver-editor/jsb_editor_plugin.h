@@ -9,11 +9,20 @@ class GodotJSEditorPlugin : public EditorPlugin
     GDCLASS(GodotJSEditorPlugin, EditorPlugin)
 
 private:
+    enum ECategoryHint : uint8_t
+    {
+        CH_JAVASCRIPT = 1 << 0,
+        CH_TYPESCRIPT = 1 << 1,
+        CH_MISC = 1 << 2,
+
+        CH_OPTIONAL = 1 << 7,
+    };
+
     struct InstallFileInfo
     {
         String source_name;
         String target_dir;
-        bool optional;
+        uint8_t hint;
     };
 
     Vector<InstallFileInfo> install_files_;

@@ -57,27 +57,29 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_control_to_bottom_panel(memnew(GodotJSREPL), TTR("GodotJS"));
 
     // config files
-    install_files_.push_back({ "tsconfig.json", "res://typescripts", false });
-    install_files_.push_back({ "package.json", "res://typescripts", false });
-    install_files_.push_back({ ".gdignore", "res://typescripts", false });
+    install_files_.push_back({ "tsconfig.json", "res://typescripts", CH_TYPESCRIPT });
+    install_files_.push_back({ "package.json", "res://typescripts", CH_TYPESCRIPT });
+    install_files_.push_back({ ".gdignore", "res://typescripts", CH_TYPESCRIPT });
 
     // type declaration files
-    install_files_.push_back({ "godot.minimal.d.ts", "res://typescripts/typings", false });
+    install_files_.push_back({ "godot.minimal.d.ts", "res://typescripts/typings", CH_TYPESCRIPT });
 
     // ts source files
-    install_files_.push_back({ "jsb.core.ts", "res://typescripts/src/jsb", false });
-    install_files_.push_back({ "jsb.editor.codegen.ts", "res://typescripts/src/jsb", false });
-    install_files_.push_back({ "jsb.editor.main.ts", "res://typescripts/src/jsb", false });
+    install_files_.push_back({ "jsb.core.ts", "res://typescripts/src/jsb", CH_TYPESCRIPT });
+    install_files_.push_back({ "jsb.editor.codegen.ts", "res://typescripts/src/jsb", CH_TYPESCRIPT });
+    install_files_.push_back({ "jsb.editor.main.ts", "res://typescripts/src/jsb", CH_TYPESCRIPT });
 
     // files which could be generated from ts source with tsc by the user
-    install_files_.push_back({ "jsb.core.js", "res://javascripts/jsb", false });
-    install_files_.push_back({ "jsb.editor.codegen.js", "res://javascripts/jsb", false });
-    install_files_.push_back({ "jsb.editor.main.js", "res://javascripts/jsb", false });
+    install_files_.push_back({ "jsb.core.js.map", "res://javascripts/jsb", CH_TYPESCRIPT | CH_OPTIONAL });
+    install_files_.push_back({ "jsb.editor.codegen.js.map", "res://javascripts/jsb", CH_TYPESCRIPT | CH_OPTIONAL });
+    install_files_.push_back({ "jsb.editor.main.js.map", "res://javascripts/jsb", CH_TYPESCRIPT | CH_OPTIONAL });
 
-    install_files_.push_back({ "jsb.core.js.map", "res://javascripts/jsb", true });
-    install_files_.push_back({ "jsb.editor.codegen.js.map", "res://javascripts/jsb", true });
-    install_files_.push_back({ "jsb.editor.main.js.map", "res://javascripts/jsb", true });
-    install_files_.push_back({ "filetype-js.svg", "res://javascripts/icon", true });
+    // files which could be generated from ts source with tsc by the user
+    install_files_.push_back({ "jsb.core.js", "res://javascripts/jsb", CH_JAVASCRIPT });
+    install_files_.push_back({ "jsb.editor.codegen.js", "res://javascripts/jsb", CH_JAVASCRIPT });
+    install_files_.push_back({ "jsb.editor.main.js", "res://javascripts/jsb", CH_JAVASCRIPT });
+
+    install_files_.push_back({ "filetype-js.svg", "res://javascripts/icon", CH_MISC | CH_OPTIONAL });
 }
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
@@ -115,13 +117,13 @@ void GodotJSEditorPlugin::try_install_ts_project()
 
 void GodotJSEditorPlugin::install_ts_project(const Vector<InstallFileInfo>& p_files)
 {
-    for (const InstallFileInfo info: p_files)
+    for (const InstallFileInfo& info: p_files)
     {
         const Error err = write_file(info.target_dir, info.source_name);
         if (err != OK)
         {
             JSB_LOG(Warning, "failed to write file '%s' to '%s'", info.source_name, info.target_dir);
-            if (!info.optional)
+            if ((info.hint & CH_OPTIONAL) == 0)
             {
                 return;
             }
