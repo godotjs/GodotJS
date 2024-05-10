@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "../jsb_version.h"
+
 #include "core/object/object.h"
 #include "core/string/print_string.h"
 #include "core/templates/hash_map.h"
@@ -29,6 +31,8 @@
 
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
+
+#define JSB_MODULE_NAME_STRING JSB_STRINGIFY(JSB_MODULE_NAME)
 
 #define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
