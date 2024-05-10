@@ -3,8 +3,10 @@
 #include <iterator>
 
 #include "../internal/jsb_path_util.h"
+#include "../internal/jsb_settings.h"
 #include "jsb_gdjs_script_instance.h"
 #include "jsb_gdjs_script.h"
+#include "editor/editor_settings.h"
 
 GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;
 
@@ -13,7 +15,10 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
     jsb_check(!singleton_);
     singleton_ = this;
 
-    GLOBAL_DEF(PropertyInfo(Variant::INT, "jsb/debugger/port", PROPERTY_HINT_RANGE, "0, 65536, 1"), 9229);
+    GLOBAL_DEF(jsb::internal::Settings::kRtDebuggerPort, 9229);
+#if TOOLS_ENABLED
+    EDITOR_DEF(jsb::internal::Settings::kEdDebuggerPort, 9230);
+#endif
 }
 
 GodotJSScriptLanguage::~GodotJSScriptLanguage()

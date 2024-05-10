@@ -6,6 +6,8 @@
 
 #include "../internal/jsb_path_util.h"
 #include "jsb_module_loader.h"
+#include "editor/editor_settings.h"
+#include "modules/GodotJS/internal/jsb_settings.h"
 
 namespace jsb
 {
@@ -171,7 +173,9 @@ namespace jsb
         module_loaders_.insert("godot", memnew(GodotModuleLoader));
         EnvironmentStore::get_shared().add(this);
 #if JSB_WITH_DEBUGGER
-        debugger_ = JavaScriptDebugger::create(isolate_, GLOBAL_GET("jsb/debugger/port"));
+        debugger_ = JavaScriptDebugger::create(isolate_, Engine::get_singleton()->is_editor_hint()
+            ? EDITOR_GET(internal::Settings::kEdDebuggerPort)
+            : GLOBAL_GET(internal::Settings::kRtDebuggerPort));
 #endif
     }
 
