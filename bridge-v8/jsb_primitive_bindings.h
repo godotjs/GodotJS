@@ -6,6 +6,12 @@
 #   define JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS 0
 #endif
 
+#if JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS
+#   error "NOT SUPPORTED YET"
+#endif
+
+#define JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW 0
+
 #define JSB_OPERATOR_NAME(op_code) #op_code
 
 namespace jsb
@@ -26,7 +32,7 @@ namespace jsb
 
     jsb_force_inline void construct_variant(Variant& r_value, Variant::Type p_type)
     {
-#if defined(JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW)
+#if JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW
         Callable::CallError err;
         Variant::construct(p_type, r_value, nullptr, 0, err);
 #else

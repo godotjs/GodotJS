@@ -1,11 +1,11 @@
 #ifndef GODOTJS_OBJECT_HANDLE_H
 #define GODOTJS_OBJECT_HANDLE_H
 
-#include "jsb_class_info.h"
 #include "jsb_pch.h"
 
 namespace jsb
 {
+    // use the only one field if possible, otherwise it's not straightforward in implementing the same thing with QuickJS
     enum : uint32_t
     {
         kObjectFieldPointer,

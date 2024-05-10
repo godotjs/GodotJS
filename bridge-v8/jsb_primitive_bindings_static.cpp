@@ -1,6 +1,5 @@
 #include "jsb_primitive_bindings.h"
 #if JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS
-#error NOT SUPPORTED YET
 #include "jsb_class_info.h"
 #include "jsb_transpiler.h"
 

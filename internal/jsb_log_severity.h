@@ -2,7 +2,8 @@
 #define DEF(...)
 #endif
 
-DEF(Verbose) // very trivial
+DEF(VeryVerbose) // very trivial (omitted by default even if DEV_ENABLED)
+DEF(Verbose)     // trivial
 
 DEF(Debug)   // not important
 DEF(Info)    // general level
@@ -11,3 +12,4 @@ DEF(Trace)   // 'console.trace'
 DEF(Warning) //
 DEF(Error)   // unexpected but not critical
 DEF(Assert)  // 'console.assert'
+DEF(Fatal)   // critial errors

@@ -30,7 +30,7 @@ namespace jsb
     public:
         jsb_force_inline ~JavaScriptModuleCache()
         {
-            for (KeyValue<StringName, JavaScriptModule*>& it : module_cache_)
+            for (const KeyValue<StringName, JavaScriptModule*>& it : module_cache_)
             {
                 memdelete(it.value);
             }
