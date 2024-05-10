@@ -44,12 +44,6 @@ namespace jsb
             return v8::Number::New(isolate, p_val);
         }
 
-        static bool can_convert_strict(const v8::Local<v8::Value>& p_val, Variant::Type p_type)
-        {
-            //TODO guess and check
-            return true;
-        }
-
         /**
          * Convert a v8 utf-16 string to a godot String
          * @note crash if failed

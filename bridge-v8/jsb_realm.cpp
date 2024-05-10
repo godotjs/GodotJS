@@ -1011,8 +1011,6 @@ namespace jsb
         return false;
     }
 
-    //TODO not fully implemented
-    // translate js val into gd variant without any type hint
     bool Realm::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant& r_cvar)
     {
         if (p_jval.IsEmpty() || p_jval->IsNullOrUndefined())
@@ -1091,6 +1089,96 @@ namespace jsb
         return false;
     }
 
+    bool Realm::can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type)
+    {
+        switch (p_type)
+        {
+        case Variant::BOOL: { return p_val->IsBoolean(); }
+        case Variant::FLOAT: // return p_val->IsNumber();
+        case Variant::INT: { return p_val->IsNumber(); } //TODO find a better way to check integer type?
+            case Variant::STRING:
+            case Variant::STRING_NAME: { return p_val->IsString(); }
+        case Variant::NODE_PATH:
+            if (p_val->IsString())
+            {
+                return true;
+            }
+            goto FALLBACK_TO_VARIANT;
+        case Variant::OBJECT:
+            {
+                if (!p_val->IsObject()) return false;
+                v8::Local<v8::Object> self = p_val.As<v8::Object>();
+                if (self->InternalFieldCount() != kObjectFieldCount) return false;
+                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                    !class_info || class_info->type != NativeClassType::GodotObject)
+                {
+                    return false;
+                }
+                return true;
+            }
+        case Variant::VECTOR2:
+        case Variant::VECTOR2I:
+        case Variant::RECT2:
+        case Variant::RECT2I:
+        case Variant::VECTOR3:
+        case Variant::VECTOR3I:
+        case Variant::TRANSFORM2D:
+        case Variant::VECTOR4:
+        case Variant::VECTOR4I:
+        case Variant::PLANE:
+        case Variant::QUATERNION:
+        case Variant::AABB:
+        case Variant::BASIS:
+        case Variant::TRANSFORM3D:
+        case Variant::PROJECTION:
+
+        // misc types
+        case Variant::COLOR:
+        case Variant::RID:
+        case Variant::CALLABLE:
+        case Variant::SIGNAL:
+        case Variant::DICTIONARY:
+        case Variant::ARRAY:
+
+        // typed arrays
+        case Variant::PACKED_BYTE_ARRAY:
+        case Variant::PACKED_INT32_ARRAY:
+        case Variant::PACKED_INT64_ARRAY:
+        case Variant::PACKED_FLOAT32_ARRAY:
+        case Variant::PACKED_FLOAT64_ARRAY:
+        case Variant::PACKED_STRING_ARRAY:
+        case Variant::PACKED_VECTOR2_ARRAY:
+        case Variant::PACKED_VECTOR3_ARRAY:
+        case Variant::PACKED_COLOR_ARRAY:
+            {
+                FALLBACK_TO_VARIANT:
+                if (!p_val->IsObject())
+                {
+                    return false;
+                }
+                v8::Local<v8::Object> self = p_val.As<v8::Object>();
+                if (self->InternalFieldCount() != kObjectFieldCount)
+                {
+                    return false;
+                }
+                void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+                if (!pointer)
+                {
+                    return Variant::can_convert_strict(Variant::NIL, p_type);
+                }
+                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                    !class_info || class_info->type != NativeClassType::GodotPrimitive)
+                {
+                    return false;
+                }
+                const Variant* target = (const Variant*) pointer;
+                return Variant::can_convert_strict(target->get_type(), p_type);
+            }
+        default: return false;
+        }
+    }
+
     // translate js val into gd variant with an expected type
     bool Realm::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar)
     {
@@ -1160,7 +1248,11 @@ namespace jsb
                 }
 
                 void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                jsb_check(Environment::wrap(isolate)->check_object(pointer));
+                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                    !class_info || class_info->type != NativeClassType::GodotObject)
+                {
+                    return false;
+                }
                 r_cvar = (Object*) pointer;
                 return true;
             }
@@ -1215,12 +1307,8 @@ namespace jsb
                 //TODO check the class to make it safe to cast (space cheaper?)
                 //TODO or, add one more InternalField to ensure it (time cheaper?)
                 void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
-                const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
-                if (!class_info)
-                {
-                    return false;
-                }
-                if (class_info->type != NativeClassType::GodotPrimitive)
+                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                    !class_info || class_info->type != NativeClassType::GodotPrimitive)
                 {
                     return false;
                 }

@@ -178,7 +178,7 @@ namespace jsb
                 for (int argument_index = 0; argument_index < argc; ++argument_index)
                 {
                     const Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, argument_index);
-                    if (!V8Helper::can_convert_strict(info[argument_index], argument_type))
+                    if (!Realm::can_convert_strict(isolate, context, info[argument_index], argument_type))
                     {
                         argument_type_match = false;
                         break;
