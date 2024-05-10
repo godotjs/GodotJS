@@ -17,8 +17,12 @@
 #   define JSB_WITH_VARIANT_POOL 1
 #endif
 
+#ifndef JSB_DEBUG
+#   define JSB_DEBUG DEV_ENABLED
+#endif
+
 #ifndef JSB_MIN_LOG_LEVEL
-#   if DEV_ENABLED
+#   if JSB_DEBUG
 #       define JSB_MIN_LOG_LEVEL Verbose
 #   else
 #       define JSB_MIN_LOG_LEVEL Warning
@@ -53,7 +57,7 @@
 
 #define JSB_LOG(Severity, Format, ...) JSB_LOG_IMPL(jsb, Severity, Format, ##__VA_ARGS__)
 
-#if DEV_ENABLED
+#if JSB_DEBUG
 #   define jsb_check(Condition) CRASH_COND(!(Condition))
 #   define jsb_checkf(Condition, Format, ...) CRASH_COND_MSG(!(Condition), vformat(Format, ##__VA_ARGS__))
 #   define jsb_ensure(Condition) CRASH_COND(!(Condition))

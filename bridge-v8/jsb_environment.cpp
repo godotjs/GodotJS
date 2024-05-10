@@ -17,7 +17,7 @@ namespace jsb
 
         GlobalInitialize()
         {
-#if DEV_ENABLED
+#if JSB_DEBUG
             constexpr char args[] = "--expose-gc";
             v8::V8::SetFlagsFromString(args, std::size(args) - 1);
 #endif
@@ -266,7 +266,7 @@ namespace jsb
 
     void Environment::gc()
     {
-#if DEV_ENABLED
+#if JSB_DEBUG
         isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
 #else
         isolate_->LowMemoryNotification();

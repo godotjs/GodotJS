@@ -76,7 +76,7 @@ namespace jsb
 
         // update `exports`, because its value may be covered during the execution process of the elevator script.
         v8::Local<v8::Value> updated_exports = jmodule->Get(context, v8::String::NewFromUtf8Literal(isolate, "exports")).ToLocalChecked();
-#if DEV_ENABLED
+#if JSB_DEBUG
         if (updated_exports != jexports) JSB_LOG(Warning, "`exports` is covered in module");
 #endif
         p_module.exports.Reset(isolate, updated_exports);

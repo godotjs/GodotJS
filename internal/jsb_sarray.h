@@ -11,7 +11,7 @@
 #endif
 
 #ifndef JSB_SARRAY_DEBUG
-#define JSB_SARRAY_DEBUG DEV_ENABLED
+#define JSB_SARRAY_DEBUG JSB_DEBUG
 #endif
 
 namespace jsb::internal
@@ -32,6 +32,7 @@ namespace jsb::internal
 			int previous;
 			RevisionType revision;
 			T value;
+		    
 #if JSB_SARRAY_DEBUG
 		    bool has_value_;
 		    jsb_force_inline void reset_value() { has_value_ = false; }

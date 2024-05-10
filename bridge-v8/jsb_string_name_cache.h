@@ -61,7 +61,7 @@ namespace jsb
             {
                 const StringNameID id = get_string_id(name);
                 Slot& slot = values_[id];
-#if DEV_ENABLED
+#if JSB_DEBUG
                 if (slot.ref_ && slot.ref_ != TStrongRef(isolate, p_value))
                 {
                     JSB_LOG(Warning, "replacing existed string name cache %s", name);

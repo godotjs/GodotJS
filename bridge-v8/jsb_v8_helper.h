@@ -9,7 +9,7 @@ namespace jsb
         template<typename T>
         jsb_force_inline static int32_t jsb_downscale(int64_t p_val, const T& p_msg)
         {
-#if DEV_ENABLED
+#if JSB_DEBUG
             if (p_val != (int64_t) (int32_t) p_val)
             {
                 JSB_LOG(Warning, "inconsistent int64_t conversion: %s", p_msg);
@@ -20,7 +20,7 @@ namespace jsb
 
         jsb_force_inline static int32_t jsb_downscale(int64_t p_val)
         {
-#if DEV_ENABLED
+#if JSB_DEBUG
             if (p_val != (int64_t) (int32_t) p_val)
             {
                 JSB_LOG(Warning, "inconsistent int64_t conversion");

@@ -2,7 +2,7 @@
 #define DEF(...)
 #endif
 
-DEF(VeryVerbose) // very trivial (omitted by default even if DEV_ENABLED)
+DEF(VeryVerbose) // very trivial (omitted by default even if JSB_DEBUG is on)
 DEF(Verbose)     // trivial
 
 DEF(Debug)   // not important
