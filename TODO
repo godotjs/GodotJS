@@ -1,23 +1,25 @@
 
 FEATS:
-    ✔ lang: signal decalaration in scripts @done(24-04-23 18:33)
     ✔ editor: install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
-    ✔ module: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
-    ☐ source-map: configurable in project settings
-    ☐ binding: handle default argument values
-    ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)
     ✔ editor: confirm to overwrite if files exist when installing TS project presets @done(24-04-23 10:55)
+    ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)
     ✔ core: Variant pool (no threading since environment scoped) @done(24-04-21 21:53)
-    ☐ cpp: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
+    ☐ core: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ REPL: auto-complete when input text changed
     ☐ REPL: object details (as JSON?)
     ☐ REPL: completely re-implement the bottom panel in typescript if possible
+    ☐ scons: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
+    ☐ binding: handle default argument values (such as `MethodBind.default_arguments` in `_godot_object_method`)
+    ✔ binding: implement `can_convert_strict` @done(24-05-10 15:11)
+    ☐ lang: add `preload` support (behave like in GDScript)
+    ✔ lang: signal decalaration in scripts @done(24-04-23 18:33)
+    ✔ lang: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
     ✔ lang: gd exported property in scripts @done(24-04-27 20:58)
     ☐ lang: default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) 
     ☐ lang: onready gd var in scripts
     ✔ lang: NodePath support @done(24-04-27 20:58)
     ✔ lang: StringName support (treated as javascript string) @done(24-04-27 20:59)
-    ☐ binding: add `preload` support (behave like in GDScript)
+    ☐ source-map: configurable in project settings
 
 ISSUES:
     ☐ editor: unexpected reload prompt

@@ -1,7 +1,8 @@
 
-TypScript/JavaScript for Godot with V8
+TypScript/JavaScript for Godot with V8.
 
-> **NOTE** This project is still in the very early stage of development.
+> [!NOTE]
+> This project is still in the very early stage of development.
 
 ## Features
 * [x] Support on-demand binding
@@ -26,6 +27,33 @@ cd YourGodotEngineSource/modules
 git lfs clone https://github.com/ialex32x/GodotJS.git
 ```
 
-Compile and launch `Godot Editor`.
+Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
-For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) and [Documents](./docs/get_started.md). 
+For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git). 
+
+### Scripting
+* [GodotJS Scripts](./docs/godotjs_scripts.md)
+* [Godot Primitive Types](./docs/godot_primitive_types.md)
+
+### Utilities
+* [REPL Support](./docs/repl.md)
+* [Debugger](./docs/debugger.md)
+
+### Advanced
+* [Build V8](./docs/build_v8.md)
+* [Dependencies](./docs/deps.md)
+* [Compile Options](./docs/compile_options.md)
+
+## Current State
+
+| Platform | V8 | QuickJS |
+| --- | --- | --- |
+| Windows x86_64 | WIP | TODO |
+| Windows x86_32 | UNPLANNED | UNPLANNED |
+| UWP | UNPLANNED | UNPLANNED |
+| Windows ARM64 | TODO | TODO |
+| Linux x86_64 | TODO | TODO |
+| Linux ARM64 | WIP | TODO |
+| MacOS x86_64 | TODO | TODO |
+| MacOS ARM64 | WIP | TODO |
+| WebAssembly | X | TODO |

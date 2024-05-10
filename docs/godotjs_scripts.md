@@ -1,15 +1,15 @@
 
 # GodotJS Scripts
-A javascript class can extend a Godot Object class (like GDScript):
+A javascript class can extend a Godot Object class:
 
 > This example is written in TypeScript.
 
 ```ts
 import { Node, Signal } from "godot";
-import { signal } from "./jsb/jsb.core";
+import { signal_ } from "./jsb/jsb.core";
 
 export default class MyJSNode extends Node {
-    @signal
+    @signal_()
     test!: Signal;
 
     constructor() {
@@ -32,15 +32,18 @@ export default class MyJSNode extends Node {
 }
 ```
 
-Attach the compiled file to a Node:
+> [!NOTE]
+> The class must be exported as `default`, otherwise the script will not recognized as Godot class extension.
+
+Compile the typescript source into javascript, and attach the compiled script to a Node:
 
 ![attach a script](./assets/attach_script.png)
 
 ## Exported Variables
-TODO
+WRITE SOMETHING HERE
 
 ## Signals
-TODO
+WRITE SOMETHING HERE
 
 ## Reloading
-TODO
+WRITE SOMETHING HERE
