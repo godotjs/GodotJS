@@ -31,6 +31,7 @@ namespace jsb
             ClassId,
             ClassSignals,    // array of all @signal annotations
             ClassProperties, // array of all @export annotations
+            ClassImplicitReadyFunc, // array of all @onready annotations
             kNum,
         };
     }

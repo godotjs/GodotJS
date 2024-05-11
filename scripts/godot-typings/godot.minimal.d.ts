@@ -27,8 +27,11 @@ declare namespace jsb {
     }
 
     namespace internal {
+        type OnReadyEvaluatorFunc = (self: any) => any;
+
         function add_script_signal(target: any, name: string): void;
         function add_script_property(target: any, details: ScriptPropertyInfo): void;
+        function add_script_ready(target: any, details: { name: string, evaluator: string | OnReadyEvaluatorFunc }): void;
     }
 
     enum VariantType {

@@ -15,10 +15,13 @@ export function export_(type: jsb.VariantType, details?: { class_?: Function, hi
     }
 }
 
-type EvaluatorFunc = (self: any) => any;
-
-export function onready_(evaluator: string | EvaluatorFunc) {
+/**
+ * auto initialized on ready (before _ready called)
+ * @param evaluator for now, only string is accepted
+ */
+export function onready_(evaluator: string | jsb.internal.OnReadyEvaluatorFunc) {
     return function (target: any, key: string) {
-        //TODO
+        let ebd = { name: key, evaluator: evaluator };
+        jsb.internal.add_script_ready(target, ebd);
     }
 }

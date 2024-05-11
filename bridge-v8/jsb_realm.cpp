@@ -11,6 +11,7 @@
 
 //TODO
 #include "../weaver/jsb_callable_custom.h"
+#include "scene/main/node.h"
 
 namespace jsb
 {
@@ -22,6 +23,16 @@ namespace jsb
         if (method_it != p_class_info.virtual_methods_map.end()) return method_it->value;
         jsb_check(p_class_info.inherits_ptr);
         return get_method_info_recursively(*p_class_info.inherits_ptr, method_name);
+    }
+
+    static bool is_subclass_of(const StringName& p_class_name, const StringName& p_expected_class_name)
+    {
+        if ((const void*) p_class_name)
+        {
+            if (p_class_name == p_expected_class_name) return true;
+            return is_subclass_of(ClassDB::get_parent_class(p_class_name), p_expected_class_name);
+        }
+        return false;
     }
 
     static void _generate_stacktrace(v8::Isolate* isolate, StringBuilder& sb)
@@ -599,6 +610,7 @@ namespace jsb
                 jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "internal"), internal_obj).Check();
                 internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
                 internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
+                internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
             }
 
             {
@@ -1914,11 +1926,72 @@ namespace jsb
     {
         environment_->check_internal_state();
         jsb_check(p_object_id.is_valid());
-        ObjectHandle& handle = environment_->objects_.get_value(p_object_id);
-        GodotJSClassInfo& js_class_info = environment_->get_gdjs_class(p_gdjs_class_id);
+        // GodotJSClassInfo& js_class_info = environment_->get_gdjs_class(p_gdjs_class_id);
 
+        v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = this->unwrap();
+        v8::Context::Scope context_scope(context);
+        v8::Local<v8::Object> self = environment_->objects_.get_value(p_object_id).ref_.Get(isolate);
+
+        Variant unpacked;
+        if (!js_to_gd_var(isolate, context, self, Variant::OBJECT, unpacked) || unpacked.is_null())
+        {
+            JSB_LOG(Error, "failed to access 'this'");
+            return;
+        }
+
+        jsb_check(is_subclass_of(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, SNAME("Node")));
         // handle all @onready properties
-        // ...
+        v8::Local<v8::Value> val_test;
+        if (self->Get(context, environment_->get_symbol(Symbols::ClassImplicitReadyFunc)).ToLocal(&val_test) && val_test->IsArray())
+        {
+            v8::Local<v8::Array> collection = val_test.As<v8::Array>();
+            const uint32_t len = collection->Length();
+            const Node* node = (Node*)(Object*) unpacked;
+
+            for (uint32_t index = 0; index < len; ++index)
+            {
+                v8::Local<v8::Object> element = collection->Get(context, index).ToLocalChecked().As<v8::Object>();
+                v8::Local<v8::String> element_name = element->Get(context, environment_->get_string_name_cache().get_string_value(isolate, SNAME("name"))).ToLocalChecked().As<v8::String>();
+                v8::Local<v8::Value> element_value = element->Get(context, environment_->get_string_name_cache().get_string_value(isolate, SNAME("evaluator"))).ToLocalChecked();
+
+                if (element_value->IsString())
+                {
+                    const String node_path_str = V8Helper::to_string(isolate, element_value);
+                    Node* child_node = node->get_node(node_path_str);
+                    if (!child_node)
+                    {
+                        self->Set(context, element_name, v8::Null(isolate));
+                        return;
+                    }
+                    v8::Local<v8::Object> child_object;
+                    if (!gd_obj_to_js(isolate, context, child_node, child_object))
+                    {
+                        JSB_LOG(Error, "failed to evaluate onready value for %s", node_path_str);
+                        return;
+                    }
+                    self->Set(context, element_name, child_object);
+                }
+                else if (element_value->IsFunction())
+                {
+                    jsb_not_implemented(true, "function evaluator not implemented yet");
+                    v8::Local<v8::Value> argv[] = { self };
+                    v8::TryCatch try_catch_run(isolate);
+                    v8::MaybeLocal<v8::Value> result = element_value.As<v8::Function>()->Call(context, self, std::size(argv), argv);
+                    if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+                    {
+                        JSB_LOG(Warning, "something wrong when evaluating onready '%s'\n%s", V8Helper::to_string(isolate, element_name), (String) exception_info);
+                        return;
+                    }
+                    if (!result.IsEmpty())
+                    {
+                        self->Set(context, element_name, result.ToLocalChecked());
+                    }
+                }
+            }
+        }
     }
 
     Variant Realm::call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
@@ -1957,10 +2030,47 @@ namespace jsb
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
     }
 
+    // function add_script_property(target: any, name: string,  evaluator: string | Function): void;
+    void Realm::_add_script_ready(const v8::FunctionCallbackInfo<v8::Value> &info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        if (info.Length() != 2 || !info[0]->IsObject() || !info[1]->IsObject())
+        {
+            jsb_throw(isolate, "bad param");
+            return;
+        }
+        v8::Local<v8::Object> target = info[0].As<v8::Object>();
+        v8::Local<v8::Object> evaluator = info[1].As<v8::Object>();
+
+        Environment* environment = Environment::wrap(isolate);
+        v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassImplicitReadyFunc);
+        v8::Local<v8::Array> collection;
+        v8::Local<v8::Value> val_test;
+        uint32_t index;
+        if (v8::MaybeLocal<v8::Value> maybe = target->Get(context, symbol); !maybe.ToLocal(&val_test) || val_test->IsUndefined())
+        {
+            index = 0;
+            collection = v8::Array::New(isolate);
+            target->Set(context, symbol, collection);
+        }
+        else
+        {
+            jsb_check(val_test->IsArray());
+            collection = val_test.As<v8::Array>();
+            index = collection->Length();
+        }
+
+        collection->Set(context, index, evaluator);
+        JSB_LOG(Verbose, "script %s define property(onready) %s",
+            V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
+            V8Helper::to_string(isolate, evaluator->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
+    }
+
     // function add_script_property(target: any, name: string, details: ScriptPropertyInfo): void;
     void Realm::_add_script_property(const v8::FunctionCallbackInfo<v8::Value> &info)
     {
-
         v8::Isolate* isolate = info.GetIsolate();
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();

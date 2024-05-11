@@ -107,8 +107,18 @@ namespace jsb
         //TODO temp, js function (cached in `function_bank_`)
         ObjectCacheID retain_function(NativeObjectID p_object_id, const StringName& p_method);
         bool release_function(ObjectCacheID p_func_id);
+
+        /**
+         * This method will not throw any exception.
+         */
         Variant call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
+
+        /**
+         * Setup `onready` fields (this method must be called before `_ready`).
+         * This method will not throw any exception.
+         */
         void call_prelude(GodotJSClassID p_gdjs_class_id, NativeObjectID p_object_id);
+
         bool get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val);
 
@@ -218,6 +228,7 @@ namespace jsb
         static void _godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _add_script_property(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _add_script_ready(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         void _register_builtins(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self);
 

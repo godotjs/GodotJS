@@ -38,9 +38,6 @@ private:
     // bool get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const;
     Variant call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
 
-    /**
-     * Setup `onready/export` fields (this method must be called before `_ready`)
-     */
     void call_prelude(jsb::NativeObjectID p_object_id);
 
 public:
