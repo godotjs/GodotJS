@@ -181,7 +181,7 @@ namespace jsb
     {
         while (!gdjs_classes_.is_empty())
         {
-            GodotJSClassID id = gdjs_classes_.get_first_index();
+            const GodotJSClassID id = gdjs_classes_.get_first_index();
             // JavaScriptClassInfo& class_info = gdjs_classes_[id];
             // class_info.xxx.Reset();
             gdjs_classes_.remove_at(id);
@@ -215,16 +215,19 @@ namespace jsb
         while (!objects_.is_empty())
         {
             const internal::Index64 first_index = objects_.get_first_index();
-            ObjectHandle& handle = objects_.get_value(first_index);
-            const bool is_persistent = persistent_objects_.has(handle.pointer);
-            const NativeClassInfo& class_info = native_classes_.get_value(handle.class_id);
+            {
+                jsb_address_guard(objects_, address_guard);
+                ObjectHandle& handle = objects_.get_value(first_index);
+                const bool is_persistent = persistent_objects_.has(handle.pointer);
+                const NativeClassInfo& class_info = native_classes_.get_value(handle.class_id);
 
-            JSB_LOG(Verbose, "deleting %s(%d) %s", (String) class_info.name, (uint32_t) handle.class_id, uitos((uintptr_t) handle.pointer));
-            class_info.finalizer(this, handle.pointer, is_persistent);
-            handle.ref_.Reset();
-            objects_index_.erase(handle.pointer);
+                JSB_LOG(Verbose, "deleting %s(%d) %s", (String) class_info.name, (uint32_t) handle.class_id, uitos((uintptr_t) handle.pointer));
+                class_info.finalizer(this, handle.pointer, is_persistent);
+                handle.ref_.Reset();
+                objects_index_.erase(handle.pointer);
+                if (is_persistent) persistent_objects_.erase(handle.pointer);
+            }
             objects_.remove_at(first_index);
-            if (is_persistent) persistent_objects_.erase(handle.pointer);
         }
 
         string_name_cache_.clear();

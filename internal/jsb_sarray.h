@@ -14,6 +14,10 @@
 #define JSB_SARRAY_DEBUG JSB_DEBUG
 #endif
 
+#if JSB_DEBUG
+#   define jsb_address_guard(list, scope_name) const auto scope_name = (list).address_scope();
+#endif
+
 namespace jsb::internal
 {
     //NOTE some types (like std::function) are not supported because copy/move on resizing is not implemented for now.
@@ -32,7 +36,7 @@ namespace jsb::internal
 			int previous;
 			RevisionType revision;
 			T value;
-		    
+
 #if JSB_SARRAY_DEBUG
 		    bool has_value_;
 		    jsb_force_inline void reset_value() { has_value_ = false; }
