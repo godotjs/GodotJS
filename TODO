@@ -11,11 +11,12 @@ FEATS:
     ☐ scons: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
     ☐ binding: handle default argument values (such as `MethodBind.default_arguments` in `_godot_object_method`)
     ✔ binding: implement `can_convert_strict` @done(24-05-10 15:11)
+    ☐ binding: move `VariantInfoCollection` instance into `Environment` @started(24-05-11 10:04)
     ☐ lang: add `preload` support (behave like in GDScript)
     ✔ lang: signal decalaration in scripts @done(24-04-23 18:33)
     ✔ lang: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
     ✔ lang: gd exported property in scripts @done(24-04-27 20:58)
-    ☐ lang: default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) 
+    ☐ lang: default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11 10:06)
     ☐ lang: onready gd var in scripts
     ✔ lang: NodePath support @done(24-04-27 20:58)
     ✔ lang: StringName support (treated as javascript string) @done(24-04-27 20:59)

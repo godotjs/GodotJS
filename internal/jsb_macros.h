@@ -6,6 +6,7 @@
 #include "../jsb_version.h"
 
 #include "core/object/object.h"
+#include "core/variant/variant_utility.h"
 #include "core/string/print_string.h"
 #include "core/templates/hash_map.h"
 #include "core/io/file_access.h"
@@ -27,6 +28,10 @@
 #   else
 #       define JSB_MIN_LOG_LEVEL Warning
 #   endif
+#endif
+
+#ifndef JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW
+#   define JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW 0
 #endif
 
 #ifndef JSB_LOG_WITH_SOURCE

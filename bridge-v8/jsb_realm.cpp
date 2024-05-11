@@ -532,6 +532,7 @@ namespace jsb
         }
 
         // properties (@export_)
+        // detect all exported properties (which annotated with @export_)
         {
             v8::Local<v8::Value> val_test;
             if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
@@ -545,9 +546,10 @@ namespace jsb
                     jsb_check(element->IsObject());
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     GodotJSPropertyInfo property_info;
-                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, V8Helper::to_string(isolate, "name")).ToLocalChecked()); // string
-                    property_info.type = (Variant::Type) obj->Get(context, V8Helper::to_string(isolate, "type")).ToLocalChecked()->Int32Value(context).ToChecked(); // int
-                    //TODO property details
+                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->get_string_name_cache().get_string_value(isolate, SNAME("name"))).ToLocalChecked()); // string
+                    property_info.type = (Variant::Type) obj->Get(context, environment->get_string_name_cache().get_string_value(isolate, SNAME("type"))).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    //TODO save property default value
+                    // property_info.default_value = ...;
                     p_class_info.properties.insert(property_info.name, property_info);
                     JSB_LOG(Verbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
                 }
@@ -1908,9 +1910,20 @@ namespace jsb
         return true;
     }
 
+    void Realm::call_prelude(GodotJSClassID p_gdjs_class_id, NativeObjectID p_object_id)
+    {
+        environment_->check_internal_state();
+        jsb_check(p_object_id.is_valid());
+        ObjectHandle& handle = environment_->objects_.get_value(p_object_id);
+        GodotJSClassInfo& js_class_info = environment_->get_gdjs_class(p_gdjs_class_id);
+
+        // handle all @onready properties
+        // ...
+    }
+
     Variant Realm::call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
     {
-        jsb_checkf(Thread::get_caller_id() == environment_->thread_id_, "multi-threaded call not supported yet");
+        environment_->check_internal_state();
         if (!function_bank_.is_valid_index(p_func_id))
         {
             r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;

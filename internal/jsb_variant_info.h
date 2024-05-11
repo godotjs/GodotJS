@@ -34,11 +34,7 @@ namespace jsb::internal
             jsb_check(p_index >= 0 && p_index < methods.size());
             return methods[p_index];
         }
-
-        static VariantInfoCollection global;
     };
-
-    VariantInfoCollection VariantInfoCollection::global;
 }
 #endif
 

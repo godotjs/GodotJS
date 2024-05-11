@@ -1,5 +1,6 @@
 #include "jsb_gdjs_script_instance.h"
 #include "jsb_gdjs_lang.h"
+#include "scene/scene_string_names.h"
 
 bool GodotJSScriptInstance::set(const StringName& p_name, const Variant& p_value)
 {
@@ -62,6 +63,10 @@ bool GodotJSScriptInstance::has_method(const StringName& p_method) const { retur
 Variant GodotJSScriptInstance::callp(const StringName& p_method, const Variant** p_args, int p_argcount,
                                      Callable::CallError& r_error)
 {
+    if (p_method == SceneStringNames::get_singleton()->_ready)
+    {
+        script_->call_prelude(object_id_);
+    }
     return script_->call_script_method(object_id_, p_method, p_args, p_argcount, r_error);
 }
 

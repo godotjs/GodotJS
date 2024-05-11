@@ -38,6 +38,11 @@ private:
     // bool get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const;
     Variant call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
 
+    /**
+     * Setup `onready/export` fields (this method must be called before `_ready`)
+     */
+    void call_prelude(jsb::NativeObjectID p_object_id);
+
 public:
     GodotJSScript();
     virtual ~GodotJSScript() override;
@@ -84,6 +89,12 @@ public:
     virtual bool has_script_signal(const StringName& p_signal) const override;
     virtual void get_script_signal_list(List<MethodInfo>* r_signals) const override;
 
+    virtual bool is_placeholder_fallback_enabled() const override { return true; }
+
+    /**
+     * `get_property_default_value` get called by `PlaceHolderScriptInstance` only if `is_placeholder_fallback_enabled` returns true.
+     * @seealso core/object/script_language.cpp => bool PlaceHolderScriptInstance::get(const StringName &p_name, Variant &r_ret) const
+     */
     virtual bool get_property_default_value(const StringName& p_property, Variant& r_value) const override;
 
     virtual void update_exports() override;
@@ -100,8 +111,6 @@ public:
     virtual void get_members(HashSet<StringName>* p_constants) override
     {
     }
-
-    virtual bool is_placeholder_fallback_enabled() const override { return false; }
 
     virtual const Variant get_rpc_config() const override;
 #pragma endregion // Script Interface Implementation

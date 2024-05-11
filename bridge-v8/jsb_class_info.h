@@ -67,6 +67,8 @@ namespace jsb
         PropertyHint hint = PROPERTY_HINT_NONE;
         String hint_string;
         uint32_t usage = PROPERTY_USAGE_DEFAULT;
+
+        // Variant default_value;
     };
 
     // exchanging internal javascript class (object) information with `JavaScript` class.

@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include "jsb_value_move.h"
+#include "modules/GodotJS/internal/jsb_variant_info.h"
 
 namespace jsb
 {
@@ -53,11 +54,15 @@ namespace jsb
         GodotPrimitiveImport godot_primitive_index_[Variant::VARIANT_MAX] = {};
         HashMap<StringName, Variant::Type> godot_primitive_map_;
 
+        internal::VariantInfoCollection variant_info_collection_;
+
     public:
         Realm(const std::shared_ptr<class Environment>& runtime);
         ~Realm();
 
         jsb_force_inline RealmID id() const { return id_; }
+
+        jsb_force_inline internal::VariantInfoCollection& get_variant_info_collection() { return variant_info_collection_; }
 
         const std::shared_ptr<Environment>& get_environment() const { return environment_; }
 
@@ -103,6 +108,7 @@ namespace jsb
         ObjectCacheID retain_function(NativeObjectID p_object_id, const StringName& p_method);
         bool release_function(ObjectCacheID p_func_id);
         Variant call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
+        void call_prelude(GodotJSClassID p_gdjs_class_id, NativeObjectID p_object_id);
         bool get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val);
 

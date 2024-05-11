@@ -5,9 +5,10 @@
 #include "jsb_transpiler.h"
 #include "jsb_v8_helper.h"
 #include "../internal/jsb_variant_info.h"
+#include "../internal/jsb_variant_util.h"
 
 #define RegisterPrimitiveType(TypeName) register_primitive_binding(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
-#define GlobalVariantInfoCollection ::jsb::internal::VariantInfoCollection::global
+#define GetVariantInfoCollection(p_realm) (p_realm)->get_variant_info_collection() // ::jsb::internal::VariantInfoCollection::global
 
 namespace jsb
 {
@@ -41,7 +42,7 @@ namespace jsb
             }
             Variant ret;
             const Variant::Type return_type = Variant::get_operator_return_type(op, left_type, right_type);
-            construct_variant(ret, return_type);
+            internal::construct_variant(ret, return_type);
             func(&left, &right, &ret);
             if (ret.get_type() != return_type)
             {
@@ -109,21 +110,21 @@ namespace jsb
     {
         constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
 
-        jsb_force_inline static int register_getset_method(const StringName& p_name)
+        jsb_force_inline static int register_getset_method(const FBindingEnv& p_env, const StringName& p_name)
         {
-            const int collection_index = GlobalVariantInfoCollection.getsets.size();
-            GlobalVariantInfoCollection.getsets.append({
+            const int collection_index = GetVariantInfoCollection(p_env.realm).getsets.size();
+            GetVariantInfoCollection(p_env.realm).getsets.append({
                 Variant::get_member_validated_setter(TYPE, p_name),
                 Variant::get_member_validated_getter(TYPE, p_name),
                 Variant::get_member_type(TYPE, p_name)});
             return collection_index;
         }
 
-        jsb_force_inline static int register_builtin_method(const StringName& p_name)
+        jsb_force_inline static int register_builtin_method(const FBindingEnv& p_env, const StringName& p_name)
         {
-            const int collection_index = GlobalVariantInfoCollection.methods.size();
-            GlobalVariantInfoCollection.methods.append({});
-            internal::FMethodInfo& method_info = GlobalVariantInfoCollection.methods.write[collection_index];
+            const int collection_index = GetVariantInfoCollection(p_env.realm).methods.size();
+            GetVariantInfoCollection(p_env.realm).methods.append({});
+            internal::FMethodInfo& method_info = GetVariantInfoCollection(p_env.realm).methods.write[collection_index];
             method_info.name = p_name;
             method_info.return_type = Variant::get_builtin_method_return_type(TYPE, p_name);
             const int argument_count = Variant::get_builtin_method_argument_count(TYPE, p_name);
@@ -248,10 +249,10 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const internal::FGetSetInfo& getset = GlobalVariantInfoCollection.get_setter(info.Data().As<v8::Int32>()->Value());
+            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
-            construct_variant(value, getset.type);
+            internal::construct_variant(value, getset.type);
 
             //NOTE the getter function will not touch the type of `Variant`, so we must set it properly before use in the above code
             getset.getter_func(p_self, &value);
@@ -271,7 +272,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const internal::FGetSetInfo& getset = GlobalVariantInfoCollection.get_setter(info.Data().As<v8::Int32>()->Value());
+            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
             if (!Realm::js_to_gd_var(isolate, context, info[0], getset.type, value))
@@ -289,7 +290,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const internal::FMethodInfo& method_info = GlobalVariantInfoCollection.get_method(info.Data().As<v8::Int32>()->Value());
+            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
 
             // prepare argv
@@ -341,7 +342,7 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FMethodInfo& method_info = GlobalVariantInfoCollection.get_method(info.Data().As<v8::Int32>()->Value());
+            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
 
             // prepare argv
@@ -404,7 +405,7 @@ namespace jsb
                 Variant::get_member_list(TYPE, &members);
                 for (const StringName& name : members)
                 {
-                    const v8::Local<v8::Integer> index = v8::Int32::New(p_env.isolate, register_getset_method(name));
+                    const v8::Local<v8::Integer> index = v8::Int32::New(p_env.isolate, register_getset_method(p_env, name));
                     prototype_template->SetAccessorProperty(V8Helper::to_string(p_env.isolate, name),
                         v8::FunctionTemplate::New(p_env.isolate, _getter, index),
                         v8::FunctionTemplate::New(p_env.isolate, _setter, index));
@@ -417,7 +418,7 @@ namespace jsb
                 Variant::get_builtin_method_list(TYPE, &methods);
                 for (const StringName& name : methods)
                 {
-                    const int index = register_builtin_method(name);
+                    const int index = register_builtin_method(p_env, name);
                     if (Variant::is_builtin_method_static(TYPE, name))
                     {
                         function_template->Set(V8Helper::to_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, _static_method, v8::Int32::New(p_env.isolate, index)));

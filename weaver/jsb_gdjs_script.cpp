@@ -1,6 +1,7 @@
 #include "jsb_gdjs_script.h"
 #include "jsb_gdjs_lang.h"
 #include "jsb_gdjs_script_instance.h"
+#include "../internal/jsb_variant_util.h"
 
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
@@ -195,7 +196,13 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 
 bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
-    //TODO
+    if (const auto& it = get_js_class_info().properties.find(p_property))
+    {
+        //TODO handle property_info.default_value of GodotJS script class
+        jsb::internal::construct_variant(r_value, it->value.type);
+        return true;
+    }
+    // JSB_LOG(Warning, "unknown property %s", p_property);
     return false;
 }
 
@@ -245,6 +252,12 @@ Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const
     }
     return realm_->call_function(p_object_id, func_id, p_argv, p_argc, r_error);
 }
+
+void GodotJSScript::call_prelude(jsb::NativeObjectID p_object_id)
+{
+    realm_->call_prelude(gdjs_class_id_, p_object_id);
+}
+
 //
 // bool GodotJSScript::get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const
 // {
