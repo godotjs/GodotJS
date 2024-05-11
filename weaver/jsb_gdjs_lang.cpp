@@ -14,11 +14,7 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
 {
     jsb_check(!singleton_);
     singleton_ = this;
-
-    GLOBAL_DEF(jsb::internal::Settings::kRtDebuggerPort, 9229);
-#if TOOLS_ENABLED
-    EDITOR_DEF(jsb::internal::Settings::kEdDebuggerPort, 9230);
-#endif
+    // jsb::internal::Settings::on_init();
 }
 
 GodotJSScriptLanguage::~GodotJSScriptLanguage()

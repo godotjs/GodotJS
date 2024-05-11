@@ -102,6 +102,8 @@ namespace jsb
         Environment();
         ~Environment();
 
+        void start_debugger();
+
         jsb_force_inline void check_internal_state() const { jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet"); }
 
         // replace position in the stacktrace with source map

@@ -10,9 +10,7 @@ namespace jsb::internal
     class Settings
     {
     public:
-        constexpr static const char kEdDebuggerPort[] = "jsb/editor/debugger/port";
-        constexpr static const char kRtDebuggerPort[] = "jsb/runtime/debugger/port";
-
+        static uint16_t get_debugger_port();
     };
 }
 

@@ -172,11 +172,9 @@ namespace jsb
         }
         module_loaders_.insert("godot", memnew(GodotModuleLoader));
         EnvironmentStore::get_shared().add(this);
-#if JSB_WITH_DEBUGGER
-        debugger_ = JavaScriptDebugger::create(isolate_, Engine::get_singleton()->is_editor_hint()
-            ? EDITOR_GET(internal::Settings::kEdDebuggerPort)
-            : GLOBAL_GET(internal::Settings::kRtDebuggerPort));
-#endif
+
+        //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
+        start_debugger();
     }
 
     Environment::~Environment()
@@ -426,6 +424,17 @@ namespace jsb
         return _source_map_cache.handle_source_map(p_stacktrace);
 #else
         return p_stacktrace;
+#endif
+    }
+
+    void Environment::start_debugger()
+    {
+#if JSB_WITH_DEBUGGER
+        if (debugger_)
+        {
+            return;
+        }
+        debugger_ = JavaScriptDebugger::create(isolate_, internal::Settings::get_debugger_port());
 #endif
     }
 

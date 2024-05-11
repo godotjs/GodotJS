@@ -3,6 +3,7 @@
 #include "jsb_project_preset.h"
 #include "jsb_repl.h"
 #include "../internal/jsb_path_util.h"
+#include "../internal/jsb_settings.h"
 #include "../weaver/jsb_gdjs_lang.h"
 
 #include "core/config/project_settings.h"
@@ -43,6 +44,7 @@ void GodotJSEditorPlugin::_on_menu_pressed(int p_what)
 
 GodotJSEditorPlugin::GodotJSEditorPlugin()
 {
+    // jsb::internal::Settings::on_editor_init();
     PopupMenu *menu = memnew(PopupMenu);
     add_tool_submenu_item(TTR("GodotJS"), menu);
     menu->add_item(TTR("Install TS Project"), MENU_ID_INSTALL_TS_PROJECT);
