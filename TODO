@@ -8,7 +8,7 @@ FEATS:
     ☐ REPL: auto-complete when input text changed
     ☐ REPL: object details (as JSON?)
     ☐ REPL: completely re-implement the bottom panel in typescript if possible
-    ☐ scons: generate JSB_ options in jsb.gen.h (get rid of project scope defines)
+    ✔ scons: generate JSB_ options in jsb.gen.h (get rid of project scope defines) @done(24-05-12 08:17)
     ☐ binding: handle default argument values (such as `MethodBind.default_arguments` in `_godot_object_method`)
     ✔ binding: implement `can_convert_strict` @done(24-05-10 15:11)
     ✔ binding: move `VariantInfoCollection` instance into `Environment` @started(24-05-11 10:04) @done(24-05-11 17:44) @lasted(7h40m44s)

@@ -14,30 +14,6 @@
 #include "core/os/thread.h"
 #include "core/os/os.h"
 
-#ifndef JSB_WITH_VARIANT_POOL
-#   define JSB_WITH_VARIANT_POOL 1
-#endif
-
-#ifndef JSB_DEBUG
-#   define JSB_DEBUG DEV_ENABLED
-#endif
-
-#ifndef JSB_MIN_LOG_LEVEL
-#   if JSB_DEBUG
-#       define JSB_MIN_LOG_LEVEL Verbose
-#   else
-#       define JSB_MIN_LOG_LEVEL Warning
-#   endif
-#endif
-
-#ifndef JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW
-#   define JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW 0
-#endif
-
-#ifndef JSB_LOG_WITH_SOURCE
-#   define JSB_LOG_WITH_SOURCE 1
-#endif
-
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
 

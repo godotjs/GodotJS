@@ -18,33 +18,52 @@ websocket_lib = "lws"
 print("compiling:", module_name)
 print("javascript engine:", javascript_engine)
 
-# make these PreprocessorDefinitions publicly known for the convenience of IDE coding hints
-javascript_shared_defines = [
-    "JSB_WITH_V8="+         str(1 if javascript_engine == "v8" else 0),
-    "JSB_WITH_QUICKJS="+    str(1 if javascript_engine == "quickjs" else 0),
+class CompileDefines:
+    def __init__(self, name, value, help = None):
+        self.name = name
+        self.value = value
+        self.help = help
 
-    # enable to debug with Chrome devtools with the following link by default:
-    # devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1
-    "JSB_WITH_DEBUGGER=1",
+jsb_defines = [
+    CompileDefines("JSB_WITH_V8", 1 if javascript_engine == "v8" else 0),
+    CompileDefines("JSB_WITH_QUICKJS", 1 if javascript_engine == "quickjs" else 0),
+    
+    CompileDefines("JSB_WITH_DEBUGGER", 1, [
+        "enable to debug with Chrome devtools with the following link by default:", 
+        "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1",
+    ]),
 
-    # translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)
-    "JSB_WITH_SOURCEMAP=1",
+    CompileDefines("JSB_WITH_SOURCEMAP", 1, [
+        "translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)",
+    ]),
 
-    # enable this to let all methods in `console` print with js stacktrace
-    "JSB_WITH_STACKTRACE_ALWAYS=0",
+    CompileDefines("JSB_WITH_STACKTRACE_ALWAYS", 0, [
+        "enable this to let all methods in `console` print with js stacktrace",
+    ]),
 
-    # NOTE
-    # JSB_WITH_LWS must be enabled if JSB_WITH_DEBUGGER is used.
-    # currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`
-    # `devtools` do not response the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`
-    # and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`
-    "JSB_WITH_LWS="+ str(1 if websocket_lib == "lws" else 0),
+    CompileDefines("JSB_WITH_LWS", 1 if websocket_lib == "lws" else 0, [
+        "JSB_WITH_LWS must be enabled if JSB_WITH_DEBUGGER is used.",
+        "currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`",
+        "`devtools` do not response the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`",
+        "and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`",
+    ]), 
 
-    # lower log levels are completely skipped (at compile-time)
-    "JSB_MIN_LOG_LEVEL=Verbose",
+    CompileDefines("JSB_MIN_LOG_LEVEL", "Verbose" if env["dev_build"] else "Warning", [
+        "lower log levels are completely skipped (at compile-time)",
+    ]), 
 
-    # log with [source filename, line number, function name]
-    "JSB_LOG_WITH_SOURCE=0",
+    CompileDefines("JSB_LOG_WITH_SOURCE", 0, [
+        "log with [source filename, line number, function name]", 
+    ]),
+
+    CompileDefines("JSB_WITH_VARIANT_POOL", 1, [
+        "use a pool allocator for creating variant instances"
+    ]),
+
+    CompileDefines("JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW", 0), 
+    CompileDefines("JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS", 0), 
+
+    CompileDefines("JSB_DEBUG", 1 if env["dev_build"] else 0), 
 ]
 
 # def write_file(filename, ostream: io.StringIO):
@@ -121,13 +140,23 @@ def generate_jsb_gen_header():
         output.write(f"#define jsb_initialize_module initialize_{module_name}_module\n")
         output.write(f"#define jsb_uninitialize_module uninitialize_{module_name}_module\n")
         output.write("\n")
+        first_define = True
+        for t in jsb_defines:
+            if t.help != None:
+                if not first_define:
+                    output.write("\n")
+                if isinstance(t.help, str):
+                    output.write(f"// {t.help}\n")
+                elif isinstance(t.help, list):
+                    for line in t.help:
+                        output.write(f"// {line}\n")
+            output.write(f"#define {t.name} {t.value}\n")
+            first_define = False
+        output.write("\n")
         output.write("#endif\n")
     write_file("jsb.gen.h", output)
 
 env_jsb = env_modules.Clone()
-
-env.Append(CPPDEFINES=javascript_shared_defines)
-env_jsb.Append(CPPDEFINES=javascript_shared_defines) # due to env_modules inherited from env before adding jsb preprocessors
 module_obj = []
 
 if javascript_engine == "v8":

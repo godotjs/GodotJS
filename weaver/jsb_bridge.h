@@ -1,6 +1,8 @@
 #ifndef JSB_BRIDGE_H
 #define JSB_BRIDGE_H
 
+#include "../jsb.gen.h"
+
 #if JSB_WITH_V8
 #   include "../bridge-v8/jsb_environment.h"
 #   include "../bridge-v8/jsb_realm.h"
