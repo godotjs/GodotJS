@@ -5,19 +5,18 @@ TypScript/JavaScript for Godot with V8.
 > This project is still in the very early stage of development.
 
 ## Features
-* [x] Support on-demand binding
-* [x] Essential NodeJS compatibilities (`console` , `timers` and `CommonJS` modules)
+* [x] On-demand binding
 * [x] Godot Object types binding
 * [x] Godot Primitive types binding
 * [x] Debug with Chrome devtools when using V8
-* [x] Support SourceMap
-* [x] Support REPL in Godot Editor
+* [x] SourceMap translated debug info
+* [x] REPL in Godot Editor
 * [x] Godot `ScriptLanguage` integration
-* [ ] Support hot-reload
-* [ ] Asynchronous module loading support (`import` function)
-* [ ] Multiple contexts for sandboxing script environments (not multi-threading)
-* [ ] Worker threads implementation
-* [ ] Seamlessly switch to QuickJS when targeting web
+* [x] Essential javascript builtins (`require` `timers` `console`)
+* [ ] Hot-reloading
+* [ ] Asynchronous module loading (`import` function)
+* [ ] Sandboxed scripting (not multi-threading)
+* [ ] Worker threads
 
 ## Get Started
 
@@ -36,24 +35,19 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 * [Godot Primitive Types](./docs/godot_primitive_types.md)
 
 ### Utilities
-* [REPL Support](./docs/repl.md)
+* [REPL](./docs/repl.md)
 * [Debugger](./docs/debugger.md)
 
 ### Advanced
 * [Build V8](./docs/build_v8.md)
+* QuickJS (PLANNED)
 * [Dependencies](./docs/deps.md)
 * [Compile Options](./docs/compile_options.md)
 
-## Current State
-
-| Platform | V8 | QuickJS |
-| --- | --- | --- |
-| Windows x86_64 | WIP | TODO |
-| Windows x86_32 | UNPLANNED | UNPLANNED |
-| UWP | UNPLANNED | UNPLANNED |
-| Windows ARM64 | TODO | TODO |
-| Linux x86_64 | TODO | TODO |
-| Linux ARM64 | WIP | TODO |
-| MacOS x86_64 | TODO | TODO |
-| MacOS ARM64 | WIP | TODO |
-| WebAssembly | X | TODO |
+## Supported Platforms
+- [x] Windows: x86_64 (TODO ARM64, UWP)
+- [x] MacOS: AppleSilicon
+- [ ] Android
+- [ ] iOS
+- [ ] Linux
+- [ ] WebAssembly (quickjs only)
