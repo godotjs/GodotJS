@@ -25,12 +25,13 @@ GodotJSScript::~GodotJSScript()
     }
 }
 
+// GDScript::can_instantiate()
 bool GodotJSScript::can_instantiate() const
 {
 #ifdef TOOLS_ENABLED
     return valid_ && (tool_ || ScriptServer::is_scripting_enabled());
 #else
-    return valid;
+    return valid_;
 #endif
 }
 
@@ -97,10 +98,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 
 Error GodotJSScript::reload(bool p_keep_state)
 {
-    if (!valid_)
-    {
-        return ERR_UNAVAILABLE;
-    }
+    if (!valid_) return ERR_UNAVAILABLE;
 
     //TODO discard all cached methods?
     //TODO all `Callable` objects become invalid after reloading
@@ -235,6 +233,7 @@ void GodotJSScript::attach_source(const std::shared_ptr<jsb::Realm>& p_context, 
 
 const jsb::GodotJSClassInfo& GodotJSScript::get_js_class_info() const
 {
+    jsb_checkf(gdjs_class_id_, "avoid calling this method if class_id is invalid, check prior with 'valid_'");
     return realm_->get_gdjs_class_info(gdjs_class_id_);
 }
 
@@ -273,6 +272,7 @@ void GodotJSScript::call_prelude(jsb::NativeObjectID p_object_id)
 PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_this)
 {
 #ifdef TOOLS_ENABLED
+    jsb_check(valid_);
     PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(GodotJSScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
     placeholders.insert(si);
     update_exports();
@@ -294,6 +294,7 @@ void GodotJSScript::update_exports()
 {
 #if TOOLS_ENABLED
     //TODO
+    if (!valid_) return;
     List<PropertyInfo> props;
     HashMap<StringName, Variant> values;
 

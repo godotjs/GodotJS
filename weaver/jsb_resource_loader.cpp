@@ -26,16 +26,17 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
     const jsb::JavaScriptModuleCache& module_cache = realm->get_module_cache();
     if (jsb::JavaScriptModule* module = module_cache.find(p_path))
     {
-        if (module->default_class_id)
+        Ref<GodotJSScript> spt;
+        spt.instantiate();
+        spt->attach_source(realm, p_path, code, module->default_class_id);
+        if (r_error) *r_error = OK;
+        if (!spt->is_valid())
         {
-            Ref<GodotJSScript> spt;
-            spt.instantiate();
-            spt->attach_source(realm, p_path, code, module->default_class_id);
-            return spt;
+            JSB_LOG(Warning, "generate a stub script object which does not contain a GodotJS class to avoid errors on resource loading (%s)", p_path);
         }
-        JSB_LOG(Warning, "no godot js class defined as default exported in module '%s'", p_path);
+        return spt;
     }
-
+    JSB_LOG(Error, "no such module %s", p_path);
     if (r_error) *r_error = FAILED;
     return {};
 }
