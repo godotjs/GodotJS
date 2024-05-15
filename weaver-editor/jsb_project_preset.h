@@ -6,6 +6,6 @@
 
 struct GodotJSPorjectPreset
 {
-    static const char* get_source(const String &p_filename, size_t& r_len);
+    static const char* get_source(const String& p_filename, size_t& r_len);
 };
 #endif

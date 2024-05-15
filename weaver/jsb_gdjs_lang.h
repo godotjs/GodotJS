@@ -11,6 +11,7 @@ class GodotJSScriptLanguage : public ScriptLanguage
 private:
     friend class GodotJSScript;
     friend class GodotJSScriptInstance;
+
     static GodotJSScriptLanguage* singleton_;
 
     Mutex mutex_;

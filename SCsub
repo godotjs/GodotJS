@@ -80,7 +80,7 @@ def write_file(filename, ostream):
         print(f"generate {filename}")
 
 def generate_method_code(output, methodname, indent, filenames):
-    output.write(f"const char* GodotJSPorjectPreset::{methodname}(const String &p_filename, size_t& r_len)\n")
+    output.write(f"const char* GodotJSPorjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
     output.write("{\n")
     output.write(indent+"static const char data[] = {\n")
     positions = {}

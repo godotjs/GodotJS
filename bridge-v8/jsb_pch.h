@@ -26,5 +26,6 @@
 #include "../internal/jsb_function_pointer.h"
 #include "../internal/jsb_typealias.h"
 #include "../internal/jsb_benchmark.h"
+#include "../internal/jsb_string_names.h"
 
 #endif

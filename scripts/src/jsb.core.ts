@@ -25,3 +25,9 @@ export function onready_(evaluator: string | jsb.internal.OnReadyEvaluatorFunc) 
         jsb.internal.add_script_ready(target, ebd);
     }
 }
+
+export function tool_() {
+    return function (target: any) {
+        jsb.internal.add_script_tool(target);
+    }
+}

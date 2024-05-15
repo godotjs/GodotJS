@@ -17,6 +17,7 @@ FEATS:
     ✔ lang: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
     ✔ lang: gd exported property in scripts @done(24-04-27 20:58)
     ☐ lang: default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11 10:06)
+    ✔ lang: `tool` annotated scripts @done(24-05-15)
     ✔ lang: onready gd var in scripts @done(24-05-11 17:45)
     ✔ lang: NodePath support @done(24-04-27 20:58)
     ✔ lang: StringName support (treated as javascript string) @done(24-04-27 20:59)

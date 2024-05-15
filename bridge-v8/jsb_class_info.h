@@ -71,19 +71,23 @@ namespace jsb
         // Variant default_value;
     };
 
+    namespace GodotJSClassFlags
+    {
+        enum Type : uint8_t
+        {
+            None = 0,
+
+            //TODO we have no idea about it with javascript itself. maybe we can decorate the abstract class and check here?
+            Abstract = 1 << 0,
+            Tool = 1 << 1,
+        };
+    }
+
     // exchanging internal javascript class (object) information with `JavaScript` class.
     // DO NOT expose javascript runtime detail types with involved external classes,
     // since these info structs will be replaced deps on the runtime used.
     struct GodotJSClassInfo
     {
-        enum Flags : uint8_t
-        {
-            None = 0,
-
-            //TODO we have no idea about it with javascript itself. maybe we can decorate the abstract class and check here?
-            Abstract = 1,
-        };
-
         StringName module_id;
 
         // js class name
@@ -93,14 +97,17 @@ namespace jsb
         NativeClassID native_class_id;
         StringName native_class_name;
 
-        Flags flags = None;
+        GodotJSClassFlags::Type flags = GodotJSClassFlags::None;
 
         HashMap<StringName, GodotJSMethodInfo> methods;
         HashMap<StringName, GodotJSMethodInfo> signals;
         HashMap<StringName, GodotJSPropertyInfo> properties;
 
         //TODO whether the internal class object alive or not
-        bool is_valid() const { return true; }
+        jsb_force_inline bool is_valid() const { return true; }
+
+        jsb_force_inline bool is_tool() const { return flags & GodotJSClassFlags::Tool; }
+        jsb_force_inline bool is_abstract() const { return flags & GodotJSClassFlags::Abstract; }
     };
 }
 

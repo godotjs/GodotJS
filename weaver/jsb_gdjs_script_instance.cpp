@@ -85,7 +85,7 @@ void GodotJSScriptInstance::notification(int p_notification, bool p_reversed)
     Variant value = p_notification;
     const Variant* argv[] = {&value};
     Callable::CallError error;
-    callp(SNAME("_notification"), argv, 1, error);
+    callp(jsb_string_name(_notification), argv, 1, error);
 }
 
 ScriptLanguage* GodotJSScriptInstance::get_language() { return GodotJSScriptLanguage::get_singleton(); }

@@ -287,7 +287,7 @@ namespace jsb
             const StringName module_id_sn = p_module_id;
             JavaScriptModule& module = module_cache_.insert(module_id_sn, false);
             v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
-            v8::Local<v8::String> propkey_loaded = v8::String::NewFromUtf8Literal(isolate, "loaded");
+            v8::Local<v8::String> propkey_loaded = environment_->GetStringName(isolate, loaded);
 
             // register the new module obj into module_cache obj
             v8::Local<v8::Object> jmodule_cache = jmodule_cache_.Get(isolate);
@@ -408,8 +408,16 @@ namespace jsb
                         JSB_LOG(Warning, "parent module not found with the name '%s'", p_parent_id);
                     }
                 }
+
                 module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, true)).Check();
-                _parse_script_class(this, context, module);
+                {
+                    v8::TryCatch try_catch_run(isolate);
+                    _parse_script_class(this, context, module);
+                    if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+                    {
+                        JSB_LOG(Error, "something wrong when parsing '%s'\n%s", module_id, (String) exception_info);
+                    }
+                }
                 return &module;
             }
         }
@@ -454,6 +462,7 @@ namespace jsb
         // unsafe
         const NativeClassID native_class_id = (NativeClassID) class_id_val->Uint32Value(p_context).ToChecked();
         const NativeClassInfo& native_class_info = environment->get_native_class(native_class_id);
+
         GodotJSClassInfo* existed_class_info = environment->find_gdjs_class(p_module.default_class_id);
         if (existed_class_info)
         {
@@ -469,8 +478,10 @@ namespace jsb
             existed_class_info->module_id = p_module.id;
         }
 
+        jsb_address_guard(environment->gdjs_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
-        existed_class_info->js_class_name = V8Helper::to_string(isolate, name_str); // String(*name, name.length());
+        existed_class_info->js_class_name = environment->get_string_name_cache().get_string_name(isolate, name_str);
+        // existed_class_info->js_class_name = V8Helper::to_string(isolate, name_str); // String(*name, name.length());
         existed_class_info->native_class_id = native_class_id;
         existed_class_info->native_class_name = native_class_info.name;
         existed_class_info->js_class.Reset(isolate, default_obj);
@@ -486,7 +497,7 @@ namespace jsb
 
         //TODO collect methods/signals/properties
         v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(isolate);
-        v8::Local<v8::Object> prototype = default_obj->Get(p_context, V8Helper::to_string(isolate, "prototype")).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Object> prototype = default_obj->Get(p_context, environment->GetStringName(isolate, prototype)).ToLocalChecked().As<v8::Object>();
 
         // methods
         {
@@ -503,25 +514,35 @@ namespace jsb
                 if (prototype->GetOwnPropertyDescriptor(p_context, prop_name).ToLocal(&prop_descriptor) && prop_descriptor->IsObject())
                 {
                     v8::Local<v8::Value> prop_val;
-                    if (prop_descriptor.As<v8::Object>()->Get(p_context, V8Helper::to_string(isolate, "value")).ToLocal(&prop_val) && prop_val->IsFunction())
+                    if (prop_descriptor.As<v8::Object>()->Get(p_context, environment->GetStringName(isolate, value)).ToLocal(&prop_val) && prop_val->IsFunction())
                     {
-                            //TODO property categories
-                            const StringName sname = name_s;
-                            GodotJSMethodInfo method_info = {};
-                            // method_info.name = sname;
-                            // method_info.function_.Reset(payload.isolate, prop_val.As<v8::Function>());
-                            // const internal::Index32 id = payload.class_info.methods.add(std::move(method_info));
-                            // payload.class_info.methods_map.insert(sname, id);
-                            p_class_info.methods.insert(sname, method_info);
-                            JSB_LOG(Verbose, "... method %s", name_s);
+                        //TODO property categories
+                        const StringName sname = name_s;
+                        GodotJSMethodInfo method_info = {};
+                        // method_info.name = sname;
+                        // method_info.function_.Reset(payload.isolate, prop_val.As<v8::Function>());
+                        // const internal::Index32 id = payload.class_info.methods.add(std::move(method_info));
+                        // payload.class_info.methods_map.insert(sname, id);
+                        p_class_info.methods.insert(sname, method_info);
+                        JSB_LOG(Verbose, "... method %s", name_s);
                     }
                 }
+            }
+        }
+
+        // tool (@tool_)
+        {
+            const bool is_tool = default_obj->HasOwnProperty(p_context, environment->get_symbol(Symbols::ClassToolScript)).FromMaybe(false);
+            if (is_tool)
+            {
+                p_class_info.flags = (GodotJSClassFlags::Type) (p_class_info.flags | GodotJSClassFlags::Tool);
             }
         }
 
         // signals (@signal_)
         {
             v8::Local<v8::Value> val_test;
+            //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
             if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
@@ -546,7 +567,9 @@ namespace jsb
         // detect all exported properties (which annotated with @export_)
         {
             v8::Local<v8::Value> val_test;
+            //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
             if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
+            // if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
@@ -557,8 +580,8 @@ namespace jsb
                     jsb_check(element->IsObject());
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     GodotJSPropertyInfo property_info;
-                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->get_string_name_cache().get_string_value(isolate, SNAME("name"))).ToLocalChecked()); // string
-                    property_info.type = (Variant::Type) obj->Get(context, environment->get_string_name_cache().get_string_value(isolate, SNAME("type"))).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringName(isolate, name)).ToLocalChecked()); // string
+                    property_info.type = (Variant::Type) obj->Get(context, environment->GetStringName(isolate, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
                     //TODO save property default value
                     // property_info.default_value = ...;
                     p_class_info.properties.insert(property_info.name, property_info);
@@ -566,8 +589,6 @@ namespace jsb
                 }
             }
         }
-
-        //TODO iterator payload.properties to determine the type (func/prop/signal)
     }
 
     NativeObjectID Realm::crossbind(Object* p_this, GodotJSClassID p_class_id)
@@ -608,9 +629,14 @@ namespace jsb
                 v8::Local<v8::Object> internal_obj = v8::Object::New(isolate);
 
                 jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "internal"), internal_obj).Check();
-                internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
-                internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
-                internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
+#pragma push_macro("DEF")
+#   undef DEF
+#   define DEF(FuncName) internal_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, #FuncName), v8::Function::New(context, _##FuncName).ToLocalChecked()).Check()
+                DEF(add_script_signal);
+                DEF(add_script_property);
+                DEF(add_script_ready);
+                DEF(add_script_tool);
+#pragma pop_macro("DEF")
             }
 
             {
@@ -818,9 +844,13 @@ namespace jsb
 
         if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
         {
-            ERR_FAIL_V_MSG(ERR_COMPILATION_FAILED, vformat("failed to load '%s'\n%s", p_name, (String) exception_info));
+            JSB_LOG(Error, "failed to load '%s'\n%s", p_name, (String) exception_info);
         }
-        ERR_FAIL_V_MSG(ERR_COMPILATION_FAILED, "something wrong");
+        else
+        {
+            JSB_LOG(Error, "something wrong");
+        }
+        return ERR_COMPILATION_FAILED;
     }
 
     const NativeClassInfo* Realm::_expose_godot_primitive_class(Variant::Type p_type, NativeClassID* r_class_id)
@@ -1360,7 +1390,7 @@ namespace jsb
             }
         case Variant::STRING_NAME:
             {
-                r_jval = Environment::wrap(isolate)->string_name_cache_.get_string_value(isolate, (StringName) p_cvar);
+                r_jval = Environment::wrap(isolate)->get_string_name_cache().get_string_value(isolate, (StringName) p_cvar);
                 return true;
             }
         case Variant::OBJECT:
@@ -1884,7 +1914,7 @@ namespace jsb
         v8::Local<v8::Context> context = this->unwrap();
         v8::Context::Scope context_scope(context);
         v8::Local<v8::Object> self = environment->objects_.get_value(p_object_id).ref_.Get(isolate);
-        v8::Local<v8::String> name = environment->string_name_cache_.get_string_value(isolate, p_info.name);
+        v8::Local<v8::String> name = environment->get_string_name_cache().get_string_value(isolate, p_info.name);
         v8::Local<v8::Value> value;
         if (!self->Get(context, name).ToLocal(&value))
         {
@@ -1911,7 +1941,7 @@ namespace jsb
         v8::Local<v8::Context> context = this->unwrap();
         v8::Context::Scope context_scope(context);
         v8::Local<v8::Object> self = environment->objects_.get_value(p_object_id).ref_.Get(isolate);
-        v8::Local<v8::String> name = environment->string_name_cache_.get_string_value(isolate, p_info.name);
+        v8::Local<v8::String> name = environment->get_string_name_cache().get_string_value(isolate, p_info.name);
         v8::Local<v8::Value> value;
         if (!gd_var_to_js(isolate, context, p_val, p_info.type, value))
         {
@@ -1942,7 +1972,7 @@ namespace jsb
             return;
         }
 
-        jsb_check(is_subclass_of(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, SNAME("Node")));
+        jsb_check(is_subclass_of(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)));
         // handle all @onready properties
         v8::Local<v8::Value> val_test;
         if (self->Get(context, environment_->get_symbol(Symbols::ClassImplicitReadyFunc)).ToLocal(&val_test) && val_test->IsArray())
@@ -1954,8 +1984,8 @@ namespace jsb
             for (uint32_t index = 0; index < len; ++index)
             {
                 v8::Local<v8::Object> element = collection->Get(context, index).ToLocalChecked().As<v8::Object>();
-                v8::Local<v8::String> element_name = element->Get(context, environment_->get_string_name_cache().get_string_value(isolate, SNAME("name"))).ToLocalChecked().As<v8::String>();
-                v8::Local<v8::Value> element_value = element->Get(context, environment_->get_string_name_cache().get_string_value(isolate, SNAME("evaluator"))).ToLocalChecked();
+                v8::Local<v8::String> element_name = element->Get(context, environment_->GetStringName(isolate, name)).ToLocalChecked().As<v8::String>();
+                v8::Local<v8::Value> element_value = element->Get(context, environment_->GetStringName(isolate, evaluator)).ToLocalChecked();
 
                 if (element_value->IsString())
                 {
@@ -2028,6 +2058,25 @@ namespace jsb
         const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
         jsb_check(js_func);
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
+    }
+
+    // function add_script_tool(target: any): void;
+    void Realm::_add_script_tool(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        if (info.Length() != 1 || !info[0]->IsObject())
+        {
+            jsb_throw(isolate, "bad param");
+            return;
+        }
+        Environment* environment = Environment::wrap(isolate);
+        v8::Local<v8::Object> target = info[0].As<v8::Object>();
+        v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassToolScript);
+        target->Set(context, symbol, v8::Boolean::New(isolate, true));
+        JSB_LOG(Verbose, "script %s (tool)",
+            V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
     }
 
     // function add_script_property(target: any, name: string,  evaluator: string | Function): void;

@@ -15,7 +15,7 @@
 #endif
 
 #if JSB_DEBUG
-#   define jsb_address_guard(list, scope_name) const auto scope_name = (list).address_scope();
+#   define jsb_address_guard(list, scope_name) const auto scope_name = (list).address_scope()
 #endif
 
 namespace jsb::internal

@@ -15,7 +15,6 @@ class GodotJSScript : public Script
 
 private:
     // fields
-    bool tool_ = false;
     bool valid_ = false;
     bool reloading_ = false;
 
@@ -77,9 +76,9 @@ public:
 
     virtual MethodInfo get_method_info(const StringName& p_method) const override;
 
-    virtual bool is_tool() const override { return tool_; }
     virtual bool is_valid() const override { return valid_; }
-    virtual bool is_abstract() const override;
+    virtual bool is_tool() const override { return valid_ && get_js_class_info().is_tool(); }
+    virtual bool is_abstract() const override { return valid_ && get_js_class_info().is_abstract(); }
 
     virtual ScriptLanguage* get_language() const override;
 

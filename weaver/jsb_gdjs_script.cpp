@@ -29,7 +29,7 @@ GodotJSScript::~GodotJSScript()
 bool GodotJSScript::can_instantiate() const
 {
 #ifdef TOOLS_ENABLED
-    return valid_ && (tool_ || ScriptServer::is_scripting_enabled());
+    return valid_ && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
     return valid_;
 #endif
@@ -138,11 +138,6 @@ MethodInfo GodotJSScript::get_method_info(const StringName& p_method) const
     MethodInfo item = {};
     item.name = p_method;
     return item;
-}
-
-bool GodotJSScript::is_abstract() const
-{
-    return get_js_class_info().flags & jsb::GodotJSClassInfo::Abstract;
 }
 
 ScriptLanguage* GodotJSScript::get_language() const

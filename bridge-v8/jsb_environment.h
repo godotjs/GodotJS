@@ -17,6 +17,8 @@
 #include "../internal/jsb_source_map_cache.h"
 #endif
 
+#define GetStringName(isolate, name) get_string_name_cache().get_string_value(isolate, jsb_string_name(name))
+
 namespace jsb
 {
     enum : uint32_t
@@ -29,9 +31,10 @@ namespace jsb
         enum Type : uint8_t
         {
             ClassId,
-            ClassSignals,    // array of all @signal annotations
-            ClassProperties, // array of all @export annotations
+            ClassSignals,           // array of all @signal annotations
+            ClassProperties,        // array of all @export annotations
             ClassImplicitReadyFunc, // array of all @onready annotations
+            ClassToolScript,        // @tool annotated scripts
             kNum,
         };
     }

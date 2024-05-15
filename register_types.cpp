@@ -1,5 +1,6 @@
 #include "register_types.h"
 
+#include "internal/jsb_string_names.h"
 #include "weaver/jsb_gdjs_lang.h"
 #include "weaver/jsb_resource_loader.h"
 #include "weaver/jsb_resource_saver.h"

@@ -4,6 +4,7 @@
 
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
+#include "../internal/jsb_string_names.h"
 #include "jsb_gdjs_script_instance.h"
 #include "jsb_gdjs_script.h"
 #include "editor/editor_settings.h"
@@ -14,11 +15,13 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
 {
     jsb_check(!singleton_);
     singleton_ = this;
+    jsb::internal::StringNames::create();
     // jsb::internal::Settings::on_init();
 }
 
 GodotJSScriptLanguage::~GodotJSScriptLanguage()
 {
+    jsb::internal::StringNames::free();
     jsb_check(singleton_ == this);
     singleton_ = nullptr;
 }

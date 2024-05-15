@@ -71,6 +71,8 @@
 // help to trace the location of the throwing error in C++ code.
 #define jsb_throw(isolate, literal) { ERR_PRINT((literal)); (isolate)->ThrowError((literal)); } (void) 0
 
+#define jsb_underlying_value(enum_type, enum_value) (__underlying_type(enum_type) (enum_value))
+
 namespace jsb::internal
 {
     namespace ELogSeverity
