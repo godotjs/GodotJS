@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onready_ = exports.export_ = exports.signal_ = void 0;
+exports.tool_ = exports.onready_ = exports.export_ = exports.signal_ = void 0;
 /**
  *
  */
@@ -17,10 +17,21 @@ function export_(type, details) {
     };
 }
 exports.export_ = export_;
+/**
+ * auto initialized on ready (before _ready called)
+ * @param evaluator for now, only string is accepted
+ */
 function onready_(evaluator) {
     return function (target, key) {
-        //TODO
+        let ebd = { name: key, evaluator: evaluator };
+        jsb.internal.add_script_ready(target, ebd);
     };
 }
 exports.onready_ = onready_;
+function tool_() {
+    return function (target) {
+        jsb.internal.add_script_tool(target);
+    };
+}
+exports.tool_ = tool_;
 //# sourceMappingURL=jsb.core.js.map
