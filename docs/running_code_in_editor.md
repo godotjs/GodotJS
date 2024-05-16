@@ -6,7 +6,7 @@
 
 
 If a GodotJS class is annotated with `tool_()`, it'll be instantiated in the editor. Check `Engine.is_editor_hint()` in the script to check if it's running in the editor.  
-It's also possible to show warnings on a `Node` on the `Scene` panel with `_get_configuration_warnings` defined. Here is an simple example:
+It's also possible to show warnings on a `Node` on `Scene` panel with `_get_configuration_warnings` defined. Here is a simple example:
 
 ```ts
 import { Engine, PackedStringArray, Sprite2D } from "godot";
