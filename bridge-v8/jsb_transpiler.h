@@ -172,9 +172,7 @@ namespace jsb
     {
         static int32_t from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
-            int32_t val = 0;
-            p_val->Int32Value(context).To(&val);
-            return val;
+            return p_val->Int32Value(context).FromMaybe(0);
         }
         static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, int32_t val)
         {
