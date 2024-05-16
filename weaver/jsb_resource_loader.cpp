@@ -15,30 +15,14 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
         if (r_error) *r_error = err;
         return {};
     }
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
-    std::shared_ptr<jsb::Realm> realm = lang->get_context();
-    err = realm->load(p_path);
-    if (err != OK)
-    {
-        if (r_error) *r_error = err;
-        return {};
-    }
-    const jsb::JavaScriptModuleCache& module_cache = realm->get_module_cache();
-    if (jsb::JavaScriptModule* module = module_cache.find(p_path))
-    {
-        Ref<GodotJSScript> spt;
-        spt.instantiate();
-        spt->attach_source(realm, p_path, code, module->default_class_id);
-        if (r_error) *r_error = OK;
-        if (!spt->is_valid())
-        {
-            JSB_LOG(Warning, "generate a stub script object which does not contain a GodotJS class to avoid errors on resource loading (%s)", p_path);
-        }
-        return spt;
-    }
-    JSB_LOG(Error, "no such module %s", p_path);
-    if (r_error) *r_error = FAILED;
-    return {};
+    JSB_LOG(Verbose, "loading script resource %s on thread %s", p_path, uitos(Thread::get_caller_id()));
+
+    // return a skeleton script which only contains path and source code without actually loaded in `realm` since `load` may called from background threads
+    Ref<GodotJSScript> spt;
+    spt.instantiate();
+    spt->attach_source(p_path, code);
+    if (r_error) *r_error = OK;
+    return spt;
 }
 
 void ResourceFormatLoaderGodotJSScript::get_recognized_extensions(List<String>* p_extensions) const

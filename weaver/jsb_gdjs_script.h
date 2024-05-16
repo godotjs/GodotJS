@@ -14,9 +14,9 @@ class GodotJSScript : public Script
     GDCLASS(GodotJSScript, Script)
 
 private:
-    // fields
+    // if the script invalid (or not actually loaded yet)
     bool valid_ = false;
-    bool reloading_ = false;
+    bool loaded_ = false;
 
     HashSet<PlaceHolderScriptInstance*> placeholders;
 
@@ -39,11 +39,13 @@ private:
 
     void call_prelude(jsb::NativeObjectID p_object_id);
 
+    void load_module();
+
 public:
     GodotJSScript();
     virtual ~GodotJSScript() override;
 
-    void attach_source(const std::shared_ptr<jsb::Realm>& p_context, const String& p_path, const String& p_source, jsb::GodotJSClassID p_class_id);
+    void attach_source(const String& p_path, const String& p_source);
 
     const jsb::GodotJSClassInfo& get_js_class_info() const;
 
@@ -76,7 +78,8 @@ public:
 
     virtual MethodInfo get_method_info(const StringName& p_method) const override;
 
-    virtual bool is_valid() const override { return valid_; }
+    // we expect Godot calling this after loaded_?
+    virtual bool is_valid() const override { jsb_check(loaded_); return valid_; }
     virtual bool is_tool() const override { return valid_ && get_js_class_info().is_tool(); }
     virtual bool is_abstract() const override { return valid_ && get_js_class_info().is_abstract(); }
 

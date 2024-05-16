@@ -28,6 +28,7 @@ GodotJSScript::~GodotJSScript()
 // GDScript::can_instantiate()
 bool GodotJSScript::can_instantiate() const
 {
+    if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module();
 #ifdef TOOLS_ENABLED
     return valid_ && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -46,6 +47,7 @@ void GodotJSScript::set_source_code(const String& p_code)
 
 Ref<Script> GodotJSScript::get_base_script() const
 {
+    jsb_check(loaded_);
     //TODO
     //if (base_)
     //{
@@ -56,12 +58,14 @@ Ref<Script> GodotJSScript::get_base_script() const
 
 StringName GodotJSScript::get_global_name() const
 {
+    jsb_check(loaded_);
     //TODO
     return {};
 }
 
 bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
 {
+    jsb_check(loaded_);
     const Ref<GodotJSScript> type_check = p_script;
     if (type_check.is_null())
     {
@@ -81,11 +85,13 @@ bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
 
 StringName GodotJSScript::get_instance_base_type() const
 {
+    jsb_check(loaded_);
     return get_js_class_info().native_class_name;
 }
 
 ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 {
+    jsb_check(loaded_);
     //TODO multi-thread scripting not supported for now
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
 
@@ -98,6 +104,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 
 Error GodotJSScript::reload(bool p_keep_state)
 {
+    jsb_check(loaded_);
     if (!valid_) return ERR_UNAVAILABLE;
 
     //TODO discard all cached methods?
@@ -110,29 +117,34 @@ Error GodotJSScript::reload(bool p_keep_state)
 #ifdef TOOLS_ENABLED
 Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 {
+    jsb_check(loaded_);
     //TODO
     return {};
 }
 
 String GodotJSScript::get_class_icon_path() const
 {
+    jsb_check(loaded_);
     //TODO
     return "res://javascripts/icon/filetype-js.svg";
 }
 
 PropertyInfo GodotJSScript::get_class_category() const
 {
+    jsb_check(loaded_);
     return super::get_class_category();
 }
 #endif // TOOLS_ENABLED
 
 bool GodotJSScript::has_method(const StringName& p_method) const
 {
+    jsb_check(loaded_);
     return get_js_class_info().methods.has(p_method);
 }
 
 MethodInfo GodotJSScript::get_method_info(const StringName& p_method) const
 {
+    jsb_check(loaded_);
     jsb_check(has_method(p_method));
     //TODO details?
     MethodInfo item = {};
@@ -147,11 +159,13 @@ ScriptLanguage* GodotJSScript::get_language() const
 
 bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 {
+    jsb_check(loaded_);
     return get_js_class_info().signals.has(p_signal);
 }
 
 void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 {
+    jsb_check(loaded_);
     for (const auto& it : get_js_class_info().signals)
     {
         //TODO details?
@@ -163,6 +177,7 @@ void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 
 void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 {
+    jsb_check(loaded_);
     for (const auto& it : get_js_class_info().methods)
     {
         //TODO details?
@@ -174,6 +189,7 @@ void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 
 void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 {
+    jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
     p_list->push_back(get_class_category());
 #endif
@@ -189,6 +205,7 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 
 bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
+    jsb_check(loaded_);
     if (const auto& it = get_js_class_info().properties.find(p_property))
     {
         //TODO handle property_info.default_value of GodotJS script class
@@ -201,39 +218,71 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
 
 const Variant GodotJSScript::get_rpc_config() const
 {
+    jsb_check(loaded_);
     //TODO
     return {};
 }
 
 bool GodotJSScript::has_static_method(const StringName& p_method) const
 {
+    jsb_check(loaded_);
     //TODO
     return false;
 }
 
 bool GodotJSScript::instance_has(const Object* p_this) const
 {
+    jsb_check(loaded_);
     MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
     return instances_.has(const_cast<Object*>(p_this));
 }
 
-void GodotJSScript::attach_source(const std::shared_ptr<jsb::Realm>& p_context, const String& p_path, const String& p_source, jsb::GodotJSClassID p_class_id)
+void GodotJSScript::attach_source(const String& p_path, const String& p_source)
 {
-    realm_ = p_context;
-    gdjs_class_id_ = p_class_id;
-    valid_ = gdjs_class_id_.is_valid();
     set_path(p_path);
     set_source_code(p_source);
+    //TODO we can't instantly compile it here, maybe we could do some string analysis/parsing thread independently
+}
+
+void GodotJSScript::load_module()
+{
+    if (realm_ && loaded_) return;
+
+    const String path = get_path();
+    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    std::shared_ptr<jsb::Realm> realm = lang->get_context();
+
+    realm_ = realm;
+    loaded_ = true;
+    Error err = realm->load(path);
+    if (err != OK)
+    {
+        JSB_LOG(Error, "failed to attach module %s (%d)", path, err);
+        return;
+    }
+    const jsb::JavaScriptModuleCache& module_cache = realm->get_module_cache();
+    if (jsb::JavaScriptModule* module = module_cache.find(path))
+    {
+        gdjs_class_id_ = module->default_class_id;
+        valid_ = gdjs_class_id_.is_valid();
+        if (valid_) return;
+
+        JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class (%s)", path);
+        return;
+    }
+    JSB_LOG(Error, "no such module %s", path);
 }
 
 const jsb::GodotJSClassInfo& GodotJSScript::get_js_class_info() const
 {
+    jsb_check(loaded_);
     jsb_checkf(gdjs_class_id_, "avoid calling this method if class_id is invalid, check prior with 'valid_'");
     return realm_->get_gdjs_class_info(gdjs_class_id_);
 }
 
 Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
 {
+    jsb_check(loaded_);
     jsb::ObjectCacheID func_id;
     if (const HashMap<StringName, jsb::ObjectCacheID>::Iterator& it = cached_methods_.find(p_method))
     {
@@ -249,6 +298,7 @@ Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const
 
 void GodotJSScript::call_prelude(jsb::NativeObjectID p_object_id)
 {
+    jsb_check(loaded_);
     realm_->call_prelude(gdjs_class_id_, p_object_id);
 }
 
@@ -266,6 +316,7 @@ void GodotJSScript::call_prelude(jsb::NativeObjectID p_object_id)
 
 PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_this)
 {
+    jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
     jsb_check(valid_);
     PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(GodotJSScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
@@ -287,6 +338,7 @@ void GodotJSScript::_placeholder_erased(PlaceHolderScriptInstance* p_placeholder
 
 void GodotJSScript::update_exports()
 {
+    jsb_check(loaded_);
 #if TOOLS_ENABLED
     //TODO
     if (!valid_) return;
@@ -295,13 +347,16 @@ void GodotJSScript::update_exports()
 
     props.push_back(get_class_category());
 
-    for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : get_js_class_info().properties) {
+    realm_->get_environment()->check_internal_state();
+    for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : get_js_class_info().properties)
+    {
         const jsb::GodotJSPropertyInfo &pi = pair.value;
         props.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
         values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
     }
 
-    for (PlaceHolderScriptInstance *s : placeholders) {
+    for (PlaceHolderScriptInstance *s : placeholders)
+    {
         s->update(props, values);
     }
 #endif

@@ -48,6 +48,9 @@
 #   define jsb_ensure(Condition) CRASH_COND(!(Condition))
 #endif
 
+#define jsb_likely(Expression) likely(Expression)
+#define jsb_unlikely(Expression) unlikely(Expression)
+
 #define jsb_typename(TypeName) ((void) sizeof(TypeName), #TypeName)
 #define jsb_nameof(TypeName, MemberName) ((void) sizeof(TypeName::MemberName), #MemberName)
 #define jsb_methodbind(TypeName, MemberName) &TypeName::MemberName, #MemberName

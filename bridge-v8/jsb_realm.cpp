@@ -825,6 +825,7 @@ namespace jsb
 
     Error Realm::load(const String& p_name)
     {
+        environment_->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
@@ -1824,6 +1825,7 @@ namespace jsb
     ObjectCacheID Realm::retain_function(NativeObjectID p_object_id, const StringName& p_method)
     {
         ObjectHandle* handle;
+        environment_->check_internal_state();
         if (environment_->objects_.try_get_value_pointer(p_object_id, handle))
         {
             v8::Isolate* isolate = environment_->isolate_;
