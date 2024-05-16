@@ -3,6 +3,8 @@
 #include "jsb_gdjs_script_instance.h"
 #include "../internal/jsb_variant_util.h"
 
+#define GODOTJS_LOAD_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); } (void) 0
+
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
     {
@@ -28,7 +30,7 @@ GodotJSScript::~GodotJSScript()
 // GDScript::can_instantiate()
 bool GodotJSScript::can_instantiate() const
 {
-    if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module();
+    GODOTJS_LOAD_MODULE();
 #ifdef TOOLS_ENABLED
     return valid_ && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -225,6 +227,7 @@ const Variant GodotJSScript::get_rpc_config() const
 
 bool GodotJSScript::has_static_method(const StringName& p_method) const
 {
+    GODOTJS_LOAD_MODULE();
     jsb_check(loaded_);
     //TODO
     return false;
