@@ -11,6 +11,7 @@ namespace jsb::internal
     {
     public:
         static uint16_t get_debugger_port();
+        static bool get_sourcemap_enabled();
     };
 }
 

@@ -4,6 +4,7 @@ namespace jsb::internal
 {
     constexpr static const char kEdDebuggerPort[] = "jsb/debugger/editor_port";
     constexpr static const char kRtDebuggerPort[] = "jsb/debugger/runtime_port";
+    constexpr static const char kRtSourceMapEnabled[] = "jsb/debugger/source_map_enabled";
 
     void init_settings()
     {
@@ -14,6 +15,7 @@ namespace jsb::internal
             // EDITOR_DEF(kEdDebuggerPort, 9230);
             GLOBAL_DEF(kEdDebuggerPort, 9230);
             GLOBAL_DEF(kRtDebuggerPort, 9229);
+            GLOBAL_DEF(kRtSourceMapEnabled, true);
         }
     }
 
@@ -27,4 +29,8 @@ namespace jsb::internal
             : GLOBAL_GET(kRtDebuggerPort);
     }
 
+    bool Settings::get_sourcemap_enabled()
+    {
+        return GLOBAL_GET(kRtSourceMapEnabled);
+    }
 }
