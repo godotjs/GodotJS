@@ -32,6 +32,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ### Scripting
 * [GodotJS Scripts](./docs/godotjs_scripts.md)
+* [Running code in the editor](./docs/running_code_in_editor.md)
 * [Godot Primitive Types](./docs/godot_primitive_types.md)
 
 ### Utilities
@@ -40,7 +41,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ### Advanced
 * [Build V8](./docs/build_v8.md)
-* QuickJS (PLANNED)
+* [QuickJS (PLANNED)](./docs/quickjs.md)
 * [Dependencies](./docs/deps.md)
 * [Compile Options](./docs/compile_options.md)
 

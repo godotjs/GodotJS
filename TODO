@@ -1,36 +1,37 @@
 
-FEATS:
-    ✔ editor: install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
-    ✔ editor: confirm to overwrite if files exist when installing TS project presets @done(24-04-23 10:55)
-    ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)
-    ✔ core: Variant pool (no threading since environment scoped) @done(24-04-21 21:53)
-    ☐ core: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
-    ☐ REPL: auto-complete when input text changed
-    ☐ REPL: object details (as JSON?)
-    ☐ REPL: completely re-implement the bottom panel in typescript if possible
-    ✔ scons: generate JSB_ options in jsb.gen.h (get rid of project scope defines) @done(24-05-12 08:17)
-    ☐ binding: handle default argument values (such as `MethodBind.default_arguments` in `_godot_object_method`)
-    ✔ binding: implement `can_convert_strict` @done(24-05-10 15:11)
-    ✔ binding: move `VariantInfoCollection` instance into `Environment` @started(24-05-11 10:04) @done(24-05-11 17:44) @lasted(7h40m44s)
-    ☐ lang: add `preload` support (behave like in GDScript)
-    ✔ lang: signal decalaration in scripts @done(24-04-23 18:33)
-    ✔ lang: support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
-    ✔ lang: gd exported property in scripts @done(24-04-27 20:58)
-    ☐ lang: default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11 10:06)
-    ✔ lang: `tool` annotated scripts @done(24-05-15)
-    ✔ lang: onready gd var in scripts @done(24-05-11 17:45)
-    ✔ lang: NodePath support @done(24-04-27 20:58)
-    ✔ lang: StringName support (treated as javascript string) @done(24-04-27 20:59)
-    ☐ source-map: configurable in project settings
-
-ISSUES:
-    ☐ editor: unexpected reload prompt
-    ☐ editor: errors on script reloading
-    ✔ runtime: crash on calling ResourceLoader.load @done(24-04-30 17:51)
-    ☐ runtime: exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52)
-    ✔ binding: can not access static members (nested enum, constants) of exposed godot singleton objects @done(24-04-30 17:53)
-    ✔ binding: static functions not found after exposing @done(24-04-30 17:52)
+Core:
     ☐ source-map: incorrect Ln:Col on bundle scripts
+    ☐ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52)
+    ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
+    ☐ errors on script reloading
+    ✔ source-map: configurable in project settings @done(24-05-16 16:45)
+    ✔ generate JSB_ options in jsb.gen.h (get rid of project scope defines) @done(24-05-12 08:17)
+    ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)
 
-CHECKS:
+Scripting:
+    ☐ unexpected reloading (only datetime changed)
+    ☐ add `preload` support (behave like in GDScript)
+    ☐ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11 10:06)
+    ☐ handle default argument values (such as `MethodBind.default_arguments` in `_godot_object_method`)
+    ✔ crash on calling ResourceLoader.load @done(24-04-30 17:51)
+    ✔ Variant pool (no threading since environment scoped) @done(24-04-21 21:53)
+    ✔ signal decalaration in scripts @done(24-04-23 18:33)
+    ✔ support the function `define(...)` (from AMD module standard) @done(24-04-02 17:16)
+    ✔ gd exported property in scripts @done(24-04-27 20:58)
+    ✔ `tool` annotated scripts @done(24-05-15)
+    ✔ onready gd var in scripts @done(24-05-11 17:45)
+    ✔ NodePath support @done(24-04-27 20:58)
+    ✔ StringName support (treated as javascript string) @done(24-04-27 20:59)
+    ✔ random crash on compiling scripts in ResourceLoader (due to multi-threading) @done(24-05-16 13:29)
+    ✔ implement `can_convert_strict` @done(24-05-10 15:11)
+    ✔ can not access static members (nested enum, constants) of exposed godot singleton objects @done(24-04-30 17:53)
+    ✔ static functions not found after exposing @done(24-04-30 17:52)
+    ✔ move `VariantInfoCollection` instance into `Environment` @started(24-05-11 10:04) @done(24-05-11 17:44) @lasted(7h40m44s)
+    ✔ confirm to overwrite if files exist when installing TS project presets @done(24-04-23 10:55)
+    ✔ install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
+
+REPL:
+    ☐ auto-complete when input text changed
+    ☐ print object details in REPL output (as JSON?)
+    ☐ completely re-implement the bottom panel in typescript if possible
     
