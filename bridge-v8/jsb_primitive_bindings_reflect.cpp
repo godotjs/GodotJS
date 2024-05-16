@@ -42,7 +42,7 @@ namespace jsb
             }
             Variant ret;
             const Variant::Type return_type = Variant::get_operator_return_type(op, left_type, right_type);
-            internal::construct_variant(ret, return_type);
+            internal::VariantUtil::construct_variant(ret, return_type);
             func(&left, &right, &ret);
             if (ret.get_type() != return_type)
             {
@@ -252,7 +252,7 @@ namespace jsb
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
-            internal::construct_variant(value, getset.type);
+            internal::VariantUtil::construct_variant(value, getset.type);
 
             //NOTE the getter function will not touch the type of `Variant`, so we must set it properly before use in the above code
             getset.getter_func(p_self, &value);
