@@ -27,13 +27,31 @@ class MyClass extends Node {
 > [!WARNING]
 > However, it may cause object leaks if `this` is captured in a lambda function. So avoid coding in this way `jsb.callable(this, () => this.xxx())`.
 
-## async/await
+## Await a Signal
+
+With a simple wrapper, `Signal` can be awaitable in javascript:
 
 ```ts
-// draft
-// not implemented
-async function test() {
-    await $(this.onclick); 
-}
+import { Node, Signal } from "godot";
+import { $wait, signal_ } from "./jsb/jsb.core";
 
+class ExampleClass extends Node {
+    @signal_()
+    test_signal!: Signal;
+
+    _ready() {
+        test();
+    }
+
+    async test() {
+        console.log("before signal emit");
+        // result is 123
+        const result = await $wait(this.test_signal); 
+        console.log("after signal emit", result);
+    }
+
+    emit_somehow() {
+        this.test_signal.emit(123);
+    }
+}
 ```

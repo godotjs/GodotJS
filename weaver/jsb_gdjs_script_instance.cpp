@@ -56,9 +56,20 @@ bool GodotJSScriptInstance::property_get_revert(const StringName& p_name, Varian
 }
 
 
-void GodotJSScriptInstance::get_method_list(List<MethodInfo>* p_list) const { script_->get_script_method_list(p_list); }
+void GodotJSScriptInstance::get_method_list(List<MethodInfo>* p_list) const
+{
+    script_->get_script_method_list(p_list);
+}
 
-bool GodotJSScriptInstance::has_method(const StringName& p_method) const { return script_->has_method(p_method); }
+bool GodotJSScriptInstance::has_method(const StringName& p_method) const
+{
+    //TODO ensure `_ready` called even if not actually defined in the script
+    // if (p_method == SceneStringNames::get_singleton()->_ready)
+    // {
+    //     return true;
+    // }
+    return script_->has_method(p_method);
+}
 
 Variant GodotJSScriptInstance::callp(const StringName& p_method, const Variant** p_args, int p_argcount,
                                      Callable::CallError& r_error)
@@ -66,6 +77,10 @@ Variant GodotJSScriptInstance::callp(const StringName& p_method, const Variant**
     if (p_method == SceneStringNames::get_singleton()->_ready)
     {
         script_->call_prelude(object_id_);
+        // if (!script_->has_method(p_method))
+        // {
+        //     return {};
+        // }
     }
     return script_->call_script_method(object_id_, p_method, p_args, p_argcount, r_error);
 }
@@ -79,6 +94,9 @@ void GodotJSScriptInstance::notification(int p_notification, bool p_reversed)
         // so, some of the reversed notifications can not be handled by script instances
         return;
     }
+
+    // since `NOTIFICATION_READY` is not reversed, `notification` will be posted after `callp`.
+    // so, we can't `call_prelude` here with `NOTIFICATION_READY`
 
     //TODO find the method named `_notification`, cal it with `p_notification` as `argv`
     //TODO call it at all type levels? @seealso `GDScriptInstance::notification`
