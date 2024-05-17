@@ -10,9 +10,13 @@ Core:
 
 Scripting:
     ☐ unexpected reloading (only datetime changed)
-    ☐ add `preload` support (behave like in GDScript)
+    ☐ add `preload` support
     ☐ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11 10:06)
-    ☐ handle default argument values (such as `MethodBind.default_arguments` in `_godot_object_method`)
+    ☐ check if `call_prelude` is called even if `_ready` is not defined in script
+    ☐ handle default argument values when calling Variant type methods
+    ☐ handle default argument values when calling Object type methods (such as `MethodBind.default_arguments` in `_godot_object_method`)
+    ✔ handle varargs when calling Variant type methods @done(24-05-17 19:15)
+    ☐ handle varargs when calling Object type methods
     ✔ crash on calling ResourceLoader.load @done(24-04-30 17:51)
     ✔ Variant pool (no threading since environment scoped) @done(24-04-21 21:53)
     ✔ signal decalaration in scripts @done(24-04-23 18:33)
