@@ -3,7 +3,7 @@
 #include "jsb_gdjs_script_instance.h"
 #include "../internal/jsb_variant_util.h"
 
-#define GODOTJS_LOAD_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); } (void) 0
+#define GODOTJS_LOAD_SCRIPT_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); } (void) 0
 
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
@@ -30,7 +30,7 @@ GodotJSScript::~GodotJSScript()
 // GDScript::can_instantiate()
 bool GodotJSScript::can_instantiate() const
 {
-    GODOTJS_LOAD_MODULE();
+    GODOTJS_LOAD_SCRIPT_MODULE();
 #ifdef TOOLS_ENABLED
     return valid_ && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -85,10 +85,11 @@ bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
     return false;
 }
 
+// this method is called in `EditorStandardSyntaxHighlighter::_update_cache()` without checking `script->is_valid()`
 StringName GodotJSScript::get_instance_base_type() const
 {
-    jsb_check(loaded_);
-    return get_js_class_info().native_class_name;
+    GODOTJS_LOAD_SCRIPT_MODULE();
+    return valid_ ? get_js_class_info().native_class_name : StringName();
 }
 
 ScriptInstance* GodotJSScript::instance_create(Object* p_this)
@@ -227,7 +228,7 @@ const Variant GodotJSScript::get_rpc_config() const
 
 bool GodotJSScript::has_static_method(const StringName& p_method) const
 {
-    GODOTJS_LOAD_MODULE();
+    GODOTJS_LOAD_SCRIPT_MODULE();
     jsb_check(loaded_);
     //TODO
     return false;
