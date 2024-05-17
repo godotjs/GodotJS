@@ -6,7 +6,7 @@
 `jsb.callable` returns a `Callable` javascript object.  
 
 > [!WARNING]
-> Please cautious that `jsb.callable(this, this.xxx) === jsb.callable(this, this.xxx)` returns `false`.   
+> Please be cautious that `jsb.callable(this, this.xxx) === jsb.callable(this, this.xxx)` returns `false`.   
 > But it's compared internally in C++ to check equality when using them for `connect` and `disconnect`.
 
 ```ts

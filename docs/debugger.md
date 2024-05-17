@@ -8,7 +8,8 @@ Open `devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws
 
 > [!NOTE] 
 > The listening port can be changed in `Project Settings`, and a restart is required for it to take effect.  
-> `Project Settings > jsb > Editor > Debugger > Port` for `Editor` environment  
-> `Project Settings > jsb > Runtime > Debugger > Port` for `Runtime` environment  
+> `Project Settings > GodotJS > Debugger > Editor Port` for `Editor` environment  
+> `Project Settings > GodotJS > Debugger > Runtime Port` for `Runtime` environment.
+> Check `Advanced Settings` if they are not listed in `Project Settings`.
 
 

@@ -33,16 +33,18 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ### Utilities
 * [REPL](./docs/repl.md)
+* [SourceMap](./docs/source_map.md)
 * [Debugger](./docs/debugger.md)
 
 ### Advanced
 * [Build V8](./docs/build_v8.md)
 * [QuickJS (PLANNED)](./docs/quickjs.md)
 * [Dependencies](./docs/deps.md)
-* [Compile Options](./docs/compile_options.md)
+* [Compiler Options](./docs/compiler_options.md)
 
 ## Supported Platforms
-- [x] Windows: x86_64 (TODO ARM64, UWP)
+- [x] Windows: x86_64
+- [ ] Windows: ARM64, UWP
 - [x] MacOS: AppleSilicon
 - [ ] Android
 - [ ] iOS
