@@ -5,6 +5,9 @@ if (!jsb.TOOLS_ENABLED) {
     throw new Error("codegen is only allowed in editor mode")
 }
 
+//TODO use godot.MethodFlags.METHOD_FLAG_VARARG
+const METHOD_FLAG_VARARG = 16;
+
 interface CodeWriter {
     get types(): TypeDB;
     get size(): number;
@@ -44,6 +47,10 @@ const KeywordReplacement: { [name: string]: string } = {
     ["string"]: "string_",
     ["Symbol"]: "Symbol_",
     ["typeof"]: "typeof_",
+    ["arguments"]: "arguments_",
+
+    // a special item which used as the name of variadic arguments placement
+    ["vargargs"]: "vargargs_",
 }
 
 const PrimitiveTypeNames : { [type: number]: string } = {
@@ -103,6 +110,12 @@ const IgnoredTypes = new Set([
     "GodotPhysicsServer3D",
     "PhysicsServer2DExtension",
     "PhysicsServer3DExtension",
+
+    // gdscript related classes
+    "GDScript",
+    "GDScriptEditorTranslationParserPlugin",
+    "GDScriptNativeClass",
+    "GDScriptSyntaxHighlighter",
 ])
 const PrimitiveTypesSet = new Set([
     "Vector2",
@@ -318,11 +331,17 @@ class ClassWriter extends IndentWriter {
         return `${replace(info.name)}: ${this.make_typename(info)}`
     }
     private make_args(method_info: jsb.editor.MethodBind): string {
-        //TODO
+        //TODO consider default arguments
+        const varargs = "...vargargs: any[]";
+        const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
         if (method_info.args_.length == 0) {
-            return ""
+            return is_vararg ? varargs : "";
         }
-        return method_info.args_.map(it => this.make_arg(it)).join(", ");
+        const args = method_info.args_.map(it => this.make_arg(it)).join(", ");
+        if (is_vararg) {
+            return `${args}, ${varargs}`;
+        }
+        return args;
     }
     private make_return(method_info: jsb.editor.MethodBind): string {
         //TODO

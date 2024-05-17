@@ -1134,6 +1134,27 @@ namespace jsb
         return false;
     }
 
+    bool Realm::check_argc(const MethodBind* p_method, int p_argc)
+    {
+        //TODO check the num of arguments for MethodBind invocation
+        // if (p_method->is_vararg())
+        // {
+        //     if (p_argc < p_method->get_argument_count())
+        //     {
+        //         return false;
+        //     }
+        // }
+        // else
+        // {
+        //     //TODO consider default arguments
+        //     if (p_argc != p_method->get_argument_count())
+        //     {
+        //         return false;
+        //     }
+        // }
+        return true;
+    }
+
     bool Realm::can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type)
     {
         switch (p_type)
@@ -1609,6 +1630,11 @@ namespace jsb
         }
 
         // prepare argv
+        if (!check_argc(method_bind, argc))
+        {
+            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            return;
+        }
         const Variant** argv = jsb_stackalloc(const Variant*, argc);
         Variant* args = jsb_stackalloc(Variant, argc);
         for (int index = 0; index < argc; ++index)

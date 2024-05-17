@@ -215,6 +215,7 @@ namespace jsb
          * Check if a javascript value `p_val` could be converted into the expected primitive type `p_type`
          */
         static bool can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type);
+        static bool check_argc(const MethodBind* p_method, int p_argc);
 
     private:
         static void _new_callable(const v8::FunctionCallbackInfo<v8::Value>& info);

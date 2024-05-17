@@ -129,6 +129,7 @@ namespace jsb
             method_info.return_type = Variant::get_builtin_method_return_type(TYPE, p_name);
             const int argument_count = Variant::get_builtin_method_argument_count(TYPE, p_name);
             method_info.argument_types.resize_zeroed(argument_count);
+            method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, p_name);
             for (int argument_index = 0; argument_index < argument_count; ++argument_index)
             {
                 const Variant::Type type = Variant::get_builtin_method_argument_type(TYPE, p_name, argument_index);
@@ -294,14 +295,21 @@ namespace jsb
             const int argc = info.Length();
 
             // prepare argv
-            jsb_check(argc <= method_info.argument_types.size());
+            if (!method_info.check_argc(argc))
+            {
+                jsb_throw(isolate, "num of arguments does not meet the requirement");
+                return;
+            }
             const Variant** argv = jsb_stackalloc(const Variant*, argc);
+            const int known_argc = method_info.argument_types.size();
             Variant* args = jsb_stackalloc(Variant, argc);
             for (int index = 0; index < argc; ++index)
             {
                 memnew_placement(&args[index], Variant);
                 argv[index] = &args[index];
-                if (!Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index]))
+                if (index < known_argc
+                    ? !Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
+                    : !Realm::js_to_gd_var(isolate, context, info[index], args[index]))
                 {
                     // revert all constructors
                     v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
@@ -346,15 +354,21 @@ namespace jsb
             const int argc = info.Length();
 
             // prepare argv
-            jsb_check(argc <= method_info.argument_types.size());
+            if (!method_info.check_argc(argc))
+            {
+                jsb_throw(isolate, "num of arguments does not meet the requirement");
+                return;
+            }
             const Variant** argv = jsb_stackalloc(const Variant*, argc);
+            const int known_argc = method_info.argument_types.size();
             Variant* args = jsb_stackalloc(Variant, argc);
             for (int index = 0; index < argc; ++index)
             {
                 memnew_placement(&args[index], Variant);
                 argv[index] = &args[index];
-                const Variant::Type type = method_info.argument_types[index];
-                if (!Realm::js_to_gd_var(isolate, context, info[index], type, args[index]))
+                if (index < known_argc
+                    ? !Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
+                    : !Realm::js_to_gd_var(isolate, context, info[index], args[index]))
                 {
                     // revert all constructors
                     v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));

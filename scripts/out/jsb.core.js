@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tool_ = exports.onready_ = exports.export_ = exports.signal_ = void 0;
+exports.$wait = exports.tool_ = exports.onready_ = exports.export_ = exports.signal_ = void 0;
 /**
  *
  */
@@ -34,4 +34,21 @@ function tool_() {
     };
 }
 exports.tool_ = tool_;
+function $wait(signal) {
+    return new Promise(resolve => {
+        signal.connect(jsb.callable(function () {
+            if (arguments.length == 0) {
+                resolve(undefined);
+                return;
+            }
+            if (arguments.length == 1) {
+                resolve(arguments[0]);
+                return;
+            }
+            // return as javascript array if more than one 
+            resolve(Array.from(arguments));
+        }), 0);
+    });
+}
+exports.$wait = $wait;
 //# sourceMappingURL=jsb.core.js.map

@@ -556,6 +556,7 @@ namespace jsb
                 MethodInfo method_info;
                 method_info.name = name;
                 method_info.flags = 0;
+                if (Variant::is_builtin_method_vararg(TYPE, name)) method_info.flags |= METHOD_FLAG_VARARG;
                 method_info.return_val.type = Variant::get_builtin_method_return_type(TYPE, name);
                 for (int i = 0, n = Variant::get_builtin_method_argument_count(TYPE, name); i < n; ++i)
                 {

@@ -31,3 +31,20 @@ export function tool_() {
         jsb.internal.add_script_tool(target);
     }
 }
+
+export function $wait(signal: any) {
+    return new Promise(resolve => {
+        signal.connect(jsb.callable(function () { 
+            if (arguments.length == 0) {
+                resolve(undefined);
+                return;
+            }
+            if (arguments.length == 1) {
+                resolve(arguments[0]);
+                return;
+            }
+            // return as javascript array if more than one 
+            resolve(Array.from(arguments));
+        }), 0);
+    })
+}

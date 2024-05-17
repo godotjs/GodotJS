@@ -9,6 +9,28 @@ namespace jsb::internal
         StringName name;
         Vector<Variant::Type> argument_types;
         Variant::Type return_type;
+
+        bool is_vararg;
+
+        bool check_argc(int argc) const
+        {
+            if (is_vararg)
+            {
+                if (argc < argument_types.size())
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                //TODO consider default arguments
+                if (argc != argument_types.size())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     };
 
     struct FGetSetInfo
