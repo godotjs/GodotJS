@@ -221,7 +221,7 @@ namespace jsb
                 const bool is_persistent = persistent_objects_.has(handle.pointer);
                 const NativeClassInfo& class_info = native_classes_.get_value(handle.class_id);
 
-                JSB_LOG(Verbose, "deleting %s(%d) %s", (String) class_info.name, (uint32_t) handle.class_id, uitos((uintptr_t) handle.pointer));
+                JSB_LOG(VeryVerbose, "deleting %s(%d) %s", (String) class_info.name, (uint32_t) handle.class_id, uitos((uintptr_t) handle.pointer));
                 class_info.finalizer(this, handle.pointer, is_persistent);
                 handle.ref_.Reset();
                 objects_index_.erase(handle.pointer);
@@ -303,7 +303,7 @@ namespace jsb
         {
             handle.ref_count_ = 1;
         }
-        JSB_LOG(Verbose, "bind object %s (id: %s) with class %s (%d)", uitos((uintptr_t) p_pointer), uitos((uint64_t) object_id), (String) native_classes_.get_value(p_class_id).name, (uint32_t) p_class_id);
+        JSB_LOG(VeryVerbose, "bind object %s (id: %s) with class %s (%d)", uitos((uintptr_t) p_pointer), uitos((uint64_t) object_id), (String) native_classes_.get_value(p_class_id).name, (uint32_t) p_class_id);
         return object_id;
     }
 
@@ -411,13 +411,13 @@ namespace jsb
         {
             const NativeClassInfo& class_info = native_classes_.get_value(class_id);
 
-            JSB_LOG(Verbose, "deleting %s(%d) addr:%s", (String) class_info.name, (uint32_t) class_id, uitos((uintptr_t) p_pointer));
+            JSB_LOG(VeryVerbose, "deleting %s(%d) addr:%s", (String) class_info.name, (uint32_t) class_id, uitos((uintptr_t) p_pointer));
             //NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
             class_info.finalizer(this, p_pointer, is_persistent);
         }
         else
         {
-            JSB_LOG(Verbose, "unbinding %s(%d) addr:%s", (String) native_classes_.get_value(class_id).name, (uint32_t) class_id, uitos((uintptr_t) p_pointer));
+            JSB_LOG(VeryVerbose, "unbinding %s(%d) addr:%s", (String) native_classes_.get_value(class_id).name, (uint32_t) class_id, uitos((uintptr_t) p_pointer));
         }
     }
 

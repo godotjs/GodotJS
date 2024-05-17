@@ -217,7 +217,7 @@ namespace jsb
             }
             deps.push_back(item_str);
         }
-        JSB_LOG(Verbose, "new AMD module loader %s deps: %s", module_id_str, String(", ").join(deps));
+        JSB_LOG(VeryVerbose, "new AMD module loader %s deps: %s", module_id_str, String(", ").join(deps));
         realm->environment_->add_module_loader<AMDModuleLoader>(module_id_str,
             deps, v8::Global<v8::Function>(isolate, info[2].As<v8::Function>()));
     }
@@ -345,7 +345,7 @@ namespace jsb
                 jsb_check(existed_module->id == module_id);
                 jsb_check(existed_module->path == asset_path);
 
-                JSB_LOG(Verbose, "reload module %s", module_id);
+                JSB_LOG(VeryVerbose, "reload module %s", module_id);
                 existed_module->reload_requested = false;
                 if (!resolver->load(this, asset_path, *existed_module))
                 {
@@ -485,7 +485,7 @@ namespace jsb
         existed_class_info->native_class_id = native_class_id;
         existed_class_info->native_class_name = native_class_info.name;
         existed_class_info->js_class.Reset(isolate, default_obj);
-        JSB_LOG(Verbose, "godot js class name %s (native: %s)", existed_class_info->js_class_name, existed_class_info->native_class_name);
+        JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", existed_class_info->js_class_name, existed_class_info->native_class_name);
         _parse_script_class_iterate(p_realm, p_context, *existed_class_info);
     }
 
@@ -524,7 +524,7 @@ namespace jsb
                         // const internal::Index32 id = payload.class_info.methods.add(std::move(method_info));
                         // payload.class_info.methods_map.insert(sname, id);
                         p_class_info.methods.insert(sname, method_info);
-                        JSB_LOG(Verbose, "... method %s", name_s);
+                        JSB_LOG(VeryVerbose, "... method %s", name_s);
                     }
                 }
             }
@@ -558,7 +558,7 @@ namespace jsb
                     const StringNameID string_id = environment->string_name_cache_.get_string_id(signal);
                     v8::Local<v8::Function> signal_func = v8::Function::New(p_context, _godot_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_id)).ToLocalChecked();
                     prototype->SetAccessorProperty(element.As<v8::Name>(), signal_func);
-                    JSB_LOG(Verbose, "... signal %s (%d)", signal, (uint32_t) string_id);
+                    JSB_LOG(VeryVerbose, "... signal %s (%d)", signal, (uint32_t) string_id);
                 }
             }
         }
@@ -585,7 +585,7 @@ namespace jsb
                     //TODO save property default value
                     // property_info.default_value = ...;
                     p_class_info.properties.insert(property_info.name, property_info);
-                    JSB_LOG(Verbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
+                    JSB_LOG(VeryVerbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
                 }
             }
         }
@@ -607,7 +607,7 @@ namespace jsb
         //     v8::Local<v8::String> signal_name_str = V8Helper::to_string(isolate, pair.key);
         //     v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, _godot_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) environment_->add_string_name(pair.key)));
         // }
-        JSB_LOG(Verbose, "[experimental] crossbinding %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
+        JSB_LOG(VeryVerbose, "[experimental] crossbinding %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
         return object_id;
     }
 
@@ -883,7 +883,7 @@ namespace jsb
         NativeClassID class_id;
         if (const NativeClassInfo* cached_info = environment_->find_godot_class(p_class_info->name, class_id))
         {
-            JSB_LOG(Verbose, "return cached native class %s (%d) (for %s)", cached_info->name, (uint32_t) class_id, p_class_info->name);
+            JSB_LOG(VeryVerbose, "return cached native class %s (%d) (for %s)", cached_info->name, (uint32_t) class_id, p_class_info->name);
             jsb_check(cached_info->name == p_class_info->name);
             jsb_check(!cached_info->template_.IsEmpty());
             jsb_check(!cached_info->function_.IsEmpty());
@@ -892,7 +892,7 @@ namespace jsb
 
         // const auto native_classes_address_scope = environment_->native_classes_.address_scope();
         class_id = environment_->add_class(NativeClassType::GodotObject, p_class_info->name);
-        JSB_LOG(Verbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
+        JSB_LOG(VeryVerbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
 
         // construct type template
         {
@@ -1000,7 +1000,7 @@ namespace jsb
                 v8::Local<v8::FunctionTemplate> base_template = environment_->get_native_class(super_class_id).template_.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
                 function_template->Inherit(base_template);
-                JSB_LOG(Verbose, "%s (%d) extends %s (%d)", p_class_info->name, (uint32_t) class_id, p_class_info->inherits_ptr->name, (uint32_t) super_class_id);
+                JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, (uint32_t) class_id, p_class_info->inherits_ptr->name, (uint32_t) super_class_id);
             }
 
             {
@@ -1009,7 +1009,7 @@ namespace jsb
                 v8::Local<v8::Function> function = function_template->GetFunction(context).ToLocalChecked();
                 class_info.function_.Reset(isolate, function);
                 jsb_check(!class_info.function_.IsEmpty());
-                JSB_LOG(Verbose, "class info ready %s (%d)", p_class_info->name, (uint32_t) class_id);
+                JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, (uint32_t) class_id);
             }
         } // end type template
 
@@ -1698,7 +1698,7 @@ namespace jsb
         // (1) primitive types
         if (const auto it = realm->godot_primitive_map_.find(type_name); it != realm->godot_primitive_map_.end())
         {
-            JSB_LOG(Verbose, "import primitive type %s", (String) type_name);
+            JSB_LOG(VeryVerbose, "import primitive type %s", (String) type_name);
             const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(it->value);
             jsb_check(class_info);
             jsb_check(!class_info->template_.IsEmpty());
@@ -1715,7 +1715,7 @@ namespace jsb
         if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(type_name))
         {
             v8::Local<v8::Object> rval;
-            JSB_LOG(Verbose, "exposing singleton object %s", (String) type_name);
+            JSB_LOG(VeryVerbose, "exposing singleton object %s", (String) type_name);
             if (gd_obj_to_js(isolate, context, gd_singleton, rval))
             {
                 realm->environment_->mark_as_persistent_object(gd_singleton);
@@ -1844,7 +1844,7 @@ namespace jsb
             return {};
         }
 
-        JSB_LOG(Verbose, "script compiled %s", p_filename);
+        JSB_LOG(VeryVerbose, "script compiled %s", p_filename);
         return maybe_value;
     }
 
@@ -2103,7 +2103,7 @@ namespace jsb
         v8::Local<v8::Object> target = info[0].As<v8::Object>();
         v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassToolScript);
         target->Set(context, symbol, v8::Boolean::New(isolate, true));
-        JSB_LOG(Verbose, "script %s (tool)",
+        JSB_LOG(VeryVerbose, "script %s (tool)",
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
     }
 
@@ -2140,7 +2140,7 @@ namespace jsb
         }
 
         collection->Set(context, index, evaluator);
-        JSB_LOG(Verbose, "script %s define property(onready) %s",
+        JSB_LOG(VeryVerbose, "script %s define property(onready) %s",
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
             V8Helper::to_string(isolate, evaluator->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
     }
@@ -2178,7 +2178,7 @@ namespace jsb
         }
 
         collection->Set(context, index, details);
-        JSB_LOG(Verbose, "script %s define property(export) %s",
+        JSB_LOG(VeryVerbose, "script %s define property(export) %s",
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
             V8Helper::to_string(isolate, details->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
     }
@@ -2217,7 +2217,7 @@ namespace jsb
         }
 
         collection->Set(context, index, signal);
-        JSB_LOG(Verbose, "script %s define signal %s",
+        JSB_LOG(VeryVerbose, "script %s define signal %s",
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
             V8Helper::to_string(isolate, signal));
     }

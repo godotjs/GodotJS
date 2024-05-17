@@ -673,7 +673,7 @@ namespace jsb
                 {
                     if (!p_persistent)
                     {
-                        JSB_LOG(Verbose, "deleting gd ref_counted object %s", uitos((uintptr_t) self));
+                        JSB_LOG(VeryVerbose, "deleting gd ref_counted object %s", uitos((uintptr_t) self));
                         memdelete(self);
                     }
                 }
@@ -683,7 +683,7 @@ namespace jsb
                 //TODO only delete when the object's lifecycle is fully managed by javascript
                 if (!p_persistent)
                 {
-                    JSB_LOG(Verbose, "deleting gd object %s", uitos((uintptr_t) self));
+                    JSB_LOG(VeryVerbose, "deleting gd object %s", uitos((uintptr_t) self));
                     memdelete(self);
                 }
             }

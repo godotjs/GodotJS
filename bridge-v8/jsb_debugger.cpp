@@ -152,11 +152,11 @@ namespace jsb
 	                return false;
 	            }
 
-	            JSB_DEBUGGER_LOG(Verbose, "send message: %d bytes", len);
+	            JSB_DEBUGGER_LOG(VeryVerbose, "send message: %d bytes", len);
 	            _send_queue.remove_at(0);
 	            if (!_send_queue.is_empty())
 	            {
-	                JSB_DEBUGGER_LOG(Verbose, "messages in queue to be sent: %d", _send_queue.size());
+	                JSB_DEBUGGER_LOG(VeryVerbose, "messages in queue to be sent: %d", _send_queue.size());
 	                lws_callback_on_writable(wsi_);
 	            }
 	        }
@@ -337,7 +337,7 @@ namespace jsb
                 return false;
             }
 
-            JSB_DEBUGGER_LOG(Verbose, "new connection established");
+            JSB_DEBUGGER_LOG(VeryVerbose, "new connection established");
             channel_ = std::make_unique<JSInspectorChannel>(wsi, isolate_, *inspector_);
             return true;
         }
@@ -370,7 +370,7 @@ namespace jsb
 	                return -1;
 	            }
 
-	            JSB_DEBUGGER_LOG(Verbose, "on receive callback");
+	            JSB_DEBUGGER_LOG(VeryVerbose, "on receive callback");
 		        return 0;
 	        case LWS_CALLBACK_CLIENT_WRITEABLE:
 	        case LWS_CALLBACK_SERVER_WRITEABLE:
@@ -381,7 +381,7 @@ namespace jsb
 	                return -1;
 	            }
 
-	            // JSB_DEBUGGER_LOG(Verbose, "on writeable callback");
+	            // JSB_DEBUGGER_LOG(VeryVerbose, "on writeable callback");
 		        return 0;
 	        case LWS_CALLBACK_CLOSED:
 		        JSB_DEBUGGER_LOG(Debug, "wsi closed");
@@ -406,7 +406,7 @@ namespace jsb
                             "}]";
 
 	                    const CharString content = vformat(kJsonListFormat, impl->port_).utf8();
-	                    JSB_DEBUGGER_LOG(Verbose, "GET /json/list");
+	                    JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/list");
 	                    _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
 	                }
 	                else if (uri == "/json/version")
@@ -420,18 +420,18 @@ namespace jsb
                             "	 \"webSocketDebuggerUrl\" : \"ws://localhost:%d\""
                             "}";
 	                    const CharString content = vformat(kJsonVersionFormat, impl->port_).utf8();
-	                    JSB_DEBUGGER_LOG(Verbose, "GET /json/version");
+	                    JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/version");
 	                    _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
 	                }
 	                else
 	                {
-	                    JSB_DEBUGGER_LOG(Verbose, "GET %s 404", uri);
+	                    JSB_DEBUGGER_LOG(VeryVerbose, "GET %s 404", uri);
 	                    lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, "<html><body>NOT FOUND</body></html>");
 	                }
 	                return -1;
 	            }
 	        case LWS_CALLBACK_HTTP_BODY_COMPLETION:
-	            JSB_DEBUGGER_LOG(Verbose, "LWS_CALLBACK_HTTP_BODY_COMPLETION");
+	            JSB_DEBUGGER_LOG(VeryVerbose, "LWS_CALLBACK_HTTP_BODY_COMPLETION");
 		        lws_return_http_status(wsi, 200, nullptr);
 	            return -1;
 	        case LWS_CALLBACK_CLIENT_ESTABLISHED:
@@ -443,7 +443,7 @@ namespace jsb
 	            // LWS_CALLBACK_EVENT_WAIT_CANCELLED 71
 	            // LWS_CALLBACK_PROTOCOL_INIT 27
 	            // LWS_CALLBACK_GET_THREAD_ID 31
-	            JSB_DEBUGGER_LOG(Verbose, "unhandled %d", reason);
+	            JSB_DEBUGGER_LOG(VeryVerbose, "unhandled %d", reason);
 	            return 0;
 	        }
         }

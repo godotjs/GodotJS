@@ -31,7 +31,7 @@ void GodotJSScriptLanguage::init()
     if (!once_inited_)
     {
         once_inited_ = true;
-        JSB_LOG(Verbose, "jsb lang init");
+        JSB_LOG(VeryVerbose, "jsb lang init");
         environment_ = std::make_shared<jsb::Environment>();
         realm_ = std::make_shared<jsb::Realm>(environment_);
 
@@ -56,7 +56,7 @@ void GodotJSScriptLanguage::finish()
     once_inited_ = false;
     realm_.reset();
     environment_.reset();
-    JSB_LOG(Verbose, "jsb lang finish");
+    JSB_LOG(VeryVerbose, "jsb lang finish");
 }
 
 void GodotJSScriptLanguage::frame()

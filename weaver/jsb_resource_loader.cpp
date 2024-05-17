@@ -15,7 +15,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
         if (r_error) *r_error = err;
         return {};
     }
-    JSB_LOG(Verbose, "loading script resource %s on thread %s", p_path, uitos(Thread::get_caller_id()));
+    JSB_LOG(VeryVerbose, "loading script resource %s on thread %s", p_path, uitos(Thread::get_caller_id()));
 
     // return a skeleton script which only contains path and source code without actually loaded in `realm` since `load` may called from background threads
     Ref<GodotJSScript> spt;

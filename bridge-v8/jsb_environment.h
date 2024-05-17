@@ -290,7 +290,7 @@ namespace jsb
                 jsb_check(!godot_classes_index_.has(p_class_name));
                 godot_classes_index_.insert(p_class_name, class_id);
             }
-            JSB_LOG(Verbose, "new class %s (%d)", p_class_name, (uint32_t) class_id);
+            JSB_LOG(VeryVerbose, "new class %s (%d)", p_class_name, (uint32_t) class_id);
             return class_id;
         }
 

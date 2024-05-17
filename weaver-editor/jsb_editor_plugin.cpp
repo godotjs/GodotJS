@@ -86,7 +86,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
 {
-    JSB_LOG(Verbose, "~GodotJSEditorPlugin");
+    JSB_LOG(VeryVerbose, "~GodotJSEditorPlugin");
 }
 
 Error GodotJSEditorPlugin::write_file(const String &p_target_dir, const String &p_source_name)
