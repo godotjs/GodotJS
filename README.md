@@ -1,18 +1,13 @@
 
-TypScript/JavaScript for Godot with V8.
+GodotJS - TypScript/JavaScript for Godot with V8.
 
 > [!NOTE]
 > This project is still in the very early stage of development.
 
 ## Features
-* [x] On-demand binding
-* [x] Godot Object types binding
-* [x] Godot Primitive types binding
+* [x] `ScriptLanguage` integration
 * [x] Debug with Chrome devtools when using V8
-* [x] SourceMap translated debug info
-* [x] REPL in Godot Editor
-* [x] Godot `ScriptLanguage` integration
-* [x] Essential javascript builtins (`require` `timers` `console`)
+* [x] REPL in Editor
 * [ ] Hot-reloading
 * [ ] Asynchronous module loading (`import` function)
 * [ ] Sandboxed scripting (not multi-threading)
@@ -32,8 +27,9 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ### Scripting
 * [GodotJS Scripts](./docs/godotjs_scripts.md)
-* [Running code in the editor](./docs/running_code_in_editor.md)
 * [Godot Primitive Types](./docs/godot_primitive_types.md)
+* [Running code in the editor](./docs/running_code_in_editor.md)
+* [Signals](./docs/signals.md)
 
 ### Utilities
 * [REPL](./docs/repl.md)
