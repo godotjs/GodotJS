@@ -338,7 +338,7 @@ namespace jsb
         const HashMap<void*, internal::Index64>::Iterator it = objects_index_.find(p_pointer);
         if (it == objects_index_.end())
         {
-            JSB_LOG(Warning, "bad pointer %s", uitos((uintptr_t) p_pointer));
+            JSB_LOG(VeryVerbose, "bad pointer %s", uitos((uintptr_t) p_pointer));
             return true;
         }
         const internal::Index64 object_id = it->value;

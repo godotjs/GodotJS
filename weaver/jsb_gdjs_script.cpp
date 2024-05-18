@@ -342,6 +342,7 @@ void GodotJSScript::_placeholder_erased(PlaceHolderScriptInstance* p_placeholder
 
 void GodotJSScript::update_exports()
 {
+    GODOTJS_LOAD_SCRIPT_MODULE();
     jsb_check(loaded_);
 #if TOOLS_ENABLED
     //TODO
