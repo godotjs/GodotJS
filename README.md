@@ -23,7 +23,10 @@ git lfs clone https://github.com/ialex32x/GodotJS.git
 
 Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
-For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git). 
+For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.
+
+[![snake](./docs/assets/snake_01.gif)](https://github.com/ialex32x/GodotJSExample.git)
+[![jummpybird](./docs/assets/jumpybird.gif)](https://github.com/ialex32x/GodotJSExample.git)
 
 ### Scripting
 * [GodotJS Scripts](./docs/godotjs_scripts.md)

@@ -36,7 +36,9 @@ function tool_() {
 exports.tool_ = tool_;
 function $wait(signal) {
     return new Promise(resolve => {
-        signal.connect(jsb.callable(function () {
+        let fn = null;
+        fn = jsb.callable(function () {
+            signal.disconnect(fn);
             if (arguments.length == 0) {
                 resolve(undefined);
                 return;
@@ -47,7 +49,8 @@ function $wait(signal) {
             }
             // return as javascript array if more than one 
             resolve(Array.from(arguments));
-        }), 0);
+        });
+        signal.connect(fn, 0);
     });
 }
 exports.$wait = $wait;
