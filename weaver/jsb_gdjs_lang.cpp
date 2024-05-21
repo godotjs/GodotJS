@@ -13,6 +13,7 @@ GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;
 
 GodotJSScriptLanguage::GodotJSScriptLanguage()
 {
+    JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, Construct);
     jsb_check(!singleton_);
     singleton_ = this;
     jsb::internal::StringNames::create();
@@ -30,6 +31,7 @@ void GodotJSScriptLanguage::init()
 {
     if (!once_inited_)
     {
+        JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, init);
         once_inited_ = true;
         JSB_LOG(VeryVerbose, "jsb lang init");
         environment_ = std::make_shared<jsb::Environment>();

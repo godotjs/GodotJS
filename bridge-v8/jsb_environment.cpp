@@ -154,6 +154,7 @@ namespace jsb
 
     Environment::Environment()
     {
+        JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
         static GlobalInitialize global_initialize;
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;

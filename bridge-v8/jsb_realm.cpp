@@ -224,6 +224,7 @@ namespace jsb
 
     void Realm::_require(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
+        JSB_BENCHMARK_SCOPE(JSRealm, _require);
         v8::Isolate* isolate = info.GetIsolate();
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -270,6 +271,7 @@ namespace jsb
 
     JavaScriptModule* Realm::_load_module(const String& p_parent_id, const String& p_module_id)
     {
+        JSB_BENCHMARK_SCOPE(JSRealm, _load_module);
         JavaScriptModule* existed_module = module_cache_.find(p_module_id);
         if (existed_module && !existed_module->reload_requested)
         {
@@ -825,6 +827,7 @@ namespace jsb
 
     Error Realm::load(const String& p_name)
     {
+        JSB_BENCHMARK_SCOPE(JSRealm, load);
         environment_->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -1681,6 +1684,8 @@ namespace jsb
     // [JS] function load_type(type_name: string): Class;
     void Realm::_load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
+        JSB_BENCHMARK_SCOPE(JSRealm, _load_godot_mod);
+
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Value> arg0 = info[0];
         if (!arg0->IsString())
@@ -1769,6 +1774,7 @@ namespace jsb
 
     JSValueMove Realm::eval_source(const CharString& p_source, const String& p_filename, Error& r_err)
     {
+        JSB_BENCHMARK_SCOPE(JSRealm, eval_source);
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);

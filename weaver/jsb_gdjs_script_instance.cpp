@@ -110,6 +110,7 @@ ScriptLanguage* GodotJSScriptInstance::get_language() { return GodotJSScriptLang
 
 GodotJSScriptInstance::~GodotJSScriptInstance()
 {
+    JSB_BENCHMARK_SCOPE(GodotJSScriptInstance, Destruct);
     MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
     jsb_check(script_.is_valid() && owner_);
     script_->instances_.erase(owner_);

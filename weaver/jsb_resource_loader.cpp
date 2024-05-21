@@ -6,6 +6,8 @@
 
 Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, const String& p_original_path, Error* r_error, bool p_use_sub_threads, float* r_progress, CacheMode p_cache_mode)
 {
+    JSB_BENCHMARK_SCOPE(ResourceFormatLoaderGodotJSScript, load);
+
     //TODO use Realm to resolve?
     Error err;
     jsb_check(p_path.ends_with(JSB_RES_EXT));

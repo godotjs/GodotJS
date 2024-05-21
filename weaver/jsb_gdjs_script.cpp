@@ -8,6 +8,7 @@
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
     {
+        JSB_BENCHMARK_SCOPE(GodotJSScript, Construct);
         GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
         MutexLock lock(lang->mutex_);
 
@@ -20,6 +21,7 @@ GodotJSScript::~GodotJSScript()
     cached_methods_.clear();
 
     {
+        JSB_BENCHMARK_SCOPE(GodotJSScript, Destruct);
         const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
         MutexLock lock(lang->mutex_);
 
@@ -251,6 +253,7 @@ void GodotJSScript::attach_source(const String& p_path, const String& p_source)
 void GodotJSScript::load_module()
 {
     if (realm_ && loaded_) return;
+    JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
     const String path = get_path();
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();

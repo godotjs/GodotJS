@@ -28,6 +28,9 @@ jsb_defines = [
     CompileDefines("JSB_WITH_V8", 1 if javascript_engine == "v8" else 0),
     CompileDefines("JSB_WITH_QUICKJS", 1 if javascript_engine == "quickjs" else 0),
     
+    CompileDefines("JSB_BENCHMARK", 1, [
+        "print benchmark", 
+    ]), 
     CompileDefines("JSB_WITH_DEBUGGER", 1, [
         "enable to debug with Chrome devtools with the following link by default:", 
         "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1",
