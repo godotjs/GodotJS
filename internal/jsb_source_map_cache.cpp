@@ -38,7 +38,19 @@ namespace jsb::internal
             if (hint.is_empty()) st_line = vformat("    at %s:%d:%d", restored, position.line, position.column);
             else st_line = vformat("    at %s (%s:%d:%d)", hint, restored, position.line, position.column);
         }
-        return String("\n").join(st_lines);
+
+        static String newline = "\n";
+        String ret;
+        for (int i = 0, n = st_lines.size(); i < n; ++i)
+        {
+            const String& line = st_lines[i];
+            // skip the leading 'Error' in the `stacktrace` message
+            if (i == 0 && line == "Error") continue;
+            // use static string `newline` to avoid `strlen` in `String::operator +=(const char*)`
+            if (!ret.is_empty()) ret += newline;
+            ret += line;
+        }
+        return ret;
     }
 
     SourceMap* SourceMapCache::find_source_map(const String& p_filename)
