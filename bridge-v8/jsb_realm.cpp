@@ -147,12 +147,10 @@ namespace jsb
         // join all data
         for (int n = info.Length(); index < n; index++)
         {
-            v8::String::Utf8Value str(isolate, info[index]);
-
-            if (str.length() > 0)
+            if (String str = stringify(isolate, context, info[index]); str.length() > 0)
             {
                 sb.append(" ");
-                sb.append(String::utf8(*str, str.length()));
+                sb.append(str);
             }
         }
 
@@ -173,6 +171,35 @@ namespace jsb
         default: print_line(text); return;
         }
     }
+
+    String Realm::stringify(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval)
+    {
+        if (p_jval->IsObject())
+        {
+            v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+            if (self->InternalFieldCount() == kObjectFieldCount)
+            {
+                //TODO check the class to make it safe to cast (space cheaper?)
+                //TODO or, add one more InternalField to ensure it (time cheaper?)
+                void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+                const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                if (!class_info)
+                {
+                    static String dead_object = "(dead object)";
+                    return dead_object;
+                }
+                if (class_info->type == NativeClassType::GodotObject) return vformat("[%s %s]", class_info->name, uitos((uint64_t) pointer));
+                return ((Variant*) pointer)->operator String();
+            }
+        }
+
+        if (v8::String::Utf8Value str(isolate, p_jval); str.length() > 0)
+        {
+            return String::utf8(*str, str.length());
+        }
+        return String();
+    }
+
 
     void Realm::_define(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
@@ -494,7 +521,7 @@ namespace jsb
     void Realm::_parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info)
     {
         Environment* environment = p_realm->environment_.get();
-        const auto godot_js_classes_address_scope = environment->gdjs_classes_.address_scope();
+        jsb_address_guard(environment->gdjs_classes_, godotjs_classes_address_guard);
         v8::Isolate* isolate = environment->unwrap();
 
         //TODO collect methods/signals/properties
@@ -599,16 +626,11 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = context_.Get(isolate);
 
-        const auto godot_js_class_info_address_scope = environment_->gdjs_classes_.address_scope();
+        jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
         const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         v8::Local<v8::Object> instance = constructor->CallAsConstructor(context, 0, nullptr).ToLocalChecked().As<v8::Object>();
         const NativeObjectID object_id = environment_->bind_godot_object(class_info.native_class_id, p_this, instance);
-        // for (const KeyValue<StringName, GodotJSMethodInfo>& pair : class_info.signals)
-        // {
-        //     v8::Local<v8::String> signal_name_str = V8Helper::to_string(isolate, pair.key);
-        //     v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, _godot_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) environment_->add_string_name(pair.key)));
-        // }
         JSB_LOG(VeryVerbose, "[experimental] crossbinding %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
         return object_id;
     }
@@ -893,7 +915,6 @@ namespace jsb
             return class_id;
         }
 
-        // const auto native_classes_address_scope = environment_->native_classes_.address_scope();
         class_id = environment_->add_class(NativeClassType::GodotObject, p_class_info->name);
         JSB_LOG(VeryVerbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
 
@@ -1007,6 +1028,7 @@ namespace jsb
             }
 
             {
+                jsb_address_guard(environment_->native_classes_, native_classes_address_scope);
                 NativeClassInfo& class_info = environment_->get_native_class(class_id);
                 jsb_check(function_template == class_info.template_);
                 v8::Local<v8::Function> function = function_template->GetFunction(context).ToLocalChecked();
@@ -1135,27 +1157,6 @@ namespace jsb
             return true;
         }
         return false;
-    }
-
-    bool Realm::check_argc(const MethodBind* p_method, int p_argc)
-    {
-        //TODO check the num of arguments for MethodBind invocation
-        // if (p_method->is_vararg())
-        // {
-        //     if (p_argc < p_method->get_argument_count())
-        //     {
-        //         return false;
-        //     }
-        // }
-        // else
-        // {
-        //     //TODO consider default arguments
-        //     if (p_argc != p_method->get_argument_count())
-        //     {
-        //         return false;
-        //     }
-        // }
-        return true;
     }
 
     bool Realm::can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type)
@@ -1472,6 +1473,7 @@ namespace jsb
         case Variant::PACKED_VECTOR3_ARRAY:
         case Variant::PACKED_COLOR_ARRAY:
             {
+                jsb_checkf(Variant::can_convert(p_cvar.get_type(), p_type), "variant type can't convert to %s from %s", Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
                 //TODO TEMP SOLUTION
                 Realm* realm = Realm::wrap(context);
                 NativeClassID class_id;
@@ -1633,7 +1635,7 @@ namespace jsb
         }
 
         // prepare argv
-        if (!check_argc(method_bind, argc))
+        if (!internal::FMethodInfo::check_argc(method_bind->is_vararg(), argc, method_bind->get_default_argument_count(), method_bind->get_argument_count()))
         {
             jsb_throw(isolate, "num of arguments does not meet the requirement");
             return;

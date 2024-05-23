@@ -73,6 +73,14 @@ namespace jsb
             return str_gd;
         }
 
+        // get pointer of `this` with unsafe static cast
+        template<typename T>
+        jsb_force_inline static T* get_this(const v8::Local<v8::Object>& p_obj)
+        {
+            if (!p_obj->IsObject() || p_obj->InternalFieldCount() != kObjectFieldCount) return nullptr;
+            return (T*) p_obj->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+        }
+
         template<size_t N>
         jsb_force_inline static v8::Local<v8::String> to_string(v8::Isolate* isolate, const char (&literal)[N])
         {

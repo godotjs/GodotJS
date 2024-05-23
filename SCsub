@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import os
 import io
+import time
 
 Import("env")
 Import("env_modules")
@@ -94,11 +95,13 @@ def generate_method_code(output, methodname, indent, filenames):
             targetname = os.path.basename(sourcename)
         targetstart = cursor
         newline = 0
-        output.write(indent+indent+"// target: "+targetname+"\n")
-        output.write(indent+indent)
+        mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(sourcename)))
         with open(sourcename, "rb") as input:
             bytes = input.read()
-            cursor += len(bytes)
+            length = len(bytes)
+            output.write(indent+indent+f"// target: {targetname} length: {length} modified: {mtime}\n")
+            output.write(indent+indent)
+            cursor += length
             positions[targetname] = (targetstart, cursor - targetstart)
             for byte in bytes:
                 output.write(f"0x{byte:02x}, ")

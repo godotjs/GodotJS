@@ -8,28 +8,28 @@ namespace jsb::internal
     {
         StringName name;
         Vector<Variant::Type> argument_types;
+        Vector<Variant> default_arguments;
         Variant::Type return_type;
 
         bool is_vararg;
 
-        bool check_argc(int argc) const
+        jsb_force_inline bool check_argc(int argc) const
+        {
+            return check_argc(is_vararg, argc, default_arguments.size(), argument_types.size());
+        }
+
+        jsb_force_inline static bool check_argc(bool is_vararg, int argc, int default_num, int expected_num)
         {
             if (is_vararg)
             {
-                if (argc < argument_types.size())
-                {
-                    return false;
-                }
+                return argc + default_num >= expected_num;
             }
-            else
+
+            if (default_num == 0)
             {
-                //TODO consider default arguments
-                if (argc != argument_types.size())
-                {
-                    return false;
-                }
+                return argc == expected_num;
             }
-            return true;
+            return argc <= expected_num && argc + default_num >= expected_num;
         }
     };
 

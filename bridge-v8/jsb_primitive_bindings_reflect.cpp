@@ -127,6 +127,7 @@ namespace jsb
             internal::FMethodInfo& method_info = GetVariantInfoCollection(p_env.realm).methods.write[collection_index];
             method_info.name = p_name;
             method_info.return_type = Variant::get_builtin_method_return_type(TYPE, p_name);
+            method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, p_name);
             const int argument_count = Variant::get_builtin_method_argument_count(TYPE, p_name);
             method_info.argument_types.resize_zeroed(argument_count);
             method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, p_name);
@@ -236,7 +237,7 @@ namespace jsb
         static void finalizer(Environment* environment, void* pointer, bool p_persistent)
         {
             Variant* self = (Variant*) pointer;
-            jsb_check(self->get_type() == TYPE);
+            jsb_checkf(Variant::can_convert(self->get_type(), TYPE), "variant type can't convert to %s from %s", Variant::get_type_name(TYPE), Variant::get_type_name(self->get_type()));
             if (!p_persistent)
             {
                 environment->dealloc_variant(self);
@@ -290,9 +291,14 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
             const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
+            Variant* self = V8Helper::get_this<Variant>(info.This());
+            if (!self)
+            {
+                jsb_throw(isolate, "no bound this");
+                return;
+            }
 
             // prepare argv
             if (!method_info.check_argc(argc))

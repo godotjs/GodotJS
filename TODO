@@ -7,16 +7,18 @@ Core:
     ✔ source-map: configurable in project settings @done(24-05-16 16:45)
     ✔ generate JSB_ options in jsb.gen.h (get rid of project scope defines) @done(24-05-12 08:17)
     ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)
+    ✔ codegen: defulat argument values @done(24-05-23)
+    ✔ `console.log` prints readable strings for godot `Object` and `Variant`  @done(24-05-23)
 
 Scripting:
     ☐ unexpected reloading (only datetime changed)
     ☐ add `preload` support
     ☐ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11 10:06)
     ☐ check if `call_prelude` is called even if `_ready` is not defined in script
-    ☐ handle default argument values when calling Variant type methods
-    ☐ handle default argument values when calling Object type methods (such as `MethodBind.default_arguments` in `_godot_object_method`)
+    ✔ handle default argument values when calling Variant type methods @done(24-05-23)
+    ✔ handle default argument values when calling Object type methods (such as `MethodBind.default_arguments` in `_godot_object_method`) @done(24-05-23)
     ✔ handle varargs when calling Variant type methods @done(24-05-17 19:15)
-    ☐ handle varargs when calling Object type methods
+    ✔ handle varargs when calling Object type methods @done(24-05-23 12:09)
     ✔ crash on calling ResourceLoader.load @done(24-04-30 17:51)
     ✔ Variant pool (no threading since environment scoped) @done(24-04-21 21:53)
     ✔ signal decalaration in scripts @done(24-04-23 18:33)

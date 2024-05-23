@@ -277,6 +277,57 @@ class ClassWriter extends IndentWriter {
     make_arg(info) {
         return `${replace(info.name)}: ${this.make_typename(info)}`;
     }
+    make_literal_value(value) {
+        // plain types
+        switch (value.type) {
+            case jsb.VariantType.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
+            case jsb.VariantType.TYPE_FLOAT:
+            case jsb.VariantType.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
+            case jsb.VariantType.TYPE_STRING:
+            case jsb.VariantType.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
+            default: break;
+        }
+        // make them more readable?
+        if (value.type == jsb.VariantType.TYPE_VECTOR2) {
+            if (value == null)
+                return 'new Vector2()';
+            if (value.value.x == value.value.y) {
+                if (value.value.x == 0)
+                    return `Vector2.ZERO`;
+                if (value.value.x == 1)
+                    return `Vector2.ONE`;
+            }
+            return `new Vector2(${value.value.x}, ${value.value.y})`;
+        }
+        if (value.type == jsb.VariantType.TYPE_VECTOR3) {
+            if (value == null)
+                return 'new Vector3()';
+            if (value.value.x == value.value.y == value.value.z) {
+                if (value.value.x == 0)
+                    return `Vector3.ZERO`;
+                if (value.value.x == 1)
+                    return `Vector3.ONE`;
+            }
+            return `new Vector3(${value.value.x}, ${value.value.y}, ${value.value.z})`;
+        }
+        if (value.type == jsb.VariantType.TYPE_COLOR) {
+            if (value == null)
+                return 'new Color()';
+            return `new Color(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
+        }
+        if (value.value == null) {
+            return "<any> {} /*compound.type from nil*/";
+        }
+        //TODO value sig for compound types
+        return `<any> {} /*compound.type from ${value.type}(${value.value})*/`;
+    }
+    make_arg_default_value(method_info, index) {
+        const default_arguments = method_info.default_arguments || [];
+        const def_index = index - (method_info.args_.length - default_arguments.length);
+        if (def_index < 0 || def_index >= default_arguments.length)
+            return this.make_arg(method_info.args_[index]);
+        return this.make_arg(method_info.args_[index]) + " = " + this.make_literal_value(default_arguments[def_index]);
+    }
     make_args(method_info) {
         //TODO consider default arguments
         const varargs = "...vargargs: any[]";
@@ -284,7 +335,7 @@ class ClassWriter extends IndentWriter {
         if (method_info.args_.length == 0) {
             return is_vararg ? varargs : "";
         }
-        const args = method_info.args_.map(it => this.make_arg(it)).join(", ");
+        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index)).join(", ");
         if (is_vararg) {
             return `${args}, ${varargs}`;
         }

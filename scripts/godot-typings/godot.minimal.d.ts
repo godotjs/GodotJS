@@ -189,6 +189,12 @@ declare namespace jsb {
             PROPERTY_USAGE_NO_EDITOR = PROPERTY_USAGE_STORAGE,
         }
 
+        interface DefaultArgumentInfo
+        {
+            type: jsb.VariantType;
+            value: any;
+        }
+
         interface MethodInfo {
             id: number;
             name: string;
@@ -199,6 +205,7 @@ declare namespace jsb {
             argument_count: number; /** int32_t */
 
             args_: Array<PropertyInfo>;
+            default_arguments?: Array<DefaultArgumentInfo>;
             return_: PropertyInfo | undefined;
         }
 
@@ -212,6 +219,7 @@ declare namespace jsb {
             argument_count: number; /** int32_t */
 
             args_: Array<PropertyInfo>;
+            default_arguments?: Array<DefaultArgumentInfo>;
             return_: PropertyInfo | undefined;
         }
 
@@ -311,6 +319,7 @@ declare namespace jsb {
 
         function get_global_constants(): Array<GlobalConstantInfo>;
 
+        // SO FAR, NOT USED
         function get_utility_functions(): Array<MethodInfo>;
 
         function delete_file(filepath: string): void;

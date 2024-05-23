@@ -1,5 +1,6 @@
 #include "jsb_editor_utility.h"
 
+#include "jsb_realm.h"
 #include "jsb_primitive_bindings.h"
 #include "core/core_constants.h"
 #if TOOLS_ENABLED
@@ -125,6 +126,24 @@ namespace jsb
             set_field(isolate, context, object, "usage", property_info.usage);
         }
 
+        void build_property_default_value(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& property_value, Variant::Type property_type, const v8::Local<v8::Object>& object)
+        {
+            v8::Local<v8::Value> val;
+            if (property_value.get_type() == Variant::NIL)
+            {
+                set_field(isolate, context, object, "type", property_type);
+                set_field(isolate, context, object, "value", v8::Null(isolate));
+                return;
+            }
+            if (!Realm::gd_var_to_js(isolate, context, property_value, property_type, val))
+            {
+                JSB_LOG(Error, "unresolved default value");
+                return;
+            }
+            set_field(isolate, context, object, "type", property_type);
+            set_field(isolate, context, object, "value", val);
+        }
+
         struct FPrimitiveGetSetInfo
         {
             StringName name;
@@ -190,16 +209,34 @@ namespace jsb
                 set_field(isolate, context, object, "return_", property_info_obj);
             }
 
-            const int argc = method_bind->get_argument_count();
-            v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argc);
-            for (int index = 0; index < argc; ++index)
             {
-                const PropertyInfo& arg_info = method_bind->get_argument_info(index);
-                v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
-                build_property_info(isolate, context, arg_info, property_info_obj);
-                args_obj->Set(context, index, property_info_obj);
+                const int argc = method_bind->get_argument_count();
+                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argc);
+                for (int index = 0; index < argc; ++index)
+                {
+                    const PropertyInfo& arg_info = method_bind->get_argument_info(index);
+                    v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
+                    build_property_info(isolate, context, arg_info, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj);
+                }
+                set_field(isolate, context, object, "args_", args_obj);
             }
-            set_field(isolate, context, object, "args_", args_obj);
+
+            // write type info for `defaults`
+            {
+                const Vector<Variant>& default_arguments = method_bind->get_default_arguments();
+                jsb_check(method_bind->get_default_argument_count() == default_arguments.size());
+                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, default_arguments.size());
+                for (int index = 0; index < default_arguments.size(); ++index)
+                {
+                    v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
+                    const Variant::Type type = method_bind->get_argument_info(method_bind->get_argument_count() - (default_arguments.size() - index)).type;
+                    const Variant value = default_arguments[index];
+                    build_property_default_value(isolate, context, value, type, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj);
+                }
+                set_field(isolate, context, object, "default_arguments", args_obj);
+            }
         }
 
         void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const MethodInfo& method_info, const v8::Local<v8::Object>& object)
@@ -213,6 +250,7 @@ namespace jsb
             // set_field(isolate, context, object, "has_return", method_bind->has_return());
             set_field(isolate, context, object, "argument_count", method_info.arguments.size());
 
+            // write type info for `return`
             if (method_info.return_val.type != Variant::NIL)
             {
                 const PropertyInfo& return_info = method_info.return_val;
@@ -221,16 +259,34 @@ namespace jsb
                 set_field(isolate, context, object, "return_", property_info_obj);
             }
 
-            const int argc = method_info.arguments.size();
-            v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argc);
-            for (int index = 0; index < argc; ++index)
+            // write type info for `arguments`
             {
-                const PropertyInfo& arg_info = method_info.arguments[index];
-                v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
-                build_property_info(isolate, context, arg_info, property_info_obj);
-                args_obj->Set(context, index, property_info_obj);
+                const int argc = method_info.arguments.size();
+                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argc);
+                for (int index = 0; index < argc; ++index)
+                {
+                    const PropertyInfo& arg_info = method_info.arguments[index];
+                    v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
+                    build_property_info(isolate, context, arg_info, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj);
+                }
+                set_field(isolate, context, object, "args_", args_obj);
             }
-            set_field(isolate, context, object, "args_", args_obj);
+
+            // write type info for `defaults`
+            {
+                const int argc = method_info.default_arguments.size();
+                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argc);
+                for (int index = 0; index < argc; ++index)
+                {
+                    v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
+                    const Variant value = method_info.default_arguments[index];
+                    const Variant::Type type = method_info.arguments[method_info.arguments.size() - (argc - index)].type;
+                    build_property_default_value(isolate, context, value, type, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj);
+                }
+                set_field(isolate, context, object, "default_arguments", args_obj);
+            }
         }
 
         void build_enum_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const ClassDB::ClassInfo::EnumInfo& enum_info, const v8::Local<v8::Object>& object)
@@ -565,6 +621,7 @@ namespace jsb
                     prop_info.type = Variant::get_builtin_method_argument_type(TYPE, name, i);
                     method_info.arguments.push_back(prop_info);
                 }
+                method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
                 if (Variant::is_builtin_method_const(TYPE, name)) method_info.flags |= METHOD_FLAG_CONST;
                 if (Variant::is_builtin_method_static(TYPE, name)) method_info.flags |= METHOD_FLAG_STATIC;
                 if (Variant::is_builtin_method_vararg(TYPE, name)) method_info.flags |= METHOD_FLAG_VARARG;
