@@ -247,7 +247,7 @@ void GodotJSScript::attach_source(const String& p_path, const String& p_source)
 {
     set_path(p_path);
     set_source_code(p_source);
-    //TODO we can't instantly compile it here, maybe we could do some string analysis/parsing thread independently
+    //TODO we can't instantly compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
 }
 
 void GodotJSScript::load_module()
@@ -256,19 +256,19 @@ void GodotJSScript::load_module()
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
     const String path = get_path();
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     std::shared_ptr<jsb::Realm> realm = lang->get_context();
 
     realm_ = realm;
     loaded_ = true;
-    Error err = realm->load(path);
+    const Error err = realm->load(path);
     if (err != OK)
     {
         JSB_LOG(Error, "failed to attach module %s (%d)", path, err);
         return;
     }
     const jsb::JavaScriptModuleCache& module_cache = realm->get_module_cache();
-    if (jsb::JavaScriptModule* module = module_cache.find(path))
+    if (const jsb::JavaScriptModule* module = module_cache.find(path))
     {
         gdjs_class_id_ = module->default_class_id;
         valid_ = gdjs_class_id_.is_valid();

@@ -96,7 +96,10 @@ namespace jsb
         }
 
         //TODO temp
-        jsb_force_inline const GodotJSClassInfo& get_gdjs_class_info(GodotJSClassID p_class_id) const { return environment_->get_gdjs_class(p_class_id); }
+        jsb_force_inline const GodotJSClassInfo& get_gdjs_class_info(GodotJSClassID p_class_id) const
+        {
+            return environment_->get_gdjs_class(p_class_id);
+        }
 
         //TODO temp, get C++ function pointer (include class methods)
         jsb_force_inline static uint8_t* get_function_pointer(const v8::Local<v8::Context>& p_context, uint32_t p_offset)

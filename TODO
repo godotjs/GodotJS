@@ -4,6 +4,7 @@ Core:
     ☐ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52)
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
+    ☐ codegen: generate `signal` with type annotation for arguments
     ✔ source-map: configurable in project settings @done(24-05-16 16:45)
     ✔ generate JSB_ options in jsb.gen.h (get rid of project scope defines) @done(24-05-12 08:17)
     ✔ codegen: primitive constructor declarations @done(24-04-21 10:58)

@@ -1939,6 +1939,7 @@ namespace jsb
 
     bool Realm::get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val)
     {
+        environment_->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
         if (!this->environment_->objects_.is_valid_index(p_object_id))
@@ -1966,6 +1967,7 @@ namespace jsb
 
     bool Realm::set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val)
     {
+        environment_->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
         if (!this->environment_->objects_.is_valid_index(p_object_id))
