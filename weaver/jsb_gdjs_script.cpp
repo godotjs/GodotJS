@@ -96,14 +96,23 @@ StringName GodotJSScript::get_instance_base_type() const
 
 ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 {
-    jsb_check(loaded_);
     //TODO multi-thread scripting not supported for now
+    jsb_check(loaded_);
+
+    /* STEP 1, CREATE */
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
 
     instance->owner_ = p_this;
     instance->script_ = Ref(this); // must set before 'set_script_instance'
     instance->owner_->set_script_instance(instance);
+
+	/* STEP 2, INITIALIZE AND CONSTRUCT */
+    {
+        MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+        instances_.insert(instance->owner_);
+    }
     instance->object_id_ = realm_->crossbind(p_this, gdjs_class_id_);
+
     return instance;
 }
 

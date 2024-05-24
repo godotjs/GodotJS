@@ -17,7 +17,7 @@
 #include "../internal/jsb_source_map_cache.h"
 #endif
 
-#define GetStringName(isolate, name) get_string_name_cache().get_string_value(isolate, jsb_string_name(name))
+#define GetStringValue(isolate, name) get_string_name_cache().get_string_value(isolate, jsb_string_name(name))
 
 namespace jsb
 {

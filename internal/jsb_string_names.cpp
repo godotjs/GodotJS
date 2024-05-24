@@ -5,14 +5,11 @@ namespace jsb::internal
 
     StringNames::StringNames()
     {
-        prototype = _scs_create("prototype");
-        value = _scs_create("value");
-        loaded = _scs_create("loaded");
-        name = _scs_create("name");
-        type = _scs_create("type");
-        evaluator = _scs_create("evaluator");
-        _notification = _scs_create("_notification");
-        Node = _scs_create("Node");
+#pragma push_macro("DEF")
+#   undef DEF
+#   define DEF(KeyName) sn_##KeyName = _scs_create(#KeyName)
+#   include "jsb_string_names.def.h"
+#pragma pop_macro("DEF")
     }
 
 }

@@ -2,7 +2,7 @@
 #define GODOTJS_STRING_NAMES_H
 #include "jsb_macros.h"
 
-#define jsb_string_name(name) ::jsb::internal::StringNames::get_singleton().name
+#define jsb_string_name(name) ::jsb::internal::StringNames::get_singleton().sn_##name
 
 class GodotJSScriptLanguage;
 
@@ -27,15 +27,13 @@ namespace jsb::internal
     public:
         jsb_force_inline static StringNames& get_singleton() { return *singleton_; }
 
-        StringName prototype;
-        StringName value;
-        StringName loaded;
-        StringName name;
-        StringName type;
-        StringName evaluator;
-        StringName _notification;
+#pragma push_macro("DEF")
+#   undef DEF
+#   define DEF(KeyName) StringName sn_##KeyName
+#   include "jsb_string_names.def.h"
 
-        StringName Node;
+#pragma pop_macro("DEF")
+
     };
 }
 #endif

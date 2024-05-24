@@ -316,7 +316,7 @@ namespace jsb
             const StringName module_id_sn = p_module_id;
             JavaScriptModule& module = module_cache_.insert(module_id_sn, false);
             v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
-            v8::Local<v8::String> propkey_loaded = environment_->GetStringName(isolate, loaded);
+            v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(isolate, loaded);
 
             // register the new module obj into module_cache obj
             v8::Local<v8::Object> jmodule_cache = jmodule_cache_.Get(isolate);
@@ -469,17 +469,17 @@ namespace jsb
         {
             return;
         }
+        Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
         v8::Local<v8::Value> default_val;
-        if (!exports->Get(p_context, v8::String::NewFromUtf8Literal(isolate, "default")).ToLocal(&default_val)
+        if (!exports->Get(p_context, environment->GetStringValue(isolate, default)).ToLocal(&default_val)
             || !default_val->IsObject())
         {
             return;
         }
 
-        Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
-        v8::Local<v8::String> name_str = default_obj->Get(p_context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>();
+        v8::Local<v8::String> name_str = default_obj->Get(p_context, environment->GetStringValue(isolate, name)).ToLocalChecked().As<v8::String>();
         // v8::String::Utf8Value name(p_isolate, name_str);
         v8::Local<v8::Value> class_id_val;
         if (!default_obj->Get(p_context, environment->get_symbol(Symbols::ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
@@ -490,8 +490,10 @@ namespace jsb
 
         // unsafe
         const NativeClassID native_class_id = (NativeClassID) class_id_val->Uint32Value(p_context).ToChecked();
+        jsb_address_guard(environment->native_classes_, native_classes_address_guard);
         const NativeClassInfo& native_class_info = environment->get_native_class(native_class_id);
 
+        //TODO maybe we should always add new godotjs class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
         GodotJSClassInfo* existed_class_info = environment->find_gdjs_class(p_module.default_class_id);
         if (existed_class_info)
         {
@@ -526,7 +528,7 @@ namespace jsb
 
         //TODO collect methods/signals/properties
         v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(isolate);
-        v8::Local<v8::Object> prototype = default_obj->Get(p_context, environment->GetStringName(isolate, prototype)).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Object> prototype = default_obj->Get(p_context, environment->GetStringValue(isolate, prototype)).ToLocalChecked().As<v8::Object>();
 
         // methods
         {
@@ -543,7 +545,7 @@ namespace jsb
                 if (prototype->GetOwnPropertyDescriptor(p_context, prop_name).ToLocal(&prop_descriptor) && prop_descriptor->IsObject())
                 {
                     v8::Local<v8::Value> prop_val;
-                    if (prop_descriptor.As<v8::Object>()->Get(p_context, environment->GetStringName(isolate, value)).ToLocal(&prop_val) && prop_val->IsFunction())
+                    if (prop_descriptor.As<v8::Object>()->Get(p_context, environment->GetStringValue(isolate, value)).ToLocal(&prop_val) && prop_val->IsFunction())
                     {
                         //TODO property categories
                         const StringName sname = name_s;
@@ -609,8 +611,8 @@ namespace jsb
                     jsb_check(element->IsObject());
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     GodotJSPropertyInfo property_info;
-                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringName(isolate, name)).ToLocalChecked()); // string
-                    property_info.type = (Variant::Type) obj->Get(context, environment->GetStringName(isolate, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(isolate, name)).ToLocalChecked()); // string
+                    property_info.type = (Variant::Type) obj->Get(context, environment->GetStringValue(isolate, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
                     //TODO save property default value
                     // property_info.default_value = ...;
                     p_class_info.properties.insert(property_info.name, property_info);
@@ -2022,8 +2024,8 @@ namespace jsb
             for (uint32_t index = 0; index < len; ++index)
             {
                 v8::Local<v8::Object> element = collection->Get(context, index).ToLocalChecked().As<v8::Object>();
-                v8::Local<v8::String> element_name = element->Get(context, environment_->GetStringName(isolate, name)).ToLocalChecked().As<v8::String>();
-                v8::Local<v8::Value> element_value = element->Get(context, environment_->GetStringName(isolate, evaluator)).ToLocalChecked();
+                v8::Local<v8::String> element_name = element->Get(context, environment_->GetStringValue(isolate, name)).ToLocalChecked().As<v8::String>();
+                v8::Local<v8::Value> element_value = element->Get(context, environment_->GetStringValue(isolate, evaluator)).ToLocalChecked();
 
                 if (element_value->IsString())
                 {
