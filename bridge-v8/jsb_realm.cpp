@@ -389,8 +389,8 @@ namespace jsb
                 const CharString cmodule_id = module_id.utf8();
                 v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
                 v8::Local<v8::Object> exports_obj = v8::Object::New(isolate);
-                v8::Local<v8::String> propkey_loaded = v8::String::NewFromUtf8Literal(isolate, "loaded");
-                v8::Local<v8::String> propkey_children = v8::String::NewFromUtf8Literal(isolate, "children");
+                v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(isolate, loaded);
+                v8::Local<v8::String> propkey_children = environment_->GetStringValue(isolate, children);
 
                 // register the new module obj into module_cache obj
                 v8::Local<v8::Object> jmodule_cache = jmodule_cache_.Get(isolate);
@@ -399,9 +399,9 @@ namespace jsb
 
                 // init the new module obj
                 module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, false)).Check();
-                module_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "id"), jmodule_id).Check();
+                module_obj->Set(context, environment_->GetStringValue(isolate, id), jmodule_id).Check();
                 module_obj->Set(context, propkey_children, v8::Array::New(isolate)).Check();
-                module_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "exports"), exports_obj);
+                module_obj->Set(context, environment_->GetStringValue(isolate, exports), exports_obj);
                 module.id = module_id;
                 module.path = asset_path;
                 module.module.Reset(isolate, module_obj);
