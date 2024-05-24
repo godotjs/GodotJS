@@ -160,6 +160,7 @@ namespace jsb
         create_params.array_buffer_allocator = &allocator_;
 
         thread_id_ = Thread::get_caller_id();
+        last_ticks_ = 0;
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);

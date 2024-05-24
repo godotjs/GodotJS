@@ -16,6 +16,14 @@ namespace jsb::internal
             r_value = VariantUtilityFunctions::type_convert(dummy, p_type);
 #endif
         }
+
+        /**
+         * if a StringName represents a non-null string
+         */
+        jsb_force_inline static bool is_valid(const StringName& p_name)
+        {
+            return ((const void*) p_name) != nullptr;
+        }
     };
 }
 #endif

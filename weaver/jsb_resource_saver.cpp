@@ -1,7 +1,9 @@
 #include "jsb_resource_saver.h"
 #include "jsb_gdjs_script.h"
+#include "jsb_gdjs_lang.h"
 #include "core/error/error_list.h"
 
+// @seealso: gdscript.cpp ResourceFormatSaverGDScript::save
 Error ResourceFormatSaverGodotJSScript::save(const Ref<Resource>& p_resource, const String& p_path, uint32_t p_flags)
 {
     const Ref<GodotJSScript> sqscr = p_resource;
@@ -22,8 +24,8 @@ Error ResourceFormatSaverGodotJSScript::save(const Ref<Resource>& p_resource, co
 
     if (ScriptServer::is_reload_scripts_on_save_enabled())
     {
-        sqscr->reload();
-        //GodotJSScriptLanguage::get_singleton()->reload_tool_script(p_resource, true);
+        // WTF??
+        GodotJSScriptLanguage::get_singleton()->reload_tool_script(p_resource, true);
     }
 
     return OK;

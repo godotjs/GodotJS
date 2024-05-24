@@ -197,7 +197,9 @@ namespace jsb
         // return false if something wrong with an exception thrown
         // caller should handle the exception if it's not called from js
         JavaScriptModule* _load_module(const String& p_parent_id, const String& p_module_id);
-        void reload_module(const StringName& p_module_id);
+
+        // request to reload a module
+        bool reload_module(const StringName& p_module_id);
 
         /**
          * Translate a Godot object into a javascript object. The type of `p_object_obj` will be automatically exposed to the context if not existed.

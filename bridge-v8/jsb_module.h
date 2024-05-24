@@ -2,6 +2,7 @@
 #define GODOTJS_MODULE_H
 
 #include "jsb_pch.h"
+#include "../internal/jsb_variant_util.h"
 
 namespace jsb
 {
@@ -56,7 +57,7 @@ namespace jsb
         {
             jsb_checkf(!((String) p_name).is_empty(), "empty module name is not allowed");
             jsb_checkf(!find(p_name), "duplicated module name %s", p_name);
-            if (p_main_candidate && !((const void*) main_))
+            if (p_main_candidate && !internal::VariantUtil::is_valid(main_))
             {
                 main_ = p_name;
                 JSB_LOG(Verbose, "load main module %s", p_name);

@@ -18,6 +18,7 @@
 #endif
 
 #define GetStringValue(isolate, name) get_string_name_cache().get_string_value(isolate, jsb_string_name(name))
+#define SymbolFor(name) get_symbol(Symbols::name)
 
 namespace jsb
 {
@@ -31,10 +32,10 @@ namespace jsb
         enum Type : uint8_t
         {
             ClassId,
-            ClassSignals,           // array of all @signal annotations
-            ClassProperties,        // array of all @export annotations
-            ClassImplicitReadyFunc, // array of all @onready annotations
-            ClassToolScript,        // @tool annotated scripts
+            ClassSignals,            // array of all @signal annotations
+            ClassProperties,         // array of all @export annotations
+            ClassImplicitReadyFuncs, // array of all @onready annotations
+            ClassToolScript,         // @tool annotated scripts
             kNum,
         };
     }
@@ -110,7 +111,7 @@ namespace jsb
 
         jsb_force_inline void check_internal_state() const { jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet"); }
 
-        // replace position in the stacktrace with source map
+        // try to translate the source positions in stacktrace
         String handle_source_map(const String& p_stacktrace);
 
 #if JSB_WITH_VARIANT_POOL
@@ -119,34 +120,10 @@ namespace jsb
             Variant* rval = variants_pool_.alloc();
             *rval = p_templet;
             return rval;
-            // if (const int n = variants_pool_.size())
-            // {
-            //     Variant* ru = variants_pool_[n - 1];
-            //     variants_pool_.remove_at(n - 1);
-            //     *ru = p_templet;
-            //     return ru;
-            // }
-            // return memnew(Variant(p_templet));
         }
 
-        jsb_force_inline Variant* alloc_variant()
-        {
-            return variants_pool_.alloc();
-            // if (const int n = variants_pool_.size())
-            // {
-            //     Variant* ru = variants_pool_[n - 1];
-            //     variants_pool_.remove_at(n - 1);
-            //     return ru;
-            // }
-            // return memnew(Variant);
-        }
-
-        jsb_force_inline void dealloc_variant(Variant* p_var)
-        {
-            // VariantInternal::clear(p_var);
-            // variants_pool_.append(p_var);
-            variants_pool_.free(p_var);
-        }
+        jsb_force_inline Variant* alloc_variant() { return variants_pool_.alloc(); }
+        jsb_force_inline void dealloc_variant(Variant* p_var) { variants_pool_.free(p_var); }
 #else
         jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { return memnew(Variant(p_templet)); }
         jsb_force_inline Variant* alloc_variant() { return memnew(Variant); }
@@ -171,10 +148,6 @@ namespace jsb
         jsb_no_discard
         jsb_force_inline
         v8::Isolate* unwrap() const { return isolate_; }
-
-        jsb_no_discard
-        jsb_force_inline
-        bool check(v8::Isolate* p_isolate) const { return p_isolate == isolate_; }
 
         /**
          * \brief bind a C++ `p_pointer` with a JS `p_object`

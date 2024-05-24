@@ -15,7 +15,10 @@
 #endif
 
 #if JSB_DEBUG
+// ensure list items not reallocated when a scope is alive
 #   define jsb_address_guard(list, scope_name) const auto scope_name = (list).address_scope()
+#else
+#   define jsb_address_guard(list, scope_name) (void) 0
 #endif
 
 namespace jsb::internal

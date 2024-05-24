@@ -112,6 +112,18 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
         instances_.insert(instance->owner_);
     }
     instance->object_id_ = realm_->crossbind(p_this, gdjs_class_id_);
+    if (!instance->object_id_.is_valid())
+    {
+        instance->script_ = Ref<GodotJSScript>();
+        instance->owner_->set_script_instance(nullptr);
+        //NOTE `instance` becomes an invalid pointer since it's deleted in `set_script_instance`
+        {
+            MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+            instances_.erase(p_this);
+        }
+        JSB_LOG(Error, "Error constructing a GodotJSScriptInstance");
+        return nullptr;
+    }
 
     return instance;
 }
@@ -121,10 +133,47 @@ Error GodotJSScript::reload(bool p_keep_state)
     jsb_check(loaded_);
     if (!valid_) return ERR_UNAVAILABLE;
 
-    //TODO discard all cached methods?
-    //TODO all `Callable` objects become invalid after reloading
-    // cached_methods_.clear();
-    // realm_->reload_module(get_js_class_info().module_id);
+    if (!p_keep_state)
+    {
+        MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+        if (instances_.size())
+        {
+            return ERR_ALREADY_IN_USE;
+        }
+    }
+
+    // discard all cached methods
+    cached_methods_.clear();
+
+    //TODO `Callable` objects bound with this script should be invalidated somehow?
+    // ...
+
+    if (p_keep_state)
+    {
+        //TODO (common situation) preserve the object and change it's prototype
+        // const StringName& module_id = get_js_class_info().module_id;
+        // const jsb::GodotJSClassID last_class_id = gdjs_class_id_;
+        // if (!realm_->reload_module(module_id))
+        // {
+        //     return ERR_DOES_NOT_EXIST;
+        // }
+        // loaded_ = false;
+        // load_module();
+        // if (last_class_id != gdjs_class_id_)
+        // {
+        //     MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_); // necessary?
+        //     while (instances_.front())
+        //     {
+        //         Object* obj = instances_.front()->get();
+        //         jsb_check(obj->get_script() == Ref(this));
+        //         realm_->rebind(obj, gdjs_class_id_);
+        //     }
+        // }
+        return OK;
+    }
+
+    //TODO discard the object and crossbind again
+    JSB_LOG(Log, "discard the object and crossbind again");
     return OK;
 }
 
@@ -270,8 +319,7 @@ void GodotJSScript::load_module()
 
     realm_ = realm;
     loaded_ = true;
-    const Error err = realm->load(path);
-    if (err != OK)
+    if (const Error err = realm->load(path); err != OK)
     {
         JSB_LOG(Error, "failed to attach module %s (%d)", path, err);
         return;
@@ -281,9 +329,12 @@ void GodotJSScript::load_module()
     {
         gdjs_class_id_ = module->default_class_id;
         valid_ = gdjs_class_id_.is_valid();
-        if (valid_) return;
-
-        JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class (%s)", path);
+        if (valid_)
+        {
+            JSB_LOG(Verbose, "script module loaded %s", path);
+            return;
+        }
+        JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class %s", path);
         return;
     }
     JSB_LOG(Error, "no such module %s", path);

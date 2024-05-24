@@ -768,7 +768,7 @@ namespace jsb
             Engine::Singleton singleton = singletons[index];
             v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
             const StringName class_name = singleton.ptr->get_class_name();
-            if (! (const void*) singleton.class_name)
+            if (!internal::VariantUtil::is_valid(singleton.class_name))
             {
                 singleton.class_name = class_name;
                 JSB_LOG(Warning, "singleton (%s) hides the clas_name, restoring with '%s'", singleton.name, class_name);

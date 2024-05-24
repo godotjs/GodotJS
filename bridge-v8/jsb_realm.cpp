@@ -7,6 +7,8 @@
 #include "jsb_ref.h"
 #include "jsb_v8_helper.h"
 #include "../internal/jsb_path_util.h"
+#include "../internal/jsb_class_util.h"
+#include "../internal/jsb_variant_util.h"
 #include "../internal/jsb_console_output.h"
 
 //TODO
@@ -23,16 +25,6 @@ namespace jsb
         if (method_it != p_class_info.virtual_methods_map.end()) return method_it->value;
         jsb_check(p_class_info.inherits_ptr);
         return get_method_info_recursively(*p_class_info.inherits_ptr, method_name);
-    }
-
-    static bool is_subclass_of(const StringName& p_class_name, const StringName& p_expected_class_name)
-    {
-        if ((const void*) p_class_name)
-        {
-            if (p_class_name == p_expected_class_name) return true;
-            return is_subclass_of(ClassDB::get_parent_class(p_class_name), p_expected_class_name);
-        }
-        return false;
     }
 
     static void _generate_stacktrace(v8::Isolate* isolate, StringBuilder& sb)
@@ -181,15 +173,24 @@ namespace jsb
             {
                 //TODO check the class to make it safe to cast (space cheaper?)
                 //TODO or, add one more InternalField to ensure it (time cheaper?)
+                const Environment* environment = Environment::wrap(isolate);
                 void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
-                const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
-                if (!class_info)
+                const NativeClassInfo* class_info = environment->get_object_class(pointer);
+                if (jsb_unlikely(!class_info))
                 {
-                    static String dead_object = "(dead object)";
-                    return dead_object;
+                    return vformat("[dead_object @%s]", uitos((uint64_t) pointer));
                 }
-                if (class_info->type == NativeClassType::GodotObject) return vformat("[%s %s]", class_info->name, uitos((uint64_t) pointer));
-                return ((Variant*) pointer)->operator String();
+                const NativeObjectID object_id = environment->get_object_id(pointer);
+                if (class_info->type == NativeClassType::GodotObject)
+                {
+                    return vformat("[%s #%s @%s]", class_info->name, uitos((uint64_t) object_id), uitos((uint64_t) pointer));
+                }
+                jsb_check(class_info->type == NativeClassType::GodotPrimitive);
+                {
+                    const Variant* variant = (Variant*) pointer;
+                    const String type_name = Variant::get_type_name(variant->get_type());
+                    return vformat("[%s %s]", type_name, variant->operator String());
+                }
             }
         }
 
@@ -216,7 +217,7 @@ namespace jsb
         Environment* environment = Environment::wrap(isolate);
         const StringName module_id_str = environment->string_name_cache_.get_string_name(isolate, info[0].As<v8::String>());
         // const StringName module_id_str = V8Helper::to_string(v8::String::Value(isolate, info[0]));
-        if ((const void*) module_id_str == nullptr)
+        if (!internal::VariantUtil::is_valid(module_id_str))
         {
             isolate->ThrowError("bad module_id");
             return;
@@ -279,30 +280,29 @@ namespace jsb
         }
     }
 
-    void Realm::reload_module(const StringName& p_module_id)
+    bool Realm::reload_module(const StringName& p_module_id)
     {
-        if (JavaScriptModule* existed_module = module_cache_.find(p_module_id))
+        JavaScriptModule* existing_module = module_cache_.find(p_module_id);
+        if (existing_module && !existing_module->path.is_empty())
         {
-            if (!existed_module->path.is_empty())
-            {
-                v8::Isolate* isolate = get_isolate();
-                v8::HandleScope handle_scope(isolate);
-                v8::Context::Scope context_scope(unwrap());
+            v8::Isolate* isolate = get_isolate();
+            v8::HandleScope handle_scope(isolate);
+            v8::Context::Scope context_scope(unwrap());
 
-                //TODO reload all related modules (search the module graph)
-                existed_module->reload_requested = true;
-                _load_module("", existed_module->id);
-            }
+            //TODO reload all related modules (search the module graph)
+            existing_module->reload_requested = true;
+            return true;
         }
+        return false;
     }
 
     JavaScriptModule* Realm::_load_module(const String& p_parent_id, const String& p_module_id)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _load_module);
-        JavaScriptModule* existed_module = module_cache_.find(p_module_id);
-        if (existed_module && !existed_module->reload_requested)
+        JavaScriptModule* existing_module = module_cache_.find(p_module_id);
+        if (existing_module && !existing_module->reload_requested)
         {
-            return existed_module;
+            return existing_module;
         }
 
         v8::Isolate* isolate = environment_->isolate_;
@@ -312,7 +312,7 @@ namespace jsb
         // find loader with the module id
         if (IModuleLoader* loader = environment_->find_module_loader(p_module_id))
         {
-            jsb_checkf(!existed_module, "module loader does not support reloading");
+            jsb_checkf(!existing_module, "module loader does not support reloading");
             const StringName module_id_sn = p_module_id;
             JavaScriptModule& module = module_cache_.insert(module_id_sn, false);
             v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
@@ -362,26 +362,26 @@ namespace jsb
             const String& module_id = asset_path;
 
             // check again with the resolved module_id
-            existed_module = module_cache_.find(module_id);
-            if (existed_module && !existed_module->reload_requested)
+            existing_module = module_cache_.find(module_id);
+            if (existing_module && !existing_module->reload_requested)
             {
-                return existed_module;
+                return existing_module;
             }
 
             // supported module properties: id, filename, cache, loaded, exports, children
-            if (existed_module)
+            if (existing_module)
             {
-                jsb_check(existed_module->id == module_id);
-                jsb_check(existed_module->path == asset_path);
+                jsb_check(existing_module->id == module_id);
+                jsb_check(existing_module->path == asset_path);
 
                 JSB_LOG(VeryVerbose, "reload module %s", module_id);
-                existed_module->reload_requested = false;
-                if (!resolver->load(this, asset_path, *existed_module))
+                existing_module->reload_requested = false;
+                if (!resolver->load(this, asset_path, *existing_module))
                 {
                     return nullptr;
                 }
-                _parse_script_class(this, context, *existed_module);
-                return existed_module;
+                _parse_script_class(this, context, *existing_module);
+                return existing_module;
             }
             else
             {
@@ -480,9 +480,8 @@ namespace jsb
 
         v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
         v8::Local<v8::String> name_str = default_obj->Get(p_context, environment->GetStringValue(isolate, name)).ToLocalChecked().As<v8::String>();
-        // v8::String::Utf8Value name(p_isolate, name_str);
         v8::Local<v8::Value> class_id_val;
-        if (!default_obj->Get(p_context, environment->get_symbol(Symbols::ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
+        if (!default_obj->Get(p_context, environment->SymbolFor(ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
         {
             // ignore a javascript which does not inherit from a native class (directly and indirectly both)
             return;
@@ -563,7 +562,7 @@ namespace jsb
 
         // tool (@tool_)
         {
-            const bool is_tool = default_obj->HasOwnProperty(p_context, environment->get_symbol(Symbols::ClassToolScript)).FromMaybe(false);
+            const bool is_tool = default_obj->HasOwnProperty(p_context, environment->SymbolFor(ClassToolScript)).FromMaybe(false);
             if (is_tool)
             {
                 p_class_info.flags = (GodotJSClassFlags::Type) (p_class_info.flags | GodotJSClassFlags::Tool);
@@ -574,7 +573,7 @@ namespace jsb
         {
             v8::Local<v8::Value> val_test;
             //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
-            if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
+            if (prototype->Get(p_context, environment->SymbolFor(ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
@@ -599,8 +598,8 @@ namespace jsb
         {
             v8::Local<v8::Value> val_test;
             //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
-            if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
-            // if (prototype->Get(p_context, environment->get_symbol(Symbols::ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
+            if (prototype->Get(p_context, environment->SymbolFor(ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
+            // if (prototype->Get(p_context, environment->SymbolFor(ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
@@ -630,10 +629,23 @@ namespace jsb
 
         jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
         const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
+        const StringName class_name = class_info.js_class_name;
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
-        v8::Local<v8::Object> instance = constructor->CallAsConstructor(context, 0, nullptr).ToLocalChecked().As<v8::Object>();
-        const NativeObjectID object_id = environment_->bind_godot_object(class_info.native_class_id, p_this, instance);
-        JSB_LOG(VeryVerbose, "[experimental] crossbinding %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
+        v8::TryCatch try_catch_run(isolate);
+        v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 0, nullptr);
+        if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+        {
+            JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_name, (String) exception_info);
+            return {};
+        }
+        v8::Local<v8::Value> instance;
+        if (!constructed_value.ToLocal(&instance) || !instance->IsObject())
+        {
+            JSB_LOG(Error, "bad instance '%s", class_name);
+            return {};
+        }
+        const NativeObjectID object_id = environment_->bind_godot_object(class_info.native_class_id, p_this, instance.As<v8::Object>());
+        JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
         return object_id;
     }
 
@@ -1015,10 +1027,8 @@ namespace jsb
 
             //TODO expose all available fields/properties etc.
 
-            // set `class_id` on the exposed godot class for the convenience when finding it from any subclasses in javascript.
-            // currently used in `dump(in module_id, out class_info)`
-            const v8::Local<v8::Symbol> class_id_symbol = environment_->get_symbol(Symbols::ClassId);
-            function_template->Set(class_id_symbol, v8::Uint32::NewFromUnsigned(isolate, class_id));
+            // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
+            function_template->Set(environment_->SymbolFor(ClassId), v8::Uint32::NewFromUnsigned(isolate, class_id));
 
             // setup the prototype chain (inherit)
             if (const NativeClassID super_class_id = _expose_godot_class(p_class_info->inherits_ptr))
@@ -1996,7 +2006,6 @@ namespace jsb
     {
         environment_->check_internal_state();
         jsb_check(p_object_id.is_valid());
-        // GodotJSClassInfo& js_class_info = environment_->get_gdjs_class(p_gdjs_class_id);
 
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -2012,10 +2021,10 @@ namespace jsb
             return;
         }
 
-        jsb_check(is_subclass_of(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)));
+        jsb_checkf(internal::ClassUtil::check_class(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
         // handle all @onready properties
         v8::Local<v8::Value> val_test;
-        if (self->Get(context, environment_->get_symbol(Symbols::ClassImplicitReadyFunc)).ToLocal(&val_test) && val_test->IsArray())
+        if (self->Get(context, environment_->SymbolFor(ClassImplicitReadyFuncs)).ToLocal(&val_test) && val_test->IsArray())
         {
             v8::Local<v8::Array> collection = val_test.As<v8::Array>();
             const uint32_t len = collection->Length();
@@ -2113,8 +2122,7 @@ namespace jsb
         }
         Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Object> target = info[0].As<v8::Object>();
-        v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassToolScript);
-        target->Set(context, symbol, v8::Boolean::New(isolate, true));
+        target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true));
         JSB_LOG(VeryVerbose, "script %s (tool)",
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
     }
@@ -2134,7 +2142,7 @@ namespace jsb
         v8::Local<v8::Object> evaluator = info[1].As<v8::Object>();
 
         Environment* environment = Environment::wrap(isolate);
-        v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassImplicitReadyFunc);
+        v8::Local<v8::Symbol> symbol = environment->SymbolFor(ClassImplicitReadyFuncs);
         v8::Local<v8::Array> collection;
         v8::Local<v8::Value> val_test;
         uint32_t index;
@@ -2172,7 +2180,7 @@ namespace jsb
         v8::Local<v8::Object> details = info[1].As<v8::Object>();
 
         Environment* environment = Environment::wrap(isolate);
-        v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassProperties);
+        v8::Local<v8::Symbol> symbol = environment->SymbolFor(ClassProperties);
         v8::Local<v8::Array> collection;
         v8::Local<v8::Value> val_test;
         uint32_t index;
@@ -2211,7 +2219,7 @@ namespace jsb
         v8::Local<v8::Object> target = info[0].As<v8::Object>();
         v8::Local<v8::String> signal = info[1].As<v8::String>();
         Environment* environment = Environment::wrap(isolate);
-        v8::Local<v8::Symbol> symbol = environment->get_symbol(Symbols::ClassSignals);
+        v8::Local<v8::Symbol> symbol = environment->SymbolFor(ClassSignals);
         v8::Local<v8::Array> collection;
         v8::Local<v8::Value> val_test;
         uint32_t index;
