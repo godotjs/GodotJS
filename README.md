@@ -18,7 +18,18 @@ GodotJS - TypScript/JavaScript for Godot with V8.
 Download or clone the repo into the `modules` directory of your Godot engine source:
 ```sh
 cd YourGodotEngineSource/modules
-git lfs clone https://github.com/ialex32x/GodotJS.git
+git clone https://github.com/ialex32x/GodotJS.git
+```
+
+Pull all lfs objects (since the prebuilt `v8` library is too big to push as a common file to github):
+
+> [!NOTE]
+> `git-lfs` must be installed as a prerequisite. Follow the instructions on [Github Docs](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) to install `git-lfs`.
+
+```sh
+cd YourGodotEngineSource/modules/GodotJS
+git lfs install
+git lfs pull
 ```
 
 Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
