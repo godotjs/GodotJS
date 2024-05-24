@@ -98,6 +98,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 {
     //TODO multi-thread scripting not supported for now
     jsb_check(loaded_);
+    jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), get_js_class_info().native_class_name));
 
     /* STEP 1, CREATE */
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);

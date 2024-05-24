@@ -2021,7 +2021,7 @@ namespace jsb
             return;
         }
 
-        jsb_checkf(internal::ClassUtil::check_class(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
+        jsb_checkf(ClassDB::is_parent_class(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
         // handle all @onready properties
         v8::Local<v8::Value> val_test;
         if (self->Get(context, environment_->SymbolFor(ClassImplicitReadyFuncs)).ToLocal(&val_test) && val_test->IsArray())
