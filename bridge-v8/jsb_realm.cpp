@@ -1690,7 +1690,9 @@ namespace jsb
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
             Variant::Type type = method_bind->get_argument_type(index);
-            if (!js_to_gd_var(isolate, context, info[index], type, args[index]))
+            if (type == Variant::NIL //TODO nil usually means Variant parameters
+                ? !js_to_gd_var(isolate, context, info[index], args[index])
+                : !js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
                 v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
