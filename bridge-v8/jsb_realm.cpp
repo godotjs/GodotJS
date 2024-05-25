@@ -282,13 +282,10 @@ namespace jsb
 
     bool Realm::reload_module(const StringName& p_module_id)
     {
-        JavaScriptModule* existing_module = module_cache_.find(p_module_id);
-        if (existing_module && !existing_module->path.is_empty())
+        environment_->check_internal_state();
+        if (JavaScriptModule* existing_module = module_cache_.find(p_module_id))
         {
-            v8::Isolate* isolate = get_isolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Context::Scope context_scope(unwrap());
-
+            jsb_check(!existing_module->path.is_empty());
             //TODO reload all related modules (search the module graph)
             existing_module->reload_requested = true;
             return true;
@@ -316,7 +313,7 @@ namespace jsb
             const StringName module_id_sn = p_module_id;
             JavaScriptModule& module = module_cache_.insert(module_id_sn, false);
             v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
-            v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(isolate, loaded);
+            v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(loaded);
 
             // register the new module obj into module_cache obj
             v8::Local<v8::Object> jmodule_cache = jmodule_cache_.Get(isolate);
@@ -389,8 +386,8 @@ namespace jsb
                 const CharString cmodule_id = module_id.utf8();
                 v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
                 v8::Local<v8::Object> exports_obj = v8::Object::New(isolate);
-                v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(isolate, loaded);
-                v8::Local<v8::String> propkey_children = environment_->GetStringValue(isolate, children);
+                v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(loaded);
+                v8::Local<v8::String> propkey_children = environment_->GetStringValue(children);
 
                 // register the new module obj into module_cache obj
                 v8::Local<v8::Object> jmodule_cache = jmodule_cache_.Get(isolate);
@@ -399,9 +396,9 @@ namespace jsb
 
                 // init the new module obj
                 module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, false)).Check();
-                module_obj->Set(context, environment_->GetStringValue(isolate, id), jmodule_id).Check();
+                module_obj->Set(context, environment_->GetStringValue(id), jmodule_id).Check();
                 module_obj->Set(context, propkey_children, v8::Array::New(isolate)).Check();
-                module_obj->Set(context, environment_->GetStringValue(isolate, exports), exports_obj);
+                module_obj->Set(context, environment_->GetStringValue(exports), exports_obj);
                 module.id = module_id;
                 module.path = asset_path;
                 module.module.Reset(isolate, module_obj);
@@ -472,14 +469,14 @@ namespace jsb
         Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
         v8::Local<v8::Value> default_val;
-        if (!exports->Get(p_context, environment->GetStringValue(isolate, default)).ToLocal(&default_val)
+        if (!exports->Get(p_context, environment->GetStringValue(default)).ToLocal(&default_val)
             || !default_val->IsObject())
         {
             return;
         }
 
         v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
-        v8::Local<v8::String> name_str = default_obj->Get(p_context, environment->GetStringValue(isolate, name)).ToLocalChecked().As<v8::String>();
+        v8::Local<v8::String> name_str = default_obj->Get(p_context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>();
         v8::Local<v8::Value> class_id_val;
         if (!default_obj->Get(p_context, environment->SymbolFor(ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
         {
@@ -527,7 +524,7 @@ namespace jsb
 
         //TODO collect methods/signals/properties
         v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(isolate);
-        v8::Local<v8::Object> prototype = default_obj->Get(p_context, environment->GetStringValue(isolate, prototype)).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Object> prototype = default_obj->Get(p_context, environment->GetStringValue(prototype)).ToLocalChecked().As<v8::Object>();
 
         // methods
         {
@@ -544,7 +541,7 @@ namespace jsb
                 if (prototype->GetOwnPropertyDescriptor(p_context, prop_name).ToLocal(&prop_descriptor) && prop_descriptor->IsObject())
                 {
                     v8::Local<v8::Value> prop_val;
-                    if (prop_descriptor.As<v8::Object>()->Get(p_context, environment->GetStringValue(isolate, value)).ToLocal(&prop_val) && prop_val->IsFunction())
+                    if (prop_descriptor.As<v8::Object>()->Get(p_context, environment->GetStringValue(value)).ToLocal(&prop_val) && prop_val->IsFunction())
                     {
                         //TODO property categories
                         const StringName sname = name_s;
@@ -610,8 +607,8 @@ namespace jsb
                     jsb_check(element->IsObject());
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     GodotJSPropertyInfo property_info;
-                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(isolate, name)).ToLocalChecked()); // string
-                    property_info.type = (Variant::Type) obj->Get(context, environment->GetStringValue(isolate, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(name)).ToLocalChecked()); // string
+                    property_info.type = (Variant::Type) obj->Get(context, environment->GetStringValue(type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
                     //TODO save property default value
                     // property_info.default_value = ...;
                     p_class_info.properties.insert(property_info.name, property_info);
@@ -647,6 +644,40 @@ namespace jsb
         const NativeObjectID object_id = environment_->bind_godot_object(class_info.native_class_id, p_this, instance.As<v8::Object>());
         JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
         return object_id;
+    }
+
+    void Realm::rebind(Object *p_this, GodotJSClassID p_class_id)
+    {
+        //TODO a dirty but approaching solution for hot-reloading
+        environment_->check_internal_state();
+        v8::Isolate* isolate = get_isolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = context_.Get(isolate);
+        v8::Context::Scope context_scope(context);
+
+        v8::Local<v8::Object> instance;
+        if (!environment_->get_object(p_this, instance))
+        {
+            JSB_LOG(Fatal, "bad instance");
+            return;
+        }
+
+        jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
+        const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
+        const StringName class_name = class_info.js_class_name;
+        v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
+        v8::Local<v8::Value> prototype = constructor->Get(context, environment_->GetStringValue(prototype)).ToLocalChecked();
+
+        v8::TryCatch try_catch(isolate);
+        jsb_check(instance->IsObject());
+        jsb_check(prototype->IsObject());
+        if (instance->SetPrototype(context, prototype).IsNothing())
+        {
+            if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch))
+            {
+                JSB_LOG(Warning, "something wrong\n%s", (String) exception_info);
+            }
+        }
     }
 
     void Realm::_register_builtins(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self)
@@ -2033,8 +2064,8 @@ namespace jsb
             for (uint32_t index = 0; index < len; ++index)
             {
                 v8::Local<v8::Object> element = collection->Get(context, index).ToLocalChecked().As<v8::Object>();
-                v8::Local<v8::String> element_name = element->Get(context, environment_->GetStringValue(isolate, name)).ToLocalChecked().As<v8::String>();
-                v8::Local<v8::Value> element_value = element->Get(context, environment_->GetStringValue(isolate, evaluator)).ToLocalChecked();
+                v8::Local<v8::String> element_name = element->Get(context, environment_->GetStringValue(name)).ToLocalChecked().As<v8::String>();
+                v8::Local<v8::Value> element_value = element->Get(context, environment_->GetStringValue(evaluator)).ToLocalChecked();
 
                 if (element_value->IsString())
                 {

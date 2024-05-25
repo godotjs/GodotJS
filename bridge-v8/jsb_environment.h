@@ -17,7 +17,7 @@
 #include "../internal/jsb_source_map_cache.h"
 #endif
 
-#define GetStringValue(isolate, name) get_string_name_cache().get_string_value(isolate, jsb_string_name(name))
+#define GetStringValue(name) get_string_value(jsb_string_name(name))
 #define SymbolFor(name) get_symbol(Symbols::name)
 
 namespace jsb
@@ -131,6 +131,7 @@ namespace jsb
 #endif
 
         jsb_force_inline StringNameCache& get_string_name_cache() { return string_name_cache_; }
+        jsb_force_inline v8::Local<v8::String> get_string_value(const StringName& p_name) { return string_name_cache_.get_string_value(isolate_, p_name); }
 
         jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const
         {

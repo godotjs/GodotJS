@@ -40,6 +40,16 @@ bool GodotJSScript::can_instantiate() const
 #endif
 }
 
+bool GodotJSScript::is_tool() const
+{
+    if (valid_)
+    {
+        GODOTJS_LOAD_SCRIPT_MODULE();
+        return get_js_class_info().is_tool();
+    }
+    return false;
+}
+
 void GodotJSScript::set_source_code(const String& p_code)
 {
     if (source_ == p_code)
@@ -151,25 +161,13 @@ Error GodotJSScript::reload(bool p_keep_state)
 
     if (p_keep_state)
     {
-        //TODO (common situation) preserve the object and change it's prototype
-        // const StringName& module_id = get_js_class_info().module_id;
-        // const jsb::GodotJSClassID last_class_id = gdjs_class_id_;
-        // if (!realm_->reload_module(module_id))
-        // {
-        //     return ERR_DOES_NOT_EXIST;
-        // }
-        // loaded_ = false;
-        // load_module();
-        // if (last_class_id != gdjs_class_id_)
-        // {
-        //     MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_); // necessary?
-        //     while (instances_.front())
-        //     {
-        //         Object* obj = instances_.front()->get();
-        //         jsb_check(obj->get_script() == Ref(this));
-        //         realm_->rebind(obj, gdjs_class_id_);
-        //     }
-        // }
+        // (common situation) preserve the object and change it's prototype
+        const StringName& module_id = get_js_class_info().module_id;
+        if (!realm_->reload_module(module_id))
+        {
+            return ERR_DOES_NOT_EXIST;
+        }
+        loaded_ = false;
         return OK;
     }
 
@@ -333,6 +331,20 @@ void GodotJSScript::load_module()
         if (valid_)
         {
             JSB_LOG(Verbose, "script module loaded %s", path);
+            {
+                //TODO a dirty but approaching solution for hot-reloading
+                MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_); // necessary?
+                for (RBSet<Object *>::Element *E = instances_.front(); E;)
+                {
+                    RBSet<Object *>::Element *N = E->next();
+                    Object* obj = E->get();
+                    jsb_check(obj->get_script() == Ref(this));
+                    jsb_check(realm_->get_environment()->check_object(obj));
+                    jsb_check(ClassDB::is_parent_class(realm_->get_gdjs_class_info(module->default_class_id).native_class_name, obj->get_class_name()));
+                    realm_->rebind(obj, gdjs_class_id_);
+                    E = N;
+                }
+            }
             return;
         }
         JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class %s", path);

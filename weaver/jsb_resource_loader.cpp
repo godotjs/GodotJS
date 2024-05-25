@@ -8,6 +8,20 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 {
     JSB_BENCHMARK_SCOPE(ResourceFormatLoaderGodotJSScript, load);
 
+    {
+        //TODO a dirty but approaching solution for hot-reloading
+        MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+        SelfList<GodotJSScript> *elem = GodotJSScriptLanguage::singleton_->script_list_.first();
+        while (elem)
+        {
+            if (elem->self()->get_path() == p_path)
+            {
+                return Ref(elem->self());
+            }
+            elem = elem->next();
+        }
+    }
+
     //TODO use Realm to resolve?
     Error err;
     jsb_check(p_path.ends_with(JSB_RES_EXT));

@@ -80,7 +80,7 @@ public:
 
     // we expect Godot calling this after loaded_?
     virtual bool is_valid() const override { jsb_check(loaded_); return valid_; }
-    virtual bool is_tool() const override { return valid_ && get_js_class_info().is_tool(); }
+    virtual bool is_tool() const override;
     virtual bool is_abstract() const override { return valid_ && get_js_class_info().is_abstract(); }
 
     virtual ScriptLanguage* get_language() const override;

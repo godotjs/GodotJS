@@ -143,6 +143,8 @@ namespace jsb
 
         NativeObjectID crossbind(Object* p_this, GodotJSClassID p_class_id);
 
+        void rebind(Object* p_this, GodotJSClassID p_class_id);
+
         jsb_force_inline v8::Isolate* get_isolate() const { jsb_check(environment_); return environment_->isolate_; }
 
         /**
