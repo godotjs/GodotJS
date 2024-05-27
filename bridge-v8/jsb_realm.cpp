@@ -1199,6 +1199,8 @@ namespace jsb
             else r_cvar = *(Variant*) pointer;
             return true;
         }
+
+        JSB_LOG(Error, "js_to_gd_var: unhandled type");
         return false;
     }
 
@@ -1297,22 +1299,42 @@ namespace jsb
     {
         switch (p_type)
         {
-        case Variant::NIL: return p_jval->IsNullOrUndefined();
-        case Variant::BOOL:
-            // strict?
-            if (p_jval->IsBoolean()) { r_cvar = p_jval->BooleanValue(isolate); return true; }
-            return false;
-        case Variant::INT:
-            // strict?
-            if (p_jval->IsInt32()) { r_cvar = p_jval->Int32Value(context).ToChecked(); return true; }
-            if (p_jval->IsNumber()) { r_cvar = (int64_t) p_jval->NumberValue(context).ToChecked(); return true; }
-            return false;
         case Variant::FLOAT:
             if (p_jval->IsNumber())
             {
                 r_cvar = p_jval->NumberValue(context).ToChecked();
                 return true;
             }
+            return false;
+        case Variant::INT:
+            // strict?
+            if (p_jval->IsInt32()) { r_cvar = p_jval->Int32Value(context).ToChecked(); return true; }
+            if (p_jval->IsNumber()) { r_cvar = (int64_t) p_jval->NumberValue(context).ToChecked(); return true; }
+            return false;
+        case Variant::OBJECT:
+            {
+                if (!p_jval->IsObject())
+                {
+                    return false;
+                }
+                v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+                if (self->InternalFieldCount() != kObjectFieldCount)
+                {
+                    return false;
+                }
+
+                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                    !class_info || class_info->type != NativeClassType::GodotObject)
+                {
+                    return false;
+                }
+                r_cvar = (Object*) pointer;
+                return true;
+            }
+        case Variant::BOOL:
+            // strict?
+            if (p_jval->IsBoolean()) { r_cvar = p_jval->BooleanValue(isolate); return true; }
             return false;
         case Variant::STRING:
             if (p_jval->IsString())
@@ -1348,27 +1370,6 @@ namespace jsb
                 return true;
             }
             goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::OBJECT:
-            {
-                if (!p_jval->IsObject())
-                {
-                    return false;
-                }
-                v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-                if (self->InternalFieldCount() != kObjectFieldCount)
-                {
-                    return false;
-                }
-
-                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
-                    !class_info || class_info->type != NativeClassType::GodotObject)
-                {
-                    return false;
-                }
-                r_cvar = (Object*) pointer;
-                return true;
-            }
         // math types
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
@@ -1428,6 +1429,9 @@ namespace jsb
                 r_cvar = *(Variant*) pointer;
                 return true;
             }
+        case Variant::NIL:
+            //NOTE (instead of prompting a nil value) the type NIL usually means a Variant parameter accepted by a godot method
+            return js_to_gd_var(isolate, context, p_jval, r_cvar);
         default: return false;
         }
     }
@@ -1436,30 +1440,15 @@ namespace jsb
     {
         switch (p_type)
         {
-        case Variant::NIL: r_jval = v8::Null(isolate); return true;
-        case Variant::BOOL: r_jval = v8::Boolean::New(isolate, p_cvar); return true;
-        case Variant::INT:
-            {
-                const int64_t raw_val = p_cvar;
-                r_jval = v8::Int32::New(isolate, V8Helper::jsb_downscale(raw_val));
-                return true;
-            }
         case Variant::FLOAT:
             {
                 r_jval = v8::Number::New(isolate, p_cvar);
                 return true;
             }
-        case Variant::STRING:
+        case Variant::INT:
             {
-                //TODO optimize with cache?
-                const String raw_val = p_cvar;
-                const CharString repr_val = raw_val.utf8();
-                r_jval = v8::String::NewFromUtf8(isolate, repr_val.get_data(), v8::NewStringType::kNormal, repr_val.length()).ToLocalChecked();
-                return true;
-            }
-        case Variant::STRING_NAME:
-            {
-                r_jval = Environment::wrap(isolate)->get_string_name_cache().get_string_value(isolate, (StringName) p_cvar);
+                const int64_t raw_val = p_cvar;
+                r_jval = v8::Int32::New(isolate, V8Helper::jsb_downscale(raw_val));
                 return true;
             }
         case Variant::OBJECT:
@@ -1478,6 +1467,20 @@ namespace jsb
                     return true;
                 }
                 return false;
+            }
+        case Variant::BOOL: r_jval = v8::Boolean::New(isolate, p_cvar); return true;
+        case Variant::STRING:
+            {
+                //TODO optimize with cache?
+                const String raw_val = p_cvar;
+                const CharString repr_val = raw_val.utf8();
+                r_jval = v8::String::NewFromUtf8(isolate, repr_val.get_data(), v8::NewStringType::kNormal, repr_val.length()).ToLocalChecked();
+                return true;
+            }
+        case Variant::STRING_NAME:
+            {
+                r_jval = Environment::wrap(isolate)->get_string_name_cache().get_string_value(isolate, (StringName) p_cvar);
+                return true;
             }
         // math types
         case Variant::VECTOR2:
@@ -1536,8 +1539,12 @@ namespace jsb
                 }
                 return false;
             }
-            //TODO unimplemented
-        default: return false;
+        case Variant::NIL: r_jval = v8::Null(isolate); return true;
+        default:
+            {
+                JSB_LOG(Error, "unhandled type %s", Variant::get_type_name(p_type));
+                return false;
+            }
         }
     }
 
@@ -1690,9 +1697,7 @@ namespace jsb
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
             Variant::Type type = method_bind->get_argument_type(index);
-            if (type == Variant::NIL //TODO nil usually means Variant parameters
-                ? !js_to_gd_var(isolate, context, info[index], args[index])
-                : !js_to_gd_var(isolate, context, info[index], type, args[index]))
+            if (!js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
                 v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
