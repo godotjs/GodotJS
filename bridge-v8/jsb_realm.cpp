@@ -40,6 +40,15 @@ namespace jsb
 
     internal::SArray<Realm*, RealmID> Realm::realms_;
 
+    void Realm::_is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        Object* obj;
+        const bool convertible = js_to_gd_obj(isolate, context, info[0], obj);
+        info.GetReturnValue().Set(convertible);
+    }
+
     // construct a callable object
     // [js] function callable(fn: Function): godot.Callable;
     // [js] function callable(thiz: godot.Object, fn: Function): godot.Callable;
@@ -692,6 +701,7 @@ namespace jsb
             jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, DEV_ENABLED)).Check();
             jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, TOOLS_ENABLED)).Check();
             jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
+            jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "is_instance_valid"), v8::Function::New(context, _is_instance_valid).ToLocalChecked()).Check();
 
             // jsb.internal
             {
@@ -995,6 +1005,12 @@ namespace jsb
                 }
             }
 
+            if (p_class_info->name == jsb_string_name(Object))
+            {
+                // special methods
+                object_template->Set(environment_->GetStringValue(free), v8::FunctionTemplate::New(isolate, _godot_object_free));
+            }
+
             // for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->virtual_methods_map)
             // {
             //     const StringName& method_name = pair.key;
@@ -1294,6 +1310,28 @@ namespace jsb
         }
     }
 
+    bool Realm::js_to_gd_obj(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Object*& r_godot_obj)
+    {
+        if (!p_jval->IsObject())
+        {
+            return false;
+        }
+        v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+        if (self->InternalFieldCount() != kObjectFieldCount)
+        {
+            return false;
+        }
+
+        void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+        if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+            !class_info || class_info->type != NativeClassType::GodotObject)
+        {
+            return false;
+        }
+        r_godot_obj = (Object*) pointer;
+        return true;
+    }
+
     // translate js val into gd variant with an expected type
     bool Realm::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar)
     {
@@ -1575,78 +1613,25 @@ namespace jsb
         info.GetReturnValue().Set(rval);
     }
 
-    void Realm::_godot_object_virtual_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void Realm::_godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        jsb_check(info.Data()->IsUint32());
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        Realm* realm = wrap(context);
-        Environment* environment = realm->environment_.get();
-        StringName method_name = environment->string_name_cache_.get_string_name((StringNameID) info.Data().As<v8::Uint32>()->Value());
-        const int argc = info.Length();
-
-        v8::Local<v8::Object> self = info.This();
-
-        // avoid unexpected `this` in a relatively cheap way
-        if (!self->IsObject() || self->InternalFieldCount() != kObjectFieldCount)
+        Object* gd_object;
+        if (!js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object)
         {
-            isolate->ThrowError("bad this");
+            jsb_throw(isolate, "bad this");
             return;
         }
 
-        // `this` must be a gd object which already bound to javascript
-        void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-        jsb_check(Environment::wrap(isolate)->check_object(pointer));
-        Object* gd_object = (Object*) pointer;
-
-        // inefficient approach to get MethodInfo
-        StringName class_name = gd_object->get_class_name();
-        const HashMap<StringName, ClassDB::ClassInfo>::Iterator class_it = ClassDB::classes.find(class_name);
-        jsb_check(class_it != ClassDB::classes.end());
-        const ClassDB::ClassInfo& class_info = class_it->value;
-        const MethodInfo& method_info = get_method_info_recursively(class_info, method_name);
-
-        // prepare argv
-        jsb_check(argc <= method_info.arguments.size());
-        const Variant** argv = jsb_stackalloc(const Variant*, argc);
-        Variant* args = jsb_stackalloc(Variant, argc);
-        for (int index = 0; index < argc; ++index)
+        Callable::CallError err;
+        Variant dummy = gd_object->callp(jsb_string_name(free), nullptr, 0, err);
+        jsb_check(dummy.get_type() == Variant::NIL);
+        if (jsb_unlikely(err.error != Callable::CallError::CALL_OK))
         {
-            memnew_placement(&args[index], Variant);
-            argv[index] = &args[index];
-            Variant::Type type = method_info.arguments[index].type;
-            if (!js_to_gd_var(isolate, context, info[index], type, args[index]))
-            {
-                // revert all constructors
-                v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
-                while (index >= 0) { args[index--].~Variant(); }
-                isolate->ThrowError(error_message);
-                return;
-            }
-        }
-
-        // call godot method
-        Callable::CallError error;
-        Variant crval = gd_object->callp(method_name, argv, argc, error);
-
-        // don't forget to destruct all stack allocated variants
-        for (int index = 0; index < argc; ++index)
-        {
-            args[index].~Variant();
-        }
-
-        if (error.error != Callable::CallError::CALL_OK)
-        {
-            isolate->ThrowError("failed to call");
+            jsb_throw(isolate, "bad free");
             return;
         }
-        v8::Local<v8::Value> jrval;
-        if (gd_var_to_js(isolate, context, crval, jrval))
-        {
-            info.GetReturnValue().Set(jrval);
-            return;
-        }
-        isolate->ThrowError("failed to translate godot variant to v8 value");
     }
 
     void Realm::_godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -1662,26 +1647,11 @@ namespace jsb
         Object* gd_object = nullptr;
         if (!method_bind->is_static())
         {
-            v8::Local<v8::Object> self = info.This();
-
-            // avoid unexpected `this` in a relatively cheap way
-            if (!self->IsObject() || self->InternalFieldCount() != kObjectFieldCount)
+            if (!js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object)
             {
-                isolate->ThrowError("bad this");
+                jsb_throw(isolate, "bad this");
                 return;
             }
-
-            // `this` must be a gd object which already bound to javascript
-            void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            //NOTE check null if internal field cleared when 'unbind_object', otherwise use 'check_object'
-            if (pointer == nullptr)
-            // if (!Environment::wrap(isolate)->check_object(pointer))
-            {
-                isolate->ThrowError("bad object");
-                return;
-            }
-            jsb_check(Environment::wrap(isolate)->check_object(pointer));
-            gd_object = (Object*) pointer;
         }
 
         // prepare argv

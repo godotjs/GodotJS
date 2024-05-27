@@ -393,21 +393,6 @@ class ClassWriter extends IndentWriter {
         }
         return "void"
     }
-    //TODO temporarily reuse MethodBind routine
-    virtual_method_(method_info: jsb.editor.MethodInfo) {
-        const special_mark = "/*virtual*/ ";
-        if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
-            const args = this.make_args(method_info)
-            const rval = this.make_return(method_info)
-            const prefix = this.make_method_prefix(method_info);
-            this.line(`${special_mark}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
-            return;
-        }
-        const args = this.make_args(method_info)
-        const rval = this.make_return(method_info)
-        const prefix = this.make_method_prefix(method_info);
-        this.line(`${special_mark}${prefix}${method_info.name}(${args}): ${rval}`);
-    }
     property_(property_info: jsb.editor.PropertySetGetInfo) {
         const type_name = PrimitiveTypeNames[property_info.type];
         this.line_comment_(`// godot.getset: ${property_info.name}: ${type_name}`);
@@ -759,15 +744,15 @@ export default class TSDCodeGen {
                 }
             }
         }
+        if (cls.name == "Object") {
+            class_cg.line(`free(): void`);
+        }
         for (let method_info of cls.methods) {
             class_cg.method_(method_info);
         }
         for (let property_info of cls.properties) {
             class_cg.property_(property_info);
         }
-        // for (let method_info of cls.virtual_methods) {
-        //     class_cg.virtual_method_(method_info);
-        // }
         if (cls.signals) {
             for (let signal_info of cls.signals) {
                 class_cg.signal_(signal_info);

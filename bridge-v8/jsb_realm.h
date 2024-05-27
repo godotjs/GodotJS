@@ -207,6 +207,7 @@ namespace jsb
          * Translate a Godot object into a javascript object. The type of `p_object_obj` will be automatically exposed to the context if not existed.
          */
         static bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval);
+        static bool js_to_gd_obj(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Object*& r_godot_obj);
 
         jsb_force_inline static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, v8::Local<v8::Value>& r_jval) { return gd_var_to_js(isolate, context, p_cvar, p_cvar.get_type(), r_jval); }
         static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, Variant::Type p_type, v8::Local<v8::Value>& r_jval);
@@ -225,13 +226,14 @@ namespace jsb
         static bool can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type);
 
     private:
+        static void _is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _new_callable(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _define(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _print(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _set_timer(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _clear_timer(const v8::FunctionCallbackInfo<v8::Value>& info);
 
-        static void _godot_object_virtual_method(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value>& info);

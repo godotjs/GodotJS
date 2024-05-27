@@ -15,7 +15,11 @@ DEF(evaluator);
 DEF(_notification);
 
 // class names
+DEF(Object);
 DEF(Node);
+
+// special names
+DEF(free);
 
 // keyword names
 DEF(default);

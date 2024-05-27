@@ -6,16 +6,19 @@ declare namespace jsb {
     const TOOLS_ENABLED: boolean;
 
     /**
-     * @todo not implemented yet
-     * create godot Callable with a bound object `self`
+     * Create godot Callable with a bound object `self`
      */
     function callable(self: GDObject, fn: Function): GDCallable;
 
     /**
-     * @todo not implemented yet
-     * create godot Callable without a bound object
+     * Create godot Callable without a bound object
      */
     function callable(fn: Function): GDCallable;
+
+    /**
+     * If the given `self` is a godot Object and is still alive.
+     */
+    function is_instance_valid(self: GDObject): boolean;
 
     interface ScriptPropertyInfo {
         name: string;
