@@ -63,7 +63,10 @@ namespace jsb
     {
         Variant::Type type = Variant::NIL;
         StringName name;
-        StringName class_name; // For classes
+
+        //TODO class_name is needed if type is OBJECT
+        StringName class_name;
+
         PropertyHint hint = PROPERTY_HINT_NONE;
         String hint_string;
         uint32_t usage = PROPERTY_USAGE_DEFAULT;
@@ -97,8 +100,9 @@ namespace jsb
         // for constructor/prototype access
         v8::Global<v8::Object> js_class;
 
-        //TODO class default object (lazily created and needed only when any variable exported)
-        v8::Global<v8::Object> js_default_object;
+        // a default object instance for js_class (lazily created if there is a variable exported at least) with no crossbound object instance.
+        // it's null if failed to construct the CDO.
+        v8::Global<v8::Value> js_default_object;
 
         // the native class id the current class inherits from.
         NativeClassID native_class_id;

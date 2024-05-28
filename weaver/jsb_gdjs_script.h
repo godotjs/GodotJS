@@ -17,8 +17,13 @@ private:
     // if the script invalid (or not actually loaded yet)
     bool valid_ = false;
     bool loaded_ = false;
+    bool source_changed_cache = false;
 
     HashSet<PlaceHolderScriptInstance*> placeholders;
+
+    // WTF??
+    HashMap<StringName, Variant> member_default_values_cache;
+    List<PropertyInfo> members_cache;
 
     SelfList<GodotJSScript> script_list_;
     RBSet<Object*> instances_;
@@ -40,6 +45,9 @@ private:
     void call_prelude(jsb::NativeObjectID p_object_id);
 
     void load_module();
+
+    void _update_exports(PlaceHolderScriptInstance *p_instance_to_update);
+    void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
 
 public:
     GodotJSScript();
@@ -88,12 +96,7 @@ public:
     virtual bool has_script_signal(const StringName& p_signal) const override;
     virtual void get_script_signal_list(List<MethodInfo>* r_signals) const override;
 
-    virtual bool is_placeholder_fallback_enabled() const override { return true; }
-
-    /**
-     * `get_property_default_value` get called by `PlaceHolderScriptInstance` only if `is_placeholder_fallback_enabled` returns true.
-     * @seealso core/object/script_language.cpp => bool PlaceHolderScriptInstance::get(const StringName &p_name, Variant &r_ret) const
-     */
+    virtual bool is_placeholder_fallback_enabled() const override { return false; }
     virtual bool get_property_default_value(const StringName& p_property, Variant& r_value) const override;
 
     virtual void update_exports() override;

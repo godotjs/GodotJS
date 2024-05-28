@@ -517,10 +517,10 @@ namespace jsb
         jsb_address_guard(environment->gdjs_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->js_class_name = environment->get_string_name_cache().get_string_name(isolate, name_str);
-        // existed_class_info->js_class_name = V8Helper::to_string(isolate, name_str); // String(*name, name.length());
         existed_class_info->native_class_id = native_class_id;
         existed_class_info->native_class_name = native_class_info.name;
         existed_class_info->js_class.Reset(isolate, default_obj);
+        existed_class_info->js_default_object.Reset();
         JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", existed_class_info->js_class_name, existed_class_info->native_class_name);
         _parse_script_class_iterate(p_realm, p_context, *existed_class_info);
     }
@@ -1962,14 +1962,54 @@ namespace jsb
         environment_->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = unwrap();
         GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_gdjs_class_id);
         if (const auto& it = class_info.properties.find(p_name))
         {
-            //TODO create CDO if not created, then read the default value from CDO
-            ::jsb::internal::VariantUtil::construct_variant(r_val, it->value.type);
+            v8::Local<v8::Value> instance;
+            if (class_info.js_default_object.IsEmpty())
+            {
+                v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
+                v8::TryCatch try_catch_run(isolate);
+                v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 0, nullptr);
+                if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+                {
+                    JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_info.js_class_name, (String) exception_info);
+                    class_info.js_default_object.Reset(isolate, v8::Null(isolate));
+                    return false;
+                }
+                if (!constructed_value.ToLocal(&instance))
+                {
+                    JSB_LOG(Error, "bad instance '%s", class_info.js_class_name);
+                    class_info.js_default_object.Reset(isolate, v8::Null(isolate));
+                    return false;
+                }
+                class_info.js_default_object.Reset(isolate, instance);
+            }
+            else
+            {
+                instance = class_info.js_default_object.Get(isolate);
+            }
+
+            if (!instance->IsObject())
+            {
+                JSB_LOG(Error, "bad instance '%s", class_info.js_class_name);
+                return false;
+            }
+
+            // try read default value from CDO.
+            // pretend nothing's wrong if failed by constructing a default value in-place
+            v8::Local<v8::Object> cdo = instance.As<v8::Object>();
+            v8::Local<v8::Value> value;
+            if (!cdo->Get(context, environment_->get_string_name_cache().get_string_value(isolate, p_name)).ToLocal(&value)
+                || !js_to_gd_var(isolate, context, value, it->value.type, r_val))
+            {
+                JSB_LOG(Warning, "failed to get/translate default value of '%s' from CDO", p_name);
+                ::jsb::internal::VariantUtil::construct_variant(r_val, it->value.type);
+            }
             return true;
         }
-        // JSB_LOG(Warning, "unknown property %s", p_property);
+        // JSB_LOG(Warning, "unknown property %s", p_name);
         return false;
     }
 

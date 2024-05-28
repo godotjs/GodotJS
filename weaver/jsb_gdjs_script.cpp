@@ -268,7 +268,12 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
     jsb_check(loaded_);
-    return realm_->get_script_default_property_value(gdjs_class_id_, p_property, r_value);
+    if (HashMap<StringName, Variant>::ConstIterator it = member_default_values_cache.find(p_property))
+    {
+        r_value = it->value;
+        return true;
+    }
+    return false;
 }
 
 const Variant GodotJSScript::get_rpc_config() const
@@ -311,6 +316,7 @@ void GodotJSScript::load_module()
 
     realm_ = realm;
     loaded_ = true;
+    source_changed_cache = true;
     if (const Error err = realm->load(path); err != OK)
     {
         JSB_LOG(Error, "failed to attach module %s (%d)", path, err);
@@ -394,8 +400,7 @@ PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_
     jsb_check(valid_);
     PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(GodotJSScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
     placeholders.insert(si);
-    update_exports();
-    // _update_exports(nullptr, false, si);
+    _update_exports(si);
     return si;
 #else
     return nullptr;
@@ -414,25 +419,58 @@ void GodotJSScript::update_exports()
     GODOTJS_LOAD_SCRIPT_MODULE();
     jsb_check(loaded_);
 #if TOOLS_ENABLED
-    //TODO
     if (!valid_) return;
-    List<PropertyInfo> props;
-    HashMap<StringName, Variant> values;
-
-    props.push_back(get_class_category());
-
-    realm_->get_environment()->check_internal_state();
-    for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : get_js_class_info().properties)
-    {
-        const jsb::GodotJSPropertyInfo &pi = pair.value;
-        props.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
-        values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
-    }
-
-    for (PlaceHolderScriptInstance *s : placeholders)
-    {
-        s->update(props, values);
-    }
+    _update_exports(nullptr);
 #endif
 }
 
+void GodotJSScript::_update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values)
+{
+    for (const KeyValue<StringName, Variant> &E : member_default_values_cache)
+    {
+        r_values[E.key] = E.value;
+    }
+    for (const PropertyInfo &E : members_cache)
+    {
+        r_props.push_back(E);
+    }
+}
+
+void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_update)
+{
+    if (source_changed_cache)
+    {
+        source_changed_cache = false;
+        members_cache.clear();
+        member_default_values_cache.clear();
+        realm_->get_environment()->check_internal_state();
+
+        members_cache.push_back(get_class_category());
+        const jsb::GodotJSClassInfo& class_info = get_js_class_info();
+        for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : class_info.properties)
+        {
+            const jsb::GodotJSPropertyInfo &pi = pair.value;
+            members_cache.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
+            // values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
+
+            //TODO maybe this behaviour is not expected
+            Variant default_value;
+            realm_->get_script_default_property_value(gdjs_class_id_, pi.name, default_value);
+            member_default_values_cache[pi.name] = default_value;
+        }
+
+        List<PropertyInfo> props;
+        HashMap<StringName, Variant> values;
+        _update_exports_values(props, values);
+
+        if (p_instance_to_update)
+        {
+            p_instance_to_update->update(props, values);
+            return;
+        }
+        for (PlaceHolderScriptInstance *s : placeholders)
+        {
+            s->update(props, values);
+        }
+    }
+}
