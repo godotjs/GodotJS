@@ -268,14 +268,7 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
     jsb_check(loaded_);
-    if (const auto& it = get_js_class_info().properties.find(p_property))
-    {
-        //TODO handle property_info.default_value of GodotJS script class
-        ::jsb::internal::VariantUtil::construct_variant(r_value, it->value.type);
-        return true;
-    }
-    // JSB_LOG(Warning, "unknown property %s", p_property);
-    return false;
+    return realm_->get_script_default_property_value(gdjs_class_id_, p_property, r_value);
 }
 
 const Variant GodotJSScript::get_rpc_config() const

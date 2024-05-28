@@ -121,7 +121,7 @@ namespace jsb
          * This method will not throw any exception.
          */
         void call_prelude(GodotJSClassID p_gdjs_class_id, NativeObjectID p_object_id);
-
+        bool get_script_default_property_value(GodotJSClassID p_gdjs_class_id, const StringName& p_name, Variant& r_val);
         bool get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val);
 

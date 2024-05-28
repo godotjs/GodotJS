@@ -88,13 +88,23 @@ namespace jsb
     // since these info structs will be replaced deps on the runtime used.
     struct GodotJSClassInfo
     {
+        // name of the owner module
         StringName module_id;
 
         // js class name
         StringName js_class_name;
+
+        // for constructor/prototype access
         v8::Global<v8::Object> js_class;
 
+        //TODO class default object (lazily created and needed only when any variable exported)
+        v8::Global<v8::Object> js_default_object;
+
+        // the native class id the current class inherits from.
         NativeClassID native_class_id;
+
+        // a fastpath to read the name of native class (the GodotJS class inherits from).
+        // it's a redundant field only for performance.
         StringName native_class_name;
 
         GodotJSClassFlags::Type flags = GodotJSClassFlags::None;

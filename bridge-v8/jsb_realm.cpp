@@ -1957,6 +1957,22 @@ namespace jsb
         return rvar;
     }
 
+    bool Realm::get_script_default_property_value(GodotJSClassID p_gdjs_class_id, const StringName& p_name, Variant& r_val)
+    {
+        environment_->check_internal_state();
+        v8::Isolate* isolate = get_isolate();
+        v8::HandleScope handle_scope(isolate);
+        GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_gdjs_class_id);
+        if (const auto& it = class_info.properties.find(p_name))
+        {
+            //TODO create CDO if not created, then read the default value from CDO
+            ::jsb::internal::VariantUtil::construct_variant(r_val, it->value.type);
+            return true;
+        }
+        // JSB_LOG(Warning, "unknown property %s", p_property);
+        return false;
+    }
+
     bool Realm::get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val)
     {
         environment_->check_internal_state();
@@ -2014,6 +2030,7 @@ namespace jsb
     {
         environment_->check_internal_state();
         jsb_check(p_object_id.is_valid());
+        jsb_checkf(ClassDB::is_parent_class(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
 
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -2029,7 +2046,6 @@ namespace jsb
             return;
         }
 
-        jsb_checkf(ClassDB::is_parent_class(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
         // handle all @onready properties
         v8::Local<v8::Value> val_test;
         if (self->Get(context, environment_->SymbolFor(ClassImplicitReadyFuncs)).ToLocal(&val_test) && val_test->IsArray())
