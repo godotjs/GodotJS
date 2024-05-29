@@ -39,6 +39,48 @@ Compile the typescript source into javascript, and attach the compiled script to
 
 ![attach a script](./assets/attach_script.png)
 
+## Exported Properties
+In `GodotJS`, class member properties/variables can be exported. This means their value gets saved along with the resource (such as the scene) they're attached to. They will also be available for editing in the property editor. Exporting is done by using the `@export_` annotation.
+
+```ts
+export default class Shooter extends Sprite2D {
+    // type must be explicitly in annotation (because static type do not really exist in typescript)
+    @export_(jsb.VariantType.TYPE_FLOAT)
+    speed: number = 0;
+
+    // ...
+}
+```
+
+In this example the value `0` will be saved and visible in the property editor.  
+
+The retrieval of default value is implemented through `Class Default Object (CDO)`. `GodotJS` will instantiate a pure javascript instance of the script class (`Shooter` in this example) as `CDO`, then the property value is read from `CDO` as `default value` in the property editor. 
+
+> [!NOTE] 
+> Be cautious when coding within `constructor`, as it is probably called for initializing `CDO`.
+
+### Basic Use
+
+```ts 
+@export_(jsb.VariantType.TYPE_STRING)
+address: string = "somewhere";
+
+@export_(jsb.VariantType.TYPE_INT)
+age: number = 0;
+```
+
+If there's no default value, `default value` of the give type will be used (`0` in this case).
+```ts 
+@export_(jsb.VariantType.TYPE_INT)
+age: number;
+```
+
+### Grouping Exports
+NOT IMPLEMENTED FOR NOW
+
+## Signals
+WRITE SOMETHING HERE
+
 ## Cyclic imports
 Cyclic imports are allowed in `GodotJS` with some limits.
 
@@ -78,12 +120,6 @@ export class CyclicClass2 {
     }
 }
 ```
-
-## Exported Variables
-WRITE SOMETHING HERE
-
-## Signals
-WRITE SOMETHING HERE
 
 ## Reloading
 WRITE SOMETHING HERE
