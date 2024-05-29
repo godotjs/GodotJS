@@ -5,9 +5,9 @@ GodotJS - TypScript/JavaScript for Godot with V8.
 > This project is still in the very early stage of development.
 
 ## Features
-* [x] `ScriptLanguage` integration
-* [x] Debug with Chrome devtools when using V8
-* [x] REPL in Editor
+* [x] [`ScriptLanguage` integration](./docs/godotjs_scripts.md)
+* [x] [Debug with Chrome devtools when using V8](./docs/debugger.md)
+* [x] [REPL in Editor](./docs/repl.md)
 * [ ] Hot-reloading
 * [ ] Asynchronous module loading (`import` function)
 * [ ] Sandboxed scripting (not multi-threading)
