@@ -65,10 +65,23 @@ namespace jsb
         return inspect_fallback(isolate, context, p_val);
     }
 
+    Variant JSValueMove::to_variant() const
+    {
+        if (!is_valid()) return {};
+        v8::Isolate* isolate = realm_->get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = realm_->unwrap();
+        v8::Context::Scope context_scope(context);
+
+        Variant val;
+        Realm::js_to_gd_var(isolate, context, value_.Get(isolate), val);
+        return val;
+    }
+
     String JSValueMove::to_string() const
     {
         if (!is_valid()) return {};
-
         v8::Isolate* isolate = realm_->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);

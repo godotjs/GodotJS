@@ -26,6 +26,7 @@ namespace jsb
         jsb_force_inline void ignore() const {}
         bool is_valid() const;
         String to_string() const;
+        Variant to_variant() const;
         // Vector<String> to_strings() const;
     };
 }

@@ -64,7 +64,7 @@ namespace jsb
             }
             else
             {
-                JSB_LOG(Verbose, "loading module %s", p_name);
+                JSB_LOG(VeryVerbose, "loading module %s", p_name);
             }
             JavaScriptModule* module = memnew(JavaScriptModule);
             module_cache_.insert(p_name, module);

@@ -657,7 +657,7 @@ namespace jsb
             }
             else
             {
-                JSB_LOG(Verbose, "[experimental] constructing %s(%d) from subclass", jclass_info.name, (uint32_t) class_id);
+                JSB_LOG(VeryVerbose, "constructing %s(%d) from subclass", jclass_info.name, (uint32_t) class_id);
             }
         }
 

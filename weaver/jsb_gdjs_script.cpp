@@ -329,7 +329,7 @@ void GodotJSScript::load_module()
         valid_ = gdjs_class_id_.is_valid();
         if (valid_)
         {
-            JSB_LOG(Verbose, "script module loaded %s", path);
+            JSB_LOG(VeryVerbose, "GodotJSScript module loaded %s", path);
             {
                 //TODO a dirty but approaching solution for hot-reloading
                 MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_); // necessary?

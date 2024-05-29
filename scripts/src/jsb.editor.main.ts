@@ -1,10 +1,10 @@
-
 // entry point (editor only)
+import { PackedStringArray } from "godot";
 
-export function auto_complete(pattern: string): Array<string> {
-    let result: Array<string> = [];
+export function auto_complete(pattern: string): PackedStringArray {
+    let results = new PackedStringArray();
     if (typeof pattern !== "string") {
-        return result;
+        return results;
     }
     
     let scope: any = null;
@@ -16,7 +16,7 @@ export function auto_complete(pattern: string): Array<string> {
         try {
             scope = eval(pattern.substring(0, index));
         } catch (e) {
-            return result;
+            return results;
         }
         pattern = pattern.substring(index + 1);
     } else {
@@ -25,9 +25,8 @@ export function auto_complete(pattern: string): Array<string> {
 
     for (let k in scope) {
         if (k.indexOf(pattern) == 0) {
-            result.push(head + left + k);
+            results.append(head + left + k);
         }
     }
-
-    return result;
+    return results;
 }

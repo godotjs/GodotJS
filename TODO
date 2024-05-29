@@ -5,6 +5,8 @@ Core:
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
+    ☐ exported property: enum value support
+    ☐ exported property: flags value support
     ☐ `weakref`?
     ✔ `Object.free()` binding @done(24-05-27)
     ✔ `is_instance_valid(obj)` @done(24-05-27)
@@ -17,8 +19,9 @@ Core:
 Scripting:
     ☐ unexpected reloading (only datetime changed)
     ☐ add `preload` support
-    ☐ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11 10:06)
     ☐ check if `call_prelude` is called even if `_ready` is not defined in script
+    ☐ scriptable EditorPlugin
+    ✔ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11) @done(24-05-29)
     ✔ handle default argument values when calling Variant type methods @done(24-05-23)
     ✔ handle default argument values when calling Object type methods (such as `MethodBind.default_arguments` in `_godot_object_method`) @done(24-05-23)
     ✔ handle varargs when calling Variant type methods @done(24-05-17 19:15)
@@ -41,7 +44,7 @@ Scripting:
     ✔ install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
 
 REPL:
-    ☐ auto-complete when input text changed
+    ✔ auto-complete when input text changed @done(24-05-29)
     ☐ print object details in REPL output (as JSON?)
     ☐ completely re-implement the bottom panel in typescript if possible
     
