@@ -44,7 +44,8 @@ In `GodotJS`, class member properties/variables can be exported. This means thei
 
 ```ts
 export default class Shooter extends Sprite2D {
-    // type must be explicitly in annotation (because static type do not really exist in typescript)
+    // type must be explicitly provided as the first parameter of @export_
+    // cuz static type is actually a phantom in typescript
     @export_(jsb.VariantType.TYPE_FLOAT)
     speed: number = 0;
 

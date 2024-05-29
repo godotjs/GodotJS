@@ -21,7 +21,7 @@ cd YourGodotEngineSource/modules
 git clone https://github.com/ialex32x/GodotJS.git
 ```
 
-**STEP 2:** Pull all lfs objects (since the prebuilt `v8` library is too big to push as a common file to github):
+**STEP 2:** Pull all lfs objects (since the prebuilt `v8` library is too big to push as a common file on github):
 
 > [!NOTE]
 > `git-lfs` must be installed as a prerequisite. Follow the instructions on [Github Docs](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) to install `git-lfs`.
