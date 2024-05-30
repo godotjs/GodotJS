@@ -76,6 +76,21 @@ If there's no default value, `default value` of the give type will be used (`0` 
 age: number;
 ```
 
+### Exported Enum Properties
+Enum value properties can be exported with the built-in support in the property editor.
+
+> [!NOTE]
+> So far, only `int` is supported as enum value.
+
+```ts
+@export_enum(MyColor)
+color: MyColor = MyColor.White;
+```
+
+The value can be easily chose from a dropdown list in the editor.  
+
+![enum_prop](./assets/export_enum_inspector.png)
+
 ### Grouping Exports
 NOT IMPLEMENTED FOR NOW
 

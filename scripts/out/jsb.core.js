@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.$wait = exports.tool_ = exports.onready_ = exports.export_ = exports.signal_ = void 0;
+exports.$wait = exports.tool_ = exports.onready_ = exports.export_enum = exports.export_ = exports.signal_ = void 0;
+const godot_1 = require("godot");
 /**
  *
  */
@@ -12,11 +13,34 @@ function signal_() {
 exports.signal_ = signal_;
 function export_(type, details) {
     return function (target, key) {
-        let ebd = Object.assign({ name: key, type: type }, details);
+        let ebd = { name: key, type: type, hint: godot_1.PropertyHint.PROPERTY_HINT_NONE, hint_string: "" };
+        if (typeof details === "object") {
+            if (typeof details.hint === "number")
+                ebd.hint = details.hint;
+            if (typeof details.hint_string === "string")
+                ebd.hint_string = details.hint_string;
+        }
         jsb.internal.add_script_property(target, ebd);
     };
 }
 exports.export_ = export_;
+/**
+ * NOTE only int value enums are allowed
+ */
+function export_enum(enum_type) {
+    return function (target, key) {
+        let enum_vs = [];
+        for (let c in enum_type) {
+            const v = enum_type[c];
+            if (typeof v === "string") {
+                enum_vs.push(v + ":" + c);
+            }
+        }
+        let ebd = { name: key, type: jsb.VariantType.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(",") };
+        jsb.internal.add_script_property(target, ebd);
+    };
+}
+exports.export_enum = export_enum;
 /**
  * auto initialized on ready (before _ready called)
  * @param evaluator for now, only string is accepted

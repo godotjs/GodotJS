@@ -20,6 +20,10 @@ DEF(Node);
 
 // special names
 DEF(free);
+DEF(hint);
+DEF(hint_string);
+DEF(usage);
+DEF(class_);
 
 // keyword names
 DEF(default);

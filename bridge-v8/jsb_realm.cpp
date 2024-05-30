@@ -618,8 +618,8 @@ namespace jsb
                     GodotJSPropertyInfo property_info;
                     property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(name)).ToLocalChecked()); // string
                     property_info.type = (Variant::Type) obj->Get(context, environment->GetStringValue(type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
-                    //TODO save property default value
-                    // property_info.default_value = ...;
+                    property_info.hint = (PropertyHint) obj->Get(context, environment->GetStringValue(hint)).ToLocalChecked()->Int32Value(context).ToChecked();;
+                    property_info.hint_string = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(hint_string)).ToLocalChecked());
                     p_class_info.properties.insert(property_info.name, property_info);
                     JSB_LOG(VeryVerbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
                 }
@@ -1775,7 +1775,24 @@ namespace jsb
             return;
         }
 
-        // (5) classes in ClassDB
+        // (5) global_enums
+        if (CoreConstants::is_global_enum(type_name))
+        {
+            HashMap<StringName, int64_t> enum_values;
+            CoreConstants::get_enum_values(type_name, &enum_values);
+            v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
+            for (const KeyValue<StringName, int64_t>& kv : enum_values)
+            {
+                v8::Local<v8::String> key = V8Helper::to_string(isolate, kv.key);
+                v8::Local<v8::Integer> value = V8Helper::to_int32(isolate, kv.value);
+                enumeration->Set(context, key, value);
+                enumeration->Set(context, value, key); // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
+            }
+            info.GetReturnValue().Set(enumeration);
+            return;
+        }
+
+        // (6) classes in ClassDB
         const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(type_name);
         if (it != ClassDB::classes.end())
         {
@@ -2191,7 +2208,7 @@ namespace jsb
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
     }
 
-    // function add_script_property(target: any, name: string,  evaluator: string | Function): void;
+    // function add_script_ready(target: any, name: string,  evaluator: string | Function): void;
     void Realm::_add_script_ready(const v8::FunctionCallbackInfo<v8::Value> &info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -2263,8 +2280,8 @@ namespace jsb
 
         collection->Set(context, index, details);
         JSB_LOG(VeryVerbose, "script %s define property(export) %s",
-            V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
-            V8Helper::to_string(isolate, details->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
+            V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
+            V8Helper::to_string(isolate, details->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()));
     }
 
     // function add_script_signal(target: any, signal_name: string): void;
@@ -2302,7 +2319,7 @@ namespace jsb
 
         collection->Set(context, index, signal);
         JSB_LOG(VeryVerbose, "script %s define signal %s",
-            V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
+            V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
             V8Helper::to_string(isolate, signal));
     }
 

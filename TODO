@@ -1,13 +1,14 @@
 
 Core:
+    ☐ global scope defined constants (such as PropertyHint)
     ☐ source-map: incorrect Ln:Col on bundle scripts
     ☐ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52)
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
-    ☐ exported property: enum value support
+    ✔ global enums binding @done(24-05-30)
+    ✔ exported property: enum value support @done(24-05-30)
     ☐ exported property: flags value support
-    ☐ `weakref`?
     ✔ `Object.free()` binding @done(24-05-27)
     ✔ `is_instance_valid(obj)` @done(24-05-27)
     ✔ source-map: configurable in project settings @done(24-05-16 16:45)
@@ -20,6 +21,7 @@ Scripting:
     ☐ unexpected reloading (only datetime changed)
     ☐ add `preload` support
     ☐ check if `call_prelude` is called even if `_ready` is not defined in script
+    ☐ scriptable EditorInspectorPlugin
     ☐ scriptable EditorPlugin
     ✔ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11) @done(24-05-29)
     ✔ handle default argument values when calling Variant type methods @done(24-05-23)
