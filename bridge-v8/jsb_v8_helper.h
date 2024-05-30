@@ -108,7 +108,8 @@ namespace jsb
                 v8::Local<v8::String> key = V8Helper::to_string(isolate, kv.key);
                 v8::Local<v8::Integer> value = V8Helper::to_int32(isolate, kv.value);
                 enumeration->Set(context, key, value);
-                enumeration->Set(context, value, key); // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
+                // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
+                enumeration->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), key, v8::DontEnum);
             }
             return enumeration;
         }
