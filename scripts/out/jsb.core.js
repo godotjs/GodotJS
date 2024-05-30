@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.$wait = exports.tool_ = exports.onready_ = exports.export_enum = exports.export_ = exports.signal_ = void 0;
+exports.$wait = exports.tool_ = exports.onready_ = exports.export_flags = exports.export_enum = exports.export_ = exports.signal_ = void 0;
 const godot_1 = require("godot");
 /**
  *
@@ -41,6 +41,23 @@ function export_enum(enum_type) {
     };
 }
 exports.export_enum = export_enum;
+/**
+ * NOTE only int value enums are allowed
+ */
+function export_flags(enum_type) {
+    return function (target, key) {
+        let enum_vs = [];
+        for (let c in enum_type) {
+            const v = enum_type[c];
+            if (typeof v === "string" && enum_type[v] != 0) {
+                enum_vs.push(v + ":" + c);
+            }
+        }
+        let ebd = { name: key, type: jsb.VariantType.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(",") };
+        jsb.internal.add_script_property(target, ebd);
+    };
+}
+exports.export_flags = export_flags;
 /**
  * auto initialized on ready (before _ready called)
  * @param evaluator for now, only string is accepted

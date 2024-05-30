@@ -6,9 +6,10 @@ Core:
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
+    ☐ godot.Variant.Type/Operator are not exposed (because `Variant` itself does not exist in js)
     ✔ global enums binding @done(24-05-30)
     ✔ exported property: enum value support @done(24-05-30)
-    ☐ exported property: flags value support
+    ✔ exported property: flags value support @done(24-05-30)
     ✔ `Object.free()` binding @done(24-05-27)
     ✔ `is_instance_valid(obj)` @done(24-05-27)
     ✔ source-map: configurable in project settings @done(24-05-16 16:45)
