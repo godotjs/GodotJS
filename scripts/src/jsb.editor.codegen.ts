@@ -1,5 +1,5 @@
 
-import { FileAccess } from "godot";
+import { FileAccess, Variant } from "godot";
 
 if (!jsb.TOOLS_ENABLED) {
     throw new Error("codegen is only allowed in editor mode")
@@ -54,51 +54,51 @@ const KeywordReplacement: { [name: string]: string } = {
 }
 
 const PrimitiveTypeNames : { [type: number]: string } = {
-    [jsb.VariantType.TYPE_NIL]: "any",
-    [jsb.VariantType.TYPE_BOOL]: "boolean",
-    [jsb.VariantType.TYPE_INT]: "number /*i64*/",
-    [jsb.VariantType.TYPE_FLOAT]: "number /*f64*/",
-    [jsb.VariantType.TYPE_STRING]: "string",
+    [Variant.Type.TYPE_NIL]: "any",
+    [Variant.Type.TYPE_BOOL]: "boolean",
+    [Variant.Type.TYPE_INT]: "number /*i64*/",
+    [Variant.Type.TYPE_FLOAT]: "number /*f64*/",
+    [Variant.Type.TYPE_STRING]: "string",
 
     //TODO the following mappings could be replaced with Variant::get_type_name()
     // math types
-    [jsb.VariantType.TYPE_VECTOR2]: "Vector2",
-    [jsb.VariantType.TYPE_VECTOR2I]: "Vector2i",
-    [jsb.VariantType.TYPE_RECT2]: "Rect2",
-    [jsb.VariantType.TYPE_RECT2I]: "Rect2i",
-    [jsb.VariantType.TYPE_VECTOR3]: "Vector3",
-    [jsb.VariantType.TYPE_VECTOR3I]: "Vector3i",
-    [jsb.VariantType.TYPE_TRANSFORM2D]: "Transform2D",
-    [jsb.VariantType.TYPE_VECTOR4]: "Vector4",
-    [jsb.VariantType.TYPE_VECTOR4I]: "Vector4i",
-    [jsb.VariantType.TYPE_PLANE]: "Plane",
-    [jsb.VariantType.TYPE_QUATERNION]: "Quaternion",
-    [jsb.VariantType.TYPE_AABB]: "AABB",
-    [jsb.VariantType.TYPE_BASIS]: "Basis",
-    [jsb.VariantType.TYPE_TRANSFORM3D]: "Transform3D",
-    [jsb.VariantType.TYPE_PROJECTION]: "Projection",
+    [Variant.Type.TYPE_VECTOR2]: "Vector2",
+    [Variant.Type.TYPE_VECTOR2I]: "Vector2i",
+    [Variant.Type.TYPE_RECT2]: "Rect2",
+    [Variant.Type.TYPE_RECT2I]: "Rect2i",
+    [Variant.Type.TYPE_VECTOR3]: "Vector3",
+    [Variant.Type.TYPE_VECTOR3I]: "Vector3i",
+    [Variant.Type.TYPE_TRANSFORM2D]: "Transform2D",
+    [Variant.Type.TYPE_VECTOR4]: "Vector4",
+    [Variant.Type.TYPE_VECTOR4I]: "Vector4i",
+    [Variant.Type.TYPE_PLANE]: "Plane",
+    [Variant.Type.TYPE_QUATERNION]: "Quaternion",
+    [Variant.Type.TYPE_AABB]: "AABB",
+    [Variant.Type.TYPE_BASIS]: "Basis",
+    [Variant.Type.TYPE_TRANSFORM3D]: "Transform3D",
+    [Variant.Type.TYPE_PROJECTION]: "Projection",
 
     // misc types
-    [jsb.VariantType.TYPE_COLOR]: "Color",
-    [jsb.VariantType.TYPE_STRING_NAME]: "StringName",
-    [jsb.VariantType.TYPE_NODE_PATH]: "NodePath",
-    [jsb.VariantType.TYPE_RID]: "RID",
-    [jsb.VariantType.TYPE_OBJECT]: "Object",
-    [jsb.VariantType.TYPE_CALLABLE]: "Callable",
-    [jsb.VariantType.TYPE_SIGNAL]: "Signal",
-    [jsb.VariantType.TYPE_DICTIONARY]: "Dictionary",
-    [jsb.VariantType.TYPE_ARRAY]: "Array",
+    [Variant.Type.TYPE_COLOR]: "Color",
+    [Variant.Type.TYPE_STRING_NAME]: "StringName",
+    [Variant.Type.TYPE_NODE_PATH]: "NodePath",
+    [Variant.Type.TYPE_RID]: "RID",
+    [Variant.Type.TYPE_OBJECT]: "Object",
+    [Variant.Type.TYPE_CALLABLE]: "Callable",
+    [Variant.Type.TYPE_SIGNAL]: "Signal",
+    [Variant.Type.TYPE_DICTIONARY]: "Dictionary",
+    [Variant.Type.TYPE_ARRAY]: "Array",
 
     // typed arrays
-    [jsb.VariantType.TYPE_PACKED_BYTE_ARRAY]: "PackedByteArray",
-    [jsb.VariantType.TYPE_PACKED_INT32_ARRAY]: "PackedInt32Array",
-    [jsb.VariantType.TYPE_PACKED_INT64_ARRAY]: "PackedInt64Array",
-    [jsb.VariantType.TYPE_PACKED_FLOAT32_ARRAY]: "PackedFloat32Array",
-    [jsb.VariantType.TYPE_PACKED_FLOAT64_ARRAY]: "PackedFloat64Array",
-    [jsb.VariantType.TYPE_PACKED_STRING_ARRAY]: "PackedStringArray",
-    [jsb.VariantType.TYPE_PACKED_VECTOR2_ARRAY]: "PackedVector2Array",
-    [jsb.VariantType.TYPE_PACKED_VECTOR3_ARRAY]: "PackedVector3Array",
-    [jsb.VariantType.TYPE_PACKED_COLOR_ARRAY]: "PackedColorArray",
+    [Variant.Type.TYPE_PACKED_BYTE_ARRAY]: "PackedByteArray",
+    [Variant.Type.TYPE_PACKED_INT32_ARRAY]: "PackedInt32Array",
+    [Variant.Type.TYPE_PACKED_INT64_ARRAY]: "PackedInt64Array",
+    [Variant.Type.TYPE_PACKED_FLOAT32_ARRAY]: "PackedFloat32Array",
+    [Variant.Type.TYPE_PACKED_FLOAT64_ARRAY]: "PackedFloat64Array",
+    [Variant.Type.TYPE_PACKED_STRING_ARRAY]: "PackedStringArray",
+    [Variant.Type.TYPE_PACKED_VECTOR2_ARRAY]: "PackedVector2Array",
+    [Variant.Type.TYPE_PACKED_VECTOR3_ARRAY]: "PackedVector3Array",
+    [Variant.Type.TYPE_PACKED_COLOR_ARRAY]: "PackedColorArray",
 }
 const RemapTypes: { [name: string]: string } = {
     ["Error"]: "GodotError",
@@ -333,15 +333,15 @@ class ClassWriter extends IndentWriter {
     private make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
         // plain types
         switch (value.type) {
-            case jsb.VariantType.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
-            case jsb.VariantType.TYPE_FLOAT: 
-            case jsb.VariantType.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
-            case jsb.VariantType.TYPE_STRING:
-            case jsb.VariantType.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
+            case Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
+            case Variant.Type.TYPE_FLOAT: 
+            case Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
+            case Variant.Type.TYPE_STRING:
+            case Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
             default: break;
         }
         // make them more readable?
-        if (value.type == jsb.VariantType.TYPE_VECTOR2) {
+        if (value.type == Variant.Type.TYPE_VECTOR2) {
             if (value == null) return 'new Vector2()';
             if (value.value.x == value.value.y) {
                 if (value.value.x == 0) return `Vector2.ZERO`;
@@ -349,7 +349,7 @@ class ClassWriter extends IndentWriter {
             }
             return `new Vector2(${value.value.x}, ${value.value.y})`;
         }
-        if (value.type == jsb.VariantType.TYPE_VECTOR3) {
+        if (value.type == Variant.Type.TYPE_VECTOR3) {
             if (value == null) return 'new Vector3()';
             if (value.value.x == value.value.y == value.value.z) {
                 if (value.value.x == 0) return `Vector3.ZERO`;
@@ -357,7 +357,7 @@ class ClassWriter extends IndentWriter {
             }
             return `new Vector3(${value.value.x}, ${value.value.y}, ${value.value.z})`;
         }
-        if (value.type == jsb.VariantType.TYPE_COLOR) {
+        if (value.type == Variant.Type.TYPE_COLOR) {
             if (value == null) return 'new Color()';
             return `new Color(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
         }

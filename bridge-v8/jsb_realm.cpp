@@ -718,16 +718,6 @@ namespace jsb
 #pragma pop_macro("DEF")
             }
 
-            {
-                v8::Local<v8::Object> ptypes = v8::Object::New(isolate);
-#pragma push_macro("DEF")
-#   undef DEF
-#   define DEF(FieldName) ptypes->Set(context, v8::String::NewFromUtf8Literal(isolate, "TYPE_" #FieldName), v8::Int32::New(isolate, Variant::FieldName)).Check();
-#   include "jsb_variant_types.h"
-#pragma pop_macro("DEF")
-                jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "VariantType"), ptypes).Check();
-            }
-
 #if TOOLS_ENABLED
             // internal 'jsb.editor'
             {
@@ -1734,8 +1724,6 @@ namespace jsb
             return;
         }
 
-        //TODO put all singletons into another module 'godot-globals' for better readability (and avoid naming conflicts, like the `class IP` and the `singleton IP`)
-
         // (2) singletons have the top priority (in GDScriptLanguage::init, singletons will overwrite the globals slot even if a type/const has the same name)
         //     checking before getting to avoid error prints in `get_singleton_object`
         if (Engine::get_singleton()->has_singleton(type_name))
@@ -1775,24 +1763,7 @@ namespace jsb
             return;
         }
 
-        // (5) global_enums
-        if (CoreConstants::is_global_enum(type_name))
-        {
-            HashMap<StringName, int64_t> enum_values;
-            CoreConstants::get_enum_values(type_name, &enum_values);
-            v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
-            for (const KeyValue<StringName, int64_t>& kv : enum_values)
-            {
-                v8::Local<v8::String> key = V8Helper::to_string(isolate, kv.key);
-                v8::Local<v8::Integer> value = V8Helper::to_int32(isolate, kv.value);
-                enumeration->Set(context, key, value);
-                enumeration->Set(context, value, key); // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-            }
-            info.GetReturnValue().Set(enumeration);
-            return;
-        }
-
-        // (6) classes in ClassDB
+        // (5) classes in ClassDB
         const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(type_name);
         if (it != ClassDB::classes.end())
         {
@@ -1805,6 +1776,29 @@ namespace jsb
                 info.GetReturnValue().Set(godot_class.function_.Get(isolate));
                 return;
             }
+        }
+
+        // (6) global_enums
+        if (CoreConstants::is_global_enum(type_name))
+        {
+            HashMap<StringName, int64_t> enum_values;
+            CoreConstants::get_enum_values(type_name, &enum_values);
+            info.GetReturnValue().Set(V8Helper::to_enum(isolate, context, enum_values));
+            return;
+        }
+
+        // (7) special case: `Variant` (`Variant` is not exposed as it-self in js, but we still need to access the nested enums in it)
+        // seealso: core/variant/binder_common.h
+        //          VARIANT_ENUM_CAST(Variant::Type);
+        //          VARIANT_ENUM_CAST(Variant::Operator);
+        // they are exposed as `Variant.Type` in global constants in godot
+        if (type_name == jsb_string_name(Variant))
+        {
+            v8::Local<v8::Object> obj = v8::Object::New(isolate);
+            obj->Set(context, V8Helper::to_string(isolate, "Type"), V8Helper::to_global_enum(isolate, context, "Variant.Type"));
+            obj->Set(context, V8Helper::to_string(isolate, "Operator"), V8Helper::to_global_enum(isolate, context, "Variant.Operator"));
+            info.GetReturnValue().Set(obj);
+            return;
         }
 
         const CharString message = vformat("godot class not found '%s'", type_name).utf8();

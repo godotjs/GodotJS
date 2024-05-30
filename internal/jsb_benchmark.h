@@ -3,7 +3,9 @@
 #include "jsb_macros.h"
 
 #if JSB_BENCHMARK
-#   define JSB_BENCHMARK_SCOPE(RegionName, DetailName) static String __String__##RegionName##DetailName = #RegionName "." #DetailName; ::jsb::internal::Benchmark __Benchmark__##RegionName##DetailName(__String__##RegionName##DetailName)
+#   define JSB_BENCHMARK_SCOPE(RegionName, DetailName) \
+    static String __String__##RegionName##DetailName = #RegionName "." #DetailName; \
+    ::jsb::internal::Benchmark __Benchmark__##RegionName##DetailName(__String__##RegionName##DetailName, __FILE__, __LINE__)
 #else
 #   define JSB_BENCHMARK_SCOPE(RegionName, DetailName) (void) 0
 #endif
@@ -13,7 +15,7 @@ namespace jsb::internal
     // simple implementation of benchmark
     struct Benchmark
     {
-        Benchmark(const String& p_name): name_(p_name)
+        Benchmark(const String& p_name, const char* p_file, int p_line): name_(p_name), file_(p_file), line_(p_line)
         {
             start_ = OS::get_singleton()->get_ticks_usec();
             // OS::get_singleton()->benchmark_begin_measure(name_);
@@ -26,13 +28,15 @@ namespace jsb::internal
             if (total > 20000)
             {
                 const double total_f = (double)total / 1000000.0;
-                JSB_LOG(Warning, "benchmark %s: %f s", name_, total_f);
+                JSB_LOG(Log, "slow process %s: %f s (%s:%d)", name_, total_f, file_, line_);
             }
             // OS::get_singleton()->benchmark_end_measure(name_);
         }
 
     private:
         String name_;
+        const char* file_;
+        int line_;
         uint64_t start_;
     };
 }

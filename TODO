@@ -6,7 +6,8 @@ Core:
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
-    ☐ godot.Variant.Type/Operator are not exposed (because `Variant` itself does not exist in js)
+    ✔ godot.Variant.Type/Operator are not exposed (because `Variant` itself does not exist in js) @done(24-05-30)
+    ✔ remove redundant enum declaration in godot.minimal.d.ts @done(24-05-30)
     ✔ global enums binding @done(24-05-30)
     ✔ exported property: enum value support @done(24-05-30)
     ✔ exported property: flags value support @done(24-05-30)
@@ -24,6 +25,7 @@ Scripting:
     ☐ check if `call_prelude` is called even if `_ready` is not defined in script
     ☐ scriptable EditorInspectorPlugin
     ☐ scriptable EditorPlugin
+    ☐ REPL: retrieve input history with `up/down` key
     ✔ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11) @done(24-05-29)
     ✔ handle default argument values when calling Variant type methods @done(24-05-23)
     ✔ handle default argument values when calling Object type methods (such as `MethodBind.default_arguments` in `_godot_object_method`) @done(24-05-23)

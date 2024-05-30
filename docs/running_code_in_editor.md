@@ -9,7 +9,7 @@ If a GodotJS class is annotated with `tool_()`, it'll be instantiated in the edi
 It's also possible to show warnings on a `Node` on `Scene` panel with `_get_configuration_warnings` defined. Here is a simple example:
 
 ```ts
-import { Engine, PackedStringArray, Sprite2D } from "godot";
+import { Engine, PackedStringArray, Sprite2D, Variant } from "godot";
 import { export_, tool_ } from "../jsb/jsb.core";
 
 @tool_()
@@ -18,7 +18,7 @@ export default class MyEditorSprite extends Sprite2D {
     /**
      * get/set property for `export` (both must be defined)
      */
-    @export_(jsb.VariantType.TYPE_FLOAT)
+    @export_(Variant.Type.TYPE_FLOAT)
     get speed(): number { return this._speed; }
     set speed(value: number) {
         if (this._speed != value) {
@@ -30,7 +30,7 @@ export default class MyEditorSprite extends Sprite2D {
     /**
      * plain field for `export`
      */
-    @export_(jsb.VariantType.TYPE_INT)
+    @export_(Variant.Type.TYPE_INT)
     unused_int = 0;
 
     private _clockwise = false;

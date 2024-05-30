@@ -2,6 +2,8 @@
 #define DEF(x)
 #endif
 
+// ONLY FREQUENTLY USED NAMES SHOULD BE LISTED HERE
+
 // name to name
 DEF(prototype);
 DEF(value);
@@ -17,6 +19,7 @@ DEF(_notification);
 // class names
 DEF(Object);
 DEF(Node);
+DEF(Variant);
 
 // special names
 DEF(free);

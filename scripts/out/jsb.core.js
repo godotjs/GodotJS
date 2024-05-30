@@ -36,7 +36,7 @@ function export_enum(enum_type) {
                 enum_vs.push(v + ":" + c);
             }
         }
-        let ebd = { name: key, type: jsb.VariantType.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(",") };
+        let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(",") };
         jsb.internal.add_script_property(target, ebd);
     };
 }
@@ -53,7 +53,7 @@ function export_flags(enum_type) {
                 enum_vs.push(v + ":" + c);
             }
         }
-        let ebd = { name: key, type: jsb.VariantType.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(",") };
+        let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(",") };
         jsb.internal.add_script_property(target, ebd);
     };
 }

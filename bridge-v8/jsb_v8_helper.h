@@ -93,6 +93,26 @@ namespace jsb
             return v8::String::NewFromUtf8(isolate, cstr.ptr(), v8::NewStringType::kNormal, cstr.length()).ToLocalChecked();
         }
 
+        static v8::Local<v8::Object> to_global_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& name)
+        {
+            HashMap<StringName, int64_t> enum_values;
+            CoreConstants::get_enum_values(name, &enum_values);
+            return to_enum(isolate, context, enum_values);
+        }
+
+        static v8::Local<v8::Object> to_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const HashMap<StringName, int64_t>& enum_values)
+        {
+            v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
+            for (const KeyValue<StringName, int64_t>& kv : enum_values)
+            {
+                v8::Local<v8::String> key = V8Helper::to_string(isolate, kv.key);
+                v8::Local<v8::Integer> value = V8Helper::to_int32(isolate, kv.value);
+                enumeration->Set(context, key, value);
+                enumeration->Set(context, value, key); // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
+            }
+            return enumeration;
+        }
+
         jsb_force_inline static v8::MaybeLocal<v8::Script> compile(v8::Local<v8::Context> context, v8::Local<v8::String> source, const String& p_filename)
         {
             v8::Isolate* isolate = context->GetIsolate();

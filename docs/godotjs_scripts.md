@@ -46,7 +46,7 @@ In `GodotJS`, class member properties/variables can be exported. This means thei
 export default class Shooter extends Sprite2D {
     // type must be explicitly provided as the first parameter of @export_
     // cuz static type is actually a phantom in typescript
-    @export_(jsb.VariantType.TYPE_FLOAT)
+    @export_(Variant.Type.TYPE_FLOAT)
     speed: number = 0;
 
     // ...
@@ -63,16 +63,16 @@ The retrieval of default value is implemented through `Class Default Object (CDO
 ### Basic Use
 
 ```ts 
-@export_(jsb.VariantType.TYPE_STRING)
+@export_(Variant.Type.TYPE_STRING)
 address: string = "somewhere";
 
-@export_(jsb.VariantType.TYPE_INT)
+@export_(Variant.Type.TYPE_INT)
 age: number = 0;
 ```
 
 If there's no default value, `default value` of the give type will be used (`0` in this case).
 ```ts 
-@export_(jsb.VariantType.TYPE_INT)
+@export_(Variant.Type.TYPE_INT)
 age: number;
 ```
 

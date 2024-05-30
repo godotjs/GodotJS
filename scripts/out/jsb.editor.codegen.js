@@ -32,48 +32,48 @@ const KeywordReplacement = {
     ["vargargs"]: "vargargs_",
 };
 const PrimitiveTypeNames = {
-    [jsb.VariantType.TYPE_NIL]: "any",
-    [jsb.VariantType.TYPE_BOOL]: "boolean",
-    [jsb.VariantType.TYPE_INT]: "number /*i64*/",
-    [jsb.VariantType.TYPE_FLOAT]: "number /*f64*/",
-    [jsb.VariantType.TYPE_STRING]: "string",
+    [godot_1.Variant.Type.TYPE_NIL]: "any",
+    [godot_1.Variant.Type.TYPE_BOOL]: "boolean",
+    [godot_1.Variant.Type.TYPE_INT]: "number /*i64*/",
+    [godot_1.Variant.Type.TYPE_FLOAT]: "number /*f64*/",
+    [godot_1.Variant.Type.TYPE_STRING]: "string",
     //TODO the following mappings could be replaced with Variant::get_type_name()
     // math types
-    [jsb.VariantType.TYPE_VECTOR2]: "Vector2",
-    [jsb.VariantType.TYPE_VECTOR2I]: "Vector2i",
-    [jsb.VariantType.TYPE_RECT2]: "Rect2",
-    [jsb.VariantType.TYPE_RECT2I]: "Rect2i",
-    [jsb.VariantType.TYPE_VECTOR3]: "Vector3",
-    [jsb.VariantType.TYPE_VECTOR3I]: "Vector3i",
-    [jsb.VariantType.TYPE_TRANSFORM2D]: "Transform2D",
-    [jsb.VariantType.TYPE_VECTOR4]: "Vector4",
-    [jsb.VariantType.TYPE_VECTOR4I]: "Vector4i",
-    [jsb.VariantType.TYPE_PLANE]: "Plane",
-    [jsb.VariantType.TYPE_QUATERNION]: "Quaternion",
-    [jsb.VariantType.TYPE_AABB]: "AABB",
-    [jsb.VariantType.TYPE_BASIS]: "Basis",
-    [jsb.VariantType.TYPE_TRANSFORM3D]: "Transform3D",
-    [jsb.VariantType.TYPE_PROJECTION]: "Projection",
+    [godot_1.Variant.Type.TYPE_VECTOR2]: "Vector2",
+    [godot_1.Variant.Type.TYPE_VECTOR2I]: "Vector2i",
+    [godot_1.Variant.Type.TYPE_RECT2]: "Rect2",
+    [godot_1.Variant.Type.TYPE_RECT2I]: "Rect2i",
+    [godot_1.Variant.Type.TYPE_VECTOR3]: "Vector3",
+    [godot_1.Variant.Type.TYPE_VECTOR3I]: "Vector3i",
+    [godot_1.Variant.Type.TYPE_TRANSFORM2D]: "Transform2D",
+    [godot_1.Variant.Type.TYPE_VECTOR4]: "Vector4",
+    [godot_1.Variant.Type.TYPE_VECTOR4I]: "Vector4i",
+    [godot_1.Variant.Type.TYPE_PLANE]: "Plane",
+    [godot_1.Variant.Type.TYPE_QUATERNION]: "Quaternion",
+    [godot_1.Variant.Type.TYPE_AABB]: "AABB",
+    [godot_1.Variant.Type.TYPE_BASIS]: "Basis",
+    [godot_1.Variant.Type.TYPE_TRANSFORM3D]: "Transform3D",
+    [godot_1.Variant.Type.TYPE_PROJECTION]: "Projection",
     // misc types
-    [jsb.VariantType.TYPE_COLOR]: "Color",
-    [jsb.VariantType.TYPE_STRING_NAME]: "StringName",
-    [jsb.VariantType.TYPE_NODE_PATH]: "NodePath",
-    [jsb.VariantType.TYPE_RID]: "RID",
-    [jsb.VariantType.TYPE_OBJECT]: "Object",
-    [jsb.VariantType.TYPE_CALLABLE]: "Callable",
-    [jsb.VariantType.TYPE_SIGNAL]: "Signal",
-    [jsb.VariantType.TYPE_DICTIONARY]: "Dictionary",
-    [jsb.VariantType.TYPE_ARRAY]: "Array",
+    [godot_1.Variant.Type.TYPE_COLOR]: "Color",
+    [godot_1.Variant.Type.TYPE_STRING_NAME]: "StringName",
+    [godot_1.Variant.Type.TYPE_NODE_PATH]: "NodePath",
+    [godot_1.Variant.Type.TYPE_RID]: "RID",
+    [godot_1.Variant.Type.TYPE_OBJECT]: "Object",
+    [godot_1.Variant.Type.TYPE_CALLABLE]: "Callable",
+    [godot_1.Variant.Type.TYPE_SIGNAL]: "Signal",
+    [godot_1.Variant.Type.TYPE_DICTIONARY]: "Dictionary",
+    [godot_1.Variant.Type.TYPE_ARRAY]: "Array",
     // typed arrays
-    [jsb.VariantType.TYPE_PACKED_BYTE_ARRAY]: "PackedByteArray",
-    [jsb.VariantType.TYPE_PACKED_INT32_ARRAY]: "PackedInt32Array",
-    [jsb.VariantType.TYPE_PACKED_INT64_ARRAY]: "PackedInt64Array",
-    [jsb.VariantType.TYPE_PACKED_FLOAT32_ARRAY]: "PackedFloat32Array",
-    [jsb.VariantType.TYPE_PACKED_FLOAT64_ARRAY]: "PackedFloat64Array",
-    [jsb.VariantType.TYPE_PACKED_STRING_ARRAY]: "PackedStringArray",
-    [jsb.VariantType.TYPE_PACKED_VECTOR2_ARRAY]: "PackedVector2Array",
-    [jsb.VariantType.TYPE_PACKED_VECTOR3_ARRAY]: "PackedVector3Array",
-    [jsb.VariantType.TYPE_PACKED_COLOR_ARRAY]: "PackedColorArray",
+    [godot_1.Variant.Type.TYPE_PACKED_BYTE_ARRAY]: "PackedByteArray",
+    [godot_1.Variant.Type.TYPE_PACKED_INT32_ARRAY]: "PackedInt32Array",
+    [godot_1.Variant.Type.TYPE_PACKED_INT64_ARRAY]: "PackedInt64Array",
+    [godot_1.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY]: "PackedFloat32Array",
+    [godot_1.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY]: "PackedFloat64Array",
+    [godot_1.Variant.Type.TYPE_PACKED_STRING_ARRAY]: "PackedStringArray",
+    [godot_1.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY]: "PackedVector2Array",
+    [godot_1.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY]: "PackedVector3Array",
+    [godot_1.Variant.Type.TYPE_PACKED_COLOR_ARRAY]: "PackedColorArray",
 };
 const RemapTypes = {
     ["Error"]: "GodotError",
@@ -280,15 +280,15 @@ class ClassWriter extends IndentWriter {
     make_literal_value(value) {
         // plain types
         switch (value.type) {
-            case jsb.VariantType.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
-            case jsb.VariantType.TYPE_FLOAT:
-            case jsb.VariantType.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
-            case jsb.VariantType.TYPE_STRING:
-            case jsb.VariantType.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
+            case godot_1.Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
+            case godot_1.Variant.Type.TYPE_FLOAT:
+            case godot_1.Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
+            case godot_1.Variant.Type.TYPE_STRING:
+            case godot_1.Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
             default: break;
         }
         // make them more readable?
-        if (value.type == jsb.VariantType.TYPE_VECTOR2) {
+        if (value.type == godot_1.Variant.Type.TYPE_VECTOR2) {
             if (value == null)
                 return 'new Vector2()';
             if (value.value.x == value.value.y) {
@@ -299,7 +299,7 @@ class ClassWriter extends IndentWriter {
             }
             return `new Vector2(${value.value.x}, ${value.value.y})`;
         }
-        if (value.type == jsb.VariantType.TYPE_VECTOR3) {
+        if (value.type == godot_1.Variant.Type.TYPE_VECTOR3) {
             if (value == null)
                 return 'new Vector3()';
             if (value.value.x == value.value.y == value.value.z) {
@@ -310,7 +310,7 @@ class ClassWriter extends IndentWriter {
             }
             return `new Vector3(${value.value.x}, ${value.value.y}, ${value.value.z})`;
         }
-        if (value.type == jsb.VariantType.TYPE_COLOR) {
+        if (value.type == godot_1.Variant.Type.TYPE_COLOR) {
             if (value == null)
                 return 'new Color()';
             return `new Color(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
