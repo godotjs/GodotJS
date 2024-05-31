@@ -86,3 +86,8 @@ export default class MyEditorScript1 extends EditorScript {
 This `_run()` method is executed when you use `File > Run` or the keyboard shortcut `Ctrl + Shift + X` while the `EditorScript` is the currently open script in the script editor. This keyboard shortcut is only effective when currently focused on the script editor.
 
 ![run_editor_script.png](./assets/run_editor_script.png)
+
+
+---
+
+[Go Back](../README.md)

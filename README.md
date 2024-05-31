@@ -41,7 +41,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ### Scripting
 * [GodotJS Scripts](./docs/godotjs_scripts.md)
-* [Godot Primitive Types](./docs/godot_primitive_types.md)
+* [Godot Bindings](./docs/godot_binding.md)
 * [Running code in the editor](./docs/running_code_in_editor.md)
 * [Signals](./docs/signals.md)
 

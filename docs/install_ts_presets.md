@@ -22,3 +22,8 @@ cd YourGodotProject/typescripts
 # remove the option `-w` if no continuous compilation required
 npx tsc -w
 ```
+
+
+---
+
+[Go Back](../README.md)
