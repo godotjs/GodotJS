@@ -6,7 +6,7 @@
 
 namespace jsb
 {
-    Vector<uint8_t> IModuleResolver::read_all_bytes(const ISourceReader& p_reader)
+    Vector<uint8_t> IModuleResolver::read_all_bytes(const internal::ISourceReader& p_reader)
     {
         constexpr static char header[] = "(function(exports,require,module,__filename,__dirname){";
         constexpr static char footer[] = "\n})";
@@ -133,7 +133,7 @@ namespace jsb
     bool DefaultModuleResolver::load(Realm* p_realm, const String& r_asset_path, JavaScriptModule& p_module)
     {
         // load source buffer
-        FileAccessSourceReader reader(FileAccess::open(r_asset_path, FileAccess::READ));
+        internal::FileAccessSourceReader reader(FileAccess::open(r_asset_path, FileAccess::READ));
         if (reader.is_null() || reader.get_length() == 0)
         {
             p_realm->get_isolate()->ThrowError("failed to read module source");
