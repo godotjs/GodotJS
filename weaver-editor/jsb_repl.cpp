@@ -60,7 +60,7 @@ GodotJSREPL::GodotJSREPL()
     candidate_list_->set_focus_mode(FOCUS_NONE);
     candidate_list_->set_mouse_filter(MOUSE_FILTER_IGNORE);
     candidate_list_->set_disable_visibility_clip(true);
-    candidate_list_->set_size(Size2(300, 160));
+    candidate_list_->set_size(Size2(600, 160));
     add_child(candidate_list_);
 }
 
