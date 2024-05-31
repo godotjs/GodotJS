@@ -7,7 +7,7 @@ All godot types (Object & Primitive) are defined in the built-in module `godot` 
 
 ## Enum
 
-Godot enums are exposed in javascript as js enum, and the underlying constant values which already defined in enums are eliminated from bindings.  
+Godot enums are exposed in javascript as `enum`, and the underlying constant values which already defined in enums are eliminated from bindings.
 
 > [!NOTE] 
 > The name of enum value can be retrieved by reading from enum type with the value as the key.  
@@ -41,7 +41,7 @@ console.log(Image.AlphaMode[mode]);
 | STRING | `string` |  |
 | STRING_NAME | `string` |  |
 
-All variant types not mentioned above are exposed as a class in javascript.
+All variant types not mentioned above are exposed as `class` in javascript.
 
 > [!NOTE] 
 > All primitive types which represented as `Variant` are pooled in `Environment` if `JSB_WITH_VARIANT_POOL` is enabled to reduce unnecessary cost on repeatedly memory allocation.
