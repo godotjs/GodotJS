@@ -6,32 +6,10 @@ namespace jsb
 {
     struct V8Helper
     {
-        template<typename T>
-        jsb_force_inline static int32_t jsb_downscale(int64_t p_val, const T& p_msg)
-        {
-#if JSB_DEBUG
-            if (p_val != (int64_t) (int32_t) p_val)
-            {
-                JSB_LOG(Warning, "inconsistent int64_t conversion: %s", p_msg);
-            }
-#endif
-            return (int32_t) p_val;
-        }
-
-        jsb_force_inline static int32_t jsb_downscale(int64_t p_val)
-        {
-#if JSB_DEBUG
-            if (p_val != (int64_t) (int32_t) p_val)
-            {
-                JSB_LOG(Warning, "inconsistent int64_t conversion");
-            }
-#endif
-            return (int32_t) p_val;
-        }
-
+        // convert int64 to int32 anyway
         jsb_force_inline static v8::Local<v8::Integer> to_int32(v8::Isolate* isolate, int64_t p_val)
         {
-            return v8::Int32::New(isolate, jsb_downscale(p_val));
+            return v8::Int32::New(isolate, (int32_t) p_val);
         }
 
         jsb_force_inline static v8::Local<v8::Boolean> to_boolean(v8::Isolate* isolate, bool p_val)
@@ -97,19 +75,42 @@ namespace jsb
         {
             HashMap<StringName, int64_t> enum_values;
             CoreConstants::get_enum_values(name, &enum_values);
-            return to_enum(isolate, context, enum_values);
+            return to_global_enum(isolate, context, enum_values);
         }
 
-        static v8::Local<v8::Object> to_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const HashMap<StringName, int64_t>& enum_values)
+        static v8::Local<v8::Object> to_global_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const HashMap<StringName, int64_t>& enum_values)
         {
             v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
             for (const KeyValue<StringName, int64_t>& kv : enum_values)
             {
-                v8::Local<v8::String> key = V8Helper::to_string(isolate, kv.key);
+                jsb_verify_int64(kv.value, "%s %s", kv.key, uitos(kv.value));
+                v8::Local<v8::String> name = V8Helper::to_string(isolate, kv.key);
                 v8::Local<v8::Integer> value = V8Helper::to_int32(isolate, kv.value);
-                enumeration->Set(context, key, value);
+                enumeration->Set(context, name, value);
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-                enumeration->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), key, v8::DontEnum);
+                enumeration->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), name, v8::DontEnum);
+            }
+            return enumeration;
+        }
+
+        static v8::Local<v8::ObjectTemplate> to_template_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context,
+            const ClassDB::ClassInfo::EnumInfo& p_info, const HashMap<StringName, int64_t>& p_constants,
+            HashSet<StringName>* o_names)
+        {
+            v8::Local<v8::ObjectTemplate> enumeration = v8::ObjectTemplate::New(isolate);
+            for (const StringName& enum_name : p_info.constants)
+            {
+                const String& enum_name_str = (String) enum_name;
+                jsb_not_implemented(enum_name_str.contains("."), "hierarchically nested definition is currently not supported");
+                const auto& const_it = p_constants.find(enum_name);
+                jsb_check(const_it);
+                jsb_verify_int64(const_it->value, "%s %s", enum_name, const_it->value);
+                v8::Local<v8::String> name = to_string(isolate, enum_name_str);
+                v8::Local<v8::Integer> value = to_int32(isolate, const_it->value);
+                enumeration->Set(name, value);
+                // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
+                enumeration->Set(value->ToString(context).ToLocalChecked(), name, v8::DontEnum);
+                if (o_names) o_names->insert(enum_name);
             }
             return enumeration;
         }

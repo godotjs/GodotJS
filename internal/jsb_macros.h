@@ -48,6 +48,12 @@
 #   define jsb_ensure(Condition) CRASH_COND(!(Condition))
 #endif
 
+#if JSB_DEBUG
+#   define jsb_verify_int64(Value64, Format, ...) { if (Value64 != (int64_t) (int32_t) Value64) { JSB_LOG(Warning, "(lossy conversion) " Format, ##__VA_ARGS__); } } (void) 0
+#else
+#   define jsb_verify_int64(Value64, Format, ...) (void) 0
+#endif
+
 #define jsb_likely(Expression) likely(Expression)
 #define jsb_unlikely(Expression) unlikely(Expression)
 

@@ -1031,35 +1031,22 @@ namespace jsb
             HashSet<StringName> enum_consts;
             for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
             {
-                v8::Local<v8::ObjectTemplate> enum_obj = v8::ObjectTemplate::New(isolate);
-                for (const StringName& enum_vname : pair.value.constants)
-                {
-                    const String& enum_vname_str = (String) enum_vname;
-                    jsb_not_implemented(enum_vname_str.contains("."), "hierarchically nested definition is currently not supported");
-                    const CharString vname_str = enum_vname_str.utf8();
-                    const auto const_it = p_class_info->constant_map.find(enum_vname);
-                    const int32_t enum_value = (int32_t) const_it->value;
-                    enum_obj->Set(
-                        v8::String::NewFromUtf8(isolate, vname_str.ptr(), v8::NewStringType::kNormal, vname_str.length()).ToLocalChecked(),
-                        v8::Int32::New(isolate, enum_value)
-                    );
-                    enum_consts.insert(enum_vname);
-                }
-
-                template_for_static->Set(V8Helper::to_string(isolate, pair.key), enum_obj);
+                template_for_static->Set(
+                    V8Helper::to_string(isolate, pair.key),
+                    V8Helper::to_template_enum(isolate, context, pair.value, p_class_info->constant_map, &enum_consts));
             }
 
             // expose class constants
             for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
             {
                 if (enum_consts.has(pair.key)) continue;
-                const int64_t const_value = pair.value;
                 const String& const_name_str = (String) pair.key;
                 jsb_not_implemented(const_name_str.contains("."), "hierarchically nested definition is currently not supported");
-                const CharString const_name = const_name_str.utf8(); // utf-8 for better compatibilities
-                v8::Local<v8::String> prop_key = v8::String::NewFromUtf8(isolate, const_name.ptr(), v8::NewStringType::kNormal, const_name.length()).ToLocalChecked();
+                jsb_verify_int64(pair.value, "%s.%s %s", p_class_info->name, pair.key, uitos(pair.value));
 
-                template_for_static->Set(prop_key, v8::Int32::New(isolate, V8Helper::jsb_downscale(const_value, pair.key)));
+                template_for_static->Set(
+                    V8Helper::to_string(isolate, const_name_str),
+                    V8Helper::to_int32(isolate, pair.value));
             }
 
             //TODO expose all available fields/properties etc.
@@ -1476,7 +1463,8 @@ namespace jsb
         case Variant::INT:
             {
                 const int64_t raw_val = p_cvar;
-                r_jval = v8::Int32::New(isolate, V8Helper::jsb_downscale(raw_val));
+                jsb_verify_int64(raw_val, "");
+                r_jval = V8Helper::to_int32(isolate, raw_val);
                 return true;
             }
         case Variant::OBJECT:
@@ -1783,7 +1771,7 @@ namespace jsb
         {
             HashMap<StringName, int64_t> enum_values;
             CoreConstants::get_enum_values(type_name, &enum_values);
-            info.GetReturnValue().Set(V8Helper::to_enum(isolate, context, enum_values));
+            info.GetReturnValue().Set(V8Helper::to_global_enum(isolate, context, enum_values));
             return;
         }
 
