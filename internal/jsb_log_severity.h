@@ -1,15 +1,22 @@
-﻿#ifndef DEF
-#define DEF(...)
+#ifndef GODOTJS_LOG_SEVERITY_DEF_H
+#define GODOTJS_LOG_SEVERITY_DEF_H
+
+#include <cstdint>
+
+namespace jsb::internal
+{
+    namespace ELogSeverity
+    {
+        enum Type : uint8_t
+        {
+#pragma push_macro("DEF")
+#   undef   DEF
+#   define  DEF(FieldName) FieldName,
+#   include "jsb_log_severity.def.h"
+
+#pragma pop_macro("DEF")
+        };
+    }
+}
+
 #endif
-
-DEF(VeryVerbose) // very trivial (omitted by default even if JSB_DEBUG is on)
-DEF(Verbose)     // trivial
-
-DEF(Debug)   // not important
-DEF(Info)    // general level
-DEF(Log)     // 'console.log'
-DEF(Trace)   // 'console.trace'
-DEF(Warning) //
-DEF(Error)   // unexpected but not critical
-DEF(Assert)  // 'console.assert'
-DEF(Fatal)   // critial errors

@@ -1,9 +1,8 @@
 #ifndef JSB_MACROS_H
 #define JSB_MACROS_H
 
-#include <cstdint>
-
 #include "../jsb_version.h"
+#include "jsb_console_output.h"
 
 #include "core/object/object.h"
 #include "core/variant/variant_utility.h"
@@ -30,10 +29,10 @@
 #define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) \
     if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::JSB_MIN_LOG_LEVEL) \
     {\
-        if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::Error) { _err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Method/function failed.", JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__)); } \
-        else if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::Warning) { _err_print_error(FUNCTION_STR, __FILE__, __LINE__, JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__), false, ERR_HANDLER_WARNING); }\
-        else if constexpr (jsb::internal::ELogSeverity::Severity > jsb::internal::ELogSeverity::Verbose) { print_line(JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__)); } \
-        else if (OS::get_singleton()->is_stdout_verbose()) { print_line(JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__)); } \
+        if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::Error) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); _err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Method/function failed.", output_text); } \
+        else if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::Warning) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); _err_print_error(FUNCTION_STR, __FILE__, __LINE__, output_text, false, ERR_HANDLER_WARNING); }\
+        else if constexpr (jsb::internal::ELogSeverity::Severity > jsb::internal::ELogSeverity::Verbose) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); print_line(output_text); } \
+        else if (OS::get_singleton()->is_stdout_verbose()) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); print_line(output_text); } \
     } (void) 0
 
 #define JSB_LOG(Severity, Format, ...) JSB_LOG_IMPL(jsb, Severity, Format, ##__VA_ARGS__)
@@ -81,20 +80,5 @@
 #define jsb_throw(isolate, literal) { ERR_PRINT((literal)); (isolate)->ThrowError((literal)); } (void) 0
 
 #define jsb_underlying_value(enum_type, enum_value) (__underlying_type(enum_type) (enum_value))
-
-namespace jsb::internal
-{
-    namespace ELogSeverity
-    {
-        enum Type : uint8_t
-        {
-#pragma push_macro("DEF")
-#   undef   DEF
-#   define  DEF(FieldName) FieldName,
-#   include "jsb_log_severity.h"
-#pragma pop_macro("DEF")
-        };
-    }
-}
 
 #endif

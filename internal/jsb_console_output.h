@@ -1,6 +1,8 @@
 ﻿#ifndef GODOTJS_CONSOLE_OUTPUT_H
 #define GODOTJS_CONSOLE_OUTPUT_H
-#include "jsb_macros.h"
+
+#include "core/string/ustring.h"
+#include "jsb_log_severity.h"
 
 namespace jsb
 {
@@ -12,11 +14,10 @@ namespace jsb
         {
             friend class jsb::Realm;
 
-        private:
-            static void _write(ELogSeverity::Type p_severity, const String& p_text);
-
         public:
             virtual void write(ELogSeverity::Type p_severity, const String& p_text) = 0;
+
+            static void internal_write(ELogSeverity::Type p_severity, const String& p_text);
 
             IConsoleOutput();
             virtual ~IConsoleOutput();

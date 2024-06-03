@@ -10,9 +10,36 @@
 #define RegisterPrimitiveType(TypeName) register_primitive_binding(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
 #define GetVariantInfoCollection(p_realm) (p_realm)->get_variant_info_collection() // ::jsb::internal::VariantInfoCollection::global
 
+#define JSB_DEFINE_OPERATOR2(op_code) function_template->\
+    Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, BinaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
+    JSB_LOG(Verbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+
+#define JSB_DEFINE_OPERATOR1(op_code) function_template->\
+    Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, UnaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
+    JSB_LOG(Verbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+
+#define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
+#define JSB_DEFINE_OVERLOADED_BINARY_END()
+
+#define JSB_DEFINE_BINARY_OVERLOAD(R, A, B)
+#define JSB_DEFINE_UNARY(op_code) JSB_DEFINE_OPERATOR1(op_code)
+#define JSB_DEFINE_COMPARATOR(op_code) JSB_DEFINE_OPERATOR2(op_code)
+
+#define JSB_TYPE_BEGIN(InType) \
+    template<>\
+    struct OperatorRegister<InType>\
+    {\
+        typedef InType CurrentType;\
+        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template)\
+        {
+
+#define JSB_TYPE_END() \
+        }\
+    };
+
 namespace jsb
 {
-    struct OperatorEvaluator2
+    struct BinaryOperator
     {
         static void invoke(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
@@ -60,50 +87,64 @@ namespace jsb
         }
     };
 
-#define JSB_DEFINE_OPERATOR2(op_code) function_template->\
-    Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, OperatorEvaluator2::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
-    JSB_LOG(Verbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
-
-#define JSB_TYPE_OPERATORS_BEGIN(TypeName) \
-    template<>\
-    struct OperatorRegister<TypeName>\
-    {\
-        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template)\
+    struct UnaryOperator
+    {
+        static void invoke(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
-#define JSB_TYPE_OPERATORS_END() \
-        }\
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::HandleScope handle_scope(isolate);
+            v8::Isolate::Scope isolate_scope(isolate);
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const Variant::Operator op = (Variant::Operator) info.Data().As<v8::Int32>()->Value();
+            if (info.Length() != 1)
+            {
+                jsb_throw(isolate, "bad param");
+                return;
+            }
+            Variant left;
+            const Variant right; // it's not really used
+            if (!Realm::js_to_gd_var(isolate, context, info[0], left))
+            {
+                jsb_throw(isolate, "bad translation");
+                return;
+            }
+            const Variant::Type left_type = left.get_type();
+            constexpr Variant::Type right_type = Variant::NIL;
+            const Variant::ValidatedOperatorEvaluator func = Variant::get_validated_operator_evaluator(op, left_type, right_type);
+            if (!func)
+            {
+                jsb_throw(isolate, "bad type (no operator)");
+                return;
+            }
+            Variant ret;
+            const Variant::Type return_type = Variant::get_operator_return_type(op, left_type, right_type);
+            internal::VariantUtil::construct_variant(ret, return_type);
+            func(&left, &right, &ret);
+            if (ret.get_type() != return_type)
+            {
+                jsb_throw(isolate, "bad return");
+                return;
+            }
+
+            v8::Local<v8::Value> rval;
+            if (!Realm::gd_var_to_js(isolate, context, ret, rval))
+            {
+                jsb_throw(isolate, "bad translation");
+                return;
+            }
+            info.GetReturnValue().Set(rval);
+        }
     };
 
-
-    template<typename T>
+    template<typename TypeName>
     struct OperatorRegister
     {
         static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template) {}
     };
 
+    #define Number double
     #include "jsb_primitive_operators.def.h"
-
-    template<>
-    struct OperatorRegister<Dictionary>
-    {
-        static void set_named(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            //TODO dictionary operator[] write
-        }
-
-        static void get_named(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            //TODO dictionary operator[] read
-        }
-
-        static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template)
-        {
-            JSB_DEFINE_OPERATOR2(EQUAL);
-            JSB_DEFINE_OPERATOR2(NOT_EQUAL);
-            prototype_template->Set(V8Helper::to_string(p_env.isolate, "set_named"), v8::FunctionTemplate::New(p_env.isolate, set_named));
-            prototype_template->Set(V8Helper::to_string(p_env.isolate, "get_named"), v8::FunctionTemplate::New(p_env.isolate, get_named));
-        }
-    };
+    #undef Number
 
     template<typename T>
     struct VariantBind
@@ -539,4 +580,6 @@ namespace jsb
         p_realm->RegisterPrimitiveType(PackedColorArray);
     }
 }
+
 #endif
+

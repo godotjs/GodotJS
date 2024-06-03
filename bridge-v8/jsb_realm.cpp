@@ -162,7 +162,7 @@ namespace jsb
 #endif
 
         const String& text = sb.as_string();
-        internal::IConsoleOutput::_write(severity, text);
+        internal::IConsoleOutput::internal_write(severity, text);
         switch (severity)
         {
         case internal::ELogSeverity::Assert: CRASH_NOW_MSG(text); return;

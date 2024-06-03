@@ -15,18 +15,28 @@
 
 namespace jsb_private
 {
-    //NOTE dummy functions only for compile-time check
-    template <typename T>
-    bool get_member_name(const T&);
-    template <typename T>
-    bool get_member_name(const volatile T&);
-    template <typename R, typename... Args>
-    bool get_member_name(R (*)(Args...));
+    //NOTE dummy functions only for compile-time check and never being really compiled
+    template <typename T>                   bool get_member_name(const T&);
+    template <typename T>                   bool get_member_name(const volatile T&);
+    template <typename R, typename... Args> bool get_member_name(R (*)(Args...));
 }
 
-#define JSB_GET_FIELD_NAME(TypeName, ValueName) ((void)sizeof(jsb_private::get_member_name(TypeName::ValueName)), JSB_STRINGIFY(ValueName))
-#define JSB_GET_FIELD_NAME_I(InstName, ValueName) ((void)sizeof(jsb_private::get_member_name(std::decay_t<decltype(InstName)>::ValueName)), JSB_STRINGIFY(ValueName))
 #define JSB_GET_FIELD_NAME_PRESET(InstName, ValueName) ((void)sizeof(jsb_private::get_member_name(std::decay_t<decltype(InstName)>::ValueName)), JSB_STRINGIFY(ValueName)), InstName.ValueName
+
+#define JSB_TYPE_BEGIN(InType) template<> struct OperatorRegister<InType>\
+    {\
+        typedef InType CurrentType;\
+        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)\
+        {
+#define JSB_TYPE_END() \
+        }\
+    };
+
+#define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(InOperator) OverloadedBinaryOperator(JSB_OPERATOR_NAME(InOperator), context, operators)
+#define JSB_DEFINE_BINARY_OVERLOAD(TReturn, TLeft, TRight) .Define<TReturn, TLeft, TRight>()
+#define JSB_DEFINE_OVERLOADED_BINARY_END() ;
+#define JSB_DEFINE_UNARY(InOperator) UnaryOperator::Define<CurrentType>(context, operators, JSB_OPERATOR_NAME(InOperator));
+#define JSB_DEFINE_COMPARATOR(InOperator) Comparator::Define<CurrentType, CurrentType>(context, operators, JSB_OPERATOR_NAME(InOperator));
 
 namespace jsb
 {
@@ -423,11 +433,17 @@ namespace jsb
         }
     }
 
-    template<typename TReturn>
-    struct Result
+    struct OverloadedBinaryOperator
     {
-        template<typename TLeft, typename TRight>
-        static void From(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
+        String op_name;
+        const v8::Local<v8::Context>& context;
+        const v8::Local<v8::Array>& operators;
+
+        OverloadedBinaryOperator(const String& p_name, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Array>& p_operators)
+        : op_name(p_name), context(p_context), operators(p_operators) {}
+
+        template<typename TReturn, typename TLeft, typename TRight>
+        OverloadedBinaryOperator& Define()
         {
             v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
 
@@ -436,69 +452,68 @@ namespace jsb
             set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TLeft>::VARIANT_TYPE);
             set_field(context->GetIsolate(), context, obj, "right_type", (int) GetTypeInfo<TRight>::VARIANT_TYPE);
             const uint32_t len = operators->Length();
+            operators->Set(context, len, obj).Check();
+            return *this;
+        }
+    };
+
+    struct Comparator
+    {
+        template<typename TLeft, typename TRight>
+        static void Define(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
+        {
+            v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
+
+            set_field(context->GetIsolate(), context, obj, "name", op_name);
+            set_field(context->GetIsolate(), context, obj, "return_type", (int) GetTypeInfo<bool>::VARIANT_TYPE);
+            set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TLeft>::VARIANT_TYPE);
+            set_field(context->GetIsolate(), context, obj, "right_type", (int) GetTypeInfo<TRight>::VARIANT_TYPE);
+            const uint32_t len = operators->Length();
             operators->Set(context, len, obj);
         }
     };
 
-    template<typename T>
+    struct UnaryOperator
+    {
+        template<typename TypeName>
+        static void Define(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
+        {
+            v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
+
+            set_field(context->GetIsolate(), context, obj, "name", op_name);
+            set_field(context->GetIsolate(), context, obj, "return_type", (int) GetTypeInfo<bool>::VARIANT_TYPE);
+            set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TypeName>::VARIANT_TYPE);
+            set_field(context->GetIsolate(), context, obj, "right_type", (int) Variant::NIL);
+            const uint32_t len = operators->Length();
+            operators->Set(context, len, obj);
+        }
+    };
+
+    template<typename TypeName>
     struct OperatorRegister
     {
         static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators) {}
     };
 
-    using Number = double;
+    #define Number double
+    #include "jsb_primitive_operators.def.h"
+    #undef Number
 
-#define JSB_OPERATOR2(OpName, Ret, Left, Right) { (void) sizeof(Variant::OP_##OpName); Result<Ret>::From<Left, Right>(context, operators, JSB_OPERATOR_NAME(OpName)); } (void) 0
-
-    template<> struct OperatorRegister<Vector2>
-    {
-        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
-        {
-            JSB_OPERATOR2(ADD, Vector2, Vector2, Vector2);
-            JSB_OPERATOR2(SUBTRACT, Vector2, Vector2, Vector2);
-            JSB_OPERATOR2(MULTIPLY, Vector2, Vector2, Vector2);
-            JSB_OPERATOR2(MULTIPLY, Vector2, Number, Vector2);
-            JSB_OPERATOR2(MULTIPLY, Vector2, Vector2, Number);
-            JSB_OPERATOR2(DIVIDE, Vector2, Vector2, Vector2);
-            JSB_OPERATOR2(DIVIDE, Vector2, Vector2, Number);
-            JSB_OPERATOR2(EQUAL, bool, Vector2, Vector2);
-            JSB_OPERATOR2(NOT_EQUAL, bool, Vector2, Vector2);
-        }
-    };
-
-    template<> struct OperatorRegister<Vector3>
-    {
-        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
-        {
-            JSB_OPERATOR2(ADD, Vector3, Vector3, Vector3);
-            JSB_OPERATOR2(SUBTRACT, Vector3, Vector3, Vector3);
-            JSB_OPERATOR2(MULTIPLY, Vector3, Vector3, Vector3);
-            JSB_OPERATOR2(MULTIPLY, Vector3, Number, Vector3);
-            JSB_OPERATOR2(MULTIPLY, Vector3, Vector3, Number);
-            JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Vector3);
-            JSB_OPERATOR2(DIVIDE, Vector3, Vector3, Number);
-            JSB_OPERATOR2(EQUAL, bool, Vector3, Vector3);
-            JSB_OPERATOR2(NOT_EQUAL, bool, Vector3, Vector3);
-        }
-    };
-
-    template<> struct OperatorRegister<Dictionary>
-    {
-        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
-        {
-            JSB_OPERATOR2(EQUAL, bool, Dictionary, Dictionary);
-            JSB_OPERATOR2(NOT_EQUAL, bool, Dictionary, Dictionary);
-        }
-    };
-
-    template<> struct OperatorRegister<Callable>
-    {
-        static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
-        {
-            JSB_OPERATOR2(EQUAL, bool, Callable, Callable);
-            JSB_OPERATOR2(NOT_EQUAL, bool, Callable, Callable);
-        }
-    };
+    // template<> struct OperatorRegister<Vector2>
+    // {
+    //     typedef Vector2 CurrentType;
+    //     static void generate(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators)
+    //     {
+    //         OverloadedBinaryOperator(JSB_OPERATOR_NAME(MULTIPLY), context, operators)
+    //             .Define<Vector2, Vector2, Vector2>()
+    //             .Define<Vector2, Vector2, Number>()
+    //             .Define<Vector2, Number, Vector2>()
+    //         ;
+    //         Comparator::Define<CurrentType, CurrentType>(context, operators, JSB_OPERATOR_NAME(EQUALS));
+    //         UnaryOperator::Define<CurrentType>(context, operators, JSB_OPERATOR_NAME(NEGATE));
+    //
+    //     }
+    // };
 
     void JavaScriptEditorUtility::_get_classes(const v8::FunctionCallbackInfo<v8::Value>& info)
     {

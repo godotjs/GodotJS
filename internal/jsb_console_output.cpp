@@ -14,7 +14,7 @@ namespace jsb::internal
         outputs_.erase(this);
     }
 
-    void IConsoleOutput::_write(ELogSeverity::Type p_severity, const String &p_text)
+    void IConsoleOutput::internal_write(ELogSeverity::Type p_severity, const String &p_text)
     {
         for (IConsoleOutput* output: outputs_)
         {
