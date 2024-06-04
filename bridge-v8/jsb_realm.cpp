@@ -40,6 +40,23 @@ namespace jsb
 
     internal::SArray<Realm*, RealmID> Realm::realms_;
 
+    void Realm::_to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        Variant var;
+        if (!js_to_gd_var(isolate, context, info[0], Variant::PACKED_BYTE_ARRAY, var))
+        {
+            jsb_throw(isolate, "bad parameter");
+            return;
+        }
+        const Vector<uint8_t> packed = var;
+        v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, packed.size());
+        void* data = buffer->Data();
+        memcpy(data, packed.ptr(), packed.size());
+        info.GetReturnValue().Set(buffer);
+    }
+
     void Realm::_is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -702,6 +719,7 @@ namespace jsb
             jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, TOOLS_ENABLED)).Check();
             jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
             jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "is_instance_valid"), v8::Function::New(context, _is_instance_valid).ToLocalChecked()).Check();
+            jsb_obj->Set(context, V8Helper::to_string(isolate, "to_array_buffer"), v8::Function::New(context, _to_array_buffer).ToLocalChecked()).Check();
 
             // jsb.internal
             {

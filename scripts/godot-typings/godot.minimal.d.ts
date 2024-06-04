@@ -1,6 +1,6 @@
 
 declare namespace jsb {
-    import { Callable as GDCallable, Object as GDObject, PropertyUsageFlags, PropertyHint, MethodFlags, Variant } from "godot";
+    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant } from "godot";
 
     const DEV_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
@@ -19,6 +19,8 @@ declare namespace jsb {
      * If the given `self` is instance of `godot.Object` and is still alive.
      */
     function is_instance_valid(self: GDObject): boolean;
+
+    function to_array_buffer(packed: PackedByteArray): ArrayBuffer;
 
     interface ScriptPropertyInfo {
         name: string;

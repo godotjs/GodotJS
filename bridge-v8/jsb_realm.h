@@ -226,6 +226,7 @@ namespace jsb
         static bool can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type);
 
     private:
+        static void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _new_callable(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _define(const v8::FunctionCallbackInfo<v8::Value>& info);

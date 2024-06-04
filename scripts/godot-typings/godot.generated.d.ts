@@ -1,4 +1,5 @@
-// AUTO-GENERATED
+// THIS FILE IS ONLY A PLACEHOLDER FOR COMPILING THE PREMADE TYPESCRIPT SOURCES IN THE GODOTJS MODULE IN-PLACE WITHOUT ERRORS.
+// godot.xxx.d.ts files will be generated in a target project.
 
 declare module "godot" {
     class Node {
@@ -8,6 +9,9 @@ declare module "godot" {
     // singleton
     namespace Engine {
         function get_time_scale(): number;
+    }
+
+    class PackedByteArray {
     }
 
     namespace FileAccess {

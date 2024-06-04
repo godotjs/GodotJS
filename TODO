@@ -6,6 +6,7 @@ Core:
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
+    ☐ `PackedByteArray` to `ArrayBuffer` converter
     ✔ essential operator bindings of primitive types @done(24-06-03 19:17)
     ✔ godot.Variant.Type/Operator are not exposed (because `Variant` itself does not exist in js) @done(24-05-30)
     ✔ remove redundant enum declaration in godot.minimal.d.ts @done(24-05-30)
