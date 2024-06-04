@@ -1,5 +1,5 @@
-#ifndef JSB_MACROS_H
-#define JSB_MACROS_H
+#ifndef GODOTJS_INTERNAL_MACROS_H
+#define GODOTJS_INTERNAL_MACROS_H
 
 #include "../jsb_version.h"
 #include "jsb_console_output.h"

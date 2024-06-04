@@ -6,10 +6,10 @@
 #include "jsb_environment.h"
 #include "jsb_module.h"
 #include "jsb_primitive_bindings.h"
-#include <unordered_map>
-
 #include "jsb_value_move.h"
-#include "modules/GodotJS/internal/jsb_variant_info.h"
+#include "../internal/jsb_variant_info.h"
+
+#include <unordered_map>
 
 namespace jsb
 {

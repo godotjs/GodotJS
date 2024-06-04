@@ -1,5 +1,5 @@
-#ifndef JSB_BRIDGE_H
-#define JSB_BRIDGE_H
+#ifndef GODOTJS_WEAVER_BRIDGE_H
+#define GODOTJS_WEAVER_BRIDGE_H
 
 #include "../jsb.gen.h"
 

@@ -2,7 +2,7 @@
 
 #include "jsb_editor_utility.h"
 #include "jsb_exception_info.h"
-#include "jsb_module_loader.h"
+#include "jsb_amd_module_loader.h"
 #include "jsb_transpiler.h"
 #include "jsb_ref.h"
 #include "jsb_v8_helper.h"

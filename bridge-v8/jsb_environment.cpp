@@ -5,9 +5,9 @@
 #endif
 
 #include "../internal/jsb_path_util.h"
-#include "jsb_module_loader.h"
+#include "../internal/jsb_settings.h"
+#include "jsb_godot_module_loader.h"
 #include "editor/editor_settings.h"
-#include "modules/GodotJS/internal/jsb_settings.h"
 
 namespace jsb
 {
