@@ -11,6 +11,7 @@ DEF(id);
 DEF(exports);
 DEF(loaded);
 DEF(name);
+DEF(main);
 DEF(children);
 DEF(type);
 DEF(evaluator);

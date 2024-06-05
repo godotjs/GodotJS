@@ -26,6 +26,8 @@ namespace jsb
     {
     private:
         friend class JavaScriptLanguage;
+        friend class BridgeModuleLoader;
+        friend class Builtins;
 
         static internal::SArray<Realm*, RealmID> realms_;
 
@@ -155,32 +157,13 @@ namespace jsb
          * \return js rval
          */
         v8::MaybeLocal<v8::Value> _compile_run(const char* p_source, int p_source_len, const String& p_filename);
-        v8::Local<v8::Function> _new_require_func(const CharString& p_module_id)
-        {
-            v8::Isolate* isolate = environment_->isolate_;
-            v8::Local<v8::Context> context = context_.Get(isolate);
-            v8::Local<v8::String> jmodule_id = v8::String::NewFromUtf8(isolate, p_module_id.ptr(), v8::NewStringType::kNormal, p_module_id.length()).ToLocalChecked();
-            v8::Local<v8::Function> jrequire = v8::Function::New(context, Realm::_require, /* magic: module_id */ jmodule_id).ToLocalChecked();
-            v8::Local<v8::Object> jmain_module;
-            if (_get_main_module(&jmain_module))
-            {
-                jrequire->Set(context, v8::String::NewFromUtf8Literal(isolate, "main"), jmain_module).Check();
-            }
-            else
-            {
-                JSB_LOG(Warning, "invalid main module");
-                jrequire->Set(context, v8::String::NewFromUtf8Literal(isolate, "main"), v8::Undefined(isolate)).Check();
-            }
-            return jrequire;
-        }
+        v8::Local<v8::Function> _new_require_func(const CharString& p_module_id);
 
         bool _get_main_module(v8::Local<v8::Object>* r_main_module) const;
 
         // JS function (type_name: string): type
         // it's called from JS, load godot type with the `type_name` in the `godot` module (it can be type/singleton/constant/etc.)
         static void _load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info);
-
-        static void _require(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         NativeClassID _expose_godot_class(const ClassDB::ClassInfo* p_class_info);
         NativeClassID _expose_godot_class(const StringName& p_class_name)
@@ -218,7 +201,6 @@ namespace jsb
          * Translate js val into gd variant without any type hint
          */
         static bool js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant& r_cvar);
-        static String stringify(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval);
 
         /**
          * Check if a javascript value `p_val` could be converted into the expected primitive type `p_type`
@@ -226,23 +208,9 @@ namespace jsb
         static bool can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type);
 
     private:
-        static void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _new_callable(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _define(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _print(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _set_timer(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _clear_timer(const v8::FunctionCallbackInfo<v8::Value>& info);
-
         static void _godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _add_script_property(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _add_script_ready(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _add_script_tool(const v8::FunctionCallbackInfo<v8::Value>& info);
-
-        void _register_builtins(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self);
 
         static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
         static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);

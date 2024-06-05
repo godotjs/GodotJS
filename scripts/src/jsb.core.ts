@@ -1,5 +1,6 @@
 
 import { PropertyHint, Variant  } from "godot";
+import * as jsb from "godot-jsb";
 
 /**
  *

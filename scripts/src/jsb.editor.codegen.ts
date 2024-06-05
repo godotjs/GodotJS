@@ -1,5 +1,6 @@
 
 import { FileAccess, Variant } from "godot";
+import * as jsb from "godot-jsb";
 
 if (!jsb.TOOLS_ENABLED) {
     throw new Error("codegen is only allowed in editor mode")

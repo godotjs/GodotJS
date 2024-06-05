@@ -130,6 +130,7 @@ namespace jsb
         jsb_force_inline void dealloc_variant(Variant* p_var) { memdelete(p_var); }
 #endif
 
+        jsb_force_inline internal::TTimerManager<JavaScriptTimerAction>& get_timer_manager() { return timer_manager_; }
         jsb_force_inline StringNameCache& get_string_name_cache() { return string_name_cache_; }
         jsb_force_inline v8::Local<v8::String> get_string_value(const StringName& p_name) { return string_name_cache_.get_string_value(isolate_, p_name); }
 

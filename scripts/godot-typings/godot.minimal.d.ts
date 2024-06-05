@@ -1,5 +1,5 @@
 
-declare namespace jsb {
+declare module "godot-jsb" {
     import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant } from "godot";
 
     const DEV_ENABLED: boolean;

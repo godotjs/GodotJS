@@ -1,5 +1,6 @@
 #include "jsb_amd_module_loader.h"
 #include "jsb_realm.h"
+#include "jsb_builtins.h"
 
 namespace jsb
 {

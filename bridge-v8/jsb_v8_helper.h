@@ -6,6 +6,8 @@ namespace jsb
 {
     struct V8Helper
     {
+        static String stringify(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval);
+
         // convert int64 to int32 anyway
         jsb_force_inline static v8::Local<v8::Integer> to_int32(v8::Isolate* isolate, int64_t p_val)
         {

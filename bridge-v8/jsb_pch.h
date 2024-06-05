@@ -17,6 +17,7 @@
 #include "core/math/vector4.h"
 #include "core/config/project_settings.h"
 #include "core/variant/variant_utility.h"
+#include "scene/main/node.h"
 
 //TODO handle module deps in SCSub
 #include "modules/regex/regex.h"
