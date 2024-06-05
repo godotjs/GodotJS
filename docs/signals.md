@@ -10,6 +10,9 @@
 > But it's compared internally in C++ to check equality when using them for `connect` and `disconnect`.
 
 ```ts
+import { Node } from "godot";
+import * as jsb from "godot-jsb";
+
 class MyClass extends Node {
     foo() {
         // subscribe

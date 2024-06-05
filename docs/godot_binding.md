@@ -64,6 +64,35 @@ class MyActor extends Node2D {
 
 ```
 
+## PackedByteArray
+
+A javascript `ArrayBuffer` can be used as a `PackedByteArray` implicitly.
+
+> [!NOTE]
+> The generated `godot.d.ts` files do not handle `ArrayBuffer` as `PackedByteArray` for now, but it's actually fine to do so. This will be fixed later.
+
+```ts
+let file = FileAccess.open(filePath, FileAccess.ModeFlags.WRITE);
+let buffer = new ArrayBuffer(16);
+let view = new Uint8Array(buffer);
+view.fill(0);
+file.store_buffer(buffer);
+```
+
+But reversely, `jsb.to_array_buffer` call is required to get an `ArrayBuffer` from `PackedByteArray`.
+
+```ts
+let packed = FileAccess.get_file_as_bytes("res://something.txt");
+
+// 'packed' is a `PackedByteArray`
+console.log(packed.size()); 
+
+// 'buffer' is a `ArrayBuffer`, if you want
+let buffer = jsb.to_array_buffer(packed); 
+console.log(buffer.byteLength);
+```
+
+
 ---
 
 [Go Back](../README.md)
