@@ -71,6 +71,25 @@ namespace jsb
             return v8::String::NewFromUtf8(isolate, cstr.ptr(), v8::NewStringType::kNormal, cstr.length()).ToLocalChecked();
         }
 
+        static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
+        {
+            const size_t size = array_buffer->ByteLength();
+            PackedByteArray packed;
+            Error err = packed.resize((int) size);
+            jsb_check(err == OK);
+            const void* data = array_buffer->Data();
+            memcpy(packed.ptrw(), data, size);
+            return packed;
+        }
+
+        static v8::Local<v8::ArrayBuffer> to_array_buffer(v8::Isolate* isolate, const Vector<uint8_t>& packed)
+        {
+            v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, packed.size());
+            void* data = buffer->Data();
+            memcpy(data, packed.ptr(), packed.size());
+            return buffer;
+        }
+
         static v8::Local<v8::Object> to_global_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& name)
         {
             HashMap<StringName, int64_t> enum_values;

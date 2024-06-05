@@ -50,11 +50,7 @@ namespace jsb
             jsb_throw(isolate, "bad parameter");
             return;
         }
-        const Vector<uint8_t> packed = var;
-        v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, packed.size());
-        void* data = buffer->Data();
-        memcpy(data, packed.ptr(), packed.size());
-        info.GetReturnValue().Set(buffer);
+        info.GetReturnValue().Set(V8Helper::to_array_buffer(isolate, var));
     }
 
     void Realm::_is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -1186,6 +1182,12 @@ namespace jsb
             r_cvar = V8Helper::to_string(isolate, p_jval.As<v8::String>());
             return true;
         }
+        // is it proper to convert a ArrayBuffer into Vector<uint8_t>?
+        if (p_jval->IsArrayBuffer())
+        {
+            r_cvar = V8Helper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
+            return true;
+        }
         //TODO
         // if (p_jval->IsFunction())
         // {
@@ -1403,6 +1405,13 @@ namespace jsb
                 return true;
             }
             goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_BYTE_ARRAY:
+            if (p_jval->IsArrayBuffer())
+            {
+                r_cvar = V8Helper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
+                return true;
+            }
+            goto FALLBACK_TO_VARIANT;
         // math types
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
@@ -1429,7 +1438,6 @@ namespace jsb
         case Variant::ARRAY:
 
         // typed arrays
-        case Variant::PACKED_BYTE_ARRAY:
         case Variant::PACKED_INT32_ARRAY:
         case Variant::PACKED_INT64_ARRAY:
         case Variant::PACKED_FLOAT32_ARRAY:
