@@ -87,7 +87,7 @@ let packed = FileAccess.get_file_as_bytes("res://something.txt");
 // 'packed' is a `PackedByteArray`
 console.log(packed.size()); 
 
-// 'buffer' is a `ArrayBuffer`, if you want
+// 'buffer' is a `ArrayBuffer`
 let buffer = jsb.to_array_buffer(packed); 
 console.log(buffer.byteLength);
 ```
