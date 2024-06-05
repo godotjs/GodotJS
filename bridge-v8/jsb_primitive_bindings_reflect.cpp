@@ -143,7 +143,7 @@ namespace jsb
     };
 
     #define Number double
-    #include "jsb_primitive_operators.def.h"
+    #include "../internal/jsb_primitive_operators.def.h"
     #undef Number
 
     template<typename T>
