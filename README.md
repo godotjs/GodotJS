@@ -1,7 +1,8 @@
 
 GodotJS - TypScript/JavaScript for Godot with V8.
 
-![Build Godot Editor with GodotJS](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build.yml/badge.svg)
+![Build Godot Editor Windows with GodotJS](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)
+![Build Godot Editor MacOS with GodotJS](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)
 
 > [!NOTE]
 > This project is still in the very early stage of development.
