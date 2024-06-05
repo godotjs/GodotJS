@@ -36,8 +36,10 @@ git lfs pull
 
 For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.
 
-[![snake](./docs/assets/snake_01.gif)](https://github.com/ialex32x/GodotJSExample.git)
-[![jummpybird](./docs/assets/jumpybird.gif)](https://github.com/ialex32x/GodotJSExample.git)
+A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build).
+
+[![Example: Snake](./docs/assets/snake_01.gif)](https://github.com/ialex32x/GodotJSExample.git)
+[![Example: Jummpy Bird](./docs/assets/jumpybird.gif)](https://github.com/ialex32x/GodotJSExample.git)
 
 ### Scripting
 * [GodotJS Scripts](./docs/godotjs_scripts.md)
