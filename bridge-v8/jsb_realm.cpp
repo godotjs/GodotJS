@@ -14,14 +14,6 @@
 
 namespace jsb
 {
-    static const MethodInfo& get_method_info_recursively(const ClassDB::ClassInfo& p_class_info, const StringName& method_name)
-    {
-        const HashMap<StringName, MethodInfo>::ConstIterator method_it = p_class_info.virtual_methods_map.find(method_name);
-        if (method_it != p_class_info.virtual_methods_map.end()) return method_it->value;
-        jsb_check(p_class_info.inherits_ptr);
-        return get_method_info_recursively(*p_class_info.inherits_ptr, method_name);
-    }
-
     internal::SArray<Realm*, RealmID> Realm::realms_;
 
     ObjectCacheID Realm::get_cached_function(const v8::Local<v8::Function>& p_func)
@@ -158,7 +150,7 @@ namespace jsb
                 module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, false)).Check();
                 module_obj->Set(context, environment_->GetStringValue(id), jmodule_id).Check();
                 module_obj->Set(context, propkey_children, v8::Array::New(isolate)).Check();
-                module_obj->Set(context, environment_->GetStringValue(exports), exports_obj);
+                module_obj->Set(context, environment_->GetStringValue(exports), exports_obj).Check();
                 module.id = module_id;
                 module.path = asset_path;
                 module.module.Reset(isolate, module_obj);
@@ -1406,8 +1398,8 @@ namespace jsb
         if (type_name == jsb_string_name(Variant))
         {
             v8::Local<v8::Object> obj = v8::Object::New(isolate);
-            obj->Set(context, V8Helper::to_string(isolate, "Type"), V8Helper::to_global_enum(isolate, context, "Variant.Type"));
-            obj->Set(context, V8Helper::to_string(isolate, "Operator"), V8Helper::to_global_enum(isolate, context, "Variant.Operator"));
+            obj->Set(context, V8Helper::to_string(isolate, "Type"), V8Helper::to_global_enum(isolate, context, "Variant.Type")).Check();
+            obj->Set(context, V8Helper::to_string(isolate, "Operator"), V8Helper::to_global_enum(isolate, context, "Variant.Operator")).Check();
             info.GetReturnValue().Set(obj);
             return;
         }
@@ -1728,7 +1720,7 @@ namespace jsb
                     Node* child_node = node->get_node(node_path_str);
                     if (!child_node)
                     {
-                        self->Set(context, element_name, v8::Null(isolate));
+                        self->Set(context, element_name, v8::Null(isolate)).Check();
                         return;
                     }
                     v8::Local<v8::Object> child_object;
@@ -1737,7 +1729,7 @@ namespace jsb
                         JSB_LOG(Error, "failed to evaluate onready value for %s", node_path_str);
                         return;
                     }
-                    self->Set(context, element_name, child_object);
+                    self->Set(context, element_name, child_object).Check();
                 }
                 else if (element_value->IsFunction())
                 {
@@ -1752,7 +1744,7 @@ namespace jsb
                     }
                     if (!result.IsEmpty())
                     {
-                        self->Set(context, element_name, result.ToLocalChecked());
+                        self->Set(context, element_name, result.ToLocalChecked()).Check();
                     }
                 }
             }
