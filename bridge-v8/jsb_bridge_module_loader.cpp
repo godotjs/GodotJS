@@ -150,7 +150,7 @@ namespace jsb
         }
         Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Object> target = info[0].As<v8::Object>();
-        target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true));
+        target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true)).Check();
         JSB_LOG(VeryVerbose, "script %s (tool)",
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
     }
@@ -178,7 +178,7 @@ namespace jsb
         {
             index = 0;
             collection = v8::Array::New(isolate);
-            target->Set(context, symbol, collection);
+            target->Set(context, symbol, collection).Check();
         }
         else
         {
@@ -187,7 +187,7 @@ namespace jsb
             index = collection->Length();
         }
 
-        collection->Set(context, index, evaluator);
+        collection->Set(context, index, evaluator).Check();
         JSB_LOG(VeryVerbose, "script %s define property(onready) %s",
             V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
             V8Helper::to_string(isolate, evaluator->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
@@ -216,7 +216,7 @@ namespace jsb
         {
             index = 0;
             collection = v8::Array::New(isolate);
-            target->Set(context, symbol, collection);
+            target->Set(context, symbol, collection).Check();
         }
         else
         {
@@ -225,7 +225,7 @@ namespace jsb
             index = collection->Length();
         }
 
-        collection->Set(context, index, details);
+        collection->Set(context, index, details).Check();
         JSB_LOG(VeryVerbose, "script %s define property(export) %s",
             V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
             V8Helper::to_string(isolate, details->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()));
@@ -255,7 +255,7 @@ namespace jsb
         {
             index = 0;
             collection = v8::Array::New(isolate);
-            target->Set(context, symbol, collection);
+            target->Set(context, symbol, collection).Check();
         }
         else
         {
@@ -264,7 +264,7 @@ namespace jsb
             index = collection->Length();
         }
 
-        collection->Set(context, index, signal);
+        collection->Set(context, index, signal).Check();
         JSB_LOG(VeryVerbose, "script %s define signal %s",
             V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
             V8Helper::to_string(isolate, signal));

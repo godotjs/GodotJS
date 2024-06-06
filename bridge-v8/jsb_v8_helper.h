@@ -108,9 +108,9 @@ namespace jsb
                 jsb_verify_int64(kv.value, "%s %s", kv.key, uitos(kv.value));
                 v8::Local<v8::String> name = V8Helper::to_string(isolate, kv.key);
                 v8::Local<v8::Integer> value = V8Helper::to_int32(isolate, kv.value);
-                enumeration->Set(context, name, value);
+                enumeration->Set(context, name, value).Check();
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-                enumeration->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), name, v8::DontEnum);
+                enumeration->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), name, v8::DontEnum).Check();
             }
             return enumeration;
         }

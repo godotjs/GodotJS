@@ -195,7 +195,7 @@ namespace jsb
                 v8::Local<v8::Object> arg_obj = v8::Object::New(isolate);
                 set_field(isolate, context, arg_obj, "name", argument_info.name);
                 set_field(isolate, context, arg_obj, "type", argument_info.type);
-                args_obj->Set(context, index, arg_obj);
+                args_obj->Set(context, index, arg_obj).Check();
             }
             set_field(isolate, context, object, "arguments", args_obj);
         }
@@ -227,7 +227,7 @@ namespace jsb
                     const PropertyInfo& arg_info = method_bind->get_argument_info(index);
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     build_property_info(isolate, context, arg_info, property_info_obj);
-                    args_obj->Set(context, index, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj).Check();
                 }
                 set_field(isolate, context, object, "args_", args_obj);
             }
@@ -243,7 +243,7 @@ namespace jsb
                     const Variant::Type type = method_bind->get_argument_info(method_bind->get_argument_count() - (default_arguments.size() - index)).type;
                     const Variant value = default_arguments[index];
                     build_property_default_value(isolate, context, value, type, property_info_obj);
-                    args_obj->Set(context, index, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj).Check();
                 }
                 set_field(isolate, context, object, "default_arguments", args_obj);
             }
@@ -278,7 +278,7 @@ namespace jsb
                     const PropertyInfo& arg_info = method_info.arguments[index];
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     build_property_info(isolate, context, arg_info, property_info_obj);
-                    args_obj->Set(context, index, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj).Check();
                 }
                 set_field(isolate, context, object, "args_", args_obj);
             }
@@ -293,7 +293,7 @@ namespace jsb
                     const Variant value = method_info.default_arguments[index];
                     const Variant::Type type = method_info.arguments[method_info.arguments.size() - (argc - index)].type;
                     build_property_default_value(isolate, context, value, type, property_info_obj);
-                    args_obj->Set(context, index, property_info_obj);
+                    args_obj->Set(context, index, property_info_obj).Check();
                 }
                 set_field(isolate, context, object, "default_arguments", args_obj);
             }
@@ -306,7 +306,7 @@ namespace jsb
             for (int index = 0; index < num; ++index)
             {
                 const StringName& name = enum_info.constants[index];
-                constants_obj->Set(context, index, S(isolate, name).ToLocalChecked());
+                constants_obj->Set(context, index, S(isolate, name).ToLocalChecked()).Check();
             }
             set_field(isolate, context, object, "literals", constants_obj);
             set_field(isolate, context, object, JSB_GET_FIELD_NAME_PRESET(enum_info, is_bitfield));
@@ -341,7 +341,7 @@ namespace jsb
                     const PropertyInfo& property_info = class_info.property_list[index];
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     build_property_info(isolate, context, property_info, property_info_obj);
-                    properties_obj->Set(context, index, property_info_obj);
+                    properties_obj->Set(context, index, property_info_obj).Check();
                 }
             }
 
@@ -356,7 +356,7 @@ namespace jsb
                     const ClassDB::PropertySetGet& property_info = pair.value;
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     build_property_info(isolate, context, property_name, property_info, property_info_obj);
-                    properties_obj->Set(context, index++, property_info_obj);
+                    properties_obj->Set(context, index++, property_info_obj).Check();
                 }
             }
 
@@ -370,7 +370,7 @@ namespace jsb
                     MethodBind const * const method_bind = pair.value;
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                     build_method_info(isolate, context, method_bind, method_info_obj);
-                    methods_obj->Set(context, index++, method_info_obj);
+                    methods_obj->Set(context, index++, method_info_obj).Check();
                 }
             }
 
@@ -383,7 +383,7 @@ namespace jsb
                 {
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                     build_method_info(isolate, context, pair.value, method_info_obj);
-                    methods_obj->Set(context, index++, method_info_obj);
+                    methods_obj->Set(context, index++, method_info_obj).Check();
                 }
             }
 
@@ -398,7 +398,7 @@ namespace jsb
                     v8::Local<v8::Object> enum_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, enum_info_obj, "name", pair.key);
                     build_enum_info(isolate, context, enum_info, enum_info_obj);
-                    enums_obj->Set(context, index++, enum_info_obj);
+                    enums_obj->Set(context, index++, enum_info_obj).Check();
                 }
             }
 
@@ -412,7 +412,7 @@ namespace jsb
                     v8::Local<v8::Object> constant_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, constant_info_obj, "name", pair.key);
                     set_field(isolate, context, constant_info_obj, "value", pair.value);
-                    constants_obj->Set(context, index++, constant_info_obj);
+                    constants_obj->Set(context, index++, constant_info_obj).Check();
                 }
             }
 
@@ -426,7 +426,7 @@ namespace jsb
                     v8::Local<v8::Object> signal_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, signal_info_obj, "name", pair.key);
                     build_signal_info(isolate, context, pair.value, signal_info_obj);
-                    signals_obj->Set(context, index++, signal_info_obj);
+                    signals_obj->Set(context, index++, signal_info_obj).Check();
                 }
             }
             return class_info_obj;
@@ -469,7 +469,7 @@ namespace jsb
             set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TLeft>::VARIANT_TYPE);
             set_field(context->GetIsolate(), context, obj, "right_type", (int) GetTypeInfo<TRight>::VARIANT_TYPE);
             const uint32_t len = operators->Length();
-            operators->Set(context, len, obj);
+            operators->Set(context, len, obj).Check();
         }
     };
 
@@ -485,7 +485,7 @@ namespace jsb
             set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TypeName>::VARIANT_TYPE);
             set_field(context->GetIsolate(), context, obj, "right_type", (int) Variant::NIL);
             const uint32_t len = operators->Length();
-            operators->Set(context, len, obj);
+            operators->Set(context, len, obj).Check();
         }
     };
 
@@ -527,7 +527,7 @@ namespace jsb
         v8::Local<v8::Array> array = v8::Array::New(isolate, list.size());
         for (int index = 0, num = list.size(); index < num; ++index)
         {
-            array->Set(context, index, build_class_info(isolate, context, list[index]));
+            array->Set(context, index, build_class_info(isolate, context, list[index])).Check();
         }
         info.GetReturnValue().Set(array);
     }
@@ -561,9 +561,9 @@ namespace jsb
             {
                 values_obj->Set(context,
                     S(isolate, kv.key).ToLocalChecked(),
-                    build_int64(isolate, kv.key, kv.value));
+                    build_int64(isolate, kv.key, kv.value)).Check();
             }
-            array->Set(context, array_index++, enum_obj);
+            array->Set(context, array_index++, enum_obj).Check();
         }
         info.GetReturnValue().Set(array);
     }
@@ -592,7 +592,7 @@ namespace jsb
                 }
                 v8::Local<v8::Object> constructor_obj = v8::Object::New(isolate);
                 build_constructor_info(isolate, context, constructor_info, constructor_obj);
-                constructors_obj->Set(context, constructor_index, constructor_obj);
+                constructors_obj->Set(context, constructor_index, constructor_obj).Check();
             }
         }
 
@@ -611,7 +611,7 @@ namespace jsb
                 property_info.type = Variant::get_member_type(TYPE, property_name);
                 v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                 build_property_info(isolate, context, property_name, property_info, property_info_obj);
-                members_obj->Set(context, index++, property_info_obj);
+                members_obj->Set(context, index++, property_info_obj).Check();
             }
         }
 
@@ -642,7 +642,7 @@ namespace jsb
                 if (Variant::is_builtin_method_vararg(TYPE, name)) method_info.flags |= METHOD_FLAG_VARARG;
                 v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                 build_method_info(isolate, context, method_info, method_info_obj);
-                methods_obj->Set(context, index++, method_info_obj);
+                methods_obj->Set(context, index++, method_info_obj).Check();
             }
         }
 
@@ -672,7 +672,7 @@ namespace jsb
                 v8::Local<v8::Object> enum_info_obj = v8::Object::New(isolate);
                 set_field(isolate, context, enum_info_obj, "name", enum_name);
                 build_enum_info(isolate, context, enum_info, enum_info_obj);
-                enums_obj->Set(context, index++, enum_info_obj);
+                enums_obj->Set(context, index++, enum_info_obj).Check();
             }
         }
 
@@ -697,13 +697,13 @@ namespace jsb
                 case Variant::FLOAT: set_field(isolate, context, constant_info_obj, "value", (double) constant_value); break;
                 default: break;
                 }
-                constants_obj->Set(context, index++, constant_info_obj);
+                constants_obj->Set(context, index++, constant_info_obj).Check();
             }
         }
         return class_info_obj;
     }
 
-    #define GeneratePrimitiveType(Type) array->Set(context, index++, generate_primitive_type<Type>(isolate, context))
+    #define GeneratePrimitiveType(Type) array->Set(context, index++, generate_primitive_type<Type>(isolate, context)).Check()
     void JavaScriptEditorUtility::_get_primitive_types(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -764,7 +764,7 @@ namespace jsb
             const MethodInfo method_info = Variant::get_utility_function_info(utility_function_list[index]);
             v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
             build_method_info(isolate, context, method_info, method_info_obj);
-            array->Set(context, index, method_info_obj);
+            array->Set(context, index, method_info_obj).Check();
         }
         info.GetReturnValue().Set(array);
     }
@@ -793,7 +793,7 @@ namespace jsb
             set_field(isolate, context, constant_obj, "class_name", singleton.class_name);
             set_field(isolate, context, constant_obj, "user_created", singleton.user_created);
             set_field(isolate, context, constant_obj, "editor_only", singleton.editor_only);
-            array->Set(context, index, constant_obj);
+            array->Set(context, index, constant_obj).Check();
         }
         info.GetReturnValue().Set(array);
     }
@@ -807,7 +807,6 @@ namespace jsb
     {
         v8::Isolate* isolate = info.GetIsolate();
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         if (info.Length() != 1 || !info[0]->IsString())
         {
