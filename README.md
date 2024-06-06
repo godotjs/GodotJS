@@ -1,5 +1,6 @@
 
-GodotJS - TypScript/JavaScript for Godot with V8.
+# GodotJS 
+Add TypeScript/JavaScript Support for Godot 4.x with v8.
 
 ![Build Godot Editor Windows with GodotJS](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)
 ![Build Godot Editor MacOS with GodotJS](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)
@@ -8,9 +9,9 @@ GodotJS - TypScript/JavaScript for Godot with V8.
 > This project is still in the very early stage of development.
 
 ## Features
-* [x] [`ScriptLanguage` integration](./docs/godotjs_scripts.md)
-* [x] [Debug with Chrome devtools when using V8](./docs/debugger.md)
-* [x] [REPL in Editor](./docs/repl.md)
+* [x] Godot ScriptLanguage integration
+* [x] Debug with Chrome devtools when using V8
+* [x] REPL in Editor
 * [ ] Hot-reloading
 * [ ] Asynchronous module loading (`import` function)
 * [ ] Sandboxed scripting (not multi-threading)
