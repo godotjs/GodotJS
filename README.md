@@ -2,8 +2,9 @@
 # GodotJS 
 Add TypeScript/JavaScript Support for Godot 4.x with v8.
 
-![Build Godot Editor Windows with GodotJS](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)
-![Build Godot Editor MacOS with GodotJS](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)
+![Windows Build](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)
+![MacOS Build](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)
+![Linux Build](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml/badge.svg)
 
 > [!NOTE]
 > This project is still in the very early stage of development.
