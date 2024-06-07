@@ -64,9 +64,11 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 
 ## Supported Platforms
 - [x] Windows: x86_64
-- [ ] Windows: ARM64, UWP
-- [x] MacOS: AppleSilicon
+- [ ] Windows: arm64, UWP
+- [x] MacOS: arm64
+- [ ] MacOS: x86_64
+- [x] Linux: x86_64
+- [ ] Linux: arm64
 - [ ] Android
 - [ ] iOS
-- [ ] Linux
 - [ ] WebAssembly (quickjs only)
