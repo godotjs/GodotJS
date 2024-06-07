@@ -174,8 +174,7 @@ if javascript_engine == "v8":
         # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will failed on `v8::ArrayBuffer::Allocator`
         env.Append(LINKFLAGS=["-lv8_monolith"])
     elif env["platform"] == "linuxbsd":
-        env.Append(LIBPATH=[f'#modules/{module_name}/v8/linux.x86_64.release'])
-        env.Append(LINKFLAGS=["-lv8_monolith"])
+        env.Append(LIBS=[File('v8/linux.x86_64.release/libv8_monolith.a')])
     else:
         env.Append(LIBS=[File("v8/windows.x86_64.release/v8_monolith.lib")])
         env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
@@ -206,8 +205,7 @@ if websocket_lib == "lws":
         env.Append(LINKFLAGS=["-lwebsockets"])
     elif env["platform"] == "linuxbsd":
         env_jsb.Append(CPPPATH=["lws/linux.x86_64.release/include"])
-        env.Append(LIBPATH=[f'#modules/{module_name}/lws/linux.x86_64.release'])
-        env.Append(LINKFLAGS=["-lwebsockets"])
+        env.Append(LIBS=[File('lws/linux.x86_64.release/libwebsockets.a')])
     elif env["platform"] == "windows":
         if env.msvc and env["vsproj"]:
             env.Append(CPPPATH=[f"#modules/{module_name}/lws/windows.x86_64.release/include"])
