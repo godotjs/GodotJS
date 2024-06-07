@@ -42,22 +42,6 @@ namespace jsb
 {
     namespace
     {
-        v8::MaybeLocal<v8::String> S(v8::Isolate* isolate, const String& name)
-        {
-            const CharString char_string = name.utf8();
-            return v8::String::NewFromUtf8(isolate, char_string.ptr(), v8::NewStringType::kNormal, char_string.length());
-        }
-
-        v8::MaybeLocal<v8::String> S(v8::Isolate* isolate, const char* name)
-        {
-            return v8::String::NewFromUtf8(isolate, name, v8::NewStringType::kNormal);
-        }
-
-        v8::MaybeLocal<v8::String> S(v8::Isolate* isolate, const StringName& name)
-        {
-            return S(isolate, (String) name);
-        }
-
         v8::Local<v8::Value> build_int64(v8::Isolate* isolate, const String& field_name,  int64_t field_value)
         {
             const int32_t scaled_value = (int32_t) field_value;
@@ -81,7 +65,7 @@ namespace jsb
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], const StringName& field_value)
         {
-            set_field(isolate, context, obj, field_name, S(isolate, field_value).ToLocalChecked());
+            set_field(isolate, context, obj, field_name, V8Helper::to_string(isolate, field_value));
         }
 
         template<int N>
@@ -99,13 +83,13 @@ namespace jsb
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], const String& field_value)
         {
-            set_field(isolate, context, obj, field_name, S(isolate, field_value).ToLocalChecked());
+            set_field(isolate, context, obj, field_name, V8Helper::to_string(isolate, field_value));
         }
 
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], const char*& field_value)
         {
-            set_field(isolate, context, obj, field_name, S(isolate, field_value).ToLocalChecked());
+            set_field(isolate, context, obj, field_name, V8Helper::to_string(isolate, field_value));
         }
 
         template<int N>
@@ -306,7 +290,7 @@ namespace jsb
             for (int index = 0; index < num; ++index)
             {
                 const StringName& name = enum_info.constants[index];
-                constants_obj->Set(context, index, S(isolate, name).ToLocalChecked()).Check();
+                constants_obj->Set(context, index, V8Helper::to_string(isolate, name)).Check();
             }
             set_field(isolate, context, object, "literals", constants_obj);
             set_field(isolate, context, object, JSB_GET_FIELD_NAME_PRESET(enum_info, is_bitfield));
@@ -560,7 +544,7 @@ namespace jsb
             for (const KeyValue<StringName, int64_t>& kv : map)
             {
                 values_obj->Set(context,
-                    S(isolate, kv.key).ToLocalChecked(),
+                    V8Helper::to_string(isolate, kv.key),
                     build_int64(isolate, kv.key, kv.value)).Check();
             }
             array->Set(context, array_index++, enum_obj).Check();
