@@ -2,9 +2,9 @@
 # GodotJS 
 Add TypeScript/JavaScript Support for Godot 4.x with v8.
 
-![Windows Build](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)
-![MacOS Build](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)
-![Linux Build](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml/badge.svg)
+[![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
+[![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
+[![linux](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml)
 
 > [!NOTE]
 > This project is still in the very early stage of development.
@@ -59,14 +59,11 @@ The module directroy structure looks like this:
 
 The currently used version of `v8` is `12.4.254.20`.
 
-> [!NOTE]
-> `git-lfs` was used to keep the v8 libraries directly in this repository before v0.5, but removed due to the costly storage/bandwidth of github 💔.
-
 **STEP 3:** Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
 For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.
 
-A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/actions).
+A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/releases).
 
 > [!NOTE]
 > Encountering `Unresolved external symbol` errors during linkage with `v8_monolith.lib` or `libucrt.lib` may be addressed by updating to the latest version of the `MSVC v143` toolchain (if VS2022 is used).
