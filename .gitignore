@@ -4,8 +4,7 @@ __pycache__
 *.obj
 *.o
 
-!/v8/**/*.lib
-!/v8/**/*.a
+/v8
 
 /scripts/node_modules
 
@@ -16,3 +15,4 @@ __MACOSX
 # auto-generated sources
 /jsb.gen.h
 /weaver-editor/jsb_project_preset.cpp
+
