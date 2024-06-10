@@ -26,16 +26,41 @@ cd YourGodotEngineSource/modules
 git clone https://github.com/ialex32x/GodotJS.git
 ```
 
-**STEP 2:** Pull all lfs objects (since the prebuilt `v8` library is too big to push as a common file on github):
-
-> [!NOTE]
-> `git-lfs` must be installed as a prerequisite. Follow the instructions on [Github Docs](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) to install `git-lfs`.
+**STEP 2:** Put `v8` headers and libraries into `GodotJS`, or directly download the prebuilt `v8` from [GodotJS-Dependencies](https://github.com/ialex32x/GodotJS-Dependencies/releases):
 
 ```sh
-cd YourGodotEngineSource/modules/GodotJS
-git lfs install
-git lfs pull
+# download the archive of prebuilt v8 
+curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8_r6.zip --output your/download/path/v8.zip
+
+# extract the zip file into your `GodotJS` directory, 
+# NOTE: no white space after the switch `-o`
+7z x -o"YourGodotEngineSource/modules/GodotJS" your/download/path/v8.zip 
 ```
+
+The module directroy structure looks like this:
+```
+┗━ godot
+    ┗━ modules
+        ┣━ ...
+        ┣━ gltf
+        ┣━ GodotJS
+        ┃    ┣━ bridge-quickjs
+        ┃    ┣━ bridge-v8
+        ┃    ┣━ ...
+        ┃    ┣━ lws
+        ┃    ┗━ v8
+        ┃        ┣━ include
+        ┃        ┣━ linux.x86_64.release
+        ┃        ┣━ macos.arm64.release
+        ┃        ┗━ windows.x86_64.release
+        ┣━ gridmap
+        ┣━ ...
+```
+
+The currently used version of `v8` is `12.4.254.20`.
+
+> [!NOTE]
+> `git-lfs` was used to keep the v8 libraries directly in this repository before v0.5, but removed due to the costly storage/bandwidth of github 💔.
 
 **STEP 3:** Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
