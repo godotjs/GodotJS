@@ -534,10 +534,8 @@ namespace jsb
                 NativeClassInfo& class_info = p_env.environment->get_native_class(class_id);
                 class_info.finalizer = &finalizer;
                 class_info.template_.Reset(p_env.isolate, function_template);
-                class_info.function_.Reset(p_env.isolate, function_template->GetFunction(p_env.context).ToLocalChecked());
                 jsb_check(class_info.template_ == function_template);
                 jsb_check(!class_info.template_.IsEmpty());
-                jsb_check(!class_info.function_.IsEmpty());
             }
             return class_id;
         }

@@ -38,9 +38,10 @@ namespace jsb
         //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
         v8::Global<v8::FunctionTemplate> template_;
 
-        //TODO not really necessary
-        //TODO why jclass_info.template_.Get.GetFunction instantiate a new function diff with jclass_info.function_.Get when reading in ClassTemplate<Object>.constructor??
-        v8::Global<v8::Function> function_;
+        jsb_force_inline v8::Local<v8::Function> get_function(v8::Isolate* isolate, const v8::Local<v8::Context>& context) const
+        {
+            return template_.Get(isolate)->GetFunction(context).ToLocalChecked();
+        }
     };
 
     namespace GodotJSMethodFlags

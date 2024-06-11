@@ -545,7 +545,6 @@ namespace jsb
         if (r_class_id) *r_class_id = importer.id;
         NativeClassInfo& class_info = environment_->get_native_class(importer.id);
         jsb_check(class_info.name == importer.type_name);
-        jsb_check(!class_info.function_.IsEmpty());
         return &class_info;
     }
 
@@ -559,7 +558,6 @@ namespace jsb
             JSB_LOG(VeryVerbose, "return cached native class %s (%d) (for %s)", cached_info->name, (uint32_t) class_id, p_class_info->name);
             jsb_check(cached_info->name == p_class_info->name);
             jsb_check(!cached_info->template_.IsEmpty());
-            jsb_check(!cached_info->function_.IsEmpty());
             return class_id;
         }
 
@@ -670,9 +668,6 @@ namespace jsb
                 jsb_address_guard(environment_->native_classes_, native_classes_address_scope);
                 NativeClassInfo& class_info = environment_->get_native_class(class_id);
                 jsb_check(function_template == class_info.template_);
-                v8::Local<v8::Function> function = function_template->GetFunction(context).ToLocalChecked();
-                class_info.function_.Reset(isolate, function);
-                jsb_check(!class_info.function_.IsEmpty());
                 JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, (uint32_t) class_id);
             }
         } // end type template
@@ -1322,8 +1317,7 @@ namespace jsb
             const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(it->value);
             jsb_check(class_info);
             jsb_check(!class_info->template_.IsEmpty());
-            jsb_check(!class_info->function_.IsEmpty());
-            info.GetReturnValue().Set(class_info->function_.Get(isolate));
+            info.GetReturnValue().Set(class_info->get_function(isolate, context));
             return;
         }
 
@@ -1375,8 +1369,7 @@ namespace jsb
                 NativeClassInfo& godot_class = realm->environment_->get_native_class(class_id);
                 jsb_check(godot_class.name == type_name);
                 jsb_check(!godot_class.template_.IsEmpty());
-                jsb_checkf(!godot_class.function_.IsEmpty(), "function_ not set for native class info %s", type_name);
-                info.GetReturnValue().Set(godot_class.function_.Get(isolate));
+                info.GetReturnValue().Set(godot_class.get_function(isolate, context));
                 return;
             }
         }

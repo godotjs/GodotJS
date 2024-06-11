@@ -633,7 +633,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
-            // v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
@@ -641,7 +641,7 @@ namespace jsb
             const NativeClassInfo& jclass_info = environment->get_native_class(class_id);
             jsb_check(jclass_info.type == NativeClassType::GodotObject);
             v8::Local<v8::Value> new_target = info.NewTarget();
-            v8::Local<v8::Function> constructor = jclass_info.function_.Get(isolate);
+            v8::Local<v8::Function> constructor = jclass_info.get_function(isolate, context);
 
             if (constructor == new_target)
             {
