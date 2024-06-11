@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import importlib.util
-import sys
 import os
 import io
 import time
@@ -10,6 +8,11 @@ Import("env_modules")
 
 def is_v8_available():
     return env["platform"] != "web"
+
+def check(condition, text):
+    if not condition:
+        print("Error: " + text)
+        Exit(2)
 
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
@@ -167,19 +170,21 @@ module_obj = []
 
 if javascript_engine == "v8":
     # it seems godot always links MT_StaticRelease even if env["dev_build"]
+    # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will fail on `v8::ArrayBuffer::Allocator`
+
+    # check existence of v8 (since it's setup manually)
+    check(os.path.exists("v8"), "The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8_r6.zip")
 
     if env["platform"] == "macos":
         env.Append(LIBPATH=[f'#modules/{module_name}/v8/macos.arm64.release'])
-
-        # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will failed on `v8::ArrayBuffer::Allocator`
         env.Append(LINKFLAGS=["-lv8_monolith"])
     elif env["platform"] == "linuxbsd":
         env.Append(LIBS=[File('v8/linux.x86_64.release/libv8_monolith.a')])
     else:
         env.Append(LIBS=[File("v8/windows.x86_64.release/v8_monolith.lib")])
         env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
-    #TODO v8 builds on other platforms
 
+    # platform-specific defines
     if env["platform"] != "ios":
         env_jsb.AppendUnique(CPPDEFINES=["V8_COMPRESS_POINTERS"])
 
