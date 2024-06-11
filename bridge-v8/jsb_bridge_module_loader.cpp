@@ -152,7 +152,7 @@ namespace jsb
         v8::Local<v8::Object> target = info[0].As<v8::Object>();
         target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true)).Check();
         JSB_LOG(VeryVerbose, "script %s (tool)",
-            V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
+            V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()));
     }
 
     // function add_script_ready(target: any, name: string,  evaluator: string | Function): void;
@@ -189,8 +189,8 @@ namespace jsb
 
         collection->Set(context, index, evaluator).Check();
         JSB_LOG(VeryVerbose, "script %s define property(onready) %s",
-            V8Helper::to_string(isolate, target->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()),
-            V8Helper::to_string(isolate, evaluator->Get(context, v8::String::NewFromUtf8Literal(isolate, "name")).ToLocalChecked().As<v8::String>()));
+            V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
+            V8Helper::to_string(isolate, evaluator->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()));
     }
 
     // function add_script_property(target: any, name: string, details: ScriptPropertyInfo): void;
