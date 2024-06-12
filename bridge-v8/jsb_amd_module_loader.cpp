@@ -29,7 +29,7 @@ namespace jsb
             // special case: `require` & `exports`
             if (dep_module_id == "require")
             {
-                dep_vals[index] = p_realm->_new_require_func(self_module_id.utf8());
+                dep_vals[index] = p_realm->_new_require_func(self_module_id);
                 continue;
             }
             if (dep_module_id == "exports")

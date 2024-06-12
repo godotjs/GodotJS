@@ -43,7 +43,7 @@ namespace jsb
             v8::Local<v8::Function> require_func = v8::Function::New(context, _require).ToLocalChecked();
             self->Set(context, v8::String::NewFromUtf8Literal(isolate, "require"), require_func).Check();
             self->Set(context, v8::String::NewFromUtf8Literal(isolate, "define"), v8::Function::New(context, _define).ToLocalChecked()).Check();
-            require_func->Set(context, v8::String::NewFromUtf8Literal(isolate, "cache"), realm->jmodule_cache_.Get(isolate)).Check();
+            require_func->Set(context, v8::String::NewFromUtf8Literal(isolate, "cache"), realm->get_module_cache().unwrap(isolate)).Check();
             require_func->Set(context, v8::String::NewFromUtf8Literal(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
         }
 

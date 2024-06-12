@@ -26,7 +26,6 @@ namespace jsb
     {
     private:
         friend class JavaScriptLanguage;
-        friend class BridgeModuleLoader;
         friend class Builtins;
 
         static internal::SArray<Realm*, RealmID> realms_;
@@ -40,7 +39,6 @@ namespace jsb
         internal::CFunctionPointers function_pointers_;
 
         JavaScriptModuleCache module_cache_;
-        v8::Global<v8::Object> jmodule_cache_;
 
         std::unordered_map<TWeakRef<v8::Function>, internal::Index32, TWeakRef<v8::Function>::hasher, TWeakRef<v8::Function>::equaler> function_refs_; // backlink
         internal::SArray<TStrongRef<v8::Function>, internal::Index32> function_bank_;
@@ -128,6 +126,7 @@ namespace jsb
         bool set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val);
 
         jsb_force_inline const JavaScriptModuleCache& get_module_cache() const { return module_cache_; }
+        jsb_force_inline JavaScriptModuleCache& get_module_cache() { return module_cache_; }
 
         //NOTE AVOID USING THIS CALL, CONSIDERING REMOVING IT.
         //     eval from source
@@ -157,7 +156,7 @@ namespace jsb
          * \return js rval
          */
         v8::MaybeLocal<v8::Value> _compile_run(const char* p_source, int p_source_len, const String& p_filename);
-        v8::Local<v8::Function> _new_require_func(const CharString& p_module_id);
+        v8::Local<v8::Function> _new_require_func(const String& p_module_id);
 
         bool _get_main_module(v8::Local<v8::Object>* r_main_module) const;
 
@@ -207,6 +206,8 @@ namespace jsb
          */
         static bool can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type);
 
+        ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
+
     private:
         static void _godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
@@ -215,7 +216,6 @@ namespace jsb
         static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
         static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);
 
-        ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
     };
 }

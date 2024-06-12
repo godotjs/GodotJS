@@ -61,21 +61,7 @@ namespace jsb
         if (IModuleLoader* loader = environment_->find_module_loader(p_module_id))
         {
             jsb_checkf(!existing_module, "module loader does not support reloading");
-            const StringName module_id_sn = p_module_id;
-            JavaScriptModule& module = module_cache_.insert(module_id_sn, false);
-            v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
-            v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(loaded);
-
-            // register the new module obj into module_cache obj
-            v8::Local<v8::Object> jmodule_cache = jmodule_cache_.Get(isolate);
-            const CharString cmodule_id = p_module_id.utf8();
-            v8::Local<v8::String> jmodule_id = v8::String::NewFromUtf8(isolate, cmodule_id.ptr(), v8::NewStringType::kNormal, cmodule_id.length()).ToLocalChecked();
-            jmodule_cache->Set(context, jmodule_id, module_obj).Check();
-
-            // init the new module obj
-            module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, false)).Check();
-            module.id = module_id_sn;
-            module.module.Reset(isolate, module_obj);
+            JavaScriptModule& module = module_cache_.insert(isolate, context, p_module_id, false, false);
 
             //NOTE the loader should throw error if failed
             if (!loader->load(this, module))
@@ -83,7 +69,7 @@ namespace jsb
                 return nullptr;
             }
 
-            module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, true)).Check();
+            module.on_load(isolate, context);
             return &module;
         }
 
@@ -107,7 +93,7 @@ namespace jsb
         String asset_path;
         if (IModuleResolver* resolver = environment_->find_module_resolver(normalized_id, asset_path))
         {
-            const String& module_id = asset_path;
+            const StringName& module_id = asset_path;
 
             // check again with the resolved module_id
             existing_module = module_cache_.find(module_id);
@@ -133,26 +119,14 @@ namespace jsb
             }
             else
             {
-                JavaScriptModule& module = module_cache_.insert(module_id, true);
-                const CharString cmodule_id = module_id.utf8();
-                v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
+                JavaScriptModule& module = module_cache_.insert(isolate, context, module_id, true, false);
                 v8::Local<v8::Object> exports_obj = v8::Object::New(isolate);
-                v8::Local<v8::String> propkey_loaded = environment_->GetStringValue(loaded);
-                v8::Local<v8::String> propkey_children = environment_->GetStringValue(children);
-
-                // register the new module obj into module_cache obj
-                v8::Local<v8::Object> jmodule_cache = jmodule_cache_.Get(isolate);
-                v8::Local<v8::String> jmodule_id = v8::String::NewFromUtf8(isolate, cmodule_id.ptr(), v8::NewStringType::kNormal, cmodule_id.length()).ToLocalChecked();
-                jmodule_cache->Set(context, jmodule_id, module_obj).Check();
+                v8::Local<v8::Object> module_obj = module.module.Get(isolate);
 
                 // init the new module obj
-                module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, false)).Check();
-                module_obj->Set(context, environment_->GetStringValue(id), jmodule_id).Check();
-                module_obj->Set(context, propkey_children, v8::Array::New(isolate)).Check();
+                module_obj->Set(context, environment_->GetStringValue(children), v8::Array::New(isolate)).Check();
                 module_obj->Set(context, environment_->GetStringValue(exports), exports_obj).Check();
-                module.id = module_id;
                 module.path = asset_path;
-                module.module.Reset(isolate, module_obj);
                 module.exports.Reset(isolate, exports_obj);
 
                 //NOTE the resolver should throw error if failed
@@ -169,7 +143,7 @@ namespace jsb
                     {
                         v8::Local<v8::Object> jparent_module = cparent_module->module.Get(isolate);
                         v8::Local<v8::Value> jparent_children_v;
-                        if (jparent_module->Get(context, propkey_children).ToLocal(&jparent_children_v) && jparent_children_v->IsArray())
+                        if (jparent_module->Get(context, environment_->GetStringValue(children)).ToLocal(&jparent_children_v) && jparent_children_v->IsArray())
                         {
                             v8::Local<v8::Array> jparent_children = jparent_children_v.As<v8::Array>();
                             const uint32_t children_num = jparent_children->Length();
@@ -186,7 +160,7 @@ namespace jsb
                     }
                 }
 
-                module_obj->Set(context, propkey_loaded, v8::Boolean::New(isolate, true)).Check();
+                module.on_load(isolate, context);
                 {
                     v8::TryCatch try_catch_run(isolate);
                     _parse_script_class(this, context, module);
@@ -199,8 +173,7 @@ namespace jsb
             }
         }
 
-        const CharString cerror_message = vformat("unknown module: %s", normalized_id).utf8();
-        isolate->ThrowError(v8::String::NewFromUtf8(isolate, cerror_message.ptr(), v8::NewStringType::kNormal, cerror_message.length()).ToLocalChecked());
+        isolate->ThrowError(V8Helper::to_string(isolate, vformat("unknown module: %s", normalized_id)));
         return nullptr;
     }
 
@@ -431,11 +404,11 @@ namespace jsb
         }
     }
 
-    v8::Local<v8::Function> Realm::_new_require_func(const CharString &p_module_id)
+    v8::Local<v8::Function> Realm::_new_require_func(const String &p_module_id)
     {
         v8::Isolate* isolate = environment_->isolate_;
         v8::Local<v8::Context> context = context_.Get(isolate);
-        v8::Local<v8::String> jmodule_id = v8::String::NewFromUtf8(isolate, p_module_id.ptr(), v8::NewStringType::kNormal, p_module_id.length()).ToLocalChecked();
+        v8::Local<v8::String> jmodule_id = V8Helper::to_string(isolate, p_module_id);
         v8::Local<v8::Function> jrequire = v8::Function::New(context, Builtins::_require, /* magic: module_id */ jmodule_id).ToLocalChecked();
         v8::Local<v8::Object> jmain_module;
         if (_get_main_module(&jmain_module))
@@ -467,7 +440,7 @@ namespace jsb
             v8::Context::Scope context_scope(context);
             v8::Local<v8::Object> global = context->Global();
 
-            jmodule_cache_.Reset(isolate, v8::Object::New(isolate));
+            module_cache_.init(isolate);
             Builtins::register_(context, global);
             register_primitive_bindings(this);
         }
@@ -490,7 +463,7 @@ namespace jsb
         environment_->on_context_destroyed(context);
         context->SetAlignedPointerInEmbedderData(kContextEmbedderData, nullptr);
 
-        jmodule_cache_.Reset();
+        module_cache_.deinit();
         context_.Reset();
     }
 

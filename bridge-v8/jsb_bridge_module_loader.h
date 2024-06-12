@@ -13,16 +13,6 @@ namespace jsb
         virtual ~BridgeModuleLoader() override = default;
 
         virtual bool load(class Realm* p_realm, JavaScriptModule& p_module) override;
-
-    private:
-        static void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _new_callable(const v8::FunctionCallbackInfo<v8::Value>& info);
-
-        static void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _add_script_property(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _add_script_ready(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _add_script_tool(const v8::FunctionCallbackInfo<v8::Value>& info);
     };
 
 }

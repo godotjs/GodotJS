@@ -48,22 +48,22 @@ namespace jsb
             return false;
         }
 
-        const CharString cmodule_id = String(p_module.id).utf8();
-        const CharString cfilename = p_filename_abs.utf8();
-        const CharString cdirname = internal::PathUtil::dirname(p_filename_abs).utf8();
+        // const CharString cmodule_id = String(p_module.id).utf8();
+        // const CharString cfilename = p_filename_abs.utf8();
+        const String dirname = internal::PathUtil::dirname(p_filename_abs);
 
-        v8::Local<v8::Object> jmodule = p_module.module.Get(isolate);
-        v8::Local<v8::Value> jexports = p_module.exports.Get(isolate);
-        v8::Local<v8::String> jfilename = v8::String::NewFromUtf8(isolate, cfilename.ptr(), v8::NewStringType::kNormal, cfilename.length()).ToLocalChecked();
-        v8::Local<v8::Function> jrequire = p_realm->_new_require_func(cmodule_id);
+        Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Function> elevator = func_local.As<v8::Function>();
+        v8::Local<v8::Object> module_obj = p_module.module.Get(isolate);
 
-        v8::Local<v8::Value> argv[] = { // exports, require, module, __filename, __dirname
-            jexports,
-            jrequire,
-            jmodule,
-            jfilename,
-            v8::String::NewFromUtf8(isolate, cdirname.ptr(), v8::NewStringType::kNormal, cdirname.length()).ToLocalChecked(),
+        constexpr int kIndexExports = 0;
+        constexpr int kIndexFileName = 3;
+        v8::Local<v8::Value> argv[] = {
+            /* 0: exports  */ p_module.exports.Get(isolate),
+            /* 1: require  */ p_realm->_new_require_func(p_module.id),
+            /* 2: module   */ module_obj,
+            /* 3: filename */ V8Helper::to_string(isolate, p_filename_abs),
+            /* 4: dirname  */ V8Helper::to_string(isolate, dirname),
         };
 
         //TODO set `require.cache`
@@ -76,12 +76,12 @@ namespace jsb
         }
 
         // update `exports`, because its value may be covered during the execution process of the elevator script.
-        v8::Local<v8::Value> updated_exports = jmodule->Get(context, v8::String::NewFromUtf8Literal(isolate, "exports")).ToLocalChecked();
+        v8::Local<v8::Value> updated_exports = module_obj->Get(context, environment->GetStringValue(exports)).ToLocalChecked();
 #if JSB_DEBUG
-        if (updated_exports != jexports) JSB_LOG(Log, "`exports` is overwritten in module");
+        if (updated_exports != argv[kIndexExports]) { JSB_LOG(Log, "`exports` is overwritten in module"); }
 #endif
         p_module.exports.Reset(isolate, updated_exports);
-        jmodule->Set(context, v8::String::NewFromUtf8Literal(isolate, "filename"), jfilename).Check();
+        module_obj->Set(context, V8Helper::to_string(isolate, "filename"), argv[kIndexFileName]).Check();
         return true;
     }
 
