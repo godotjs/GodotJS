@@ -12,11 +12,11 @@
 
 #define JSB_DEFINE_OPERATOR2(op_code) function_template->\
     Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, BinaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
-    JSB_LOG(Verbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+    JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
 #define JSB_DEFINE_OPERATOR1(op_code) function_template->\
     Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, UnaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
-    JSB_LOG(Verbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+    JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
 #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
 #define JSB_DEFINE_OVERLOADED_BINARY_END()
@@ -31,7 +31,8 @@
     {\
         typedef InType CurrentType;\
         static void generate(const FBindingEnv& p_env, const v8::Local<v8::FunctionTemplate>& function_template, const v8::Local<v8::ObjectTemplate>& prototype_template)\
-        {
+        {\
+            JSB_LOG(VeryVerbose, "expose primitive type " #InType);
 
 #define JSB_TYPE_END() \
         }\

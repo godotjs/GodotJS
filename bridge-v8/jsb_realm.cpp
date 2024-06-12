@@ -1,6 +1,5 @@
 #include "jsb_realm.h"
 
-#include "jsb_editor_utility.h"
 #include "jsb_exception_info.h"
 #include "jsb_amd_module_loader.h"
 #include "jsb_transpiler.h"
