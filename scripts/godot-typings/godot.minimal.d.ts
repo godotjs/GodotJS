@@ -41,6 +41,9 @@ declare module "godot-jsb" {
         function add_script_property(target: any, details: ScriptPropertyInfo): void;
         function add_script_ready(target: any, details: { name: string, evaluator: string | OnReadyEvaluatorFunc }): void;
         function add_script_tool(target: any);
+
+        function add_module(id: string, obj: any): void;
+        function find_module(id: string): any;
     }
 
     namespace editor {
