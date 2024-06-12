@@ -3,6 +3,7 @@
 #include "jsb_realm.h"
 #include "../internal/jsb_path_util.h"
 #include "../weaver/jsb_weaver_consts.h"
+#include "core/io/json.h"
 
 namespace jsb
 {
@@ -77,31 +78,80 @@ namespace jsb
         // update `exports`, because its value may be covered during the execution process of the elevator script.
         v8::Local<v8::Value> updated_exports = jmodule->Get(context, v8::String::NewFromUtf8Literal(isolate, "exports")).ToLocalChecked();
 #if JSB_DEBUG
-        if (updated_exports != jexports) JSB_LOG(Warning, "`exports` is covered in module");
+        if (updated_exports != jexports) JSB_LOG(Log, "`exports` is overwritten in module");
 #endif
         p_module.exports.Reset(isolate, updated_exports);
         jmodule->Set(context, v8::String::NewFromUtf8Literal(isolate, "filename"), jfilename).Check();
         return true;
     }
 
+    bool DefaultModuleResolver::check_file_path(const String& p_module_id, String& o_path)
+    {
+        static const String js_ext = "." JSB_RES_EXT;
+        Ref<FileAccess> access = get_file_access();
+
+        // direct module
+        {
+            const String extended = internal::PathUtil::extends_with(p_module_id, js_ext);
+            if(access->file_exists(extended))
+            {
+                o_path = extended;
+                return true;
+            }
+        }
+
+        // parse package.json
+        {
+            const String package_json = internal::PathUtil::combine(p_module_id, "package.json");
+            if(access->file_exists(package_json))
+            {
+                Ref<FileAccess> file = access->open(package_json, FileAccess::READ);
+                jsb_check(file.is_valid());
+
+                Ref<JSON> json;
+                json.instantiate();
+                Error error = json->parse(file->get_as_utf8_string());
+                do
+                {
+                    if (error != OK)
+                    {
+                        JSB_LOG(Error, "failed to parse JSON (%d: %s)", json->get_error_line(), json->get_error_message());
+                        break;
+                    }
+
+                    String main_path;
+                    const Dictionary data = json->get_data();
+                    const String main = internal::PathUtil::combine(p_module_id, internal::PathUtil::extends_with(data["main"], js_ext));
+                    error = internal::PathUtil::extract(main, main_path);
+                    if (error != OK)
+                    {
+                        JSB_LOG(Error, "can not extract path %s", main);
+                        break;
+                    }
+
+                    if(access->file_exists(main_path))
+                    {
+                        o_path = main_path;
+                        return true;
+                    }
+                } while (false);
+            }
+        }
+
+        return false;
+    }
+
+
     // early and simple validation: check source file existence
     bool DefaultModuleResolver::get_source_info(const String &p_module_id, String& r_asset_path)
     {
-        static const String ext = "." JSB_RES_EXT;
-        const String extended = p_module_id.ends_with(ext) ? p_module_id : p_module_id + ext;
+        JSB_LOG(VeryVerbose, "resolving path %s", p_module_id);
 
-        JSB_LOG(VeryVerbose, "resolving path %s", extended);
         // directly inspect it at first if it's an explicit path
-        if (
-#if !WINDOWS_ENABLED
-            extended.begins_with("/") ||
-#endif
-            extended.contains(":/")
-            )
+        if (internal::PathUtil::is_absolute_path(p_module_id))
         {
-            if(get_file_access()->file_exists(extended))
+            if(check_file_path(p_module_id, r_asset_path))
             {
-                r_asset_path = extended;
                 return true;
             }
             r_asset_path.clear();
@@ -110,10 +160,9 @@ namespace jsb
 
         for (const String& search_path : search_paths_)
         {
-            const String filename = internal::PathUtil::combine(search_path, extended);
-            if (get_file_access()->file_exists(filename))
+            const String filename = internal::PathUtil::combine(search_path, p_module_id);
+            if (check_file_path(filename, r_asset_path))
             {
-                r_asset_path = filename;
                 return true;
             }
         }
@@ -130,10 +179,10 @@ namespace jsb
         return *this;
     }
 
-    bool DefaultModuleResolver::load(Realm* p_realm, const String& r_asset_path, JavaScriptModule& p_module)
+    bool DefaultModuleResolver::load(Realm* p_realm, const String& p_asset_path, JavaScriptModule& p_module)
     {
         // load source buffer
-        internal::FileAccessSourceReader reader(FileAccess::open(r_asset_path, FileAccess::READ));
+        const internal::FileAccessSourceReader reader(p_asset_path);
         if (reader.is_null() || reader.get_length() == 0)
         {
             p_realm->get_isolate()->ThrowError("failed to read module source");

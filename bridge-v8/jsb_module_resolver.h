@@ -18,7 +18,7 @@ namespace jsb
 
         // load source into the module
         // `exports' will be set into `p_module.exports` if loaded successfully
-        virtual bool load(class Realm* p_realm, const String& r_asset_path, JavaScriptModule& p_module) = 0;
+        virtual bool load(class Realm* p_realm, const String& p_asset_path, JavaScriptModule& p_module) = 0;
 
     protected:
         // read the source buffer (transformed into commonjs)
@@ -35,11 +35,13 @@ namespace jsb
         virtual ~DefaultModuleResolver() override = default;
 
         virtual bool get_source_info(const String& p_module_id, String& r_asset_path) override;
-        virtual bool load(class Realm* p_realm, const String& r_asset_path, JavaScriptModule& p_module) override;
+        virtual bool load(class Realm* p_realm, const String& p_asset_path, JavaScriptModule& p_module) override;
 
         DefaultModuleResolver& add_search_path(const String& p_path);
 
     protected:
+        bool check_file_path(const String& p_module_id, String& o_path);
+
         Ref<FileAccess> get_file_access()
         {
             if (file_access_.is_null())

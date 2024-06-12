@@ -21,7 +21,7 @@ namespace jsb::internal
         Ref<FileAccess> file_;
 
     public:
-        FileAccessSourceReader(const Ref<FileAccess>& p_file): file_(p_file) {}
+        FileAccessSourceReader(const String& p_file_name);
         virtual ~FileAccessSourceReader() override = default;
 
         virtual bool is_null() const override { return file_.is_null(); }

@@ -38,5 +38,18 @@ namespace jsb::internal
         const Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
         return da->file_exists(p_path);
     }
-    
+
+    bool PathUtil::is_absolute_path(const String& p_path)
+    {
+#if !WINDOWS_ENABLED
+        if (p_path.begins_with("/")) return true;
+#endif
+        return p_path.contains(":/");
+    }
+
+    String PathUtil::extends_with(const String& p_path, const String& p_ext)
+    {
+        return p_path.ends_with(p_ext) ? p_path : p_path + p_ext;
+    }
+
 }

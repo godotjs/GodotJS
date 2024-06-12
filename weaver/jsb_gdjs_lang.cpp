@@ -39,6 +39,9 @@ void GodotJSScriptLanguage::init()
 
         environment_->add_module_resolver<jsb::DefaultModuleResolver>()
                     .add_search_path("res://javascripts")
+#if TOOLS_ENABLED
+                    .add_search_path("res://typescripts/node_modules") // so far, it's only for editor scripting
+#endif
         // // search path for editor only scripts
         // .add_search_path(jsb::internal::PathUtil::combine(
         //     jsb::internal::PathUtil::dirname(::OS::get_singleton()->get_executable_path()),

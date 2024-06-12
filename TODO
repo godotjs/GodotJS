@@ -8,7 +8,7 @@ Core:
     ☐ codegen: generate `signal` with type annotation for arguments
     ✔ define `jsb` functions in a module (instead of in a global namespace) @done(24-06-05)
     ☐ github actions: build with godot engine
-    ☐ add `node_modules` into search paths (editor only?)
+    ✔ add `node_modules` into search paths (editor only?) @done(24-06-12)
     ✔ `PackedByteArray` to `ArrayBuffer` converter @done(24-06-05)
     ✔ essential operator bindings of primitive types @done(24-06-03 19:17)
     ✔ godot.Variant.Type/Operator are not exposed (because `Variant` itself does not exist in js) @done(24-05-30)
@@ -61,3 +61,4 @@ REPL:
     
 IDEA:
     ☐ nodejs integration (editor only?)
+    ☐ libffi support

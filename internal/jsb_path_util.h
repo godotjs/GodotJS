@@ -31,7 +31,14 @@ namespace jsb::internal
          */
         static Error extract(const String& p_path, String& o_path);
 
+        static String extends_with(const String& p_path, const String& p_ext);
+
         static bool find(const String& p_path);
+
+        /**
+         * \brief if the given path string is absolute
+         */
+        static bool is_absolute_path(const String& p_path);
 
     };
 
