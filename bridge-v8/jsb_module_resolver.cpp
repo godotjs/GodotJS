@@ -7,23 +7,6 @@
 
 namespace jsb
 {
-    Vector<uint8_t> IModuleResolver::read_all_bytes(const internal::ISourceReader& p_reader)
-    {
-        constexpr static char header[] = "(function(exports,require,module,__filename,__dirname){";
-        constexpr static char footer[] = "\n})";
-
-        jsb_check(!p_reader.is_null());
-        Vector<uint8_t> data;
-        const size_t file_len = p_reader.get_length();
-        jsb_check(file_len);
-        data.resize((int) (file_len + ::std::size(header) + ::std::size(footer) - 2));
-
-        memcpy(data.ptrw(), header, ::std::size(header) - 1);
-        p_reader.get_buffer(data.ptrw() + ::std::size(header) - 1, file_len);
-        memcpy(data.ptrw() + file_len + ::std::size(header) - 1, footer, ::std::size(footer) - 1);
-        return data;
-    }
-
     bool IModuleResolver::load_from_source(Realm* p_realm, JavaScriptModule& p_module, const String& p_filename_abs, const Vector<uint8_t>& p_source)
     {
         v8::Isolate* isolate = p_realm->get_isolate();
@@ -83,6 +66,23 @@ namespace jsb
         p_module.exports.Reset(isolate, updated_exports);
         module_obj->Set(context, V8Helper::to_string(isolate, "filename"), argv[kIndexFileName]).Check();
         return true;
+    }
+
+    Vector<uint8_t> DefaultModuleResolver::read_all_bytes(const internal::ISourceReader& p_reader)
+    {
+        constexpr static char header[] = "(function(exports,require,module,__filename,__dirname){";
+        constexpr static char footer[] = "\n})";
+
+        jsb_check(!p_reader.is_null());
+        Vector<uint8_t> data;
+        const size_t file_len = p_reader.get_length();
+        jsb_check(file_len);
+        data.resize((int) (file_len + ::std::size(header) + ::std::size(footer) - 2));
+
+        memcpy(data.ptrw(), header, ::std::size(header) - 1);
+        p_reader.get_buffer(data.ptrw() + ::std::size(header) - 1, file_len);
+        memcpy(data.ptrw() + file_len + ::std::size(header) - 1, footer, ::std::size(footer) - 1);
+        return data;
     }
 
     bool DefaultModuleResolver::check_file_path(const String& p_module_id, String& o_path)

@@ -21,11 +21,9 @@ namespace jsb
         virtual bool load(class Realm* p_realm, const String& p_asset_path, JavaScriptModule& p_module) = 0;
 
     protected:
-        // read the source buffer (transformed into commonjs)
-        static Vector<uint8_t> read_all_bytes(const internal::ISourceReader& p_reader);
-
         // `p_filename_abs` the absolute file path accessible for debugger
         bool load_from_source(class Realm* p_realm, JavaScriptModule& p_module, const String& p_filename_abs, const Vector<uint8_t>& p_source);
+
     };
 
     // the default module resolver finds source files directly with `FileAccess` with `search_paths`
@@ -41,6 +39,9 @@ namespace jsb
 
     protected:
         bool check_file_path(const String& p_module_id, String& o_path);
+
+        // read the source buffer (transformed into commonjs)
+        static Vector<uint8_t> read_all_bytes(const internal::ISourceReader& p_reader);
 
         Ref<FileAccess> get_file_access()
         {
