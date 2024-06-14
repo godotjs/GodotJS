@@ -78,7 +78,7 @@ v8_use_external_startup_data = false
 v8_enable_pointer_compression = true
 v8_jitless = false                  # jit enabled
 
-use_custom_libcxx = true            # false will produce warnings
+use_custom_libcxx = false            # false will produce warnings
 treat_warnings_as_errors = false    # 
 v8_symbol_level = 0                 # smaller lib 
 v8_enable_sandbox = false 
