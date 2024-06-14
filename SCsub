@@ -69,6 +69,9 @@ jsb_defines = [
 
     CompileDefines("JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW", 0), 
     CompileDefines("JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS", 0), 
+    CompileDefines("JSB_IMPLICIT_PACKED_ARRAY_CONVERSION", 1, [
+        "implicitly convert a javascript array as godot Vector<T> which is convenient but less performant if massively used"
+    ]),
 
     CompileDefines("JSB_DEBUG", 1 if env["dev_build"] else 0), 
 ]

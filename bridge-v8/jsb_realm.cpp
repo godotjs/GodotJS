@@ -885,6 +885,50 @@ namespace jsb
         return true;
     }
 
+    template<typename T>
+    static bool try_convert_array(v8::Isolate* isolate, const v8::Local<v8::Context>& context, v8::Local<v8::Value> p_val, Variant& r_packed)
+    {
+        if constexpr (GetTypeInfo<T>::METADATA == GodotTypeInfo::METADATA_INT_IS_UINT8)
+        {
+            if (p_val->IsArrayBuffer())
+            {
+                r_packed = V8Helper::to_packed_byte_array(isolate, p_val.As<v8::ArrayBuffer>());
+                return true;
+            }
+        }
+
+#if JSB_IMPLICIT_PACKED_ARRAY_CONVERSION
+        if (!p_val->IsArray())
+        {
+            return false;
+        }
+
+        const v8::Local<v8::Array> array = p_val.As<v8::Array>();
+        const uint32_t len = array->Length();
+        Vector<T> packed;
+        packed.resize((int)len);
+        for (uint32_t index = 0; index < len; ++index)
+        {
+            v8::Local<v8::Value> element;
+            Variant element_var;
+            if (array->Get(context, index).ToLocal(&element) && Realm::js_to_gd_var(isolate, context, element, GetTypeInfo<T>::VARIANT_TYPE, element_var))
+            {
+                packed.write[index] = element_var;
+            }
+            else
+            {
+                // be cautious here, we silently omit conversion failures
+                packed.write[index] = T {};
+                JSB_LOG(Warning, "failed to convert array element %d as %s, it'll be left as the default value", index, Variant::get_type_name(GetTypeInfo<T>::VARIANT_TYPE));
+            }
+        }
+        r_packed = packed;
+        return true;
+#else
+        return false;
+#endif
+    }
+
     // translate js val into gd variant with an expected type
     bool Realm::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar)
     {
@@ -961,13 +1005,15 @@ namespace jsb
                 return true;
             }
             goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_BYTE_ARRAY:
-            if (p_jval->IsArrayBuffer())
-            {
-                r_cvar = V8Helper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
-                return true;
-            }
-            goto FALLBACK_TO_VARIANT;
+        case Variant::PACKED_BYTE_ARRAY:    if (try_convert_array<uint8_t>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_INT32_ARRAY:   if (try_convert_array<int32_t>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_INT64_ARRAY:   if (try_convert_array<int64_t>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_FLOAT32_ARRAY: if (try_convert_array<float>(isolate, context, p_jval, r_cvar))   return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_FLOAT64_ARRAY: if (try_convert_array<double>(isolate, context, p_jval, r_cvar))  return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_STRING_ARRAY:  if (try_convert_array<String>(isolate, context, p_jval, r_cvar))  return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_VECTOR2_ARRAY: if (try_convert_array<Vector2>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_VECTOR3_ARRAY: if (try_convert_array<Vector3>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_COLOR_ARRAY:   if (try_convert_array<Color>(isolate, context, p_jval, r_cvar))   return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         // math types
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
@@ -992,16 +1038,6 @@ namespace jsb
         case Variant::SIGNAL:
         case Variant::DICTIONARY:
         case Variant::ARRAY:
-
-        // typed arrays
-        case Variant::PACKED_INT32_ARRAY:
-        case Variant::PACKED_INT64_ARRAY:
-        case Variant::PACKED_FLOAT32_ARRAY:
-        case Variant::PACKED_FLOAT64_ARRAY:
-        case Variant::PACKED_STRING_ARRAY:
-        case Variant::PACKED_VECTOR2_ARRAY:
-        case Variant::PACKED_VECTOR3_ARRAY:
-        case Variant::PACKED_COLOR_ARRAY:
             {
                 FALLBACK_TO_VARIANT:
                 //TODO TEMP SOLUTION
