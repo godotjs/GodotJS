@@ -1,4 +1,69 @@
 
+# Build V8 (static,monolithic) from source
+
+**STEP 1**  
+Download `depot_tools` from https://storage.googleapis.com/chrome-infra/depot_tools.zip if using `Windows`, and extract it to a path you want. 
+
+Otherwise, get `depot_tools` from the git repository:
+
+```
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+```
+
+**STEP 2**  
+
+Add the `depot_tools` path into the environment variable `PATH`.
+
+On `windows`:
+
+```bat
+set PATH=Your\Path\To\depot_tools;%PATH%
+set DEPOT_TOOLS_WIN_TOOLCHAIN=0
+```
+
+> [!NOTE]
+> If `DEPOT_TOOLS_WIN_TOOLCHAIN` is not set, `depot_tools` will fail to build because it will try to use the google internal toolchain instead of the locally installed Visual Studio.
+
+On `linux`, `macos`:
+```sh
+export PATH=Your/Path/To/depot_tools:$PATH
+```
+
+**STEP 3**  
+
+Sync and fetch v8:
+
+```sh
+cd Your/Path/To/depot_tools
+gclient 
+
+mkdir -p Your/Path/To/v8 
+cd Your/Path/To/v8
+fetch v8
+cd v8
+git checkout refs/tags/12.4.254.20
+gclient sync
+```
+
+**STEP 4**  
+
+Generate build configurations:
+
+```sh
+gn gen ./out.gn/x64.release
+```
+
+Modify the options in `out.gn/x64.release/args.gn`. See [Options](#options-currently-used-for-building-v8)
+
+
+**STEP 5**  
+
+Build:
+
+```sh
+ninja -C ./out.gn/x64.release v8_monolith
+```
+
 ## Options Currently Used for Building V8
 
 Windows x64
