@@ -64,7 +64,27 @@ class MyActor extends Node2D {
 
 ```
 
-## PackedByteArray
+## Packed Array (`Vector<T>`)
+
+If `JSB_IMPLICIT_PACKED_ARRAY_CONVERSION` is defined as `true`, `Packed Array` will be implicitly converted from javascript `Array`.
+
+```ts
+let a1 = new PackedStringArray();
+let a2 = new PackedStringArray();
+a2.append("test2");
+
+a1.append_array(["hey", "there"]); // implicit, it will fail if `JSB_IMPLICIT_PACKED_ARRAY_CONVERSION` is `0`
+a1.append_array(a2); // explicit
+
+let b1 = new PackedByteArray();
+b1.append_array([20, 1, 6, 5]); 
+
+// ArrayBuffer is implicitly treated as PackedByteBuffer even if `JSB_IMPLICIT_PACKED_ARRAY_CONVERSION` is `0`
+// See `PackedByteArray and ArrayBuffer`
+b1.append_array(new ArrayBuffer(16)); 
+```
+
+### PackedByteArray and ArrayBuffer
 
 A javascript `ArrayBuffer` can be used as a `PackedByteArray` implicitly.
 
@@ -75,6 +95,7 @@ A javascript `ArrayBuffer` can be used as a `PackedByteArray` implicitly.
 let file = FileAccess.open(filePath, FileAccess.ModeFlags.WRITE);
 let buffer = new ArrayBuffer(16);
 let view = new Uint8Array(buffer);
+
 view.fill(0);
 file.store_buffer(buffer);
 ```
