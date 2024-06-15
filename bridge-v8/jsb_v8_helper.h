@@ -74,6 +74,12 @@ namespace jsb
             return v8::String::NewFromUtf8(isolate, cstr.ptr(), v8::NewStringType::kNormal, cstr.length()).ToLocalChecked();
         }
 
+        jsb_force_inline static v8::Local<v8::String> to_string_ascii(v8::Isolate* isolate, const String& p_str)
+        {
+            const CharString cstr = p_str.ascii();
+            return v8::String::NewFromOneByte(isolate, (const uint8_t*) cstr.ptr(), v8::NewStringType::kNormal, cstr.length()).ToLocalChecked();
+        }
+
         static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
         {
             const size_t size = array_buffer->ByteLength();

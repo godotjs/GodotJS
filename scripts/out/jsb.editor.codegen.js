@@ -372,13 +372,19 @@ class ClassWriter extends IndentWriter {
         }
         return "void";
     }
-    property_(property_info) {
+    property_(getset_info) {
         // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
-        if (property_info.index >= 0 || property_info.name.indexOf("/") >= 0) {
+        if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
             return;
         }
-        const type_name = this.make_typename(property_info.info);
-        this.line_comment_(`godot.getset: ${property_info.name}: ${type_name}`);
+        const type_name = this.make_typename(getset_info.info);
+        console.assert(getset_info.getter.length != 0);
+        if (getset_info.setter.length == 0) {
+            this.line(`readonly ${getset_info.name}: ${type_name}`);
+        }
+        else {
+            this.line(`${getset_info.name}: ${type_name}`);
+        }
     }
     primitive_property_(property_info) {
         const type_name = PrimitiveTypeNames[property_info.type];
@@ -415,10 +421,10 @@ class ClassWriter extends IndentWriter {
     // }
     signal_(signal_info) {
         if (this._singleton_mode) {
-            this.line(`static ${signal_info.name}: Signal`);
+            this.line(`static readonly ${signal_info.name}: Signal`);
         }
         else {
-            this.line(`${signal_info.name}: Signal`);
+            this.line(`readonly ${signal_info.name}: Signal`);
         }
         // this.line(`${signal_info.name}(op: jsb.SignalOp.Connect | jsb.SignalOp.Disconnect, callable: Callable): void`);
         // this.line(`${signal_info.name}(op: jsb.SignalOp.IsConnected, callable: Callable): boolean`);

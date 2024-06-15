@@ -549,13 +549,28 @@ namespace jsb
             const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);
             v8::Local<v8::Template> template_for_static = is_singleton_class ? v8::Local<v8::Template>::Cast(object_template) : v8::Local<v8::Template>::Cast(function_template);
 
+            // expose getset properties
+            for (const KeyValue<StringName, ::ClassDB::PropertySetGet>& pair : p_class_info->property_setget)
+            {
+                if (pair.value.index >= 0) continue;
+                const StringName& property_name = pair.key;
+                const ::ClassDB::PropertySetGet& getset_info = pair.value;
+
+                v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
+                    ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._getptr))
+                    : v8::Local<v8::FunctionTemplate>();
+                v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
+                    ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._setptr))
+                    : v8::Local<v8::FunctionTemplate>();
+                object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
+            }
+
             // expose class methods
             for (const KeyValue<StringName, MethodBind*>& pair : p_class_info->method_map)
             {
                 const StringName& method_name = pair.key;
                 MethodBind* method_bind = pair.value;
-                const CharString cmethod_name = ((String) method_name).ascii();
-                v8::Local<v8::String> propkey_name = v8::String::NewFromUtf8(isolate, cmethod_name.ptr(), v8::NewStringType::kNormal, cmethod_name.length()).ToLocalChecked();
+                v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, method_name); // V8Helper::to_string_ascii(isolate, method_name);
                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, method_bind));
 
                 if (method_bind->is_static())
@@ -574,26 +589,11 @@ namespace jsb
                 object_template->Set(environment_->GetStringValue(free), v8::FunctionTemplate::New(isolate, _godot_object_free));
             }
 
-            // for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->virtual_methods_map)
-            // {
-            //     const StringName& method_name = pair.key;
-            //     const MethodInfo& method_info = pair.value;
-            //     const CharString cmethod_name = ((String) method_name).ascii();
-            //     v8::Local<v8::String> propkey_name = v8::String::NewFromUtf8(isolate, cmethod_name.ptr(), v8::NewStringType::kNormal, cmethod_name.length()).ToLocalChecked();
-            //     const StringNameID string_name_id = environment_->add_string_name(method_name);
-            //     v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, _godot_object_virtual_method, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_name_id));
-            //
-            //     jsb_check(!(method_info.flags & METHOD_FLAG_STATIC));
-            //     object_template->Set(propkey_name, propval_func);
-            // }
-
             // expose signals
             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
             {
                 const StringName& name_str = pair.key;
-                // const MethodInfo& method_info = pair.value;
-                // const CharString name = ((String) name_str).utf8();
-                v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, name_str); // v8::String::NewFromUtf8(isolate, name.ptr(), v8::NewStringType::kNormal, name.length()).ToLocalChecked();
+                v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, name_str);
                 const StringNameID string_id = environment_->string_name_cache_.get_string_id(name_str);
                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, _godot_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_id));
                 // object_template->Set(propkey_name, propval_func);
@@ -1238,8 +1238,8 @@ namespace jsb
         const MethodBind* method_bind = (MethodBind*) info.Data().As<v8::External>()->Value();
         const int argc = info.Length();
 
-        jsb_checkf(Thread::get_caller_id() == Environment::wrap(isolate)->thread_id_, "multi-threaded call not supported yet");
         jsb_check(method_bind);
+        Environment::wrap(isolate)->check_internal_state();
         Object* gd_object = nullptr;
         if (!method_bind->is_static())
         {
