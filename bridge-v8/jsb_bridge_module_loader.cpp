@@ -165,13 +165,11 @@ namespace jsb
             set_field(isolate, context, object, "type", property_info.type);
         }
 
-        void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const PropertyInfo& property_info, const ClassDB::PropertySetGet& getset_info, const v8::Local<v8::Object>& object)
+        void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const ClassDB::PropertySetGet& getset_info, const v8::Local<v8::Object>& object)
         {
             set_field(isolate, context, object, "name", property_name);
             set_field(isolate, context, object, "type", getset_info.type);
-            set_field(isolate, context, object, "hint", property_info.hint);
-            set_field(isolate, context, object, "hint_string", property_info.hint_string);
-            set_field(isolate, context, object, "class_name", property_info.class_name);
+            set_field(isolate, context, object, "index", getset_info.index);
             set_field(isolate, context, object, "setter", getset_info.setter);
             set_field(isolate, context, object, "getter", getset_info.getter);
         }
@@ -346,9 +344,12 @@ namespace jsb
                     const StringName& property_name = pair.key;
                     const ClassDB::PropertySetGet& getset_info = pair.value;
                     const PropertyInfo& property_info = class_info.property_map.get(property_name);
+                    v8::Local<v8::Object> getset_info_obj = v8::Object::New(isolate);
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
-                    build_property_info(isolate, context, property_name, property_info, getset_info, property_info_obj);
-                    properties_obj->Set(context, index++, property_info_obj).Check();
+                    set_field(isolate, context, getset_info_obj, "info", property_info_obj);
+                    build_property_info(isolate, context, property_info, property_info_obj);
+                    build_property_info(isolate, context, property_name, getset_info, getset_info_obj);
+                    properties_obj->Set(context, index++, getset_info_obj).Check();
                 }
             }
 

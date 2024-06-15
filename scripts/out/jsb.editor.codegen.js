@@ -373,8 +373,12 @@ class ClassWriter extends IndentWriter {
         return "void";
     }
     property_(property_info) {
-        const type_name = PrimitiveTypeNames[property_info.type];
-        this.line_comment_(`// godot.getset: ${property_info.name}: ${type_name}`);
+        // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
+        if (property_info.index >= 0 || property_info.name.indexOf("/") >= 0) {
+            return;
+        }
+        const type_name = this.make_typename(property_info.info);
+        this.line_comment_(`godot.getset: ${property_info.name}: ${type_name}`);
     }
     primitive_property_(property_info) {
         const type_name = PrimitiveTypeNames[property_info.type];

@@ -111,8 +111,11 @@ declare module "godot-jsb" {
         interface PropertySetGetInfo {
             name: string;
             type: Variant.Type;
+            index: number;
             setter: string;
             getter: string;
+
+            info: PropertyInfo;
         }
 
         interface PrimitiveGetSetInfo {
