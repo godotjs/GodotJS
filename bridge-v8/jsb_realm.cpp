@@ -553,9 +553,9 @@ namespace jsb
             for (const KeyValue<StringName, ::ClassDB::PropertySetGet>& pair : p_class_info->property_setget)
             {
                 if (pair.value.index >= 0) continue;
+                if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
+
                 const StringName& property_name = pair.key;
-                //TODO temporarily disable the 'name' property since it overwrites the javascript function/class name
-                if (property_name == jsb_string_name(name)) continue;
                 const ::ClassDB::PropertySetGet& getset_info = pair.value;
 
                 v8::Local<v8::FunctionTemplate> getter = getset_info._getptr

@@ -22,10 +22,19 @@ namespace jsb::internal
             singleton_ = nullptr;
         }
 
+        // we need to ignore some names used in godot (such as XXX.name) to avoid conflicts in javascript.
+        // for instance, the GodotJS script name is determined with the `name` property of a javascript class.
+        HashSet<StringName> ignored_;
+
+        //TODO replace instead of ignore
+        // HashMap<StringName, StringName> replacements_;
+
         StringNames();
 
     public:
         jsb_force_inline static StringNames& get_singleton() { return *singleton_; }
+
+        jsb_force_inline bool is_ignored(const StringName& p_name) const { return ignored_.has(p_name); }
 
 #pragma push_macro("DEF")
 #   undef DEF

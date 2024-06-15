@@ -10,6 +10,8 @@ namespace jsb::internal
 #   define DEF(KeyName) sn_##KeyName = _scs_create(#KeyName)
 #   include "jsb_string_names.def.h"
 #pragma pop_macro("DEF")
+
+        ignored_.insert(sn_name);
     }
 
 }

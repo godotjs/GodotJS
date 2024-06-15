@@ -341,12 +341,9 @@ namespace jsb
                 int index = 0;
                 for (const KeyValue<StringName, ClassDB::PropertySetGet>& pair : class_info.property_setget)
                 {
+                    if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
+
                     const StringName& property_name = pair.key;
-                    //TODO temporarily disable the 'name' property since it overwrites the javascript function/class name
-                    if (property_name == jsb_string_name(name))
-                    {
-                        continue;
-                    }
                     const ClassDB::PropertySetGet& getset_info = pair.value;
                     const PropertyInfo& property_info = class_info.property_map.get(property_name);
                     v8::Local<v8::Object> getset_info_obj = v8::Object::New(isolate);
@@ -903,7 +900,7 @@ namespace jsb
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
             target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true)).Check();
             JSB_LOG(VeryVerbose, "script %s (tool)",
-                V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()));
+                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))));
         }
 
         // function add_script_ready(target: any, name: string,  evaluator: string | Function): void;
