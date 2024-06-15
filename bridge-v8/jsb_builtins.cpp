@@ -99,7 +99,7 @@ namespace jsb
 #if JSB_WITH_STACKTRACE_ALWAYS
         _generate_stacktrace(isolate, sb);
 #else
-        if (severity == internal::ELogSeverity::Trace) _generate_stacktrace(isolate, sb);
+        if (severity == internal::ELogSeverity::Trace || severity >= internal::ELogSeverity::Error) _generate_stacktrace(isolate, sb);
 #endif
 
         const String& text = sb.as_string();
