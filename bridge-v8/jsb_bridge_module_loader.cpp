@@ -342,6 +342,11 @@ namespace jsb
                 for (const KeyValue<StringName, ClassDB::PropertySetGet>& pair : class_info.property_setget)
                 {
                     const StringName& property_name = pair.key;
+                    //TODO temporarily disable the 'name' property since it overwrites the javascript function/class name
+                    if (property_name == jsb_string_name(name))
+                    {
+                        continue;
+                    }
                     const ClassDB::PropertySetGet& getset_info = pair.value;
                     const PropertyInfo& property_info = class_info.property_map.get(property_name);
                     v8::Local<v8::Object> getset_info_obj = v8::Object::New(isolate);
@@ -935,8 +940,8 @@ namespace jsb
 
             collection->Set(context, index, evaluator).Check();
             JSB_LOG(VeryVerbose, "script %s define property(onready) %s",
-                V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
-                V8Helper::to_string(isolate, evaluator->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()));
+                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
+                V8Helper::to_string_opt(isolate, evaluator->Get(context, environment->GetStringValue(name))));
         }
 
         // function add_script_property(target: any, name: string, details: ScriptPropertyInfo): void;
@@ -973,8 +978,8 @@ namespace jsb
 
             collection->Set(context, index, details).Check();
             JSB_LOG(VeryVerbose, "script %s define property(export) %s",
-                V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
-                V8Helper::to_string(isolate, details->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()));
+                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
+                V8Helper::to_string_opt(isolate, details->Get(context, environment->GetStringValue(name))));
         }
 
         void _find_module(const v8::FunctionCallbackInfo<v8::Value> &info)
@@ -1067,7 +1072,7 @@ namespace jsb
 
             collection->Set(context, index, signal).Check();
             JSB_LOG(VeryVerbose, "script %s define signal %s",
-                V8Helper::to_string(isolate, target->Get(context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>()),
+                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
                 V8Helper::to_string(isolate, signal));
         }
     }

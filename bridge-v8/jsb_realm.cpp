@@ -554,6 +554,8 @@ namespace jsb
             {
                 if (pair.value.index >= 0) continue;
                 const StringName& property_name = pair.key;
+                //TODO temporarily disable the 'name' property since it overwrites the javascript function/class name
+                if (property_name == jsb_string_name(name)) continue;
                 const ::ClassDB::PropertySetGet& getset_info = pair.value;
 
                 v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
@@ -640,6 +642,7 @@ namespace jsb
                 jsb_address_guard(environment_->native_classes_, native_classes_address_scope);
                 NativeClassInfo& class_info = environment_->get_native_class(class_id);
                 jsb_check(function_template == class_info.template_);
+                class_info.set_function(isolate, function_template->GetFunction(context).ToLocalChecked());
                 JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, (uint32_t) class_id);
             }
         } // end type template

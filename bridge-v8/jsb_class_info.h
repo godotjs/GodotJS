@@ -38,9 +38,19 @@ namespace jsb
         //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
         v8::Global<v8::FunctionTemplate> template_;
 
+        // template_ itself but instantiated
+        //TODO it is unnecessary, but we can't get expected result of `get_function() == new_target` for some unknown reasons
+        v8::Global<v8::Function> target_;
+
+        jsb_force_inline void set_function(v8::Isolate* isolate, const v8::Local<v8::Function>& func)
+        {
+            target_.Reset(isolate, func);
+        }
+
         jsb_force_inline v8::Local<v8::Function> get_function(v8::Isolate* isolate, const v8::Local<v8::Context>& context) const
         {
-            return template_.Get(isolate)->GetFunction(context).ToLocalChecked();
+            jsb_check(!target_.IsEmpty());
+            return target_.Get(isolate);
         }
     };
 

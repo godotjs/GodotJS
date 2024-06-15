@@ -6,7 +6,7 @@ Core:
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
-    ☐ issue: `new Object()` is unexpectedly garbage collected without a `free` call
+    ✔ issue: `new Object()` is unexpectedly garbage collected without a `free` call @done(24-06-15 15:30)
     ☐ optionally ignore methods which already covered by property getset
     ✔ codegen: mark `signal` as readonly in d.ts @done(24-06-15)
     ✔ define `jsb` functions in a module (instead of in a global namespace) @done(24-06-05)
@@ -59,6 +59,7 @@ Scripting:
 REPL:
     ✔ auto-complete when input text changed @done(24-05-29)
     ✔ print all internal logs in REPL panel during REPL eval @done(24-06-03 19:18)
+    ✔ print godot things in the way of godot itself @done(24-06-15 15:31)
     ☐ print object details in REPL output (as JSON?)
     ☐ completely re-implement the bottom panel in typescript if possible
     

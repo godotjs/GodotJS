@@ -37,6 +37,12 @@ namespace jsb
             return str_gd;
         }
 
+        jsb_force_inline static String to_string_opt(v8::Isolate* isolate, const v8::MaybeLocal<v8::Value>& p_val)
+        {
+            v8::Local<v8::Value> local;
+            return p_val.ToLocal(&local) ? to_string(isolate, local) : String();
+        }
+
         /**
          * Convert a javascript 'String/Symbol' value to a godot String
          */
