@@ -141,7 +141,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 
 Error GodotJSScript::reload(bool p_keep_state)
 {
-    jsb_check(loaded_);
+    if (!loaded_) return OK;
     if (!valid_) return ERR_UNAVAILABLE;
 
     if (!p_keep_state)
