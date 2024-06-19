@@ -334,9 +334,11 @@ namespace jsb
                 }
             }
 
-            // properties?
+            // properties
             {
-                v8::Local<v8::Array> properties_obj = v8::Array::New(isolate, (int) class_info.property_setget.size());
+                // intentionally new array without a length from `class_info.property_setget.size()`,
+                // because ignoring items causes holes in the "properties" array which would be `undefined`
+                v8::Local<v8::Array> properties_obj = v8::Array::New(isolate);
                 set_field(isolate, context, class_info_obj, "properties", properties_obj);
                 int index = 0;
                 for (const KeyValue<StringName, ClassDB::PropertySetGet>& pair : class_info.property_setget)
