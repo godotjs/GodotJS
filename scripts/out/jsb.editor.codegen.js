@@ -256,7 +256,46 @@ class ClassWriter extends IndentWriter {
     constant_(constant) {
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
+    make_classname(class_name) {
+        const remap_name = RemapTypes[class_name];
+        if (typeof remap_name !== "undefined") {
+            return remap_name;
+        }
+        if (class_name in this.types.classes) {
+            return class_name;
+        }
+        else {
+            if (class_name.indexOf(".") >= 0) {
+                const layers = class_name.split(".");
+                if (layers.length == 2) {
+                    // nested enums in primitive types do not exist in class_info, they are manually binded.
+                    if (PrimitiveTypesSet.has(layers[0])) {
+                        return class_name;
+                    }
+                    const cls = this.types.classes[layers[0]];
+                    if (typeof cls !== "undefined" && cls.enums.findIndex(v => v.name == layers[1]) >= 0) {
+                        return class_name;
+                    }
+                }
+            }
+            if (class_name in this.types.globals) {
+                return class_name;
+            }
+            if (class_name in this.types.singletons) {
+                return class_name;
+            }
+            // if (ReservedTypes.has(class_name)) {
+            //     return class_name;
+            // }
+            console.warn("undefined class", class_name);
+            return `any /*${class_name}*/`;
+        }
+    }
     make_typename(info) {
+        if (info.hint == godot_1.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
+            console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
+            return info.hint_string.split(",").map(class_name => this.make_classname(class_name)).join(" | ");
+        }
         if (info.class_name.length == 0) {
             const primitive_name = PrimitiveTypeNames[info.type];
             if (typeof primitive_name !== "undefined") {
@@ -264,39 +303,7 @@ class ClassWriter extends IndentWriter {
             }
             return `any /*unhandled: ${info.type}*/`;
         }
-        const remap_name = RemapTypes[info.class_name];
-        if (typeof remap_name !== "undefined") {
-            return remap_name;
-        }
-        if (info.class_name in this.types.classes) {
-            return info.class_name;
-        }
-        else {
-            if (info.class_name.indexOf(".") >= 0) {
-                const layers = info.class_name.split(".");
-                if (layers.length == 2) {
-                    // nested enums in primitive types do not exist in class_info, they are manually binded.
-                    if (PrimitiveTypesSet.has(layers[0])) {
-                        return info.class_name;
-                    }
-                    const cls = this.types.classes[layers[0]];
-                    if (typeof cls !== "undefined" && cls.enums.findIndex(v => v.name == layers[1]) >= 0) {
-                        return info.class_name;
-                    }
-                }
-            }
-            if (info.class_name in this.types.globals) {
-                return info.class_name;
-            }
-            if (info.class_name in this.types.singletons) {
-                return info.class_name;
-            }
-            // if (ReservedTypes.has(info.class_name)) {
-            //     return info.class_name;
-            // }
-            console.warn("undefined class", info.class_name);
-            return `any /*${info.class_name}*/`;
-        }
+        return this.make_classname(info.class_name);
     }
     make_arg(info) {
         return `${replace(info.name)}: ${this.make_typename(info)}`;
@@ -671,43 +678,49 @@ class TSDCodeGen {
         class_cg.finish();
     }
     emit_godot_class(cg, cls, singleton_mode) {
-        const ignored_consts = new Set();
-        const class_ns_cg = cg.namespace_(cls.name);
-        if (cls.enums) {
-            for (let enum_info of cls.enums) {
-                const enum_cg = class_ns_cg.enum_(enum_info.name);
-                for (let name of enum_info.literals) {
-                    const value = cls.constants.find(v => v.name == name).value;
-                    enum_cg.element_(name, value);
-                    ignored_consts.add(name);
-                }
-                enum_cg.finish();
-            }
-        }
-        class_ns_cg.finish();
-        const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super : "", singleton_mode);
-        if (cls.constants) {
-            for (let constant of cls.constants) {
-                if (!ignored_consts.has(constant.name)) {
-                    class_cg.constant_(constant);
+        try {
+            const ignored_consts = new Set();
+            const class_ns_cg = cg.namespace_(cls.name);
+            if (cls.enums) {
+                for (let enum_info of cls.enums) {
+                    const enum_cg = class_ns_cg.enum_(enum_info.name);
+                    for (let name of enum_info.literals) {
+                        const value = cls.constants.find(v => v.name == name).value;
+                        enum_cg.element_(name, value);
+                        ignored_consts.add(name);
+                    }
+                    enum_cg.finish();
                 }
             }
-        }
-        if (cls.name == "Object") {
-            class_cg.line(`free(): void`);
-        }
-        for (let method_info of cls.methods) {
-            class_cg.method_(method_info);
-        }
-        for (let property_info of cls.properties) {
-            class_cg.property_(property_info);
-        }
-        if (cls.signals) {
-            for (let signal_info of cls.signals) {
-                class_cg.signal_(signal_info);
+            class_ns_cg.finish();
+            const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super : "", singleton_mode);
+            if (cls.constants) {
+                for (let constant of cls.constants) {
+                    if (!ignored_consts.has(constant.name)) {
+                        class_cg.constant_(constant);
+                    }
+                }
             }
+            if (cls.name == "Object") {
+                class_cg.line(`free(): void`);
+            }
+            for (let method_info of cls.methods) {
+                class_cg.method_(method_info);
+            }
+            for (let property_info of cls.properties) {
+                class_cg.property_(property_info);
+            }
+            if (cls.signals) {
+                for (let signal_info of cls.signals) {
+                    class_cg.signal_(signal_info);
+                }
+            }
+            class_cg.finish();
         }
-        class_cg.finish();
+        catch (error) {
+            console.error(`failed to generate '${cls.name}'`);
+            throw error;
+        }
     }
 }
 exports.default = TSDCodeGen;
