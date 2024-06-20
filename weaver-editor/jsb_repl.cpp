@@ -1,5 +1,8 @@
 ﻿#include "jsb_repl.h"
 
+#include "jsb_editor_plugin.h"
+#include "editor/editor_node.h"
+#include "editor/editor_string_names.h"
 #include "scene/scene_string_names.h"
 #include "scene/gui/button.h"
 #include "scene/gui/item_list.h"
@@ -26,6 +29,22 @@ GodotJSREPL::GodotJSREPL()
         clear_button_->set_focus_mode(FOCUS_NONE);
         clear_button_->set_tooltip_text(TTR("Clear Output"));
         clear_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_clear_pressed));
+    }
+    {
+        dts_button_ = memnew(Button);
+        tool_bar_box->add_child(dts_button_);
+        dts_button_->set_theme_type_variation("FlatButton");
+        dts_button_->set_focus_mode(FOCUS_NONE);
+        dts_button_->set_tooltip_text(TTR("Generate godot.d.ts files"));
+        dts_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_generate_dts_pressed));
+    }
+    {
+        preset_button_ = memnew(Button);
+        tool_bar_box->add_child(preset_button_);
+        preset_button_->set_theme_type_variation("FlatButton");
+        preset_button_->set_focus_mode(FOCUS_NONE);
+        preset_button_->set_tooltip_text(TTR("Install GodotJS preset files"));
+        preset_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_install_preset_pressed));
     }
 
     output_box_ = memnew(RichTextLabel);
@@ -85,12 +104,28 @@ void GodotJSREPL::_notification(int p_what)
 
 void GodotJSREPL::_update_theme()
 {
-    clear_button_->set_icon(get_editor_theme_icon(SNAME("Clear")));
+    clear_button_->set_icon(get_editor_theme_icon("Clear"));
+    dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
+    preset_button_->set_icon(get_editor_theme_icon("Window"));
 }
 
 void GodotJSREPL::_clear_pressed()
 {
     output_box_->clear();
+}
+
+void GodotJSREPL::_install_preset_pressed()
+{
+    EditorNode* editor_node = EditorNode::get_singleton();
+    if (!editor_node) return;
+    GodotJSEditorPlugin* editor_plugin = reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
+    if (!editor_plugin) return;
+    editor_plugin->try_install_ts_project();
+}
+
+void GodotJSREPL::_generate_dts_pressed()
+{
+    GodotJSEditorPlugin::generate_godot_dts();
 }
 
 String GodotJSREPL::encode_string(const String& p_text)

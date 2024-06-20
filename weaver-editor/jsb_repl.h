@@ -16,7 +16,11 @@ private:
     bool input_submitting_;
     class LineEdit* input_box_;
     class RichTextLabel* output_box_;
+
     class Button* clear_button_;
+    class Button* dts_button_;
+    class Button* preset_button_;
+
     class ItemList* candidate_list_;
 
     Vector<OutputLine> lines_;
@@ -31,6 +35,8 @@ protected:
     void _input_gui_input(const Ref<InputEvent> &p_event);
     void _input_focus_exit();
     void _clear_pressed();
+    void _generate_dts_pressed();
+    void _install_preset_pressed();
     void _notification(int p_what);
 
     void add_string(const String& p_str);

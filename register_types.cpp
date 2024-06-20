@@ -36,6 +36,7 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
         {
             GodotJSEditorPlugin* plugin = memnew(GodotJSEditorPlugin);
             EditorNode::add_editor_plugin(plugin);
+            plugin->set_name(jsb_typename(GodotJSEditorPlugin));
         });
 #endif
     }
