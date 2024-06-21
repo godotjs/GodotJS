@@ -321,20 +321,8 @@ namespace jsb
             set_field(isolate, context, class_info_obj, "name", class_name);
             set_field(isolate, context, class_info_obj, "super", class_info.inherits);
 
-            // fields?
-            {
-                v8::Local<v8::Array> properties_obj = v8::Array::New(isolate, class_info.property_list.size());
-                set_field(isolate, context, class_info_obj, "fields", properties_obj);
-                for (int index = 0, num = class_info.property_list.size(); index < num; ++index)
-                {
-                    const PropertyInfo& property_info = class_info.property_list[index];
-                    v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
-                    build_property_info(isolate, context, property_info, property_info_obj);
-                    properties_obj->Set(context, index, property_info_obj).Check();
-                }
-            }
-
-            // properties
+            // HashSet<StringName> omitted_methods;
+            // class: properties
             {
                 // intentionally new array without a length from `class_info.property_setget.size()`,
                 // because ignoring items causes holes in the "properties" array which would be `undefined`
@@ -354,16 +342,20 @@ namespace jsb
                     build_property_info(isolate, context, property_info, property_info_obj);
                     build_property_info(isolate, context, property_name, getset_info, getset_info_obj);
                     properties_obj->Set(context, index++, getset_info_obj).Check();
+                    // if (internal::VariantUtil::is_valid(getset_info.getter)) omitted_methods.insert(getset_info.getter);
+                    // if (internal::VariantUtil::is_valid(getset_info.setter)) omitted_methods.insert(getset_info.setter);
                 }
             }
 
-            // methods
+            // class: methods
             {
-                v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, (int) class_info.method_map.size());
+                const int len = (int) class_info.method_map.size();
+                const v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, len);
                 set_field(isolate, context, class_info_obj, "methods", methods_obj);
                 int index = 0;
                 for (const KeyValue<StringName, MethodBind*>& pair : class_info.method_map)
                 {
+                    // if (omitted_methods.has(pair.key)) continue;
                     MethodBind const * const method_bind = pair.value;
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                     build_method_info(isolate, context, method_bind, method_info_obj);
@@ -371,7 +363,7 @@ namespace jsb
                 }
             }
 
-            // vmethods (DO NOT USE)
+            // class: vmethods (DO NOT USE)
             {
                 v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, (int) class_info.virtual_methods_map.size());
                 set_field(isolate, context, class_info_obj, "virtual_methods", methods_obj);
@@ -384,7 +376,7 @@ namespace jsb
                 }
             }
 
-            // enums
+            // class: enums
             {
                 v8::Local<v8::Array> enums_obj = v8::Array::New(isolate, (int) class_info.enum_map.size());
                 set_field(isolate, context, class_info_obj, "enums", enums_obj);
@@ -399,7 +391,7 @@ namespace jsb
                 }
             }
 
-            // constants (int only)
+            // class: constants (int only)
             {
                 v8::Local<v8::Array> constants_obj = v8::Array::New(isolate, (int) class_info.constant_map.size());
                 set_field(isolate, context, class_info_obj, "constants", constants_obj);
@@ -413,7 +405,7 @@ namespace jsb
                 }
             }
 
-            // signals
+            // class: signals
             {
                 v8::Local<v8::Array> signals_obj = v8::Array::New(isolate, (int) class_info.signal_map.size());
                 set_field(isolate, context, class_info_obj, "signals", signals_obj);
@@ -426,6 +418,7 @@ namespace jsb
                     signals_obj->Set(context, index++, signal_info_obj).Check();
                 }
             }
+
             return class_info_obj;
         }
     }

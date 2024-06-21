@@ -549,7 +549,8 @@ namespace jsb
             const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);
             v8::Local<v8::Template> template_for_static = is_singleton_class ? v8::Local<v8::Template>::Cast(object_template) : v8::Local<v8::Template>::Cast(function_template);
 
-            // expose getset properties
+            // HashSet<StringName> omitted_methods;
+            // class: properties (getset)
             for (const KeyValue<StringName, ::ClassDB::PropertySetGet>& pair : p_class_info->property_setget)
             {
                 if (pair.value.index >= 0) continue;
@@ -565,11 +566,15 @@ namespace jsb
                     ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._setptr))
                     : v8::Local<v8::FunctionTemplate>();
                 object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
+                // if (internal::VariantUtil::is_valid(getset_info.getter)) omitted_methods.insert(getset_info.getter);
+                // if (internal::VariantUtil::is_valid(getset_info.setter)) omitted_methods.insert(getset_info.setter);
             }
 
-            // expose class methods
+            // class: methods
             for (const KeyValue<StringName, MethodBind*>& pair : p_class_info->method_map)
             {
+                // if (omitted_methods.has(pair.key)) continue;
+
                 const StringName& method_name = pair.key;
                 MethodBind* method_bind = pair.value;
                 v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, method_name); // V8Helper::to_string_ascii(isolate, method_name);
@@ -587,11 +592,11 @@ namespace jsb
 
             if (p_class_info->name == jsb_string_name(Object))
             {
-                // special methods
+                // class: special methods
                 object_template->Set(environment_->GetStringValue(free), v8::FunctionTemplate::New(isolate, _godot_object_free));
             }
 
-            // expose signals
+            // class: signals
             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
             {
                 const StringName& name_str = pair.key;
@@ -602,7 +607,7 @@ namespace jsb
                 object_template->SetAccessorProperty(propkey_name, propval_func);
             }
 
-            // expose nested enum
+            // class: enum (nested in class)
             HashSet<StringName> enum_consts;
             for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
             {
@@ -611,7 +616,7 @@ namespace jsb
                     V8Helper::to_template_enum(isolate, context, pair.value, p_class_info->constant_map, &enum_consts));
             }
 
-            // expose class constants
+            // class: constants
             for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
             {
                 if (enum_consts.has(pair.key)) continue;
@@ -624,12 +629,10 @@ namespace jsb
                     V8Helper::to_int32(isolate, pair.value));
             }
 
-            //TODO expose all available fields/properties etc.
-
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
             function_template->Set(environment_->SymbolFor(ClassId), v8::Uint32::NewFromUnsigned(isolate, class_id));
 
-            // setup the prototype chain (inherit)
+            // build the prototype chain (inherit)
             if (const NativeClassID super_class_id = _expose_godot_class(p_class_info->inherits_ptr))
             {
                 v8::Local<v8::FunctionTemplate> base_template = environment_->get_native_class(super_class_id).template_.Get(isolate);
@@ -790,7 +793,7 @@ namespace jsb
             {
                 return true;
             }
-            goto FALLBACK_TO_VARIANT;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         case Variant::OBJECT:
             {
                 if (!p_val->IsObject()) return false;
@@ -872,7 +875,7 @@ namespace jsb
         {
             return false;
         }
-        v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+        const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
         if (self->InternalFieldCount() != kObjectFieldCount)
         {
             return false;
