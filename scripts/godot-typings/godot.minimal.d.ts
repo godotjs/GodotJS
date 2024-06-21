@@ -157,9 +157,8 @@ declare module "godot-jsb" {
         interface ClassInfo extends BasicClassInfo {
             super: string;
 
-            // fields: Array<FieldInfo>;
             properties: Array<PropertySetGetInfo>;
-            // virtual_methods: Array<MethodInfo>;
+            virtual_methods: Array<MethodInfo>;
             signals: Array<SignalInfo>;
             constants?: Array<ConstantInfo>;
         }
@@ -169,9 +168,7 @@ declare module "godot-jsb" {
 
             constructors: Array<ConstructorInfo>;
             operators: Array<OperatorInfo>;
-            // fields: Array<FieldInfo>;
             properties: Array<PrimitiveGetSetInfo>;
-            // virtual_methods: Array<MethodInfo>;
             constants?: Array<PrimitiveConstantInfo>;
         }
 

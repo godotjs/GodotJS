@@ -428,19 +428,25 @@ class ClassWriter extends IndentWriter {
         const right_type_name = PrimitiveTypeNames[operator_info.right_type];
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
-    method_(method_info: jsb.editor.MethodBind) {
+    virtual_method_(method_info: jsb.editor.MethodBind) {
+        this.method_(method_info, "/* gdvirtual */ ");
+    }
+    ordinary_method_(method_info: jsb.editor.MethodBind) {
+        this.method_(method_info, "");
+    }
+    method_(method_info: jsb.editor.MethodBind, category: string) {
         // some godot methods declared with special characters
         if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
             const args = this.make_args(method_info)
             const rval = this.make_return(method_info)
             const prefix = this.make_method_prefix(method_info);
-            this.line(`${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
+            this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
             return;
         }
         const args = this.make_args(method_info)
         const rval = this.make_return(method_info)
         const prefix = this.make_method_prefix(method_info);
-        this.line(`${prefix}${method_info.name}(${args}): ${rval}`);
+        this.line(`${category}${prefix}${method_info.name}(${args}): ${rval}`);
     }
     // function_(method_info: jsb.editor.MethodInfo) {
     //     const args = this.make_args(method_info)
@@ -726,7 +732,7 @@ export default class TSDCodeGen {
             class_cg.constructor_(constructor_info);
         }
         for (let method_info of cls.methods) {
-            class_cg.method_(method_info);
+            class_cg.ordinary_method_(method_info);
         }
         for (let operator_info of cls.operators) {
             class_cg.operator_(operator_info);
@@ -762,11 +768,11 @@ export default class TSDCodeGen {
                     }
                 }
             }
-            if (cls.name == "Object") {
-                class_cg.line(`free(): void`);
+            for (let method_info of cls.virtual_methods) {
+                class_cg.virtual_method_(method_info);
             }
             for (let method_info of cls.methods) {
-                class_cg.method_(method_info);
+                class_cg.ordinary_method_(method_info);
             }
             for (let property_info of cls.properties) {
                 class_cg.property_(property_info);
