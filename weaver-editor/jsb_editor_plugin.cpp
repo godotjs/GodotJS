@@ -58,8 +58,8 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_control_to_bottom_panel(memnew(GodotJSREPL), TTR("GodotJS"));
 
     // config files
-    install_files_.push_back({ "tsconfig.json", "res://typescripts", jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ "package.json", "res://typescripts", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "tsconfig.json", "res://typescripts", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
+    install_files_.push_back({ "package.json", "res://typescripts", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
     install_files_.push_back({ ".gdignore", "res://typescripts", jsb::CH_TYPESCRIPT });
 
     // type declaration files
@@ -138,6 +138,7 @@ bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file)
     const String target_name = jsb::internal::PathUtil::combine(p_file.target_dir, p_file.source_name);
     Error err;
     if (!FileAccess::exists(target_name)) return false;
+    if ((p_file.hint & jsb::CH_CREATE_ONLY) != 0) return true;
     const Ref<FileAccess> access = FileAccess::open(target_name, FileAccess::READ, &err);
     if (err != OK || access.is_null()) return false;
     const size_t file_len = access->get_length();

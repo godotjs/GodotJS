@@ -1,11 +1,12 @@
 
 Core:
-    ☐ global scope defined constants (such as PropertyHint)
+    ✔ global scope defined constants (such as PropertyHint) @done
     ☐ source-map: incorrect Ln:Col on bundle scripts
     ☐ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52)
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
+    ✔ codegen: not to overwrite tsconfig.json and package.json when installing presets @done(24-06-21)
     ✔ issue: `new Object()` is unexpectedly garbage collected without a `free` call @done(24-06-15 15:30)
     ☐ optionally ignore methods which already covered by property getset
     ✔ codegen: mark `signal` as readonly in d.ts @done(24-06-15)
@@ -66,3 +67,4 @@ REPL:
 IDEA:
     ☐ nodejs integration (editor only?)
     ☐ libffi support
+    ☐ try: provide a quickjs-v8 minimal implementation to support quickjs without rewriting all bridging code

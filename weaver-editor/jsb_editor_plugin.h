@@ -13,6 +13,9 @@ namespace jsb
         CH_TYPESCRIPT = 1 << 1,
         CH_MISC = 1 << 2,
 
+        // only write file if not existed since some files would be modified in projects, such as package.json, by users
+        CH_CREATE_ONLY = 1 << 3,
+
         CH_OPTIONAL = 1 << 7,
     };
 
@@ -20,6 +23,8 @@ namespace jsb
     {
         String source_name;
         String target_dir;
+
+        // ECategoryHint
         uint8_t hint;
     };
 }

@@ -76,6 +76,18 @@ jsb_defines = [
     CompileDefines("JSB_DEBUG", 1 if env["dev_build"] else 0), 
 ]
 
+def is_defined(name, value):
+    for t in jsb_defines:
+        if t.name == name:
+            return t.value == value
+    return False
+
+def set_defined(name, value):
+    for t in jsb_defines:
+        if t.name == name:
+            t.value = value
+    check(False, f"can not set value to '{name}' which is not defined")
+
 # def write_file(filename, ostream: io.StringIO):
 def write_file(filename, ostream):
     ostream.seek(0)
@@ -192,7 +204,6 @@ if javascript_engine == "v8":
         env_jsb.AppendUnique(CPPDEFINES=["V8_COMPRESS_POINTERS"])
 
     env_jsb.Append(CPPDEFINES=["_ITERATOR_DEBUG_LEVEL=0"])
-    env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
 
     # headers
     # env_jsb is enough for compiler, but IDE lookup paths from `env`
@@ -203,7 +214,12 @@ else:
     # quickjs is directly build from source
     env_jsb.add_source_files(module_obj, "quickjs/*.c")
     env_jsb.add_source_files(module_obj, "bridge-quickjs/*.cpp")
-    env_jsb.add_source_files(module_obj, "bridge-quickjs/extra/*.cpp")
+
+    if is_defined("JSB_WITH_DEBUGGER", 1):
+        set_defined("JSB_WITH_DEBUGGER", 0)
+        print("Warning: debugger is not supported when using quickjs as the javascript runtime")
+    
+env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
 
 # lws
 if websocket_lib == "lws":

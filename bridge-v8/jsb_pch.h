@@ -1,11 +1,7 @@
 #ifndef GODOTJS_PCH_H
 #define GODOTJS_PCH_H
 
-#include <v8.h>
-#include <v8-persistent-handle.h>
-#include <libplatform/libplatform.h>
-#include <v8-inspector.h>
-#include <v8-version-string.h>
+#include "../jsb.gen.h"
 
 #include <memory>
 #include <cstdint>
@@ -18,6 +14,19 @@
 #include "core/config/project_settings.h"
 #include "core/variant/variant_utility.h"
 #include "scene/main/node.h"
+
+#if JSB_WITH_V8
+#   include <v8.h>
+#   include <v8-persistent-handle.h>
+#   include <libplatform/libplatform.h>
+#   include <v8-inspector.h>
+#   include <v8-version-string.h>
+#elif JSB_WITH_QUICKJS
+#   error not implemented yet
+#   include "../bridge-quickjs/jsb_quickjs_v8.h"
+#else
+#   error unknown javascript runtime
+#endif
 
 //TODO handle module deps in SCSub
 #include "modules/regex/regex.h"
