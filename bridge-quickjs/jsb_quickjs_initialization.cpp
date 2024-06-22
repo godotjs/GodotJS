@@ -11,9 +11,9 @@ namespace v8
 
     }
 
-    void V8::Initialize()
+    bool V8::Initialize()
     {
-
+        return true;
     }
 
 }

@@ -7,7 +7,10 @@ namespace v8
 {
     class Context
     {
+    public:
 
+    private:
+        // JSContext* context_;
     };
 }
 

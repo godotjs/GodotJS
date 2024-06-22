@@ -12,7 +12,7 @@ namespace v8
 
         static void InitializePlatform(Platform* platform);
 
-        static void Initialize();
+        static bool Initialize();
     };
 }
 #endif
