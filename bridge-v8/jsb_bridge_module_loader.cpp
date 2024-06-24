@@ -8,6 +8,8 @@
 
 #if TOOLS_ENABLED
 
+#include "editor/editor_help.h"
+
 // for windows api (like 'DeleteFileW')
 #if WINDOWS_ENABLED
 #   define WIN32_LEAN_AND_MEAN
@@ -165,13 +167,14 @@ namespace jsb
             set_field(isolate, context, object, "type", property_info.type);
         }
 
-        void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const ClassDB::PropertySetGet& getset_info, const v8::Local<v8::Object>& object)
+        void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const ClassDB::PropertySetGet& getset_info, const DocData::PropertyDoc* property_doc, const v8::Local<v8::Object>& object)
         {
             set_field(isolate, context, object, "name", property_name);
             set_field(isolate, context, object, "type", getset_info.type);
             set_field(isolate, context, object, "index", getset_info.index);
             set_field(isolate, context, object, "setter", getset_info.setter);
             set_field(isolate, context, object, "getter", getset_info.getter);
+            set_field(isolate, context, object, "description", property_doc ? property_doc->description : "");
         }
 
         void build_constructor_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const FConstructorInfo& constructor_info, const v8::Local<v8::Object>& object)
@@ -189,7 +192,7 @@ namespace jsb
             set_field(isolate, context, object, "arguments", args_obj);
         }
 
-        void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, MethodBind const* method_bind, const v8::Local<v8::Object>& object)
+        void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, MethodBind const* method_bind, const DocData::MethodDoc* method_doc, const v8::Local<v8::Object>& object)
         {
             set_field(isolate, context, object, "id", method_bind->get_method_id());
             set_field(isolate, context, object, "name", method_bind->get_name());
@@ -199,6 +202,7 @@ namespace jsb
             set_field(isolate, context, object, "is_vararg", method_bind->is_vararg());
             // set_field(isolate, context, object, "has_return", method_bind->has_return());
             set_field(isolate, context, object, "argument_count", method_bind->get_argument_count());
+            set_field(isolate, context, object, "description", method_doc ? method_doc->description : "");
 
             if (method_bind->has_return())
             {
@@ -311,15 +315,44 @@ namespace jsb
             // set_field(isolate, context, object, "arguments", method_info.arguments);
         }
 
+        const DocData::PropertyDoc* find_property_doc(const DocData::ClassDoc* class_doc, const StringName& expected_name)
+        {
+            if (class_doc)
+            {
+                for (const DocData::PropertyDoc& it : class_doc->properties)
+                {
+                    if (it.name == expected_name) return &it;
+                }
+            }
+            return nullptr;
+        }
+
+        const DocData::MethodDoc* find_method_doc(const DocData::ClassDoc* class_doc, const StringName& expected_name)
+        {
+            if (class_doc)
+            {
+                for (const DocData::MethodDoc& it : class_doc->methods)
+                {
+                    if (it.name == expected_name) return &it;
+                }
+            }
+            return nullptr;
+        }
+
         v8::Local<v8::Object> build_class_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& class_name)
         {
             v8::Local<v8::Object> class_info_obj = v8::Object::New(isolate);
             const HashMap<StringName, ClassDB::ClassInfo>::Iterator class_it = ClassDB::classes.find(class_name);
+            const DocTools* doc_tools = EditorHelp::get_doc_data();
+            jsb_check(doc_tools);
+            const DocData::ClassDoc* class_doc = doc_tools->class_list.getptr(class_name);
 
             jsb_check(class_it != ClassDB::classes.end());
             const ClassDB::ClassInfo& class_info = class_it->value;
             set_field(isolate, context, class_info_obj, "name", class_name);
             set_field(isolate, context, class_info_obj, "super", class_info.inherits);
+            set_field(isolate, context, class_info_obj, "brief_description", class_doc ? class_doc->brief_description : "");
+            // set_field(isolate, context, class_info_obj, "description", class_doc ? class_doc->description : "");
 
             // HashSet<StringName> omitted_methods;
             // class: properties
@@ -333,6 +366,7 @@ namespace jsb
                 {
                     if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
 
+
                     const StringName& property_name = pair.key;
                     const ClassDB::PropertySetGet& getset_info = pair.value;
                     const PropertyInfo& property_info = class_info.property_map.get(property_name);
@@ -340,7 +374,7 @@ namespace jsb
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, getset_info_obj, "info", property_info_obj);
                     build_property_info(isolate, context, property_info, property_info_obj);
-                    build_property_info(isolate, context, property_name, getset_info, getset_info_obj);
+                    build_property_info(isolate, context, property_name, getset_info, find_property_doc(class_doc, property_name), getset_info_obj);
                     properties_obj->Set(context, index++, getset_info_obj).Check();
                     // if (internal::VariantUtil::is_valid(getset_info.getter)) omitted_methods.insert(getset_info.getter);
                     // if (internal::VariantUtil::is_valid(getset_info.setter)) omitted_methods.insert(getset_info.setter);
@@ -358,7 +392,7 @@ namespace jsb
                     // if (omitted_methods.has(pair.key)) continue;
                     MethodBind const * const method_bind = pair.value;
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
-                    build_method_info(isolate, context, method_bind, method_info_obj);
+                    build_method_info(isolate, context, method_bind, find_method_doc(class_doc, pair.key), method_info_obj);
                     methods_obj->Set(context, index++, method_info_obj).Check();
                 }
             }

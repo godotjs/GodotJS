@@ -18,7 +18,7 @@ interface CodeWriter {
 
     enum_(name: string): EnumWriter;
     namespace_(name: string): NamespaceWriter;
-    class_(name: string, super_: string, singleton_mode: boolean): ClassWriter;
+    class_(name: string, brief_description: string, super_: string, singleton_mode: boolean): ClassWriter;
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
 }
@@ -178,8 +178,8 @@ abstract class AbstractWriter implements ScopeWriter {
     namespace_(name: string): NamespaceWriter {
         return new NamespaceWriter(this, name)
     }
-    class_(name: string, super_: string, singleton_mode: boolean): ClassWriter {
-        return new ClassWriter(this, name, super_, singleton_mode);
+    class_(name: string, brief_description: string, super_: string, singleton_mode: boolean): ClassWriter {
+        return new ClassWriter(this, name, brief_description, super_, singleton_mode);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
     //     return new SingletonWriter(this, info);
@@ -253,29 +253,107 @@ class NamespaceWriter extends IndentWriter {
 
 class ClassWriter extends IndentWriter {
     protected _name: string;
+    protected _brief_description: string;
     protected _super: string;
     protected _singleton_mode: boolean;
 
-    constructor(base: ScopeWriter, name: string, super_: string, singleton_mode: boolean) {
+    constructor(base: ScopeWriter, name: string, brief_description: string, super_: string, singleton_mode: boolean) {
         super(base);
         this._name = name;
+        this._brief_description = brief_description;
         this._super = super_;
         this._singleton_mode = singleton_mode;
     }
+
     protected head() {
         if (typeof this._super !== "string" || this._super.length == 0) {
             return `class ${this._name}`
         }
         return `class ${this._name} extends ${this._super}`
     }
+
     protected make_method_prefix(method_info: jsb.editor.MethodBind): string {
         return this._singleton_mode || method_info.is_static ? "static " : "";
     }
+
+    protected get_leading_tab(text: string) {
+        let tab = "";
+        for (let i = 0; i < text.length; ++i) {
+            if (text.charAt(i) != "\t") {
+                break;
+            }
+            tab += "\t";
+        }
+        return tab;
+    }
+
+    protected trim_leading_tab(text: string, leading_tab: string) {
+        if (leading_tab.length != 0 && text.startsWith(leading_tab)) return text.substring(leading_tab.length);
+        return text;
+    }
+
+    protected is_empty_or_whitespace(text: string) {
+        for (let i = 0; i < text.length; ++i) {
+            let c = text.charCodeAt(i);
+            if (c != 32 && c != 9) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //TODO replace elements with more readable formats
+    protected replace_doc_block_expression(text: string) {
+        return text;
+    }
+
+    // get rid of all `codeblocks` since the `codeblocks` elements are too long to read
+    protected get_simplified_description(text: string): string {
+        text = this.remove_markup_content(text, 0, "[codeblocks]", "[/codeblocks]");
+        text = this.remove_markup_content(text, 0, "[codeblock]", "[/codeblock]");
+        return text;
+    }
+
+    protected remove_markup_content(text: string, from_pos: number, markup_begin: string, markup_end: string): string {
+        let start = text.indexOf(markup_begin, from_pos);
+        if (start >= 0) {
+            let end = text.indexOf(markup_end, from_pos);
+            if (end >= 0) {
+                return this.remove_markup_content(text.substring(0, start) + text.substring(end + markup_end.length), start, markup_begin, markup_end);
+            }
+        }
+        return text;
+    }
+
+    protected doc_comment_(text?: string, writer?: CodeWriter) {
+        if (typeof text !== "string" || text.length == 0) return;
+        if (typeof writer === "undefined") writer = this;
+        let lines = this.replace_doc_block_expression(this.get_simplified_description(text).replace("\r\n", "\n")).split("\n");
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[0])) lines.splice(0, 1);
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1])) lines.splice(lines.length - 1, 1);
+        if (lines.length == 0) return;
+        let leading_tab = this.get_leading_tab(lines[0]);
+        lines = lines.map(value => this.trim_leading_tab(value, leading_tab));
+        if (lines.length == 1) {
+            return writer.line(`/** ${lines[0]} */`);
+        }
+        for (let i = 0; i < lines.length; ++i) {
+            if (i == 0) {
+                writer.line(`/** ${lines[i]}`);
+            } else {
+                writer.line(` *  ${lines[i]}`);
+            }
+        }
+        writer.line(` */`);
+    }
+
     finish() {
+        this.doc_comment_(this._brief_description, this._base);
         this._base.line(`${this.head()} {`)
         super.finish()
         this._base.line('}')
     }
+
     primitive_constant_(constant: jsb.editor.PrimitiveConstantInfo) {
         if (typeof constant.value !== "undefined") {
             this.line(`static readonly ${constant.name} = ${constant.value}`);
@@ -284,9 +362,11 @@ class ClassWriter extends IndentWriter {
             this.line(`static readonly ${constant.name}: ${type_name}`);
         }
     }
+
     constant_(constant: jsb.editor.ConstantInfo) {
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
+
     private make_classname(class_name: string): string {
         const remap_name: string | undefined = RemapTypes[class_name];
         if (typeof remap_name !== "undefined") {
@@ -321,6 +401,7 @@ class ClassWriter extends IndentWriter {
             return `any /*${class_name}*/`;
         }
     }
+
     private make_typename(info: jsb.editor.PropertyInfo): string {
         if (info.hint == PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
@@ -335,9 +416,11 @@ class ClassWriter extends IndentWriter {
         }
         return this.make_classname(info.class_name);
     }
+
     private make_arg(info: jsb.editor.PropertyInfo): string {
         return `${replace(info.name)}: ${this.make_typename(info)}`
     }
+
     private make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
         // plain types
         switch (value.type) {
@@ -375,12 +458,14 @@ class ClassWriter extends IndentWriter {
         //TODO value sig for compound types
         return `<any> {} /*compound.type from ${value.type}(${value.value})*/`;
     }
+
     private make_arg_default_value(method_info: jsb.editor.MethodBind, index: number): string {
         const default_arguments = method_info.default_arguments || [];
         const def_index = index - (method_info.args_.length - default_arguments.length);
         if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index]);
         return this.make_arg(method_info.args_[index]) + " = " + this.make_literal_value(default_arguments[def_index]);
     }
+
     private make_args(method_info: jsb.editor.MethodBind): string {
         //TODO consider default arguments
         const varargs = "...vargargs: any[]";
@@ -394,6 +479,7 @@ class ClassWriter extends IndentWriter {
         }
         return args;
     }
+
     private make_return(method_info: jsb.editor.MethodBind): string {
         //TODO
         if (typeof method_info.return_ != "undefined") {
@@ -401,6 +487,7 @@ class ClassWriter extends IndentWriter {
         }
         return "void"
     }
+
     property_(getset_info: jsb.editor.PropertySetGetInfo) {
         // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
         if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
@@ -408,6 +495,7 @@ class ClassWriter extends IndentWriter {
         }
         const type_name = this.make_typename(getset_info.info);
         console.assert(getset_info.getter.length != 0);
+        this.doc_comment_(getset_info.description);
         if (getset_info.setter.length == 0) {
             this.line(`readonly ${getset_info.name}: ${type_name}`);
         } else {
@@ -435,6 +523,7 @@ class ClassWriter extends IndentWriter {
         this.method_(method_info, "");
     }
     method_(method_info: jsb.editor.MethodBind, category: string) {
+        this.doc_comment_(method_info.description);
         // some godot methods declared with special characters
         if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
             const args = this.make_args(method_info)
@@ -621,7 +710,9 @@ export default class TSDCodeGen {
         }
         const len = this._splitter.get_size();
         const lineno = this._splitter.get_lineno();
-        if (len > 1024 * 900 || lineno > 12000) {
+
+        // limit size and length of the generated file for better readability and being more friendly to the VSCode TS server and diff tools
+        if (len > 1024 * 900 || lineno > 9200) {
             return this.new_splitter().get_writer();
         }
         return this._splitter.get_writer();
@@ -720,7 +811,7 @@ export default class TSDCodeGen {
         }
         class_ns_cg.finish();
 
-        const class_cg = cg.class_(cls.name, "", false);
+        const class_cg = cg.class_(cls.name, "", "", false);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -760,7 +851,7 @@ export default class TSDCodeGen {
             }
             class_ns_cg.finish();
 
-            const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super! : "", singleton_mode);
+            const class_cg = cg.class_(cls.name, cls.brief_description, this.has_class(cls.super) ? cls.super! : "", singleton_mode);
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {

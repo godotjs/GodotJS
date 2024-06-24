@@ -71,23 +71,13 @@ declare module "godot-jsb" {
             value: any;
         }
 
-        interface MethodInfo {
-            id: number;
-            name: string;
-            hint_flags: MethodFlags;
-            is_static: boolean;
-            is_const: boolean;
-            is_vararg: boolean;
-            argument_count: number; /** int32_t */
-
-            args_: Array<PropertyInfo>;
-            default_arguments?: Array<DefaultArgumentInfo>;
-            return_: PropertyInfo | undefined;
-        }
-
+        // we treat godot MethodInfo/MethodBind as the same thing here for simplicity
+        //NOTE some fields will not be set if it's actually a MethodInfo struct
         interface MethodBind {
             id: number;
             name: string;
+            description: string;
+            
             hint_flags: MethodFlags;
             is_static: boolean;
             is_const: boolean;
@@ -110,6 +100,8 @@ declare module "godot-jsb" {
 
         interface PropertySetGetInfo {
             name: string;
+            description: string;
+
             type: Variant.Type;
             index: number;
             setter: string;
@@ -157,8 +149,11 @@ declare module "godot-jsb" {
         interface ClassInfo extends BasicClassInfo {
             super: string;
 
+            brief_description: string;
+            description: string;
+
             properties: Array<PropertySetGetInfo>;
-            virtual_methods: Array<MethodInfo>;
+            virtual_methods: Array<MethodBind>;
             signals: Array<SignalInfo>;
             constants?: Array<ConstantInfo>;
         }
@@ -196,7 +191,7 @@ declare module "godot-jsb" {
         function get_global_constants(): Array<GlobalConstantInfo>;
 
         // SO FAR, NOT USED
-        function get_utility_functions(): Array<MethodInfo>;
+        function get_utility_functions(): Array<MethodBind>;
 
         function delete_file(filepath: string): void;
     }

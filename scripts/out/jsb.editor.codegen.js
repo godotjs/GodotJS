@@ -167,8 +167,8 @@ class AbstractWriter {
     namespace_(name) {
         return new NamespaceWriter(this, name);
     }
-    class_(name, super_, singleton_mode) {
-        return new ClassWriter(this, name, super_, singleton_mode);
+    class_(name, brief_description, super_, singleton_mode) {
+        return new ClassWriter(this, name, brief_description, super_, singleton_mode);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
     //     return new SingletonWriter(this, info);
@@ -224,9 +224,10 @@ class NamespaceWriter extends IndentWriter {
     }
 }
 class ClassWriter extends IndentWriter {
-    constructor(base, name, super_, singleton_mode) {
+    constructor(base, name, brief_description, super_, singleton_mode) {
         super(base);
         this._name = name;
+        this._brief_description = brief_description;
         this._super = super_;
         this._singleton_mode = singleton_mode;
     }
@@ -239,7 +240,79 @@ class ClassWriter extends IndentWriter {
     make_method_prefix(method_info) {
         return this._singleton_mode || method_info.is_static ? "static " : "";
     }
+    get_leading_tab(text) {
+        let tab = "";
+        for (let i = 0; i < text.length; ++i) {
+            if (text.charAt(i) != "\t") {
+                break;
+            }
+            tab += "\t";
+        }
+        return tab;
+    }
+    trim_leading_tab(text, leading_tab) {
+        if (leading_tab.length != 0 && text.startsWith(leading_tab))
+            return text.substring(leading_tab.length);
+        return text;
+    }
+    is_empty_or_whitespace(text) {
+        for (let i = 0; i < text.length; ++i) {
+            let c = text.charCodeAt(i);
+            if (c != 32 && c != 9) {
+                return false;
+            }
+        }
+        return true;
+    }
+    //TODO replace elements with more readable formats
+    replace_doc_block_expression(text) {
+        return text;
+    }
+    // get rid of all `codeblocks` since the `codeblocks` elements are too long to read
+    get_simplified_description(text) {
+        text = this.remove_markup_content(text, 0, "[codeblocks]", "[/codeblocks]");
+        text = this.remove_markup_content(text, 0, "[codeblock]", "[/codeblock]");
+        return text;
+    }
+    remove_markup_content(text, from_pos, markup_begin, markup_end) {
+        let start = text.indexOf(markup_begin, from_pos);
+        if (start >= 0) {
+            let end = text.indexOf(markup_end, from_pos);
+            if (end >= 0) {
+                return this.remove_markup_content(text.substring(0, start) + text.substring(end + markup_end.length), start, markup_begin, markup_end);
+            }
+        }
+        return text;
+    }
+    doc_comment_(text, writer) {
+        if (typeof text !== "string" || text.length == 0)
+            return;
+        if (typeof writer === "undefined")
+            writer = this;
+        let lines = this.replace_doc_block_expression(this.get_simplified_description(text).replace("\r\n", "\n")).split("\n");
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[0]))
+            lines.splice(0, 1);
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1]))
+            lines.splice(lines.length - 1, 1);
+        if (lines.length == 0)
+            return;
+        let leading_tab = this.get_leading_tab(lines[0]);
+        lines = lines.map(value => this.trim_leading_tab(value, leading_tab));
+        if (lines.length == 1) {
+            return writer.line(`/** ${lines[0]} */`);
+        }
+        for (let i = 0; i < lines.length; ++i) {
+            if (i == 0) {
+                writer.line(`/** ${lines[i]}`);
+            }
+            else {
+                writer.line(` *  ${lines[i]}`);
+            }
+        }
+        writer.line(` */`);
+    }
     finish() {
+        this.doc_comment_(this._brief_description, this._base);
         this._base.line(`${this.head()} {`);
         super.finish();
         this._base.line('}');
@@ -386,6 +459,7 @@ class ClassWriter extends IndentWriter {
         }
         const type_name = this.make_typename(getset_info.info);
         console.assert(getset_info.getter.length != 0);
+        this.doc_comment_(getset_info.description);
         if (getset_info.setter.length == 0) {
             this.line(`readonly ${getset_info.name}: ${type_name}`);
         }
@@ -407,19 +481,26 @@ class ClassWriter extends IndentWriter {
         const right_type_name = PrimitiveTypeNames[operator_info.right_type];
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
-    method_(method_info) {
+    virtual_method_(method_info) {
+        this.method_(method_info, "/* gdvirtual */ ");
+    }
+    ordinary_method_(method_info) {
+        this.method_(method_info, "");
+    }
+    method_(method_info, category) {
+        this.doc_comment_(method_info.description);
         // some godot methods declared with special characters
         if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
             const args = this.make_args(method_info);
             const rval = this.make_return(method_info);
             const prefix = this.make_method_prefix(method_info);
-            this.line(`${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
+            this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
             return;
         }
         const args = this.make_args(method_info);
         const rval = this.make_return(method_info);
         const prefix = this.make_method_prefix(method_info);
-        this.line(`${prefix}${method_info.name}(${args}): ${rval}`);
+        this.line(`${category}${prefix}${method_info.name}(${args}): ${rval}`);
     }
     // function_(method_info: jsb.editor.MethodInfo) {
     //     const args = this.make_args(method_info)
@@ -565,7 +646,8 @@ class TSDCodeGen {
         }
         const len = this._splitter.get_size();
         const lineno = this._splitter.get_lineno();
-        if (len > 1024 * 900 || lineno > 12000) {
+        // limit size and length of the generated file for better readability and being more friendly to the VSCode TS server and diff tools
+        if (len > 1024 * 900 || lineno > 9200) {
             return this.new_splitter().get_writer();
         }
         return this._splitter.get_writer();
@@ -655,7 +737,7 @@ class TSDCodeGen {
             }
         }
         class_ns_cg.finish();
-        const class_cg = cg.class_(cls.name, "", false);
+        const class_cg = cg.class_(cls.name, "", "", false);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -667,7 +749,7 @@ class TSDCodeGen {
             class_cg.constructor_(constructor_info);
         }
         for (let method_info of cls.methods) {
-            class_cg.method_(method_info);
+            class_cg.ordinary_method_(method_info);
         }
         for (let operator_info of cls.operators) {
             class_cg.operator_(operator_info);
@@ -693,7 +775,7 @@ class TSDCodeGen {
                 }
             }
             class_ns_cg.finish();
-            const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super : "", singleton_mode);
+            const class_cg = cg.class_(cls.name, cls.brief_description, this.has_class(cls.super) ? cls.super : "", singleton_mode);
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {
@@ -701,11 +783,11 @@ class TSDCodeGen {
                     }
                 }
             }
-            if (cls.name == "Object") {
-                class_cg.line(`free(): void`);
+            for (let method_info of cls.virtual_methods) {
+                class_cg.virtual_method_(method_info);
             }
             for (let method_info of cls.methods) {
-                class_cg.method_(method_info);
+                class_cg.ordinary_method_(method_info);
             }
             for (let property_info of cls.properties) {
                 class_cg.property_(property_info);
