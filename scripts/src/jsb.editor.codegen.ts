@@ -17,13 +17,15 @@ interface CodeWriter {
     line(text: string): void;
 
     enum_(name: string): EnumWriter;
-    namespace_(name: string): NamespaceWriter;
-    class_(name: string, brief_description: string, super_: string, singleton_mode: boolean): ClassWriter;
+    namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter;
+    class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter;
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
 }
 
 interface ScopeWriter extends CodeWriter {
+    get class_doc(): jsb.editor.ClassDoc | undefined;
+
     finish(): void;
 }
 
@@ -102,6 +104,7 @@ const PrimitiveTypeNames : { [type: number]: string } = {
     [Variant.Type.TYPE_PACKED_COLOR_ARRAY]: "PackedColorArray",
 }
 const RemapTypes: { [name: string]: string } = {
+    ["bool"]: "bool",
     ["Error"]: "GodotError",
 }
 const IgnoredTypes = new Set([
@@ -164,6 +167,7 @@ abstract class AbstractWriter implements ScopeWriter {
     abstract get lineno(): number;
     abstract finish(): void;
     abstract get types(): TypeDB;
+    get class_doc(): jsb.editor.ClassDoc | undefined { return undefined; }
 
     constructor() { }
 
@@ -171,15 +175,15 @@ abstract class AbstractWriter implements ScopeWriter {
         if (name.indexOf('.') >= 0) {
             let layers = name.split('.');
             name = layers.splice(layers.length - 1)[0];
-            return new EnumWriter(this.namespace_(layers.join(".")), name).auto();
+            return new EnumWriter(this.namespace_(layers.join("."), this.class_doc), name).auto();
         }
         return new EnumWriter(this, name);
     }
-    namespace_(name: string): NamespaceWriter {
-        return new NamespaceWriter(this, name)
+    namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter {
+        return new NamespaceWriter(this, name, class_doc)
     }
-    class_(name: string, brief_description: string, super_: string, singleton_mode: boolean): ClassWriter {
-        return new ClassWriter(this, name, brief_description, super_, singleton_mode);
+    class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter {
+        return new ClassWriter(this, name, super_, singleton_mode, class_doc);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
     //     return new SingletonWriter(this, info);
@@ -190,6 +194,91 @@ abstract class AbstractWriter implements ScopeWriter {
 }
 
 const tab = "    ";
+
+class DocCommentHelper {
+    static get_leading_tab(text: string) {
+        let tab = "";
+        for (let i = 0; i < text.length; ++i) {
+            if (text.charAt(i) != "\t") {
+                break;
+            }
+            tab += "\t";
+        }
+        return tab;
+    }
+
+    static trim_leading_tab(text: string, leading_tab: string) {
+        if (leading_tab.length != 0 && text.startsWith(leading_tab)) return text.substring(leading_tab.length);
+        return text;
+    }
+
+    static is_empty_or_whitespace(text: string) {
+        for (let i = 0; i < text.length; ++i) {
+            let c = text.charCodeAt(i);
+            if (c != 32 && c != 9) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // get rid of all `codeblocks` since the `codeblocks` elements are too long to read
+    static get_simplified_description(text: string): string {
+        text = this.remove_markup_content(text, 0, "[codeblocks]", "[/codeblocks]");
+        text = this.remove_markup_content(text, 0, "[codeblock]", "[/codeblock]");
+        text = this.replace_markup_content(text, 0, "[code]", "`");
+        text = this.replace_markup_content(text, 0, "[/code]", "`");
+        text = this.replace_markup_content(text, 0, "[b]Note:[/b]", "  \n**Note:**");
+        text = this.replace_markup_content(text, 0, "[b]", "**");
+        text = this.replace_markup_content(text, 0, "[/b]", "**");
+        return text;
+    }
+
+    static replace_markup_content(text: string, from_pos: number, markup: string, rep: string): string {
+        let index = text.indexOf(markup, from_pos);
+        if (index >= 0) {
+            return this.replace_markup_content(text.substring(0, index) + rep + text.substring(index + markup.length), index + rep.length, markup, rep);
+        }
+        return text;
+    }
+
+    static remove_markup_content(text: string, from_pos: number, markup_begin: string, markup_end: string): string {
+        let start = text.indexOf(markup_begin, from_pos);
+        if (start >= 0) {
+            let end = text.indexOf(markup_end, from_pos);
+            if (end >= 0) {
+                return this.remove_markup_content(text.substring(0, start) + text.substring(end + markup_end.length), start, markup_begin, markup_end);
+            }
+        }
+        return text;
+    }
+
+    static write(writer: CodeWriter, text: string | undefined, newline: boolean): boolean {
+        if (typeof text !== "string" || text.length == 0) return false;
+        let lines = this.get_simplified_description(text).replace("\r\n", "\n").split("\n");
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[0])) lines.splice(0, 1);
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1])) lines.splice(lines.length - 1, 1);
+        if (lines.length == 0) return false;
+        let leading_tab = this.get_leading_tab(lines[0]);
+        lines = lines.map(value => this.trim_leading_tab(value, leading_tab));
+        if (newline) writer.line("");
+        if (lines.length == 1) {
+            writer.line(`/** ${lines[0]} */`);
+            return true;
+        }
+        for (let i = 0; i < lines.length; ++i) {
+            // additional tailing whitespaces for better text format rendered
+            if (i == 0) {
+                writer.line(`/** ${lines[i]}  `); 
+            } else {
+                writer.line(` *  ${lines[i]}  `);
+            }
+        }
+        writer.line(` */`);
+        return true;
+    }
+
+}
 
 class IndentWriter extends AbstractWriter {
     protected _base: ScopeWriter;
@@ -235,10 +324,14 @@ class ModuleWriter extends IndentWriter {
 
 class NamespaceWriter extends IndentWriter {
     protected _name: string;
+    protected _doc?: jsb.editor.ClassDoc;
 
-    constructor(base: ScopeWriter, name: string) {
+    get class_doc() { return this._doc; }
+
+    constructor(base: ScopeWriter, name: string, class_doc?: jsb.editor.ClassDoc) {
         super(base);
         this._name = name;
+        this._doc = class_doc;
     }
 
     finish() {
@@ -253,16 +346,19 @@ class NamespaceWriter extends IndentWriter {
 
 class ClassWriter extends IndentWriter {
     protected _name: string;
-    protected _brief_description: string;
     protected _super: string;
     protected _singleton_mode: boolean;
+    protected _doc?: jsb.editor.ClassDoc;
+    protected _separator_line = false;
 
-    constructor(base: ScopeWriter, name: string, brief_description: string, super_: string, singleton_mode: boolean) {
+    get class_doc(): jsb.editor.ClassDoc | undefined { return this._doc; }
+
+    constructor(base: ScopeWriter, name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc) {
         super(base);
         this._name = name;
-        this._brief_description = brief_description;
         this._super = super_;
         this._singleton_mode = singleton_mode;
+        this._doc = class_doc;
     }
 
     protected head() {
@@ -276,85 +372,16 @@ class ClassWriter extends IndentWriter {
         return this._singleton_mode || method_info.is_static ? "static " : "";
     }
 
-    protected get_leading_tab(text: string) {
-        let tab = "";
-        for (let i = 0; i < text.length; ++i) {
-            if (text.charAt(i) != "\t") {
-                break;
-            }
-            tab += "\t";
-        }
-        return tab;
-    }
-
-    protected trim_leading_tab(text: string, leading_tab: string) {
-        if (leading_tab.length != 0 && text.startsWith(leading_tab)) return text.substring(leading_tab.length);
-        return text;
-    }
-
-    protected is_empty_or_whitespace(text: string) {
-        for (let i = 0; i < text.length; ++i) {
-            let c = text.charCodeAt(i);
-            if (c != 32 && c != 9) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    //TODO replace elements with more readable formats
-    protected replace_doc_block_expression(text: string) {
-        return text;
-    }
-
-    // get rid of all `codeblocks` since the `codeblocks` elements are too long to read
-    protected get_simplified_description(text: string): string {
-        text = this.remove_markup_content(text, 0, "[codeblocks]", "[/codeblocks]");
-        text = this.remove_markup_content(text, 0, "[codeblock]", "[/codeblock]");
-        return text;
-    }
-
-    protected remove_markup_content(text: string, from_pos: number, markup_begin: string, markup_end: string): string {
-        let start = text.indexOf(markup_begin, from_pos);
-        if (start >= 0) {
-            let end = text.indexOf(markup_end, from_pos);
-            if (end >= 0) {
-                return this.remove_markup_content(text.substring(0, start) + text.substring(end + markup_end.length), start, markup_begin, markup_end);
-            }
-        }
-        return text;
-    }
-
-    protected doc_comment_(text?: string, writer?: CodeWriter) {
-        if (typeof text !== "string" || text.length == 0) return;
-        if (typeof writer === "undefined") writer = this;
-        let lines = this.replace_doc_block_expression(this.get_simplified_description(text).replace("\r\n", "\n")).split("\n");
-        if (lines.length > 0 && this.is_empty_or_whitespace(lines[0])) lines.splice(0, 1);
-        if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1])) lines.splice(lines.length - 1, 1);
-        if (lines.length == 0) return;
-        let leading_tab = this.get_leading_tab(lines[0]);
-        lines = lines.map(value => this.trim_leading_tab(value, leading_tab));
-        if (lines.length == 1) {
-            return writer.line(`/** ${lines[0]} */`);
-        }
-        for (let i = 0; i < lines.length; ++i) {
-            if (i == 0) {
-                writer.line(`/** ${lines[i]}`);
-            } else {
-                writer.line(` *  ${lines[i]}`);
-            }
-        }
-        writer.line(` */`);
-    }
-
     finish() {
-        this.doc_comment_(this._brief_description, this._base);
+        DocCommentHelper.write(this._base, this._doc?.brief_description, false);
         this._base.line(`${this.head()} {`)
         super.finish()
         this._base.line('}')
     }
 
     primitive_constant_(constant: jsb.editor.PrimitiveConstantInfo) {
+        DocCommentHelper.write(this, this._doc?.constants[constant.name]?.description, this._separator_line);
+        this._separator_line = true;
         if (typeof constant.value !== "undefined") {
             this.line(`static readonly ${constant.name} = ${constant.value}`);
         } else {
@@ -364,6 +391,8 @@ class ClassWriter extends IndentWriter {
     }
 
     constant_(constant: jsb.editor.ConstantInfo) {
+        DocCommentHelper.write(this, this._doc?.constants[constant.name]?.description, this._separator_line);
+        this._separator_line = true;
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
 
@@ -407,6 +436,8 @@ class ClassWriter extends IndentWriter {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
             return info.hint_string.split(",").map(class_name => this.make_classname(class_name)).join(" | ")
         }
+
+        //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
         if (info.class_name.length == 0) {
             const primitive_name = PrimitiveTypeNames[info.type];
             if (typeof primitive_name !== "undefined") {
@@ -414,6 +445,7 @@ class ClassWriter extends IndentWriter {
             }
             return `any /*unhandled: ${info.type}*/`;
         }
+        
         return this.make_classname(info.class_name);
     }
 
@@ -494,69 +526,79 @@ class ClassWriter extends IndentWriter {
             return;
         }
         const type_name = this.make_typename(getset_info.info);
-        console.assert(getset_info.getter.length != 0);
-        this.doc_comment_(getset_info.description);
+        console.assert(getset_info.getter.length != 0);        
+        DocCommentHelper.write(this, this._doc?.properties[getset_info.name]?.description, this._separator_line);
+        this._separator_line = true;
         if (getset_info.setter.length == 0) {
             this.line(`readonly ${getset_info.name}: ${type_name}`);
         } else {
             this.line(`${getset_info.name}: ${type_name}`);
         }
     }
+
     primitive_property_(property_info: jsb.editor.PrimitiveGetSetInfo) {
+        this._separator_line = true;
         const type_name = PrimitiveTypeNames[property_info.type];
         this.line(`${property_info.name}: ${type_name}`);
     }
+
     constructor_(constructor_info: jsb.editor.ConstructorInfo) {
+        this._separator_line = true;
         const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
         this.line(`constructor(${args})`);
     }
+
     operator_(operator_info: jsb.editor.OperatorInfo) {
+        this._separator_line = true;
         const return_type_name = PrimitiveTypeNames[operator_info.return_type];
         const left_type_name = PrimitiveTypeNames[operator_info.left_type];
         const right_type_name = PrimitiveTypeNames[operator_info.right_type];
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
+
     virtual_method_(method_info: jsb.editor.MethodBind) {
         this.method_(method_info, "/* gdvirtual */ ");
     }
+
     ordinary_method_(method_info: jsb.editor.MethodBind) {
         this.method_(method_info, "");
     }
+
     method_(method_info: jsb.editor.MethodBind, category: string) {
-        this.doc_comment_(method_info.description);
-        // some godot methods declared with special characters
+        DocCommentHelper.write(this, this._doc?.methods[method_info.name]?.description, this._separator_line);
+        this._separator_line = true;
+        const args = this.make_args(method_info);
+        const rval = this.make_return(method_info);
+        const prefix = this.make_method_prefix(method_info);
+
+        // some godot methods declared with special characters which can not be declared literally
         if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
-            const args = this.make_args(method_info)
-            const rval = this.make_return(method_info)
-            const prefix = this.make_method_prefix(method_info);
             this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
             return;
         }
-        const args = this.make_args(method_info)
-        const rval = this.make_return(method_info)
-        const prefix = this.make_method_prefix(method_info);
         this.line(`${category}${prefix}${method_info.name}(${args}): ${rval}`);
     }
-    // function_(method_info: jsb.editor.MethodInfo) {
-    //     const args = this.make_args(method_info)
-    //     const rval = this.make_return(method_info)
-    //     this.line(`function ${method_info.name}(${args}): ${rval}`);
-    // }
+
     signal_(signal_info: jsb.editor.SignalInfo) {
+        DocCommentHelper.write(this, this._doc?.signals[signal_info.name]?.description, this._separator_line);
+        this._separator_line = true;
+        
+        const args = this.make_args(signal_info.method_);
+        const rval = this.make_return(signal_info.method_);
+        const sig = `// ${args} => ${rval}`;
+
         if (this._singleton_mode) {
-            this.line(`static readonly ${signal_info.name}: Signal`);
+            this.line(`static readonly ${signal_info.name}: Signal ${sig}`);
         } else {
-            this.line(`readonly ${signal_info.name}: Signal`);
+            this.line(`readonly ${signal_info.name}: Signal ${sig}`);
         }
-        // this.line(`${signal_info.name}(op: jsb.SignalOp.Connect | jsb.SignalOp.Disconnect, callable: Callable): void`);
-        // this.line(`${signal_info.name}(op: jsb.SignalOp.IsConnected, callable: Callable): boolean`);
-        // this.line(`${signal_info.name}(op: jsb.SignalOp.Emit, ...args: any[]): GodotError`);
     }
 }
 
 class EnumWriter extends IndentWriter {
     protected _name: string;
     protected _auto = false;
+    protected _separator_line = false;
 
     constructor(base: ScopeWriter, name: string) {
         super(base);
@@ -571,6 +613,7 @@ class EnumWriter extends IndentWriter {
         this._auto = true;
         return this;
     }
+
     finish() {
         if (this._lines.length != 0) {
             this._base.line(`enum ${this._name} {`);
@@ -583,7 +626,9 @@ class EnumWriter extends IndentWriter {
     }
 
     element_(name: string, value: number) {
-        this.line(`${name} = ${value},`)
+        DocCommentHelper.write(this, this._base.class_doc?.constants[name]?.description, this._separator_line);
+        this._separator_line = true;
+        this.line(`${name} = ${value},`);
     }
 }
 
@@ -616,7 +661,7 @@ class FileWriter extends AbstractWriter {
 
 class FileSplitter {
     private _file: FileAccess;
-    private _toplevel: ScopeWriter;
+    private _toplevel: ModuleWriter;
     private _types: TypeDB;
 
     constructor(types: TypeDB, filePath: string) {
@@ -704,7 +749,7 @@ export default class TSDCodeGen {
     }
 
     // the returned writer will be `finished` automatically
-    private split(): CodeWriter {
+    private split(): ModuleWriter {
         if (this._splitter == undefined) {
             return this.new_splitter().get_writer();
         }
@@ -796,22 +841,23 @@ export default class TSDCodeGen {
     }
 
     private emit_godot_primitive(cg: CodeWriter, cls: jsb.editor.PrimitiveClassInfo) {
+        const class_doc = jsb.editor.get_class_doc(cls.name);
         const ignored_consts: Set<string> = new Set();
-        const class_ns_cg = cg.namespace_(cls.name);
+        const class_ns_cg = cg.namespace_(cls.name, class_doc);
         if (cls.enums) {
             for (let enum_info of cls.enums) {
                 const enum_cg = class_ns_cg.enum_(enum_info.name);
-                for (let name of enum_info.literals) {
-                    const value = cls.constants!.find(v => v.name == name)!.value;
-                    enum_cg.element_(name, value)
-                    ignored_consts.add(name);
+                for (let enumeration_name of enum_info.literals) {
+                    const value = cls.constants!.find(v => v.name == enumeration_name)!.value;
+                    enum_cg.element_(enumeration_name, value);
+                    ignored_consts.add(enumeration_name);
                 }
                 enum_cg.finish();
             }
         }
         class_ns_cg.finish();
 
-        const class_cg = cg.class_(cls.name, "", "", false);
+        const class_cg = cg.class_(cls.name, "", false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -836,22 +882,23 @@ export default class TSDCodeGen {
 
     private emit_godot_class(cg: CodeWriter, cls: jsb.editor.ClassInfo, singleton_mode: boolean) {
         try {
+            const class_doc = jsb.editor.get_class_doc(cls.name);
             const ignored_consts: Set<string> = new Set();
-            const class_ns_cg = cg.namespace_(cls.name);
+            const class_ns_cg = cg.namespace_(cls.name, class_doc);
             if (cls.enums) {
                 for (let enum_info of cls.enums) {
                     const enum_cg = class_ns_cg.enum_(enum_info.name);
-                    for (let name of enum_info.literals) {
-                        const value = cls.constants!.find(v => v.name == name)!.value;
-                        enum_cg.element_(name, value)
-                        ignored_consts.add(name);
+                    for (let enumeration_name of enum_info.literals) {
+                        const value = cls.constants!.find(v => v.name == enumeration_name)!.value;
+                        enum_cg.element_(enumeration_name, value)
+                        ignored_consts.add(enumeration_name);
                     }
                     enum_cg.finish();
                 }
             }
             class_ns_cg.finish();
 
-            const class_cg = cg.class_(cls.name, cls.brief_description, this.has_class(cls.super) ? cls.super! : "", singleton_mode);
+            const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super! : "", singleton_mode, class_doc);
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {

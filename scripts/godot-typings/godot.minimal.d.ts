@@ -76,7 +76,6 @@ declare module "godot-jsb" {
         interface MethodBind {
             id: number;
             name: string;
-            description: string;
             
             hint_flags: MethodFlags;
             is_static: boolean;
@@ -100,7 +99,6 @@ declare module "godot-jsb" {
 
         interface PropertySetGetInfo {
             name: string;
-            description: string;
 
             type: Variant.Type;
             index: number;
@@ -116,12 +114,8 @@ declare module "godot-jsb" {
         }
 
         interface SignalInfo {
-            id: number;
             name: string;
-            name_: string;
-            flags: MethodFlags;
-            // return_val: FieldInfo;
-            // arguments: Array<FieldInfo>;
+            method_: MethodBind;
         }
 
         interface ArgumentInfo {
@@ -149,9 +143,6 @@ declare module "godot-jsb" {
         interface ClassInfo extends BasicClassInfo {
             super: string;
 
-            brief_description: string;
-            description: string;
-
             properties: Array<PropertySetGetInfo>;
             virtual_methods: Array<MethodBind>;
             signals: Array<SignalInfo>;
@@ -178,6 +169,17 @@ declare module "godot-jsb" {
             name: string;
             values: { [name: string]: number /** int64_t */ };
         }
+
+        interface ClassDoc {
+            brief_description: string;
+
+            constants: { [name: string]: { description: string } };
+            methods: { [name: string]: { description: string } };
+            properties: { [name: string]: { description: string } };
+            signals: { [name: string]: { description: string } };
+        }
+
+        function get_class_doc(class_name: string): ClassDoc | undefined;
 
         /**
          * get a list of all classes registered in ClassDB

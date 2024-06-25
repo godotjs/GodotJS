@@ -100,6 +100,7 @@ const PrimitiveTypeNames = {
     [godot_1.Variant.Type.TYPE_PACKED_COLOR_ARRAY]: "PackedColorArray",
 };
 const RemapTypes = {
+    ["bool"]: "bool",
     ["Error"]: "GodotError",
 };
 const IgnoredTypes = new Set([
@@ -155,20 +156,21 @@ function replace(name) {
     return typeof rep !== "undefined" ? rep : name;
 }
 class AbstractWriter {
+    get class_doc() { return undefined; }
     constructor() { }
     enum_(name) {
         if (name.indexOf('.') >= 0) {
             let layers = name.split('.');
             name = layers.splice(layers.length - 1)[0];
-            return new EnumWriter(this.namespace_(layers.join(".")), name).auto();
+            return new EnumWriter(this.namespace_(layers.join("."), this.class_doc), name).auto();
         }
         return new EnumWriter(this, name);
     }
-    namespace_(name) {
-        return new NamespaceWriter(this, name);
+    namespace_(name, class_doc) {
+        return new NamespaceWriter(this, name, class_doc);
     }
-    class_(name, brief_description, super_, singleton_mode) {
-        return new ClassWriter(this, name, brief_description, super_, singleton_mode);
+    class_(name, super_, singleton_mode, class_doc) {
+        return new ClassWriter(this, name, super_, singleton_mode, class_doc);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
     //     return new SingletonWriter(this, info);
@@ -178,6 +180,90 @@ class AbstractWriter {
     }
 }
 const tab = "    ";
+class DocCommentHelper {
+    static get_leading_tab(text) {
+        let tab = "";
+        for (let i = 0; i < text.length; ++i) {
+            if (text.charAt(i) != "\t") {
+                break;
+            }
+            tab += "\t";
+        }
+        return tab;
+    }
+    static trim_leading_tab(text, leading_tab) {
+        if (leading_tab.length != 0 && text.startsWith(leading_tab))
+            return text.substring(leading_tab.length);
+        return text;
+    }
+    static is_empty_or_whitespace(text) {
+        for (let i = 0; i < text.length; ++i) {
+            let c = text.charCodeAt(i);
+            if (c != 32 && c != 9) {
+                return false;
+            }
+        }
+        return true;
+    }
+    // get rid of all `codeblocks` since the `codeblocks` elements are too long to read
+    static get_simplified_description(text) {
+        text = this.remove_markup_content(text, 0, "[codeblocks]", "[/codeblocks]");
+        text = this.remove_markup_content(text, 0, "[codeblock]", "[/codeblock]");
+        text = this.replace_markup_content(text, 0, "[code]", "`");
+        text = this.replace_markup_content(text, 0, "[/code]", "`");
+        text = this.replace_markup_content(text, 0, "[b]Note:[/b]", "  \n**Note:**");
+        text = this.replace_markup_content(text, 0, "[b]", "**");
+        text = this.replace_markup_content(text, 0, "[/b]", "**");
+        return text;
+    }
+    static replace_markup_content(text, from_pos, markup, rep) {
+        let index = text.indexOf(markup, from_pos);
+        if (index >= 0) {
+            return this.replace_markup_content(text.substring(0, index) + rep + text.substring(index + markup.length), index + rep.length, markup, rep);
+        }
+        return text;
+    }
+    static remove_markup_content(text, from_pos, markup_begin, markup_end) {
+        let start = text.indexOf(markup_begin, from_pos);
+        if (start >= 0) {
+            let end = text.indexOf(markup_end, from_pos);
+            if (end >= 0) {
+                return this.remove_markup_content(text.substring(0, start) + text.substring(end + markup_end.length), start, markup_begin, markup_end);
+            }
+        }
+        return text;
+    }
+    static write(writer, text, newline) {
+        if (typeof text !== "string" || text.length == 0)
+            return false;
+        let lines = this.get_simplified_description(text).replace("\r\n", "\n").split("\n");
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[0]))
+            lines.splice(0, 1);
+        if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1]))
+            lines.splice(lines.length - 1, 1);
+        if (lines.length == 0)
+            return false;
+        let leading_tab = this.get_leading_tab(lines[0]);
+        lines = lines.map(value => this.trim_leading_tab(value, leading_tab));
+        if (newline)
+            writer.line("");
+        if (lines.length == 1) {
+            writer.line(`/** ${lines[0]} */`);
+            return true;
+        }
+        for (let i = 0; i < lines.length; ++i) {
+            // additional tailing whitespaces for better text format rendered
+            if (i == 0) {
+                writer.line(`/** ${lines[i]}  `);
+            }
+            else {
+                writer.line(` *  ${lines[i]}  `);
+            }
+        }
+        writer.line(` */`);
+        return true;
+    }
+}
 class IndentWriter extends AbstractWriter {
     constructor(base) {
         super();
@@ -210,9 +296,11 @@ class ModuleWriter extends IndentWriter {
     }
 }
 class NamespaceWriter extends IndentWriter {
-    constructor(base, name) {
+    get class_doc() { return this._doc; }
+    constructor(base, name, class_doc) {
         super(base);
         this._name = name;
+        this._doc = class_doc;
     }
     finish() {
         if (this._lines.length == 0) {
@@ -224,12 +312,14 @@ class NamespaceWriter extends IndentWriter {
     }
 }
 class ClassWriter extends IndentWriter {
-    constructor(base, name, brief_description, super_, singleton_mode) {
+    get class_doc() { return this._doc; }
+    constructor(base, name, super_, singleton_mode, class_doc) {
         super(base);
+        this._separator_line = false;
         this._name = name;
-        this._brief_description = brief_description;
         this._super = super_;
         this._singleton_mode = singleton_mode;
+        this._doc = class_doc;
     }
     head() {
         if (typeof this._super !== "string" || this._super.length == 0) {
@@ -240,84 +330,17 @@ class ClassWriter extends IndentWriter {
     make_method_prefix(method_info) {
         return this._singleton_mode || method_info.is_static ? "static " : "";
     }
-    get_leading_tab(text) {
-        let tab = "";
-        for (let i = 0; i < text.length; ++i) {
-            if (text.charAt(i) != "\t") {
-                break;
-            }
-            tab += "\t";
-        }
-        return tab;
-    }
-    trim_leading_tab(text, leading_tab) {
-        if (leading_tab.length != 0 && text.startsWith(leading_tab))
-            return text.substring(leading_tab.length);
-        return text;
-    }
-    is_empty_or_whitespace(text) {
-        for (let i = 0; i < text.length; ++i) {
-            let c = text.charCodeAt(i);
-            if (c != 32 && c != 9) {
-                return false;
-            }
-        }
-        return true;
-    }
-    //TODO replace elements with more readable formats
-    replace_doc_block_expression(text) {
-        return text;
-    }
-    // get rid of all `codeblocks` since the `codeblocks` elements are too long to read
-    get_simplified_description(text) {
-        text = this.remove_markup_content(text, 0, "[codeblocks]", "[/codeblocks]");
-        text = this.remove_markup_content(text, 0, "[codeblock]", "[/codeblock]");
-        return text;
-    }
-    remove_markup_content(text, from_pos, markup_begin, markup_end) {
-        let start = text.indexOf(markup_begin, from_pos);
-        if (start >= 0) {
-            let end = text.indexOf(markup_end, from_pos);
-            if (end >= 0) {
-                return this.remove_markup_content(text.substring(0, start) + text.substring(end + markup_end.length), start, markup_begin, markup_end);
-            }
-        }
-        return text;
-    }
-    doc_comment_(text, writer) {
-        if (typeof text !== "string" || text.length == 0)
-            return;
-        if (typeof writer === "undefined")
-            writer = this;
-        let lines = this.replace_doc_block_expression(this.get_simplified_description(text).replace("\r\n", "\n")).split("\n");
-        if (lines.length > 0 && this.is_empty_or_whitespace(lines[0]))
-            lines.splice(0, 1);
-        if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1]))
-            lines.splice(lines.length - 1, 1);
-        if (lines.length == 0)
-            return;
-        let leading_tab = this.get_leading_tab(lines[0]);
-        lines = lines.map(value => this.trim_leading_tab(value, leading_tab));
-        if (lines.length == 1) {
-            return writer.line(`/** ${lines[0]} */`);
-        }
-        for (let i = 0; i < lines.length; ++i) {
-            if (i == 0) {
-                writer.line(`/** ${lines[i]}`);
-            }
-            else {
-                writer.line(` *  ${lines[i]}`);
-            }
-        }
-        writer.line(` */`);
-    }
     finish() {
-        this.doc_comment_(this._brief_description, this._base);
+        var _a;
+        DocCommentHelper.write(this._base, (_a = this._doc) === null || _a === void 0 ? void 0 : _a.brief_description, false);
         this._base.line(`${this.head()} {`);
         super.finish();
         this._base.line('}');
     }
     primitive_constant_(constant) {
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.constants[constant.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
         if (typeof constant.value !== "undefined") {
             this.line(`static readonly ${constant.name} = ${constant.value}`);
         }
@@ -327,6 +350,9 @@ class ClassWriter extends IndentWriter {
         }
     }
     constant_(constant) {
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.constants[constant.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
     make_classname(class_name) {
@@ -369,6 +395,7 @@ class ClassWriter extends IndentWriter {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
             return info.hint_string.split(",").map(class_name => this.make_classname(class_name)).join(" | ");
         }
+        //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
         if (info.class_name.length == 0) {
             const primitive_name = PrimitiveTypeNames[info.type];
             if (typeof primitive_name !== "undefined") {
@@ -453,13 +480,15 @@ class ClassWriter extends IndentWriter {
         return "void";
     }
     property_(getset_info) {
+        var _a, _b;
         // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
         if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
             return;
         }
         const type_name = this.make_typename(getset_info.info);
         console.assert(getset_info.getter.length != 0);
-        this.doc_comment_(getset_info.description);
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.properties[getset_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
         if (getset_info.setter.length == 0) {
             this.line(`readonly ${getset_info.name}: ${type_name}`);
         }
@@ -468,14 +497,17 @@ class ClassWriter extends IndentWriter {
         }
     }
     primitive_property_(property_info) {
+        this._separator_line = true;
         const type_name = PrimitiveTypeNames[property_info.type];
         this.line(`${property_info.name}: ${type_name}`);
     }
     constructor_(constructor_info) {
+        this._separator_line = true;
         const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
         this.line(`constructor(${args})`);
     }
     operator_(operator_info) {
+        this._separator_line = true;
         const return_type_name = PrimitiveTypeNames[operator_info.return_type];
         const left_type_name = PrimitiveTypeNames[operator_info.left_type];
         const right_type_name = PrimitiveTypeNames[operator_info.right_type];
@@ -488,41 +520,39 @@ class ClassWriter extends IndentWriter {
         this.method_(method_info, "");
     }
     method_(method_info, category) {
-        this.doc_comment_(method_info.description);
-        // some godot methods declared with special characters
-        if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
-            const args = this.make_args(method_info);
-            const rval = this.make_return(method_info);
-            const prefix = this.make_method_prefix(method_info);
-            this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
-            return;
-        }
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.methods[method_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
         const args = this.make_args(method_info);
         const rval = this.make_return(method_info);
         const prefix = this.make_method_prefix(method_info);
+        // some godot methods declared with special characters which can not be declared literally
+        if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
+            this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
+            return;
+        }
         this.line(`${category}${prefix}${method_info.name}(${args}): ${rval}`);
     }
-    // function_(method_info: jsb.editor.MethodInfo) {
-    //     const args = this.make_args(method_info)
-    //     const rval = this.make_return(method_info)
-    //     this.line(`function ${method_info.name}(${args}): ${rval}`);
-    // }
     signal_(signal_info) {
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.signals[signal_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
+        const args = this.make_args(signal_info.method_);
+        const rval = this.make_return(signal_info.method_);
+        const sig = `// ${args} => ${rval}`;
         if (this._singleton_mode) {
-            this.line(`static readonly ${signal_info.name}: Signal`);
+            this.line(`static readonly ${signal_info.name}: Signal ${sig}`);
         }
         else {
-            this.line(`readonly ${signal_info.name}: Signal`);
+            this.line(`readonly ${signal_info.name}: Signal ${sig}`);
         }
-        // this.line(`${signal_info.name}(op: jsb.SignalOp.Connect | jsb.SignalOp.Disconnect, callable: Callable): void`);
-        // this.line(`${signal_info.name}(op: jsb.SignalOp.IsConnected, callable: Callable): boolean`);
-        // this.line(`${signal_info.name}(op: jsb.SignalOp.Emit, ...args: any[]): GodotError`);
     }
 }
 class EnumWriter extends IndentWriter {
     constructor(base, name) {
         super(base);
         this._auto = false;
+        this._separator_line = false;
         this._name = name;
     }
     /**
@@ -544,6 +574,9 @@ class EnumWriter extends IndentWriter {
         }
     }
     element_(name, value) {
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._base.class_doc) === null || _a === void 0 ? void 0 : _a.constants[name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
         this.line(`${name} = ${value},`);
     }
 }
@@ -723,21 +756,22 @@ class TSDCodeGen {
         }
     }
     emit_godot_primitive(cg, cls) {
+        const class_doc = jsb.editor.get_class_doc(cls.name);
         const ignored_consts = new Set();
-        const class_ns_cg = cg.namespace_(cls.name);
+        const class_ns_cg = cg.namespace_(cls.name, class_doc);
         if (cls.enums) {
             for (let enum_info of cls.enums) {
                 const enum_cg = class_ns_cg.enum_(enum_info.name);
-                for (let name of enum_info.literals) {
-                    const value = cls.constants.find(v => v.name == name).value;
-                    enum_cg.element_(name, value);
-                    ignored_consts.add(name);
+                for (let enumeration_name of enum_info.literals) {
+                    const value = cls.constants.find(v => v.name == enumeration_name).value;
+                    enum_cg.element_(enumeration_name, value);
+                    ignored_consts.add(enumeration_name);
                 }
                 enum_cg.finish();
             }
         }
         class_ns_cg.finish();
-        const class_cg = cg.class_(cls.name, "", "", false);
+        const class_cg = cg.class_(cls.name, "", false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -761,21 +795,22 @@ class TSDCodeGen {
     }
     emit_godot_class(cg, cls, singleton_mode) {
         try {
+            const class_doc = jsb.editor.get_class_doc(cls.name);
             const ignored_consts = new Set();
-            const class_ns_cg = cg.namespace_(cls.name);
+            const class_ns_cg = cg.namespace_(cls.name, class_doc);
             if (cls.enums) {
                 for (let enum_info of cls.enums) {
                     const enum_cg = class_ns_cg.enum_(enum_info.name);
-                    for (let name of enum_info.literals) {
-                        const value = cls.constants.find(v => v.name == name).value;
-                        enum_cg.element_(name, value);
-                        ignored_consts.add(name);
+                    for (let enumeration_name of enum_info.literals) {
+                        const value = cls.constants.find(v => v.name == enumeration_name).value;
+                        enum_cg.element_(enumeration_name, value);
+                        ignored_consts.add(enumeration_name);
                     }
                     enum_cg.finish();
                 }
             }
             class_ns_cg.finish();
-            const class_cg = cg.class_(cls.name, cls.brief_description, this.has_class(cls.super) ? cls.super : "", singleton_mode);
+            const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super : "", singleton_mode, class_doc);
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {

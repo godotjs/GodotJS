@@ -167,14 +167,13 @@ namespace jsb
             set_field(isolate, context, object, "type", property_info.type);
         }
 
-        void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const ClassDB::PropertySetGet& getset_info, const DocData::PropertyDoc* property_doc, const v8::Local<v8::Object>& object)
+        void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const ClassDB::PropertySetGet& getset_info, const v8::Local<v8::Object>& object)
         {
             set_field(isolate, context, object, "name", property_name);
             set_field(isolate, context, object, "type", getset_info.type);
             set_field(isolate, context, object, "index", getset_info.index);
             set_field(isolate, context, object, "setter", getset_info.setter);
             set_field(isolate, context, object, "getter", getset_info.getter);
-            set_field(isolate, context, object, "description", property_doc ? property_doc->description : "");
         }
 
         void build_constructor_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const FConstructorInfo& constructor_info, const v8::Local<v8::Object>& object)
@@ -192,7 +191,7 @@ namespace jsb
             set_field(isolate, context, object, "arguments", args_obj);
         }
 
-        void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, MethodBind const* method_bind, const DocData::MethodDoc* method_doc, const v8::Local<v8::Object>& object)
+        void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, MethodBind const* method_bind, const v8::Local<v8::Object>& object)
         {
             set_field(isolate, context, object, "id", method_bind->get_method_id());
             set_field(isolate, context, object, "name", method_bind->get_name());
@@ -202,7 +201,6 @@ namespace jsb
             set_field(isolate, context, object, "is_vararg", method_bind->is_vararg());
             // set_field(isolate, context, object, "has_return", method_bind->has_return());
             set_field(isolate, context, object, "argument_count", method_bind->get_argument_count());
-            set_field(isolate, context, object, "description", method_doc ? method_doc->description : "");
 
             if (method_bind->has_return())
             {
@@ -295,64 +293,33 @@ namespace jsb
         void build_enum_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const ClassDB::ClassInfo::EnumInfo& enum_info, const v8::Local<v8::Object>& object)
         {
             const int num = enum_info.constants.size();
-            v8::Local<v8::Array> constants_obj = v8::Array::New(isolate, num);
+            v8::Local<v8::Array> elements_array = v8::Array::New(isolate, num);
             for (int index = 0; index < num; ++index)
             {
                 const StringName& name = enum_info.constants[index];
-                constants_obj->Set(context, index, V8Helper::to_string(isolate, name)).Check();
+                elements_array->Set(context, index, V8Helper::to_string(isolate, name)).Check();
             }
-            set_field(isolate, context, object, "literals", constants_obj);
+            set_field(isolate, context, object, "literals", elements_array);
             set_field(isolate, context, object, JSB_GET_FIELD_NAME_PRESET(enum_info, is_bitfield));
         }
 
-        void build_signal_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const MethodInfo& method_info, const v8::Local<v8::Object>& object)
+        void build_signal_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const MethodInfo& method_info, const v8::Local<v8::Object>& signal_obj)
         {
-            set_field(isolate, context, object, "id", method_info.id);
-            set_field(isolate, context, object, "name_", method_info.name);
-            set_field(isolate, context, object, "flags", method_info.flags);
-            // TODO
-            // set_field(isolate, context, object, "return_val", method_info.return_val);
-            // set_field(isolate, context, object, "arguments", method_info.arguments);
-        }
+            v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
 
-        const DocData::PropertyDoc* find_property_doc(const DocData::ClassDoc* class_doc, const StringName& expected_name)
-        {
-            if (class_doc)
-            {
-                for (const DocData::PropertyDoc& it : class_doc->properties)
-                {
-                    if (it.name == expected_name) return &it;
-                }
-            }
-            return nullptr;
-        }
-
-        const DocData::MethodDoc* find_method_doc(const DocData::ClassDoc* class_doc, const StringName& expected_name)
-        {
-            if (class_doc)
-            {
-                for (const DocData::MethodDoc& it : class_doc->methods)
-                {
-                    if (it.name == expected_name) return &it;
-                }
-            }
-            return nullptr;
+            build_method_info(isolate, context, method_info, method_obj);
+            set_field(isolate, context, signal_obj, "method_", method_obj);
         }
 
         v8::Local<v8::Object> build_class_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& class_name)
         {
             v8::Local<v8::Object> class_info_obj = v8::Object::New(isolate);
             const HashMap<StringName, ClassDB::ClassInfo>::Iterator class_it = ClassDB::classes.find(class_name);
-            const DocTools* doc_tools = EditorHelp::get_doc_data();
-            jsb_check(doc_tools);
-            const DocData::ClassDoc* class_doc = doc_tools->class_list.getptr(class_name);
 
             jsb_check(class_it != ClassDB::classes.end());
             const ClassDB::ClassInfo& class_info = class_it->value;
             set_field(isolate, context, class_info_obj, "name", class_name);
             set_field(isolate, context, class_info_obj, "super", class_info.inherits);
-            set_field(isolate, context, class_info_obj, "brief_description", class_doc ? class_doc->brief_description : "");
-            // set_field(isolate, context, class_info_obj, "description", class_doc ? class_doc->description : "");
 
             // HashSet<StringName> omitted_methods;
             // class: properties
@@ -374,7 +341,7 @@ namespace jsb
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, getset_info_obj, "info", property_info_obj);
                     build_property_info(isolate, context, property_info, property_info_obj);
-                    build_property_info(isolate, context, property_name, getset_info, find_property_doc(class_doc, property_name), getset_info_obj);
+                    build_property_info(isolate, context, property_name, getset_info, getset_info_obj);
                     properties_obj->Set(context, index++, getset_info_obj).Check();
                     // if (internal::VariantUtil::is_valid(getset_info.getter)) omitted_methods.insert(getset_info.getter);
                     // if (internal::VariantUtil::is_valid(getset_info.setter)) omitted_methods.insert(getset_info.setter);
@@ -392,7 +359,7 @@ namespace jsb
                     // if (omitted_methods.has(pair.key)) continue;
                     MethodBind const * const method_bind = pair.value;
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
-                    build_method_info(isolate, context, method_bind, find_method_doc(class_doc, pair.key), method_info_obj);
+                    build_method_info(isolate, context, method_bind, method_info_obj);
                     methods_obj->Set(context, index++, method_info_obj).Check();
                 }
             }
@@ -660,6 +627,69 @@ namespace jsb
 
     struct JavaScriptEditorUtility
     {
+        static void _get_class_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::HandleScope handle_scope(isolate);
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+            const String name = V8Helper::to_string(isolate, info[0]);
+            if (const DocData::ClassDoc* ptr = EditorHelp::get_doc_data()->class_list.getptr(name))
+            {
+                const DocData::ClassDoc& class_doc = *ptr;
+                v8::Local<v8::Object> class_doc_obj = v8::Object::New(isolate);
+
+                // doc:class<brief>
+                set_field(isolate, context, class_doc_obj, JSB_GET_FIELD_NAME_PRESET(class_doc, brief_description));
+
+                // doc:constants
+                v8::Local<v8::Object> constants_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "constants", constants_obj);
+                for (const DocData::ConstantDoc& constant_doc : class_doc.constants)
+                {
+                    v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
+                    constants_obj->Set(context, V8Helper::to_string(isolate, constant_doc.name), constant_obj);
+
+                    set_field(isolate, context, constant_obj, "description", constant_doc.description);
+                }
+
+                // doc:methods
+                v8::Local<v8::Object> methods_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "methods", methods_obj);
+                for (const DocData::MethodDoc& method_doc : class_doc.methods)
+                {
+                    v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
+                    methods_obj->Set(context, V8Helper::to_string(isolate, method_doc.name), method_obj);
+
+                    set_field(isolate, context, method_obj, "description", method_doc.description);
+                }
+
+                // doc:properties
+                v8::Local<v8::Object> properties_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "properties", properties_obj);
+                for (const DocData::PropertyDoc& property_doc : class_doc.properties)
+                {
+                    v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
+                    properties_obj->Set(context, V8Helper::to_string(isolate, property_doc.name), property_obj);
+
+                    set_field(isolate, context, property_obj, "description", property_doc.description);
+                }
+
+                // doc:signals
+                v8::Local<v8::Object> signals_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "signals", signals_obj);
+                for (const DocData::MethodDoc& signal_doc : class_doc.signals)
+                {
+                    v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
+                    signals_obj->Set(context, V8Helper::to_string(isolate, signal_doc.name), signal_obj);
+
+                    set_field(isolate, context, signal_obj, "description", signal_doc.description);
+                }
+
+                info.GetReturnValue().Set(class_doc_obj);
+            }
+        }
+
         static void _get_classes(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -1143,6 +1173,7 @@ namespace jsb
                 v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
 
                 jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "editor"), editor_obj).Check();
+                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_class_doc"), v8::Function::New(context, JavaScriptEditorUtility::_get_class_doc).ToLocalChecked()).Check();
                 editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_classes"), v8::Function::New(context, JavaScriptEditorUtility::_get_classes).ToLocalChecked()).Check();
                 editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_global_constants"), v8::Function::New(context, JavaScriptEditorUtility::_get_global_constants).ToLocalChecked()).Check();
                 editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_singletons"), v8::Function::New(context, JavaScriptEditorUtility::_get_singletons).ToLocalChecked()).Check();
