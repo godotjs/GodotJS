@@ -268,13 +268,8 @@ namespace jsb
                     if (prop_descriptor.As<v8::Object>()->Get(p_context, environment->GetStringValue(value)).ToLocal(&prop_val) && prop_val->IsFunction())
                     {
                         //TODO property categories
-                        const StringName sname = name_s;
                         GodotJSMethodInfo method_info = {};
-                        // method_info.name = sname;
-                        // method_info.function_.Reset(payload.isolate, prop_val.As<v8::Function>());
-                        // const internal::Index32 id = payload.class_info.methods.add(std::move(method_info));
-                        // payload.class_info.methods_map.insert(sname, id);
-                        p_class_info.methods.insert(sname, method_info);
+                        p_class_info.methods.insert((StringName) name_s, method_info);
                         JSB_LOG(VeryVerbose, "... method %s", name_s);
                     }
                 }
@@ -287,6 +282,14 @@ namespace jsb
             if (is_tool)
             {
                 p_class_info.flags = (GodotJSClassFlags::Type) (p_class_info.flags | GodotJSClassFlags::Tool);
+            }
+        }
+
+        // icon (@icon)
+        {
+            if (v8::Local<v8::Value> val; default_obj->Get(p_context, environment->SymbolFor(ClassIcon)).ToLocal(&val))
+            {
+                p_class_info.icon = V8Helper::to_string(isolate, val);
             }
         }
 

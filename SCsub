@@ -260,9 +260,7 @@ if env.editor_build:
         "scripts/presets/package.json.txt": "package.json",
         "scripts/presets/tsconfig.json.txt": "tsconfig.json",
         "scripts/presets/gdignore.txt": ".gdignore",
-        # icon (from https://icons.getbootstrap.com/icons/filetype-js/)
-        "scripts/presets/filetype-js.svg": "",
-
+        
         # runtime presets
         "scripts/out/jsb.core.js": "",
         "scripts/out/jsb.core.js.map": "",

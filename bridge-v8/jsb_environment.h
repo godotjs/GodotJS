@@ -36,6 +36,7 @@ namespace jsb
             ClassProperties,         // array of all @export annotations
             ClassImplicitReadyFuncs, // array of all @onready annotations
             ClassToolScript,         // @tool annotated scripts
+            ClassIcon,               // @icon
             kNum,
         };
     }

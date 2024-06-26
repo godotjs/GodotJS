@@ -196,7 +196,7 @@ jsb::JSValueMove GodotJSScriptLanguage::eval_source(const String& p_code, Error&
 
 String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path) const
 {
-    if (r_icon_path) *r_icon_path = "res://javascripts/icon/filetype-js.svg";
+    // if (r_icon_path) *r_icon_path = "res://javascripts/icon/filetype-js.svg";
     //TODO threading issue
     JSB_LOG(Verbose, "get_global_class_name %s (thread: %s)", p_path, Thread::is_main_thread() ? "main" : "background");
     return {};

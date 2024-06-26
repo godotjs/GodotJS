@@ -944,7 +944,7 @@ namespace jsb
             info.GetReturnValue().Set(rval);
         }
 
-        // function add_script_tool(target: any): void;
+        // function (target: any): void;
         void _add_script_tool(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -960,6 +960,25 @@ namespace jsb
             target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true)).Check();
             JSB_LOG(VeryVerbose, "script %s (tool)",
                 V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))));
+        }
+
+        // function (target: any): void;
+        void _add_script_icon(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::HandleScope handle_scope(isolate);
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            if (info.Length() != 2 || !info[0]->IsObject() || !info[1]->IsString())
+            {
+                jsb_throw(isolate, "bad param");
+                return;
+            }
+            Environment* environment = Environment::wrap(isolate);
+            v8::Local<v8::Object> target = info[0].As<v8::Object>();
+            target->Set(context, environment->SymbolFor(ClassIcon), info[1]).Check();
+            JSB_LOG(VeryVerbose, "script %s (icon) %s",
+                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
+                V8Helper::to_string(isolate, info[1]));
         }
 
         // function add_script_ready(target: any, name: string,  evaluator: string | Function): void;
@@ -1000,7 +1019,7 @@ namespace jsb
                 V8Helper::to_string_opt(isolate, evaluator->Get(context, environment->GetStringValue(name))));
         }
 
-        // function add_script_property(target: any, name: string, details: ScriptPropertyInfo): void;
+        // function (target: any, name: string, details: ScriptPropertyInfo): void;
         void _add_script_property(const v8::FunctionCallbackInfo<v8::Value> &info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -1165,6 +1184,7 @@ namespace jsb
                 internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
                 internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
                 internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
             }
 
 #if TOOLS_ENABLED

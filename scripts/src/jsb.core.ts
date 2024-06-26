@@ -5,7 +5,7 @@ import * as jsb from "godot-jsb";
 /**
  *
  */
-export function signal_() {
+export function signal() {
     return function (target: any, key: string) {
         jsb.internal.add_script_signal(target, key);
     }
@@ -60,16 +60,22 @@ export function export_flags(enum_type: any) {
  * auto initialized on ready (before _ready called)
  * @param evaluator for now, only string is accepted
  */
-export function onready_(evaluator: string | jsb.internal.OnReadyEvaluatorFunc) {
+export function onready(evaluator: string | jsb.internal.OnReadyEvaluatorFunc) {
     return function (target: any, key: string) {
         let ebd = { name: key, evaluator: evaluator };
         jsb.internal.add_script_ready(target, ebd);
     }
 }
 
-export function tool_() {
+export function tool() {
     return function (target: any) {
         jsb.internal.add_script_tool(target);
+    }
+}
+
+export function icon(path: string) {
+    return function (target: any) {
+        jsb.internal.add_script_icon(target, path);
     }
 }
 

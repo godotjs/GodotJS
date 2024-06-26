@@ -79,8 +79,6 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     install_files_.push_back({ "jsb.core.js", "res://javascripts/jsb", jsb::CH_JAVASCRIPT });
     install_files_.push_back({ "jsb.editor.codegen.js", "res://javascripts/jsb", jsb::CH_JAVASCRIPT });
     install_files_.push_back({ "jsb.editor.main.js", "res://javascripts/jsb", jsb::CH_JAVASCRIPT });
-
-    install_files_.push_back({ "filetype-js.svg", "res://javascripts/icon", jsb::CH_MISC | jsb::CH_OPTIONAL });
 }
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()

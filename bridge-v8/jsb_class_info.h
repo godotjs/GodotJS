@@ -124,6 +124,8 @@ namespace jsb
 
         GodotJSClassFlags::Type flags = GodotJSClassFlags::None;
 
+        String icon;
+
         HashMap<StringName, GodotJSMethodInfo> methods;
         HashMap<StringName, GodotJSMethodInfo> signals;
         HashMap<StringName, GodotJSPropertyInfo> properties;
