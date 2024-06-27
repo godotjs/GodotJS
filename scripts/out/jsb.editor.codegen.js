@@ -310,6 +310,17 @@ class ModuleWriter extends IndentWriter {
         super.finish();
         this._base.line('}');
     }
+    // godot utility functions must be in global scope 
+    utility_(method_info) {
+        const args = this.types.make_args(method_info);
+        const rval = this.types.make_return(method_info);
+        // some godot methods declared with special characters which can not be declared literally
+        if (!this.types.is_valid_method_name(method_info.name)) {
+            this.line(`// [INVALID_NAME]: static function ${method_info.name}(${args}): ${rval}`);
+            return;
+        }
+        this.line(`static function ${method_info.name}(${args}): ${rval}`);
+    }
 }
 class NamespaceWriter extends IndentWriter {
     get class_doc() { return this._doc; }
@@ -371,12 +382,173 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
+    property_(getset_info) {
+        var _a, _b;
+        // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
+        if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
+            return;
+        }
+        const type_name = this.types.make_typename(getset_info.info);
+        console.assert(getset_info.getter.length != 0);
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.properties[getset_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
+        if (getset_info.setter.length == 0) {
+            this.line(`readonly ${getset_info.name}: ${type_name}`);
+        }
+        else {
+            this.line(`${getset_info.name}: ${type_name}`);
+        }
+    }
+    primitive_property_(property_info) {
+        this._separator_line = true;
+        const type_name = PrimitiveTypeNames[property_info.type];
+        this.line(`${property_info.name}: ${type_name}`);
+    }
+    constructor_(constructor_info) {
+        this._separator_line = true;
+        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
+        this.line(`constructor(${args})`);
+    }
+    operator_(operator_info) {
+        this._separator_line = true;
+        const return_type_name = PrimitiveTypeNames[operator_info.return_type];
+        const left_type_name = PrimitiveTypeNames[operator_info.left_type];
+        const right_type_name = PrimitiveTypeNames[operator_info.right_type];
+        this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
+    }
+    virtual_method_(method_info) {
+        this.method_(method_info, "/* gdvirtual */ ");
+    }
+    ordinary_method_(method_info) {
+        this.method_(method_info, "");
+    }
+    method_(method_info, category) {
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.methods[method_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
+        const args = this.types.make_args(method_info);
+        const rval = this.types.make_return(method_info);
+        const prefix = this.make_method_prefix(method_info);
+        // some godot methods declared with special characters which can not be declared literally
+        if (!this.types.is_valid_method_name(method_info.name)) {
+            this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
+            return;
+        }
+        this.line(`${category}${prefix}${method_info.name}(${args}): ${rval}`);
+    }
+    signal_(signal_info) {
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.signals[signal_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
+        const args = this.types.make_args(signal_info.method_);
+        const rval = this.types.make_return(signal_info.method_);
+        const sig = `// ${args} => ${rval}`;
+        if (this._singleton_mode) {
+            this.line(`static readonly ${signal_info.name}: Signal ${sig}`);
+        }
+        else {
+            this.line(`readonly ${signal_info.name}: Signal ${sig}`);
+        }
+    }
+}
+class EnumWriter extends IndentWriter {
+    constructor(base, name) {
+        super(base);
+        this._auto = false;
+        this._separator_line = false;
+        this._name = name;
+    }
+    /**
+     * the base writer will also be marked as `finished` automatically by the current writer when it's `finished`.
+     * NOTE usually used when `base` writer is fully managed by the current writer.
+     */
+    auto() {
+        this._auto = true;
+        return this;
+    }
+    finish() {
+        if (this._lines.length != 0) {
+            this._base.line(`enum ${this._name} {`);
+            super.finish();
+            this._base.line('}');
+        }
+        if (this._auto) {
+            this._base.finish();
+        }
+    }
+    element_(name, value) {
+        var _a, _b;
+        DocCommentHelper.write(this, (_b = (_a = this._base.class_doc) === null || _a === void 0 ? void 0 : _a.constants[name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
+        this._separator_line = true;
+        this.line(`${name} = ${value},`);
+    }
+}
+class FileWriter extends AbstractWriter {
+    constructor(types, file) {
+        super();
+        this._size = 0;
+        this._lineno = 0;
+        this._types = types;
+        this._file = file;
+    }
+    get size() { return this._size; }
+    get lineno() { return this._lineno; }
+    get types() { return this._types; }
+    line(text) {
+        this._file.store_line(text);
+        this._size += text.length;
+        this._lineno += 1;
+    }
+    finish() {
+        this._file.flush();
+    }
+}
+class FileSplitter {
+    constructor(types, filePath) {
+        this._types = types;
+        this._file = godot_1.FileAccess.open(filePath, godot_1.FileAccess.ModeFlags.WRITE);
+        this._toplevel = new ModuleWriter(new FileWriter(this._types, this._file), "godot");
+        this._file.store_line("// AUTO-GENERATED");
+        this._file.store_line('/// <reference no-default-lib="true"/>');
+    }
+    close() {
+        this._toplevel.finish();
+        this._file.flush();
+        this._file.close();
+    }
+    get_writer() {
+        return this._toplevel;
+    }
+    get_size() { return this._toplevel.size; }
+    get_lineno() { return this._toplevel.lineno; }
+}
+class TypeDB {
+    constructor() {
+        this.singletons = {};
+        this.classes = {};
+        this.primitive_types = {};
+        this.globals = {};
+        this.utilities = {};
+    }
+    is_primitive_type(name) {
+        return typeof this.primitive_types[name] !== "undefined";
+    }
+    is_valid_method_name(name) {
+        if (typeof KeywordReplacement[name] !== "undefined") {
+            return false;
+        }
+        if (name.indexOf('/') >= 0 || name.indexOf('.') >= 0) {
+            return false;
+        }
+        return true;
+    }
     make_classname(class_name) {
+        const types = this;
         const remap_name = RemapTypes[class_name];
         if (typeof remap_name !== "undefined") {
             return remap_name;
         }
-        if (class_name in this.types.classes) {
+        if (class_name in types.classes) {
             return class_name;
         }
         else {
@@ -387,16 +559,16 @@ class ClassWriter extends IndentWriter {
                     if (PrimitiveTypesSet.has(layers[0])) {
                         return class_name;
                     }
-                    const cls = this.types.classes[layers[0]];
+                    const cls = types.classes[layers[0]];
                     if (typeof cls !== "undefined" && cls.enums.findIndex(v => v.name == layers[1]) >= 0) {
                         return class_name;
                     }
                 }
             }
-            if (class_name in this.types.globals) {
+            if (class_name in types.globals) {
                 return class_name;
             }
-            if (class_name in this.types.singletons) {
+            if (class_name in types.singletons) {
                 return class_name;
             }
             // if (ReservedTypes.has(class_name)) {
@@ -495,156 +667,6 @@ class ClassWriter extends IndentWriter {
         }
         return "void";
     }
-    property_(getset_info) {
-        var _a, _b;
-        // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
-        if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
-            return;
-        }
-        const type_name = this.make_typename(getset_info.info);
-        console.assert(getset_info.getter.length != 0);
-        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.properties[getset_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
-        this._separator_line = true;
-        if (getset_info.setter.length == 0) {
-            this.line(`readonly ${getset_info.name}: ${type_name}`);
-        }
-        else {
-            this.line(`${getset_info.name}: ${type_name}`);
-        }
-    }
-    primitive_property_(property_info) {
-        this._separator_line = true;
-        const type_name = PrimitiveTypeNames[property_info.type];
-        this.line(`${property_info.name}: ${type_name}`);
-    }
-    constructor_(constructor_info) {
-        this._separator_line = true;
-        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
-        this.line(`constructor(${args})`);
-    }
-    operator_(operator_info) {
-        this._separator_line = true;
-        const return_type_name = PrimitiveTypeNames[operator_info.return_type];
-        const left_type_name = PrimitiveTypeNames[operator_info.left_type];
-        const right_type_name = PrimitiveTypeNames[operator_info.right_type];
-        this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
-    }
-    virtual_method_(method_info) {
-        this.method_(method_info, "/* gdvirtual */ ");
-    }
-    ordinary_method_(method_info) {
-        this.method_(method_info, "");
-    }
-    method_(method_info, category) {
-        var _a, _b;
-        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.methods[method_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
-        this._separator_line = true;
-        const args = this.make_args(method_info);
-        const rval = this.make_return(method_info);
-        const prefix = this.make_method_prefix(method_info);
-        // some godot methods declared with special characters which can not be declared literally
-        if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
-            this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
-            return;
-        }
-        this.line(`${category}${prefix}${method_info.name}(${args}): ${rval}`);
-    }
-    signal_(signal_info) {
-        var _a, _b;
-        DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.signals[signal_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
-        this._separator_line = true;
-        const args = this.make_args(signal_info.method_);
-        const rval = this.make_return(signal_info.method_);
-        const sig = `// ${args} => ${rval}`;
-        if (this._singleton_mode) {
-            this.line(`static readonly ${signal_info.name}: Signal ${sig}`);
-        }
-        else {
-            this.line(`readonly ${signal_info.name}: Signal ${sig}`);
-        }
-    }
-}
-class EnumWriter extends IndentWriter {
-    constructor(base, name) {
-        super(base);
-        this._auto = false;
-        this._separator_line = false;
-        this._name = name;
-    }
-    /**
-     * the base writer will also be marked as `finished` automatically by the current writer when it's `finished`.
-     * NOTE usually used when `base` writer is fully managed by the current writer.
-     */
-    auto() {
-        this._auto = true;
-        return this;
-    }
-    finish() {
-        if (this._lines.length != 0) {
-            this._base.line(`enum ${this._name} {`);
-            super.finish();
-            this._base.line('}');
-        }
-        if (this._auto) {
-            this._base.finish();
-        }
-    }
-    element_(name, value) {
-        var _a, _b;
-        DocCommentHelper.write(this, (_b = (_a = this._base.class_doc) === null || _a === void 0 ? void 0 : _a.constants[name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
-        this._separator_line = true;
-        this.line(`${name} = ${value},`);
-    }
-}
-class FileWriter extends AbstractWriter {
-    constructor(types, file) {
-        super();
-        this._size = 0;
-        this._lineno = 0;
-        this._types = types;
-        this._file = file;
-    }
-    get size() { return this._size; }
-    get lineno() { return this._lineno; }
-    get types() { return this._types; }
-    line(text) {
-        this._file.store_line(text);
-        this._size += text.length;
-        this._lineno += 1;
-    }
-    finish() {
-        this._file.flush();
-    }
-}
-class FileSplitter {
-    constructor(types, filePath) {
-        this._types = types;
-        this._file = godot_1.FileAccess.open(filePath, godot_1.FileAccess.ModeFlags.WRITE);
-        this._toplevel = new ModuleWriter(new FileWriter(this._types, this._file), "godot");
-        this._file.store_line("// AUTO-GENERATED");
-        this._file.store_line('/// <reference no-default-lib="true"/>');
-    }
-    close() {
-        this._toplevel.finish();
-        this._file.flush();
-        this._file.close();
-    }
-    get_writer() {
-        return this._toplevel;
-    }
-    get_size() { return this._toplevel.size; }
-    get_lineno() { return this._toplevel.lineno; }
-}
-class TypeDB {
-    constructor() {
-        this.singletons = {};
-        this.classes = {};
-        this.primitive_types = {};
-        this.globals = {};
-    }
-    is_primitive_type(name) {
-        return typeof this.primitive_types[name] !== "undefined";
-    }
 }
 // d.ts generator
 class TSDCodeGen {
@@ -656,6 +678,7 @@ class TSDCodeGen {
         const primitive_types = jsb.editor.get_primitive_types();
         const singletons = jsb.editor.get_singletons();
         const globals = jsb.editor.get_global_constants();
+        const utilities = jsb.editor.get_utility_functions();
         for (let cls of classes) {
             this._types.classes[cls.name] = cls;
         }
@@ -667,6 +690,9 @@ class TSDCodeGen {
         }
         for (let global_ of globals) {
             this._types.globals[global_.name] = global_;
+        }
+        for (let utility of utilities) {
+            this._types.utilities[utility.name] = utility;
         }
     }
     make_path(index) {
@@ -720,6 +746,7 @@ class TSDCodeGen {
         this.emit_singletons();
         this.emit_godot();
         this.emit_globals();
+        this.emit_utilities();
         (_a = this._splitter) === null || _a === void 0 ? void 0 : _a.close();
         this.cleanup();
     }
@@ -741,6 +768,13 @@ class TSDCodeGen {
             else {
                 cg.line_comment_(`ERROR: singleton ${singleton.name} without class info ${singleton.class_name}`);
             }
+        }
+    }
+    emit_utilities() {
+        for (let utility_name in this._types.utilities) {
+            const utility_func = this._types.utilities[utility_name];
+            const cg = this.split();
+            cg.utility_(utility_func);
         }
     }
     emit_globals() {

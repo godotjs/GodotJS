@@ -197,7 +197,6 @@ declare module "godot-jsb" {
 
         function get_global_constants(): Array<GlobalConstantInfo>;
 
-        // SO FAR, NOT USED
         function get_utility_functions(): Array<MethodBind>;
 
         function delete_file(filepath: string): void;

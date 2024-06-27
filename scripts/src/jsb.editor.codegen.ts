@@ -161,6 +161,7 @@ function replace(name: string) {
     const rep = KeywordReplacement[name];
     return typeof rep !== "undefined" ? rep : name;
 }
+
 abstract class AbstractWriter implements ScopeWriter {
     abstract line(text: string): void;
     abstract get size(): number;
@@ -343,6 +344,19 @@ class ModuleWriter extends IndentWriter {
         super.finish();
         this._base.line('}');
     }
+
+    // godot utility functions must be in global scope 
+    utility_(method_info: jsb.editor.MethodBind) {
+        const args = this.types.make_args(method_info);
+        const rval = this.types.make_return(method_info);
+
+        // some godot methods declared with special characters which can not be declared literally
+        if (!this.types.is_valid_method_name(method_info.name)) {
+            this.line(`// [INVALID_NAME]: static function ${method_info.name}(${args}): ${rval}`);
+            return;
+        }
+        this.line(`static function ${method_info.name}(${args}): ${rval}`);
+    }
 }
 
 class NamespaceWriter extends IndentWriter {
@@ -419,136 +433,12 @@ class ClassWriter extends IndentWriter {
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
 
-    private make_classname(class_name: string): string {
-        const remap_name: string | undefined = RemapTypes[class_name];
-        if (typeof remap_name !== "undefined") {
-            return remap_name;
-        }
-        if (class_name in this.types.classes) {
-            return class_name;
-        } else {
-            if (class_name.indexOf(".") >= 0) {
-                const layers = class_name.split(".");
-                if (layers.length == 2) {
-                    // nested enums in primitive types do not exist in class_info, they are manually binded.
-                    if (PrimitiveTypesSet.has(layers[0])) {
-                        return class_name;
-                    }
-                    const cls = this.types.classes[layers[0]];
-                    if (typeof cls !== "undefined" && cls.enums!.findIndex(v => v.name == layers[1]) >= 0) {
-                        return class_name;
-                    }
-                }
-            }
-            if (class_name in this.types.globals) {
-                return class_name;
-            }
-            if (class_name in this.types.singletons) {
-                return class_name;
-            }
-            // if (ReservedTypes.has(class_name)) {
-            //     return class_name;
-            // }
-            console.warn("undefined class", class_name);
-            return `any /*${class_name}*/`;
-        }
-    }
-
-    private make_typename(info: jsb.editor.PropertyInfo): string {
-        if (info.hint == PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
-            console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return info.hint_string.split(",").map(class_name => this.make_classname(class_name)).join(" | ")
-        }
-
-        //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
-        if (info.class_name.length == 0) {
-            const primitive_name = PrimitiveTypeNames[info.type];
-            if (typeof primitive_name !== "undefined") {
-                return primitive_name;
-            }
-            return `any /*unhandled: ${info.type}*/`;
-        }
-        
-        return this.make_classname(info.class_name);
-    }
-
-    private make_arg(info: jsb.editor.PropertyInfo): string {
-        return `${replace(info.name)}: ${this.make_typename(info)}`
-    }
-
-    private make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
-        // plain types
-        switch (value.type) {
-            case Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
-            case Variant.Type.TYPE_FLOAT: 
-            case Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
-            case Variant.Type.TYPE_STRING:
-            case Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
-            default: break;
-        }
-        // make them more readable?
-        if (value.type == Variant.Type.TYPE_VECTOR2) {
-            if (value == null) return 'new Vector2()';
-            if (value.value.x == value.value.y) {
-                if (value.value.x == 0) return `Vector2.ZERO`;
-                if (value.value.x == 1) return `Vector2.ONE`;
-            }
-            return `new Vector2(${value.value.x}, ${value.value.y})`;
-        }
-        if (value.type == Variant.Type.TYPE_VECTOR3) {
-            if (value == null) return 'new Vector3()';
-            if (value.value.x == value.value.y == value.value.z) {
-                if (value.value.x == 0) return `Vector3.ZERO`;
-                if (value.value.x == 1) return `Vector3.ONE`;
-            }
-            return `new Vector3(${value.value.x}, ${value.value.y}, ${value.value.z})`;
-        }
-        if (value.type == Variant.Type.TYPE_COLOR) {
-            if (value == null) return 'new Color()';
-            return `new Color(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
-        }
-        if (value.value == null) {
-            return "<any> {} /*compound.type from nil*/";
-        }
-        //TODO value sig for compound types
-        return `<any> {} /*compound.type from ${value.type}(${value.value})*/`;
-    }
-
-    private make_arg_default_value(method_info: jsb.editor.MethodBind, index: number): string {
-        const default_arguments = method_info.default_arguments || [];
-        const def_index = index - (method_info.args_.length - default_arguments.length);
-        if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index]);
-        return this.make_arg(method_info.args_[index]) + " = " + this.make_literal_value(default_arguments[def_index]);
-    }
-
-    private make_args(method_info: jsb.editor.MethodBind): string {
-        //TODO consider default arguments
-        const varargs = "...vargargs: any[]";
-        const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
-        if (method_info.args_.length == 0) {
-            return is_vararg ? varargs : "";
-        }
-        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index)).join(", ");
-        if (is_vararg) {
-            return `${args}, ${varargs}`;
-        }
-        return args;
-    }
-
-    private make_return(method_info: jsb.editor.MethodBind): string {
-        //TODO
-        if (typeof method_info.return_ != "undefined") {
-            return this.make_typename(method_info.return_)
-        }
-        return "void"
-    }
-
     property_(getset_info: jsb.editor.PropertySetGetInfo) {
         // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
         if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
             return;
         }
-        const type_name = this.make_typename(getset_info.info);
+        const type_name = this.types.make_typename(getset_info.info);
         console.assert(getset_info.getter.length != 0);        
         DocCommentHelper.write(this, this._doc?.properties[getset_info.name]?.description, this._separator_line);
         this._separator_line = true;
@@ -590,12 +480,12 @@ class ClassWriter extends IndentWriter {
     method_(method_info: jsb.editor.MethodBind, category: string) {
         DocCommentHelper.write(this, this._doc?.methods[method_info.name]?.description, this._separator_line);
         this._separator_line = true;
-        const args = this.make_args(method_info);
-        const rval = this.make_return(method_info);
+        const args = this.types.make_args(method_info);
+        const rval = this.types.make_return(method_info);
         const prefix = this.make_method_prefix(method_info);
 
         // some godot methods declared with special characters which can not be declared literally
-        if (method_info.name.indexOf('/') >= 0 || method_info.name.indexOf('.') >= 0) {
+        if (!this.types.is_valid_method_name(method_info.name)) {
             this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
             return;
         }
@@ -606,8 +496,8 @@ class ClassWriter extends IndentWriter {
         DocCommentHelper.write(this, this._doc?.signals[signal_info.name]?.description, this._separator_line);
         this._separator_line = true;
         
-        const args = this.make_args(signal_info.method_);
-        const rval = this.make_return(signal_info.method_);
+        const args = this.types.make_args(signal_info.method_);
+        const rval = this.types.make_return(signal_info.method_);
         const sig = `// ${args} => ${rval}`;
 
         if (this._singleton_mode) {
@@ -684,7 +574,7 @@ class FileWriter extends AbstractWriter {
 
 class FileSplitter {
     private _file: FileAccess;
-    private _toplevel: ScopeWriter;
+    private _toplevel: ModuleWriter;
     private _types: TypeDB;
 
     constructor(types: TypeDB, filePath: string) {
@@ -715,9 +605,145 @@ class TypeDB {
     classes: { [name: string]: jsb.editor.ClassInfo } = {};
     primitive_types: { [name: string]: jsb.editor.PrimitiveClassInfo } = {};
     globals: { [name: string]: jsb.editor.GlobalConstantInfo } = {};
+    utilities: { [name: string]: jsb.editor.MethodBind } = {};
 
     is_primitive_type(name: string): boolean {
         return typeof this.primitive_types[name] !== "undefined";
+    }
+
+    is_valid_method_name(name: string): boolean {
+        if (typeof KeywordReplacement[name] !== "undefined") {
+            return false;
+        }
+        if (name.indexOf('/') >= 0 || name.indexOf('.') >= 0) {
+            return false;
+        }
+        return true;
+    }
+    
+    make_classname(class_name: string): string {
+        const types = this;
+        const remap_name: string | undefined = RemapTypes[class_name];
+        if (typeof remap_name !== "undefined") {
+            return remap_name;
+        }
+        if (class_name in types.classes) {
+            return class_name;
+        } else {
+            if (class_name.indexOf(".") >= 0) {
+                const layers = class_name.split(".");
+                if (layers.length == 2) {
+                    // nested enums in primitive types do not exist in class_info, they are manually binded.
+                    if (PrimitiveTypesSet.has(layers[0])) {
+                        return class_name;
+                    }
+                    const cls = types.classes[layers[0]];
+                    if (typeof cls !== "undefined" && cls.enums!.findIndex(v => v.name == layers[1]) >= 0) {
+                        return class_name;
+                    }
+                }
+            }
+            if (class_name in types.globals) {
+                return class_name;
+            }
+            if (class_name in types.singletons) {
+                return class_name;
+            }
+            // if (ReservedTypes.has(class_name)) {
+            //     return class_name;
+            // }
+            console.warn("undefined class", class_name);
+            return `any /*${class_name}*/`;
+        }
+    }
+
+    make_typename(info: jsb.editor.PropertyInfo): string {
+        if (info.hint == PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
+            console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
+            return info.hint_string.split(",").map(class_name => this.make_classname(class_name)).join(" | ")
+        }
+
+        //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
+        if (info.class_name.length == 0) {
+            const primitive_name = PrimitiveTypeNames[info.type];
+            if (typeof primitive_name !== "undefined") {
+                return primitive_name;
+            }
+            return `any /*unhandled: ${info.type}*/`;
+        }
+        
+        return this.make_classname(info.class_name);
+    }
+
+    make_arg(info: jsb.editor.PropertyInfo): string {
+        return `${replace(info.name)}: ${this.make_typename(info)}`
+    }
+
+    make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
+        // plain types
+        switch (value.type) {
+            case Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
+            case Variant.Type.TYPE_FLOAT: 
+            case Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
+            case Variant.Type.TYPE_STRING:
+            case Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
+            default: break;
+        }
+        // make them more readable?
+        if (value.type == Variant.Type.TYPE_VECTOR2) {
+            if (value == null) return 'new Vector2()';
+            if (value.value.x == value.value.y) {
+                if (value.value.x == 0) return `Vector2.ZERO`;
+                if (value.value.x == 1) return `Vector2.ONE`;
+            }
+            return `new Vector2(${value.value.x}, ${value.value.y})`;
+        }
+        if (value.type == Variant.Type.TYPE_VECTOR3) {
+            if (value == null) return 'new Vector3()';
+            if (value.value.x == value.value.y == value.value.z) {
+                if (value.value.x == 0) return `Vector3.ZERO`;
+                if (value.value.x == 1) return `Vector3.ONE`;
+            }
+            return `new Vector3(${value.value.x}, ${value.value.y}, ${value.value.z})`;
+        }
+        if (value.type == Variant.Type.TYPE_COLOR) {
+            if (value == null) return 'new Color()';
+            return `new Color(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
+        }
+        if (value.value == null) {
+            return "<any> {} /*compound.type from nil*/";
+        }
+        //TODO value sig for compound types
+        return `<any> {} /*compound.type from ${value.type}(${value.value})*/`;
+    }
+
+    make_arg_default_value(method_info: jsb.editor.MethodBind, index: number): string {
+        const default_arguments = method_info.default_arguments || [];
+        const def_index = index - (method_info.args_.length - default_arguments.length);
+        if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index]);
+        return this.make_arg(method_info.args_[index]) + " = " + this.make_literal_value(default_arguments[def_index]);
+    }
+
+    make_args(method_info: jsb.editor.MethodBind): string {
+        //TODO consider default arguments
+        const varargs = "...vargargs: any[]";
+        const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
+        if (method_info.args_.length == 0) {
+            return is_vararg ? varargs : "";
+        }
+        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index)).join(", ");
+        if (is_vararg) {
+            return `${args}, ${varargs}`;
+        }
+        return args;
+    }
+
+    make_return(method_info: jsb.editor.MethodBind): string {
+        //TODO
+        if (typeof method_info.return_ != "undefined") {
+            return this.make_typename(method_info.return_)
+        }
+        return "void"
     }
 }
 
@@ -736,6 +762,7 @@ export default class TSDCodeGen {
         const primitive_types = jsb.editor.get_primitive_types();
         const singletons = jsb.editor.get_singletons();
         const globals = jsb.editor.get_global_constants();
+        const utilities = jsb.editor.get_utility_functions();
         for (let cls of classes) {
             this._types.classes[cls.name] = cls;
         }
@@ -747,6 +774,9 @@ export default class TSDCodeGen {
         }
         for (let global_ of globals) {
             this._types.globals[global_.name] = global_;
+        }
+        for (let utility of utilities) {
+            this._types.utilities[utility.name] = utility;
         }
     }
 
@@ -772,7 +802,7 @@ export default class TSDCodeGen {
     }
 
     // the returned writer will be `finished` automatically
-    private split(): CodeWriter {
+    private split() {
         if (this._splitter == undefined) {
             return this.new_splitter().get_writer();
         }
@@ -806,6 +836,7 @@ export default class TSDCodeGen {
         this.emit_singletons();
         this.emit_godot();
         this.emit_globals();
+        this.emit_utilities();
         this._splitter?.close();
         this.cleanup();
     }
@@ -829,6 +860,14 @@ export default class TSDCodeGen {
             } else {
                 cg.line_comment_(`ERROR: singleton ${singleton.name} without class info ${singleton.class_name}`)
             }
+        }
+    }
+
+    private emit_utilities() {
+        for (let utility_name in this._types.utilities) {
+            const utility_func = this._types.utilities[utility_name];
+            const cg = this.split();
+            cg.utility_(utility_func);
         }
     }
 

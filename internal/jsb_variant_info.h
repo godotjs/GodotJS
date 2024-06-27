@@ -31,6 +31,24 @@ namespace jsb::internal
             }
             return argc <= expected_num && argc + default_num >= expected_num;
         }
+
+        FMethodInfo& operator=(const MethodInfo& p_method_info)
+        {
+            name = p_method_info.name;
+            argument_types.resize(p_method_info.arguments.size());
+            for (int index = 0, num = p_method_info.arguments.size(); index < num; ++index)
+            {
+                argument_types.write[index] = p_method_info.arguments[index].type;
+            }
+            default_arguments.resize(p_method_info.default_arguments.size());
+            for (int index = 0, num = p_method_info.default_arguments.size(); index < num; ++index)
+            {
+                default_arguments.write[index] = p_method_info.default_arguments[index];
+            }
+            return_type = p_method_info.return_val.type;
+            is_vararg = (p_method_info.flags & METHOD_FLAG_VARARG) != 0;
+            return *this;
+        }
     };
 
     struct FGetSetInfo
@@ -44,6 +62,14 @@ namespace jsb::internal
     {
         Vector<FMethodInfo> methods;
         Vector<FGetSetInfo> getsets;
+
+        // Vector<MethodInfo> utility_funcs;
+        //
+        // jsb_force_inline const MethodInfo& get_utility_func(int p_index)
+        // {
+        //     jsb_check(p_index >= 0 && p_index < utility_funcs.size());
+        //     return utility_funcs[p_index];
+        // }
 
         jsb_force_inline const FGetSetInfo& get_setter(int p_index)
         {

@@ -1239,6 +1239,65 @@ namespace jsb
         }
     }
 
+    void Realm::_godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Isolate::Scope isolate_scope(isolate);
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const internal::FMethodInfo& method_info = Realm::wrap(context)->get_variant_info_collection().get_method(info.Data().As<v8::Int32>()->Value());
+        const int argc = info.Length();
+
+        // prepare argv
+        if (!method_info.check_argc(argc))
+        {
+            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            return;
+        }
+        const Variant** argv = jsb_stackalloc(const Variant*, argc);
+        const int known_argc = method_info.argument_types.size();
+        Variant* args = jsb_stackalloc(Variant, argc);
+        for (int index = 0; index < argc; ++index)
+        {
+            memnew_placement(&args[index], Variant);
+            argv[index] = &args[index];
+            if (index < known_argc
+                ? !Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
+                : !Realm::js_to_gd_var(isolate, context, info[index], args[index]))
+            {
+                // revert all constructors
+                v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
+                while (index >= 0) { args[index--].~Variant(); }
+                isolate->ThrowError(error_message);
+                return;
+            }
+        }
+
+        // call godot method
+        Callable::CallError error;
+        Variant crval;
+        Variant::call_utility_function(method_info.name, &crval, argv, argc, error);
+
+        // don't forget to destruct all stack allocated variants
+        for (int index = 0; index < argc; ++index)
+        {
+            args[index].~Variant();
+        }
+
+        if (error.error != Callable::CallError::CALL_OK)
+        {
+            jsb_throw(isolate, "failed to call");
+            return;
+        }
+        v8::Local<v8::Value> jrval;
+        if (Realm::gd_var_to_js(isolate, context, crval, jrval))
+        {
+            info.GetReturnValue().Set(jrval);
+            return;
+        }
+        jsb_throw(isolate, "failed to translate godot variant to v8 value");
+    }
+
     void Realm::_godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         jsb_check(info.Data()->IsExternal());
@@ -1356,8 +1415,17 @@ namespace jsb
             return;
         }
 
-        // (3) math_defs. but `PI`, `INF`, `NAN`, `TAU` could be easily accessed in javascript.
-        //     so we just happily omit these defines here.
+        // (3) utility functions.
+        if (Variant::has_utility_function(type_name))
+        {
+            jsb_check(sizeof(Variant::ValidatedUtilityFunction) == sizeof(void*));
+            const int32_t utility_func_index = (int32_t) realm->get_variant_info_collection().methods.size();
+            realm->get_variant_info_collection().methods.append({});
+            internal::FMethodInfo& method_info = realm->get_variant_info_collection().methods.write[utility_func_index];
+            method_info = Variant::get_utility_function_info(type_name);
+            info.GetReturnValue().Set(v8::Function::New(context, _godot_utility_func, v8::Int32::New(isolate, utility_func_index)).ToLocalChecked());
+            return;
+        }
 
         // (4) global_constants
         if (CoreConstants::is_global_constant(type_name))

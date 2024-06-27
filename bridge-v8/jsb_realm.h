@@ -212,6 +212,7 @@ namespace jsb
         static void _godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
         static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);
