@@ -195,6 +195,28 @@ abstract class AbstractWriter implements ScopeWriter {
 
 const tab = "    ";
 
+class Description {
+    private result: string;
+
+    get text() { return this.result; }
+
+    get length() { return this.result.length; }
+
+    private constructor(result: string) {
+        this.result = result;
+    }
+
+    static forAny(description: string | undefined) {
+        return new Description(description || "");
+    }
+
+    /** a link to godot official docs website is added in comment for class description */
+    static forClass(class_name: string, description: string | undefined) {
+        let link = jsb.editor.VERSION_DOCS_URL.length != 0 && class_name.length != 0 ? `\n@link ${jsb.editor.VERSION_DOCS_URL}/classes/class_${class_name.toLowerCase()}.html` : "";
+        return new Description((description || "") + link);
+    }
+}
+
 class DocCommentHelper {
     static get_leading_tab(text: string) {
         let tab = "";
@@ -253,9 +275,10 @@ class DocCommentHelper {
         return text;
     }
 
-    static write(writer: CodeWriter, text: string | undefined, newline: boolean): boolean {
-        if (typeof text !== "string" || text.length == 0) return false;
-        let lines = this.get_simplified_description(text).replace("\r\n", "\n").split("\n");
+    static write(writer: CodeWriter, description: Description | string | undefined, newline: boolean): boolean {
+        if (typeof description === "undefined" || description.length == 0) return false;
+        let rawlines = typeof description === "string" ? Description.forAny(description).text : description.text;
+        let lines = this.get_simplified_description(rawlines).replace("\r\n", "\n").split("\n");
         if (lines.length > 0 && this.is_empty_or_whitespace(lines[0])) lines.splice(0, 1);
         if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1])) lines.splice(lines.length - 1, 1);
         if (lines.length == 0) return false;
@@ -373,7 +396,7 @@ class ClassWriter extends IndentWriter {
     }
 
     finish() {
-        DocCommentHelper.write(this._base, this._doc?.brief_description, false);
+        DocCommentHelper.write(this._base, Description.forClass(this._name, this._doc?.brief_description), false);
         this._base.line(`${this.head()} {`)
         super.finish()
         this._base.line('}')
@@ -661,7 +684,7 @@ class FileWriter extends AbstractWriter {
 
 class FileSplitter {
     private _file: FileAccess;
-    private _toplevel: ModuleWriter;
+    private _toplevel: ScopeWriter;
     private _types: TypeDB;
 
     constructor(types: TypeDB, filePath: string) {
@@ -749,7 +772,7 @@ export default class TSDCodeGen {
     }
 
     // the returned writer will be `finished` automatically
-    private split(): ModuleWriter {
+    private split(): CodeWriter {
         if (this._splitter == undefined) {
             return this.new_splitter().get_writer();
         }

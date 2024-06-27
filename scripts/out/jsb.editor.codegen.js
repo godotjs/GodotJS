@@ -180,6 +180,21 @@ class AbstractWriter {
     }
 }
 const tab = "    ";
+class Description {
+    get text() { return this.result; }
+    get length() { return this.result.length; }
+    constructor(result) {
+        this.result = result;
+    }
+    static forAny(description) {
+        return new Description(description || "");
+    }
+    /** a link to godot official docs website is added in comment for class description */
+    static forClass(class_name, description) {
+        let link = jsb.editor.VERSION_DOCS_URL.length != 0 && class_name.length != 0 ? `\n@link ${jsb.editor.VERSION_DOCS_URL}/classes/class_${class_name.toLowerCase()}.html` : "";
+        return new Description((description || "") + link);
+    }
+}
 class DocCommentHelper {
     static get_leading_tab(text) {
         let tab = "";
@@ -233,10 +248,11 @@ class DocCommentHelper {
         }
         return text;
     }
-    static write(writer, text, newline) {
-        if (typeof text !== "string" || text.length == 0)
+    static write(writer, description, newline) {
+        if (typeof description === "undefined" || description.length == 0)
             return false;
-        let lines = this.get_simplified_description(text).replace("\r\n", "\n").split("\n");
+        let rawlines = typeof description === "string" ? Description.forAny(description).text : description.text;
+        let lines = this.get_simplified_description(rawlines).replace("\r\n", "\n").split("\n");
         if (lines.length > 0 && this.is_empty_or_whitespace(lines[0]))
             lines.splice(0, 1);
         if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1]))
@@ -332,7 +348,7 @@ class ClassWriter extends IndentWriter {
     }
     finish() {
         var _a;
-        DocCommentHelper.write(this._base, (_a = this._doc) === null || _a === void 0 ? void 0 : _a.brief_description, false);
+        DocCommentHelper.write(this._base, Description.forClass(this._name, (_a = this._doc) === null || _a === void 0 ? void 0 : _a.brief_description), false);
         this._base.line(`${this.head()} {`);
         super.finish();
         this._base.line('}');

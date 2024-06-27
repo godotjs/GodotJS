@@ -3,6 +3,7 @@
 #include "jsb_realm.h"
 #include "jsb_primitive_bindings.h"
 #include "core/core_constants.h"
+#include "core/version.h"
 
 #include "../weaver/jsb_callable_custom.h"
 
@@ -1165,26 +1166,29 @@ namespace jsb
         // internal bridge functions & variables
         {
 
-            jsb_obj->Set(context, V8Helper::to_string(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, DEV_ENABLED)).Check();
-            jsb_obj->Set(context, V8Helper::to_string(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, TOOLS_ENABLED)).Check();
-            jsb_obj->Set(context, V8Helper::to_string(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
-            jsb_obj->Set(context, V8Helper::to_string(isolate, "is_instance_valid"), v8::Function::New(context, _is_instance_valid).ToLocalChecked()).Check();
-            jsb_obj->Set(context, V8Helper::to_string(isolate, "to_array_buffer"), v8::Function::New(context, _to_array_buffer).ToLocalChecked()).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, DEV_ENABLED)).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, TOOLS_ENABLED)).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_MAJOR"), v8::Int32::New(isolate, VERSION_MAJOR)).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_MINOR"), v8::Int32::New(isolate, VERSION_MINOR)).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_PATCH"), v8::Int32::New(isolate, VERSION_PATCH)).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "is_instance_valid"), v8::Function::New(context, _is_instance_valid).ToLocalChecked()).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "to_array_buffer"), v8::Function::New(context, _to_array_buffer).ToLocalChecked()).Check();
 
             // jsb.internal
             {
                 v8::Local<v8::Object> internal_obj = v8::Object::New(isolate);
 
-                jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "internal"), internal_obj).Check();
+                jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "internal"), internal_obj).Check();
 
-                internal_obj->Set(context, V8Helper::to_string(isolate, "find_module"), v8::Function::New(context, _find_module).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string(isolate, "add_module"), v8::Function::New(context, _add_module).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "find_module"), v8::Function::New(context, _find_module).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_module"), v8::Function::New(context, _add_module).ToLocalChecked()).Check();
 
-                internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
             }
 
 #if TOOLS_ENABLED
@@ -1192,15 +1196,16 @@ namespace jsb
             {
                 v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
 
-                jsb_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "editor"), editor_obj).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_class_doc"), v8::Function::New(context, JavaScriptEditorUtility::_get_class_doc).ToLocalChecked()).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_classes"), v8::Function::New(context, JavaScriptEditorUtility::_get_classes).ToLocalChecked()).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_global_constants"), v8::Function::New(context, JavaScriptEditorUtility::_get_global_constants).ToLocalChecked()).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_singletons"), v8::Function::New(context, JavaScriptEditorUtility::_get_singletons).ToLocalChecked()).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
-                editor_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "benchmark_dump"), v8::Function::New(context, JavaScriptEditorUtility::_benchmark_dump).ToLocalChecked()).Check();
+                jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "editor"), editor_obj).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_class_doc"), v8::Function::New(context, JavaScriptEditorUtility::_get_class_doc).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_classes"), v8::Function::New(context, JavaScriptEditorUtility::_get_classes).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_global_constants"), v8::Function::New(context, JavaScriptEditorUtility::_get_global_constants).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_singletons"), v8::Function::New(context, JavaScriptEditorUtility::_get_singletons).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "benchmark_dump"), v8::Function::New(context, JavaScriptEditorUtility::_benchmark_dump).ToLocalChecked()).Check();
+                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_DOCS_URL"), V8Helper::to_string(isolate, VERSION_DOCS_URL)).Check();
             }
 #endif
         }

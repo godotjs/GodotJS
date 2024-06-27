@@ -23,18 +23,18 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.$wait = exports.tool_ = exports.onready_ = exports.export_flags = exports.export_enum = exports.export_ = exports.signal_ = void 0;
+exports.$wait = exports.icon = exports.tool = exports.onready = exports.export_flags = exports.export_enum = exports.export_ = exports.signal = void 0;
 const godot_1 = require("godot");
 const jsb = __importStar(require("godot-jsb"));
 /**
  *
  */
-function signal_() {
+function signal() {
     return function (target, key) {
         jsb.internal.add_script_signal(target, key);
     };
 }
-exports.signal_ = signal_;
+exports.signal = signal;
 function export_(type, details) {
     return function (target, key) {
         let ebd = { name: key, type: type, hint: godot_1.PropertyHint.PROPERTY_HINT_NONE, hint_string: "" };
@@ -86,19 +86,25 @@ exports.export_flags = export_flags;
  * auto initialized on ready (before _ready called)
  * @param evaluator for now, only string is accepted
  */
-function onready_(evaluator) {
+function onready(evaluator) {
     return function (target, key) {
         let ebd = { name: key, evaluator: evaluator };
         jsb.internal.add_script_ready(target, ebd);
     };
 }
-exports.onready_ = onready_;
-function tool_() {
+exports.onready = onready;
+function tool() {
     return function (target) {
         jsb.internal.add_script_tool(target);
     };
 }
-exports.tool_ = tool_;
+exports.tool = tool;
+function icon(path) {
+    return function (target) {
+        jsb.internal.add_script_icon(target, path);
+    };
+}
+exports.icon = icon;
 function $wait(signal) {
     return new Promise(resolve => {
         let fn = null;
