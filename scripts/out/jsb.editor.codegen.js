@@ -190,8 +190,10 @@ class Description {
         return new Description(description || "");
     }
     /** a link to godot official docs website is added in comment for class description */
-    static forClass(class_name, description) {
-        let link = jsb.editor.VERSION_DOCS_URL.length != 0 && class_name.length != 0 ? `\n@link ${jsb.editor.VERSION_DOCS_URL}/classes/class_${class_name.toLowerCase()}.html` : "";
+    static forClass(types, class_name) {
+        let class_doc = types.find_doc(class_name);
+        let description = class_doc === null || class_doc === void 0 ? void 0 : class_doc.brief_description;
+        let link = jsb.editor.VERSION_DOCS_URL.length != 0 && !!class_doc && class_name.length != 0 ? `\n@link ${jsb.editor.VERSION_DOCS_URL}/classes/class_${class_name.toLowerCase()}.html` : "";
         return new Description((description || "") + link);
     }
 }
@@ -229,6 +231,8 @@ class DocCommentHelper {
         text = this.replace_markup_content(text, 0, "[b]Note:[/b]", "  \n**Note:**");
         text = this.replace_markup_content(text, 0, "[b]", "**");
         text = this.replace_markup_content(text, 0, "[/b]", "**");
+        text = this.replace_markup_content(text, 0, "[i]", " *");
+        text = this.replace_markup_content(text, 0, "[/i]", "* ");
         return text;
     }
     static replace_markup_content(text, from_pos, markup, rep) {
@@ -358,8 +362,7 @@ class ClassWriter extends IndentWriter {
         return this._singleton_mode || method_info.is_static ? "static " : "";
     }
     finish() {
-        var _a;
-        DocCommentHelper.write(this._base, Description.forClass(this._name, (_a = this._doc) === null || _a === void 0 ? void 0 : _a.brief_description), false);
+        DocCommentHelper.write(this._base, Description.forClass(this.types, this._name), false);
         this._base.line(`${this.head()} {`);
         super.finish();
         this._base.line('}');
@@ -529,6 +532,20 @@ class TypeDB {
         this.primitive_types = {};
         this.globals = {};
         this.utilities = {};
+        // `class_doc` is loaded lazily once used, and be cached in `class_docs`
+        this.class_docs = {};
+    }
+    find_doc(class_name) {
+        let class_doc = this.class_docs[class_name];
+        if (typeof class_doc === "object") {
+            return class_doc;
+        }
+        if (typeof class_doc === "boolean") {
+            return undefined;
+        }
+        let loaded_doc = jsb.editor.get_class_doc(class_name);
+        this.class_docs[class_name] = loaded_doc || false;
+        return loaded_doc;
     }
     is_primitive_type(name) {
         return typeof this.primitive_types[name] !== "undefined";
@@ -806,7 +823,7 @@ class TSDCodeGen {
         }
     }
     emit_godot_primitive(cg, cls) {
-        const class_doc = jsb.editor.get_class_doc(cls.name);
+        const class_doc = this._types.find_doc(cls.name);
         const ignored_consts = new Set();
         const class_ns_cg = cg.namespace_(cls.name, class_doc);
         if (cls.enums) {
@@ -845,7 +862,7 @@ class TSDCodeGen {
     }
     emit_godot_class(cg, cls, singleton_mode) {
         try {
-            const class_doc = jsb.editor.get_class_doc(cls.name);
+            const class_doc = this._types.find_doc(cls.name);
             const ignored_consts = new Set();
             const class_ns_cg = cg.namespace_(cls.name, class_doc);
             if (cls.enums) {

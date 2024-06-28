@@ -212,8 +212,10 @@ class Description {
     }
 
     /** a link to godot official docs website is added in comment for class description */
-    static forClass(class_name: string, description: string | undefined) {
-        let link = jsb.editor.VERSION_DOCS_URL.length != 0 && class_name.length != 0 ? `\n@link ${jsb.editor.VERSION_DOCS_URL}/classes/class_${class_name.toLowerCase()}.html` : "";
+    static forClass(types: TypeDB, class_name: string) {
+        let class_doc = types.find_doc(class_name);
+        let description = class_doc?.brief_description;
+        let link = jsb.editor.VERSION_DOCS_URL.length != 0 && !!class_doc && class_name.length != 0 ? `\n@link ${jsb.editor.VERSION_DOCS_URL}/classes/class_${class_name.toLowerCase()}.html` : "";
         return new Description((description || "") + link);
     }
 }
@@ -254,6 +256,8 @@ class DocCommentHelper {
         text = this.replace_markup_content(text, 0, "[b]Note:[/b]", "  \n**Note:**");
         text = this.replace_markup_content(text, 0, "[b]", "**");
         text = this.replace_markup_content(text, 0, "[/b]", "**");
+        text = this.replace_markup_content(text, 0, "[i]", " *");
+        text = this.replace_markup_content(text, 0, "[/i]", "* ");
         return text;
     }
 
@@ -410,7 +414,7 @@ class ClassWriter extends IndentWriter {
     }
 
     finish() {
-        DocCommentHelper.write(this._base, Description.forClass(this._name, this._doc?.brief_description), false);
+        DocCommentHelper.write(this._base, Description.forClass(this.types, this._name), false);
         this._base.line(`${this.head()} {`)
         super.finish()
         this._base.line('}')
@@ -606,6 +610,22 @@ class TypeDB {
     primitive_types: { [name: string]: jsb.editor.PrimitiveClassInfo } = {};
     globals: { [name: string]: jsb.editor.GlobalConstantInfo } = {};
     utilities: { [name: string]: jsb.editor.MethodBind } = {};
+
+    // `class_doc` is loaded lazily once used, and be cached in `class_docs`
+    class_docs: { [name: string]: jsb.editor.ClassDoc | false } = {};
+
+    find_doc(class_name: string): jsb.editor.ClassDoc | undefined {
+        let class_doc = this.class_docs[class_name];
+        if (typeof class_doc === "object") {
+            return <jsb.editor.ClassDoc> class_doc;
+        }
+        if (typeof class_doc === "boolean") {
+            return undefined;
+        }
+        let loaded_doc = jsb.editor.get_class_doc(class_name);
+        this.class_docs[class_name] = loaded_doc || false
+        return loaded_doc;
+    }
 
     is_primitive_type(name: string): boolean {
         return typeof this.primitive_types[name] !== "undefined";
@@ -903,7 +923,7 @@ export default class TSDCodeGen {
     }
 
     private emit_godot_primitive(cg: CodeWriter, cls: jsb.editor.PrimitiveClassInfo) {
-        const class_doc = jsb.editor.get_class_doc(cls.name);
+        const class_doc = this._types.find_doc(cls.name);
         const ignored_consts: Set<string> = new Set();
         const class_ns_cg = cg.namespace_(cls.name, class_doc);
         if (cls.enums) {
@@ -944,7 +964,7 @@ export default class TSDCodeGen {
 
     private emit_godot_class(cg: CodeWriter, cls: jsb.editor.ClassInfo, singleton_mode: boolean) {
         try {
-            const class_doc = jsb.editor.get_class_doc(cls.name);
+            const class_doc = this._types.find_doc(cls.name);
             const ignored_consts: Set<string> = new Set();
             const class_ns_cg = cg.namespace_(cls.name, class_doc);
             if (cls.enums) {
