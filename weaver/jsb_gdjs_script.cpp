@@ -187,7 +187,7 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 String GodotJSScript::get_class_icon_path() const
 {
     jsb_check(loaded_);
-    return get_js_class_info().icon;
+    return gdjs_class_id_ ? get_js_class_info().icon : String();
 }
 
 PropertyInfo GodotJSScript::get_class_category() const
