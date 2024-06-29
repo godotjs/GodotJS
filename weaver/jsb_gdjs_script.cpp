@@ -417,7 +417,7 @@ void GodotJSScript::update_exports()
 {
     GODOTJS_LOAD_SCRIPT_MODULE();
     jsb_check(loaded_);
-#if TOOLS_ENABLED
+#ifdef TOOLS_ENABLED
     if (!valid_) return;
     _update_exports(nullptr);
 #endif

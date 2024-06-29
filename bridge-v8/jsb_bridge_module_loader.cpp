@@ -7,7 +7,7 @@
 
 #include "../weaver/jsb_callable_custom.h"
 
-#if TOOLS_ENABLED
+#ifdef TOOLS_ENABLED
 
 #include "editor/editor_help.h"
 
@@ -1165,9 +1165,8 @@ namespace jsb
 
         // internal bridge functions & variables
         {
-
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, DEV_ENABLED)).Check();
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, TOOLS_ENABLED)).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, JSB_GODOT_DEV)).Check();
+            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, JSB_GODOT_TOOLS)).Check();
             jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_MAJOR"), v8::Int32::New(isolate, VERSION_MAJOR)).Check();
             jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_MINOR"), v8::Int32::New(isolate, VERSION_MINOR)).Check();
             jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_PATCH"), v8::Int32::New(isolate, VERSION_PATCH)).Check();
@@ -1191,7 +1190,7 @@ namespace jsb
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
             }
 
-#if TOOLS_ENABLED
+#ifdef TOOLS_ENABLED
             // internal 'jsb.editor'
             {
                 v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);

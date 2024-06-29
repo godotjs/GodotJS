@@ -5,7 +5,7 @@
 #include "weaver/jsb_resource_loader.h"
 #include "weaver/jsb_resource_saver.h"
 
-#if TOOLS_ENABLED
+#ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
 #include "weaver-editor/jsb_editor_plugin.h"
 #endif
@@ -31,7 +31,7 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
 		resource_saver_js.instantiate();
 		ResourceSaver::add_resource_format_saver(resource_saver_js);
 
-#if TOOLS_ENABLED
+#ifdef TOOLS_ENABLED
         EditorNode::add_init_callback([]
         {
             GodotJSEditorPlugin* plugin = memnew(GodotJSEditorPlugin);
