@@ -67,7 +67,7 @@ void GodotJSScriptLanguage::finish()
 void GodotJSScriptLanguage::frame()
 {
     environment_->update();
-    environment_->gc();
+    // environment_->gc();
 }
 
 void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const
