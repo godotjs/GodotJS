@@ -20,6 +20,7 @@ private:
     class Button* clear_button_;
     class Button* dts_button_;
     class Button* preset_button_;
+    class Label* preset_hint_label_;
 
     class ItemList* candidate_list_;
 
@@ -44,6 +45,7 @@ protected:
     void add_history(const String& p_text);
     jsb::JSValueMove eval_source(const String& p_code);
     String encode_string(const String& p_text);
+    void check_install();
 
 public:
     GodotJSREPL();

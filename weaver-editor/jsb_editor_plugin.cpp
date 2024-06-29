@@ -110,7 +110,7 @@ void GodotJSEditorPlugin::on_successfully_installed()
 void GodotJSEditorPlugin::try_install_ts_project()
 {
     Vector<String> modified;
-    if (verify_files(install_files_, modified))
+    if (verify_files(install_files_, true, &modified))
     {
         on_successfully_installed();
         return;
@@ -128,7 +128,7 @@ void GodotJSEditorPlugin::try_install_ts_project()
     confirm_dialog_->popup_centered();
 }
 
-bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file)
+bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file, bool p_verify_content)
 {
     size_t size;
     const char* data = GodotJSPorjectPreset::get_source(p_file.source_name, size);
@@ -137,27 +137,41 @@ bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file)
     Error err;
     if (!FileAccess::exists(target_name)) return false;
     if ((p_file.hint & jsb::CH_CREATE_ONLY) != 0) return true;
-    const Ref<FileAccess> access = FileAccess::open(target_name, FileAccess::READ, &err);
-    if (err != OK || access.is_null()) return false;
-    const size_t file_len = access->get_length();
-    if (file_len != size) return false;
-    Vector<uint8_t> file_data;
-    jsb_check(size == (size_t)(int) size);
-    if (file_data.resize((int) size) != OK) return false;
-    if (access->get_buffer(file_data.ptrw(), size) != size) return false;
-    return memcmp(data, file_data.ptr(), size) == 0;
+    if (p_verify_content)
+    {
+        const Ref<FileAccess> access = FileAccess::open(target_name, FileAccess::READ, &err);
+        if (err != OK || access.is_null()) return false;
+        const size_t file_len = access->get_length();
+        if (file_len != size) return false;
+        Vector<uint8_t> file_data;
+        jsb_check(size == (size_t)(int) size);
+        if (file_data.resize((int) size) != OK) return false;
+        if (access->get_buffer(file_data.ptrw(), size) != size) return false;
+        return memcmp(data, file_data.ptr(), size) == 0;
+    }
+    return true;
 }
 
-bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_files, Vector<String>& r_modified)
+bool GodotJSEditorPlugin::verify_ts_project() const
 {
+    return verify_files(install_files_, false, nullptr);
+}
+
+bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<String>* r_modified)
+{
+    bool verified = true;
     for (const jsb::InstallFileInfo& info: p_files)
     {
-        if (!verify_file(info))
+        if (!verify_file(info, p_verify_content))
         {
-            r_modified.append(info.source_name);
+            verified = false;
+            if (r_modified)
+            {
+                r_modified->append(info.source_name);
+            }
         }
     }
-    return r_modified.is_empty();
+    return verified;
 }
 
 void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>& p_files)

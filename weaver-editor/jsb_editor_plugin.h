@@ -58,6 +58,7 @@ public:
     virtual ~GodotJSEditorPlugin() override;
 
     void try_install_ts_project();
+    bool verify_ts_project() const;
 
     static void generate_godot_dts();
     static void install_ts_project(const Vector<jsb::InstallFileInfo>& p_files);
@@ -66,8 +67,8 @@ public:
      * return true if everything is identical to the expected version.
      * otherwise return false with changed files in `r_modified`.
      */
-    static bool verify_files(const Vector<jsb::InstallFileInfo>& p_files, Vector<String>& r_modified);
-    static bool verify_file(const jsb::InstallFileInfo& p_file);
+    static bool verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<String>* r_modified);
+    static bool verify_file(const jsb::InstallFileInfo& p_file, bool p_verify_content);
 
     static void on_successfully_installed();
 

@@ -46,6 +46,11 @@ GodotJSREPL::GodotJSREPL()
         preset_button_->set_tooltip_text(TTR("Install GodotJS preset files"));
         preset_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_install_preset_pressed));
     }
+    {
+        preset_hint_label_ = memnew(Label);
+        tool_bar_box->add_child(preset_hint_label_);
+        preset_hint_label_->set_text(TTR("Suggest re-installing GodotJS preset files."));
+    }
 
     output_box_ = memnew(RichTextLabel);
     output_box_->set_threaded(true);
@@ -91,8 +96,13 @@ void GodotJSREPL::_notification(int p_what)
 {
     switch (p_what)
     {
+    case NOTIFICATION_APPLICATION_FOCUS_IN:
+    {
+        check_install();
+    } break;
     case NOTIFICATION_ENTER_TREE: {
         _update_theme();
+        check_install();
         // _load_state();
     } break;
     case NOTIFICATION_THEME_CHANGED: {
@@ -107,6 +117,21 @@ void GodotJSREPL::_update_theme()
     clear_button_->set_icon(get_editor_theme_icon("Clear"));
     dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
     preset_button_->set_icon(get_editor_theme_icon("Window"));
+}
+
+void GodotJSREPL::check_install()
+{
+    do
+    {
+        EditorNode* editor_node = EditorNode::get_singleton();
+        if (!editor_node) break;
+        GodotJSEditorPlugin* editor_plugin = reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
+        if (!editor_plugin) break;
+        if (!editor_plugin->verify_ts_project()) break;
+        preset_hint_label_->set_visible(false);
+        return;
+    } while (false);
+    preset_hint_label_->set_visible(true);
 }
 
 void GodotJSREPL::_clear_pressed()
@@ -199,6 +224,7 @@ void GodotJSREPL::_input_gui_input(const Ref<InputEvent> &p_event)
 
 void GodotJSREPL::_input_submitted(const String &p_text)
 {
+    check_install();
     input_submitting_ = true;
     add_line(p_text);
     input_box_->clear();
