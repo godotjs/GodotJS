@@ -963,6 +963,13 @@ namespace jsb
                 V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))));
         }
 
+        void _notify_microtasks_run(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Environment* environment = Environment::wrap(info.GetIsolate());
+            jsb_check(environment);
+            environment->notify_microtasks_run();
+        }
+
         // function (target: any): void;
         void _add_script_icon(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
@@ -1188,6 +1195,7 @@ namespace jsb
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "notify_microtasks_run"), v8::Function::New(context, _notify_microtasks_run).ToLocalChecked()).Check();
             }
 
 #ifdef TOOLS_ENABLED

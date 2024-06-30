@@ -95,6 +95,7 @@ namespace jsb
 
         uint64_t last_ticks_;
         internal::TTimerManager<JavaScriptTimerAction> timer_manager_;
+        bool microtasks_run_ = false;
 
 #if JSB_WITH_DEBUGGER
         std::unique_ptr<class JavaScriptDebugger> debugger_;
@@ -114,6 +115,8 @@ namespace jsb
 
         // try to translate the source positions in stacktrace
         String handle_source_map(const String& p_stacktrace);
+
+        jsb_force_inline void notify_microtasks_run() { microtasks_run_ = true; }
 
 #if JSB_WITH_VARIANT_POOL
         jsb_force_inline Variant* alloc_variant(const Variant& p_templet)

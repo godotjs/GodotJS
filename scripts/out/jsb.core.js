@@ -120,6 +120,7 @@ function $wait(signal) {
             }
             // return as javascript array if more than one 
             resolve(Array.from(arguments));
+            jsb.internal.notify_microtasks_run();
         });
         signal.connect(fn, 0);
     });

@@ -49,6 +49,7 @@ declare module "godot-jsb" {
 
         function add_module(id: string, obj: any): void;
         function find_module(id: string): any;
+        function notify_microtasks_run(): void;
     }
 
     namespace editor {

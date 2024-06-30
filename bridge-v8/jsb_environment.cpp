@@ -1,7 +1,7 @@
 #include "jsb_environment.h"
 
 #if JSB_WITH_DEBUGGER
-#include "jsb_debugger.h"
+#   include "jsb_debugger.h"
 #endif
 
 #include "jsb_bridge_module_loader.h"
@@ -9,6 +9,9 @@
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 #include "editor/editor_settings.h"
+#include "main/performance.h"
+
+#define JSB_WITH_GC_CALLBACK 0
 
 namespace jsb
 {
@@ -110,6 +113,13 @@ namespace jsb
 
     namespace
     {
+#if JSB_WITH_GC_CALLBACK
+        void GCCallback(v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags)
+        {
+            JSB_LOG(Log, "v8 gc %d %d", type, flags);
+        }
+#endif
+
         void PromiseRejectCallback_(v8::PromiseRejectMessage message)
         {
             if (message.GetEvent() != v8::kPromiseRejectWithNoHandler)
@@ -159,13 +169,17 @@ namespace jsb
         static GlobalInitialize global_initialize;
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
+        //NOTE `cppgc_enable_young_generation=true` required?
+        // create_params.constraints.set_max_young_generation_size_in_bytes(JSB_YOUNG_GEN_LIMITS * 1024 * 1024);
 
         thread_id_ = Thread::get_caller_id();
         last_ticks_ = 0;
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
-
+#if JSB_WITH_GC_CALLBACK
+        isolate_->AddGCEpilogueCallback(&GCCallback);
+#endif
         {
             v8::HandleScope handle_scope(isolate_);
             for (int index = 0; index < Symbols::kNum; ++index)
@@ -261,9 +275,21 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate_);
             v8::HandleScope handle_scope(isolate_);
 
-            timer_manager_.invoke_timers(isolate_);
+            if (timer_manager_.invoke_timers(isolate_))
+            {
+                microtasks_run_ = true;
+            }
         }
-        isolate_->PerformMicrotaskCheckpoint();
+        // static constexpr int max_fps = 60;
+        //TODO a hint for scavenger which is better for reducing spikes?
+        // isolate_->SetIdle(true);
+        // isolate_->MemoryPressureNotification(v8::MemoryPressureLevel::kModerate);
+
+        if (microtasks_run_)
+        {
+            microtasks_run_ = false;
+            isolate_->PerformMicrotaskCheckpoint();
+        }
 #if JSB_WITH_DEBUGGER
         debugger_->update();
 #endif

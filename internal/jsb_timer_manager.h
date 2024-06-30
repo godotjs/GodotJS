@@ -277,8 +277,9 @@ namespace jsb::internal
 		}
 
         template<typename TContext>
-        void invoke_timers(TContext* ctx)
+        bool invoke_timers(TContext* ctx)
 		{
+		    if (_activated_timers.size() == 0) return false;
 		    for (const Index32& index : _activated_timers)
 		    {
 		        if (!_used_timers.is_valid_index(index))
@@ -310,6 +311,7 @@ namespace jsb::internal
 		        }
 		    }
 		    _activated_timers.clear();
+		    return true;
 		}
 
 	private:
