@@ -1195,7 +1195,7 @@ namespace jsb
     {
         v8::Isolate* isolate = info.GetIsolate();
         // v8::Isolate::Scope isolate_scope(isolate);
-        v8::HandleScope handle_scope(isolate);
+        // v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         // v8::Context::Scope context_scope(context);
 
@@ -1242,8 +1242,8 @@ namespace jsb
     void Realm::_godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        v8::HandleScope handle_scope(isolate);
-        v8::Isolate::Scope isolate_scope(isolate);
+        // v8::HandleScope handle_scope(isolate);
+        // v8::Isolate::Scope isolate_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         const internal::FMethodInfo& method_info = Realm::wrap(context)->get_variant_info_collection().get_method(info.Data().As<v8::Int32>()->Value());
         const int argc = info.Length();

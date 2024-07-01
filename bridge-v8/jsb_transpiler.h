@@ -35,8 +35,6 @@
 
 #define JSB_CONTEXT_BOILERPLATE() \
     v8::Isolate* isolate = info.GetIsolate();\
-    v8::HandleScope handle_scope(isolate);\
-    v8::Isolate::Scope isolate_scope(isolate);\
     v8::Local<v8::Context> context = isolate->GetCurrentContext();\
     Functor& func = *(Functor*) Realm::get_function_pointer(context, info.Data()->Uint32Value(context).ToChecked());\
     (void) 0

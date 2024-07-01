@@ -66,7 +66,7 @@ namespace jsb
 
         const std::shared_ptr<Environment>& get_environment() const { return environment_; }
 
-        static std::shared_ptr<Realm> get_realm(RealmID p_realm_id)
+        static std::shared_ptr<Realm> get_realm(const RealmID p_realm_id)
         {
             // return contexts_[p_realm_id]->shared_from_this();
             Realm* ptr;

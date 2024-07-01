@@ -45,8 +45,6 @@ namespace jsb
         static void invoke(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const Variant::Operator op = (Variant::Operator) info.Data().As<v8::Int32>()->Value();
             if (info.Length() != 2)
@@ -93,8 +91,6 @@ namespace jsb
         static void invoke(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const Variant::Operator op = (Variant::Operator) info.Data().As<v8::Int32>()->Value();
             if (info.Length() != 1)
@@ -201,9 +197,8 @@ namespace jsb
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            v8::Isolate::Scope isolate_scope(isolate);
+
             if (!info.IsConstructCall())
             {
                 jsb_throw(isolate, "bad constructor call");
@@ -289,8 +284,6 @@ namespace jsb
         static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
@@ -312,8 +305,6 @@ namespace jsb
         static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
@@ -330,8 +321,6 @@ namespace jsb
         static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
@@ -395,8 +384,6 @@ namespace jsb
         static void _static_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();

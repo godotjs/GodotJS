@@ -11,8 +11,6 @@
 #include "editor/editor_settings.h"
 #include "main/performance.h"
 
-#define JSB_WITH_GC_CALLBACK 0
-
 namespace jsb
 {
     struct GlobalInitialize
@@ -21,7 +19,7 @@ namespace jsb
 
         GlobalInitialize()
         {
-#if JSB_DEBUG
+#if JSB_EXPOSE_GC_FOR_TESTING
             constexpr char args[] = "--expose-gc";
             v8::V8::SetFlagsFromString(args, std::size(args) - 1);
 #endif
@@ -113,10 +111,24 @@ namespace jsb
 
     namespace
     {
-#if JSB_WITH_GC_CALLBACK
-        void GCCallback(v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags)
+#if JSB_PRINT_GC_TIME
+        uint64_t gc_ticks = 0;
+
+        void OnPreGCCallback(v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags)
         {
-            JSB_LOG(Log, "v8 gc %d %d", type, flags);
+            if (const OS* os = OS::get_singleton())
+            {
+                gc_ticks = os->get_ticks_msec();
+            }
+        }
+
+        void OnPostGCCallback(v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags)
+        {
+            if (const OS* os = OS::get_singleton())
+            {
+                const uint64_t dt = os->get_ticks_msec() - gc_ticks;
+                JSB_LOG(Log, "v8 gc time %dms type:%d flags:%d", dt, type, flags);
+            }
         }
 #endif
 
@@ -129,8 +141,8 @@ namespace jsb
 
             const v8::Local<v8::Promise> promise = message.GetPromise();
             v8::Isolate* isolate = promise->GetIsolate();
-            const v8::Isolate::Scope isolateScope(isolate);
-            const v8::HandleScope handleScope(isolate);
+            const v8::Isolate::Scope isolate_scope(isolate);
+            const v8::HandleScope handle_scope(isolate);
 
             const v8::Local<v8::Value> value = message.GetValue();
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -169,16 +181,20 @@ namespace jsb
         static GlobalInitialize global_initialize;
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
-        //NOTE `cppgc_enable_young_generation=true` required?
-        // create_params.constraints.set_max_young_generation_size_in_bytes(JSB_YOUNG_GEN_LIMITS * 1024 * 1024);
+        // create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
+#if JSB_WITH_V8
+        JSB_LOG(Log, "v8 version: %s", V8_VERSION_STRING);
+#endif
         thread_id_ = Thread::get_caller_id();
         last_ticks_ = 0;
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
-#if JSB_WITH_GC_CALLBACK
-        isolate_->AddGCEpilogueCallback(&GCCallback);
+        // SetBatterySaverMode
+#if JSB_PRINT_GC_TIME
+        isolate_->AddGCPrologueCallback(&OnPreGCCallback);
+        isolate_->AddGCEpilogueCallback(&OnPostGCCallback);
 #endif
         {
             v8::HandleScope handle_scope(isolate_);
@@ -280,6 +296,18 @@ namespace jsb
                 microtasks_run_ = true;
             }
         }
+
+#if JSB_EXPOSE_GC_FOR_TESTING
+        static constexpr uint64_t kForceScavengeInterval = 500;
+        if ((force_scavenge_ticks_ += elapsed_milli) > kForceScavengeInterval)
+        {
+            force_scavenge_ticks_ = 0;
+            // isolate_->SetIdle(true);
+            // isolate_->MemoryPressureNotification(v8::MemoryPressureLevel::kModerate);
+            isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
+        }
+#endif
+
         // static constexpr int max_fps = 60;
         //TODO a hint for scavenger which is better for reducing spikes?
         // isolate_->SetIdle(true);
@@ -297,7 +325,7 @@ namespace jsb
 
     void Environment::gc()
     {
-#if JSB_DEBUG
+#if JSB_EXPOSE_GC_FOR_TESTING
         isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
 #else
         isolate_->LowMemoryNotification();

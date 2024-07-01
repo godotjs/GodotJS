@@ -138,6 +138,8 @@ namespace jsb::internal
 		}
 
 	public:
+        jsb_force_inline uint64_t get_elapsed() const { return _elapsed; }
+
 		TTimerManager()
 		{
 			_time_slice = 0;

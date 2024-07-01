@@ -241,8 +241,8 @@ namespace jsb
             JSB_BENCHMARK_SCOPE(JSDebugger, Init);
 
 	        v8::Isolate* isolate = isolate_;
-	        v8::Isolate::Scope isolateScope(isolate);
-	        v8::HandleScope handleScope(isolate);
+	        v8::Isolate::Scope isolate_scope(isolate);
+	        v8::HandleScope handle_scope(isolate);
 
 	        inspector_ = v8_inspector::V8Inspector::create(isolate, this);
 	        state_ = ECS_READY;

@@ -1,7 +1,6 @@
 #include "jsb_settings.h"
 
 #include "jsb_macros.h"
-#include "../jsb.gen.h"
 
 #define JSB_SET_RESTART(val) (val)
 #define JSB_SET_IGNORE_DOCS(val) (val)

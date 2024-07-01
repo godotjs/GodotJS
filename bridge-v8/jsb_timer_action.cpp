@@ -8,9 +8,8 @@ namespace jsb
     {
         v8::Local<v8::Function> func = function_.Get(isolate);
         v8::Local<v8::Context> context = func->GetCreationContextChecked();
-        Realm* realm = Realm::wrap(context);
 
-        jsb_checkf(realm, "timer triggered after Realm diposed");
+        jsb_checkf(Realm::wrap(context), "timer triggered after Realm diposed");
         v8::Context::Scope context_scope(context);
         v8::Local<v8::Value> result;
         v8::TryCatch try_catch(isolate);

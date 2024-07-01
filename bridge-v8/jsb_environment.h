@@ -94,6 +94,9 @@ namespace jsb
         Vector<IModuleResolver*> module_resolvers_;
 
         uint64_t last_ticks_;
+#if JSB_EXPOSE_GC_FOR_TESTING
+        uint64_t force_scavenge_ticks_;
+#endif
         internal::TTimerManager<JavaScriptTimerAction> timer_manager_;
         bool microtasks_run_ = false;
 

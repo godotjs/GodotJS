@@ -31,49 +31,6 @@ class CompileDefines:
 jsb_defines = [
     CompileDefines("JSB_WITH_V8", 1 if javascript_engine == "v8" else 0),
     CompileDefines("JSB_WITH_QUICKJS", 1 if javascript_engine == "quickjs" else 0),
-    
-    CompileDefines("JSB_BENCHMARK", 1, [
-        "print benchmark", 
-    ]), 
-    CompileDefines("JSB_WITH_DEBUGGER", 1, [
-        "enable to debug with Chrome devtools with the following link by default:", 
-        "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1",
-    ]),
-
-    CompileDefines("JSB_WITH_SOURCEMAP", 1, [
-        "translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)",
-    ]),
-
-    CompileDefines("JSB_WITH_STACKTRACE_ALWAYS", 0, [
-        "enable this to let all methods in `console` print with js stacktrace",
-    ]),
-
-    CompileDefines("JSB_WITH_LWS", 1 if websocket_lib == "lws" else 0, [
-        "JSB_WITH_LWS must be enabled if JSB_WITH_DEBUGGER is used.",
-        "currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`",
-        "`devtools` do not response the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`",
-        "and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`",
-    ]), 
-
-    CompileDefines("JSB_MIN_LOG_LEVEL", "Verbose" if env["dev_build"] else "Warning", [
-        "lower log levels are completely skipped (at compile-time)",
-    ]), 
-
-    CompileDefines("JSB_LOG_WITH_SOURCE", 0, [
-        "log with [source filename, line number, function name]", 
-    ]),
-
-    CompileDefines("JSB_WITH_VARIANT_POOL", 1, [
-        "use a pool allocator for creating variant instances"
-    ]),
-
-    CompileDefines("JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW", 0), 
-    CompileDefines("JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS", 0), 
-    CompileDefines("JSB_IMPLICIT_PACKED_ARRAY_CONVERSION", 1, [
-        "implicitly convert a javascript array as godot Vector<T> which is convenient but less performant if massively used"
-    ]),
-
-    CompileDefines("JSB_DEBUG", 1 if env["dev_build"] else 0), 
 ]
 
 def is_defined(name, value):
@@ -202,7 +159,9 @@ if javascript_engine == "v8":
     # platform-specific defines
     if env["platform"] != "ios":
         env_jsb.AppendUnique(CPPDEFINES=["V8_COMPRESS_POINTERS"])
-
+        pass
+    
+    # env_jsb.AppendUnique(CPPDEFINES=["V8_ENABLE_TURBOFAN"])
     env_jsb.Append(CPPDEFINES=["_ITERATOR_DEBUG_LEVEL=0"])
 
     # headers
@@ -215,10 +174,6 @@ else:
     env_jsb.add_source_files(module_obj, "quickjs/*.c")
     env_jsb.add_source_files(module_obj, "bridge-quickjs/*.cpp")
 
-    if is_defined("JSB_WITH_DEBUGGER", 1):
-        set_defined("JSB_WITH_DEBUGGER", 0)
-        print("Warning: debugger is not supported when using quickjs as the javascript runtime")
-    
 env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
 
 # lws

@@ -1,6 +1,8 @@
 #ifndef GODOTJS_INTERNAL_MACROS_H
 #define GODOTJS_INTERNAL_MACROS_H
 
+#include "../jsb.config.h"
+#include "../jsb.gen.h"
 #include "../jsb_version.h"
 #include "jsb_console_output.h"
 
@@ -15,13 +17,13 @@
 
 #ifdef TOOLS_ENABLED
 #   define JSB_GODOT_TOOLS 1
-#else 
+#else
 #   define JSB_GODOT_TOOLS 0
 #endif
 
 #ifdef DEV_ENABLED
 #   define JSB_GODOT_DEV 1
-#else 
+#else
 #   define JSB_GODOT_DEV 0
 #endif
 

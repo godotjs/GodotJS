@@ -1,8 +1,6 @@
 #ifndef GODOTJS_PCH_H
 #define GODOTJS_PCH_H
 
-#include "../jsb.gen.h"
-
 #include <memory>
 #include <cstdint>
 
@@ -14,6 +12,8 @@
 #include "core/config/project_settings.h"
 #include "core/variant/variant_utility.h"
 #include "scene/main/node.h"
+
+#include "../internal/jsb_macros.h"
 
 #if JSB_WITH_V8
 #   include <v8.h>
@@ -31,7 +31,6 @@
 //TODO handle module deps in SCSub
 #include "modules/regex/regex.h"
 
-#include "../internal/jsb_macros.h"
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_function_pointer.h"
 #include "../internal/jsb_typealias.h"
