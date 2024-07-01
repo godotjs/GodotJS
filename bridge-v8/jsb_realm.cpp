@@ -767,7 +767,7 @@ namespace jsb
 
             //TODO check the class to make it safe to cast (space cheaper?)
             //TODO or, add one more InternalField to ensure it (time cheaper?)
-            void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+            void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
             const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
             if (!class_info)
             {
@@ -855,7 +855,7 @@ namespace jsb
                 {
                     return false;
                 }
-                void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
                 if (!pointer)
                 {
                     return Variant::can_convert_strict(Variant::NIL, p_type);
@@ -1062,7 +1062,7 @@ namespace jsb
 
                 //TODO check the class to make it safe to cast (space cheaper?)
                 //TODO or, add one more InternalField to ensure it (time cheaper?)
-                void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
                 if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
                     !class_info || class_info->type != NativeClassType::GodotPrimitive)
                 {

@@ -15,7 +15,7 @@ namespace jsb
                 //TODO check the class to make it safe to cast (space cheaper?)
                 //TODO or, add one more InternalField to ensure it (time cheaper?)
                 const Environment* environment = Environment::wrap(isolate);
-                void* pointer = self->GetAlignedPointerFromInternalField(isolate, kObjectFieldPointer);
+                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
                 const NativeClassInfo* class_info = environment->get_object_class(pointer);
                 if (jsb_unlikely(!class_info))
                 {
