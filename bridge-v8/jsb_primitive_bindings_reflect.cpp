@@ -264,7 +264,7 @@ namespace jsb
                     return;
                 }
 
-                environment->bind_object(class_id, instance, self);
+                environment->bind_struct(class_id, instance, self);
                 return;
             }
 

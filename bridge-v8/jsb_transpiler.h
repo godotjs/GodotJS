@@ -126,9 +126,8 @@ namespace jsb
             v8::Local<v8::Object> r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
             jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == kObjectFieldCount);
 
-            Variant* p_cvar = memnew(Variant(val));
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-            environment->bind_object(class_id, p_cvar, r_jval.As<v8::Object>());
+            environment->bind_struct(class_id, environment->alloc_variant(val), r_jval.As<v8::Object>());
             info.GetReturnValue().Set(r_jval);
             return true;
         }
@@ -471,7 +470,7 @@ namespace jsb
 
             TSelf* ptr = memnew(TSelf);
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_object(class_id, ptr, self);
+            runtime->bind_pointer(class_id, ptr, self, true);
         }
 
         template<typename P0, typename P1, typename P2>
@@ -493,7 +492,7 @@ namespace jsb
             P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
             TSelf* ptr = memnew(TSelf(p0, p1, p2));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_object(class_id, ptr, self);
+            runtime->bind_pointer(class_id, ptr, self, true);
         }
 
         static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
@@ -522,7 +521,7 @@ namespace jsb
 
             Variant* ptr = memnew(Variant);
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_object(class_id, ptr, self);
+            runtime->bind_struct(class_id, ptr, self);
         }
 
         template<typename P0>
@@ -542,7 +541,7 @@ namespace jsb
             P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);
             Variant* ptr = memnew(Variant(TSelf(p0)));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_object(class_id, ptr, self);
+            runtime->bind_struct(class_id, ptr, self);
         }
 
         template<typename P0, typename P1>
@@ -563,7 +562,7 @@ namespace jsb
             P1 p1 = PrimitiveAccess<P1>::from(context, info[1]);
             Variant* ptr = memnew(Variant(TSelf(p0, p1)));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_object(class_id, ptr, self);
+            runtime->bind_struct(class_id, ptr, self);
         }
 
         template<typename P0, typename P1, typename P2>
@@ -585,7 +584,7 @@ namespace jsb
             P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
             Variant* ptr = memnew(Variant(TSelf(p0, p1, p2)));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_object(class_id, ptr, self);
+            runtime->bind_struct(class_id, ptr, self);
         }
 
         template<typename P0, typename P1, typename P2, typename P3>
@@ -608,7 +607,7 @@ namespace jsb
             P3 p3 = PrimitiveAccess<P3>::from(context, info[3]);
             Variant* ptr = memnew(Variant(TSelf(p0, p1, p2, p3)));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_object(class_id, ptr, self);
+            runtime->bind_struct(class_id, ptr, self);
         }
 
         static void finalizer(Environment* runtime, void* pointer, bool p_persistent)

@@ -91,7 +91,7 @@ namespace jsb
             if (std::shared_ptr<Environment> environment = EnvironmentStore::get_shared().access(p_token))
             {
                 jsb_check(p_instance == p_binding);
-                environment->unbind_object(p_binding);
+                environment->unbind_pointer(p_binding);
             }
         }
 
@@ -334,12 +334,12 @@ namespace jsb
 
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {
-        const NativeObjectID object_id = bind_object(p_class_id, (void*) p_pointer, p_object, false);
+        const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, false);
         p_pointer->set_instance_binding(this, p_pointer, gd_instance_binding_callbacks);
         return object_id;
     }
 
-    NativeObjectID Environment::bind_object(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, bool p_weakref)
+    NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, bool p_weakref)
     {
         jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet");
         jsb_checkf(native_classes_.is_valid_index(p_class_id), "bad class_id");
@@ -377,7 +377,7 @@ namespace jsb
         JSB_LOG(Error, "failed to mark as persistent due to invalid pointer");
     }
 
-    void Environment::unbind_object(void* p_pointer)
+    void Environment::unbind_pointer(void* p_pointer)
     {
         //TODO thread-safety issues on objects_* access
         jsb_check(Thread::get_caller_id() == thread_id_);

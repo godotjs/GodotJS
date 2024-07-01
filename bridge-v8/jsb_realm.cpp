@@ -1177,7 +1177,7 @@ namespace jsb
 
                     // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
                     Environment* environment = realm->environment_.get();
-                    environment->bind_object(class_id, (void*) environment->alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                    environment->bind_struct(class_id, environment->alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
                 }
                 return false;

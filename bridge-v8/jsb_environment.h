@@ -46,6 +46,7 @@ namespace jsb
     {
     private:
         friend class Realm;
+        friend struct InstanceBindingCallbacks;
 
         // symbol for class_id on FunctionTemplate of native class
         v8::Global<v8::Symbol> symbols_[Symbols::kNum];
@@ -158,16 +159,17 @@ namespace jsb
         jsb_force_inline
         v8::Isolate* unwrap() const { return isolate_; }
 
-        /**
-         * \brief bind a C++ `p_pointer` with a JS `p_object`
-         * \param p_class_id
-         */
-        NativeObjectID bind_object(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, bool p_weakref = true);
+        // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
+        NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, bool p_weakref);
 
-        //TODO move this into Realm, change the token for set_instance_binding to context
-        //TODO store all context instead of runtimes into a global array
+        template<typename TStruct>
+        NativeObjectID bind_struct(NativeClassID p_class_id, TStruct* p_pointer, const v8::Local<v8::Object>& p_object)
+        {
+            //TODO special finalization flow
+            return bind_pointer(p_class_id, p_pointer, p_object, true);
+        }
+
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
-        void unbind_object(void* p_pointer);
 
         // whether the pointer registered in the object binding map
         jsb_force_inline bool check_object(void* p_pointer) const { return get_object_id(p_pointer).is_valid(); }
@@ -304,6 +306,9 @@ namespace jsb
     private:
         void on_context_created(const v8::Local<v8::Context>& p_context);
         void on_context_destroyed(const v8::Local<v8::Context>& p_context);
+
+        // [low level binding] unbind a raw pointer from javascript object lifecycle
+        void unbind_pointer(void* p_pointer);
 
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
