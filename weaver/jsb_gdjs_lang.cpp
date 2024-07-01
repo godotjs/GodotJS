@@ -25,6 +25,12 @@ GodotJSScriptLanguage::~GodotJSScriptLanguage()
     jsb::internal::StringNames::free();
     jsb_check(singleton_ == this);
     singleton_ = nullptr;
+
+    //TODO manage script list in a safer way (access and ref with script.id)
+    while (SelfList<GodotJSScript>* script = script_list_.first())
+    {
+        script->remove_from_list();
+    }
 }
 
 void GodotJSScriptLanguage::init()
