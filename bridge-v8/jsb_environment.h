@@ -55,6 +55,7 @@ namespace jsb
         Thread::ID thread_id_;
 
         v8::Isolate* isolate_;
+        v8::Global<v8::Private> valuetype_private_;
         ArrayBufferAllocator allocator_;
 
         //TODO postpone the call of Global.Reset if calling from other threads
@@ -87,7 +88,7 @@ namespace jsb
         HashSet<void*> persistent_objects_;
 
 #if JSB_WITH_VARIANT_POOL
-        PagedAllocator<Variant, false> variants_pool_;
+        static PagedAllocator<Variant, true> variants_pool_;
 #endif
 
         // module_id => loader
@@ -95,9 +96,6 @@ namespace jsb
         Vector<IModuleResolver*> module_resolvers_;
 
         uint64_t last_ticks_;
-#if JSB_EXPOSE_GC_FOR_TESTING
-        uint64_t force_scavenge_ticks_;
-#endif
         internal::TTimerManager<JavaScriptTimerAction> timer_manager_;
         bool microtasks_run_ = false;
 
@@ -123,19 +121,21 @@ namespace jsb
         jsb_force_inline void notify_microtasks_run() { microtasks_run_ = true; }
 
 #if JSB_WITH_VARIANT_POOL
-        jsb_force_inline Variant* alloc_variant(const Variant& p_templet)
+        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet)
         {
             Variant* rval = variants_pool_.alloc();
             *rval = p_templet;
             return rval;
         }
 
-        jsb_force_inline Variant* alloc_variant() { return variants_pool_.alloc(); }
-        jsb_force_inline void dealloc_variant(Variant* p_var) { variants_pool_.free(p_var); }
+        static jsb_force_inline Variant* alloc_variant() { return variants_pool_.alloc(); }
+
+        //NOTE must be thread-safe
+        static jsb_force_inline void dealloc_variant(Variant* p_var) { variants_pool_.free(p_var); }
 #else
-        jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { return memnew(Variant(p_templet)); }
-        jsb_force_inline Variant* alloc_variant() { return memnew(Variant); }
-        jsb_force_inline void dealloc_variant(Variant* p_var) { memdelete(p_var); }
+        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { return memnew(Variant(p_templet)); }
+        static jsb_force_inline Variant* alloc_variant() { return memnew(Variant); }
+        static jsb_force_inline void dealloc_variant(Variant* p_var) { memdelete(p_var); }
 #endif
 
         jsb_force_inline internal::TTimerManager<JavaScriptTimerAction>& get_timer_manager() { return timer_manager_; }
@@ -160,13 +160,20 @@ namespace jsb
         v8::Isolate* unwrap() const { return isolate_; }
 
         // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
-        NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, bool p_weakref);
+        NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, EBindingPolicy::Type p_policy);
 
         template<typename TStruct>
-        NativeObjectID bind_struct(NativeClassID p_class_id, TStruct* p_pointer, const v8::Local<v8::Object>& p_object)
+        void bind_valuetype(NativeClassID p_class_id, TStruct* p_pointer, const v8::Local<v8::Object>& p_object)
         {
-            //TODO special finalization flow
-            return bind_pointer(p_class_id, p_pointer, p_object, true);
+            p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
+            p_object->SetPrivate(isolate_->GetCurrentContext(), valuetype_private_.Get(isolate_),
+                // in this way, the scavenger could gc it effectively
+                v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(TStruct), [](void* data, size_t length, void* deleter_data)
+                {
+                    jsb_check(length == sizeof(TStruct));
+                    Environment::dealloc_variant((Variant*) data);
+                }, nullptr)) // we assume Environment lives longer than the deleter callback because Environment manages the lifecycle of Isolate
+            ).Check();
         }
 
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
@@ -183,17 +190,38 @@ namespace jsb
         // return true, and the corresponding JS value if `p_pointer` is valid
         jsb_force_inline bool get_object(void* p_pointer, v8::Local<v8::Object>& r_unwrap) const
         {
-            const HashMap<void*, internal::Index64>::ConstIterator& it = objects_index_.find(p_pointer);
-            if (it != objects_index_.end())
+            if (const internal::Index64* entry = objects_index_.getptr(p_pointer))
             {
-                const ObjectHandle& handle = objects_.get_value(it->value);
+                const ObjectHandle& handle = objects_.get_value(*entry);
+                jsb_check(get_object_class(p_pointer).type != NativeClassType::GodotPrimitive);
                 r_unwrap = handle.ref_.Get(isolate_);
                 return true;
             }
             return false;
         }
 
-        jsb_force_inline const NativeClassInfo* get_object_class(void* p_pointer) const
+        jsb_force_inline v8::Local<v8::Object> get_object(void* p_pointer) const
+        {
+            const internal::Index64* entry = objects_index_.getptr(p_pointer);
+            jsb_check(entry);
+            return get_object(*entry);
+        }
+
+        jsb_force_inline v8::Local<v8::Object> get_object(const internal::Index64& p_object_id) const
+        {
+            const ObjectHandle& handle = objects_.get_value(p_object_id);
+            jsb_check(native_classes_.get_value(handle.class_id).type != NativeClassType::GodotPrimitive);
+            return handle.ref_.Get(isolate_);
+        }
+
+        jsb_force_inline const NativeClassInfo& get_object_class(void* p_pointer) const
+        {
+            const NativeClassInfo* class_info = find_object_class(p_pointer);
+            jsb_check(class_info);
+            return *class_info;
+        }
+
+        jsb_force_inline const NativeClassInfo* find_object_class(void* p_pointer) const
         {
             const HashMap<void*, internal::Index64>::ConstIterator& it = objects_index_.find(p_pointer);
             if (it == objects_index_.end())
@@ -208,12 +236,19 @@ namespace jsb
             return &native_classes_.get_value(handle.class_id);
         }
 
+        jsb_force_inline NativeClassType::Type get_object_type(void* p_pointer) const
+        {
+            if (const NativeClassInfo* class_info = find_object_class(p_pointer)) return class_info->type;
+            return NativeClassType::None;
+        }
+
         // return true if can die
         bool reference_object(void* p_pointer, bool p_is_inc);
         void mark_as_persistent_object(void* p_pointer);
 
-        // request a garbage collection
+        // request a full garbage collection
         void gc();
+        void set_battery_save_mode(bool p_enabled);
 
         void update();
 
@@ -306,6 +341,8 @@ namespace jsb
     private:
         void on_context_created(const v8::Local<v8::Context>& p_context);
         void on_context_destroyed(const v8::Local<v8::Context>& p_context);
+
+        static Environment* internal_access(void* p_runtime);
 
         // [low level binding] unbind a raw pointer from javascript object lifecycle
         void unbind_pointer(void* p_pointer);

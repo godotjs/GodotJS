@@ -247,7 +247,7 @@ namespace jsb
                     }
                 }
 
-                Variant* instance = environment->alloc_variant();
+                Variant* instance = Environment::alloc_variant();
                 Callable::CallError err;
                 Variant::construct(TYPE, *instance, argv, argc, err);
 
@@ -259,12 +259,12 @@ namespace jsb
 
                 if (err.error != Callable::CallError::CALL_OK)
                 {
-                    environment->dealloc_variant(instance);
+                    Environment::dealloc_variant(instance);
                     jsb_throw(isolate, "bad call");
                     return;
                 }
 
-                environment->bind_struct(class_id, instance, self);
+                environment->bind_valuetype(class_id, instance, self);
                 return;
             }
 
@@ -277,7 +277,7 @@ namespace jsb
             jsb_checkf(Variant::can_convert(self->get_type(), TYPE), "variant type can't convert to %s from %s", Variant::get_type_name(TYPE), Variant::get_type_name(self->get_type()));
             if (!p_persistent)
             {
-                environment->dealloc_variant(self);
+                Environment::dealloc_variant(self);
             }
         }
 
@@ -285,7 +285,8 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
@@ -306,7 +307,8 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
 
             Variant value;
@@ -324,7 +326,12 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
             const int argc = info.Length();
-            Variant* self = V8Helper::get_this<Variant>(info.This());
+            if (info.This()->InternalFieldCount() != IF_VariantFieldCount)
+            {
+                jsb_throw(isolate, "no bound this");
+                return;
+            }
+            Variant* self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             if (!self)
             {
                 jsb_throw(isolate, "no bound this");
@@ -444,7 +451,7 @@ namespace jsb
             const NativeClassID class_id = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name);
 
             v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Uint32::NewFromUnsigned(p_env.isolate, class_id));
-            function_template->InstanceTemplate()->SetInternalFieldCount(kObjectFieldCount);
+            function_template->InstanceTemplate()->SetInternalFieldCount(IF_VariantFieldCount);
             function_template->SetClassName(p_env.environment->get_string_name_cache().get_string_value(p_env.isolate, class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();
 

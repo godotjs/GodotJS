@@ -8,7 +8,8 @@
 #   define JSB_DEBUG 0
 #endif
 
-//TODO for unknown reason, gc scavenger doesn't work actively as expected
+#define JSB_VERIFY_OBJECT 1
+
 // enable `RequestGarbageCollectionForTesting`
 #define JSB_EXPOSE_GC_FOR_TESTING 0
 
@@ -55,5 +56,9 @@
 
 // implicitly convert a javascript array as godot Vector<T> which is convenient but less performant if massively used
 #define JSB_IMPLICIT_PACKED_ARRAY_CONVERSION 1
+
+#define JSB_INITIAL_OBJECT_SLOTS (1024 * 64)
+#define JSB_INITIAL_SCRIPT_SLOTS 1024
+#define JSB_INITIAL_CLASS_EXTRA_SLOTS 0
 
 #endif

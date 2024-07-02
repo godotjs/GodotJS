@@ -27,9 +27,9 @@ GodotJSScriptLanguage::~GodotJSScriptLanguage()
     singleton_ = nullptr;
 
     //TODO manage script list in a safer way (access and ref with script.id)
-    while (SelfList<GodotJSScript>* script = script_list_.first())
+    while (SelfList<GodotJSScript>* script_el = script_list_.first())
     {
-        script->remove_from_list();
+        script_el->remove_from_list();
     }
 }
 

@@ -43,6 +43,19 @@ namespace jsb
             return rval;
         }
 
+        // unsafe, may be destructing
+        Environment* internal_access(void* p_runtime)
+        {
+            Environment* rval = nullptr;
+            lock_.lock();
+            if (all_runtimes_.has(p_runtime))
+            {
+                rval = (Environment*) p_runtime;
+            }
+            lock_.unlock();
+            return rval;
+        }
+
         void add(void* p_runtime)
         {
             lock_.lock();
@@ -202,7 +215,13 @@ namespace jsb
             {
                 symbols_[index].Reset(isolate_, v8::Symbol::New(isolate_));
             }
+            valuetype_private_.Reset(isolate_, v8::Private::New(isolate_));
         }
+
+        native_classes_.reserve((int) ClassDB::classes.size() + JSB_INITIAL_CLASS_EXTRA_SLOTS);
+        gdjs_classes_.reserve(JSB_INITIAL_SCRIPT_SLOTS);
+        objects_.reserve(JSB_INITIAL_OBJECT_SLOTS);
+
         module_loaders_.insert("godot", memnew(GodotModuleLoader));
         module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
         EnvironmentStore::get_shared().add(this);
@@ -230,7 +249,6 @@ namespace jsb
         debugger_.reset();
 #endif
         EnvironmentStore::get_shared().remove(this);
-
         timer_manager_.clear_all();
 
         for (IModuleResolver* resolver : module_resolvers_)
@@ -264,6 +282,7 @@ namespace jsb
             objects_.remove_at(first_index);
         }
 
+        valuetype_private_.Reset();
         string_name_cache_.clear();
 
         // cleanup all class templates
@@ -272,12 +291,6 @@ namespace jsb
         isolate_->Dispose();
         isolate_ = nullptr;
 
-        // // cleanup variant pool
-        // for (int pool_index = variants_pool_.size() - 1; pool_index >= 0; --pool_index)
-        // {
-        //     memdelete(variants_pool_[pool_index]);
-        //     variants_pool_.remove_at(pool_index);
-        // }
     }
 
     void Environment::update()
@@ -296,22 +309,6 @@ namespace jsb
                 microtasks_run_ = true;
             }
         }
-
-#if JSB_EXPOSE_GC_FOR_TESTING
-        static constexpr uint64_t kForceScavengeInterval = 500;
-        if ((force_scavenge_ticks_ += elapsed_milli) > kForceScavengeInterval)
-        {
-            force_scavenge_ticks_ = 0;
-            // isolate_->SetIdle(true);
-            // isolate_->MemoryPressureNotification(v8::MemoryPressureLevel::kModerate);
-            isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
-        }
-#endif
-
-        // static constexpr int max_fps = 60;
-        //TODO a hint for scavenger which is better for reducing spikes?
-        // isolate_->SetIdle(true);
-        // isolate_->MemoryPressureNotification(v8::MemoryPressureLevel::kModerate);
 
         if (microtasks_run_)
         {
@@ -332,14 +329,24 @@ namespace jsb
 #endif
     }
 
+    void Environment::set_battery_save_mode(bool p_enabled)
+    {
+        isolate_->SetBatterySaverMode(p_enabled);
+    }
+
+    Environment* Environment::internal_access(void* p_runtime)
+    {
+        return EnvironmentStore::get_shared().internal_access(p_runtime);
+    }
+
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {
-        const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, false);
+        const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, EBindingPolicy::External);
         p_pointer->set_instance_binding(this, p_pointer, gd_instance_binding_callbacks);
         return object_id;
     }
 
-    NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, bool p_weakref)
+    NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, EBindingPolicy::Type p_policy)
     {
         jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet");
         jsb_checkf(native_classes_.is_valid_index(p_class_id), "bad class_id");
@@ -348,12 +355,16 @@ namespace jsb
         const NativeObjectID object_id = objects_.add({});
         ObjectHandle& handle = objects_.get_value(object_id);
 
+        objects_index_.insert(p_pointer, object_id);
+        p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
+
         handle.class_id = p_class_id;
         handle.pointer = p_pointer;
+
+        // must not be a valuetype object
+        jsb_check(native_classes_.get_value(p_class_id).type != NativeClassType::GodotPrimitive);
         handle.ref_.Reset(isolate_, p_object);
-        objects_index_.insert(p_pointer, object_id);
-        p_object->SetAlignedPointerInInternalField(kObjectFieldPointer, p_pointer);
-        if (p_weakref)
+        if (p_policy == EBindingPolicy::Managed)
         {
             handle.ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
         }
@@ -402,6 +413,9 @@ namespace jsb
         const internal::Index64 object_id = it->value;
         ObjectHandle& object_handle = objects_.get_value(object_id);
 
+        // must not be a valuetype object
+        jsb_check(native_classes_.get_value(object_handle.class_id).type != NativeClassType::GodotPrimitive);
+
         // adding references
         if (p_is_inc)
         {
@@ -436,34 +450,37 @@ namespace jsb
     {
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Object> obj = p_obj.Get(isolate);
-        obj->SetAlignedPointerInInternalField(kObjectFieldPointer, nullptr);
+        obj->SetAlignedPointerInInternalField(IF_Pointer, nullptr);
     }
 
     void Environment::free_object(void* p_pointer, bool p_free)
     {
         jsb_check(Thread::get_caller_id() == thread_id_);
-        const HashMap<void*, internal::Index64>::Iterator it = objects_index_.find(p_pointer);
-        ERR_FAIL_COND_MSG(it == objects_index_.end(), "bad pointer");
-        const internal::Index64 object_id = it->value;
+        const internal::Index64* object_id = objects_index_.getptr(p_pointer);
+        jsb_checkf(object_id, "bad pointer");
+        NativeClassID class_id;
+        bool is_persistent;
 
-        ObjectHandle& object_handle = objects_.get_value(object_id);
-        jsb_check(object_handle.pointer == p_pointer);
-        const NativeClassID class_id = object_handle.class_id;
-        const bool is_persistent = persistent_objects_.has(p_pointer);
-
-        // remove index at first to make `free_object` safely reentrant
-        if (is_persistent) persistent_objects_.erase(p_pointer);
-        objects_index_.erase(p_pointer);
-        if (!p_free)
         {
-            //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
-            clear_internal_field(isolate_, object_handle.ref_);
-        }
-        object_handle.ref_.Reset();
+            ObjectHandle& object_handle = objects_.get_value(*object_id);
+            jsb_check(object_handle.pointer == p_pointer);
+            class_id = object_handle.class_id;
+            is_persistent = persistent_objects_.has(p_pointer);
 
-        //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
-        // At this stage, the JS Object is being garbage collected, we'd better to break the link between JS Object & C++ Object before `finalizer` to avoid accessing the JS Object unexpectedly.
-        objects_.remove_at(object_id);
+            // remove index at first to make `free_object` safely reentrant
+            if (is_persistent) persistent_objects_.erase(p_pointer);
+            objects_index_.erase(p_pointer);
+            if (!p_free)
+            {
+                //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
+                clear_internal_field(isolate_, object_handle.ref_);
+            }
+            object_handle.ref_.Reset();
+
+            //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
+            // At this stage, the JS Object is being garbage collected, we'd better to break the link between JS Object & C++ Object before `finalizer` to avoid accessing the JS Object unexpectedly.
+            objects_.remove_at(*object_id);
+        }
 
         if (p_free)
         {
@@ -501,4 +518,7 @@ namespace jsb
 #endif
     }
 
+#pragma region Static Fields
+    PagedAllocator<Variant, true> Environment::variants_pool_;
+#pragma endregion
 }

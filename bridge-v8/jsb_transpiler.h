@@ -11,7 +11,7 @@
     {\
         v8::Isolate* isolate = env->unwrap();\
         v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor, v8::Uint32::NewFromUnsigned(isolate, class_id));\
-        template_->InstanceTemplate()->SetInternalFieldCount(kObjectFieldCount);\
+        template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
         NativeClassInfo& class_info = env->get_native_class(class_id);\
         class_info.finalizer = &finalizer;\
         class_info.template_.Reset(isolate, template_);\
@@ -25,7 +25,7 @@
     {\
         v8::Isolate* isolate = env->unwrap();\
         v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor<TArgs...>, v8::Uint32::NewFromUnsigned(isolate, class_id));\
-        template_->InstanceTemplate()->SetInternalFieldCount(kObjectFieldCount);\
+        template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
         NativeClassInfo& class_info = env->get_native_class(class_id);\
         class_info.finalizer = &finalizer;\
         class_info.template_.Reset(isolate, template_);\
@@ -50,7 +50,7 @@ namespace jsb
         constexpr static Variant::Type Type = Variant::VECTOR2;
         static Vector2* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             return VariantInternal::get_vector2(variant);
         }
     };
@@ -60,7 +60,7 @@ namespace jsb
         constexpr static Variant::Type Type = Variant::VECTOR3;
         static Vector3* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             return VariantInternal::get_vector3(variant);
         }
     };
@@ -70,7 +70,7 @@ namespace jsb
         constexpr static Variant::Type Type = Variant::VECTOR4;
         static Vector4* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             return VariantInternal::get_vector4(variant);
         }
     };
@@ -80,7 +80,7 @@ namespace jsb
         constexpr static Variant::Type Type = Variant::SIGNAL;
         static Signal* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             return VariantInternal::get_signal(variant);
         }
     };
@@ -90,7 +90,7 @@ namespace jsb
         constexpr static Variant::Type Type = Variant::SIGNAL;
         static Callable* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             return VariantInternal::get_callable(variant);
         }
     };
@@ -100,7 +100,7 @@ namespace jsb
         constexpr static Variant::Type Type = Variant::BASIS;
         static Basis* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
             return VariantInternal::get_basis(variant);
         }
     };
@@ -124,10 +124,10 @@ namespace jsb
 
             v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
             v8::Local<v8::Object> r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
-            jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == kObjectFieldCount);
+            jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
 
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-            environment->bind_struct(class_id, environment->alloc_variant(val), r_jval.As<v8::Object>());
+            environment->bind_valuetype(class_id, environment->alloc_variant(val), r_jval.As<v8::Object>());
             info.GetReturnValue().Set(r_jval);
             return true;
         }
@@ -470,7 +470,7 @@ namespace jsb
 
             TSelf* ptr = memnew(TSelf);
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, ptr, self, true);
+            runtime->bind_pointer(class_id, ptr, self, EBindingPolicy::Managed);
         }
 
         template<typename P0, typename P1, typename P2>
@@ -492,127 +492,12 @@ namespace jsb
             P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
             TSelf* ptr = memnew(TSelf(p0, p1, p2));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, ptr, self, true);
+            runtime->bind_pointer(class_id, ptr, self, EBindingPolicy::Managed);
         }
 
         static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
         {
             TSelf* self = (TSelf*) pointer;
-            if (!p_persistent)
-            {
-                memdelete(self);
-            }
-        }
-    };
-
-    template<typename TSelf>
-    struct VariantClassTemplate
-    {
-        JSB_CLASS_BOILERPLATE()
-        JSB_CLASS_BOILERPLATE_ARGS()
-
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
-
-            Variant* ptr = memnew(Variant);
-            Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_struct(class_id, ptr, self);
-        }
-
-        template<typename P0>
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
-            if (info.Length() != 1)
-            {
-                isolate->ThrowError("bad args");
-                return;
-            }
-            P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);
-            Variant* ptr = memnew(Variant(TSelf(p0)));
-            Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_struct(class_id, ptr, self);
-        }
-
-        template<typename P0, typename P1>
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
-            if (info.Length() != 2)
-            {
-                isolate->ThrowError("bad args");
-                return;
-            }
-            P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);
-            P1 p1 = PrimitiveAccess<P1>::from(context, info[1]);
-            Variant* ptr = memnew(Variant(TSelf(p0, p1)));
-            Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_struct(class_id, ptr, self);
-        }
-
-        template<typename P0, typename P1, typename P2>
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
-            if (info.Length() != 3)
-            {
-                isolate->ThrowError("bad args");
-                return;
-            }
-            P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);
-            P1 p1 = PrimitiveAccess<P1>::from(context, info[1]);
-            P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
-            Variant* ptr = memnew(Variant(TSelf(p0, p1, p2)));
-            Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_struct(class_id, ptr, self);
-        }
-
-        template<typename P0, typename P1, typename P2, typename P3>
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
-            if (info.Length() != 4)
-            {
-                isolate->ThrowError("bad args");
-                return;
-            }
-            P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);
-            P1 p1 = PrimitiveAccess<P1>::from(context, info[1]);
-            P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
-            P3 p3 = PrimitiveAccess<P3>::from(context, info[3]);
-            Variant* ptr = memnew(Variant(TSelf(p0, p1, p2, p3)));
-            Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_struct(class_id, ptr, self);
-        }
-
-        static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
-        {
-            Variant* self = (Variant*) pointer;
             if (!p_persistent)
             {
                 memdelete(self);

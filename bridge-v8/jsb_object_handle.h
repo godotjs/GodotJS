@@ -6,12 +6,26 @@
 namespace jsb
 {
     // use the only one field if possible, otherwise it's not straightforward in implementing the same thing with QuickJS
-    enum : uint32_t
+    enum EInternalFields : uint32_t
     {
-        kObjectFieldPointer,
-        kObjectFieldCount
+        IF_Pointer = 0, // pointer to object (used by object/variant both)
+        IF_ObjectT = 1, // placeholder for non-valuetype objects
+
+        IF_VariantFieldCount = 1,
+        IF_ObjectFieldCount = 2,
     };
 
+    namespace EBindingPolicy
+    {
+        enum Type : uint8_t
+        {
+            External, // managed by c++ (the javascript counterpart will be strong-referenced)
+            Managed,  // managed by javascript gc (c++ waits gc to finalize the native object)
+        };
+    }
+
+    // godot Object classes or c++ native wrapped classes are registered in an object registry in Environment.
+    // godot Variant (valuetype) DO NOT have it's ObjectHandle.
     struct ObjectHandle
     {
         NativeClassID class_id;

@@ -9,29 +9,30 @@ namespace jsb
     {
         if (p_jval->IsObject())
         {
+            const Environment* environment = Environment::wrap(isolate);
             v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-            if (self->InternalFieldCount() == kObjectFieldCount)
+
+            switch (self->InternalFieldCount())
             {
-                //TODO check the class to make it safe to cast (space cheaper?)
-                //TODO or, add one more InternalField to ensure it (time cheaper?)
-                const Environment* environment = Environment::wrap(isolate);
-                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                const NativeClassInfo* class_info = environment->get_object_class(pointer);
-                if (jsb_unlikely(!class_info))
+            case IF_VariantFieldCount:
                 {
-                    return vformat("[dead_object @%s]", uitos((uint64_t) pointer));
-                }
-                const NativeObjectID object_id = environment->get_object_id(pointer);
-                if (class_info->type == NativeClassType::GodotObject)
-                {
-                    return vformat("[%s #%s @%s]", class_info->name, uitos((uint64_t) object_id), uitos((uint64_t) pointer));
-                }
-                jsb_check(class_info->type == NativeClassType::GodotPrimitive);
-                {
-                    const Variant* variant = (Variant*) pointer;
+                    const Variant* variant = (Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
                     const String type_name = Variant::get_type_name(variant->get_type());
                     return vformat("[%s %s]", type_name, variant->operator String());
                 }
+            case IF_ObjectFieldCount:
+                {
+                    void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+                    const NativeClassInfo* class_info = environment->find_object_class(pointer);
+                    if (jsb_unlikely(!class_info))
+                    {
+                        return vformat("[dead_object @%s]", uitos((uint64_t) pointer));
+                    }
+                    jsb_check(class_info->type == NativeClassType::GodotObject);
+                    const NativeObjectID object_id = environment->get_object_id(pointer);
+                    return vformat("[%s #%s @%s]", class_info->name, uitos((uint64_t) object_id), uitos((uint64_t) pointer));
+                }
+            default: break;
             }
         }
 

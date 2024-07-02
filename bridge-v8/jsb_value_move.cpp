@@ -42,24 +42,29 @@ namespace jsb
         if (p_val->IsObject())
         {
             v8::Local<v8::Object> self = p_val.As<v8::Object>();
-            if (self->InternalFieldCount() != kObjectFieldCount)
+            switch (self->InternalFieldCount())
             {
-                return inspect_plain_object(isolate, context, self);
+            case IF_ObjectFieldCount:
+                {
+                    Object* pointer = (Object*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+#if JSB_VERIFY_OBJECT
+                    const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
+                    if (!class_info || class_info->type != NativeClassType::GodotObject)
+                    {
+                        return vformat("BadPointer: %s", uitos((uintptr_t) pointer));
+                    }
+#endif
+                    return vformat("Object: %s", pointer ? "null" : pointer->to_string());
+                }
+            case IF_VariantFieldCount:
+                {
+                    Variant* pointer = (Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+                    jsb_check(pointer);
+                    return vformat("Variant: %s", pointer->to_json_string());
+                }
+            default:
+                return vformat("Pointer: %s", uitos((uintptr_t) self->GetAlignedPointerFromInternalField(IF_Pointer)));
             }
-
-            //TODO check the class to make it safe to cast (space cheaper?)
-            //TODO or, add one more InternalField to ensure it (time cheaper?)
-            void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
-            if (!class_info || class_info->type == NativeClassType::None)
-            {
-                return vformat("Object:%s", uitos((uintptr_t) pointer));
-            }
-            if (class_info->type == NativeClassType::GodotPrimitive)
-            {
-                return ((Variant*) pointer)->to_json_string();
-            }
-            return vformat("%s:%s", class_info->name, uitos((uintptr_t) pointer));
         }
 
         return inspect_fallback(isolate, context, p_val);

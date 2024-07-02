@@ -675,7 +675,7 @@ namespace jsb
         {
             v8::Local<v8::FunctionTemplate> jtemplate = realm->environment_->get_native_class(class_id).template_.Get(isolate);
             r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
-            jsb_check(r_jval->InternalFieldCount() == kObjectFieldCount);
+            jsb_check(r_jval->InternalFieldCount() == IF_ObjectFieldCount);
 
             if (p_godot_obj->is_ref_counted())
             {
@@ -760,22 +760,24 @@ namespace jsb
         if (p_jval->IsObject())
         {
             v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-            if (self->InternalFieldCount() != kObjectFieldCount)
+            switch (self->InternalFieldCount())
             {
-                return false;
+            case IF_VariantFieldCount: { r_cvar = *(Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer); return true; }
+            case IF_ObjectFieldCount:
+                {
+                    void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+#if JSB_VERIFY_OBJECT
+                    if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
+                        !class_info || class_info->type != NativeClassType::GodotObject)
+                    {
+                        return false;
+                    }
+#endif
+                    r_cvar = (Object*) pointer;
+                    return true;
+                }
+            default: return false;
             }
-
-            //TODO check the class to make it safe to cast (space cheaper?)
-            //TODO or, add one more InternalField to ensure it (time cheaper?)
-            void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-            const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
-            if (!class_info)
-            {
-                return false;
-            }
-            if (class_info->type == NativeClassType::GodotObject) r_cvar = (Object*) pointer;
-            else r_cvar = *(Variant*) pointer;
-            return true;
         }
 
         JSB_LOG(Error, "js_to_gd_var: unhandled type");
@@ -801,13 +803,15 @@ namespace jsb
             {
                 if (!p_val->IsObject()) return false;
                 v8::Local<v8::Object> self = p_val.As<v8::Object>();
-                if (self->InternalFieldCount() != kObjectFieldCount) return false;
-                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                if (self->InternalFieldCount() != IF_ObjectFieldCount) return false;
+#if JSB_VERIFY_OBJECT
+                void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
                     !class_info || class_info->type != NativeClassType::GodotObject)
                 {
                     return false;
                 }
+#endif
                 return true;
             }
         case Variant::VECTOR2:
@@ -851,21 +855,15 @@ namespace jsb
                     return false;
                 }
                 v8::Local<v8::Object> self = p_val.As<v8::Object>();
-                if (self->InternalFieldCount() != kObjectFieldCount)
+                if (self->InternalFieldCount() != IF_VariantFieldCount)
                 {
                     return false;
                 }
-                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                if (!pointer)
+                const Variant* target = (const Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+                if (!target)
                 {
                     return Variant::can_convert_strict(Variant::NIL, p_type);
                 }
-                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
-                    !class_info || class_info->type != NativeClassType::GodotPrimitive)
-                {
-                    return false;
-                }
-                const Variant* target = (const Variant*) pointer;
                 return Variant::can_convert_strict(target->get_type(), p_type);
             }
         default: return false;
@@ -879,17 +877,19 @@ namespace jsb
             return false;
         }
         const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-        if (self->InternalFieldCount() != kObjectFieldCount)
+        if (self->InternalFieldCount() != IF_ObjectFieldCount)
         {
             return false;
         }
 
-        void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-        if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+        void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+#if JSB_VERIFY_OBJECT
+        if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
             !class_info || class_info->type != NativeClassType::GodotObject)
         {
             return false;
         }
+#endif
         r_godot_obj = (Object*) pointer;
         return true;
     }
@@ -962,17 +962,19 @@ namespace jsb
                     return false;
                 }
                 v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-                if (self->InternalFieldCount() != kObjectFieldCount)
+                if (self->InternalFieldCount() != IF_ObjectFieldCount)
                 {
                     return false;
                 }
 
-                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
+                void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+#if JSB_VERIFY_OBJECT
+                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
                     !class_info || class_info->type != NativeClassType::GodotObject)
                 {
                     return false;
                 }
+#endif
                 r_cvar = (Object*) pointer;
                 return true;
             }
@@ -1055,19 +1057,12 @@ namespace jsb
                     return false;
                 }
                 v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-                if (self->InternalFieldCount() != kObjectFieldCount)
+                if (self->InternalFieldCount() != IF_VariantFieldCount)
                 {
                     return false;
                 }
 
-                //TODO check the class to make it safe to cast (space cheaper?)
-                //TODO or, add one more InternalField to ensure it (time cheaper?)
-                void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->get_object_class(pointer);
-                    !class_info || class_info->type != NativeClassType::GodotPrimitive)
-                {
-                    return false;
-                }
+                void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
                 r_cvar = *(Variant*) pointer;
                 return true;
             }
@@ -1171,13 +1166,13 @@ namespace jsb
                     jsb_check(class_info->type == NativeClassType::GodotPrimitive);
                     v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
                     r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
-                    jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == kObjectFieldCount);
+                    jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
                     // void* pointer = r_jval.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
                     // *(Variant*)pointer = p_cvar;
 
                     // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
                     Environment* environment = realm->environment_.get();
-                    environment->bind_struct(class_id, environment->alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                    environment->bind_valuetype(class_id, environment->alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
                 }
                 return false;
@@ -1203,7 +1198,7 @@ namespace jsb
         const StringName name = environment->string_name_cache_.get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
 
         v8::Local<v8::Object> self = info.This();
-        void* pointer = self->GetAlignedPointerFromInternalField(kObjectFieldPointer);
+        void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
         jsb_check(environment->check_object(pointer));
 
         // signal must be instance-owned
@@ -1718,7 +1713,7 @@ namespace jsb
         Environment* environment = environment_.get();
         v8::Local<v8::Context> context = this->unwrap();
         v8::Context::Scope context_scope(context);
-        v8::Local<v8::Object> self = environment->objects_.get_value(p_object_id).ref_.Get(isolate);
+        v8::Local<v8::Object> self = environment->get_object(p_object_id);
         v8::Local<v8::String> name = environment->get_string_name_cache().get_string_value(isolate, p_info.name);
         v8::Local<v8::Value> value;
         if (!self->Get(context, name).ToLocal(&value))
@@ -1746,7 +1741,7 @@ namespace jsb
         Environment* environment = environment_.get();
         v8::Local<v8::Context> context = this->unwrap();
         v8::Context::Scope context_scope(context);
-        v8::Local<v8::Object> self = environment->objects_.get_value(p_object_id).ref_.Get(isolate);
+        v8::Local<v8::Object> self = environment->get_object(p_object_id);
         v8::Local<v8::String> name = environment->get_string_name_cache().get_string_value(isolate, p_info.name);
         v8::Local<v8::Value> value;
         if (!gd_var_to_js(isolate, context, p_val, p_info.type, value))
@@ -1769,7 +1764,7 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = this->unwrap();
         v8::Context::Scope context_scope(context);
-        v8::Local<v8::Object> self = environment_->objects_.get_value(p_object_id).ref_.Get(isolate);
+        v8::Local<v8::Object> self = environment_->get_object(p_object_id);
 
         Variant unpacked;
         if (!js_to_gd_var(isolate, context, self, Variant::OBJECT, unpacked) || unpacked.is_null())
@@ -1856,7 +1851,7 @@ namespace jsb
             }
             const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
             jsb_check(js_func);
-            v8::Local<v8::Object> self = this->environment_->objects_.get_value(p_object_id).ref_.Get(isolate);
+            v8::Local<v8::Object> self = this->environment_->get_object(p_object_id);
             return _call(isolate, context, js_func.object_.Get(isolate), self, p_args, p_argcount, r_error);
         }
 

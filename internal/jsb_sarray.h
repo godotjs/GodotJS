@@ -342,16 +342,28 @@ namespace jsb::internal
 			return IndexType(new_index, new_slot.revision);
 		}
 
-		bool try_get_value_pointer(const IndexType& p_index, T*& out_item)
+        bool try_get_value_pointer(const IndexType& p_index, T*& out_item)
 		{
-			if (is_valid_index(p_index))
-			{
-				Slot& slot = get_data()[p_index.get_index()];
-				out_item = &slot.value;
-				return true;
-			}
-			out_item = 0;
-			return false;
+		    if (is_valid_index(p_index))
+		    {
+		        Slot& slot = get_data()[p_index.get_index()];
+		        out_item = &slot.value;
+		        return true;
+		    }
+		    out_item = 0;
+		    return false;
+		}
+
+        bool try_get_value_pointer(const IndexType& p_index, const T*& out_item) const
+		{
+		    if (is_valid_index(p_index))
+		    {
+		        const Slot& slot = get_data()[p_index.get_index()];
+		        out_item = &slot.value;
+		        return true;
+		    }
+		    out_item = 0;
+		    return false;
 		}
 
 		bool try_get_value(const IndexType& p_index, T& out_item)
