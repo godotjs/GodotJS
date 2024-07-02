@@ -491,7 +491,7 @@ namespace jsb::internal
 				return false;
 			}
 			o_item = get_value(p_index);
-			remove_at(p_index);
+			remove_at_checked(p_index);
 			return true;
 		}
 
@@ -535,6 +535,12 @@ namespace jsb::internal
 			}
 			jsb_check(is_consistent());
 			return true;
+		}
+
+        void remove_at_checked(const IndexType& p_index)
+		{
+		    const bool ret = remove_at(p_index);
+		    jsb_check(ret);
 		}
 
 		void reserve(int p_size)

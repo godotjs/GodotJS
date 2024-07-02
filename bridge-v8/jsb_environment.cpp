@@ -237,7 +237,7 @@ namespace jsb
             const GodotJSClassID id = gdjs_classes_.get_first_index();
             // JavaScriptClassInfo& class_info = gdjs_classes_[id];
             // class_info.xxx.Reset();
-            gdjs_classes_.remove_at(id);
+            gdjs_classes_.remove_at_checked(id);
         }
 
         for (int index = 0; index < Symbols::kNum; ++index)
@@ -264,23 +264,28 @@ namespace jsb
         }
 
         // cleanup weak callbacks not invoked by v8
+        int object_count = objects_.size();
         while (!objects_.is_empty())
         {
-            const internal::Index64 first_index = objects_.get_first_index();
+            const internal::Index64 object_id = objects_.get_first_index();
             {
+                --object_count;
                 jsb_address_guard(objects_, address_guard);
-                ObjectHandle& handle = objects_.get_value(first_index);
+                ObjectHandle& handle = objects_.get_value(object_id);
                 const bool is_persistent = persistent_objects_.has(handle.pointer);
                 const NativeClassInfo& class_info = native_classes_.get_value(handle.class_id);
 
-                JSB_LOG(VeryVerbose, "deleting %s(%d) %s", (String) class_info.name, (uint32_t) handle.class_id, uitos((uintptr_t) handle.pointer));
+                JSB_LOG(VeryVerbose, "(force) delete #%d class:%s(%d) addr:%s id:%s",
+                    object_count, (String) class_info.name, (uint32_t) handle.class_id,
+                    uitos((uintptr_t) handle.pointer), uitos(object_id));
                 class_info.finalizer(this, handle.pointer, is_persistent);
                 handle.ref_.Reset();
                 objects_index_.erase(handle.pointer);
                 if (is_persistent) persistent_objects_.erase(handle.pointer);
             }
-            objects_.remove_at(first_index);
+            objects_.remove_at_checked(object_id);
         }
+        jsb_check(object_count == 0);
 
         valuetype_private_.Reset();
         string_name_cache_.clear();
@@ -372,7 +377,9 @@ namespace jsb
         {
             handle.ref_count_ = 1;
         }
-        JSB_LOG(VeryVerbose, "bind object %s (id: %s) with class %s (%d)", uitos((uintptr_t) p_pointer), uitos((uint64_t) object_id), (String) native_classes_.get_value(p_class_id).name, (uint32_t) p_class_id);
+        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%s id:%s",
+            (String) native_classes_.get_value(p_class_id).name, (uint32_t) p_class_id,
+            uitos((uintptr_t) p_pointer), uitos((uint64_t) object_id));
         return object_id;
     }
 
@@ -456,13 +463,14 @@ namespace jsb
     void Environment::free_object(void* p_pointer, bool p_free)
     {
         jsb_check(Thread::get_caller_id() == thread_id_);
-        const internal::Index64* object_id = objects_index_.getptr(p_pointer);
+        jsb_check(objects_index_.has(p_pointer));
+        const internal::Index64 object_id = objects_index_.get(p_pointer);
         jsb_checkf(object_id, "bad pointer");
         NativeClassID class_id;
         bool is_persistent;
 
         {
-            ObjectHandle& object_handle = objects_.get_value(*object_id);
+            ObjectHandle& object_handle = objects_.get_value(object_id);
             jsb_check(object_handle.pointer == p_pointer);
             class_id = object_handle.class_id;
             is_persistent = persistent_objects_.has(p_pointer);
@@ -479,20 +487,24 @@ namespace jsb
 
             //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
             // At this stage, the JS Object is being garbage collected, we'd better to break the link between JS Object & C++ Object before `finalizer` to avoid accessing the JS Object unexpectedly.
-            objects_.remove_at(*object_id);
+            objects_.remove_at_checked(object_id);
         }
 
         if (p_free)
         {
             const NativeClassInfo& class_info = native_classes_.get_value(class_id);
 
-            JSB_LOG(VeryVerbose, "deleting %s(%d) addr:%s", (String) class_info.name, (uint32_t) class_id, uitos((uintptr_t) p_pointer));
+            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%s id:%s",
+                (String) class_info.name, (uint32_t) class_id,
+                uitos((uintptr_t) p_pointer), uitos(object_id));
             //NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
             class_info.finalizer(this, p_pointer, is_persistent);
         }
         else
         {
-            JSB_LOG(VeryVerbose, "unbinding %s(%d) addr:%s", (String) native_classes_.get_value(class_id).name, (uint32_t) class_id, uitos((uintptr_t) p_pointer));
+            JSB_LOG(VeryVerbose, "(skip) free_object class:%s(%d) addr:%s id:%s",
+                (String) native_classes_.get_value(class_id).name, (uint32_t) class_id,
+                uitos((uintptr_t) p_pointer), uitos(object_id));
         }
     }
 

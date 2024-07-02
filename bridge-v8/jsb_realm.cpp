@@ -453,7 +453,7 @@ namespace jsb
 
     Realm::~Realm()
     {
-        realms_.remove_at(id_);
+        realms_.remove_at_checked(id_);
         id_ = {};
         v8::Isolate* isolate = environment_->isolate_;
         v8::Isolate::Scope isolate_scope(isolate);
@@ -1594,7 +1594,7 @@ namespace jsb
                 v8::HandleScope handle_scope(isolate);
                 const size_t r = function_refs_.erase(TWeakRef(isolate, strong_ref.object_));
                 jsb_check(r != 0);
-                function_bank_.remove_at(p_func_id);
+                function_bank_.remove_at_checked(p_func_id);
             }
             return true;
         }
