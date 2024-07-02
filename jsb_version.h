@@ -4,7 +4,7 @@
 #include "jsb.gen.h"
 
 #define JSB_MAJOR_VERSION 0
-#define JSB_MINOR_VERSION 6
+#define JSB_MINOR_VERSION 7
 #define JSB_PATCH_VERSION 0
 
 #endif
