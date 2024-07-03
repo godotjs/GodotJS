@@ -1567,6 +1567,7 @@ namespace jsb
     {
         ObjectHandle* handle;
         environment_->check_internal_state();
+        jsb_address_guard(environment_->objects_, address_guard);
         if (environment_->objects_.try_get_value_pointer(p_object_id, handle))
         {
             v8::Isolate* isolate = environment_->isolate_;

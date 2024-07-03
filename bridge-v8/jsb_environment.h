@@ -172,7 +172,7 @@ namespace jsb
                 {
                     jsb_check(length == sizeof(TStruct));
                     Environment::dealloc_variant((Variant*) data);
-                }, nullptr)) // we assume Environment lives longer than the deleter callback because Environment manages the lifecycle of Isolate
+                }, nullptr))
             ).Check();
         }
 
@@ -315,10 +315,10 @@ namespace jsb
 
         jsb_force_inline const NativeClassInfo* find_godot_class(const StringName& p_name, NativeClassID& r_class_id) const
         {
-            if (const HashMap<StringName, NativeClassID>::ConstIterator it = godot_classes_index_.find(p_name); it != godot_classes_index_.end())
+            if (const NativeClassID* it = godot_classes_index_.getptr(p_name))
             {
-                r_class_id = it->value;
-                return &native_classes_[r_class_id];
+                r_class_id = *it;
+                return &native_classes_.get_value(r_class_id);
             }
             return nullptr;
         }
@@ -332,11 +332,10 @@ namespace jsb
         jsb_force_inline GodotJSClassInfo& add_gdjs_class(GodotJSClassID& r_class_id)
         {
             r_class_id = gdjs_classes_.add({});
-            return gdjs_classes_[r_class_id];
+            return gdjs_classes_.get_value(r_class_id);
         }
-        jsb_force_inline GodotJSClassInfo& get_gdjs_class(GodotJSClassID p_class_id) { return gdjs_classes_[p_class_id]; }
-        jsb_force_inline GodotJSClassInfo* find_gdjs_class(GodotJSClassID p_class_id) { return gdjs_classes_.is_valid_index(p_class_id) ? &gdjs_classes_[p_class_id] : nullptr; }
-        // jsb_force_inline const GodotJSClassInfo& get_gdjs_class(GodotJSClassID p_class_id) const { return gdjs_classes_[p_class_id]; }
+        jsb_force_inline GodotJSClassInfo& get_gdjs_class(GodotJSClassID p_class_id) { return gdjs_classes_.get_value(p_class_id); }
+        jsb_force_inline GodotJSClassInfo* find_gdjs_class(GodotJSClassID p_class_id) { return gdjs_classes_.is_valid_index(p_class_id) ? &gdjs_classes_.get_value(p_class_id) : nullptr; }
 
     private:
         void on_context_created(const v8::Local<v8::Context>& p_context);
@@ -347,6 +346,7 @@ namespace jsb
         // [low level binding] unbind a raw pointer from javascript object lifecycle
         void unbind_pointer(void* p_pointer);
 
+        // callback from v8 gc (not 100% guaranteed called)
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
             Environment* environment = wrap(info.GetIsolate());

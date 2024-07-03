@@ -181,13 +181,13 @@ Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguage::get_built_in_templ
 void GodotJSScriptLanguage::reload_all_scripts()
 {
     //TODO temporarily ignored because it's only called from `RemoteDebugger`
-    JSB_LOG(Verbose, "TODO");
+    JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_all_scripts] temporarily ignored because it's only called from `RemoteDebugger`");
 }
 
 void GodotJSScriptLanguage::reload_tool_script(const Ref<Script>& p_script, bool p_soft_reload)
 {
     //TODO temporarily ignored because it's only called from `ResourceSaver` (we usually write typescripts in vscode)
-    JSB_LOG(Verbose, "TODO");
+    JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_tool_script] temporarily ignored because it's only called from `ResourceSaver` (we usually write typescripts in vscode)");
 }
 
 void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions) const

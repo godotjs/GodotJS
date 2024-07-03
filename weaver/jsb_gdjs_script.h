@@ -27,7 +27,9 @@ private:
 
     SelfList<GodotJSScript> script_list_;
     RBSet<Object*> instances_;
-    std::shared_ptr<jsb::Realm> realm_;
+
+    //TODO improvement needed
+    jsb::RealmID realm_id_;
 
     String source_;
     String path_;
@@ -48,6 +50,8 @@ private:
 
     void _update_exports(PlaceHolderScriptInstance *p_instance_to_update);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
+
+    std::shared_ptr<jsb::Realm> get_realm() const { return jsb::Realm::get_realm(realm_id_); }
 
 public:
     GodotJSScript();

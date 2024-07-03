@@ -18,6 +18,7 @@
 
 #if DEV_ENABLED
 // lower log levels are completely skipped (at compile-time)
+// see `internal/jsb_log_severity.def.h`
 #   define JSB_MIN_LOG_LEVEL Verbose
 #else
 #   define JSB_MIN_LOG_LEVEL Warning

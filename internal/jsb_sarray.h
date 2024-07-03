@@ -83,6 +83,7 @@ namespace jsb::internal
             AddressScope(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; }
             AddressScope& operator=(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; return *this; }
         };
+
 		struct LowLevelAccess
 		{
 			jsb_force_inline bool is_valid_slot(int p_slot_index) const

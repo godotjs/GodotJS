@@ -264,33 +264,19 @@ namespace jsb
         }
 
         // cleanup weak callbacks not invoked by v8
-        int object_count = objects_.size();
-        while (!objects_.is_empty())
+        jsb_check((uint32_t) objects_.size() == objects_index_.size());
+        JSB_LOG(VeryVerbose, "cleanup %d objects", objects_.size());
+        while (!objects_index_.is_empty())
         {
-            const internal::Index64 object_id = objects_.get_first_index();
-            {
-                --object_count;
-                jsb_address_guard(objects_, address_guard);
-                ObjectHandle& handle = objects_.get_value(object_id);
-                const bool is_persistent = persistent_objects_.has(handle.pointer);
-                const NativeClassInfo& class_info = native_classes_.get_value(handle.class_id);
-
-                JSB_LOG(VeryVerbose, "(force) delete #%d class:%s(%d) addr:%s id:%s",
-                    object_count, (String) class_info.name, (uint32_t) handle.class_id,
-                    uitos((uintptr_t) handle.pointer), uitos(object_id));
-                class_info.finalizer(this, handle.pointer, is_persistent);
-                handle.ref_.Reset();
-                objects_index_.erase(handle.pointer);
-                if (is_persistent) persistent_objects_.erase(handle.pointer);
-            }
-            objects_.remove_at_checked(object_id);
+            free_object(objects_index_.begin()->key, true);
         }
-        jsb_check(object_count == 0);
+        jsb_check(objects_.size() == 0);
+        jsb_check(objects_index_.size() == 0);
 
         valuetype_private_.Reset();
         string_name_cache_.clear();
 
-        // cleanup all class templates
+        // cleanup all class templates (must do after objects cleaned up)
         native_classes_.clear();
 
         isolate_->Dispose();
@@ -417,6 +403,7 @@ namespace jsb
             JSB_LOG(VeryVerbose, "bad pointer %s", uitos((uintptr_t) p_pointer));
             return true;
         }
+        jsb_address_guard(objects_, address_guard);
         const internal::Index64 object_id = it->value;
         ObjectHandle& object_handle = objects_.get_value(object_id);
 
@@ -470,20 +457,23 @@ namespace jsb
         bool is_persistent;
 
         {
-            ObjectHandle& object_handle = objects_.get_value(object_id);
-            jsb_check(object_handle.pointer == p_pointer);
-            class_id = object_handle.class_id;
-            is_persistent = persistent_objects_.has(p_pointer);
-
-            // remove index at first to make `free_object` safely reentrant
-            if (is_persistent) persistent_objects_.erase(p_pointer);
-            objects_index_.erase(p_pointer);
-            if (!p_free)
             {
-                //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
-                clear_internal_field(isolate_, object_handle.ref_);
+                jsb_address_guard(objects_, address_guard);
+                ObjectHandle& object_handle = objects_.get_value(object_id);
+                jsb_check(object_handle.pointer == p_pointer);
+                class_id = object_handle.class_id;
+                is_persistent = persistent_objects_.has(p_pointer);
+
+                // remove index at first to make `free_object` safely reentrant
+                if (is_persistent) persistent_objects_.erase(p_pointer);
+                objects_index_.erase(p_pointer);
+                if (!p_free)
+                {
+                    //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
+                    clear_internal_field(isolate_, object_handle.ref_);
+                }
+                object_handle.ref_.Reset();
             }
-            object_handle.ref_.Reset();
 
             //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
             // At this stage, the JS Object is being garbage collected, we'd better to break the link between JS Object & C++ Object before `finalizer` to avoid accessing the JS Object unexpectedly.

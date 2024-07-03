@@ -6,7 +6,7 @@ bool GodotJSScriptInstance::set(const StringName& p_name, const Variant& p_value
 {
     if (const auto& it = script_->get_js_class_info().properties.find(p_name); it)
     {
-        return script_->realm_->set_script_property_value(object_id_, it->value, p_value);
+        return script_->get_realm()->set_script_property_value(object_id_, it->value, p_value);
     }
     return false;
 }
@@ -15,7 +15,7 @@ bool GodotJSScriptInstance::get(const StringName& p_name, Variant& r_ret) const
 {
     if (const auto& it = script_->get_js_class_info().properties.find(p_name); it)
     {
-        return script_->realm_->get_script_property_value(object_id_, it->value, r_ret);
+        return script_->get_realm()->get_script_property_value(object_id_, it->value, r_ret);
     }
     return false;
 }

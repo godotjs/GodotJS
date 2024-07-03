@@ -122,7 +122,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
         MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
         instances_.insert(instance->owner_);
     }
-    instance->object_id_ = realm_->crossbind(p_this, gdjs_class_id_);
+    instance->object_id_ = get_realm()->crossbind(p_this, gdjs_class_id_);
     if (!instance->object_id_.is_valid())
     {
         instance->script_ = Ref<GodotJSScript>();
@@ -163,7 +163,7 @@ Error GodotJSScript::reload(bool p_keep_state)
     {
         // (common situation) preserve the object and change it's prototype
         const StringName& module_id = get_js_class_info().module_id;
-        if (!realm_->reload_module(module_id))
+        if (!get_realm()->reload_module(module_id))
         {
             return ERR_DOES_NOT_EXIST;
         }
@@ -306,14 +306,14 @@ void GodotJSScript::attach_source(const String& p_path, const String& p_source)
 
 void GodotJSScript::load_module()
 {
-    if (realm_ && loaded_) return;
+    if (loaded_ && realm_id_) return;
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
     const String path = get_path();
     const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     std::shared_ptr<jsb::Realm> realm = lang->get_context();
 
-    realm_ = realm;
+    realm_id_ = realm->id();
     loaded_ = true;
     source_changed_cache = true;
     if (const Error err = realm->load(path); err != OK)
@@ -337,9 +337,9 @@ void GodotJSScript::load_module()
                     RBSet<Object *>::Element *N = E->next();
                     Object* obj = E->get();
                     jsb_check(obj->get_script() == Ref(this));
-                    jsb_check(realm_->get_environment()->check_object(obj));
-                    jsb_check(ClassDB::is_parent_class(realm_->get_gdjs_class_info(module->default_class_id).native_class_name, obj->get_class_name()));
-                    realm_->rebind(obj, gdjs_class_id_);
+                    jsb_check(get_realm()->get_environment()->check_object(obj));
+                    jsb_check(ClassDB::is_parent_class(get_realm()->get_gdjs_class_info(module->default_class_id).native_class_name, obj->get_class_name()));
+                    get_realm()->rebind(obj, gdjs_class_id_);
                     E = N;
                 }
             }
@@ -355,7 +355,7 @@ const jsb::GodotJSClassInfo& GodotJSScript::get_js_class_info() const
 {
     jsb_check(loaded_);
     jsb_checkf(gdjs_class_id_, "avoid calling this method if class_id is invalid, check prior with 'valid_'");
-    return realm_->get_gdjs_class_info(gdjs_class_id_);
+    return get_realm()->get_gdjs_class_info(gdjs_class_id_);
 }
 
 Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
@@ -368,16 +368,16 @@ Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const
     }
     else
     {
-        func_id = realm_->retain_function(p_object_id, p_method);
+        func_id = get_realm()->retain_function(p_object_id, p_method);
         cached_methods_.insert(p_method, func_id);
     }
-    return realm_->call_function(p_object_id, func_id, p_argv, p_argc, r_error);
+    return get_realm()->call_function(p_object_id, func_id, p_argv, p_argc, r_error);
 }
 
 void GodotJSScript::call_prelude(jsb::NativeObjectID p_object_id)
 {
     jsb_check(loaded_);
-    realm_->call_prelude(gdjs_class_id_, p_object_id);
+    get_realm()->call_prelude(gdjs_class_id_, p_object_id);
 }
 
 //
@@ -442,7 +442,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
         source_changed_cache = false;
         members_cache.clear();
         member_default_values_cache.clear();
-        realm_->get_environment()->check_internal_state();
+        get_realm()->get_environment()->check_internal_state();
 
         members_cache.push_back(get_class_category());
         const jsb::GodotJSClassInfo& class_info = get_js_class_info();
@@ -454,7 +454,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
 
             //TODO maybe this behaviour is not expected
             Variant default_value;
-            realm_->get_script_default_property_value(gdjs_class_id_, pi.name, default_value);
+            get_realm()->get_script_default_property_value(gdjs_class_id_, pi.name, default_value);
             member_default_values_cache[pi.name] = default_value;
         }
 

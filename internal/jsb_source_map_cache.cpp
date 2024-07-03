@@ -1,6 +1,6 @@
 ﻿#include "jsb_source_map_cache.h"
-
 #include "jsb_path_util.h"
+#include "modules/regex/regex.h"
 
 namespace jsb::internal
 {
