@@ -20,7 +20,7 @@ GodotJSScript::GodotJSScript(): script_list_(this)
 GodotJSScript::~GodotJSScript()
 {
     JSB_LOG(VeryVerbose, "delete GodotJSScript addr:%s", uitos((uintptr_t) this));
-    cached_methods_.clear();
+    release_cached_methods();
 
     {
         JSB_BENCHMARK_SCOPE(GodotJSScript, Destruct);
@@ -156,7 +156,7 @@ Error GodotJSScript::reload(bool p_keep_state)
     }
 
     // discard all cached methods
-    cached_methods_.clear();
+    release_cached_methods();
 
     //TODO `Callable` objects bound with this script should be invalidated somehow?
     // ...
@@ -374,6 +374,18 @@ Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const
         cached_methods_.insert(p_method, func_id);
     }
     return get_realm()->call_function(p_object_id, func_id, p_argv, p_argc, r_error);
+}
+
+void GodotJSScript::release_cached_methods()
+{
+    if (const std::shared_ptr<jsb::Realm> realm = get_realm())
+    {
+        for (const KeyValue<StringName, jsb::ObjectCacheID>& pair : cached_methods_)
+        {
+            realm->release_function(pair.value);
+        }
+    }
+    cached_methods_.clear();
 }
 
 void GodotJSScript::call_prelude(jsb::NativeObjectID p_object_id)

@@ -1586,6 +1586,7 @@ namespace jsb
 
     bool Realm::release_function(ObjectCacheID p_func_id)
     {
+        environment_->check_internal_state();
         if (function_bank_.is_valid_index(p_func_id))
         {
             TStrongRef<v8::Function>& strong_ref = function_bank_.get_value(p_func_id);

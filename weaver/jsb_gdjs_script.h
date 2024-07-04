@@ -43,6 +43,7 @@ private:
     // bool set_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, const Variant& p_value);
     // bool get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const;
     Variant call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
+    void release_cached_methods();
 
     void call_prelude(jsb::NativeObjectID p_object_id);
 
