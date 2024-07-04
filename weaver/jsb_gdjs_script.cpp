@@ -14,10 +14,12 @@ GodotJSScript::GodotJSScript(): script_list_(this)
 
         lang->script_list_.add(&script_list_);
     }
+    JSB_LOG(VeryVerbose, "new GodotJSScript addr:%s", uitos((uintptr_t) this));
 }
 
 GodotJSScript::~GodotJSScript()
 {
+    JSB_LOG(VeryVerbose, "delete GodotJSScript addr:%s", uitos((uintptr_t) this));
     cached_methods_.clear();
 
     {
@@ -435,11 +437,15 @@ void GodotJSScript::_update_exports_values(List<PropertyInfo>& r_props, HashMap<
     }
 }
 
-void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_update)
+void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_update, bool p_base_exports_changed)
 {
+    bool changed = p_base_exports_changed;
+
     if (source_changed_cache)
     {
         source_changed_cache = false;
+        changed = true;
+
         members_cache.clear();
         member_default_values_cache.clear();
         get_realm()->get_environment()->check_internal_state();
@@ -456,20 +462,26 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
             Variant default_value;
             get_realm()->get_script_default_property_value(gdjs_class_id_, pi.name, default_value);
             member_default_values_cache[pi.name] = default_value;
+            JSB_LOG(VeryVerbose, "GodotJS script default %s = %s", gdjs_class_id_ ? (String) get_js_class_info().js_class_name : "(unknown)", pi.name, (String) default_value);
         }
+    }
 
+    if ((changed || p_instance_to_update) && placeholders.size())
+    {
         List<PropertyInfo> props;
         HashMap<StringName, Variant> values;
         _update_exports_values(props, values);
 
-        if (p_instance_to_update)
+        if (changed)
+        {
+            for (PlaceHolderScriptInstance *s : placeholders)
+            {
+                s->update(props, values);
+            }
+        }
+        else
         {
             p_instance_to_update->update(props, values);
-            return;
-        }
-        for (PlaceHolderScriptInstance *s : placeholders)
-        {
-            s->update(props, values);
         }
     }
 }

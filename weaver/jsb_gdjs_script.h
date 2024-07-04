@@ -48,7 +48,7 @@ private:
 
     void load_module();
 
-    void _update_exports(PlaceHolderScriptInstance *p_instance_to_update);
+    void _update_exports(PlaceHolderScriptInstance *p_instance_to_update, bool p_base_exports_changed = false);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
 
     std::shared_ptr<jsb::Realm> get_realm() const { return jsb::Realm::get_realm(realm_id_); }
