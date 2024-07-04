@@ -137,11 +137,8 @@ namespace jsb
 
         void OnPostGCCallback(v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags)
         {
-            if (const OS* os = OS::get_singleton())
-            {
-                const uint64_t dt = os->get_ticks_msec() - gc_ticks;
-                JSB_LOG(Log, "v8 gc time %dms type:%d flags:%d", dt, type, flags);
-            }
+            JSB_LOG(VeryVerbose, "v8 gc time %dms type:%d flags:%d",
+                OS::get_singleton() ? OS::get_singleton()->get_ticks_msec() - gc_ticks : -1, type, flags);
         }
 #endif
 
@@ -197,7 +194,7 @@ namespace jsb
         // create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
 #if JSB_WITH_V8
-        JSB_LOG(Log, "v8 version: %s", V8_VERSION_STRING);
+        JSB_LOG(Verbose, "v8 version: %s", V8_VERSION_STRING);
 #endif
         thread_id_ = Thread::get_caller_id();
         last_ticks_ = 0;

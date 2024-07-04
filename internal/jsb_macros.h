@@ -4,7 +4,9 @@
 #include "../jsb.config.h"
 #include "../jsb.gen.h"
 #include "../jsb_version.h"
+
 #include "jsb_console_output.h"
+#include "jsb_logger.h"
 
 #include "core/object/object.h"
 #include "core/variant/variant_utility.h"
@@ -34,20 +36,7 @@
 
 #define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
-#if JSB_LOG_WITH_SOURCE
-#   define JSB_LOG_FORMAT(CategoryName, Severity, Format, ...) vformat("[" #CategoryName "][" #Severity "][%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
-#else
-#   define JSB_LOG_FORMAT(CategoryName, Severity, Format, ...) vformat("[" #CategoryName "][" #Severity "] " Format, ##__VA_ARGS__)
-#endif
-
-#define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) \
-    if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::JSB_MIN_LOG_LEVEL) \
-    {\
-        if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::Error) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); _err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Method/function failed.", output_text); } \
-        else if constexpr (jsb::internal::ELogSeverity::Severity >= jsb::internal::ELogSeverity::Warning) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); _err_print_error(FUNCTION_STR, __FILE__, __LINE__, output_text, false, ERR_HANDLER_WARNING); }\
-        else if constexpr (jsb::internal::ELogSeverity::Severity > jsb::internal::ELogSeverity::Verbose) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); print_line(output_text); } \
-        else if (OS::get_singleton()->is_stdout_verbose()) { String output_text = JSB_LOG_FORMAT(CategoryName, Severity, Format, ##__VA_ARGS__); ::jsb::internal::IConsoleOutput::internal_write(jsb::internal::ELogSeverity::Severity, output_text); print_line(output_text); } \
-    } (void) 0
+#define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) ::jsb::internal::Logger::output<::jsb::internal::ELogSeverity::Severity>(__FILE__, __LINE__, __FUNCTION__, "[" #CategoryName "][" #Severity "] " Format, ##__VA_ARGS__)
 
 #define JSB_LOG(Severity, Format, ...) JSB_LOG_IMPL(jsb, Severity, Format, ##__VA_ARGS__)
 
