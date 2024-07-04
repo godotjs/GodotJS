@@ -167,7 +167,7 @@ namespace jsb
         {
             p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
             p_object->SetPrivate(isolate_->GetCurrentContext(), valuetype_private_.Get(isolate_),
-                // in this way, the scavenger could gc it effectively
+                // in this way, the scavenger could gc it efficiently
                 v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(TStruct), [](void* data, size_t length, void* deleter_data)
                 {
                     jsb_check(length == sizeof(TStruct));
