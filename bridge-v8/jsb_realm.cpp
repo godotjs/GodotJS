@@ -1627,6 +1627,7 @@ namespace jsb
         }
         if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
         {
+            JSB_LOG(Error, "exception thrown in function:\n%s", (String) exception_info);
             r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
             return {};
         }
@@ -1639,6 +1640,7 @@ namespace jsb
         Variant rvar;
         if (!Realm::js_to_gd_var(isolate, context, rval.ToLocalChecked(), rvar))
         {
+            JSB_LOG(Error, "failed to translate returned value");
             r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
             return {};
         }
