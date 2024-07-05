@@ -2,10 +2,14 @@
 Core:
     ✔ global scope defined constants (such as PropertyHint) @done
     ☐ source-map: incorrect Ln:Col on bundle scripts
-    ☐ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52)
+    ✔ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52) @done(24-07-05 21:42)
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
+    ✔ output verbose log into stdout only @done(24-07-04)
+    ✔ release cached methods on script reloading @done(24-07-04)
+    ✔ expose indexed accesor of godot primitive types (set_indexed/get_indexed) @done(24-07-05)
+    ✔ optimize godot primitive bindings lifecycle @done(24-07-04)
     ✔ codegen: not to overwrite tsconfig.json and package.json when installing presets @done(24-06-21)
     ✔ issue: `new Object()` is unexpectedly garbage collected without a `free` call @done(24-06-15 15:30)
     ☐ optionally ignore methods which already covered by property getset
