@@ -63,7 +63,7 @@ namespace jsb
                     return vformat("Variant: %s", pointer->to_json_string());
                 }
             default:
-                return vformat("Pointer: %s", uitos((uintptr_t) self->GetAlignedPointerFromInternalField(IF_Pointer)));
+                return vformat("JSObject: %s", self->GetIdentityHash());
             }
         }
 
