@@ -88,6 +88,11 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 * [Dependencies](./docs/deps.md)
 * [Compiler Options](./docs/compiler_options.md)
 
+### Auxiliary Repositories
+* [GodotJSExample](https://github.com/ialex32x/GodotJSExample): An example godot project for demonstrating how to use GodotJS
+* [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build): Github workflows for building Godot Editor with GodotJS support
+* [GodotJS-Dependencies](https://github.com/ialex32x/GodotJS-Dependencies): Github workflows for building dependencies of GodotJS (v8, lws)
+
 ## Supported Platforms
 - [x] Windows: x86_64
 - [ ] Windows: arm64, UWP
