@@ -849,6 +849,11 @@ class TSDCodeGen {
         for (let constructor_info of cls.constructors) {
             class_cg.constructor_(constructor_info);
         }
+        if (typeof cls.element_type !== "undefined") {
+            const element_type_name = PrimitiveTypeNames[cls.element_type];
+            class_cg.line(`set_indexed(index: number, value: ${element_type_name})`);
+            class_cg.line(`get_indexed(index: number): ${element_type_name}`);
+        }
         for (let method_info of cls.methods) {
             class_cg.ordinary_method_(method_info);
         }

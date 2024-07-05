@@ -497,6 +497,10 @@ namespace jsb
         constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
         v8::Local<v8::Object> class_info_obj = v8::Object::New(isolate);
         set_field(isolate, context, class_info_obj, "name", Variant::get_type_name(TYPE));
+        if (Variant::has_indexing(TYPE))
+        {
+            set_field(isolate, context, class_info_obj, "element_type", Variant::get_indexed_element_type(TYPE));
+        }
 
         // constructors
         {

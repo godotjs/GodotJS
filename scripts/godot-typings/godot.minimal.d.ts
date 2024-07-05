@@ -157,6 +157,8 @@ declare module "godot-jsb" {
 
         interface PrimitiveClassInfo extends BasicClassInfo {
             name: string;
+            // valid only if has_indexing
+            element_type?: Variant.Type;
 
             constructors: Array<ConstructorInfo>;
             operators: Array<OperatorInfo>;

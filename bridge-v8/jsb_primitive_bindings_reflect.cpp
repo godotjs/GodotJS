@@ -320,6 +320,66 @@ namespace jsb
             getset.setter_func(p_self, &value);
         }
 
+        static void _set_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
+            if (info.Length() != 2
+                || !info[0]->IsInt32()
+                || !Realm::can_convert_strict(isolate, context, info[1], element_type))
+            {
+                jsb_throw(isolate, "bad params");
+                return;
+            }
+            const int32_t index = info[0].As<v8::Int32>()->Value();
+            Variant value;
+            if (!Realm::js_to_gd_var(isolate, context, info[1], element_type, value))
+            {
+                jsb_throw(isolate, "bad value");
+                return;
+            }
+            bool r_valid, r_oob;
+            Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            self->set_indexed(index, value, r_valid, r_oob);
+            if (!r_valid || r_oob)
+            {
+                jsb_throw(isolate, "invalid or out of bound");
+                return;
+            }
+        }
+
+        static void _get_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
+            if (info.Length() != 1
+                || !info[0]->IsInt32())
+            {
+                jsb_throw(isolate, "bad params");
+                return;
+            }
+            const int32_t index = info[0].As<v8::Int32>()->Value();
+            bool r_valid, r_oob;
+            const Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            const Variant value = self->get_indexed(index, r_valid, r_oob);
+            if (!r_valid || r_oob)
+            {
+                jsb_throw(isolate, "invalid or out of bound");
+                return;
+            }
+            v8::Local<v8::Value> r_val;
+            if (!Realm::gd_var_to_js(isolate, context, value, element_type, r_val))
+            {
+                jsb_throw(isolate, "bad translation");
+                return;
+            }
+            info.GetReturnValue().Set(r_val);
+        }
+
         static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -466,6 +526,13 @@ namespace jsb
                         v8::FunctionTemplate::New(p_env.isolate, _getter, index),
                         v8::FunctionTemplate::New(p_env.isolate, _setter, index));
                 }
+            }
+
+            // indexed accessor
+            if (Variant::has_indexing(TYPE))
+            {
+                prototype_template->Set(V8Helper::to_string(p_env.isolate, "set_indexed"), v8::FunctionTemplate::New(p_env.isolate, _set_indexed));
+                prototype_template->Set(V8Helper::to_string(p_env.isolate, "get_indexed"), v8::FunctionTemplate::New(p_env.isolate, _get_indexed));
             }
 
             // methods
