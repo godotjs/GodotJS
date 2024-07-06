@@ -12,6 +12,7 @@
 #include "jsb_string_name_cache.h"
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_timer_manager.h"
+#include "../internal/jsb_variant_allocator.h"
 
 #if JSB_WITH_SOURCEMAP
 #include "../internal/jsb_source_map_cache.h"
@@ -87,9 +88,7 @@ namespace jsb
         HashMap<void*, NativeObjectID> objects_index_;
         HashSet<void*> persistent_objects_;
 
-#if JSB_WITH_VARIANT_POOL
-        static PagedAllocator<Variant, true> variants_pool_;
-#endif
+        static internal::VariantAllocator variant_allocator_;
 
         // module_id => loader
         HashMap<StringName, class IModuleLoader*> module_loaders_;
@@ -111,6 +110,7 @@ namespace jsb
         Environment();
         ~Environment();
 
+        void print_statistics();
         void start_debugger();
 
         jsb_force_inline void check_internal_state() const { jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet"); }
@@ -120,32 +120,15 @@ namespace jsb
 
         jsb_force_inline void notify_microtasks_run() { microtasks_run_ = true; }
 
-#if JSB_WITH_VARIANT_POOL
-        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet)
-        {
-            Variant* rval = variants_pool_.alloc();
-            *rval = p_templet;
-            return rval;
-        }
-
-        static jsb_force_inline Variant* alloc_variant() { return variants_pool_.alloc(); }
-
-        //NOTE must be thread-safe
-        static jsb_force_inline void dealloc_variant(Variant* p_var) { variants_pool_.free(p_var); }
-#else
-        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { return memnew(Variant(p_templet)); }
-        static jsb_force_inline Variant* alloc_variant() { return memnew(Variant); }
-        static jsb_force_inline void dealloc_variant(Variant* p_var) { memdelete(p_var); }
-#endif
+        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { return variant_allocator_.alloc(p_templet); }
+        static jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
+        static jsb_force_inline void dealloc_variant(Variant* p_var) { variant_allocator_.free(p_var); }
 
         jsb_force_inline internal::TTimerManager<JavaScriptTimerAction>& get_timer_manager() { return timer_manager_; }
         jsb_force_inline StringNameCache& get_string_name_cache() { return string_name_cache_; }
         jsb_force_inline v8::Local<v8::String> get_string_value(const StringName& p_name) { return string_name_cache_.get_string_value(isolate_, p_name); }
 
-        jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const
-        {
-            return symbols_[p_type].Get(isolate_);
-        }
+        jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const { return symbols_[p_type].Get(isolate_); }
 
         jsb_no_discard
         static

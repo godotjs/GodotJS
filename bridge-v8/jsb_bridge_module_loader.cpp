@@ -7,7 +7,7 @@
 
 #include "../weaver/jsb_callable_custom.h"
 
-#ifdef TOOLS_ENABLED
+#if JSB_GODOT_TOOLS
 
 #include "editor/editor_help.h"
 
@@ -867,7 +867,7 @@ namespace jsb
     };
 }
 
-#endif // endif TOOLS_ENABLED
+#endif // endif JSB_GODOT_TOOLS
 
 namespace jsb
 {
@@ -1202,7 +1202,7 @@ namespace jsb
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "notify_microtasks_run"), v8::Function::New(context, _notify_microtasks_run).ToLocalChecked()).Check();
             }
 
-#ifdef TOOLS_ENABLED
+#if JSB_GODOT_TOOLS
             // internal 'jsb.editor'
             {
                 v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);

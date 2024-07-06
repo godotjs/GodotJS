@@ -32,6 +32,8 @@ namespace jsb
             values_.clear();
         }
 
+        jsb_force_inline int size() const { return values_.size(); }
+
         StringNameID get_string_id(const StringName& p_string_name)
         {
             if (const HashMap<StringName, StringNameID>::Iterator& it = name_index.find(p_string_name); it)
