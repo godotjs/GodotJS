@@ -145,14 +145,18 @@ if javascript_engine == "v8":
     # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will fail on `v8::ArrayBuffer::Allocator`
 
     # check existence of v8 (since it's setup manually)
-    check(os.path.exists("v8"), "The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8_r6.zip")
+    v8_missing_msg = "The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8_r6.zip"
+    check(os.path.exists("v8/include/v8.h"), v8_missing_msg)
 
     if env["platform"] == "macos":
+        check(os.path.exists("v8/macos.arm64.release/libv8_monolith.a"), v8_missing_msg)
         env.Append(LIBPATH=[f'#modules/{module_name}/v8/macos.arm64.release'])
         env.Append(LINKFLAGS=["-lv8_monolith"])
     elif env["platform"] == "linuxbsd":
+        check(os.path.exists("v8/linux.x86_64.release/libv8_monolith.a"), v8_missing_msg)
         env.Append(LIBS=[File('v8/linux.x86_64.release/libv8_monolith.a')])
     else:
+        check(os.path.exists("v8/windows.x86_64.release/v8_monolith.lib"), v8_missing_msg)
         env.Append(LIBS=[File("v8/windows.x86_64.release/v8_monolith.lib")])
         env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
 
