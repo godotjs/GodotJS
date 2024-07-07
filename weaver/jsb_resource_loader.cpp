@@ -43,7 +43,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 
 void ResourceFormatLoaderGodotJSScript::get_recognized_extensions(List<String>* p_extensions) const
 {
-    p_extensions->push_back(JSB_RES_EXT);
+    p_extensions->push_back(JSB_SOURCE_EXT);
 }
 
 bool ResourceFormatLoaderGodotJSScript::handles_type(const String& p_type) const
@@ -54,7 +54,7 @@ bool ResourceFormatLoaderGodotJSScript::handles_type(const String& p_type) const
 String ResourceFormatLoaderGodotJSScript::get_resource_type(const String& p_path) const
 {
     const String el = p_path.get_extension().to_lower();
-    return el == JSB_RES_EXT ? jsb_typename(GodotJSScript) : "";
+    return el == JSB_SOURCE_EXT ? jsb_typename(GodotJSScript) : "";
 }
 
 void ResourceFormatLoaderGodotJSScript::get_dependencies(const String& p_path, List<String>* p_dependencies, bool p_add_types)

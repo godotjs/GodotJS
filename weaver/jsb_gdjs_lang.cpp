@@ -192,7 +192,7 @@ void GodotJSScriptLanguage::reload_tool_script(const Ref<Script>& p_script, bool
 
 void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions) const
 {
-    p_extensions->push_back(JSB_RES_EXT);
+    p_extensions->push_back(JSB_SOURCE_EXT);
 }
 
 jsb::JSValueMove GodotJSScriptLanguage::eval_source(const String& p_code, Error& r_err)

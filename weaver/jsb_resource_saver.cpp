@@ -35,7 +35,7 @@ void ResourceFormatSaverGodotJSScript::get_recognized_extensions(const Ref<Resou
 {
     if (Object::cast_to<GodotJSScript>(*p_resource))
     {
-        p_extensions->push_back(JSB_RES_EXT);
+        p_extensions->push_back(JSB_SOURCE_EXT);
     }
 }
 

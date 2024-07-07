@@ -1,6 +1,8 @@
 #include "register_types.h"
 
+#include "editor/export/editor_export.h"
 #include "internal/jsb_string_names.h"
+#include "weaver-editor/jsb_export_plugin.h"
 #include "weaver/jsb_gdjs_lang.h"
 #include "weaver/jsb_resource_loader.h"
 #include "weaver/jsb_resource_saver.h"
@@ -18,8 +20,7 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE)
     {
     }
-
-    if (p_level == MODULE_INITIALIZATION_LEVEL_CORE)
+    else if (p_level == MODULE_INITIALIZATION_LEVEL_CORE)
     {
         // register javascript language
         GodotJSScriptLanguage* script_language_js = memnew(GodotJSScriptLanguage());
@@ -30,12 +31,19 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
 
 		resource_saver_js.instantiate();
 		ResourceSaver::add_resource_format_saver(resource_saver_js);
-
+    }
+    else if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
+    {
 #ifdef TOOLS_ENABLED
         EditorNode::add_init_callback([]
         {
             GodotJSEditorPlugin* plugin = memnew(GodotJSEditorPlugin);
             EditorNode::add_editor_plugin(plugin);
+
+            Ref<GodotJSExportPlugin> exporter;
+            exporter.instantiate();
+            EditorExport::get_singleton()->add_export_plugin(exporter);
+
             plugin->set_name(jsb_typename(GodotJSEditorPlugin));
         });
 #endif

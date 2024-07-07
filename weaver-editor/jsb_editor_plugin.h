@@ -37,6 +37,7 @@ public:
     Vector<String> source_names_;
 };
 
+// essential editor utilities for GodotJS, such as menu entries in the editor (Install Presets, Generate d.ts)
 class GodotJSEditorPlugin : public EditorPlugin
 {
     GDCLASS(GodotJSEditorPlugin, EditorPlugin)
