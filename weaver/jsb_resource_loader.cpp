@@ -24,7 +24,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 
     //TODO use Realm to resolve?
     Error err;
-    jsb_check(p_path.ends_with(JSB_RES_EXT));
+    jsb_check(p_path.ends_with(JSB_SOURCE_EXT));
     const String code = FileAccess::get_file_as_string(p_path, &err);
     if (err != OK)
     {
