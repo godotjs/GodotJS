@@ -2,6 +2,7 @@
 
 namespace jsb::internal
 {
+    //TODO thread-safety issue on outputs_
     namespace { Vector<IConsoleOutput*> outputs_; }
 
     IConsoleOutput::IConsoleOutput()
