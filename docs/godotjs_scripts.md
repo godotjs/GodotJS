@@ -141,6 +141,12 @@ export class CyclicClass2 {
 WRITE SOMETHING HERE
 
 
+## Use External Editor
+It's recommended to use external editor to write typescripts. Change the settings in `Editor > Edtior Settings > Text Editor > Use External Editor`, and replace the `Exec Path` with the code editor installed locally:
+
+![use_external_editor](./assets/use_external_editor.png)
+
+
 ---
 
 [Go Back](../README.md)

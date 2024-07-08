@@ -226,6 +226,7 @@ if env.editor_build:
         "scripts/src/jsb.core.ts": "",
     })
     env_jsb.add_source_files(module_obj, "weaver-editor/*.cpp")
+    SConscript("weaver-editor/templates/SCsub")
 
 generate_jsb_gen_header()
 env.modules_sources += module_obj

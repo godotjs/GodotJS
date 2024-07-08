@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+Import("env")
+
+import editor.template_builders as build_template_ts
+
+env["BUILDERS"]["MakeGodotJSTemplateBuilder"] = Builder(
+    action = env.Run(build_template_ts.make_templates, "Generating GodotJSScript templates header."),
+    suffix = ".h",
+    src_suffix = ".ts",
+)
+
+# Template files 
+# the suffix should be `.ts`, but `editor/template_builders.py` hardcoded the delimiter with `.cs`
+templates_sources = Glob("*/*.cs")
+
+env.Alias("editor_template_ts", [env.MakeGodotJSTemplateBuilder("templates.gen.h", templates_sources)])

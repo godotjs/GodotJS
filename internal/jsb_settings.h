@@ -20,6 +20,8 @@ namespace jsb::internal
 
         // get the res path for `outDir`, it's equivalent to `res://` + get_jsb_out_dir_name()
         static String get_jsb_out_res_path();
+
+        static String get_indentation();
     };
 }
 

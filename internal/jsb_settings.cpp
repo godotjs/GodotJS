@@ -58,4 +58,20 @@ namespace jsb::internal
         return "res://" + get_jsb_out_dir_name();
     }
 
+    String Settings::get_indentation()
+    {
+#if JSB_GODOT_TOOLS
+        if (Engine::get_singleton()->is_editor_hint())
+        {
+            // use_space_indentation
+            if (!!EDITOR_GET("text_editor/behavior/indent/type"))
+            {
+                const int indent_size = EDITOR_GET("text_editor/behavior/indent/size");
+                return String(" ").repeat(indent_size);
+            }
+        }
+#endif
+        return "\t";
+    }
+
 }

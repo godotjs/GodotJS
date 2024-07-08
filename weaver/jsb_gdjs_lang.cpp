@@ -9,6 +9,9 @@
 #include "jsb_gdjs_script.h"
 #include "editor/editor_settings.h"
 
+#if JSB_GODOT_TOOLS
+#include "../weaver-editor/templates/templates.gen.h"
+#endif
 GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;
 
 GodotJSScriptLanguage::GodotJSScriptLanguage()
@@ -157,7 +160,12 @@ Ref<Script> GodotJSScriptLanguage::make_template(const String& p_template, const
 {
     Ref<GodotJSScript> spt;
     spt.instantiate();
-    spt->set_source_code(p_template);
+	String processed_template = p_template;
+    processed_template = processed_template.replace("_BASE_", p_base_class_name)
+                                 .replace("_CLASS_SNAKE_CASE_", p_class_name.to_snake_case().validate_identifier())
+                                 .replace("_CLASS_", p_class_name.to_pascal_case().validate_identifier())
+                                 .replace("_TS_", jsb::internal::Settings::get_indentation());
+    spt->set_source_code(processed_template);
     return spt;
 }
 
@@ -165,13 +173,11 @@ Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguage::get_built_in_templ
 {
     Vector<ScriptTemplate> templates;
 #ifdef TOOLS_ENABLED
-    //TODO load templates from disc
-    ScriptTemplate st;
-    st.content = "// template\nexport default class {\n}\n";
-    st.description = "a javascript boilerplate";
-    st.inherit = p_object;
-    st.name = "Basic Class Template";
-    templates.append(st);
+    for (int i = 0; i < TEMPLATES_ARRAY_SIZE; i++) {
+        if (TEMPLATES[i].inherit == p_object) {
+            templates.append(TEMPLATES[i]);
+        }
+    }
 #endif
     return templates;
 }
