@@ -49,7 +49,6 @@ private:
     InstallGodotJSPresetConfirmationDialog* confirm_dialog_;
 
     std::shared_ptr<jsb::internal::Process> tsc_;
-    Timer* timer_ = nullptr;
 
 protected:
     static void _bind_methods();
@@ -57,7 +56,6 @@ protected:
     void _notification(int p_what);
     void _on_menu_pressed(int p_what);
     void _on_confirm_overwrite();
-    void _on_timer();
     static Error write_file(const jsb::InstallFileInfo& p_file);
 
 public:

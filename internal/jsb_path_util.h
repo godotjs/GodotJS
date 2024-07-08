@@ -25,6 +25,9 @@ namespace jsb::internal
         // return the upper directory path ('/' and '\' are both accepted)
         static String dirname(const String& p_name);
 
+        // return the last component of the give path ('/' and '\' are both accepted)
+        static String get_last_component(const String& p_name);
+
         /**
          * \brief extract the relative path (eliminate all '.' and '..')
          * \note '\' will NOT be handled

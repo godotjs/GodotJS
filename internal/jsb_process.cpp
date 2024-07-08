@@ -1,5 +1,7 @@
 #include "jsb_process.h"
 
+#include "jsb_path_util.h"
+
 #if defined(WINDOWS_ENABLED)
 #define WIN32_LEAN_AND_MEAN
 #include <dwrite.h>
@@ -10,8 +12,6 @@
 
 namespace jsb::internal
 {
-    static constexpr int CHUNK_SIZE = 4096;
-
 #if defined(WINDOWS_ENABLED)
     class ProcessImpl : public Process
     {
@@ -20,11 +20,11 @@ namespace jsb::internal
             PROCESS_INFORMATION pi;
         } pi = {};
 
+        String proc_name;
         HANDLE rd_pipe = nullptr;
-        OVERLAPPED overlapped_ = {};
-        volatile bool rd_pending_ = false;
-        LocalVector<char> bytes;
         Vector<char> rd_line;
+		Thread thread;
+        volatile bool is_closing = false;
         // int bytes_in_buffer = 0;
 
         // OS::ProcessID pid = 0;
@@ -32,7 +32,6 @@ namespace jsb::internal
     public:
         ProcessImpl(): Process()
         {
-            bytes.resize(CHUNK_SIZE);
         }
 
         String _quote_command_line_argument(const String &p_text) const {
@@ -47,25 +46,31 @@ namespace jsb::internal
 
         void _flush()
         {
+            if (rd_line.is_empty()) return;
+
             // Try to convert from default ANSI code page to Unicode.
-            LocalVector<wchar_t> wchars;
-            int total_wchars = MultiByteToWideChar(CP_ACP, 0, rd_line.ptr(), rd_line.size(), nullptr, 0);
-            if (total_wchars > 0)
+            LocalVector<wchar_t> buffer;
+            const int num = MultiByteToWideChar(CP_ACP, 0, rd_line.ptr(), rd_line.size(), nullptr, 0);
+            if (num > 0)
             {
-                wchars.resize(total_wchars);
-                if (MultiByteToWideChar(CP_ACP, 0, rd_line.ptr(), rd_line.size(), wchars.ptr(), total_wchars) == 0)
+                buffer.resize(num);
+                if (MultiByteToWideChar(CP_ACP, 0, rd_line.ptr(), rd_line.size(), buffer.ptr(), num) == 0)
                 {
-                    wchars.clear();
+                    buffer.clear();
                 }
             }
 
-            const String output = wchars.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(wchars.ptr(), total_wchars);
-            JSB_LOG(Log, "stdout: %s", output);
+            const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr(), num);
+            if (!output.is_empty())
+            {
+                Logger::output<ELogSeverity::Log>(__FILE__, __LINE__, __FUNCTION__, "[%s] %s", proc_name, output);
+            }
+            rd_line.clear();
         }
 
-        virtual Error on_start(const String& p_path, const List<String>& p_arguments) override
+        virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) override
         {
-            String path = p_path.replace("/", "\\");
+            const String path = p_path.replace("/", "\\");
             String command = _quote_command_line_argument(path);
 	        HANDLE pipe[2] = { nullptr, nullptr };
             for (const String &E : p_arguments)
@@ -103,77 +108,64 @@ namespace jsb::internal
 	        ERR_FAIL_COND_V_MSG(ret == 0, ERR_CANT_FORK, "Could not create child process: " + command);
             CloseHandle(pipe[1]);
             rd_pipe = pipe[0];
-            overlapped_.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-            begin_read_async();
+            proc_name = p_name;
+            {
+                //TODO use async io instead of threading
+                Thread::Settings settings;
+                settings.priority = Thread::PRIORITY_LOW;
+                thread.set_name(proc_name);
+                thread.start(&ProcessImpl::_thread_run, this, settings);
+            }
             return OK;
         }
 
-        static void on_complete(DWORD p_error_code, DWORD p_read, LPOVERLAPPED p_overlapped)
+        static void _thread_run(void* p_userdata)
         {
-            // end_read_async();
-        }
+            ProcessImpl* impl = (ProcessImpl*) p_userdata;
+            int start_state = 0;
+            char buffer[4096];
 
-        void begin_read_async()
-        {
-            // Read StdOut and StdErr from pipe.
-            if (!ReadFileEx(rd_pipe, (LPVOID) bytes.ptr(), CHUNK_SIZE, &overlapped_, &on_complete))
+            while (!impl->is_closing)
             {
-                const DWORD error = GetLastError();
-                if (error != ERROR_IO_PENDING)
+                // Read StdOut and StdErr from pipe.
+                DWORD read;
+                if (!ReadFile(impl->rd_pipe, (LPVOID) buffer, std::size(buffer), &read, NULL))
                 {
-                    JSB_LOG(Error, "failed to begin read (async): %s", uitos((uint64_t) error));
+                    break;
                 }
-                return;
-            }
 
-            rd_pending_ = true;
-        }
-
-        void end_read_async()
-        {
-            DWORD read = 0;
-            if (overlapped_.hEvent != INVALID_HANDLE_VALUE)
-            {
-                if (!GetOverlappedResult(rd_pipe, &overlapped_, &read, FALSE))
+                // Assume that all possible encodings are ASCII-compatible.
+                // Break at newline to allow receiving long output in portions.
+                for (DWORD i = 0; i < read; ++i)
                 {
-                    DWORD error = GetLastError();
-                    if (error != ERROR_IO_PENDING)
+                    if (start_state == 0)
                     {
-                        JSB_LOG(Warning, "failed to end read (async): %s", uitos((uint64_t) error));
+                        if (buffer[i] == '\x1b') { start_state = 1; continue; }
+                        start_state = 2;
                     }
-                    return;
+                    else if (start_state == 1)
+                    {
+                        start_state = 2;
+                        if (buffer[i] == 'c')  { continue; }
+                    }
+
+                    if (buffer[i] == '\n' || buffer[i] == '\r')
+                    {
+                        impl->_flush();
+                        start_state = 0;
+                    }
+                    else
+                    {
+                        impl->rd_line.push_back(buffer[i]);
+                    }
                 }
             }
-
-            // Assume that all possible encodings are ASCII-compatible.
-            // Break at newline to allow receiving long output in portions.
-            for (DWORD i = 0; i < read; ++i)
-            {
-                if (bytes[i] == '\n')
-                {
-                    _flush();
-                    rd_line.clear();
-                }
-                else
-                {
-                    rd_line.push_back(bytes[i]);
-                }
-            }
-
-            rd_pending_ = false;
-        }
-
-        virtual void on_update() override
-        {
-            if (!rd_pending_)
-            {
-                begin_read_async();
-            }
+            Logger::output<ELogSeverity::Verbose>(__FILE__, __LINE__, __FUNCTION__, "[%s] closed", impl->proc_name);
         }
 
         virtual bool _is_running() const override
         {
-            if (pi.pi.hProcess == nullptr)
+            if (is_closing || pi.pi.hProcess == nullptr)
             {
                 return false;
             }
@@ -191,22 +183,15 @@ namespace jsb::internal
 
         virtual void on_stop() override
         {
-            if (overlapped_.hEvent != INVALID_HANDLE_VALUE)
-            {
-                CloseHandle(overlapped_.hEvent);
-                overlapped_.hEvent = INVALID_HANDLE_VALUE;
-            }
-            CloseHandle(rd_pipe);
-            rd_pipe = nullptr;
-
-            const int ret = TerminateProcess(pi.pi.hProcess, 0);
+            is_closing = true;
+            Logger::output<ELogSeverity::Verbose>(__FILE__, __LINE__, __FUNCTION__, "[%s] terminating...", proc_name);
+            TerminateProcess(pi.pi.hProcess, 0);
             CloseHandle(pi.pi.hProcess);
             CloseHandle(pi.pi.hThread);
-
-            if (ret != 0)
-            {
-                JSB_LOG(Error, "failed to terminate process %d", ret);
-            }
+            CloseHandle(rd_pipe);
+            rd_pipe = nullptr;
+            thread.wait_to_finish();
+            Logger::output<ELogSeverity::Log>(__FILE__, __LINE__, __FUNCTION__, "[%s] terminated", proc_name);
         }
     };
 #elif defined(UNIX_ENABLED) && !defined(__EMSCRIPTEN__)
@@ -216,8 +201,7 @@ namespace jsb::internal
     public:
         ProcessImpl(): Process() {}
 
-        virtual Error on_start(const String& p_path, const List<String>& p_arguments) override { return OK; }
-        virtual void on_update() override { }
+        virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) override { return OK; }
         virtual bool _is_running() const override { return false; }
         virtual void on_stop() override { }
     };
@@ -227,8 +211,7 @@ namespace jsb::internal
     public:
         ProcessImpl(): Process() {}
 
-        virtual Error on_start(const String& p_path, const List<String>& p_arguments) override { return OK; }
-        virtual void on_update() override { }
+        virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) override { return OK; }
         virtual bool _is_running() const override { return false; }
         virtual void on_stop() override { }
     };
@@ -239,16 +222,15 @@ namespace jsb::internal
         return _is_running();
     }
 
-    std::shared_ptr<Process> Process::create(const String& p_path, const List<String>& p_arguments)
+    std::shared_ptr<Process> Process::create(const String& p_name, const String& p_path, const List<String>& p_arguments)
     {
         std::shared_ptr<ProcessImpl> impl = std::make_shared<ProcessImpl>();
-        impl->start(p_path, p_arguments);
+        impl->start(p_name, p_path, p_arguments);
         return impl;
     }
 
     Process::~Process()
     {
-        stop();
     }
 
     void Process::stop()
@@ -257,15 +239,9 @@ namespace jsb::internal
         on_stop();
     }
 
-    void Process::start(const String& p_path, const List<String>& p_arguments)
+    void Process::start(const String& p_name, const String& p_path, const List<String>& p_arguments)
     {
-        on_start(p_path, p_arguments);
-    }
-
-    void Process::update()
-    {
-        if (!is_running()) return;
-        on_update();
+        on_start(p_name, p_path, p_arguments);
     }
 
 }

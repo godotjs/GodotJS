@@ -26,6 +26,21 @@ namespace jsb::internal
         return p_name.substr(0, index);
     }
 
+    String PathUtil::get_last_component(const String& p_name)
+    {
+        int index = p_name.rfind("/");
+        if (index < 0)
+        {
+            index = p_name.rfind("\\");
+            if (index < 0)
+            {
+                return p_name;
+            }
+        }
+        return p_name.substr(index + 1);
+    }
+
+
     Error PathUtil::extract(const String& p_path, String& o_path)
     {
         o_path = p_path.simplify_path();
