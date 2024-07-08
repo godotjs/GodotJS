@@ -2,7 +2,6 @@
 #define GODOTJS_SCRIPT_H
 
 #include "core/object/script_language.h"
-#include "jsb_weaver_consts.h"
 #include "jsb_bridge.h"
 #include "core/templates/rb_set.h"
 
@@ -48,8 +47,6 @@ private:
     void call_prelude(jsb::NativeObjectID p_object_id);
 
     void load_module();
-
-    static String convert_to_internal_path(const String& p_source_path);
 
     void _update_exports(PlaceHolderScriptInstance *p_instance_to_update, bool p_base_exports_changed = false);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);

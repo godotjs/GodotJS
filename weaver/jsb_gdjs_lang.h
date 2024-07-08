@@ -3,7 +3,6 @@
 
 #include "core/object/script_language.h"
 #include "../internal/jsb_macros.h"
-#include "jsb_weaver_consts.h"
 #include "jsb_bridge.h"
 
 class GodotJSScriptLanguage : public ScriptLanguage

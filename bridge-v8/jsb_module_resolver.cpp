@@ -2,7 +2,6 @@
 
 #include "jsb_realm.h"
 #include "../internal/jsb_path_util.h"
-#include "../weaver/jsb_weaver_consts.h"
 #include "core/io/json.h"
 
 namespace jsb

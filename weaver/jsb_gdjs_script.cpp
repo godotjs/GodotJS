@@ -1,8 +1,8 @@
 #include "jsb_gdjs_script.h"
 #include "jsb_gdjs_lang.h"
 #include "jsb_gdjs_script_instance.h"
-#include "../internal/jsb_variant_util.h"
 #include "../internal/jsb_settings.h"
+#include "../internal/jsb_path_util.h"
 
 #define GODOTJS_LOAD_SCRIPT_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); } (void) 0
 
@@ -307,25 +307,12 @@ void GodotJSScript::attach_source(const String& p_path, const String& p_source)
     //TODO we can't instantly compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
 }
 
-String GodotJSScript::convert_to_internal_path(const String& p_source_path)
-{
-    if (p_source_path.ends_with("." JSB_TYPESCRIPT_EXT))
-    {
-        jsb_checkf(p_source_path.begins_with("res://"), "can not proceed typescript sources not under the project directory");
-        const String replaced = jsb::internal::Settings::get_jsb_out_res_path().path_join(
-            p_source_path.substr(std::size("res://") - 1, p_source_path.length() - std::size("res://") - 1)
-            + JSB_JAVASCRIPT_EXT);
-        return replaced;
-    }
-    return p_source_path;
-}
-
 void GodotJSScript::load_module()
 {
     if (loaded_ && realm_id_) return;
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
-    const String path = convert_to_internal_path(get_path());
+    const String path = jsb::internal::PathUtil::convert_to_internal_path(get_path());
     const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     std::shared_ptr<jsb::Realm> realm = lang->get_context();
 

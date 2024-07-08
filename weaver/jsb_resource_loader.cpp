@@ -2,7 +2,6 @@
 
 #include "jsb_gdjs_lang.h"
 #include "jsb_gdjs_script.h"
-#include "jsb_weaver_consts.h"
 
 Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, const String& p_original_path, Error* r_error, bool p_use_sub_threads, float* r_progress, CacheMode p_cache_mode)
 {
