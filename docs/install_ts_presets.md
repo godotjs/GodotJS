@@ -1,10 +1,10 @@
 
 Install TS project presets with `Godot Editor` menu item `Project > Tools > GodotJS > Install TS Project`.
-> All `jsb` premade config/scripts will be generated at `res://typescripts` and `res://javascripts` (the location will be configurable in a future version, probably?).
+> All `jsb` premade configurations/scripts will be generated at the root of the project (`res://`).
 > `d.ts` files of godot classes will also be generated at the same time.
 
 > [!NOTE] 
-> The directory `typescripts` is automatically ignored in `Godot Editor`. Edit typescript source from the `typescripts` directory with any code editor (like VSCode).
+> `typescript` is required to compile all typescript sources, `npm i` is needed to be run before writing your scripts.
 
 Since the `d.ts` files for godot classes are generated in the TS project, `IntelliSense` works perfectly in VSCode for better coding efficiency.
 
@@ -12,13 +12,13 @@ Since the `d.ts` files for godot classes are generated in the TS project, `Intel
 
 Install javascript packages:
 ```sh
-cd YourGodotProject/typescripts
+cd YourGodotProject/
 npm i
 ```
 
 Write and compile your typescript sources:
 ```sh
-cd YourGodotProject/typescripts
+cd YourGodotProject/
 # remove the option `-w` if no continuous compilation required
 npx tsc -w
 ```
