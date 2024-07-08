@@ -4,6 +4,7 @@
 #include "internal/jsb_string_names.h"
 #include "weaver-editor/jsb_export_plugin.h"
 #include "weaver/jsb_gdjs_lang.h"
+#include "weaver/jsb_gdjs_script.h"
 #include "weaver/jsb_resource_loader.h"
 #include "weaver/jsb_resource_saver.h"
 
@@ -17,23 +18,20 @@ Ref<ResourceFormatSaverGodotJSScript> resource_saver_js;
 
 void jsb_initialize_module(ModuleInitializationLevel p_level)
 {
-    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE)
+    if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
     {
-    }
-    else if (p_level == MODULE_INITIALIZATION_LEVEL_CORE)
-    {
+        GDREGISTER_CLASS(GodotJSScript);
+
         // register javascript language
         GodotJSScriptLanguage* script_language_js = memnew(GodotJSScriptLanguage());
-	    ScriptServer::register_language(script_language_js);
+        ScriptServer::register_language(script_language_js);
 
-		resource_loader_js.instantiate();
-		ResourceLoader::add_resource_format_loader(resource_loader_js);
+        resource_loader_js.instantiate();
+        ResourceLoader::add_resource_format_loader(resource_loader_js);
 
-		resource_saver_js.instantiate();
-		ResourceSaver::add_resource_format_saver(resource_saver_js);
-    }
-    else if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
-    {
+        resource_saver_js.instantiate();
+        ResourceSaver::add_resource_format_saver(resource_saver_js);
+
 #ifdef TOOLS_ENABLED
         EditorNode::add_init_callback([]
         {
