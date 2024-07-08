@@ -47,6 +47,8 @@ private:
     Vector<jsb::InstallFileInfo> install_files_;
     InstallGodotJSPresetConfirmationDialog* confirm_dialog_;
 
+    OS::ProcessID tsc_process_id_ = 0;
+
 protected:
     static void _bind_methods();
 
@@ -59,8 +61,14 @@ public:
     GodotJSEditorPlugin();
     virtual ~GodotJSEditorPlugin() override;
 
+    void start_tsc_watch();
+    void kill_tsc();
+
     void try_install_ts_project();
     bool verify_ts_project() const;
+
+    // not really a singleton, but always get from `EditorNode` which assumed unique
+    static GodotJSEditorPlugin* get_singleton();
 
     static void generate_godot_dts();
     static void install_ts_project(const Vector<jsb::InstallFileInfo>& p_files);

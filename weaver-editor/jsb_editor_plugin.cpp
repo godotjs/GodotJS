@@ -7,6 +7,7 @@
 #include "../weaver/jsb_gdjs_lang.h"
 
 #include "core/config/project_settings.h"
+#include "editor/editor_node.h"
 #include "scene/gui/popup_menu.h"
 #include "editor/editor_settings.h"
 #include "editor/gui/editor_toaster.h"
@@ -238,4 +239,57 @@ void GodotJSEditorPlugin::_on_confirm_overwrite()
         return;
     }
     install_ts_project(confirm_dialog_->pending_installs_);
+}
+
+void GodotJSEditorPlugin::start_tsc_watch()
+{
+    if (OS::get_singleton()->is_process_running(tsc_process_id_))
+    {
+        JSB_LOG(Error, "tsc is already running, please stop it before starting a new one.");
+        return;
+    }
+    if (!FileAccess::exists("res://node_modules/typescript/bin/tsc"))
+    {
+        JSB_LOG(Error, "typescript not installed propertly, please run 'npm i' to install all essential npm packages at first.");
+        return;
+    }
+
+    List<String> args;
+    args.push_back("./node_modules/typescript/bin/tsc");
+    args.push_back("-w");
+
+#ifdef WINDOWS_ENABLED
+    const String exe_path = "node.exe";
+#else
+    //TODO not tested
+    const String exe_path = "node";
+#endif
+    //TODO no console output in this way, implement pipes here
+    const Error err = OS::get_singleton()->create_process(exe_path, args, &tsc_process_id_);
+    if (err != OK)
+    {
+        JSB_LOG(Error, "failed to start tsc process with error %d", err);
+        return;
+    }
+    JSB_LOG(Verbose, "tsc watching...");
+}
+
+void GodotJSEditorPlugin::kill_tsc()
+{
+    if (!OS::get_singleton()->is_process_running(tsc_process_id_))
+    {
+        return;
+    }
+
+    OS::get_singleton()->kill(tsc_process_id_);
+    tsc_process_id_ = 0;
+}
+
+GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
+{
+    if (EditorNode* editor_node = EditorNode::get_singleton())
+    {
+        return reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
+    }
+    return nullptr;
 }

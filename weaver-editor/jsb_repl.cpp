@@ -51,7 +51,22 @@ GodotJSREPL::GodotJSREPL()
         tool_bar_box->add_child(preset_hint_label_);
         preset_hint_label_->set_text(TTR("Suggest re-installing GodotJS preset files."));
     }
-
+    {
+        start_tsc_button_ = memnew(Button);
+        tool_bar_box->add_child(start_tsc_button_);
+        start_tsc_button_->set_theme_type_variation("FlatButton");
+        start_tsc_button_->set_focus_mode(FOCUS_NONE);
+        start_tsc_button_->set_tooltip_text(TTR("Start tsc (watch)"));
+        start_tsc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_start_tsc_pressed));
+    }
+    {
+        kill_tsc_button_ = memnew(Button);
+        tool_bar_box->add_child(kill_tsc_button_);
+        kill_tsc_button_->set_theme_type_variation("FlatButton");
+        kill_tsc_button_->set_focus_mode(FOCUS_NONE);
+        kill_tsc_button_->set_tooltip_text(TTR("Start tsc (watch)"));
+        kill_tsc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_kill_tsc_pressed));
+    }
     output_box_ = memnew(RichTextLabel);
     output_box_->set_threaded(true);
     output_box_->set_use_bbcode(true);
@@ -117,6 +132,8 @@ void GodotJSREPL::_update_theme()
     clear_button_->set_icon(get_editor_theme_icon("Clear"));
     dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
     preset_button_->set_icon(get_editor_theme_icon("Window"));
+    start_tsc_button_->set_icon(get_editor_theme_icon("Play"));
+    kill_tsc_button_->set_icon(get_editor_theme_icon("Stop"));
 }
 
 void GodotJSREPL::check_install()
@@ -141,11 +158,10 @@ void GodotJSREPL::_clear_pressed()
 
 void GodotJSREPL::_install_preset_pressed()
 {
-    EditorNode* editor_node = EditorNode::get_singleton();
-    if (!editor_node) return;
-    GodotJSEditorPlugin* editor_plugin = reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
-    if (!editor_plugin) return;
-    editor_plugin->try_install_ts_project();
+    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
+    {
+        editor_plugin->try_install_ts_project();
+    }
 }
 
 void GodotJSREPL::_generate_dts_pressed()
@@ -272,5 +288,21 @@ void GodotJSREPL::add_history(const String &p_text)
     if (history_.size() > 10)
     {
         history_.remove_at(0);
+    }
+}
+
+void GodotJSREPL::_start_tsc_pressed()
+{
+    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
+    {
+        editor_plugin->start_tsc_watch();
+    }
+}
+
+void GodotJSREPL::_kill_tsc_pressed()
+{
+    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
+    {
+        editor_plugin->kill_tsc();
     }
 }
