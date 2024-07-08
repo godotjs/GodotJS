@@ -15,6 +15,7 @@ namespace jsb
 
         // only write file if not existed since some files would be modified in projects, such as package.json, by users
         CH_CREATE_ONLY = 1 << 3,
+        CH_REPLACE_VARS = 1 << 4,
 
         CH_OPTIONAL = 1 << 7,
     };
@@ -34,7 +35,7 @@ class InstallGodotJSPresetConfirmationDialog : public ConfirmationDialog
 	GDCLASS(InstallGodotJSPresetConfirmationDialog, ConfirmationDialog);
 
 public:
-    Vector<String> source_names_;
+    Vector<jsb::InstallFileInfo> pending_installs_;
 };
 
 // essential editor utilities for GodotJS, such as menu entries in the editor (Install Presets, Generate d.ts)
@@ -68,7 +69,7 @@ public:
      * return true if everything is identical to the expected version.
      * otherwise return false with changed files in `r_modified`.
      */
-    static bool verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<String>* r_modified);
+    static bool verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<jsb::InstallFileInfo>* r_modified);
     static bool verify_file(const jsb::InstallFileInfo& p_file, bool p_verify_content);
 
     static void on_successfully_installed();

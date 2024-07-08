@@ -87,7 +87,7 @@ namespace jsb
 
     bool DefaultModuleResolver::check_file_path(const String& p_module_id, String& o_path)
     {
-        static const String js_ext = "." JSB_SOURCE_EXT;
+        static const String js_ext = "." JSB_JAVASCRIPT_EXT;
         Ref<FileAccess> access = get_file_access();
 
         // direct module

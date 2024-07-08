@@ -44,17 +44,15 @@ void GodotJSScriptLanguage::init()
         realm_ = std::make_shared<jsb::Realm>(environment_);
 
         environment_->add_module_resolver<jsb::DefaultModuleResolver>()
-                    .add_search_path("res://javascripts")
+                    .add_search_path(jsb::internal::Settings::get_jsb_out_res_path())
+                    .add_search_path("res://javascripts") //TODO remove this after migrating to new ts project structure
+                    .add_search_path("res://libs") //TODO use configurable path for custom lib path
 #ifdef TOOLS_ENABLED
-                    .add_search_path("res://typescripts/node_modules") // so far, it's only for editor scripting
+                    .add_search_path("res://node_modules") // so far, it's only for editor scripting
 #endif
-        // // search path for editor only scripts
-        // .add_search_path(jsb::internal::PathUtil::combine(
-        //     jsb::internal::PathUtil::dirname(::OS::get_singleton()->get_executable_path()),
-        //     "../modules/jsb/scripts/out"));
         ;
 
-        if (FileAccess::exists("res://javascripts/jsb/jsb.editor.main.js"))
+        if (FileAccess::exists(jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb/jsb.editor.main.js")))
         {
             realm_->load("jsb/jsb.editor.main");
         }
@@ -192,7 +190,8 @@ void GodotJSScriptLanguage::reload_tool_script(const Ref<Script>& p_script, bool
 
 void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions) const
 {
-    p_extensions->push_back(JSB_SOURCE_EXT);
+    p_extensions->push_back(JSB_TYPESCRIPT_EXT);
+    p_extensions->push_back(JSB_JAVASCRIPT_EXT);
 }
 
 jsb::JSValueMove GodotJSScriptLanguage::eval_source(const String& p_code, Error& r_err)

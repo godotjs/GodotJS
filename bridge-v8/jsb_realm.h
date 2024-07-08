@@ -135,9 +135,10 @@ namespace jsb
         /**
          * \brief load a module script
          * \param p_name module_id
+         * \param r_module internal module info, DO NOT STORE IT OUTSIDE OF REALM.
          * \return OK if compiled and run with no error
          */
-        Error load(const String& p_name);
+        Error load(const String& p_name, JavaScriptModule** r_module = nullptr);
 
         //TODO is there a simple way to compile (validate) the script without any side effect?
         bool validate_script(const String& p_path, struct JavaScriptExceptionInfo* r_err = nullptr);

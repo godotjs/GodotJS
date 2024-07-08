@@ -470,7 +470,7 @@ namespace jsb
         context_.Reset();
     }
 
-    Error Realm::load(const String& p_name)
+    Error Realm::load(const String& p_name, JavaScriptModule** r_module)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, load);
         environment_->check_internal_state();
@@ -481,12 +481,16 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         v8::TryCatch try_catch_run(isolate);
-        if (_load_module("", p_name))
+        if (JavaScriptModule* module = _load_module("", p_name))
         {
             // no exception should be thrown if module loaded successfully
             if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
             {
                 JSB_LOG(Warning, "something wrong when loading '%s'\n%s", p_name, (String) exception_info);
+            }
+            if (r_module)
+            {
+                *r_module = module;
             }
             return OK;
         }

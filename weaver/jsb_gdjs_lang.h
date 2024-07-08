@@ -52,7 +52,7 @@ public:
 #pragma region DEFAULTLY AND PARTIALLY SUPPORTED
     virtual String get_name() const override;
     virtual String get_type() const override;
-    virtual String get_extension() const override { return JSB_SOURCE_EXT; }
+    virtual String get_extension() const override { return JSB_TYPESCRIPT_EXT; }
 
     virtual bool is_using_templates() override { return true; }
     virtual bool has_named_classes() const override { return true; }

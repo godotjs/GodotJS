@@ -57,28 +57,31 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 
     add_control_to_bottom_panel(memnew(GodotJSREPL), TTR("GodotJS"));
 
+    const String tsc_out_path = jsb::internal::Settings::get_jsb_out_res_path();
+
     // config files
-    install_files_.push_back({ "tsconfig.json", "res://typescripts", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
-    install_files_.push_back({ "package.json", "res://typescripts", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
-    install_files_.push_back({ ".gdignore", "res://typescripts", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY | jsb::CH_REPLACE_VARS });
+    install_files_.push_back({ "package.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
+    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ ".gdignore", "res://typings", jsb::CH_TYPESCRIPT });
 
     // type declaration files
-    install_files_.push_back({ "godot.minimal.d.ts", "res://typescripts/typings", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "godot.minimal.d.ts", "res://typings", jsb::CH_TYPESCRIPT });
 
     // ts source files
-    install_files_.push_back({ "jsb.core.ts", "res://typescripts/src/jsb", jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ "jsb.editor.codegen.ts", "res://typescripts/src/jsb", jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ "jsb.editor.main.ts", "res://typescripts/src/jsb", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "jsb.core.ts", "res://jsb", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "jsb.editor.codegen.ts", "res://jsb", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "jsb.editor.main.ts", "res://jsb", jsb::CH_TYPESCRIPT });
 
     // files which could be generated from ts source with tsc by the user
-    install_files_.push_back({ "jsb.core.js.map", "res://javascripts/jsb", jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
-    install_files_.push_back({ "jsb.editor.codegen.js.map", "res://javascripts/jsb", jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
-    install_files_.push_back({ "jsb.editor.main.js.map", "res://javascripts/jsb", jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
+    install_files_.push_back({ "jsb.core.js.map", tsc_out_path, jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
+    install_files_.push_back({ "jsb.editor.codegen.js.map", tsc_out_path, jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
+    install_files_.push_back({ "jsb.editor.main.js.map", tsc_out_path, jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
 
     // files which could be generated from ts source with tsc by the user
-    install_files_.push_back({ "jsb.core.js", "res://javascripts/jsb", jsb::CH_JAVASCRIPT });
-    install_files_.push_back({ "jsb.editor.codegen.js", "res://javascripts/jsb", jsb::CH_JAVASCRIPT });
-    install_files_.push_back({ "jsb.editor.main.js", "res://javascripts/jsb", jsb::CH_JAVASCRIPT });
+    install_files_.push_back({ "jsb.core.js", tsc_out_path, jsb::CH_JAVASCRIPT });
+    install_files_.push_back({ "jsb.editor.codegen.js", tsc_out_path, jsb::CH_JAVASCRIPT });
+    install_files_.push_back({ "jsb.editor.main.js", tsc_out_path, jsb::CH_JAVASCRIPT });
 }
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
@@ -97,19 +100,27 @@ Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
     const String target_name = jsb::internal::PathUtil::combine(p_file.target_dir, p_file.source_name);
     const Ref<FileAccess> outfile = FileAccess::open(target_name, FileAccess::WRITE, &err);
     ERR_FAIL_COND_V_MSG(err != OK, err, "failed to open output file");
+    if ((p_file.hint & jsb::CH_REPLACE_VARS) != 0)
+    {
+        String parsed;
+        parsed.parse_utf8(data, size);
+        parsed = parsed.replacen("__OUT_DIR__", jsb::internal::Settings::get_jsb_out_dir_name());
+        outfile->store_string(parsed);
+        return OK;
+    }
     outfile->store_buffer((const uint8_t*) data, size);
     return OK;
 }
 
 void GodotJSEditorPlugin::on_successfully_installed()
 {
-    const String toast_message = TTR("TS project installed, place your ts code in res://typescripts and compile with tsc command under `typescripts` directory.");
+    const String toast_message = TTR("TS project installed, write your ts code in the project and compile with tsc command under the project root directory.");
     EditorToaster::get_singleton()->popup_str(toast_message, EditorToaster::SEVERITY_INFO);
 }
 
 void GodotJSEditorPlugin::try_install_ts_project()
 {
-    Vector<String> modified;
+    Vector<jsb::InstallFileInfo> modified;
     if (verify_files(install_files_, true, &modified))
     {
         on_successfully_installed();
@@ -117,13 +128,13 @@ void GodotJSEditorPlugin::try_install_ts_project()
     }
 
     jsb_check(!modified.is_empty());
-    const String heading = "\n    * ";
+    const String leading_symbol = "\n    - ";
     String modified_file_list;
-    for (const String& item : modified)
+    for (const jsb::InstallFileInfo& item : modified)
     {
-        modified_file_list += heading + item;
+        modified_file_list += leading_symbol + item.target_dir.path_join(item.source_name);
     }
-    confirm_dialog_->source_names_ = modified;
+    confirm_dialog_->pending_installs_ = modified;
     confirm_dialog_->set_text(TTR("Found existing/missing files, re-installing TS project will overwrite:") + modified_file_list);
     confirm_dialog_->popup_centered();
 }
@@ -157,7 +168,7 @@ bool GodotJSEditorPlugin::verify_ts_project() const
     return verify_files(install_files_, false, nullptr);
 }
 
-bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<String>* r_modified)
+bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<jsb::InstallFileInfo>* r_modified)
 {
     bool verified = true;
     for (const jsb::InstallFileInfo& info: p_files)
@@ -167,7 +178,7 @@ bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_fil
             verified = false;
             if (r_modified)
             {
-                r_modified->append(info.source_name);
+                r_modified->append(info);
             }
         }
     }
@@ -197,12 +208,12 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
 
 void GodotJSEditorPlugin::generate_godot_dts()
 {
-    ERR_FAIL_COND_MSG(!FileAccess::exists("res://javascripts/jsb/jsb.editor.codegen.js"), "install and compile ts source at first");
+    ERR_FAIL_COND_MSG(!FileAccess::exists(jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb/jsb.editor.codegen.js")), "install and compile ts source at first");
 
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
-    lang->eval_source(R"--((function(){const mod = require("jsb/jsb.editor.codegen"); (new mod.default("./typescripts/typings")).emit();})())--", err).ignore();
+    lang->eval_source(R"--((function(){const mod = require("jsb/jsb.editor.codegen"); (new mod.default("./typings")).emit();})())--", err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 
     const String toast_message = TTR("godot.d.ts generated successfully");
@@ -211,7 +222,7 @@ void GodotJSEditorPlugin::generate_godot_dts()
 
 void GodotJSEditorPlugin::load_editor_entry_module()
 {
-    ERR_FAIL_COND_MSG(!FileAccess::exists("res://javascripts/jsb/jsb.editor.main.js"), "install and compile ts source at first");
+    ERR_FAIL_COND_MSG(!FileAccess::exists(jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb/jsb.editor.main.js")), "install and compile ts source at first");
 
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
@@ -221,18 +232,10 @@ void GodotJSEditorPlugin::load_editor_entry_module()
 
 void GodotJSEditorPlugin::_on_confirm_overwrite()
 {
-    Vector<jsb::InstallFileInfo> pending_files;
-    for (const jsb::InstallFileInfo& file_info : install_files_)
-    {
-        if (confirm_dialog_->source_names_.has(file_info.source_name))
-        {
-            pending_files.append(file_info);
-        }
-    }
-    if (pending_files.is_empty())
+    if (confirm_dialog_->pending_installs_.is_empty())
     {
         JSB_LOG(Warning, "empty pending file list to install");
         return;
     }
-    install_ts_project(pending_files);
+    install_ts_project(confirm_dialog_->pending_installs_);
 }
