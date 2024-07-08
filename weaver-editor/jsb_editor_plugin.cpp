@@ -87,6 +87,11 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
 {
+    if (tsc_)
+    {
+        tsc_->stop();
+        tsc_.reset();
+    }
     JSB_LOG(VeryVerbose, "~GodotJSEditorPlugin");
 }
 
@@ -243,7 +248,7 @@ void GodotJSEditorPlugin::_on_confirm_overwrite()
 
 void GodotJSEditorPlugin::start_tsc_watch()
 {
-    if (OS::get_singleton()->is_process_running(tsc_process_id_))
+    if (tsc_ && tsc_->is_running())
     {
         JSB_LOG(Error, "tsc is already running, please stop it before starting a new one.");
         return;
@@ -265,24 +270,36 @@ void GodotJSEditorPlugin::start_tsc_watch()
     const String exe_path = "node";
 #endif
     //TODO no console output in this way, implement pipes here
-    const Error err = OS::get_singleton()->create_process(exe_path, args, &tsc_process_id_);
-    if (err != OK)
+    tsc_ = jsb::internal::Process::create(exe_path, args);
+    if (!tsc_ || !tsc_->is_running())
     {
-        JSB_LOG(Error, "failed to start tsc process with error %d", err);
+        JSB_LOG(Error, "failed to start tsc process");
         return;
     }
     JSB_LOG(Verbose, "tsc watching...");
+    if (!timer_)
+    {
+        timer_ = memnew(Timer);
+        add_child(timer_);
+
+        timer_->set_wait_time(0.5);
+        timer_->connect("timeout", callable_mp(this, &GodotJSEditorPlugin::_on_timer));
+        timer_->start();
+    }
 }
 
 void GodotJSEditorPlugin::kill_tsc()
 {
-    if (!OS::get_singleton()->is_process_running(tsc_process_id_))
+    if (tsc_ && tsc_->is_running())
     {
-        return;
+        tsc_->stop();
     }
 
-    OS::get_singleton()->kill(tsc_process_id_);
-    tsc_process_id_ = 0;
+    if (timer_)
+    {
+        timer_->queue_free();
+        timer_ = nullptr;
+    }
 }
 
 GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
@@ -292,4 +309,12 @@ GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
         return reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
     }
     return nullptr;
+}
+
+void GodotJSEditorPlugin::_on_timer()
+{
+    if (tsc_)
+    {
+        tsc_->update();
+    }
 }
