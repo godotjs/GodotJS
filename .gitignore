@@ -15,4 +15,5 @@ __MACOSX
 # auto-generated sources
 /jsb.gen.h
 /weaver-editor/jsb_project_preset.cpp
+/weaver-editor/templates/templates.gen.h
 
