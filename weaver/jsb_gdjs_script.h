@@ -100,7 +100,7 @@ public:
     virtual bool has_script_signal(const StringName& p_signal) const override;
     virtual void get_script_signal_list(List<MethodInfo>* r_signals) const override;
 
-    virtual bool is_placeholder_fallback_enabled() const override { return false; }
+    virtual bool is_placeholder_fallback_enabled() const override { return loaded_ && !valid_; }
     virtual bool get_property_default_value(const StringName& p_property, Variant& r_value) const override;
 
     virtual void update_exports() override;

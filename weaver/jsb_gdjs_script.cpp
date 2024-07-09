@@ -230,6 +230,8 @@ bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 {
     jsb_check(loaded_);
+    if (!valid_) return;
+
     for (const auto& it : get_js_class_info().signals)
     {
         //TODO details?
