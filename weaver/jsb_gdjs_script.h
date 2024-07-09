@@ -126,6 +126,12 @@ protected:
 #ifdef TOOLS_ENABLED
     virtual void _placeholder_erased(PlaceHolderScriptInstance* p_placeholder) override;
 #endif
+
+    //TODO -- begin -- auto reload outside of internal ScriptEditor by intercepting proper callbacks?
+    virtual bool editor_can_reload_from_file() override { return true; }
+    virtual void reload_from_file() override;
+    //TODO -- end   -- auto reload outside of internal ScriptEditor by intercepting proper callbacks?
+
 #pragma endregion
 
 };

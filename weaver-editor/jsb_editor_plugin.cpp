@@ -25,11 +25,18 @@ void GodotJSEditorPlugin::_bind_methods()
 
 void GodotJSEditorPlugin::_notification(int p_what)
 {
-    // switch (p_what)
-    // {
-    // case NOTIFICATION_APPLICATION_FOCUS_IN: break;
-    // default: break;
-    // }
+    switch (p_what)
+    {
+    case NOTIFICATION_APPLICATION_FOCUS_IN:
+        _scan_external_changes();
+        break;
+    default: break;
+    }
+}
+
+void GodotJSEditorPlugin::_scan_external_changes()
+{
+    //TODO manually scan changes if not using internal ScriptEditor
 }
 
 void GodotJSEditorPlugin::_on_menu_pressed(int p_what)

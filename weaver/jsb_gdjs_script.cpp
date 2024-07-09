@@ -361,6 +361,7 @@ const jsb::GodotJSClassInfo& GodotJSScript::get_js_class_info() const
 
 Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
 {
+    GODOTJS_LOAD_SCRIPT_MODULE();
     jsb_check(loaded_);
     jsb::ObjectCacheID func_id;
     if (const HashMap<StringName, jsb::ObjectCacheID>::Iterator& it = cached_methods_.find(p_method))
@@ -505,4 +506,10 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
             p_instance_to_update->update(props, values);
         }
     }
+}
+
+void GodotJSScript::reload_from_file()
+{
+    //TODO reload, maybe it's OK?
+    reload(true);
 }
