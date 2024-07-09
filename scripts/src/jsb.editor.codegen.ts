@@ -446,17 +446,24 @@ class ClassWriter extends IndentWriter {
         console.assert(getset_info.getter.length != 0);        
         DocCommentHelper.write(this, this._doc?.properties[getset_info.name]?.description, this._separator_line);
         this._separator_line = true;
-        if (getset_info.setter.length == 0) {
-            this.line(`readonly ${getset_info.name}: ${type_name}`);
-        } else {
-            this.line(`${getset_info.name}: ${type_name}`);
+
+        // declare as get/set to avoid the pitfalls of modifying a value type return value 
+        // `node.position.x = 0;` (Although, it works in GDScript)
+        //
+        // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
+
+        this.line(`get ${getset_info.name}(): ${type_name}`);
+        if (getset_info.setter.length != 0) {
+            this.line(`set ${getset_info.name}(value: ${type_name})`);
         }
     }
 
     primitive_property_(property_info: jsb.editor.PrimitiveGetSetInfo) {
         this._separator_line = true;
         const type_name = PrimitiveTypeNames[property_info.type];
-        this.line(`${property_info.name}: ${type_name}`);
+
+        this.line(`get ${property_info.name}(): ${type_name}`);
+        this.line(`set ${property_info.name}(value: ${type_name})`);
     }
 
     constructor_(constructor_info: jsb.editor.ConstructorInfo) {
