@@ -31,7 +31,7 @@ console.log(Image.AlphaMode[mode]);
 
 # Godot Primitive Types (Variant)
 
-`Variant` values in C++ are automatically translated to the underlying primitive types in javascript. (such as `Vector2` `Vector3` `PackedStringArray` etc.).
+Godot `Variant` values are automatically translated to the primitive types in javascript if available.
 
 | Variant Type in Godot | Counterpart in JS | Caveats |
 |---|---|---|
@@ -41,10 +41,37 @@ console.log(Image.AlphaMode[mode]);
 | STRING | `string` |  |
 | STRING_NAME | `string` |  |
 
-All variant types not mentioned above are exposed as `class` in javascript.
+All variant types not mentioned above are exposed as `class` in javascript (such as `Vector2` `Vector3` `PackedStringArray` etc.).
 
 > [!NOTE] 
 > All primitive types which represented as `Variant` are pooled in `Environment` if `JSB_WITH_VARIANT_POOL` is enabled to reduce unnecessary cost on repeatedly memory allocation.
+
+## Pitfalls
+
+The javascript class variant values behave like value type when passing between `JS` and `C++`, they are **NOT** by-reference. But in pure javascript, they are still by-reference.
+
+```ts
+let value = new Vector3();
+
+// Input get a copy of the value since it's implemented in C++
+Input.set_gyroscope(value); 
+
+function modify(v: Vector3) {
+    v.x = 1;
+}
+
+// after this statement, `value.x` will be 1, since value itself is passed by-reference
+modify(value); 
+
+// node.position is NOT modified, since `node.position` is actually a getter implemented in C++ which returns a copy of it.
+modify(node.position); 
+
+```
+
+
+And, avoid coding property assignments like this: `node.position.x = 0;`, although, it works in GDScript.
+
+**It's not an error in javascript (which is more DANGEROUS)**, the actually modifed value is just a copy of `node.position`.
 
 ## StringName
 
