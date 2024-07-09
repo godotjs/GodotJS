@@ -407,7 +407,10 @@ PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_
 {
     jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
-    jsb_check(valid_);
+    if (!valid_)
+    {
+        JSB_LOG(Warning, "creating placeholder instance on invalid script (%s)", get_path());
+    }
     PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(GodotJSScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
     placeholders.insert(si);
     _update_exports(si);
@@ -448,6 +451,13 @@ void GodotJSScript::_update_exports_values(List<PropertyInfo>& r_props, HashMap<
 
 void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_update, bool p_base_exports_changed)
 {
+    // do not crash the engine if the script not loaded successfully
+    if (!is_valid())
+    {
+        JSB_LOG(Error, "the script not propertly loaded (%s)", get_path());
+        return;
+    }
+
     bool changed = p_base_exports_changed;
 
     if (source_changed_cache)
