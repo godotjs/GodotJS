@@ -36,7 +36,7 @@ Core:
 Scripting:
     ☐ unexpected reloading (only datetime changed)
     ☐ add `preload` support
-    ☐ check if `call_prelude` is called even if `_ready` is not defined in script
+    ✔ check if `call_prelude` is called even if `_ready` is not defined in script @done(24-07-10)
     ☐ scriptable EditorInspectorPlugin
     ☐ scriptable EditorPlugin
     ☐ REPL: retrieve input history with `up/down` key

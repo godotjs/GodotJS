@@ -63,25 +63,12 @@ void GodotJSScriptInstance::get_method_list(List<MethodInfo>* p_list) const
 
 bool GodotJSScriptInstance::has_method(const StringName& p_method) const
 {
-    //TODO ensure `_ready` called even if not actually defined in the script
-    // if (p_method == SceneStringNames::get_singleton()->_ready)
-    // {
-    //     return true;
-    // }
     return script_->has_method(p_method);
 }
 
 Variant GodotJSScriptInstance::callp(const StringName& p_method, const Variant** p_args, int p_argcount,
                                      Callable::CallError& r_error)
 {
-    if (p_method == SceneStringNames::get_singleton()->_ready)
-    {
-        script_->call_prelude(object_id_);
-        // if (!script_->has_method(p_method))
-        // {
-        //     return {};
-        // }
-    }
     return script_->call_script_method(object_id_, p_method, p_args, p_argcount, r_error);
 }
 

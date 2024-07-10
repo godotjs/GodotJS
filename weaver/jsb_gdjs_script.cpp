@@ -3,8 +3,10 @@
 #include "jsb_gdjs_script_instance.h"
 #include "../internal/jsb_settings.h"
 #include "../internal/jsb_path_util.h"
+#include "scene/scene_string_names.h"
 
-#define GODOTJS_LOAD_SCRIPT_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); } (void) 0
+#define GODOTJS_LOAD_SCRIPT_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); }
+#define GODOTJS_LOAD_SCRIPT_WARN() { if (jsb_unlikely(!loaded_)) JSB_LOG(Warning, "script not loaded (%s)", get_path()); }
 
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
@@ -35,7 +37,7 @@ GodotJSScript::~GodotJSScript()
 // GDScript::can_instantiate()
 bool GodotJSScript::can_instantiate() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    GODOTJS_LOAD_SCRIPT_MODULE()
 #ifdef TOOLS_ENABLED
     return valid_ && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -47,7 +49,7 @@ bool GodotJSScript::is_tool() const
 {
     if (valid_)
     {
-        GODOTJS_LOAD_SCRIPT_MODULE();
+        GODOTJS_LOAD_SCRIPT_MODULE()
         return get_js_class_info().is_tool();
     }
     return false;
@@ -103,7 +105,7 @@ bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
 // this method is called in `EditorStandardSyntaxHighlighter::_update_cache()` without checking `script->is_valid()`
 StringName GodotJSScript::get_instance_base_type() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    GODOTJS_LOAD_SCRIPT_MODULE()
     return valid_ ? get_js_class_info().native_class_name : StringName();
 }
 
@@ -182,7 +184,6 @@ Error GodotJSScript::reload(bool p_keep_state)
 #ifdef TOOLS_ENABLED
 Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 {
-    jsb_check(loaded_);
     //TODO
     return {};
 }
@@ -203,7 +204,14 @@ PropertyInfo GodotJSScript::get_class_category() const
 bool GodotJSScript::has_method(const StringName& p_method) const
 {
     jsb_check(loaded_);
-    return get_js_class_info().methods.has(p_method);
+    if (get_js_class_info().methods.has(p_method)) return true;
+
+    // ensure `_ready` called even if it's not actually defined in scripts
+    if (p_method == SceneStringNames::get_singleton()->_ready)
+    {
+        return true;
+    }
+    return false;
 }
 
 MethodInfo GodotJSScript::get_method_info(const StringName& p_method) const
@@ -229,6 +237,7 @@ bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 
 void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 {
+    GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
     if (!valid_) return;
 
@@ -243,6 +252,7 @@ void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 
 void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 {
+    GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
     for (const auto& it : get_js_class_info().methods)
     {
@@ -255,6 +265,7 @@ void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 
 void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 {
+    GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
     p_list->push_back(get_class_category());
@@ -271,7 +282,7 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 
 bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
-    jsb_check(loaded_);
+    GODOTJS_LOAD_SCRIPT_MODULE()
     if (HashMap<StringName, Variant>::ConstIterator it = member_default_values_cache.find(p_property))
     {
         r_value = it->value;
@@ -282,14 +293,14 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
 
 const Variant GodotJSScript::get_rpc_config() const
 {
-    jsb_check(loaded_);
+    GODOTJS_LOAD_SCRIPT_WARN()
     //TODO
     return {};
 }
 
 bool GodotJSScript::has_static_method(const StringName& p_method) const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
     //TODO
     return false;
@@ -361,7 +372,7 @@ const jsb::GodotJSClassInfo& GodotJSScript::get_js_class_info() const
 
 Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
     jsb::ObjectCacheID func_id;
     if (const HashMap<StringName, jsb::ObjectCacheID>::Iterator& it = cached_methods_.find(p_method))
@@ -370,6 +381,17 @@ Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const
     }
     else
     {
+        if (p_method == SceneStringNames::get_singleton()->_ready)
+        {
+            call_prelude(p_object_id);
+
+            if (!get_js_class_info().methods.has(p_method))
+            {
+                JSB_LOG(Verbose, "call_prelude for scripts that _ready function not defined (%s)", get_path());
+                return {};
+            }
+        }
+
         func_id = get_realm()->retain_function(p_object_id, p_method);
         cached_methods_.insert(p_method, func_id);
     }
@@ -432,7 +454,7 @@ void GodotJSScript::_placeholder_erased(PlaceHolderScriptInstance* p_placeholder
 
 void GodotJSScript::update_exports()
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
     if (!valid_) return;
