@@ -1,7 +1,7 @@
 // meta-description: Base template for Node with default Godot cycle methods
 
 import { _BASE_ } from "godot";
-import { onready } from "jsb/jsb.core";
+import { onready } from "../jsb/jsb.core";
 
 
 export default class _CLASS_ extends _BASE_ {
