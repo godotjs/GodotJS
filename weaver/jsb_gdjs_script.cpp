@@ -203,6 +203,7 @@ PropertyInfo GodotJSScript::get_class_category() const
 
 bool GodotJSScript::has_method(const StringName& p_method) const
 {
+    GODOTJS_LOAD_SCRIPT_MODULE();
     jsb_check(loaded_);
     if (get_js_class_info().methods.has(p_method)) return true;
 
