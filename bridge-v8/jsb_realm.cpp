@@ -220,6 +220,7 @@ namespace jsb
             existed_class_info->methods.clear();
             existed_class_info->signals.clear();
             existed_class_info->properties.clear();
+            existed_class_info->flags = GodotJSClassFlags::None;
         }
         else
         {
