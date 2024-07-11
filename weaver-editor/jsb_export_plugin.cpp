@@ -43,7 +43,7 @@ void GodotJSExportPlugin::_export_file(const String& p_path, const String& p_typ
     JSB_LOG(Verbose, "export_file path:%s", p_path);
     if (p_path.ends_with("." JSB_TYPESCRIPT_EXT))
     {
-        const String compiled_script_path = jsb::internal::PathUtil::convert_to_internal_path(p_path);
+        const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(p_path);
         Error err;
         const Vector<uint8_t> compiled_script_data = FileAccess::get_file_as_bytes(compiled_script_path, &err);
         if (err == OK)

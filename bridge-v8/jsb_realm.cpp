@@ -230,6 +230,9 @@ namespace jsb
             existed_class_info->module_id = p_module.id;
         }
 
+        // trick: save godot class id for getting it in constructor
+        default_obj->Set(p_context, environment->SymbolFor(CrossBind), v8::Uint32::NewFromUnsigned(isolate, p_module.default_class_id)).Check();
+
         jsb_address_guard(environment->gdjs_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->js_class_name = environment->get_string_name_cache().get_string_name(isolate, name_str);
@@ -351,13 +354,18 @@ namespace jsb
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = context_.Get(isolate);
+        v8::Context::Scope context_scope(context);
 
+        jsb_checkf(!environment_->get_object_id(p_this), "duplicated object binding is not allowed (%s)", uitos((uintptr_t) p_this));
         jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
         const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
         const StringName class_name = class_info.js_class_name;
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
+        jsb_check(!constructor->IsUndefined() && !constructor->IsNull());
         v8::TryCatch try_catch_run(isolate);
-        v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 0, nullptr);
+        v8::Local<v8::Value> argv = environment_->SymbolFor(CrossBind);
+        v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &argv);
+        jsb_check(!constructed_value.IsEmpty() && !constructed_value.ToLocalChecked()->IsUndefined());
         if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
         {
             JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_name, (String) exception_info);
@@ -1657,8 +1665,11 @@ namespace jsb
     {
         environment_->check_internal_state();
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = unwrap();
+        v8::Context::Scope context_scope(context);
+
         GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_gdjs_class_id);
         if (const auto& it = class_info.properties.find(p_name))
         {

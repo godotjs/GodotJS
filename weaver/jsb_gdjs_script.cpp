@@ -326,7 +326,7 @@ void GodotJSScript::load_module()
     if (loaded_ && realm_id_) return;
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
-    const String path = jsb::internal::PathUtil::convert_to_internal_path(get_path());
+    const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
     const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     std::shared_ptr<jsb::Realm> realm = lang->get_context();
 

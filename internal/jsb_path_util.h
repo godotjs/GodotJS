@@ -43,7 +43,8 @@ namespace jsb::internal
          */
         static bool is_absolute_path(const String& p_path);
 
-        static String convert_to_internal_path(const String& p_source_path);
+        static String convert_typescript_path(const String& p_source_path);
+        static String convert_javascript_path(const String& p_source_path);
 
     };
 

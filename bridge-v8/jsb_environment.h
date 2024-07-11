@@ -38,6 +38,8 @@ namespace jsb
             ClassImplicitReadyFuncs, // array of all @onready annotations
             ClassToolScript,         // @tool annotated scripts
             ClassIcon,               // @icon
+            CrossBind,               // a symbol can only be used from C++ to indicate calling from cross-bind
+            // CDO,                     // constructing class default object
             kNum,
         };
     }
@@ -165,15 +167,15 @@ namespace jsb
         jsb_force_inline bool check_object(void* p_pointer) const { return get_object_id(p_pointer).is_valid(); }
         jsb_force_inline NativeObjectID get_object_id(void* p_pointer) const
         {
-            const HashMap<void*, internal::Index64>::ConstIterator& it = objects_index_.find(p_pointer);
-            return it != objects_index_.end() ? it->value : NativeObjectID();
+            const NativeObjectID* it = objects_index_.getptr(p_pointer);
+            return it ? *it : NativeObjectID();
         }
 
         // whether the `p_pointer` registered in the object binding map
         // return true, and the corresponding JS value if `p_pointer` is valid
         jsb_force_inline bool get_object(void* p_pointer, v8::Local<v8::Object>& r_unwrap) const
         {
-            if (const internal::Index64* entry = objects_index_.getptr(p_pointer))
+            if (const NativeObjectID* entry = objects_index_.getptr(p_pointer))
             {
                 const ObjectHandle& handle = objects_.get_value(*entry);
                 jsb_check(get_object_class(p_pointer).type != NativeClassType::GodotPrimitive);
@@ -185,12 +187,12 @@ namespace jsb
 
         jsb_force_inline v8::Local<v8::Object> get_object(void* p_pointer) const
         {
-            const internal::Index64* entry = objects_index_.getptr(p_pointer);
+            const NativeObjectID* entry = objects_index_.getptr(p_pointer);
             jsb_check(entry);
             return get_object(*entry);
         }
 
-        jsb_force_inline v8::Local<v8::Object> get_object(const internal::Index64& p_object_id) const
+        jsb_force_inline v8::Local<v8::Object> get_object(const NativeObjectID& p_object_id) const
         {
             const ObjectHandle& handle = objects_.get_value(p_object_id);
             jsb_check(native_classes_.get_value(handle.class_id).type != NativeClassType::GodotPrimitive);
@@ -206,23 +208,29 @@ namespace jsb
 
         jsb_force_inline const NativeClassInfo* find_object_class(void* p_pointer) const
         {
-            const HashMap<void*, internal::Index64>::ConstIterator& it = objects_index_.find(p_pointer);
-            if (it == objects_index_.end())
+            if (const NativeObjectID* it = objects_index_.getptr(p_pointer))
             {
-                return nullptr;
+                const ObjectHandle& handle = objects_.get_value(*it);
+                jsb_check(native_classes_.is_valid_index(handle.class_id));
+                return &native_classes_.get_value(handle.class_id);
             }
-            const ObjectHandle& handle = objects_.get_value(it->value);
-            if (!native_classes_.is_valid_index(handle.class_id))
-            {
-                return nullptr;
-            }
-            return &native_classes_.get_value(handle.class_id);
+            return nullptr;
         }
 
         jsb_force_inline NativeClassType::Type get_object_type(void* p_pointer) const
         {
             if (const NativeClassInfo* class_info = find_object_class(p_pointer)) return class_info->type;
             return NativeClassType::None;
+        }
+
+        jsb_force_inline NativeClassID get_object_class_id(void* p_pointer) const
+        {
+            if (const NativeObjectID* it = objects_index_.getptr(p_pointer))
+            {
+                const ObjectHandle& handle = objects_.get_value(*it);
+                return handle.class_id;
+            }
+            return NativeClassID();
         }
 
         // return true if can die

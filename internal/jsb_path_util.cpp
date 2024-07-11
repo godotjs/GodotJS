@@ -67,7 +67,7 @@ namespace jsb::internal
         return p_path.ends_with(p_ext) ? p_path : p_path + p_ext;
     }
 
-    String PathUtil::convert_to_internal_path(const String& p_source_path)
+    String PathUtil::convert_typescript_path(const String& p_source_path)
     {
         if (p_source_path.ends_with("." JSB_TYPESCRIPT_EXT))
         {
@@ -75,6 +75,20 @@ namespace jsb::internal
             const String replaced = Settings::get_jsb_out_res_path().path_join(
                 p_source_path.substr(std::size("res://") - 1, p_source_path.length() - (int) std::size("res://") - 1)
                 + JSB_JAVASCRIPT_EXT);
+            return replaced;
+        }
+        return p_source_path;
+    }
+
+    String PathUtil::convert_javascript_path(const String& p_source_path)
+    {
+        if (p_source_path.ends_with("." JSB_JAVASCRIPT_EXT))
+        {
+            const String root_path = Settings::get_jsb_out_res_path();
+            jsb_checkf(p_source_path.begins_with(root_path), "can not proceed javascript sources not under the project data directory");
+            const String replaced = String("res://").path_join(
+                p_source_path.substr(root_path.length(), p_source_path.length() - root_path.length())
+                + JSB_TYPESCRIPT_EXT);
             return replaced;
         }
         return p_source_path;
