@@ -30,10 +30,10 @@ interface ScopeWriter extends CodeWriter {
     finish(): void;
 }
 
-//TODO remove all these lines after all primitive types implemented
 const MockLines = [
-    "class GodotError {}",
+    "",
 ]
+
 const KeywordReplacement: { [name: string]: string } = {
     ["default"]: "default_",
     ["let"]: "let_",
@@ -106,7 +106,7 @@ const PrimitiveTypeNames : { [type: number]: string } = {
 }
 const RemapTypes: { [name: string]: string } = {
     ["bool"]: "bool",
-    ["Error"]: "GodotError",
+    ["Error"]: "Error",
 }
 const IgnoredTypes = new Set([
     "IPUnix",

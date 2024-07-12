@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.auto_complete = auto_complete;
+exports.auto_complete = void 0;
 // entry point (editor only)
 const godot_1 = require("godot");
 function auto_complete(pattern) {
@@ -32,4 +32,5 @@ function auto_complete(pattern) {
     }
     return results;
 }
+exports.auto_complete = auto_complete;
 //# sourceMappingURL=jsb.editor.main.js.map

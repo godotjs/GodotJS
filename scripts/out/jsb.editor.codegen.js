@@ -30,9 +30,8 @@ if (!jsb.TOOLS_ENABLED) {
 }
 //TODO use godot.MethodFlags.METHOD_FLAG_VARARG
 const METHOD_FLAG_VARARG = 16;
-//TODO remove all these lines after all primitive types implemented
 const MockLines = [
-    "class GodotError {}",
+    "",
 ];
 const KeywordReplacement = {
     ["default"]: "default_",
@@ -101,7 +100,7 @@ const PrimitiveTypeNames = {
 };
 const RemapTypes = {
     ["bool"]: "bool",
-    ["Error"]: "GodotError",
+    ["Error"]: "Error",
 };
 const IgnoredTypes = new Set([
     "IPUnix",

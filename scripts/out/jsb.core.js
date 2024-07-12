@@ -23,14 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.signal = signal;
-exports.export_ = export_;
-exports.export_enum = export_enum;
-exports.export_flags = export_flags;
-exports.onready = onready;
-exports.tool = tool;
-exports.icon = icon;
-exports.$wait = $wait;
+exports.$wait = exports.icon = exports.tool = exports.onready = exports.export_flags = exports.export_enum = exports.export_ = exports.signal = void 0;
 const godot_1 = require("godot");
 const jsb = __importStar(require("godot-jsb"));
 /**
@@ -41,6 +34,7 @@ function signal() {
         jsb.internal.add_script_signal(target, key);
     };
 }
+exports.signal = signal;
 function export_(type, details) {
     return function (target, key) {
         let ebd = { name: key, type: type, hint: godot_1.PropertyHint.PROPERTY_HINT_NONE, hint_string: "" };
@@ -53,6 +47,7 @@ function export_(type, details) {
         jsb.internal.add_script_property(target, ebd);
     };
 }
+exports.export_ = export_;
 /**
  * NOTE only int value enums are allowed
  */
@@ -69,6 +64,7 @@ function export_enum(enum_type) {
         jsb.internal.add_script_property(target, ebd);
     };
 }
+exports.export_enum = export_enum;
 /**
  * NOTE only int value enums are allowed
  */
@@ -85,6 +81,7 @@ function export_flags(enum_type) {
         jsb.internal.add_script_property(target, ebd);
     };
 }
+exports.export_flags = export_flags;
 /**
  * auto initialized on ready (before _ready called)
  * @param evaluator for now, only string is accepted
@@ -95,16 +92,19 @@ function onready(evaluator) {
         jsb.internal.add_script_ready(target, ebd);
     };
 }
+exports.onready = onready;
 function tool() {
     return function (target) {
         jsb.internal.add_script_tool(target);
     };
 }
+exports.tool = tool;
 function icon(path) {
     return function (target) {
         jsb.internal.add_script_icon(target, path);
     };
 }
+exports.icon = icon;
 function $wait(signal) {
     return new Promise(resolve => {
         let fn = null;
@@ -125,4 +125,5 @@ function $wait(signal) {
         signal.connect(fn, 0);
     });
 }
+exports.$wait = $wait;
 //# sourceMappingURL=jsb.core.js.map
