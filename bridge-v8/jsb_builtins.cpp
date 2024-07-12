@@ -19,64 +19,17 @@ namespace jsb
         }
     }
 
-    void Builtins::register_(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self)
+    template<internal::ELogSeverity::Type ActiveSeverity>
+    void _print(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        v8::Isolate* isolate = context->GetIsolate();
+        if constexpr (ActiveSeverity < internal::ELogSeverity::JSB_MIN_LOG_LEVEL) return;
 
-        // minimal console functions support
-        {
-            v8::Local<v8::Object> console_obj = v8::Object::New(isolate);
-
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "console"), console_obj).Check();
-            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "log"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Log)).ToLocalChecked()).Check();
-            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "info"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Info)).ToLocalChecked()).Check();
-            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "debug"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Debug)).ToLocalChecked()).Check();
-            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "warn"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Warning)).ToLocalChecked()).Check();
-            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "error"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Error)).ToLocalChecked()).Check();
-            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "assert"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Assert)).ToLocalChecked()).Check();
-            console_obj->Set(context, v8::String::NewFromUtf8Literal(isolate, "trace"), v8::Function::New(context, _print, v8::Int32::New(isolate, internal::ELogSeverity::Trace)).ToLocalChecked()).Check();
-        }
-
-        // the root 'require' function
-        {
-            Realm* realm = Realm::wrap(context);
-            v8::Local<v8::Function> require_func = v8::Function::New(context, _require).ToLocalChecked();
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "require"), require_func).Check();
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "define"), v8::Function::New(context, _define).ToLocalChecked()).Check();
-            require_func->Set(context, v8::String::NewFromUtf8Literal(isolate, "cache"), realm->get_module_cache().unwrap(isolate)).Check();
-            require_func->Set(context, v8::String::NewFromUtf8Literal(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
-        }
-
-        //TODO the root 'import' function (async module loading?)
-        {
-        }
-
-        // essential timer support
-        {
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "setInterval"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Interval)).ToLocalChecked()).Check();
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "setTimeout"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout)).ToLocalChecked()).Check();
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "setImmediate"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate)).ToLocalChecked()).Check();
-            self->Set(context, v8::String::NewFromUtf8Literal(isolate, "clearInterval"), v8::Function::New(context, _clear_timer).ToLocalChecked()).Check();
-        }
-    }
-
-    void Builtins::_print(const v8::FunctionCallbackInfo<v8::Value>& info)
-    {
         v8::Isolate* isolate = info.GetIsolate();
-        v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
-
-        v8::Local<v8::Int32> magic;
-        if (!info.Data()->ToInt32(context).ToLocal(&magic))
-        {
-            isolate->ThrowError("bad call");
-            return;
-        }
-
         StringBuilder sb;
+
         sb.append("[JS]");
-        const internal::ELogSeverity::Type severity = (internal::ELogSeverity::Type) magic->Value();
-        int index = severity != internal::ELogSeverity::Assert ? 0 : 1;
+        int index = ActiveSeverity != internal::ELogSeverity::Assert ? 0 : 1;
         if (index == 1)
         {
             // check assertion
@@ -87,7 +40,7 @@ namespace jsb
         }
 
         // join all data
-        for (int n = info.Length(); index < n; index++)
+        for (int n = info.Length(); index < n; ++index)
         {
             if (String str = V8Helper::stringify(isolate, context, info[index]); str.length() > 0)
             {
@@ -99,25 +52,61 @@ namespace jsb
 #if JSB_WITH_STACKTRACE_ALWAYS
         _generate_stacktrace(isolate, sb);
 #else
-        if (severity == internal::ELogSeverity::Trace || severity >= internal::ELogSeverity::Error) _generate_stacktrace(isolate, sb);
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Trace || ActiveSeverity >= internal::ELogSeverity::Error) _generate_stacktrace(isolate, sb);
 #endif
 
         const String& text = sb.as_string();
-        internal::IConsoleOutput::internal_write(severity, text);
-        switch (severity)
+        internal::IConsoleOutput::internal_write(ActiveSeverity, text);
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Assert) { CRASH_NOW_MSG(text); return; }
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Error) { ERR_FAIL_MSG(text); return; }
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Warning) { WARN_PRINT(text); return; }
+        print_line(text);
+    }
+
+    void Builtins::register_(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self)
+    {
+        v8::Isolate* isolate = context->GetIsolate();
+
+        // minimal console functions support
         {
-        case internal::ELogSeverity::Assert: CRASH_NOW_MSG(text); return;
-        case internal::ELogSeverity::Error: ERR_FAIL_MSG(text); return;
-        case internal::ELogSeverity::Warning: WARN_PRINT(text); return;
-        case internal::ELogSeverity::Trace:
-        default: print_line(text); return;
+            v8::Local<v8::Object> console_obj = v8::Object::New(isolate);
+
+            self->Set(context, V8Helper::to_string_ascii(isolate, "console"), console_obj).Check();
+            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "log"), v8::Function::New(context, _print<internal::ELogSeverity::Log>).ToLocalChecked()).Check();
+            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "info"), v8::Function::New(context, _print<internal::ELogSeverity::Info>).ToLocalChecked()).Check();
+            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "debug"), v8::Function::New(context, _print<internal::ELogSeverity::Debug>).ToLocalChecked()).Check();
+            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "warn"), v8::Function::New(context, _print<internal::ELogSeverity::Warning>).ToLocalChecked()).Check();
+            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "error"), v8::Function::New(context, _print<internal::ELogSeverity::Error>).ToLocalChecked()).Check();
+            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "assert"), v8::Function::New(context, _print<internal::ELogSeverity::Assert>).ToLocalChecked()).Check();
+            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "trace"), v8::Function::New(context, _print<internal::ELogSeverity::Trace>).ToLocalChecked()).Check();
+        }
+
+        // the root 'require' function
+        {
+            Realm* realm = Realm::wrap(context);
+            v8::Local<v8::Function> require_func = v8::Function::New(context, _require).ToLocalChecked();
+            self->Set(context, V8Helper::to_string_ascii(isolate, "require"), require_func).Check();
+            self->Set(context, V8Helper::to_string_ascii(isolate, "define"), v8::Function::New(context, _define).ToLocalChecked()).Check();
+            require_func->Set(context, V8Helper::to_string_ascii(isolate, "cache"), realm->get_module_cache().unwrap(isolate)).Check();
+            require_func->Set(context, V8Helper::to_string_ascii(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
+        }
+
+        //TODO the root 'import' function (async module loading?)
+        {
+        }
+
+        // essential timer support
+        {
+            self->Set(context, V8Helper::to_string_ascii(isolate, "setInterval"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Interval)).ToLocalChecked()).Check();
+            self->Set(context, V8Helper::to_string_ascii(isolate, "setTimeout"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout)).ToLocalChecked()).Check();
+            self->Set(context, V8Helper::to_string_ascii(isolate, "setImmediate"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate)).ToLocalChecked()).Check();
+            self->Set(context, V8Helper::to_string_ascii(isolate, "clearInterval"), v8::Function::New(context, _clear_timer).ToLocalChecked()).Check();
         }
     }
 
     void Builtins::_define(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         Realm* realm = Realm::wrap(context);
 
@@ -166,7 +155,6 @@ namespace jsb
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _require);
         v8::Isolate* isolate = info.GetIsolate();
-        v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         if (info.Length() != 1)

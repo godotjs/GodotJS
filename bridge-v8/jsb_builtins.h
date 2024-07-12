@@ -11,7 +11,6 @@ namespace jsb
 
         static void _require(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _define(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _print(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _set_timer(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _clear_timer(const v8::FunctionCallbackInfo<v8::Value>& info);
     };
