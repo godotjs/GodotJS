@@ -13,7 +13,7 @@ Core:
     ✔ optimize godot primitive bindings lifecycle @done(24-07-04)
     ✔ codegen: not to overwrite tsconfig.json and package.json when installing presets @done(24-06-21)
     ✔ issue: `new Object()` is unexpectedly garbage collected without a `free` call @done(24-06-15 15:30)
-    ☐ optionally ignore methods which already covered by property getset
+    ✔ optionally ignore methods which already covered by property getset @done(24-07-12 22:31)
     ✔ codegen: mark `signal` as readonly in d.ts @done(24-06-15)
     ✔ define `jsb` functions in a module (instead of in a global namespace) @done(24-06-05)
     ✔ github actions: build with godot engine @done(24-06-15)
