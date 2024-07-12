@@ -3,6 +3,7 @@ declare module "godot-jsb" {
     import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant } from "godot";
 
     const DEV_ENABLED: boolean;
+    const DEBUG_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
 
     const VERSION_MAJOR: number;

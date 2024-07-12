@@ -17,18 +17,6 @@
 #include "core/os/thread.h"
 #include "core/os/os.h"
 
-#ifdef TOOLS_ENABLED
-#   define JSB_GODOT_TOOLS 1
-#else
-#   define JSB_GODOT_TOOLS 0
-#endif
-
-#ifdef DEV_ENABLED
-#   define JSB_GODOT_DEV 1
-#else
-#   define JSB_GODOT_DEV 0
-#endif
-
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
 

@@ -65,6 +65,7 @@ public:
     virtual ~GodotJSEditorPlugin() override;
 
     void start_tsc_watch();
+    bool is_tsc_watching();
     void kill_tsc();
 
     void try_install_ts_project();

@@ -253,6 +253,11 @@ void GodotJSEditorPlugin::_on_confirm_overwrite()
     install_ts_project(confirm_dialog_->pending_installs_);
 }
 
+bool GodotJSEditorPlugin::is_tsc_watching()
+{
+    return tsc_ && tsc_->is_running();
+}
+
 void GodotJSEditorPlugin::start_tsc_watch()
 {
     if (tsc_ && tsc_->is_running())

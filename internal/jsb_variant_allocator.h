@@ -6,7 +6,7 @@ namespace jsb::internal
 {
     class VariantAllocator
     {
-#if JSB_GODOT_DEV
+#if JSB_DEBUG
         SafeNumeric<uint32_t> alive_variants_num_;
 #endif
 
@@ -22,7 +22,7 @@ namespace jsb::internal
             return rval;
         }
 
-#if JSB_GODOT_DEV
+#if JSB_DEBUG
         jsb_force_inline uint32_t get_allocated_num() const { return alive_variants_num_.get(); }
 #else
         // intentionally ignored in release mode
@@ -40,7 +40,7 @@ namespace jsb::internal
 #endif
 
     private:
-#if JSB_GODOT_DEV
+#if JSB_DEBUG
         jsb_force_inline void increment() { alive_variants_num_.increment(); }
         jsb_force_inline void decrement() { alive_variants_num_.decrement(); }
 #else

@@ -22,7 +22,6 @@ private:
     class Button* preset_button_;
     class Label* preset_hint_label_;
     class Button* start_tsc_button_;
-    class Button* kill_tsc_button_;
 
     class ItemList* candidate_list_;
 
@@ -41,7 +40,6 @@ protected:
     void _generate_dts_pressed();
     void _install_preset_pressed();
     void _start_tsc_pressed();
-    void _kill_tsc_pressed();
     void _notification(int p_what);
 
     void add_string(const String& p_str);
@@ -50,6 +48,7 @@ protected:
     jsb::JSValueMove eval_source(const String& p_code);
     String encode_string(const String& p_text);
     void check_install();
+    void check_tsc();
 
 public:
     GodotJSREPL();

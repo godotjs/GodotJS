@@ -60,7 +60,7 @@ namespace jsb::internal
 
     String Settings::get_indentation()
     {
-#if JSB_GODOT_TOOLS
+#ifdef TOOLS_ENABLED
         if (Engine::get_singleton()->is_editor_hint())
         {
             // use_space_indentation

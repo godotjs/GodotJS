@@ -56,16 +56,7 @@ GodotJSREPL::GodotJSREPL()
         tool_bar_box->add_child(start_tsc_button_);
         start_tsc_button_->set_theme_type_variation("FlatButton");
         start_tsc_button_->set_focus_mode(FOCUS_NONE);
-        start_tsc_button_->set_tooltip_text(TTR("Start tsc (watch)"));
         start_tsc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_start_tsc_pressed));
-    }
-    {
-        kill_tsc_button_ = memnew(Button);
-        tool_bar_box->add_child(kill_tsc_button_);
-        kill_tsc_button_->set_theme_type_variation("FlatButton");
-        kill_tsc_button_->set_focus_mode(FOCUS_NONE);
-        kill_tsc_button_->set_tooltip_text(TTR("Start tsc (watch)"));
-        kill_tsc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_kill_tsc_pressed));
     }
     output_box_ = memnew(RichTextLabel);
     output_box_->set_threaded(true);
@@ -114,6 +105,7 @@ void GodotJSREPL::_notification(int p_what)
     case NOTIFICATION_APPLICATION_FOCUS_IN:
     {
         check_install();
+        check_tsc();
     } break;
     case NOTIFICATION_ENTER_TREE: {
         _update_theme();
@@ -132,8 +124,21 @@ void GodotJSREPL::_update_theme()
     clear_button_->set_icon(get_editor_theme_icon("Clear"));
     dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
     preset_button_->set_icon(get_editor_theme_icon("Window"));
-    start_tsc_button_->set_icon(get_editor_theme_icon("Play"));
-    kill_tsc_button_->set_icon(get_editor_theme_icon("Stop"));
+    check_tsc();
+}
+
+void GodotJSREPL::check_tsc()
+{
+    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton(); editor_plugin && editor_plugin->is_tsc_watching())
+    {
+        start_tsc_button_->set_icon(get_editor_theme_icon("Stop"));
+        start_tsc_button_->set_tooltip_text(TTR("Stop tsc"));
+    }
+    else
+    {
+        start_tsc_button_->set_icon(get_editor_theme_icon("GodotJSRun"));
+        start_tsc_button_->set_tooltip_text(TTR("Start tsc (watch)"));
+    }
 }
 
 void GodotJSREPL::check_install()
@@ -296,14 +301,8 @@ void GodotJSREPL::_start_tsc_pressed()
 {
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
     {
-        editor_plugin->start_tsc_watch();
-    }
-}
-
-void GodotJSREPL::_kill_tsc_pressed()
-{
-    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
-    {
-        editor_plugin->kill_tsc();
+        if (editor_plugin->is_tsc_watching()) editor_plugin->kill_tsc();
+        else editor_plugin->start_tsc_watch();
+        check_tsc();
     }
 }

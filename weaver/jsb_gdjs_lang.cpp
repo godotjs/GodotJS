@@ -9,7 +9,7 @@
 #include "jsb_gdjs_script.h"
 #include "editor/editor_settings.h"
 
-#if JSB_GODOT_TOOLS
+#ifdef TOOLS_ENABLED
 #include "../weaver-editor/templates/templates.gen.h"
 #endif
 GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;

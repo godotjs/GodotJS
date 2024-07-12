@@ -1,7 +1,7 @@
 #ifndef GODOTJS_CONFIG_H
 #define GODOTJS_CONFIG_H
 
-#ifdef DEV_ENABLED
+#if defined(DEV_ENABLED) || defined(DEBUG_ENABLED)
 // jsb_check is only evaluated when `JSB_DEBUG` is true
 #   define JSB_DEBUG 1
 #else
@@ -16,7 +16,7 @@
 // only for debug, print gc time
 #define JSB_PRINT_GC_TIME 1
 
-#if DEV_ENABLED
+#if JSB_DEBUG
 // lower log levels are completely skipped (at compile-time)
 // see `internal/jsb_log_severity.def.h`
 #   define JSB_MIN_LOG_LEVEL Verbose
