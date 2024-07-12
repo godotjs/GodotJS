@@ -190,6 +190,9 @@ class DocCommentHelper {
         text = this.replace_markup_content(text, 0, "[/b]", "**");
         text = this.replace_markup_content(text, 0, "[i]", " *");
         text = this.replace_markup_content(text, 0, "[/i]", "* ");
+        if (jsb.editor.VERSION_DOCS_URL.length != 0) {
+            text = this.replace_markup_content(text, 0, "$DOCS_URL", jsb.editor.VERSION_DOCS_URL);
+        }
         return text;
     }
     static replace_markup_content(text, from_pos, markup, rep) {
