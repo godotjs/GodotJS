@@ -31,7 +31,9 @@ if (!jsb.TOOLS_ENABLED) {
 //TODO use godot.MethodFlags.METHOD_FLAG_VARARG
 const METHOD_FLAG_VARARG = 16;
 const MockLines = [
-    "",
+    "type int64 = number",
+    "type float64 = number",
+    "type unresolved = any",
 ];
 const KeywordReplacement = {
     ["default"]: "default_",
@@ -57,99 +59,52 @@ const KeywordReplacement = {
 const PrimitiveTypeNames = {
     [godot_1.Variant.Type.TYPE_NIL]: "any",
     [godot_1.Variant.Type.TYPE_BOOL]: "boolean",
-    [godot_1.Variant.Type.TYPE_INT]: "number /*i64*/",
-    [godot_1.Variant.Type.TYPE_FLOAT]: "number /*f64*/",
+    [godot_1.Variant.Type.TYPE_INT]: "int64",
+    [godot_1.Variant.Type.TYPE_FLOAT]: "float64",
     [godot_1.Variant.Type.TYPE_STRING]: "string",
-    //TODO the following mappings could be replaced with Variant::get_type_name()
-    // math types
-    [godot_1.Variant.Type.TYPE_VECTOR2]: "Vector2",
-    [godot_1.Variant.Type.TYPE_VECTOR2I]: "Vector2i",
-    [godot_1.Variant.Type.TYPE_RECT2]: "Rect2",
-    [godot_1.Variant.Type.TYPE_RECT2I]: "Rect2i",
-    [godot_1.Variant.Type.TYPE_VECTOR3]: "Vector3",
-    [godot_1.Variant.Type.TYPE_VECTOR3I]: "Vector3i",
-    [godot_1.Variant.Type.TYPE_TRANSFORM2D]: "Transform2D",
-    [godot_1.Variant.Type.TYPE_VECTOR4]: "Vector4",
-    [godot_1.Variant.Type.TYPE_VECTOR4I]: "Vector4i",
-    [godot_1.Variant.Type.TYPE_PLANE]: "Plane",
-    [godot_1.Variant.Type.TYPE_QUATERNION]: "Quaternion",
-    [godot_1.Variant.Type.TYPE_AABB]: "AABB",
-    [godot_1.Variant.Type.TYPE_BASIS]: "Basis",
-    [godot_1.Variant.Type.TYPE_TRANSFORM3D]: "Transform3D",
-    [godot_1.Variant.Type.TYPE_PROJECTION]: "Projection",
-    // misc types
-    [godot_1.Variant.Type.TYPE_COLOR]: "Color",
-    [godot_1.Variant.Type.TYPE_STRING_NAME]: "StringName",
-    [godot_1.Variant.Type.TYPE_NODE_PATH]: "NodePath",
-    [godot_1.Variant.Type.TYPE_RID]: "RID",
-    [godot_1.Variant.Type.TYPE_OBJECT]: "Object",
-    [godot_1.Variant.Type.TYPE_CALLABLE]: "Callable",
-    [godot_1.Variant.Type.TYPE_SIGNAL]: "Signal",
-    [godot_1.Variant.Type.TYPE_DICTIONARY]: "Dictionary",
-    [godot_1.Variant.Type.TYPE_ARRAY]: "Array",
-    // typed arrays
-    [godot_1.Variant.Type.TYPE_PACKED_BYTE_ARRAY]: "PackedByteArray",
-    [godot_1.Variant.Type.TYPE_PACKED_INT32_ARRAY]: "PackedInt32Array",
-    [godot_1.Variant.Type.TYPE_PACKED_INT64_ARRAY]: "PackedInt64Array",
-    [godot_1.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY]: "PackedFloat32Array",
-    [godot_1.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY]: "PackedFloat64Array",
-    [godot_1.Variant.Type.TYPE_PACKED_STRING_ARRAY]: "PackedStringArray",
-    [godot_1.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY]: "PackedVector2Array",
-    [godot_1.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY]: "PackedVector3Array",
-    [godot_1.Variant.Type.TYPE_PACKED_COLOR_ARRAY]: "PackedColorArray",
 };
 const RemapTypes = {
-    ["bool"]: "bool",
+    ["bool"]: "boolean",
     ["Error"]: "Error",
 };
 const IgnoredTypes = new Set([
     "IPUnix",
-    "GodotNavigationServer2D",
-    "GodotPhysicsServer2D",
-    "GodotPhysicsServer3D",
-    "PhysicsServer2DExtension",
-    "PhysicsServer3DExtension",
-    // gdscript related classes
+    "ScriptEditorDebugger",
+    //
+    // "GodotNavigationServer2D",
+    // "GodotPhysicsServer2D",
+    // "GodotPhysicsServer3D",
+    // "PhysicsServer2DExtension",
+    // "PhysicsServer3DExtension",
+    // GodotJS related clases
+    "GodotJSEditorPlugin",
+    "GodotJSExportPlugin",
+    "GodotJSREPL",
+    "GodotJSScript",
+    // GDScript related classes
     "GDScript",
     "GDScriptEditorTranslationParserPlugin",
     "GDScriptNativeClass",
     "GDScriptSyntaxHighlighter",
 ]);
-const PrimitiveTypesSet = new Set([
-    "Vector2",
-    "Vector2i",
-    "Rect2",
-    "Rect2i",
-    "Vector3",
-    "Vector3i",
-    "Transform2D",
-    "Vector4",
-    "Vector4i",
-    "Plane",
-    "Quaternion",
-    "AABB",
-    "Basis",
-    "Transform3D",
-    "Projection",
-    "Color",
-    "StringName",
-    "NodePath",
-    "RID",
-    "Object",
-    "Callable",
-    "Signal",
-    "Dictionary",
-    "Array",
-    "PackedByteArray",
-    "PackedInt32Array",
-    "PackedInt64Array",
-    "PackedFloat32Array",
-    "PackedFloat64Array",
-    "PackedStringArray",
-    "PackedVector2Array",
-    "PackedVector3Array",
-    "PackedColorArray",
-]);
+const PrimitiveTypesSet = (function () {
+    let set = new Set();
+    for (let name in godot_1.Variant.Type) {
+        let str = (0, godot_1.type_string)(godot_1.Variant.Type[name]);
+        if (str.length != 0) {
+            set.add(str);
+            console.log("PrimitiveTypesSet:", str);
+        }
+    }
+    return set;
+})();
+function get_primitive_type_name(type) {
+    const primitive_name = PrimitiveTypeNames[type];
+    if (typeof primitive_name !== "undefined") {
+        return primitive_name;
+    }
+    return (0, godot_1.type_string)(type);
+}
 function replace(name) {
     const rep = KeywordReplacement[name];
     return typeof rep !== "undefined" ? rep : name;
@@ -377,7 +332,7 @@ class ClassWriter extends IndentWriter {
             this.line(`static readonly ${constant.name} = ${constant.value}`);
         }
         else {
-            const type_name = PrimitiveTypeNames[constant.type];
+            const type_name = get_primitive_type_name(constant.type);
             this.line(`static readonly ${constant.name}: ${type_name}`);
         }
     }
@@ -408,13 +363,13 @@ class ClassWriter extends IndentWriter {
     }
     primitive_property_(property_info) {
         this._separator_line = true;
-        const type_name = PrimitiveTypeNames[property_info.type];
+        const type_name = get_primitive_type_name(property_info.type);
         this.line(`get ${property_info.name}(): ${type_name}`);
         this.line(`set ${property_info.name}(value: ${type_name})`);
     }
     constructor_(constructor_info) {
         this._separator_line = true;
-        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
+        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${get_primitive_type_name(it.type)}`).join(", ");
         this.line(`constructor(${args})`);
     }
     constructor_ex_() {
@@ -422,9 +377,9 @@ class ClassWriter extends IndentWriter {
     }
     operator_(operator_info) {
         this._separator_line = true;
-        const return_type_name = PrimitiveTypeNames[operator_info.return_type];
-        const left_type_name = PrimitiveTypeNames[operator_info.left_type];
-        const right_type_name = PrimitiveTypeNames[operator_info.right_type];
+        const return_type_name = get_primitive_type_name(operator_info.return_type);
+        const left_type_name = get_primitive_type_name(operator_info.left_type);
+        const right_type_name = get_primitive_type_name(operator_info.right_type);
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
     virtual_method_(method_info) {
@@ -610,7 +565,7 @@ class TypeDB {
         }
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
         if (info.class_name.length == 0) {
-            const primitive_name = PrimitiveTypeNames[info.type];
+            const primitive_name = get_primitive_type_name(info.type);
             if (typeof primitive_name !== "undefined") {
                 return primitive_name;
             }
@@ -758,7 +713,7 @@ class TSDCodeGen {
             if (!godot_1.FileAccess.file_exists(path)) {
                 break;
             }
-            console.warn("delete file", path);
+            console.log("delete file", path);
             jsb.editor.delete_file(path);
         }
     }
@@ -796,18 +751,28 @@ class TSDCodeGen {
         }
     }
     emit_utilities() {
+        var _a;
+        const doc = this._types.find_doc("@GlobalScope");
+        let separator_line = false;
         for (let utility_name in this._types.utilities) {
             const utility_func = this._types.utilities[utility_name];
             const cg = this.split();
+            DocCommentHelper.write(cg, (_a = doc === null || doc === void 0 ? void 0 : doc.methods[utility_func.name]) === null || _a === void 0 ? void 0 : _a.description, separator_line);
+            separator_line = true;
             cg.utility_(utility_func);
         }
     }
     emit_globals() {
+        var _a;
         for (let global_name in this._types.globals) {
             const global_obj = this._types.globals[global_name];
             const cg = this.split();
+            const doc = this._types.find_doc("@GlobalScope");
             const ns = cg.enum_(global_obj.name);
+            let separator_line = false;
             for (let name in global_obj.values) {
+                DocCommentHelper.write(ns, (_a = doc === null || doc === void 0 ? void 0 : doc.constants[name]) === null || _a === void 0 ? void 0 : _a.description, separator_line);
+                separator_line = true;
                 ns.element_(name, global_obj.values[name]);
             }
             ns.finish();
@@ -820,7 +785,7 @@ class TSDCodeGen {
                 continue;
             }
             if (typeof this._types.singletons[class_name] !== "undefined") {
-                console.log("ignored singleton class", class_name);
+                // ignore the class if it's already defined as Singleton
                 continue;
             }
             this.emit_godot_class(this.split(), cls, false);
@@ -858,7 +823,7 @@ class TSDCodeGen {
             class_cg.constructor_(constructor_info);
         }
         if (typeof cls.element_type !== "undefined") {
-            const element_type_name = PrimitiveTypeNames[cls.element_type];
+            const element_type_name = get_primitive_type_name(cls.element_type);
             class_cg.line(`set_indexed(index: number, value: ${element_type_name})`);
             class_cg.line(`get_indexed(index: number): ${element_type_name}`);
         }

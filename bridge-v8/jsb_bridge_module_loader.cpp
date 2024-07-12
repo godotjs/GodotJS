@@ -830,7 +830,7 @@ namespace jsb
                 if (!internal::VariantUtil::is_valid(singleton.class_name))
                 {
                     singleton.class_name = class_name;
-                    JSB_LOG(Warning, "singleton (%s) hides the clas_name, restoring with '%s'", singleton.name, class_name);
+                    JSB_LOG(Verbose, "singleton (%s) hides the clas_name, restoring with '%s'", singleton.name, class_name);
                 }
 
                 set_field(isolate, context, constant_obj, "name", singleton.name);

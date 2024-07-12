@@ -151,4 +151,6 @@ declare module "godot" {
             OP_MAX = 25,
         }
     }
+
+    static function type_string(type: int64): string
 }
