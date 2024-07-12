@@ -214,7 +214,7 @@ namespace jsb
         const NativeClassInfo& native_class_info = environment->get_native_class(native_class_id);
 
         //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
-        ScriptClassInfo* existed_class_info = environment->find_gdjs_class(p_module.default_class_id);
+        ScriptClassInfo* existed_class_info = environment->find_script_class(p_module.default_class_id);
         if (existed_class_info)
         {
             existed_class_info->methods.clear();
@@ -225,7 +225,7 @@ namespace jsb
         else
         {
             ScriptClassID script_class_id;
-            existed_class_info = &environment->add_gdjs_class(script_class_id);
+            existed_class_info = &environment->add_script_class(script_class_id);
             p_module.default_class_id = script_class_id;
             existed_class_info->module_id = p_module.id;
         }
@@ -233,7 +233,7 @@ namespace jsb
         // trick: save godot class id for getting it in constructor
         default_obj->Set(p_context, environment->SymbolFor(CrossBind), v8::Uint32::NewFromUnsigned(isolate, p_module.default_class_id)).Check();
 
-        jsb_address_guard(environment->gdjs_classes_, godotjs_classes_address_guard);
+        jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->js_class_name = environment->get_string_name_cache().get_string_name(isolate, name_str);
         existed_class_info->native_class_id = native_class_id;
@@ -247,7 +247,7 @@ namespace jsb
     void Realm::_parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info)
     {
         Environment* environment = p_realm->environment_.get();
-        jsb_address_guard(environment->gdjs_classes_, godotjs_classes_address_guard);
+        jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
         v8::Isolate* isolate = environment->unwrap();
 
         //TODO collect methods/signals/properties
@@ -357,9 +357,10 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         jsb_checkf(!environment_->get_object_id(p_this), "duplicated object binding is not allowed (%s)", uitos((uintptr_t) p_this));
-        jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
-        const ScriptClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
+        jsb_address_guard(environment_->script_classes_, godotjs_classes_address_guard);
+        const ScriptClassInfo& class_info = environment_->get_script_class(p_class_id);
         const StringName class_name = class_info.js_class_name;
+
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         jsb_check(!constructor->IsUndefined() && !constructor->IsNull());
         v8::TryCatch try_catch_run(isolate);
@@ -398,8 +399,8 @@ namespace jsb
             return;
         }
 
-        jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
-        const ScriptClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
+        jsb_address_guard(environment_->script_classes_, godotjs_classes_address_guard);
+        const ScriptClassInfo& class_info = environment_->get_script_class(p_class_id);
         const StringName class_name = class_info.js_class_name;
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         v8::Local<v8::Value> prototype = constructor->Get(context, environment_->GetStringValue(prototype)).ToLocalChecked();
@@ -1670,7 +1671,7 @@ namespace jsb
         v8::Local<v8::Context> context = unwrap();
         v8::Context::Scope context_scope(context);
 
-        ScriptClassInfo& class_info = environment_->get_gdjs_class(p_gdjs_class_id);
+        ScriptClassInfo& class_info = environment_->get_script_class(p_gdjs_class_id);
         if (const auto& it = class_info.properties.find(p_name))
         {
             v8::Local<v8::Value> instance;
@@ -1778,7 +1779,7 @@ namespace jsb
     {
         environment_->check_internal_state();
         jsb_check(p_object_id.is_valid());
-        jsb_checkf(ClassDB::is_parent_class(environment_->get_gdjs_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
+        jsb_checkf(ClassDB::is_parent_class(environment_->get_script_class(p_gdjs_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
 
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);

@@ -216,7 +216,7 @@ namespace jsb
         }
 
         native_classes_.reserve((int) ClassDB::classes.size() + JSB_INITIAL_CLASS_EXTRA_SLOTS);
-        gdjs_classes_.reserve(JSB_INITIAL_SCRIPT_SLOTS);
+        script_classes_.reserve(JSB_INITIAL_SCRIPT_SLOTS);
         objects_.reserve(JSB_INITIAL_OBJECT_SLOTS);
 
         module_loaders_.insert("godot", memnew(GodotModuleLoader));
@@ -229,10 +229,10 @@ namespace jsb
 
     Environment::~Environment()
     {
-        while (!gdjs_classes_.is_empty())
+        while (!script_classes_.is_empty())
         {
-            const ScriptClassID id = gdjs_classes_.get_first_index();
-            gdjs_classes_.remove_at_checked(id);
+            const ScriptClassID id = script_classes_.get_first_index();
+            script_classes_.remove_at_checked(id);
         }
 
         for (int index = 0; index < Symbols::kNum; ++index)
@@ -515,7 +515,7 @@ namespace jsb
         JSB_LOG(Verbose, "External: %s", uitos(statistics.external_memory()));
         JSB_LOG(Verbose, "jsb.traced_objects: %d", objects_.size());
         JSB_LOG(Verbose, "jsb.classes: %d", native_classes_.size());
-        JSB_LOG(Verbose, "jsb.scripts: %d", gdjs_classes_.size());
+        JSB_LOG(Verbose, "jsb.scripts: %d", script_classes_.size());
         JSB_LOG(Verbose, "jsb.string_name_cache: %d", string_name_cache_.size());
         JSB_LOG(Verbose, "jsb.persistent_objects: %d", persistent_objects_.size());
         JSB_LOG(Verbose, "jsb.alive_variants: %s", uitos(variant_allocator_.get_allocated_num()));

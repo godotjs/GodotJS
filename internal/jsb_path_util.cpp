@@ -87,7 +87,7 @@ namespace jsb::internal
             const String root_path = Settings::get_jsb_out_res_path();
             jsb_checkf(p_source_path.begins_with(root_path), "can not proceed javascript sources not under the project data directory");
             const String replaced = String("res://").path_join(
-                p_source_path.substr(root_path.length(), p_source_path.length() - root_path.length())
+                p_source_path.substr(root_path.length() + 1, p_source_path.length() - root_path.length() - 3)
                 + JSB_TYPESCRIPT_EXT);
             return replaced;
         }

@@ -525,56 +525,62 @@ namespace jsb
 
             if (constructor == new_target)
             {
-                v8::Local<v8::Object> self = info.This();
-                const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(native_class.name);
-                jsb_check(it != ClassDB::classes.end());
-                const ClassDB::ClassInfo& gd_class_info = it->value;
+                const v8::Local<v8::Object> self = info.This();
+                // const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(native_class.name);
+                // jsb_check(it != ClassDB::classes.end());
+                // const ClassDB::ClassInfo& gd_class_info = it->value;
+                // Object* gd_object = gd_class_info.creation_func();
 
-                Object* gd_object = gd_class_info.creation_func();
-                //NOTE IS IT A TRUTH that ref_count==1 after creation_func??
+                Object* gd_object = ClassDB::instantiate(native_class.name);
+
+                // IS IT A TRUTH that ref_count==1 after creation_func??
                 jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
                 environment->bind_godot_object(class_id, gd_object, self);
+                return;
             }
-            else
+            // We need to handle different cases of cross-binding here.
+            // 1. new SubClass() which defined in scripts
+            // 2. new CDO() from C++
+            // 3. new SubClass() from C++ ResourcesLoader which needs to cross-bind an existing godot object instance with a newly constructed script instance
+            //
+            // The currently used solution is unsafe if the end user overrides the default constructor of a script.
+            // super(...arguments) must be called if constructor is explicitly defined in a script class.
+
+            if (info.Length())
             {
-                JSB_LOG(VeryVerbose, "(crossbind) constructing %s(%d) from subclass", native_class.name, (uint32_t) class_id);
-
-                // We need to handle different cases of cross-binding here.
-                // 1. new SubClass() which defined in scripts
-                // 2. new CDO() from C++
-                // 3. new SubClass() from C++ ResourcesLoader which needs to cross-bind an existing godot object instance with a newly constructed script instance
-                //
-                // The currently used solution is unsafe if the end user overrides the default constructor of a script.
-                // super(...arguments) must be called if constructor is explicitly defined in a script class.
-
-                if (info.Length())
+                // constructing CDO from C++ (nothing more to do, it's a pure javascript)
+                if (info[0] == environment->SymbolFor(CDO))
                 {
-                    // constructing CDO from C++
-                    if (info[0] == environment->SymbolFor(CDO))
-                    {
-                        JSB_LOG(Verbose, "constructing CDO from C++");
-                        //TODO NOT IMPLEMENTED YET
-                    }
-                    else if (info[0] == environment->SymbolFor(CrossBind))
-                    {
-                        JSB_LOG(Verbose, "cross binding from C++");
-                        //TODO NOT IMPLEMENTED YET
-                    }
+                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", native_class.name, class_id.value());
                     return;
                 }
 
-                // new from scripts
-                //TODO NOT IMPLEMENTED YET
-                JSB_LOG(Verbose, "new instance from scripts");
-                v8::Local<v8::Value> cross_bind_sym;
-                if (new_target.As<v8::Object>()->Get(context, environment->SymbolFor(CrossBind)).ToLocal(&cross_bind_sym))
+                // constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
+                if (info[0] == environment->SymbolFor(CrossBind))
                 {
-                    const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
-                    const int len = info.Length();
-                    const int val = len == 1 ? info[0]->Int32Value(context).ToChecked() : 0;
-                    JSB_LOG(Verbose, "script class id %d args:%d", script_class_id.value(), val);
+                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", native_class.name, class_id.value());
+                    return;
                 }
+
+                jsb_checkf(false, "unexpected identifer received. %s(%d)", native_class.name, class_id.value());
+                return;
             }
+
+            // new from scripts
+            //TODO NOT IMPLEMENTED YET
+            v8::Local<v8::Value> cross_bind_sym;
+            if (new_target.As<v8::Object>()->Get(context, environment->SymbolFor(CrossBind)).ToLocal(&cross_bind_sym))
+            {
+                const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
+                ScriptClassInfo& script_class_info = environment->get_script_class(script_class_id);
+                JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
+                    script_class_info.js_class_name, script_class_info.module_id, native_class.name, class_id.value());
+                const v8::Local<v8::Object> self = info.This();
+                script_class_info._newbind(self);
+                return;
+            }
+
+            jsb_checkf(false, "unexpected new.target. %s(%d)", native_class.name, class_id.value());
         }
 
         static void finalizer(Environment* runtime, void* pointer, bool p_persistent)

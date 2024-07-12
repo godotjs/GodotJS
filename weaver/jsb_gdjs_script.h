@@ -59,7 +59,7 @@ public:
 
     void attach_source(const String& p_path, const String& p_source);
 
-    const jsb::ScriptClassInfo& get_js_class_info() const;
+    const jsb::ScriptClassInfo& get_script_class_info() const;
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;
@@ -70,6 +70,9 @@ public:
 
     virtual StringName get_instance_base_type() const override; // this may not work in all scripts, will return empty if so
     virtual ScriptInstance* instance_create(Object* p_this) override;
+    //TODO
+    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this);
+
     virtual PlaceHolderScriptInstance* placeholder_instance_create(Object* p_this) override;
     virtual bool instance_has(const Object* p_this) const override;
 
@@ -93,7 +96,7 @@ public:
     // we expect Godot calling this after loaded_?
     virtual bool is_valid() const override { jsb_check(loaded_); return valid_; }
     virtual bool is_tool() const override;
-    virtual bool is_abstract() const override { return valid_ && get_js_class_info().is_abstract(); }
+    virtual bool is_abstract() const override { return valid_ && get_script_class_info().is_abstract(); }
 
     virtual ScriptLanguage* get_language() const override;
 

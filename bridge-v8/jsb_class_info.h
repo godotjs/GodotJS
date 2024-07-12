@@ -135,6 +135,8 @@ namespace jsb
 
         jsb_force_inline bool is_tool() const { return flags & GodotJSClassFlags::Tool; }
         jsb_force_inline bool is_abstract() const { return flags & GodotJSClassFlags::Abstract; }
+
+        void _newbind(const v8::Local<v8::Object>& p_self);
     };
 }
 

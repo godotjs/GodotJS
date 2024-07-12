@@ -96,9 +96,9 @@ namespace jsb
         }
 
         //TODO temp
-        jsb_force_inline const ScriptClassInfo& get_gdjs_class_info(ScriptClassID p_class_id) const
+        jsb_force_inline const ScriptClassInfo& get_script_class_info(ScriptClassID p_class_id) const
         {
-            return environment_->get_gdjs_class(p_class_id);
+            return environment_->get_script_class(p_class_id);
         }
 
         //TODO temp, get C++ function pointer (include class methods)
