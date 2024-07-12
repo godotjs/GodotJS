@@ -7,7 +7,7 @@ namespace jsb
 {
     typedef internal::Index32 StringNameID;
     typedef internal::Index32 NativeClassID;
-    typedef internal::Index32 GodotJSClassID;
+    typedef internal::Index32 ScriptClassID;
     typedef internal::Index32 RealmID;
     typedef internal::Index64 NativeObjectID;
 

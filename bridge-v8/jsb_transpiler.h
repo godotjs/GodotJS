@@ -518,15 +518,15 @@ namespace jsb
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
             Environment* environment = Environment::wrap(isolate);
-            const NativeClassInfo& jclass_info = environment->get_native_class(class_id);
-            jsb_check(jclass_info.type == NativeClassType::GodotObject);
+            const NativeClassInfo& native_class = environment->get_native_class(class_id);
+            jsb_check(native_class.type == NativeClassType::GodotObject);
             v8::Local<v8::Value> new_target = info.NewTarget();
-            v8::Local<v8::Function> constructor = jclass_info.get_function(isolate, context);
+            v8::Local<v8::Function> constructor = native_class.get_function(isolate, context);
 
             if (constructor == new_target)
             {
                 v8::Local<v8::Object> self = info.This();
-                const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(jclass_info.name);
+                const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(native_class.name);
                 jsb_check(it != ClassDB::classes.end());
                 const ClassDB::ClassInfo& gd_class_info = it->value;
 
@@ -537,7 +537,43 @@ namespace jsb
             }
             else
             {
-                JSB_LOG(VeryVerbose, "(crossbind) constructing %s(%d) from subclass", jclass_info.name, (uint32_t) class_id);
+                JSB_LOG(VeryVerbose, "(crossbind) constructing %s(%d) from subclass", native_class.name, (uint32_t) class_id);
+
+                // We need to handle different cases of cross-binding here.
+                // 1. new SubClass() which defined in scripts
+                // 2. new CDO() from C++
+                // 3. new SubClass() from C++ ResourcesLoader which needs to cross-bind an existing godot object instance with a newly constructed script instance
+                //
+                // The currently used solution is unsafe if the end user overrides the default constructor of a script.
+                // super(...arguments) must be called if constructor is explicitly defined in a script class.
+
+                if (info.Length())
+                {
+                    // constructing CDO from C++
+                    if (info[0] == environment->SymbolFor(CDO))
+                    {
+                        JSB_LOG(Verbose, "constructing CDO from C++");
+                        //TODO NOT IMPLEMENTED YET
+                    }
+                    else if (info[0] == environment->SymbolFor(CrossBind))
+                    {
+                        JSB_LOG(Verbose, "cross binding from C++");
+                        //TODO NOT IMPLEMENTED YET
+                    }
+                    return;
+                }
+
+                // new from scripts
+                //TODO NOT IMPLEMENTED YET
+                JSB_LOG(Verbose, "new instance from scripts");
+                v8::Local<v8::Value> cross_bind_sym;
+                if (new_target.As<v8::Object>()->Get(context, environment->SymbolFor(CrossBind)).ToLocal(&cross_bind_sym))
+                {
+                    const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
+                    const int len = info.Length();
+                    const int val = len == 1 ? info[0]->Int32Value(context).ToChecked() : 0;
+                    JSB_LOG(Verbose, "script class id %d args:%d", script_class_id.value(), val);
+                }
             }
         }
 

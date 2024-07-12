@@ -27,7 +27,7 @@ void GodotJSScriptInstance::get_property_list(List<PropertyInfo>* p_properties) 
 
 Variant::Type GodotJSScriptInstance::get_property_type(const StringName& p_name, bool* r_is_valid) const
 {
-    const jsb::GodotJSClassInfo& class_info = script_->get_js_class_info();
+    const jsb::ScriptClassInfo& class_info = script_->get_js_class_info();
     if (const HashMap<StringName, jsb::GodotJSPropertyInfo>::ConstIterator it = class_info.properties.find(p_name))
     {
         if (r_is_valid) *r_is_valid = true;

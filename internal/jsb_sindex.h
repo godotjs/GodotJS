@@ -31,8 +31,10 @@ namespace jsb::internal
         {
         }
 
+        // shorthands
         jsb_force_inline operator UnderlyingType() const { return packed_; }
         jsb_force_inline UnderlyingType value() const { return packed_; }
+        jsb_force_inline UnderlyingType operator *() const { return packed_; }
 
         jsb_force_inline TIndex(const TIndex& other) = default;
         jsb_force_inline TIndex(TIndex&& other) = default;

@@ -96,7 +96,7 @@ namespace jsb
         }
 
         //TODO temp
-        jsb_force_inline const GodotJSClassInfo& get_gdjs_class_info(GodotJSClassID p_class_id) const
+        jsb_force_inline const ScriptClassInfo& get_gdjs_class_info(ScriptClassID p_class_id) const
         {
             return environment_->get_gdjs_class(p_class_id);
         }
@@ -120,8 +120,8 @@ namespace jsb
          * Setup `onready` fields (this method must be called before `_ready`).
          * This method will not throw any exception.
          */
-        void call_prelude(GodotJSClassID p_gdjs_class_id, NativeObjectID p_object_id);
-        bool get_script_default_property_value(GodotJSClassID p_gdjs_class_id, const StringName& p_name, Variant& r_val);
+        void call_prelude(ScriptClassID p_gdjs_class_id, NativeObjectID p_object_id);
+        bool get_script_default_property_value(ScriptClassID p_gdjs_class_id, const StringName& p_name, Variant& r_val);
         bool get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val);
 
@@ -143,9 +143,9 @@ namespace jsb
         //TODO is there a simple way to compile (validate) the script without any side effect?
         bool validate_script(const String& p_path, struct JavaScriptExceptionInfo* r_err = nullptr);
 
-        NativeObjectID crossbind(Object* p_this, GodotJSClassID p_class_id);
+        NativeObjectID crossbind(Object* p_this, ScriptClassID p_class_id);
 
-        void rebind(Object* p_this, GodotJSClassID p_class_id);
+        void rebind(Object* p_this, ScriptClassID p_class_id);
 
         jsb_force_inline v8::Isolate* get_isolate() const { jsb_check(environment_); return environment_->isolate_; }
 
@@ -216,7 +216,7 @@ namespace jsb
         static void _godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
-        static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info);
+        static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info);
 
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
     };

@@ -38,8 +38,9 @@ namespace jsb
             ClassImplicitReadyFuncs, // array of all @onready annotations
             ClassToolScript,         // @tool annotated scripts
             ClassIcon,               // @icon
+
             CrossBind,               // a symbol can only be used from C++ to indicate calling from cross-bind
-            // CDO,                     // constructing class default object
+            CDO,                     // constructing class default object for a script
             kNum,
         };
     }
@@ -78,7 +79,7 @@ namespace jsb
 
         //TODO all exported default classes inherit native godot class (directly or indirectly)
         // they're only collected on a module loaded
-        internal::SArray<GodotJSClassInfo, GodotJSClassID> gdjs_classes_;
+        internal::SArray<ScriptClassInfo, ScriptClassID> gdjs_classes_;
 
         StringNameCache string_name_cache_;
 
@@ -320,13 +321,13 @@ namespace jsb
         jsb_force_inline NativeClassInfo& get_native_class(NativeClassID p_class_id) { return native_classes_.get_value(p_class_id); }
         jsb_force_inline const NativeClassInfo& get_native_class(NativeClassID p_class_id) const { return native_classes_.get_value(p_class_id); }
 
-        jsb_force_inline GodotJSClassInfo& add_gdjs_class(GodotJSClassID& r_class_id)
+        jsb_force_inline ScriptClassInfo& add_gdjs_class(ScriptClassID& r_class_id)
         {
             r_class_id = gdjs_classes_.add({});
             return gdjs_classes_.get_value(r_class_id);
         }
-        jsb_force_inline GodotJSClassInfo& get_gdjs_class(GodotJSClassID p_class_id) { return gdjs_classes_.get_value(p_class_id); }
-        jsb_force_inline GodotJSClassInfo* find_gdjs_class(GodotJSClassID p_class_id) { return gdjs_classes_.is_valid_index(p_class_id) ? &gdjs_classes_.get_value(p_class_id) : nullptr; }
+        jsb_force_inline ScriptClassInfo& get_gdjs_class(ScriptClassID p_class_id) { return gdjs_classes_.get_value(p_class_id); }
+        jsb_force_inline ScriptClassInfo* find_gdjs_class(ScriptClassID p_class_id) { return gdjs_classes_.is_valid_index(p_class_id) ? &gdjs_classes_.get_value(p_class_id) : nullptr; }
 
     private:
         void on_context_created(const v8::Local<v8::Context>& p_context);

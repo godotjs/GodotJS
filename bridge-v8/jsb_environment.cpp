@@ -231,9 +231,7 @@ namespace jsb
     {
         while (!gdjs_classes_.is_empty())
         {
-            const GodotJSClassID id = gdjs_classes_.get_first_index();
-            // JavaScriptClassInfo& class_info = gdjs_classes_[id];
-            // class_info.xxx.Reset();
+            const ScriptClassID id = gdjs_classes_.get_first_index();
             gdjs_classes_.remove_at_checked(id);
         }
 

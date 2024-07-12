@@ -14,7 +14,7 @@ namespace jsb
         String path;
 
         //
-        GodotJSClassID default_class_id;
+        ScriptClassID default_class_id;
 
         v8::Global<v8::Object> module;
         v8::Global<v8::Value> exports;

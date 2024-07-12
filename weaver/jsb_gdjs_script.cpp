@@ -364,7 +364,7 @@ void GodotJSScript::load_module()
     JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class %s", path);
 }
 
-const jsb::GodotJSClassInfo& GodotJSScript::get_js_class_info() const
+const jsb::ScriptClassInfo& GodotJSScript::get_js_class_info() const
 {
     jsb_check(loaded_);
     jsb_checkf(gdjs_class_id_, "avoid calling this method if class_id is invalid, check prior with 'valid_'");
@@ -496,7 +496,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
         get_realm()->get_environment()->check_internal_state();
 
         members_cache.push_back(get_class_category());
-        const jsb::GodotJSClassInfo& class_info = get_js_class_info();
+        const jsb::ScriptClassInfo& class_info = get_js_class_info();
         for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : class_info.properties)
         {
             const jsb::GodotJSPropertyInfo &pi = pair.value;

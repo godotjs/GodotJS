@@ -213,8 +213,8 @@ namespace jsb
         jsb_address_guard(environment->native_classes_, native_classes_address_guard);
         const NativeClassInfo& native_class_info = environment->get_native_class(native_class_id);
 
-        //TODO maybe we should always add new godotjs class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
-        GodotJSClassInfo* existed_class_info = environment->find_gdjs_class(p_module.default_class_id);
+        //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
+        ScriptClassInfo* existed_class_info = environment->find_gdjs_class(p_module.default_class_id);
         if (existed_class_info)
         {
             existed_class_info->methods.clear();
@@ -224,9 +224,9 @@ namespace jsb
         }
         else
         {
-            GodotJSClassID gdjs_class_id;
-            existed_class_info = &environment->add_gdjs_class(gdjs_class_id);
-            p_module.default_class_id = gdjs_class_id;
+            ScriptClassID script_class_id;
+            existed_class_info = &environment->add_gdjs_class(script_class_id);
+            p_module.default_class_id = script_class_id;
             existed_class_info->module_id = p_module.id;
         }
 
@@ -244,7 +244,7 @@ namespace jsb
         _parse_script_class_iterate(p_realm, p_context, *existed_class_info);
     }
 
-    void Realm::_parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, GodotJSClassInfo& p_class_info)
+    void Realm::_parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info)
     {
         Environment* environment = p_realm->environment_.get();
         jsb_address_guard(environment->gdjs_classes_, godotjs_classes_address_guard);
@@ -349,7 +349,7 @@ namespace jsb
         }
     }
 
-    NativeObjectID Realm::crossbind(Object* p_this, GodotJSClassID p_class_id)
+    NativeObjectID Realm::crossbind(Object* p_this, ScriptClassID p_class_id)
     {
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
@@ -358,13 +358,13 @@ namespace jsb
 
         jsb_checkf(!environment_->get_object_id(p_this), "duplicated object binding is not allowed (%s)", uitos((uintptr_t) p_this));
         jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
-        const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
+        const ScriptClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
         const StringName class_name = class_info.js_class_name;
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         jsb_check(!constructor->IsUndefined() && !constructor->IsNull());
         v8::TryCatch try_catch_run(isolate);
-        v8::Local<v8::Value> argv = environment_->SymbolFor(CrossBind);
-        v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &argv);
+        v8::Local<v8::Value> identifier = environment_->SymbolFor(CrossBind);
+        v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
         jsb_check(!constructed_value.IsEmpty() && !constructed_value.ToLocalChecked()->IsUndefined());
         if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
         {
@@ -382,7 +382,7 @@ namespace jsb
         return object_id;
     }
 
-    void Realm::rebind(Object *p_this, GodotJSClassID p_class_id)
+    void Realm::rebind(Object *p_this, ScriptClassID p_class_id)
     {
         //TODO a dirty but approaching solution for hot-reloading
         environment_->check_internal_state();
@@ -399,7 +399,7 @@ namespace jsb
         }
 
         jsb_address_guard(environment_->gdjs_classes_, godotjs_classes_address_guard);
-        const GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
+        const ScriptClassInfo& class_info = environment_->get_gdjs_class(p_class_id);
         const StringName class_name = class_info.js_class_name;
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         v8::Local<v8::Value> prototype = constructor->Get(context, environment_->GetStringValue(prototype)).ToLocalChecked();
@@ -1661,7 +1661,7 @@ namespace jsb
         return rvar;
     }
 
-    bool Realm::get_script_default_property_value(GodotJSClassID p_gdjs_class_id, const StringName& p_name, Variant& r_val)
+    bool Realm::get_script_default_property_value(ScriptClassID p_gdjs_class_id, const StringName& p_name, Variant& r_val)
     {
         environment_->check_internal_state();
         v8::Isolate* isolate = get_isolate();
@@ -1670,7 +1670,7 @@ namespace jsb
         v8::Local<v8::Context> context = unwrap();
         v8::Context::Scope context_scope(context);
 
-        GodotJSClassInfo& class_info = environment_->get_gdjs_class(p_gdjs_class_id);
+        ScriptClassInfo& class_info = environment_->get_gdjs_class(p_gdjs_class_id);
         if (const auto& it = class_info.properties.find(p_name))
         {
             v8::Local<v8::Value> instance;
@@ -1678,7 +1678,8 @@ namespace jsb
             {
                 v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
                 v8::TryCatch try_catch_run(isolate);
-                v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 0, nullptr);
+                v8::Local<v8::Value> identifier = environment_->SymbolFor(CDO);
+                v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
                 if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
                 {
                     JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_info.js_class_name, (String) exception_info);
@@ -1773,7 +1774,7 @@ namespace jsb
         return true;
     }
 
-    void Realm::call_prelude(GodotJSClassID p_gdjs_class_id, NativeObjectID p_object_id)
+    void Realm::call_prelude(ScriptClassID p_gdjs_class_id, NativeObjectID p_object_id)
     {
         environment_->check_internal_state();
         jsb_check(p_object_id.is_valid());

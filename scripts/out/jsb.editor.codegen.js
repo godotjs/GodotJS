@@ -169,7 +169,10 @@ class AbstractWriter {
     namespace_(name, class_doc) {
         return new NamespaceWriter(this, name, class_doc);
     }
-    class_(name, super_, singleton_mode, class_doc) {
+    gd_class_(name, super_, singleton_mode, class_doc) {
+        return new ClassWriter(this, name, super_, singleton_mode, class_doc);
+    }
+    valuetype_(name, super_, singleton_mode, class_doc) {
         return new ClassWriter(this, name, super_, singleton_mode, class_doc);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
@@ -414,6 +417,9 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
         const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
         this.line(`constructor(${args})`);
+    }
+    constructor_ex_() {
+        this.line(`constructor(identifier?: any)`);
     }
     operator_(operator_info) {
         this._separator_line = true;
@@ -841,7 +847,7 @@ class TSDCodeGen {
             }
         }
         class_ns_cg.finish();
-        const class_cg = cg.class_(cls.name, "", false, class_doc);
+        const class_cg = cg.valuetype_(cls.name, "", false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -885,13 +891,16 @@ class TSDCodeGen {
                 }
             }
             class_ns_cg.finish();
-            const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super : "", singleton_mode, class_doc);
+            const class_cg = cg.gd_class_(cls.name, this.has_class(cls.super) ? cls.super : "", singleton_mode, class_doc);
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {
                         class_cg.constant_(constant);
                     }
                 }
+            }
+            if (!singleton_mode) {
+                class_cg.constructor_ex_();
             }
             for (let method_info of cls.virtual_methods) {
                 class_cg.virtual_method_(method_info);

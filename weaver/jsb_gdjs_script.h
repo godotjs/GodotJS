@@ -33,7 +33,7 @@ private:
     String source_;
     String path_;
     GodotJSScript* base_ = nullptr;
-    jsb::GodotJSClassID gdjs_class_id_;
+    jsb::ScriptClassID gdjs_class_id_;
 
     //TODO we have realm_ shared pointer here. Thus, we can safely store GodotJSFunction here (v8 global handle)?
     HashMap<StringName, jsb::ObjectCacheID> cached_methods_;
@@ -59,7 +59,7 @@ public:
 
     void attach_source(const String& p_path, const String& p_source);
 
-    const jsb::GodotJSClassInfo& get_js_class_info() const;
+    const jsb::ScriptClassInfo& get_js_class_info() const;
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;

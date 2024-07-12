@@ -18,7 +18,8 @@ interface CodeWriter {
 
     enum_(name: string): EnumWriter;
     namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter;
-    class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter;
+    gd_class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter;
+    valuetype_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter;
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
 }
@@ -183,7 +184,10 @@ abstract class AbstractWriter implements ScopeWriter {
     namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter {
         return new NamespaceWriter(this, name, class_doc)
     }
-    class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter {
+    gd_class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter {
+        return new ClassWriter(this, name, super_, singleton_mode, class_doc);
+    }
+    valuetype_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter {
         return new ClassWriter(this, name, super_, singleton_mode, class_doc);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
@@ -470,6 +474,10 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
         const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${PrimitiveTypeNames[it.type]}`).join(", ");
         this.line(`constructor(${args})`);
+    }
+
+    constructor_ex_() {
+        this.line(`constructor(identifier?: any)`);
     }
 
     operator_(operator_info: jsb.editor.OperatorInfo) {
@@ -946,7 +954,7 @@ export default class TSDCodeGen {
         }
         class_ns_cg.finish();
 
-        const class_cg = cg.class_(cls.name, "", false, class_doc);
+        const class_cg = cg.valuetype_(cls.name, "", false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -992,13 +1000,16 @@ export default class TSDCodeGen {
             }
             class_ns_cg.finish();
 
-            const class_cg = cg.class_(cls.name, this.has_class(cls.super) ? cls.super! : "", singleton_mode, class_doc);
+            const class_cg = cg.gd_class_(cls.name, this.has_class(cls.super) ? cls.super! : "", singleton_mode, class_doc);
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {
                         class_cg.constant_(constant);
                     }
                 }
+            }
+            if (!singleton_mode) {
+                class_cg.constructor_ex_();
             }
             for (let method_info of cls.virtual_methods) {
                 class_cg.virtual_method_(method_info);

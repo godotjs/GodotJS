@@ -100,7 +100,7 @@ namespace jsb
     // exchanging internal javascript class (object) information with `JavaScript` class.
     // DO NOT expose javascript runtime detail types with involved external classes,
     // since these info structs will be replaced deps on the runtime used.
-    struct GodotJSClassInfo
+    struct ScriptClassInfo
     {
         // name of the owner module
         StringName module_id;
