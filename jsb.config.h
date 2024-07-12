@@ -58,6 +58,9 @@
 // implicitly convert a javascript array as godot Vector<T> which is convenient but less performant if massively used
 #define JSB_IMPLICIT_PACKED_ARRAY_CONVERSION 1
 
+// not to generate method declaration if already defined as get/set property
+#define JSB_EXCLUDE_GETSET_METHODS 1
+
 #define JSB_INITIAL_OBJECT_SLOTS (1024 * 64)
 #define JSB_INITIAL_SCRIPT_SLOTS 1024
 #define JSB_INITIAL_CLASS_EXTRA_SLOTS 0

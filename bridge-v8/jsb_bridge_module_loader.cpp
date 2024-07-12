@@ -322,7 +322,9 @@ namespace jsb
             set_field(isolate, context, class_info_obj, "name", class_name);
             set_field(isolate, context, class_info_obj, "super", class_info.inherits);
 
-            // HashSet<StringName> omitted_methods;
+#if JSB_EXCLUDE_GETSET_METHODS
+            HashSet<StringName> omitted_methods;
+#endif
             // class: properties
             {
                 // intentionally new array without a length from `class_info.property_setget.size()`,
@@ -344,20 +346,28 @@ namespace jsb
                     build_property_info(isolate, context, property_info, property_info_obj);
                     build_property_info(isolate, context, property_name, getset_info, getset_info_obj);
                     properties_obj->Set(context, index++, getset_info_obj).Check();
-                    // if (internal::VariantUtil::is_valid(getset_info.getter)) omitted_methods.insert(getset_info.getter);
-                    // if (internal::VariantUtil::is_valid(getset_info.setter)) omitted_methods.insert(getset_info.setter);
+#if JSB_EXCLUDE_GETSET_METHODS
+                    if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
+                    if (internal::VariantUtil::is_valid_name(getset_info.setter)) omitted_methods.insert(getset_info.setter);
+#endif
                 }
             }
 
             // class: methods
             {
+#if JSB_EXCLUDE_GETSET_METHODS
+                constexpr int len = 0;
+#else
                 const int len = (int) class_info.method_map.size();
+#endif
                 const v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, len);
                 set_field(isolate, context, class_info_obj, "methods", methods_obj);
                 int index = 0;
                 for (const KeyValue<StringName, MethodBind*>& pair : class_info.method_map)
                 {
-                    // if (omitted_methods.has(pair.key)) continue;
+#if JSB_EXCLUDE_GETSET_METHODS
+                    if (omitted_methods.has(pair.key)) continue;
+#endif
                     MethodBind const * const method_bind = pair.value;
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                     build_method_info(isolate, context, method_bind, method_info_obj);
@@ -827,7 +837,7 @@ namespace jsb
                 Engine::Singleton singleton = singletons[index];
                 v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
                 const StringName class_name = singleton.ptr->get_class_name();
-                if (!internal::VariantUtil::is_valid(singleton.class_name))
+                if (!internal::VariantUtil::is_valid_name(singleton.class_name))
                 {
                     singleton.class_name = class_name;
                     JSB_LOG(Verbose, "singleton (%s) hides the clas_name, restoring with '%s'", singleton.name, class_name);

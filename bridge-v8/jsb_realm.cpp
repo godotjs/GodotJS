@@ -573,7 +573,9 @@ namespace jsb
             const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);
             v8::Local<v8::Template> template_for_static = is_singleton_class ? v8::Local<v8::Template>::Cast(object_template) : v8::Local<v8::Template>::Cast(function_template);
 
-            // HashSet<StringName> omitted_methods;
+#if JSB_EXCLUDE_GETSET_METHODS
+            HashSet<StringName> omitted_methods;
+#endif
             // class: properties (getset)
             for (const KeyValue<StringName, ::ClassDB::PropertySetGet>& pair : p_class_info->property_setget)
             {
@@ -590,15 +592,18 @@ namespace jsb
                     ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._setptr))
                     : v8::Local<v8::FunctionTemplate>();
                 object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
-                // if (internal::VariantUtil::is_valid(getset_info.getter)) omitted_methods.insert(getset_info.getter);
-                // if (internal::VariantUtil::is_valid(getset_info.setter)) omitted_methods.insert(getset_info.setter);
+#if JSB_EXCLUDE_GETSET_METHODS
+                if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
+                if (internal::VariantUtil::is_valid_name(getset_info.setter)) omitted_methods.insert(getset_info.setter);
+#endif
             }
 
             // class: methods
             for (const KeyValue<StringName, MethodBind*>& pair : p_class_info->method_map)
             {
-                // if (omitted_methods.has(pair.key)) continue;
-
+#if JSB_EXCLUDE_GETSET_METHODS
+                if (omitted_methods.has(pair.key)) continue;
+#endif
                 const StringName& method_name = pair.key;
                 MethodBind* method_bind = pair.value;
                 v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, method_name); // V8Helper::to_string_ascii(isolate, method_name);

@@ -37,7 +37,7 @@ namespace jsb::internal
         /**
          * if a StringName represents a non-null string
          */
-        jsb_force_inline static bool is_valid(const StringName& p_name)
+        jsb_force_inline static bool is_valid_name(const StringName& p_name)
         {
             return ((const void*) p_name) != nullptr;
         }
