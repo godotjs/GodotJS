@@ -158,20 +158,21 @@ namespace jsb
                 {
                     jsb_check(length == sizeof(TStruct));
                     Variant* variant = (Variant*) data;
-                    if (variant->get_type() >= Variant::OBJECT && variant->get_type() <= Variant::ARRAY)
+                    if (const Variant::Type type = variant->get_type(); type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
                     {
                         // possible reference based elements included, they're required to be released in the main thread for simplicity.
                         if (const std::shared_ptr<Environment> env = _access(deleter_data))
                         {
-                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
                             env->enqueue_variant_dealloc(variant);
                             return;
                         }
-                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
                     }
                     else
                     {
-                        JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+                        jsb_check(type != Variant::OBJECT);
+                        JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
                     }
                     Environment::dealloc_variant(variant);
                 }, this))
