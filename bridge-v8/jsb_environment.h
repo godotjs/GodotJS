@@ -67,8 +67,8 @@ namespace jsb
         // Vector<UnreferencingRequestCall> request_calls_;
         // volatile bool pending_request_calls_;
 
-        //TODO lock on 'objects_' when referencing?
-        // lock;
+        SpinLock spin_lock_;
+        Vector<Variant*> sync_delete_;
 
         // indirect lookup
         // only godot object classes are mapped
@@ -157,8 +157,24 @@ namespace jsb
                 v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(TStruct), [](void* data, size_t length, void* deleter_data)
                 {
                     jsb_check(length == sizeof(TStruct));
-                    Environment::dealloc_variant((Variant*) data);
-                }, nullptr))
+                    Variant* variant = (Variant*) data;
+                    if (variant->get_type() >= Variant::OBJECT && variant->get_type() <= Variant::ARRAY)
+                    {
+                        // possible reference based elements included, they're required to be released in the main thread for simplicity.
+                        if (const std::shared_ptr<Environment> env = _access(deleter_data))
+                        {
+                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+                            env->enqueue_variant_dealloc(variant);
+                            return;
+                        }
+                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+                    }
+                    else
+                    {
+                        JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+                    }
+                    Environment::dealloc_variant(variant);
+                }, this))
             ).Check();
         }
 
@@ -333,7 +349,9 @@ namespace jsb
         void on_context_created(const v8::Local<v8::Context>& p_context);
         void on_context_destroyed(const v8::Local<v8::Context>& p_context);
 
-        static Environment* internal_access(void* p_runtime);
+        static std::shared_ptr<Environment> _access(void* p_runtime);
+        void enqueue_variant_dealloc(Variant* p_var);
+        void exec_sync_delete();
 
         // [low level binding] unbind a raw pointer from javascript object lifecycle
         void unbind_pointer(void* p_pointer);

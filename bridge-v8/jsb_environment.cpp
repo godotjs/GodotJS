@@ -37,7 +37,8 @@ namespace jsb
             lock_.lock();
             if (all_runtimes_.has(p_runtime))
             {
-                rval = ((Environment*) p_runtime)->shared_from_this();
+                Environment* env = (Environment*) p_runtime;
+                rval = env->shared_from_this();
             }
             lock_.unlock();
             return rval;
@@ -277,6 +278,25 @@ namespace jsb
         isolate_->Dispose();
         isolate_ = nullptr;
 
+        exec_sync_delete();
+        jsb_check(sync_delete_.is_empty());
+
+    }
+
+    void Environment::exec_sync_delete()
+    {
+        Vector<Variant*> pointers;
+
+        spin_lock_.lock();
+        pointers.append_array(sync_delete_);
+        sync_delete_.clear();
+        spin_lock_.unlock();
+
+        for (Variant* variant : pointers)
+        {
+            JSB_LOG(Verbose, "exec_sync_delete variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+            dealloc_variant(variant);
+        }
     }
 
     void Environment::update()
@@ -304,6 +324,10 @@ namespace jsb
 #if JSB_WITH_DEBUGGER
         debugger_->update();
 #endif
+        if (!sync_delete_.is_empty())
+        {
+            exec_sync_delete();
+        }
     }
 
     void Environment::gc()
@@ -320,10 +344,18 @@ namespace jsb
         isolate_->SetBatterySaverMode(p_enabled);
     }
 
-    Environment* Environment::internal_access(void* p_runtime)
+    std::shared_ptr<Environment> Environment::_access(void* p_runtime)
     {
-        return EnvironmentStore::get_shared().internal_access(p_runtime);
+        return EnvironmentStore::get_shared().access(p_runtime);
     }
+
+    void Environment::enqueue_variant_dealloc(Variant* p_var)
+    {
+        spin_lock_.lock();
+        sync_delete_.append(p_var);
+        spin_lock_.unlock();
+    }
+
 
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {

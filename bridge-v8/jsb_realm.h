@@ -28,6 +28,7 @@ namespace jsb
         friend class JavaScriptLanguage;
         friend class Builtins;
 
+        static SpinLock realms_lock_;
         static internal::SArray<Realm*, RealmID> realms_;
 
         RealmID id_;
@@ -68,9 +69,14 @@ namespace jsb
 
         static std::shared_ptr<Realm> get_realm(const RealmID p_realm_id)
         {
-            // return contexts_[p_realm_id]->shared_from_this();
-            Realm* ptr;
-            return realms_.try_get_value(p_realm_id, ptr) ? ptr->shared_from_this() : nullptr;
+            realms_lock_.lock();
+            if (Realm* ptr; realms_.try_get_value(p_realm_id, ptr))
+            {
+                realms_lock_.unlock();
+                return ptr->shared_from_this();
+            }
+            realms_lock_.unlock();
+            return nullptr;
         }
 
         void register_primitive_binding(Variant::Type p_type, PrimitiveTypeRegisterFunc p_func)

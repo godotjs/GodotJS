@@ -8,9 +8,12 @@ String GodotJSCallableCustom::get_as_text() const
 
 GodotJSCallableCustom::~GodotJSCallableCustom()
 {
-    if (std::shared_ptr<jsb::Realm> realm = jsb::Realm::get_realm(realm_id_))
+    if (callback_id_)
     {
-        realm->release_function(callback_id_);
+        if (std::shared_ptr<jsb::Realm> realm = jsb::Realm::get_realm(realm_id_))
+        {
+            realm->release_function(callback_id_);
+        }
     }
 }
 

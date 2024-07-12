@@ -14,6 +14,7 @@
 namespace jsb
 {
     internal::SArray<Realm*, RealmID> Realm::realms_;
+    SpinLock Realm::realms_lock_;
 
     ObjectCacheID Realm::get_cached_function(const v8::Local<v8::Function>& p_func)
     {
@@ -458,12 +459,18 @@ namespace jsb
             register_primitive_bindings(this);
         }
         environment_->on_context_created(context);
+
+        realms_lock_.lock();
         id_ = realms_.add(this);
+        realms_lock_.unlock();
     }
 
     Realm::~Realm()
     {
+        realms_lock_.lock();
         realms_.remove_at_checked(id_);
+        realms_lock_.unlock();
+
         id_ = {};
         v8::Isolate* isolate = environment_->isolate_;
         v8::Isolate::Scope isolate_scope(isolate);
