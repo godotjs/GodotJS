@@ -6,20 +6,11 @@ A javascript class can extend a Godot Object class:
 
 ```ts
 import { Node, Signal } from "godot";
-import { signal_ } from "./jsb/jsb.core";
+import { signal } from "./jsb/jsb.core";
 
 export default class MyJSNode extends Node {
-    @signal_()
+    @signal()
     test!: Signal;
-
-    constructor() {
-        super();
-        console.log("my js node class");
-
-        this.test.connect(jsb.callable(this, this._on_test), 0);
-        this.test.emit();
-        this.test.disconnect(jsb.callable(this, this._on_test));
-    }
 
     private _on_test() {
 
@@ -27,13 +18,39 @@ export default class MyJSNode extends Node {
 
     _ready() {
         console.log("MyJSNode _ready");
+
+        this.test.connect(jsb.callable(this, this._on_test), 0);
+        this.test.emit();
+        this.test.disconnect(jsb.callable(this, this._on_test));
     }
 
 }
 ```
 
+> [!WARNING]
+> Explicitly defined `constructor` in script classes inherited from Godot Object are not recommended, because GodotJS constructs the script classes for special uses (such as CDO and cross-binding).  
+> If it can't be avoided, always define it with an explicit argument `identifier? any`, and don't forget to call `super(identifier)`.
+
+For instance:
+```ts
+export default class MyExampleNode extends Node {
+    constructor(identifier?: any) {
+        super(identifier);
+
+        // do other things you want
+        //...
+    }
+}
+```
+
+You can instantiate a script class directly with `new` in scripts:
+```ts
+// do not pass any arguments to the constructor
+let node = new MyExampleNode();
+```
+
 > [!NOTE]
-> The class must be exported as `default`, otherwise the script will not recognized as Godot class extension.
+> A class must be exported as `default`, otherwise the script will not recognized as a valid script class.
 
 Compile the typescript source into javascript, and attach the compiled script to a Node:
 
@@ -96,6 +113,18 @@ NOT IMPLEMENTED FOR NOW
 
 ## Signals
 WRITE SOMETHING HERE
+
+## Icon annotation
+
+An icon can be used as node icon in the editor scene hierarchy with the annotation `@icon`.
+
+```ts
+@icon("res://icon/affiliate.svg")
+export default class MySprite extends Sprite2D {
+}
+```
+
+![icon](./assets/script_icon_annotation.png)
 
 ## Cyclic imports
 Cyclic imports are allowed in `GodotJS` with some limits.
