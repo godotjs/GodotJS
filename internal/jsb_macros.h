@@ -61,7 +61,6 @@
 #endif
 
 #define jsb_deprecated
-#define jsb_deleteme
 #define jsb_experimental
 #define jsb_no_discard [[nodiscard]]
 

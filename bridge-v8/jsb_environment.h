@@ -165,7 +165,8 @@ namespace jsb
                         // possible reference based elements included, they're required to be released in the main thread for simplicity.
                         if (const std::shared_ptr<Environment> env = _access(deleter_data))
                         {
-                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d", Variant::get_type_name(type), uitos((uintptr_t) variant), env->pending_delete_.space_left());
+                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d thread:%s", Variant::get_type_name(type), uitos((uintptr_t) variant), env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
+                            // we assume that there is only one scavenger thread (or one active thread at least)
                             env->pending_delete_.write(variant);
                             return;
                         }
@@ -174,7 +175,7 @@ namespace jsb
                     else
                     {
                         jsb_check(type != Variant::OBJECT);
-                        JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
+                        // JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
                     }
                     Environment::dealloc_variant(variant);
                 }, this))
