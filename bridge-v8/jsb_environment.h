@@ -13,6 +13,7 @@
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_timer_manager.h"
 #include "../internal/jsb_variant_allocator.h"
+#include "core/templates/ring_buffer.h"
 
 #if JSB_WITH_SOURCEMAP
 #include "../internal/jsb_source_map_cache.h"
@@ -67,8 +68,9 @@ namespace jsb
         // Vector<UnreferencingRequestCall> request_calls_;
         // volatile bool pending_request_calls_;
 
-        SpinLock spin_lock_;
-        Vector<Variant*> sync_delete_;
+        // SpinLock spin_lock_;
+        // Vector<Variant*> sync_delete_;
+        RingBuffer<Variant*> pending_delete_;
 
         // indirect lookup
         // only godot object classes are mapped
@@ -123,7 +125,7 @@ namespace jsb
 
         jsb_force_inline void notify_microtasks_run() { microtasks_run_ = true; }
 
-        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { return variant_allocator_.alloc(p_templet); }
+        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { jsb_check(p_templet.get_type() != Variant::OBJECT); return variant_allocator_.alloc(p_templet); }
         static jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
         static jsb_force_inline void dealloc_variant(Variant* p_var) { variant_allocator_.free(p_var); }
 
@@ -163,8 +165,8 @@ namespace jsb
                         // possible reference based elements included, they're required to be released in the main thread for simplicity.
                         if (const std::shared_ptr<Environment> env = _access(deleter_data))
                         {
-                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
-                            env->enqueue_variant_dealloc(variant);
+                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d", Variant::get_type_name(type), uitos((uintptr_t) variant), env->pending_delete_.space_left());
+                            env->pending_delete_.write(variant);
                             return;
                         }
                         JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
@@ -351,7 +353,6 @@ namespace jsb
         void on_context_destroyed(const v8::Local<v8::Context>& p_context);
 
         static std::shared_ptr<Environment> _access(void* p_runtime);
-        void enqueue_variant_dealloc(Variant* p_var);
         void exec_sync_delete();
 
         // [low level binding] unbind a raw pointer from javascript object lifecycle

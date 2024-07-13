@@ -186,7 +186,7 @@ namespace jsb
 #endif
     }
 
-    Environment::Environment()
+    Environment::Environment() : pending_delete_(nearest_shift(JSB_VARIANT_DELETION_QUEUE_SIZE - 1))
     {
         JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
         static GlobalInitialize global_initialize;
@@ -279,21 +279,14 @@ namespace jsb
         isolate_ = nullptr;
 
         exec_sync_delete();
-        jsb_check(sync_delete_.is_empty());
 
     }
 
     void Environment::exec_sync_delete()
     {
-        Vector<Variant*> pointers;
-
-        spin_lock_.lock();
-        pointers.append_array(sync_delete_);
-        sync_delete_.clear();
-        spin_lock_.unlock();
-
-        for (Variant* variant : pointers)
+        while (pending_delete_.data_left())
         {
+            Variant* variant = pending_delete_.read();
             JSB_LOG(Verbose, "exec_sync_delete variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
             dealloc_variant(variant);
         }
@@ -324,7 +317,7 @@ namespace jsb
 #if JSB_WITH_DEBUGGER
         debugger_->update();
 #endif
-        if (!sync_delete_.is_empty())
+        if (pending_delete_.data_left())
         {
             exec_sync_delete();
         }
@@ -348,14 +341,6 @@ namespace jsb
     {
         return EnvironmentStore::get_shared().access(p_runtime);
     }
-
-    void Environment::enqueue_variant_dealloc(Variant* p_var)
-    {
-        spin_lock_.lock();
-        sync_delete_.append(p_var);
-        spin_lock_.unlock();
-    }
-
 
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {
