@@ -195,21 +195,20 @@ Error GodotJSScript::reload(bool p_keep_state)
         }
     }
 
-    // discard all cached methods
-    release_cached_methods();
-
-    //TODO `Callable` objects bound with this script should be invalidated somehow?
-    // ...
-
     if (p_keep_state)
     {
         // (common situation) preserve the object and change it's prototype
         const StringName& module_id = get_script_class_info().module_id;
-        if (!get_realm()->reload_module(module_id))
+        if (get_realm()->reload_module(module_id))
         {
-            return ERR_DOES_NOT_EXIST;
+            // discard all cached methods
+            release_cached_methods();
+
+            //TODO `Callable` objects bound with this script should be invalidated somehow?
+            // ...
+
+            loaded_ = false;
         }
-        loaded_ = false;
         return OK;
     }
 

@@ -19,7 +19,14 @@ namespace jsb
         v8::Global<v8::Object> module;
         v8::Global<v8::Value> exports;
 
+#if JSB_SUPPORT_RELOAD
         bool reload_requested = false;
+        uint64_t time_modified = 0;
+
+        jsb_force_inline bool is_loaded() const { return !reload_requested; }
+#else
+        jsb_force_inline bool is_loaded() const { return true; }
+#endif
 
         void on_load(v8::Isolate* isolate, const v8::Local<v8::Context>& context);
     };

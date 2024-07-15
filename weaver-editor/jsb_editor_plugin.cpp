@@ -36,7 +36,7 @@ void GodotJSEditorPlugin::_notification(int p_what)
 
 void GodotJSEditorPlugin::_scan_external_changes()
 {
-    //TODO manually scan changes if not using internal ScriptEditor
+    //TODO manually scan changes of modules (modules not attached with GodotJS script are not automatically reloaded by resource manager)
 }
 
 void GodotJSEditorPlugin::_on_menu_pressed(int p_what)

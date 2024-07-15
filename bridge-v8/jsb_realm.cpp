@@ -34,6 +34,7 @@ namespace jsb
 
     bool Realm::reload_module(const StringName& p_module_id)
     {
+#if JSB_SUPPORT_RELOAD
         environment_->check_internal_state();
         if (JavaScriptModule* existing_module = module_cache_.find(p_module_id))
         {
@@ -42,6 +43,7 @@ namespace jsb
             existing_module->reload_requested = true;
             return true;
         }
+#endif
         return false;
     }
 
@@ -49,7 +51,7 @@ namespace jsb
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _load_module);
         JavaScriptModule* existing_module = module_cache_.find(p_module_id);
-        if (existing_module && !existing_module->reload_requested)
+        if (existing_module && existing_module->is_loaded())
         {
             return existing_module;
         }
@@ -98,7 +100,7 @@ namespace jsb
 
             // check again with the resolved module_id
             existing_module = module_cache_.find(module_id);
-            if (existing_module && !existing_module->reload_requested)
+            if (existing_module && existing_module->is_loaded())
             {
                 return existing_module;
             }
@@ -110,7 +112,9 @@ namespace jsb
                 jsb_check(existing_module->path == asset_path);
 
                 JSB_LOG(VeryVerbose, "reload module %s", module_id);
+#if JSB_SUPPORT_RELOAD
                 existing_module->reload_requested = false;
+#endif
                 if (!resolver->load(this, asset_path, *existing_module))
                 {
                     return nullptr;

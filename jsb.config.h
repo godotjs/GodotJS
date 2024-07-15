@@ -24,6 +24,8 @@
 #   define JSB_MIN_LOG_LEVEL Warning
 #endif
 
+#define JSB_SUPPORT_RELOAD 1
+
 // print benchmark
 #define JSB_BENCHMARK 1
 
