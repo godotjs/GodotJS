@@ -827,13 +827,10 @@ namespace jsb
             case IF_ObjectFieldCount:
                 {
                     void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-#if JSB_VERIFY_OBJECT
-                    if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
-                        !class_info || class_info->type != NativeClassType::GodotObject)
+                    if (!Environment::wrap(isolate)->verify_object(pointer))
                     {
                         return false;
                     }
-#endif
                     r_cvar = (Object*) pointer;
                     return true;
                 }
@@ -865,10 +862,10 @@ namespace jsb
                 if (!p_val->IsObject()) return false;
                 v8::Local<v8::Object> self = p_val.As<v8::Object>();
                 if (self->InternalFieldCount() != IF_ObjectFieldCount) return false;
+
 #if JSB_VERIFY_OBJECT
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
-                    !class_info || class_info->type != NativeClassType::GodotObject)
+                if (!Environment::wrap(isolate)->verify_object(pointer))
                 {
                     return false;
                 }
@@ -944,13 +941,10 @@ namespace jsb
         }
 
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-#if JSB_VERIFY_OBJECT
-        if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
-            !class_info || class_info->type != NativeClassType::GodotObject)
+        if (!Environment::wrap(isolate)->verify_object(pointer))
         {
             return false;
         }
-#endif
         r_godot_obj = (Object*) pointer;
         return true;
     }
@@ -1029,13 +1023,10 @@ namespace jsb
                 }
 
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-#if JSB_VERIFY_OBJECT
-                if (const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
-                    !class_info || class_info->type != NativeClassType::GodotObject)
+                if (!Environment::wrap(isolate)->verify_object(pointer))
                 {
                     return false;
                 }
-#endif
                 r_cvar = (Object*) pointer;
                 return true;
             }

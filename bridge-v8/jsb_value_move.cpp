@@ -47,13 +47,10 @@ namespace jsb
             case IF_ObjectFieldCount:
                 {
                     Object* pointer = (Object*) self->GetAlignedPointerFromInternalField(IF_Pointer);
-#if JSB_VERIFY_OBJECT
-                    const NativeClassInfo* class_info = Environment::wrap(isolate)->find_object_class(pointer);
-                    if (!class_info || class_info->type != NativeClassType::GodotObject)
+                    if (!Environment::wrap(isolate)->verify_object(pointer))
                     {
                         return vformat("BadPointer: %s", uitos((uintptr_t) pointer));
                     }
-#endif
                     return vformat("Object: %s", pointer ? "null" : pointer->to_string());
                 }
             case IF_VariantFieldCount:

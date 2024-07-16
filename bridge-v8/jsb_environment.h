@@ -238,20 +238,30 @@ namespace jsb
             return nullptr;
         }
 
+        /**
+         * Check if the type of `p_pointer` is NativeClassType::GodotObject.
+         * \note the return value does not stand for an alive object.
+         * \note return true if the pointer is null, since null can be treated as any null Object.
+         */
+        jsb_force_inline bool verify_object(void* p_pointer) const
+        {
+#if JSB_VERIFY_OBJECT
+            if (jsb_likely(p_pointer))
+            {
+                if (const NativeClassInfo* class_info = find_object_class(p_pointer);
+                    !class_info || class_info->type != NativeClassType::GodotObject)
+                {
+                    return false;
+                }
+            }
+#endif
+            return true;
+        }
+
         jsb_force_inline NativeClassType::Type get_object_type(void* p_pointer) const
         {
             if (const NativeClassInfo* class_info = find_object_class(p_pointer)) return class_info->type;
             return NativeClassType::None;
-        }
-
-        jsb_force_inline NativeClassID get_object_class_id(void* p_pointer) const
-        {
-            if (const NativeObjectID* it = objects_index_.getptr(p_pointer))
-            {
-                const ObjectHandle& handle = objects_.get_value(*it);
-                return handle.class_id;
-            }
-            return NativeClassID();
         }
 
         // return true if can die
