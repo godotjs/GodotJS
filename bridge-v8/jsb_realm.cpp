@@ -44,13 +44,19 @@ namespace jsb
             // skip modules if time_modified is unknown
             if (module->time_modified == 0) continue;
 
-            //TODO inconsistent implementation, since the original time modified is read in module resolvers
+            //TODO inconsistent implementation, since the original time modified is read in module resolvers (SourceReader)
             const uint64_t latest_time = FileAccess::get_modified_time(module->path);
             if (latest_time && latest_time != module->time_modified)
             {
                 module->time_modified = latest_time;
-                module->reload_requested = true;
-                requested_modules.append(module->id);
+
+                const String latest_hash = FileAccess::get_md5(module->path);
+                if (!latest_hash.is_empty() && latest_hash != module->hash)
+                {
+                    module->hash = latest_hash;
+                    module->reload_requested = true;
+                    requested_modules.append(module->id);
+                }
             }
         }
 

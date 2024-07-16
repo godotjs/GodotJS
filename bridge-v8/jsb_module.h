@@ -33,6 +33,7 @@ namespace jsb
 #if JSB_SUPPORT_RELOAD
         bool reload_requested = false;
         uint64_t time_modified = 0;
+        String hash;
 
         jsb_force_inline bool is_loaded() const { return !reload_requested; }
 #else

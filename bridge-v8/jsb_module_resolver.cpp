@@ -191,6 +191,7 @@ namespace jsb
         const Vector<uint8_t> source = read_all_bytes(reader);
 #if JSB_SUPPORT_RELOAD
         p_module.time_modified = reader.get_time_modified();
+        p_module.hash = reader.get_hash();
 #endif
         return load_from_source(p_realm, p_module, filename_abs, source);
     }
