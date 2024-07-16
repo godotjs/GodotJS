@@ -188,11 +188,13 @@ namespace jsb
         // caller should handle the exception if it's not called from js
         JavaScriptModule* _load_module(const String& p_parent_id, const String& p_module_id);
 
-        // manually scan changes of modules
+        // manually scan changes of modules,
+        // will reload IMMEDIATELY
         // (modules not attached with GodotJS script are not automatically reloaded by resource manager)
         void scan_external_changes();
 
-        // request to reload a module
+        // request to reload a module,
+        // will reload until next load.
         EReloadResult::Type mark_as_reloading(const StringName& p_name);
 
         /**

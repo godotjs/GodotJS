@@ -10,6 +10,30 @@ namespace jsb
         module.Get(isolate)->Set(context, environment->GetStringValue(loaded), v8::Boolean::New(isolate, true)).Check();
     }
 
+    bool JavaScriptModule::mark_as_reloading()
+    {
+#if JSB_SUPPORT_RELOAD
+        if (!is_reloadable()) return false;
+
+        //TODO reload all related modules (search the module graph) ?
+        //TODO inconsistent implementation, since the original time modified is read in module resolvers (SourceReader)
+        const uint64_t latest_time = FileAccess::get_modified_time(path);
+        if (latest_time && latest_time != time_modified)
+        {
+            time_modified = latest_time;
+
+            const String latest_hash = FileAccess::get_md5(path);
+            if (!latest_hash.is_empty() && latest_hash != hash)
+            {
+                hash = latest_hash;
+                reload_requested = true;
+                return true;
+            }
+        }
+#endif
+        return false;
+    }
+
     JavaScriptModule& JavaScriptModuleCache::insert(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& p_name, bool p_main_candidate, bool p_init_loaded)
     {
         jsb_checkf(!((String) p_name).is_empty(), "empty module name is not allowed");

@@ -166,7 +166,7 @@ namespace jsb
                         if (const std::shared_ptr<Environment> env = _access(deleter_data))
                         {
                             JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d thread:%s", Variant::get_type_name(type), uitos((uintptr_t) variant), env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
-                            // we assume that there is only one scavenger thread (or one active thread at least)
+                            // we assume that there is only one scavenger thread (or one active thread at most)
                             env->pending_delete_.write(variant);
                             return;
                         }

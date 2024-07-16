@@ -36,11 +36,17 @@ namespace jsb
         String hash;
 
         jsb_force_inline bool is_loaded() const { return !reload_requested; }
+
+        // can't reload modules if it's time_modified is unknown or non-file modules
+        bool is_reloadable() const { return time_modified != 0 && !path.is_empty(); }
 #else
-        jsb_force_inline bool is_loaded() const { return true; }
+        jsb_force_inline constexpr bool is_loaded() const { return true; }
+        jsb_force_inline constexpr bool is_reloadable() const { return false; }
 #endif
 
         void on_load(v8::Isolate* isolate, const v8::Local<v8::Context>& context);
+        bool mark_as_reloading();
+
     };
 
     struct JavaScriptModuleCache
