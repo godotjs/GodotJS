@@ -7,6 +7,7 @@ Core:
     ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
     ☐ errors on script reloading
     ☐ codegen: generate `signal` with type annotation for arguments
+    ✔ codegen: accept JS Array as godot packed array @done(24-07-16)
     ✔ output verbose log into stdout only @done(24-07-04)
     ✔ release cached methods on script reloading @done(24-07-04)
     ✔ expose indexed accesor of godot primitive types (set_indexed/get_indexed) @done(24-07-05)
@@ -34,11 +35,11 @@ Core:
     ✔ `console.log` prints readable strings for godot `Object` and `Variant`  @done(24-05-23)
 
 Scripting:
-    ☐ unexpected reloading (only datetime changed)
+    ✔ unexpected reloading (only datetime changed) @done(24-07-16)
     ☐ add `preload` support
     ✔ check if `call_prelude` is called even if `_ready` is not defined in script @done(24-07-10)
     ✔ scriptable EditorInspectorPlugin @done(24-07-12 21:45)
-    ☐ scriptable EditorPlugin
+    ✔ scriptable EditorPlugin @done(24-07-16)
     ☐ REPL: retrieve input history with `up/down` key
     ✔ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11) @done(24-05-29)
     ✔ handle default argument values when calling Variant type methods @done(24-05-23)
