@@ -31,7 +31,10 @@ if (!jsb.TOOLS_ENABLED) {
 //TODO use godot.MethodFlags.METHOD_FLAG_VARARG
 const METHOD_FLAG_VARARG = 16;
 const MockLines = [
+    "type byte = number",
+    "type int32 = number",
     "type int64 = number",
+    "type float32 = number",
     "type float64 = number",
     "type unresolved = any",
 ];
@@ -93,7 +96,6 @@ const PrimitiveTypesSet = (function () {
         let str = (0, godot_1.type_string)(godot_1.Variant.Type[name]);
         if (str.length != 0) {
             set.add(str);
-            console.log("PrimitiveTypesSet:", str);
         }
     }
     return set;
@@ -104,6 +106,21 @@ function get_primitive_type_name(type) {
         return primitive_name;
     }
     return (0, godot_1.type_string)(type);
+}
+function get_primitive_type_name_as_input(type) {
+    const primitive_name = get_primitive_type_name(type);
+    switch (type) {
+        case godot_1.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(godot_1.Variant.Type.TYPE_COLOR)}>`;
+        case godot_1.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(godot_1.Variant.Type.TYPE_VECTOR2)}>`;
+        case godot_1.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(godot_1.Variant.Type.TYPE_VECTOR3)}>`;
+        case godot_1.Variant.Type.TYPE_PACKED_STRING_ARRAY: return primitive_name + " | Array<string>";
+        case godot_1.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return primitive_name + " | Array<float32>";
+        case godot_1.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return primitive_name + " | Array<float64>";
+        case godot_1.Variant.Type.TYPE_PACKED_INT32_ARRAY: return primitive_name + " | Array<int32>";
+        case godot_1.Variant.Type.TYPE_PACKED_INT64_ARRAY: return primitive_name + " | Array<int64>";
+        case godot_1.Variant.Type.TYPE_PACKED_BYTE_ARRAY: return primitive_name + " | Array<byte> | ArrayBuffer";
+        default: return primitive_name;
+    }
 }
 function replace(name) {
     const rep = KeywordReplacement[name];
@@ -351,7 +368,6 @@ class ClassWriter extends IndentWriter {
         if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
             return;
         }
-        const type_name = this.types.make_typename(getset_info.info);
         console.assert(getset_info.getter.length != 0);
         DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.properties[getset_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
         this._separator_line = true;
@@ -359,20 +375,19 @@ class ClassWriter extends IndentWriter {
         // `node.position.x = 0;` (Although, it works in GDScript)
         //
         // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
-        this.line(`get ${getset_info.name}(): ${type_name}`);
+        this.line(`get ${getset_info.name}(): ${this.types.make_typename(getset_info.info, false)}`);
         if (getset_info.setter.length != 0) {
-            this.line(`set ${getset_info.name}(value: ${type_name})`);
+            this.line(`set ${getset_info.name}(value: ${this.types.make_typename(getset_info.info, true)})`);
         }
     }
     primitive_property_(property_info) {
         this._separator_line = true;
-        const type_name = get_primitive_type_name(property_info.type);
-        this.line(`get ${property_info.name}(): ${type_name}`);
-        this.line(`set ${property_info.name}(value: ${type_name})`);
+        this.line(`get ${property_info.name}(): ${get_primitive_type_name(property_info.type)}`);
+        this.line(`set ${property_info.name}(value: ${get_primitive_type_name_as_input(property_info.type)})`);
     }
     constructor_(constructor_info) {
         this._separator_line = true;
-        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${get_primitive_type_name(it.type)}`).join(", ");
+        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${get_primitive_type_name_as_input(it.type)}`).join(", ");
         this.line(`constructor(${args})`);
     }
     constructor_ex_() {
@@ -381,8 +396,8 @@ class ClassWriter extends IndentWriter {
     operator_(operator_info) {
         this._separator_line = true;
         const return_type_name = get_primitive_type_name(operator_info.return_type);
-        const left_type_name = get_primitive_type_name(operator_info.left_type);
-        const right_type_name = get_primitive_type_name(operator_info.right_type);
+        const left_type_name = get_primitive_type_name_as_input(operator_info.left_type);
+        const right_type_name = get_primitive_type_name_as_input(operator_info.right_type);
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
     virtual_method_(method_info) {
@@ -525,7 +540,7 @@ class TypeDB {
         }
         return true;
     }
-    make_classname(class_name) {
+    make_classname(class_name, used_as_input) {
         const types = this;
         const remap_name = RemapTypes[class_name];
         if (typeof remap_name !== "undefined") {
@@ -561,23 +576,23 @@ class TypeDB {
             return `any /*${class_name}*/`;
         }
     }
-    make_typename(info) {
+    make_typename(info, used_as_input) {
         if (info.hint == godot_1.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return info.hint_string.split(",").map(class_name => this.make_classname(class_name)).join(" | ");
+            return info.hint_string.split(",").map(class_name => this.make_classname(class_name, used_as_input)).join(" | ");
         }
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
         if (info.class_name.length == 0) {
-            const primitive_name = get_primitive_type_name(info.type);
+            const primitive_name = used_as_input ? get_primitive_type_name_as_input(info.type) : get_primitive_type_name(info.type);
             if (typeof primitive_name !== "undefined") {
                 return primitive_name;
             }
             return `any /*unhandled: ${info.type}*/`;
         }
-        return this.make_classname(info.class_name);
+        return this.make_classname(info.class_name, used_as_input);
     }
     make_arg(info) {
-        return `${replace(info.name)}: ${this.make_typename(info)}`;
+        return `${replace(info.name)}: ${this.make_typename(info, true)}`;
     }
     make_literal_value(value) {
         // plain types
@@ -646,7 +661,7 @@ class TypeDB {
     make_return(method_info) {
         //TODO
         if (typeof method_info.return_ != "undefined") {
-            return this.make_typename(method_info.return_);
+            return this.make_typename(method_info.return_, false);
         }
         return "void";
     }

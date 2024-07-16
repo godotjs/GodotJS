@@ -31,7 +31,10 @@ interface ScopeWriter extends CodeWriter {
 }
 
 const MockLines = [
+    "type byte = number",
+    "type int32 = number",
     "type int64 = number",
+    "type float32 = number",
     "type float64 = number",
     "type unresolved = any",
 ]
@@ -101,7 +104,6 @@ const PrimitiveTypesSet =  (function (): Set<string> {
         let str = type_string(<any> Variant.Type[name]); 
         if (str.length != 0) {
             set.add(str);
-            console.log("PrimitiveTypesSet:", str);
         }
     }
     return set;
@@ -114,6 +116,23 @@ function get_primitive_type_name(type: Variant.Type): string | undefined {
     }
 
     return type_string(type);
+}
+
+function get_primitive_type_name_as_input(type: Variant.Type): string | undefined {
+    const primitive_name = get_primitive_type_name(type);
+
+    switch (type) {
+        case Variant.Type.TYPE_PACKED_COLOR_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(Variant.Type.TYPE_COLOR)}>`;
+        case Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(Variant.Type.TYPE_VECTOR2)}>`;
+        case Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(Variant.Type.TYPE_VECTOR3)}>`;
+        case Variant.Type.TYPE_PACKED_STRING_ARRAY: return primitive_name + " | Array<string>";
+        case Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return primitive_name + " | Array<float32>";
+        case Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return primitive_name + " | Array<float64>";
+        case Variant.Type.TYPE_PACKED_INT32_ARRAY: return primitive_name + " | Array<int32>";
+        case Variant.Type.TYPE_PACKED_INT64_ARRAY: return primitive_name + " | Array<int64>";
+        case Variant.Type.TYPE_PACKED_BYTE_ARRAY: return primitive_name + " | Array<byte> | ArrayBuffer";
+        default: return primitive_name;
+    }
 }
 
 function replace(name: string) {
@@ -407,7 +426,6 @@ class ClassWriter extends IndentWriter {
         if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
             return;
         }
-        const type_name = this.types.make_typename(getset_info.info);
         console.assert(getset_info.getter.length != 0);        
         DocCommentHelper.write(this, this._doc?.properties[getset_info.name]?.description, this._separator_line);
         this._separator_line = true;
@@ -417,23 +435,22 @@ class ClassWriter extends IndentWriter {
         //
         // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
 
-        this.line(`get ${getset_info.name}(): ${type_name}`);
+        this.line(`get ${getset_info.name}(): ${this.types.make_typename(getset_info.info, false)}`);
         if (getset_info.setter.length != 0) {
-            this.line(`set ${getset_info.name}(value: ${type_name})`);
+            this.line(`set ${getset_info.name}(value: ${this.types.make_typename(getset_info.info, true)})`);
         }
     }
 
     primitive_property_(property_info: jsb.editor.PrimitiveGetSetInfo) {
         this._separator_line = true;
-        const type_name = get_primitive_type_name(property_info.type);
 
-        this.line(`get ${property_info.name}(): ${type_name}`);
-        this.line(`set ${property_info.name}(value: ${type_name})`);
+        this.line(`get ${property_info.name}(): ${get_primitive_type_name(property_info.type)}`);
+        this.line(`set ${property_info.name}(value: ${get_primitive_type_name_as_input(property_info.type)})`);
     }
 
     constructor_(constructor_info: jsb.editor.ConstructorInfo) {
         this._separator_line = true;
-        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${get_primitive_type_name(it.type)}`).join(", ");
+        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${get_primitive_type_name_as_input(it.type)}`).join(", ");
         this.line(`constructor(${args})`);
     }
 
@@ -444,8 +461,8 @@ class ClassWriter extends IndentWriter {
     operator_(operator_info: jsb.editor.OperatorInfo) {
         this._separator_line = true;
         const return_type_name = get_primitive_type_name(operator_info.return_type);
-        const left_type_name = get_primitive_type_name(operator_info.left_type);
-        const right_type_name = get_primitive_type_name(operator_info.right_type);
+        const left_type_name = get_primitive_type_name_as_input(operator_info.left_type);
+        const right_type_name = get_primitive_type_name_as_input(operator_info.right_type);
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
 
@@ -617,7 +634,7 @@ class TypeDB {
         return true;
     }
     
-    make_classname(class_name: string): string {
+    make_classname(class_name: string, used_as_input: boolean): string {
         const types = this;
         const remap_name: string | undefined = RemapTypes[class_name];
         if (typeof remap_name !== "undefined") {
@@ -653,26 +670,26 @@ class TypeDB {
         }
     }
 
-    make_typename(info: jsb.editor.PropertyInfo): string {
+    make_typename(info: jsb.editor.PropertyInfo, used_as_input: boolean): string {
         if (info.hint == PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return info.hint_string.split(",").map(class_name => this.make_classname(class_name)).join(" | ")
+            return info.hint_string.split(",").map(class_name => this.make_classname(class_name, used_as_input)).join(" | ")
         }
 
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
         if (info.class_name.length == 0) {
-            const primitive_name = get_primitive_type_name(info.type);
+            const primitive_name = used_as_input ? get_primitive_type_name_as_input(info.type) : get_primitive_type_name(info.type);
             if (typeof primitive_name !== "undefined") {
                 return primitive_name;
             }
             return `any /*unhandled: ${info.type}*/`;
         }
         
-        return this.make_classname(info.class_name);
+        return this.make_classname(info.class_name, used_as_input);
     }
 
     make_arg(info: jsb.editor.PropertyInfo): string {
-        return `${replace(info.name)}: ${this.make_typename(info)}`
+        return `${replace(info.name)}: ${this.make_typename(info, true)}`
     }
 
     make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
@@ -737,7 +754,7 @@ class TypeDB {
     make_return(method_info: jsb.editor.MethodBind): string {
         //TODO
         if (typeof method_info.return_ != "undefined") {
-            return this.make_typename(method_info.return_)
+            return this.make_typename(method_info.return_, false)
         }
         return "void"
     }
