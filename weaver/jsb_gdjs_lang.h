@@ -25,7 +25,7 @@ public:
     jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
 
     // main context
-    jsb_force_inline std::shared_ptr<jsb::Realm> get_context() const { return realm_; }
+    jsb_force_inline std::shared_ptr<jsb::Realm> get_realm() const { jsb_check(once_inited_ && realm_); return realm_; }
 
     jsb::JSValueMove eval_source(const String& p_code, Error& r_err);
 
@@ -100,7 +100,7 @@ public:
     }
     virtual void get_public_annotations(List<MethodInfo>* p_annotations) const override
     {
-    };
+    }
 
     virtual void profiling_start() override
     {

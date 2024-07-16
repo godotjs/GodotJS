@@ -32,19 +32,50 @@ namespace jsb
         return new_id;
     }
 
-    bool Realm::reload_module(const StringName& p_module_id)
+    void Realm::scan_external_changes()
     {
 #if JSB_SUPPORT_RELOAD
-        environment_->check_internal_state();
-        if (JavaScriptModule* existing_module = module_cache_.find(p_module_id))
+        Vector<StringName> requested_modules;
+        for (const KeyValue<StringName, JavaScriptModule*>& kv : module_cache_.modules_)
+        {
+            JavaScriptModule* module = kv.value;
+            // skip script modules which are managed by the godot editor
+            if (module->default_class_id) continue;
+            // skip modules if time_modified is unknown
+            if (module->time_modified == 0) continue;
+
+            //TODO inconsistent implementation, since the original time modified is read in module resolvers
+            const uint64_t latest_time = FileAccess::get_modified_time(module->path);
+            if (latest_time && latest_time != module->time_modified)
+            {
+                module->time_modified = latest_time;
+                module->reload_requested = true;
+                requested_modules.append(module->id);
+            }
+        }
+
+        for (const StringName& id : requested_modules)
+        {
+            JSB_LOG(Verbose, "changed module check: %s", id);
+            load(id);
+        }
+#endif
+    }
+
+    EReloadResult::Type Realm::mark_as_reloading(const StringName& p_name)
+    {
+#if JSB_SUPPORT_RELOAD
+        if (JavaScriptModule* existing_module = module_cache_.find(p_name))
         {
             jsb_check(!existing_module->path.is_empty());
             //TODO reload all related modules (search the module graph)
             existing_module->reload_requested = true;
-            return true;
+            return EReloadResult::Requested;
         }
+        return EReloadResult::NoSuchModule;
+#else
+        return EReloadResult::Disabled;
 #endif
-        return false;
     }
 
     JavaScriptModule* Realm::_load_module(const String& p_parent_id, const String& p_module_id)

@@ -199,7 +199,7 @@ Error GodotJSScript::reload(bool p_keep_state)
     {
         // (common situation) preserve the object and change it's prototype
         const StringName& module_id = get_script_class_info().module_id;
-        if (get_realm()->reload_module(module_id))
+        if (get_realm()->mark_as_reloading(module_id) == jsb::EReloadResult::Requested)
         {
             // discard all cached methods
             release_cached_methods();
@@ -365,7 +365,7 @@ void GodotJSScript::load_module()
 
     const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
     const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
-    std::shared_ptr<jsb::Realm> realm = lang->get_context();
+    std::shared_ptr<jsb::Realm> realm = lang->get_realm();
 
     realm_id_ = realm->id();
     loaded_ = true;

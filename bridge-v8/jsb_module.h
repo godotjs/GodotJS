@@ -6,6 +6,17 @@
 
 namespace jsb
 {
+    namespace EReloadResult
+    {
+        enum Type
+        {
+            NoSuchModule,
+            NoChanges,
+            Requested,
+            Disabled,
+        };
+    }
+
     struct JavaScriptModule
     {
         StringName id;
@@ -34,6 +45,8 @@ namespace jsb
     struct JavaScriptModuleCache
     {
     private:
+        friend class Realm;
+
         StringName main_;
         HashMap<StringName, JavaScriptModule*> modules_;
         v8::Global<v8::Object> cache_object_;
@@ -62,8 +75,8 @@ namespace jsb
 
         jsb_force_inline JavaScriptModule* find(const StringName& p_name) const
         {
-            const HashMap<StringName, JavaScriptModule*>::ConstIterator it = modules_.find(p_name);
-            return it != modules_.end() ? it->value : nullptr;
+            JavaScriptModule* const * it = modules_.getptr(p_name);
+            return it ? *it : nullptr;
         }
 
         jsb_force_inline JavaScriptModule* get_main() const

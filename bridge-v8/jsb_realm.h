@@ -51,7 +51,6 @@ namespace jsb
             PrimitiveTypeRegisterFunc register_func = nullptr;
         };
 
-        //TODO
         GodotPrimitiveImport godot_primitive_index_[Variant::VARIANT_MAX] = {};
         HashMap<StringName, Variant::Type> godot_primitive_map_;
 
@@ -189,8 +188,12 @@ namespace jsb
         // caller should handle the exception if it's not called from js
         JavaScriptModule* _load_module(const String& p_parent_id, const String& p_module_id);
 
+        // manually scan changes of modules
+        // (modules not attached with GodotJS script are not automatically reloaded by resource manager)
+        void scan_external_changes();
+
         // request to reload a module
-        bool reload_module(const StringName& p_module_id);
+        EReloadResult::Type mark_as_reloading(const StringName& p_name);
 
         /**
          * Translate a Godot object into a javascript object. The type of `p_object_obj` will be automatically exposed to the context if not existed.

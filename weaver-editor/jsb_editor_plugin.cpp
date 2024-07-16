@@ -36,7 +36,10 @@ void GodotJSEditorPlugin::_notification(int p_what)
 
 void GodotJSEditorPlugin::_scan_external_changes()
 {
-    //TODO manually scan changes of modules (modules not attached with GodotJS script are not automatically reloaded by resource manager)
+    if (GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton())
+    {
+        lang->get_realm()->scan_external_changes();
+    }
 }
 
 void GodotJSEditorPlugin::_on_menu_pressed(int p_what)
@@ -239,7 +242,7 @@ void GodotJSEditorPlugin::load_editor_entry_module()
 
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
-    const Error err = lang->get_context()->load("jsb/jsb.editor.main");
+    const Error err = lang->get_realm()->load("jsb/jsb.editor.main");
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.main");
 }
 

@@ -13,7 +13,7 @@ Add TypeScript/JavaScript Support for Godot 4.x with v8.
 * [x] Godot ScriptLanguage integration
 * [x] Debug with Chrome devtools when using V8
 * [x] REPL in Editor
-* [ ] Hot-reloading
+* [x] Hot-reloading
 * [ ] Asynchronous module loading (`import` function)
 * [ ] Sandboxed scripting (not multi-threading)
 * [ ] Worker threads
