@@ -12,7 +12,7 @@ namespace jsb
     {
         v8::TryCatch try_catch(isolate);
         isolate->ThrowError("");
-        if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch, false))
+        if (const JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch, false))
         {
             sb.append("\n");
             sb.append(exception_info);

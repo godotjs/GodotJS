@@ -1,11 +1,14 @@
 ﻿#include "jsb_source_map_cache.h"
 #include "jsb_path_util.h"
+#include "jsb_settings.h"
 #include "modules/regex/regex.h"
 
 namespace jsb::internal
 {
-    String SourceMapCache::handle_source_map(const String& p_stacktrace)
+#if JSB_WITH_SOURCEMAP
+    String SourceMapCache::process_source_position(const String& p_stacktrace)
     {
+        if (!internal::Settings::get_sourcemap_enabled()) return p_stacktrace;
         if (p_stacktrace.length() == 0) return p_stacktrace;
         if (source_map_match1_.is_null()) source_map_match1_ = RegEx::create_from_string(R"(\s+at\s(.+)\s\((.+\.js):(\d+):(\d+)\))");
         if (source_map_match2_.is_null()) source_map_match2_ = RegEx::create_from_string(R"(\s+at\s(.+\.js):(\d+):(\d+))");
@@ -24,7 +27,7 @@ namespace jsb::internal
             const int line = (int) match->get_string(group_index + 2).to_int();
             const int col = (int) match->get_string(group_index + 3).to_int();
 
-            SourceMap* map = find_source_map(filename);
+            const SourceMap* map = find_source_map(filename);
             if (!map) continue;
             SourcePosition position;
             if (!map->find(line, col, position)) continue;
@@ -53,6 +56,14 @@ namespace jsb::internal
         return ret;
     }
 
+    void SourceMapCache::invalidate(const String& p_filename)
+    {
+        if (cached_source_maps_.erase(p_filename))
+        {
+            JSB_LOG(Verbose, "invalidating source map cache of file %s", p_filename);
+        }
+    }
+
     SourceMap* SourceMapCache::find_source_map(const String& p_filename)
     {
         HashMap<String, SourceMap>::Iterator it = cached_source_maps_.find(p_filename);
@@ -70,4 +81,8 @@ namespace jsb::internal
         }
         return &map;
     }
+#else
+    String SourceMapCache::process_source_position(const String& p_stacktrace) { return p_stacktrace; }
+    void SourceMapCache::invalidate(const String& p_filename) {}
+#endif
 }

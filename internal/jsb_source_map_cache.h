@@ -9,15 +9,19 @@ namespace jsb::internal
 {
     struct SourceMapCache
     {
-        // replace position in the stacktrace with source map
-        String handle_source_map(const String& p_stacktrace);
+        // try to translate the source positions in stacktrace
+        String process_source_position(const String& p_stacktrace);
+
+        void invalidate(const String& p_filename);
 
     private:
+#if JSB_WITH_SOURCEMAP
         SourceMap* find_source_map(const String& p_filename);
 
         Ref<RegEx> source_map_match1_;
         Ref<RegEx> source_map_match2_;
         HashMap<String, SourceMap> cached_source_maps_;
+#endif
     };
 }
 

@@ -15,9 +15,7 @@
 #include "../internal/jsb_variant_allocator.h"
 #include "core/templates/ring_buffer.h"
 
-#if JSB_WITH_SOURCEMAP
 #include "../internal/jsb_source_map_cache.h"
-#endif
 
 #define GetStringValue(name) get_string_value(jsb_string_name(name))
 #define SymbolFor(name) get_symbol(Symbols::name)
@@ -107,9 +105,7 @@ namespace jsb
         std::unique_ptr<class JavaScriptDebugger> debugger_;
 #endif
 
-#if JSB_WITH_SOURCEMAP
         internal::SourceMapCache _source_map_cache;
-#endif
 
     public:
         Environment();
@@ -120,8 +116,7 @@ namespace jsb
 
         jsb_force_inline void check_internal_state() const { jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet"); }
 
-        // try to translate the source positions in stacktrace
-        String handle_source_map(const String& p_stacktrace);
+        jsb_force_inline internal::SourceMapCache& get_source_map_cache() { return _source_map_cache; }
 
         jsb_force_inline void notify_microtasks_run() { microtasks_run_ = true; }
 
@@ -287,7 +282,12 @@ namespace jsb
         template<typename T, typename... ArgumentTypes>
         T& add_module_loader(const StringName& p_module_id, ArgumentTypes&&... p_args)
         {
-            jsb_ensure(!module_loaders_.has(p_module_id));
+            if (const HashMap<StringName, IModuleLoader*>::Iterator& it = module_loaders_.find(p_module_id))
+            {
+                JSB_LOG(Warning, "duplicated module loader %s", p_module_id);
+                memdelete(it->value);
+                module_loaders_.remove(it);
+            }
             T* loader = memnew(T(std::forward<ArgumentTypes>(p_args)...));
             module_loaders_.insert(p_module_id, loader);
             return *loader;

@@ -510,17 +510,6 @@ namespace jsb
         }
     }
 
-    String Environment::handle_source_map(const String& p_stacktrace)
-    {
-#if JSB_WITH_SOURCEMAP
-        if (internal::Settings::get_sourcemap_enabled())
-        {
-            return _source_map_cache.handle_source_map(p_stacktrace);
-        }
-#endif
-        return p_stacktrace;
-    }
-
     void Environment::print_statistics()
     {
         v8::HeapStatistics statistics;

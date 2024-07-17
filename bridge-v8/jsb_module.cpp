@@ -8,6 +8,11 @@ namespace jsb
     {
         Environment* environment = Environment::wrap(isolate);
         module.Get(isolate)->Set(context, environment->GetStringValue(loaded), v8::Boolean::New(isolate, true)).Check();
+
+        if (!path.is_empty())
+        {
+            environment->get_source_map_cache().invalidate(path);
+        }
     }
 
     bool JavaScriptModule::mark_as_reloading()

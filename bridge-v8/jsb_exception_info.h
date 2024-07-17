@@ -48,7 +48,7 @@ namespace jsb
 
             Environment* environment = Environment::wrap(p_isolate);
             if (!message_.is_empty()) message_ += "\n";
-            message_ += environment->handle_source_map(String(*stack_trace_utf8, stack_trace_utf8.length()));
+            message_ += environment->get_source_map_cache().process_source_position(String(*stack_trace_utf8, stack_trace_utf8.length()));
         }
     };
 
