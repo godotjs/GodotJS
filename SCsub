@@ -207,11 +207,9 @@ if env.editor_build:
     generate_code({
         # editor presets
         "scripts/out/jsb.editor.codegen.js": "",
-        "scripts/out/jsb.editor.codegen.js.map": "",
         "scripts/src/jsb.editor.main.ts": "",
 
         "scripts/out/jsb.editor.main.js": "",
-        "scripts/out/jsb.editor.main.js.map": "",
         "scripts/src/jsb.editor.codegen.ts": "",
 
         "scripts/godot-typings/godot.minimal.d.ts": "",
@@ -222,7 +220,6 @@ if env.editor_build:
         
         # runtime presets
         "scripts/out/jsb.core.js": "",
-        "scripts/out/jsb.core.js.map": "",
         "scripts/src/jsb.core.ts": "",
     })
     env_jsb.add_source_files(module_obj, "weaver-editor/*.cpp")

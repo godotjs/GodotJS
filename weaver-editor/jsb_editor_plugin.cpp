@@ -85,11 +85,6 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     install_files_.push_back({ "jsb.editor.main.ts", "res://jsb", jsb::CH_TYPESCRIPT });
 
     // files which could be generated from ts source with tsc by the user
-    install_files_.push_back({ "jsb.core.js.map", tsc_out_path, jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
-    install_files_.push_back({ "jsb.editor.codegen.js.map", tsc_out_path, jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
-    install_files_.push_back({ "jsb.editor.main.js.map", tsc_out_path, jsb::CH_TYPESCRIPT | jsb::CH_OPTIONAL });
-
-    // files which could be generated from ts source with tsc by the user
     install_files_.push_back({ "jsb.core.js", tsc_out_path, jsb::CH_JAVASCRIPT });
     install_files_.push_back({ "jsb.editor.codegen.js", tsc_out_path, jsb::CH_JAVASCRIPT });
     install_files_.push_back({ "jsb.editor.main.js", tsc_out_path, jsb::CH_JAVASCRIPT });
