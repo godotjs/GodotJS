@@ -119,19 +119,32 @@ function get_primitive_type_name(type: Variant.Type): string | undefined {
     return type_string(type);
 }
 
+function get_js_array_type_name(element_type_name: string | undefined) {
+    if (typeof element_type_name === "undefined" || element_type_name.length == 0) return "";
+
+    // avoid using Array due to the naming conflicts between Godot and JavaScript builtin types
+    // return `Array<${element_type_name}>`;
+    return `${element_type_name}[]`;
+}
+
+function join_type_name(...args: (string | undefined)[]) {
+    return args.filter(value => typeof value === "string" && value.length != 0).join(" | ");
+}
+
 function get_primitive_type_name_as_input(type: Variant.Type): string | undefined {
     const primitive_name = get_primitive_type_name(type);
-
+    let js_name: string = "";
+    
     switch (type) {
-        case Variant.Type.TYPE_PACKED_COLOR_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(Variant.Type.TYPE_COLOR)}>`;
-        case Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(Variant.Type.TYPE_VECTOR2)}>`;
-        case Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return primitive_name + ` | Array<${get_primitive_type_name(Variant.Type.TYPE_VECTOR3)}>`;
-        case Variant.Type.TYPE_PACKED_STRING_ARRAY: return primitive_name + " | Array<string>";
-        case Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return primitive_name + " | Array<float32>";
-        case Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return primitive_name + " | Array<float64>";
-        case Variant.Type.TYPE_PACKED_INT32_ARRAY: return primitive_name + " | Array<int32>";
-        case Variant.Type.TYPE_PACKED_INT64_ARRAY: return primitive_name + " | Array<int64>";
-        case Variant.Type.TYPE_PACKED_BYTE_ARRAY: return primitive_name + " | Array<byte> | ArrayBuffer";
+        case Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_COLOR)));
+        case Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_VECTOR2)));
+        case Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_VECTOR3)));
+        case Variant.Type.TYPE_PACKED_STRING_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("string"));
+        case Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float32"));
+        case Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float64"));
+        case Variant.Type.TYPE_PACKED_INT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int32"));
+        case Variant.Type.TYPE_PACKED_INT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int64"));
+        case Variant.Type.TYPE_PACKED_BYTE_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
         default: return primitive_name;
     }
 }
