@@ -4,9 +4,17 @@
 
 namespace jsb::internal
 {
-    struct SourcePosition
+    struct IndexedSourcePosition
     {
         int index = 0;
+        int line = 0;
+        int column = 0;
+    };
+
+    struct SourcePosition
+    {
+        String function;
+        String filename;
         int line = 0;
         int column = 0;
     };
@@ -42,7 +50,7 @@ namespace jsb::internal
         // input: js source position [line, column]
         // output: ts source position
         //NOTE line & column are both zero-based
-        bool find(int p_line, int p_column, SourcePosition& r_pos) const;
+        bool find(int p_line, int p_column, IndexedSourcePosition& r_pos) const;
 
         const String& get_source_root() const;
         const String& get_source(int index) const;

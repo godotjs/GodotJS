@@ -36,9 +36,6 @@
 // translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)
 #define JSB_WITH_SOURCEMAP 1
 
-// enable this to let all methods in `console` print with js stacktrace
-#define JSB_WITH_STACKTRACE_ALWAYS 0
-
 // JSB_WITH_LWS must be enabled if JSB_WITH_DEBUGGER is used.
 // currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`
 // `devtools` do not response the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`

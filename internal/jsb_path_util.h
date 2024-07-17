@@ -22,6 +22,8 @@ namespace jsb::internal
             return combine(p_base, combine(p_add1, p_add2));
         }
 
+        static String to_platform_specific_path(const String& p_path);
+
         // return the upper directory path ('/' and '\' are both accepted)
         static String dirname(const String& p_name);
 

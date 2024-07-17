@@ -8,14 +8,13 @@ namespace jsb
 {
     namespace InternalTimerType { enum Type : uint8_t { Interval, Timeout, Immediate, }; }
 
-    static void _generate_stacktrace(v8::Isolate* isolate, StringBuilder& sb)
+    static void _generate_stacktrace(v8::Isolate* isolate, String& r_stacktrace, internal::SourcePosition& r_source_position)
     {
         v8::TryCatch try_catch(isolate);
         isolate->ThrowError("");
-        if (const JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch, false))
+        if (const JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch, false, &r_source_position))
         {
-            sb.append("\n");
-            sb.append(exception_info);
+            r_stacktrace = exception_info.get_stacktrace();
         }
     }
 
@@ -28,19 +27,26 @@ namespace jsb
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         StringBuilder sb;
 
-        sb.append("[JS]");
-        int index = ActiveSeverity != internal::ELogSeverity::Assert ? 0 : 1;
-        if (index == 1)
+        int index;
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Assert)
         {
             // check assertion
             if (info[0]->BooleanValue(isolate))
             {
                 return;
             }
+
+            sb.append("[JS] Assertion failure:");
+            index = 1;
+        }
+        else
+        {
+            sb.append("[JS]");
+            index = 0;
         }
 
         // join all data
-        for (int n = info.Length(); index < n; ++index)
+        for (const int n = info.Length(); index < n; ++index)
         {
             if (String str = V8Helper::stringify(isolate, context, info[index]); str.length() > 0)
             {
@@ -49,18 +55,59 @@ namespace jsb
             }
         }
 
-#if JSB_WITH_STACKTRACE_ALWAYS
-        _generate_stacktrace(isolate, sb);
-#else
-        if constexpr (ActiveSeverity == internal::ELogSeverity::Trace || ActiveSeverity >= internal::ELogSeverity::Error) _generate_stacktrace(isolate, sb);
-#endif
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Assert)
+        {
+            isolate->ThrowError(V8Helper::to_string(isolate, sb.as_string()));
+            return;
+        }
 
-        const String& text = sb.as_string();
-        internal::IConsoleOutput::internal_write(ActiveSeverity, text);
-        if constexpr (ActiveSeverity == internal::ELogSeverity::Assert) { CRASH_NOW_MSG(text); return; }
-        if constexpr (ActiveSeverity == internal::ELogSeverity::Error) { ERR_FAIL_MSG(text); return; }
-        if constexpr (ActiveSeverity == internal::ELogSeverity::Warning) { WARN_PRINT(text); return; }
-        print_line(text);
+        String stacktrace;
+        internal::SourcePosition source_position;
+
+        if constexpr (ActiveSeverity >= internal::ELogSeverity::Trace)
+        {
+            _generate_stacktrace(isolate, stacktrace, source_position);
+        }
+
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Warning)
+        {
+            const String& text = sb.as_string();
+            internal::IConsoleOutput::internal_write(ActiveSeverity, text);
+            _err_print_error(
+                source_position.function.utf8().get_data(), source_position.filename.utf8().get_data(), source_position.line,
+                text.utf8().get_data(),
+                false, ERR_HANDLER_WARNING);
+            return;
+        }
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Error)
+        {
+            const String& text = sb.as_string();
+            internal::IConsoleOutput::internal_write(ActiveSeverity, text);
+            _err_print_error(
+                source_position.function.utf8().get_data(), source_position.filename.utf8().get_data(), source_position.line,
+                text.utf8().get_data(),
+                true, ERR_HANDLER_ERROR);
+            return;
+        }
+        if constexpr (ActiveSeverity == internal::ELogSeverity::Trace)
+        {
+            if (!stacktrace.is_empty())
+            {
+                sb.append("\n");
+                sb.append(stacktrace);
+            }
+            const String& text = sb.as_string();
+            internal::IConsoleOutput::internal_write(ActiveSeverity, text);
+            print_line(text);
+            return;
+        }
+
+        // trivial prints
+        {
+            const String& text = sb.as_string();
+            internal::IConsoleOutput::internal_write(ActiveSeverity, text);
+            print_line(text);
+        }
     }
 
     void Builtins::register_(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self)

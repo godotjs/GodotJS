@@ -97,7 +97,7 @@ namespace jsb::internal
         return true;
     }
 
-    bool SourceMap::find(int p_line, int p_column, SourcePosition& r_pos) const
+    bool SourceMap::find(int p_line, int p_column, IndexedSourcePosition& r_pos) const
     {
         for (int line_index = source_lines_.size() - 1; line_index >= 0; --line_index)
         {

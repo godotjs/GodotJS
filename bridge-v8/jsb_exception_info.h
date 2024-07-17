@@ -10,15 +10,22 @@ namespace jsb
     {
         bool handled_;
         String message_;
+        String stacktrace_;
+
+        jsb_force_inline String get_message() const { return message_; }
+        jsb_force_inline String get_stacktrace() const { return stacktrace_; }
 
         jsb_force_inline operator bool() const { return handled_; }
-        jsb_force_inline operator String() const { return message_; }
+        jsb_force_inline operator String() const
+        {
+            return message_.is_empty() ? stacktrace_ : (stacktrace_.is_empty() ? message_ : message_ + "\n" + stacktrace_);
+        }
 
         JavaScriptExceptionInfo() : handled_(false) {}
         JavaScriptExceptionInfo(JavaScriptExceptionInfo&&) = default;
         JavaScriptExceptionInfo& operator=(JavaScriptExceptionInfo&&) = default;
 
-        JavaScriptExceptionInfo(v8::Isolate* p_isolate, const v8::TryCatch& p_catch, bool p_accept_message = true) : handled_(false)
+        JavaScriptExceptionInfo(v8::Isolate* p_isolate, const v8::TryCatch& p_catch, bool p_accept_message = true, internal::SourcePosition* r_position = nullptr) : handled_(false)
         {
             if (!p_catch.HasCaught())
             {
@@ -46,9 +53,7 @@ namespace jsb
                 return;
             }
 
-            Environment* environment = Environment::wrap(p_isolate);
-            if (!message_.is_empty()) message_ += "\n";
-            message_ += environment->get_source_map_cache().process_source_position(String(*stack_trace_utf8, stack_trace_utf8.length()));
+            stacktrace_ = Environment::wrap(p_isolate)->get_source_map_cache().process_source_position(String(*stack_trace_utf8, stack_trace_utf8.length()), r_position);
         }
     };
 

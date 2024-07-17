@@ -10,7 +10,7 @@ namespace jsb::internal
     struct SourceMapCache
     {
         // try to translate the source positions in stacktrace
-        String process_source_position(const String& p_stacktrace);
+        String process_source_position(const String& p_stacktrace, SourcePosition* r_position = nullptr);
 
         void invalidate(const String& p_filename);
 

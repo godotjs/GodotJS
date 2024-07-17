@@ -11,6 +11,18 @@
 
 namespace jsb::internal
 {
+    String PathUtil::to_platform_specific_path(const String& p_path)
+    {
+        const Ref<FileAccess> file_access = FileAccess::open(p_path, FileAccess::READ);
+        const String simplified = (file_access.is_valid() ? file_access->get_path_absolute() : p_path).simplify_path();
+
+#if WINDOWS_ENABLED
+        return simplified.replace("/", "\\");
+#else
+        return simplified;
+#endif
+    }
+
     String PathUtil::dirname(const String& p_name)
     {
         int index = p_name.rfind("/");
