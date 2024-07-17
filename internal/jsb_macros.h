@@ -31,11 +31,17 @@
 #if JSB_DEBUG
 #   define jsb_check(Condition) CRASH_COND(!(Condition))
 #   define jsb_checkf(Condition, Format, ...) CRASH_COND_MSG(!(Condition), vformat(Format, ##__VA_ARGS__))
-#   define jsb_ensure(Condition) CRASH_COND(!(Condition))
 #else
 #   define jsb_check(Condition) (void) 0
 #   define jsb_checkf(Condition, Format, ...) (void) 0
-#   define jsb_ensure(Condition) CRASH_COND(!(Condition))
+#endif
+
+#if JSB_DEBUG
+#   define jsb_ensure(Condition) (jsb_likely(Condition) || ([] { GENERATE_TRAP(); } (), false))
+#   define jsb_ensuref(Condition, Format, ...) (jsb_likely(Condition) || ([] { JSB_LOG(Error, Format, ##__VA_ARGS__); GENERATE_TRAP(); } (), false))
+#else
+#   define jsb_ensure(Condition) (Condition)
+#   define jsb_ensuref(Condition, Format, ...) (Condition)
 #endif
 
 #if JSB_DEBUG
