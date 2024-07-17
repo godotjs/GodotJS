@@ -16,57 +16,6 @@ namespace jsb
         return realm_ && !value_.IsEmpty();
     }
 
-    Variant inspect_fallback(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-    {
-        v8::Local<v8::String> str_value;
-        if (const v8::MaybeLocal<v8::String> maybe = p_val->ToDetailString(context); maybe.ToLocal(&str_value))
-        {
-            return V8Helper::to_string(isolate, str_value);
-        }
-        return {};
-    }
-
-    // plain JSObject
-    Variant inspect_plain_object(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& p_val)
-    {
-        // v8::Local<v8::String> str;
-        // if (v8::JSON::Stringify(context, p_val).ToLocal(&str))
-        // {
-        //     return V8Helper::to_string(isolate, str);
-        // }
-        return inspect_fallback(isolate, context, p_val);
-    }
-
-    Variant inspect(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-    {
-        if (p_val->IsObject())
-        {
-            v8::Local<v8::Object> self = p_val.As<v8::Object>();
-            switch (self->InternalFieldCount())
-            {
-            case IF_ObjectFieldCount:
-                {
-                    Object* pointer = (Object*) self->GetAlignedPointerFromInternalField(IF_Pointer);
-                    if (!Environment::wrap(isolate)->verify_object(pointer))
-                    {
-                        return vformat("BadPointer: %s", uitos((uintptr_t) pointer));
-                    }
-                    return vformat("Object: %s", pointer ? "null" : pointer->to_string());
-                }
-            case IF_VariantFieldCount:
-                {
-                    Variant* pointer = (Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
-                    jsb_check(pointer);
-                    return vformat("Variant: %s", pointer->to_json_string());
-                }
-            default:
-                return vformat("JSObject: %s", self->GetIdentityHash());
-            }
-        }
-
-        return inspect_fallback(isolate, context, p_val);
-    }
-
     Variant JSValueMove::to_variant() const
     {
         if (!is_valid()) return {};
@@ -90,7 +39,7 @@ namespace jsb
         v8::Local<v8::Context> context = realm_->unwrap();
         v8::Context::Scope context_scope(context);
 
-        return inspect(isolate, context, value_.Get(isolate));
+        return V8Helper::stringify(isolate, context, value_.Get(isolate));
     }
 
     // Vector<String> JSValueMove::to_strings() const

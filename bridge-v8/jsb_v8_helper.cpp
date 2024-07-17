@@ -5,12 +5,12 @@
 
 namespace jsb
 {
-    String V8Helper::stringify(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval)
+    String V8Helper::stringify(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
     {
-        if (p_jval->IsObject())
+        if (p_val->IsObject())
         {
             const Environment* environment = Environment::wrap(isolate);
-            v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+            const v8::Local<v8::Object> self = p_val.As<v8::Object>();
 
             switch (self->InternalFieldCount())
             {
@@ -30,16 +30,25 @@ namespace jsb
                     }
                     jsb_check(class_info->type == NativeClassType::GodotObject);
                     const NativeObjectID object_id = environment->get_object_id(pointer);
-                    return vformat("[%s #%s @%s]", class_info->name, uitos((uint64_t) object_id), uitos((uint64_t) pointer));
+                    return vformat("[%s #%s @%s]", class_info->name, uitos(object_id.value()), uitos((uint64_t) pointer));
                 }
             default: break;
             }
         }
 
-        if (v8::String::Utf8Value str(isolate, p_jval); str.length() > 0)
+        // without side effects
+        // v8::Local<v8::String> str_value;
+        // if (const v8::MaybeLocal<v8::String> maybe = p_val->ToDetailString(context); maybe.ToLocal(&str_value))
+        // {
+        //     return V8Helper::to_string(isolate, str_value);
+        // }
+
+        // with side effects
+        if (v8::String::Utf8Value str(isolate, p_val); str.length() > 0)
         {
             return String::utf8(*str, str.length());
         }
+
         return String();
     }
 
