@@ -21,11 +21,6 @@ declare module "godot-jsb" {
     function callable(fn: Function): GDCallable;
 
     /**
-     * If the given `self` is instance of `godot.Object` and is still alive.
-     */
-    function is_instance_valid(self: GDObject): boolean;
-
-    /**
      * Explicitly convert a `PackedByteArray`(aka Vector<uint8_t>) into a javascript `ArrayBuffer`
      */
     function to_array_buffer(packed: PackedByteArray): ArrayBuffer;

@@ -896,15 +896,6 @@ namespace jsb
             info.GetReturnValue().Set(V8Helper::to_array_buffer(isolate, var));
         }
 
-        void _is_instance_valid(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            Object* obj;
-            const bool convertible = Realm::js_to_gd_obj(isolate, context, info[0], obj);
-            info.GetReturnValue().Set(convertible);
-        }
-
         // construct a callable object
         // [js] function callable(fn: Function): godot.Callable;
         // [js] function callable(thiz: godot.Object, fn: Function): godot.Callable;
@@ -1205,7 +1196,6 @@ namespace jsb
             jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_MINOR"), v8::Int32::New(isolate, VERSION_MINOR)).Check();
             jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_PATCH"), v8::Int32::New(isolate, VERSION_PATCH)).Check();
             jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "is_instance_valid"), v8::Function::New(context, _is_instance_valid).ToLocalChecked()).Check();
             jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "to_array_buffer"), v8::Function::New(context, _to_array_buffer).ToLocalChecked()).Check();
 
             // jsb.internal
