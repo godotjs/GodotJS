@@ -45,8 +45,8 @@ namespace jsb
 
         /**
          * Convert a javascript 'String/Symbol' value to a godot String
-         */
-        jsb_force_inline static String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
+        */
+        static String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
         {
             String str_gd;
             if (!p_val.IsEmpty() && (p_val->IsString() || p_val->IsSymbol()))
@@ -55,6 +55,24 @@ namespace jsb
                 {
                     const Error err = str_gd.parse_utf8(*exchange, exchange.length());
                     jsb_check(err == OK);
+                }
+            }
+            return str_gd;
+        }
+
+        static String to_string_without_side_effect(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
+        {
+            String str_gd;
+            if (!p_val.IsEmpty() && (p_val->IsString() || p_val->IsSymbol()))
+            {
+                v8::Local<v8::String> detail_string;
+                if (p_val->ToDetailString(isolate->GetCurrentContext()).ToLocal(&detail_string))
+                {
+                    if (const v8::String::Utf8Value exchange(isolate, detail_string); *exchange)
+                    {
+                        const Error err = str_gd.parse_utf8(*exchange, exchange.length());
+                        jsb_check(err == OK);
+                    }
                 }
             }
             return str_gd;
@@ -141,7 +159,7 @@ namespace jsb
             return enumeration;
         }
 
-        jsb_force_inline static v8::MaybeLocal<v8::Script> compile(v8::Local<v8::Context> context, v8::Local<v8::String> source, const String& p_filename)
+        static v8::MaybeLocal<v8::Script> compile(v8::Local<v8::Context> context, v8::Local<v8::String> source, const String& p_filename)
         {
             v8::Isolate* isolate = context->GetIsolate();
             if (p_filename.is_empty())

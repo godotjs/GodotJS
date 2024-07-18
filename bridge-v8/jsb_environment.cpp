@@ -152,11 +152,8 @@ namespace jsb
 
             const v8::Local<v8::Promise> promise = message.GetPromise();
             v8::Isolate* isolate = promise->GetIsolate();
-            const v8::Local<v8::Value> value = message.GetValue();
-            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-            const String str = V8Helper::to_string(isolate, message.GetValue());
-            //TODO get the 'stack' property
+            const String str = V8Helper::to_string_without_side_effect(isolate, message.GetValue());
             JSB_LOG(Error, "unhandled promise rejection: %s", str);
         }
     }
