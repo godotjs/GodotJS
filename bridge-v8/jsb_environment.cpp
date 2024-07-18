@@ -325,6 +325,10 @@ namespace jsb
 
     void Environment::gc()
     {
+        check_internal_state();
+        string_name_cache_.clear();
+        _source_map_cache.clear();
+
 #if JSB_EXPOSE_GC_FOR_TESTING
         isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
 #else

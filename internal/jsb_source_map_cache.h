@@ -14,6 +14,8 @@ namespace jsb::internal
 
         void invalidate(const String& p_filename);
 
+        void clear();
+
     private:
 #if JSB_WITH_SOURCEMAP
         SourceMap* find_source_map(const String& p_filename);

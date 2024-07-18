@@ -70,6 +70,13 @@ namespace jsb::internal
         }
     }
 
+    void SourceMapCache::clear()
+    {
+        source_map_match1_.unref();
+        source_map_match2_.unref();
+        cached_source_maps_.clear();
+    }
+
     SourceMap* SourceMapCache::find_source_map(const String& p_filename)
     {
         HashMap<String, SourceMap>::Iterator it = cached_source_maps_.find(p_filename);
