@@ -275,13 +275,13 @@ namespace jsb::internal
 				}
 			}
 
-			return _activated_timers.size() != 0;
+			return !_activated_timers.empty();
 		}
 
         template<typename TContext>
         bool invoke_timers(TContext* ctx)
 		{
-		    if (_activated_timers.size() == 0) return false;
+		    if (_activated_timers.empty()) return false;
 		    for (const Index32& index : _activated_timers)
 		    {
 		        if (!_used_timers.is_valid_index(index))
