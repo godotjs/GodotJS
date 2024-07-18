@@ -153,4 +153,5 @@ declare module "godot" {
     }
 
     static function type_string(type: int64): string
+    static function str(o: any): string
 }

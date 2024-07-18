@@ -67,8 +67,7 @@ declare module "godot-jsb" {
             is_bitfield: boolean;
         }
 
-        interface DefaultArgumentInfo
-        {
+        interface DefaultArgumentInfo {
             type: Variant.Type;
             value: any;
         }

@@ -1,5 +1,5 @@
 
-import { FileAccess, PropertyHint, Variant, type_string } from "godot";
+import { FileAccess, PropertyHint, Variant, str as gd_to_string, type_string } from "godot";
 import * as jsb from "godot-jsb";
 
 if (!jsb.TOOLS_ENABLED) {
@@ -133,7 +133,6 @@ function join_type_name(...args: (string | undefined)[]) {
 
 function get_primitive_type_name_as_input(type: Variant.Type): string | undefined {
     const primitive_name = get_primitive_type_name(type);
-    let js_name: string = "";
     
     switch (type) {
         case Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_COLOR)));
@@ -145,6 +144,7 @@ function get_primitive_type_name_as_input(type: Variant.Type): string | undefine
         case Variant.Type.TYPE_PACKED_INT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int32"));
         case Variant.Type.TYPE_PACKED_INT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int64"));
         case Variant.Type.TYPE_PACKED_BYTE_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
+        case Variant.Type.TYPE_NODE_PATH: return join_type_name(primitive_name, "string");
         default: return primitive_name;
     }
 }
@@ -708,40 +708,62 @@ class TypeDB {
 
     make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
         // plain types
+        const type_name = get_primitive_type_name(value.type);
         switch (value.type) {
             case Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
             case Variant.Type.TYPE_FLOAT: 
             case Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
             case Variant.Type.TYPE_STRING:
             case Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
+            case Variant.Type.TYPE_NODE_PATH: return value.value == null ? "''" : `'${gd_to_string(value.value)}'`;
+            case Variant.Type.TYPE_ARRAY: return value.value == null || value.value.is_empty() ? "[]" : `${gd_to_string(value.value)}`;
+            case Variant.Type.TYPE_OBJECT: return value.value == null ? "undefined" : "<any> {}";
+            case Variant.Type.TYPE_NIL: return "<any> {}";
+            case Variant.Type.TYPE_CALLABLE:
+            case Variant.Type.TYPE_RID: return `new ${type_name}()`;
             default: break;
         }
         // make them more readable?
-        if (value.type == Variant.Type.TYPE_VECTOR2) {
-            if (value == null) return 'new Vector2()';
+        if (value.type == Variant.Type.TYPE_VECTOR2 || value.type == Variant.Type.TYPE_VECTOR2I) {
+            if (value == null) return `new ${type_name}()`;
             if (value.value.x == value.value.y) {
-                if (value.value.x == 0) return `Vector2.ZERO`;
-                if (value.value.x == 1) return `Vector2.ONE`;
+                if (value.value.x == 0) return `${type_name}.ZERO`;
+                if (value.value.x == 1) return `${type_name}.ONE`;
             }
-            return `new Vector2(${value.value.x}, ${value.value.y})`;
+            return `new ${type_name}(${value.value.x}, ${value.value.y})`;
         }
-        if (value.type == Variant.Type.TYPE_VECTOR3) {
-            if (value == null) return 'new Vector3()';
+        if (value.type == Variant.Type.TYPE_VECTOR3 || value.type == Variant.Type.TYPE_VECTOR3I) {
+            if (value == null) return `new ${type_name}()`;
             if (value.value.x == value.value.y == value.value.z) {
-                if (value.value.x == 0) return `Vector3.ZERO`;
-                if (value.value.x == 1) return `Vector3.ONE`;
+                if (value.value.x == 0) return `${type_name}.ZERO`;
+                if (value.value.x == 1) return `${type_name}.ONE`;
             }
-            return `new Vector3(${value.value.x}, ${value.value.y}, ${value.value.z})`;
+            return `new ${type_name}(${value.value.x}, ${value.value.y}, ${value.value.z})`;
         }
         if (value.type == Variant.Type.TYPE_COLOR) {
-            if (value == null) return 'new Color()';
-            return `new Color(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
+            if (value == null) return `new ${type_name}()`;
+            return `new ${type_name}(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
         }
-        if (value.value == null) {
-            return "<any> {} /*compound.type from nil*/";
+        if (value.type == Variant.Type.TYPE_RECT2 || value.type == Variant.Type.TYPE_RECT2I) {
+            if (value.value == null) return `new ${type_name}()`;
+            return `new ${type_name}(${value.value.position.x}, ${value.value.position.y}, ${value.value.size.x}, ${value.value.size.y})`
         }
+        // it's tedious to repeat all types :(
+        if ((value.type >= Variant.Type.TYPE_PACKED_BYTE_ARRAY && value.type <= Variant.Type.TYPE_PACKED_COLOR_ARRAY)) {
+            if (value.value == null || value.value.is_empty()) {
+                return "[]";
+            }
+        }
+        if (value.type == Variant.Type.TYPE_DICTIONARY) {
+            if (value.value == null || value.value.is_empty()) return `new ${type_name}()`;
+        }
+        //NOTE hope all default value for Transform2D/Transform3D is IDENTITY
+        if (value.type == Variant.Type.TYPE_TRANSFORM2D || value.type == Variant.Type.TYPE_TRANSFORM3D) {
+            return `new ${type_name}()`;
+        }
+
         //TODO value sig for compound types
-        return `<any> {} /*compound.type from ${value.type}(${value.value})*/`;
+        return `<any> {} /*compound.type from ${Variant.Type[value.type]} (${value.value})*/`;
     }
 
     make_arg_default_value(method_info: jsb.editor.MethodBind, index: number): string {
