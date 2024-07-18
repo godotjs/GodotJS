@@ -1,7 +1,7 @@
 #ifndef GODOTJS_CONFIG_H
 #define GODOTJS_CONFIG_H
 
-#if defined(DEV_ENABLED) || defined(DEBUG_ENABLED)
+#if defined(DEBUG_ENABLED)
 // jsb_check is only evaluated when `JSB_DEBUG` is true
 #   define JSB_DEBUG 1
 #else
