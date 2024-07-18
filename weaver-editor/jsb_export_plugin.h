@@ -11,12 +11,17 @@ class GodotJSExportPlugin: public EditorExportPlugin
     GDCLASS(GodotJSExportPlugin, EditorExportPlugin)
 
 public:
+    GodotJSExportPlugin();
+    virtual String get_name() const override;
 
 protected:
     virtual void _export_begin(const HashSet<String>& p_features, bool p_debug, const String& p_path, int p_flags) override;
     virtual void _export_file(const String& p_path, const String& p_type, const HashSet<String>& p_features) override;
 
     virtual PackedStringArray _get_export_features(const Ref<EditorExportPlatform>& p_export_platform, bool p_debug) const override;
+
+private:
+    HashSet<String> ignored_paths_;
 
 };
 

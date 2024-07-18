@@ -21,21 +21,21 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
         }
     }
 
-    //TODO use Realm to resolve?
-    Error err;
-    jsb_check(p_path.ends_with(JSB_TYPESCRIPT_EXT) || p_path.ends_with(JSB_JAVASCRIPT_EXT));
-    const String source_code = FileAccess::get_file_as_string(p_path, &err);
-    if (err != OK)
+#ifdef TOOLS_ENABLED
+    // only check the source file in editor mode since .ts source code is not required in runtime mode
+    if (Engine::get_singleton()->is_editor_hint() && !FileAccess::exists(p_path))
     {
-        if (r_error) *r_error = err;
+        if (r_error) *r_error = ERR_FILE_NOT_FOUND;
         return {};
     }
+#endif
+    jsb_check(p_path.ends_with(JSB_TYPESCRIPT_EXT) || p_path.ends_with(JSB_JAVASCRIPT_EXT));
     JSB_LOG(VeryVerbose, "loading script resource %s on thread %s", p_path, uitos(Thread::get_caller_id()));
 
     // return a skeleton script which only contains path and source code without actually loaded in `realm` since `load` may called from background threads
     Ref<GodotJSScript> spt;
     spt.instantiate();
-    spt->attach_source(p_path, source_code);
+    spt->attach_source(p_path);
     if (r_error) *r_error = OK;
     return spt;
 }

@@ -57,10 +57,6 @@ bool GodotJSScript::is_tool() const
 
 void GodotJSScript::set_source_code(const String& p_code)
 {
-    if (source_ == p_code)
-    {
-        return;
-    }
     source_ = p_code;
 }
 
@@ -351,10 +347,22 @@ bool GodotJSScript::instance_has(const Object* p_this) const
     return instances_.has(const_cast<Object*>(p_this));
 }
 
-void GodotJSScript::attach_source(const String& p_path, const String& p_source)
+void GodotJSScript::attach_source(const String& p_path)
 {
     set_path(p_path);
-    set_source_code(p_source);
+
+#ifdef TOOLS_ENABLED
+    Error err;
+    const String source_code = FileAccess::get_file_as_string(p_path, &err);
+    if (err != OK)
+    {
+        JSB_LOG(Warning, "can not read source from %s", p_path);
+    }
+    else
+    {
+        set_source_code(source_code);
+    }
+#endif
     //TODO we can't instantly compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
 }
 
@@ -532,7 +540,9 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
         member_default_values_cache.clear();
         get_realm()->get_environment()->check_internal_state();
 
+#ifdef TOOLS_ENABLED
         members_cache.push_back(get_class_category());
+#endif
         const jsb::ScriptClassInfo& class_info = get_script_class_info();
         for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : class_info.properties)
         {

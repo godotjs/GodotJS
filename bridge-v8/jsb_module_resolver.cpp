@@ -87,12 +87,12 @@ namespace jsb
     bool DefaultModuleResolver::check_file_path(const String& p_module_id, String& o_path)
     {
         static const String js_ext = "." JSB_JAVASCRIPT_EXT;
-        Ref<FileAccess> access = get_file_access();
 
         // direct module
         {
             const String extended = internal::PathUtil::extends_with(p_module_id, js_ext);
-            if(access->file_exists(extended))
+            //NOTE !!! we use FileAccess::exists instead of access->file_exists because access->file_exists does not consider files from packages
+            if(FileAccess::exists(extended))
             {
                 o_path = extended;
                 return true;
@@ -102,9 +102,9 @@ namespace jsb
         // parse package.json
         {
             const String package_json = internal::PathUtil::combine(p_module_id, "package.json");
-            if(access->file_exists(package_json))
+            if(FileAccess::exists(package_json))
             {
-                Ref<FileAccess> file = access->open(package_json, FileAccess::READ);
+                Ref<FileAccess> file = FileAccess::open(package_json, FileAccess::READ);
                 jsb_check(file.is_valid());
 
                 Ref<JSON> json;
@@ -128,7 +128,7 @@ namespace jsb
                         break;
                     }
 
-                    if(access->file_exists(main_path))
+                    if(FileAccess::exists(main_path))
                     {
                         o_path = main_path;
                         return true;
@@ -173,8 +173,9 @@ namespace jsb
     {
         String normalized;
         const Error err = internal::PathUtil::extract(p_path, normalized);
-        ERR_FAIL_COND_V(err != OK, *this);
+        jsb_checkf(err == OK, "failed to extract path when adding search path %s (%s)", p_path, VariantUtilityFunctions::error_string(err));
         search_paths_.append(normalized);
+        JSB_LOG(Verbose, "add search path: %s", normalized);
         return *this;
     }
 

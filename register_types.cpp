@@ -1,8 +1,6 @@
 #include "register_types.h"
 
-#include "editor/export/editor_export.h"
 #include "internal/jsb_string_names.h"
-#include "weaver-editor/jsb_export_plugin.h"
 #include "weaver/jsb_gdjs_lang.h"
 #include "weaver/jsb_gdjs_script.h"
 #include "weaver/jsb_resource_loader.h"
@@ -10,7 +8,9 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
+#include "editor/export/editor_export.h"
 #include "weaver-editor/jsb_editor_plugin.h"
+#include "weaver-editor/jsb_export_plugin.h"
 #endif
 
 Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;

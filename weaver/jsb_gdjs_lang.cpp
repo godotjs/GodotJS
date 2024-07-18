@@ -54,10 +54,12 @@ void GodotJSScriptLanguage::init()
 #endif
         ;
 
+#ifdef TOOLS_ENABLED
         if (FileAccess::exists(jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb/jsb.editor.main.js")))
         {
             realm_->load("jsb/jsb.editor.main");
         }
+#endif
     }
 }
 

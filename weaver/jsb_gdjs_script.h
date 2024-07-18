@@ -57,7 +57,7 @@ public:
     GodotJSScript();
     virtual ~GodotJSScript() override;
 
-    void attach_source(const String& p_path, const String& p_source);
+    void attach_source(const String& p_path);
 
     const jsb::ScriptClassInfo& get_script_class_info() const;
 

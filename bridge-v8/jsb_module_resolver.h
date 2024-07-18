@@ -43,16 +43,6 @@ namespace jsb
         // read the source buffer (transformed into commonjs)
         static Vector<uint8_t> read_all_bytes(const internal::ISourceReader& p_reader);
 
-        Ref<FileAccess> get_file_access()
-        {
-            if (file_access_.is_null())
-            {
-                file_access_ = FileAccess::create(FileAccess::ACCESS_RESOURCES);
-            }
-            return file_access_;
-        }
-
-        Ref<FileAccess> file_access_;
         Vector<String> search_paths_;
     };
 }
