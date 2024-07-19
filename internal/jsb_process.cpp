@@ -10,6 +10,8 @@
 #include <windowsx.h>
 #endif
 
+#define JSB_PROCESS_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSProcess, Severity, Format, ##__VA_ARGS__)
+
 namespace jsb::internal
 {
 #if defined(WINDOWS_ENABLED)
@@ -63,7 +65,7 @@ namespace jsb::internal
             const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr(), num);
             if (!output.is_empty())
             {
-                Logger::output<ELogSeverity::Log>(__FILE__, __LINE__, __FUNCTION__, "[%s] %s", proc_name, output);
+                JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, output);
             }
             rd_line.clear();
         }
@@ -140,7 +142,11 @@ namespace jsb::internal
                 {
                     if (start_state == 0)
                     {
-                        if (buffer[i] == '\x1b') { start_state = 1; continue; }
+                        if (buffer[i] == '\x1b')
+                        {
+                            start_state = 1;
+                            continue;
+                        }
                         start_state = 2;
                     }
                     else if (start_state == 1)
@@ -160,7 +166,7 @@ namespace jsb::internal
                     }
                 }
             }
-            Logger::output<ELogSeverity::Verbose>(__FILE__, __LINE__, __FUNCTION__, "[%s] closed", impl->proc_name);
+            JSB_PROCESS_LOG(Verbose, "[%s] closed", impl->proc_name);
         }
 
         virtual bool _is_running() const override
@@ -184,14 +190,14 @@ namespace jsb::internal
         virtual void on_stop() override
         {
             is_closing = true;
-            Logger::output<ELogSeverity::Verbose>(__FILE__, __LINE__, __FUNCTION__, "[%s] terminating...", proc_name);
+            JSB_PROCESS_LOG(Verbose, "[%s] terminating...", proc_name);
             TerminateProcess(pi.pi.hProcess, 0);
             CloseHandle(pi.pi.hProcess);
             CloseHandle(pi.pi.hThread);
             CloseHandle(rd_pipe);
             rd_pipe = nullptr;
             thread.wait_to_finish();
-            Logger::output<ELogSeverity::Log>(__FILE__, __LINE__, __FUNCTION__, "[%s] terminated", proc_name);
+            JSB_PROCESS_LOG(Log, "[%s] terminated", proc_name);
         }
     };
 #elif defined(UNIX_ENABLED) && !defined(__EMSCRIPTEN__)
