@@ -32,7 +32,6 @@ private:
 
     String source_;
     String path_;
-    GodotJSScript* base_ = nullptr;
     jsb::ScriptClassID gdjs_class_id_;
 
     //TODO we have realm_ shared pointer here. Thus, we can safely store GodotJSFunction here (v8 global handle)?

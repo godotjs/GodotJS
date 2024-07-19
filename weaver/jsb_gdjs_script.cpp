@@ -81,20 +81,11 @@ StringName GodotJSScript::get_global_name() const
 bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
 {
     jsb_check(loaded_);
-    const Ref<GodotJSScript> type_check = p_script;
-    if (type_check.is_null())
-    {
-        return false;
-    }
-    const GodotJSScript* ptr = this;
-    while (ptr)
-    {
-        if (ptr == p_script.ptr())
-        {
-            return true;
-        }
-        ptr = ptr->base_;
-    }
+
+    // check if the current script inherits from `p_script`
+    //TODO `inherits_script` seems to be called only by Array::assign, it's enough for now without an implementation.
+    //TODO iterate the prototype chain, check if the current script inherits from `p_script`
+
     return false;
 }
 
@@ -363,7 +354,7 @@ void GodotJSScript::attach_source(const String& p_path)
         set_source_code(source_code);
     }
 #endif
-    //TODO we can't instantly compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
+    //TODO we can't immediately compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
 }
 
 void GodotJSScript::load_module()
