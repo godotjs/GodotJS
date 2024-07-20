@@ -68,7 +68,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 
     add_control_to_bottom_panel(memnew(GodotJSREPL), TTR("GodotJS"));
 
-    const String tsc_out_path = jsb::internal::Settings::get_jsb_out_res_path();
+    const String tsc_out_path = jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb");
 
     // config files
     install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY | jsb::CH_REPLACE_VARS });
@@ -85,6 +85,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     install_files_.push_back({ "jsb.editor.main.ts", "res://jsb", jsb::CH_TYPESCRIPT });
 
     // files which could be generated from ts source with tsc by the user
+    // we copy these files for the first run of generating d.ts even if `npm install` and `tsc -w` are not executed
     install_files_.push_back({ "jsb.core.js", tsc_out_path, jsb::CH_JAVASCRIPT });
     install_files_.push_back({ "jsb.editor.codegen.js", tsc_out_path, jsb::CH_JAVASCRIPT });
     install_files_.push_back({ "jsb.editor.main.js", tsc_out_path, jsb::CH_JAVASCRIPT });
