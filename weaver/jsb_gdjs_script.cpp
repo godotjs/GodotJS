@@ -395,6 +395,9 @@ void GodotJSScript::load_module()
                 E = N;
             }
         }
+
+        // update the default value cache
+        update_exports();
         return;
     }
     JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class %s", path);
