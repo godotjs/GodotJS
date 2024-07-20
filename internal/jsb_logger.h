@@ -29,7 +29,7 @@ namespace jsb::internal
                 {
                     const String str = vformat(p_format, p_args...);
                     IConsoleOutput::internal_write(p_severity, str);
-                    _err_print_error(p_func, p_file, p_line, str, true, ERR_HANDLER_WARNING);
+                    _err_print_error(p_func, p_file, p_line, str, false, ERR_HANDLER_WARNING);
                 }
                 else if constexpr (p_severity > ELogSeverity::Verbose)
                 {
