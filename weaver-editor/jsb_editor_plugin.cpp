@@ -321,5 +321,5 @@ GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
 void GodotJSEditorPlugin::ensure_tsc_installed()
 {
     //TODO start process `npm i` if `node_modules/typescript/package.json` not found
-    //TODO report error if `npm` process can't start 
+    //TODO report error if `npm` process can't start
 }

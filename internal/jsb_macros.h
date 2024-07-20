@@ -5,6 +5,8 @@
 #include "../jsb.gen.h"
 #include "../jsb_version.h"
 
+#include <memory>
+
 #include "jsb_console_output.h"
 #include "jsb_logger.h"
 
