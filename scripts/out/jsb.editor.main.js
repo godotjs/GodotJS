@@ -34,12 +34,8 @@ function auto_complete(pattern) {
 }
 exports.auto_complete = auto_complete;
 function run_npm_install() {
-    if (godot_1.OS.get_name() != "Windows") {
-        //TODO untested on other platforms, just output a warning for now.
-        console.warn("package.json has been copied to the project, please run `npm install` manually in the project's root path.");
-        return;
-    }
-    let pid = godot_1.OS.create_process("npm.cmd", ["install"], true);
+    let exe_path = godot_1.OS.get_name() != "Windows" ? "npm" : "npm.cmd";
+    let pid = godot_1.OS.create_process(exe_path, ["install"], true);
     if (pid == -1) {
         console.error("Failed to execute `npm install`, please ensure that node.js has been installed properly, and run it manually in the project root path.");
     }
