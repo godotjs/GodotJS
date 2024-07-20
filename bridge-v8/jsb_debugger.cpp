@@ -201,7 +201,7 @@ namespace jsb
     {
         static void _lws_log_callback(int level, const char* msg)
         {
-            JSB_DEBUGGER_LOG(Debug, "[LWS] %s", msg);
+            JSB_DEBUGGER_LOG(Debug, "[LWS] %s", String(msg).trim_suffix("\n"));
         }
 
         enum EClientState
