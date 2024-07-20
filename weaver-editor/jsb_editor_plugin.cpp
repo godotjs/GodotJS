@@ -320,6 +320,10 @@ GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
 
 void GodotJSEditorPlugin::ensure_tsc_installed()
 {
-    //TODO start process `npm i` if `node_modules/typescript/package.json` not found
-    //TODO report error if `npm` process can't start
+    const String code_snippet = "require('jsb/jsb.editor.main').run_npm_install()";
+    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    jsb_check(lang);
+
+    Error err;
+    lang->eval_source(code_snippet, err);
 }

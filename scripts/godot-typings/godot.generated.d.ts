@@ -6,6 +6,11 @@ declare module "godot" {
 
     }
 
+    class OS {
+        static get_name(): string
+        static create_process(path: string, arguments_: PackedStringArray | string[], open_console: boolean = false): int64
+    }
+
     // singleton
     namespace Engine {
         function get_time_scale(): number;
