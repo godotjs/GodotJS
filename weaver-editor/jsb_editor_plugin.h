@@ -77,6 +77,8 @@ public:
     static void generate_godot_dts();
     static void install_ts_project(const Vector<jsb::InstallFileInfo>& p_files);
 
+    static void ensure_tsc_installed();
+
     /**
      * return true if everything is identical to the expected version.
      * otherwise return false with changed files in `r_modified`.

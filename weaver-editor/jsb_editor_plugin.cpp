@@ -7,10 +7,13 @@
 #include "../weaver/jsb_gdjs_lang.h"
 
 #include "core/config/project_settings.h"
+#include "editor/editor_file_system.h"
 #include "editor/editor_node.h"
 #include "scene/gui/popup_menu.h"
 #include "editor/editor_settings.h"
 #include "editor/gui/editor_toaster.h"
+
+#define JSB_TYPE_ROOT "typings"
 
 enum
 {
@@ -74,10 +77,10 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY | jsb::CH_REPLACE_VARS });
     install_files_.push_back({ "package.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
     install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ ".gdignore", "res://typings", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
 
     // type declaration files
-    install_files_.push_back({ "godot.minimal.d.ts", "res://typings", jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
 
     // ts source files
     install_files_.push_back({ "jsb.core.ts", "res://jsb", jsb::CH_TYPESCRIPT });
@@ -115,8 +118,12 @@ Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
     if ((p_file.hint & jsb::CH_REPLACE_VARS) != 0)
     {
         String parsed;
-        parsed.parse_utf8(data, size);
+        parsed.parse_utf8(data, (int) size);
         parsed = parsed.replacen("__OUT_DIR__", jsb::internal::Settings::get_jsb_out_dir_name());
+        parsed = parsed.replacen("__SRC_DIR__", "./");  // locate typescripts at the project root path for better dev experience
+        parsed = parsed.replacen("__NEW_LINE__", "crlf");
+        parsed = parsed.replacen("__MODULE__", "CommonJS"); // CommonJS is the only option currently supported
+        parsed = parsed.replacen("__TYPE_ROOTS__", String(",").join({ R"("./node_modules/@types")", "\"./" JSB_TYPE_ROOT "\"" }));
         outfile->store_string(parsed);
         return OK;
     }
@@ -201,10 +208,9 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
 {
     for (const jsb::InstallFileInfo& info: p_files)
     {
-        const Error err = write_file(info);
-        if (err != OK)
+        if (const Error err = write_file(info); err != OK)
         {
-            JSB_LOG(Warning, "failed to write file '%s' to '%s'", info.source_name, info.target_dir);
+            JSB_LOG(Warning, "failed to write file '%s' to '%s': %s", info.source_name, info.target_dir, VariantUtilityFunctions::error_string(err));
             if ((info.hint & jsb::CH_OPTIONAL) == 0)
             {
                 return;
@@ -213,8 +219,10 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
         JSB_LOG(Verbose, "install file '%s' to '%s'", info.source_name, info.target_dir);
     }
 
+    EditorFileSystem::get_singleton()->scan();
     generate_godot_dts();
     load_editor_entry_module();
+    ensure_tsc_installed();
     on_successfully_installed();
 }
 
@@ -308,4 +316,10 @@ GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
         return reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
     }
     return nullptr;
+}
+
+void GodotJSEditorPlugin::ensure_tsc_installed()
+{
+    //TODO start process `npm i` if `node_modules/typescript/package.json` not found
+    //TODO report error if `npm` process can't start 
 }
