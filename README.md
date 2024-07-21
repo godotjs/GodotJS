@@ -1,13 +1,15 @@
 
 # GodotJS 
-Add TypeScript/JavaScript Support for Godot 4.x with v8.
+This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot.  
 
 [![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
 [![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
 [![linux](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml)
 
 > [!NOTE]
-> This project is still in the very early stage of development.
+> The core functionality is implemented and essentially usable but still under testing.  
+
+![typescript_intellisence](./docs/assets/typescript_intellisence.png)
 
 ## Features
 * [x] Godot ScriptLanguage integration
@@ -61,15 +63,19 @@ The currently used version of `v8` is `12.4.254.20`.
 
 **STEP 3:** Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
-For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.
-
 A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/releases).
 
 > [!NOTE]
 > Since the prebuilt `v8` library is built with the `windows-latest` github runner which uses VS2022, encountering `Unresolved external symbol` errors during linkage with `v8_monolith.lib` or `libucrt.lib` may be addressed by updating to the latest version of the `MSVC v143` toolchain, `Windows Universal CRT SDK` and `Visual Studio 2022` itself.
 
+## Examples 
+
+For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.
+
 [![Example: Snake](./docs/assets/snake_01.gif)](https://github.com/ialex32x/GodotJSExample.git)
 [![Example: Jummpy Bird](./docs/assets/jumpybird.gif)](https://github.com/ialex32x/GodotJSExample.git)
+
+## More Details
 
 ### Scripting
 * [GodotJS Scripts](./docs/godotjs_scripts.md)
@@ -88,7 +94,7 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 * [Dependencies](./docs/deps.md)
 * [Compiler Options](./docs/compiler_options.md)
 
-### Auxiliary Repositories
+## Auxiliary Repositories
 * [GodotJSExample](https://github.com/ialex32x/GodotJSExample): An example godot project for demonstrating how to use GodotJS
 * [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build): Github workflows for building Godot Editor with GodotJS support
 * [GodotJS-Dependencies](https://github.com/ialex32x/GodotJS-Dependencies): Github workflows for building dependencies of GodotJS (v8, lws)
