@@ -8,7 +8,16 @@
 #include <dwrite_2.h>
 #include <windows.h>
 #include <windowsx.h>
-#endif
+#endif // WINDOWS_ENABLED
+
+#if defined(UNIX_ENABLED)
+
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#endif // UNIX_ENABLED
 
 #define JSB_PROCESS_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSProcess, Severity, Format, ##__VA_ARGS__)
 
@@ -201,17 +210,159 @@ namespace jsb::internal
         }
     };
 #elif defined(UNIX_ENABLED) && !defined(__EMSCRIPTEN__)
-    //TODO
+    //TODO not tested on linux
     class ProcessImpl : public Process
     {
+        String proc_name;
+        int pipefd[2] = { 0, 0 };
+        pid_t child_id_ = -1;
+        Thread thread;
+        bool is_closing = false;
+        Vector<char> rd_line;
+
     public:
         ProcessImpl(): Process() {}
 
-        virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) override { return OK; }
-        virtual bool _is_running() const override { return false; }
-        virtual void on_stop() override { }
+        virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) override
+        {
+            proc_name = p_name;
+            if (pipe(pipefd) == -1)
+            {
+                return ERR_CANT_CREATE;
+            }
+
+            child_id_ = fork();
+            if (child_id_ < 0)
+            {
+                return ERR_CANT_FORK;
+            }
+
+            if (child_id_ == 0)
+            {
+                setsid();
+
+                Vector<CharString> builder;
+                builder.push_back(p_path.utf8());
+                for (int i = 0; i < p_arguments.size(); ++i)
+                {
+                    builder.push_back(p_arguments[i].utf8());
+                }
+
+                Vector<char*> args;
+                for (int i = 0; i < builder.size(); ++i)
+                {
+                    args.push_back((char*) builder[i].get_data());
+                }
+                args.push_back(0);
+
+                close(pipefd[0]);
+                dup2(pipefd[1], STDOUT_FILENO);
+                close(pipefd[1]);
+                execvp(args[0], &args[0]);
+                JSB_PROCESS_LOG(Error, "failed to create process %s", p_path);
+                raise(SIGKILL);
+            }
+
+            close(pipefd[1]);
+            {
+                Thread::Settings settings;
+                settings.priority = Thread::PRIORITY_LOW;
+                thread.set_name(proc_name);
+                thread.start(&ProcessImpl::_thread_run, this, settings);
+            }
+            return OK;
+        }
+
+        static void _thread_run(void* p_userdata)
+        {
+            ProcessImpl* impl = (ProcessImpl*) p_userdata;
+            char buffer[4096];
+            int start_state = 0;
+
+            while (!impl->is_closing)
+            {
+                ssize_t bytes_read = 0;
+                while ((bytes_read = read(impl->pipefd[0], buffer, sizeof(buffer) - 1)) > 0)
+                {
+                    for (ssize_t i = 0; i < bytes_read; ++i)
+                    {
+                        if (start_state == 0)
+                        {
+                            if (buffer[i] == '\x1b')
+                            {
+                                start_state = 1;
+                                continue;
+                            }
+                            start_state = 2;
+                        }
+                        else if (start_state == 1)
+                        {
+                            start_state = 2;
+                            if (buffer[i] == 'c')  { continue; }
+                        }
+
+                        if (buffer[i] == '\n' || buffer[i] == '\r')
+                        {
+                            impl->_flush();
+                        }
+                        else
+                        {
+                            impl->rd_line.push_back(buffer[i]);
+                        }
+                    }
+                }
+                if (bytes_read < 0 && errno != EINTR)
+                {
+                    JSB_PROCESS_LOG(Error, "[%s] failed to read pipe", impl->proc_name);
+                    break;
+                }
+            }
+            close(impl->pipefd[0]);
+
+            int status;
+            waitpid(impl->child_id_, &status, 0);
+            JSB_PROCESS_LOG(Verbose, "[%s] closed (%d)", impl->proc_name, WEXITSTATUS(status));
+        }
+
+        void _flush()
+        {
+            if (rd_line.is_empty()) return;
+            String line;
+            if (line.parse_utf8(rd_line.ptr()) == OK)
+            {
+               JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, line);
+            }
+            rd_line.clear();
+        }
+
+        virtual bool _is_running() const override
+        {
+            if (is_closing || child_id_ < 0)
+            {
+                return false;
+            }
+            int status = 0;
+            return ::waitpid(child_id_, &status, WNOHANG) == 0;
+        }
+
+        virtual void on_stop() override
+        {
+            is_closing = true;
+            JSB_PROCESS_LOG(Verbose, "[%s] terminating...", proc_name);
+            const int ret = ::kill(child_id_, SIGKILL);
+            close(pipefd[0]);
+            pipefd[0] = pipefd[1] = 0;
+            if (!ret)
+            {
+                int st;
+                ::waitpid(child_id_, &st, 0);
+            }
+            thread.wait_to_finish();
+            JSB_PROCESS_LOG(Log, "[%s] terminated", proc_name);
+        }
     };
 #else
+    // just a null impl do nothing
     class ProcessImpl : public Process
     {
     public:
