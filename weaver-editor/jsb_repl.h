@@ -4,9 +4,9 @@
 #include "../weaver/jsb_gdjs_lang.h"
 #include "scene/gui/box_container.h"
 
-class GodotJSREPL : public Control, public jsb::internal::IConsoleOutput
+class GodotJSREPL : public HBoxContainer, public jsb::internal::IConsoleOutput
 {
-    GDCLASS(GodotJSREPL, Control)
+    GDCLASS(GodotJSREPL, HBoxContainer)
     struct OutputLine
     {
         String text;

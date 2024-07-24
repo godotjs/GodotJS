@@ -2,6 +2,7 @@
 
 #include "jsb_editor_plugin.h"
 #include "editor/editor_node.h"
+#include "editor/editor_scale.h"
 #include "editor/editor_string_names.h"
 #include "scene/scene_string_names.h"
 #include "scene/gui/button.h"
@@ -15,9 +16,9 @@ GodotJSREPL::GodotJSREPL()
 
     input_submitting_ = false;
     VBoxContainer* vbox = memnew(VBoxContainer);
+	vbox->set_custom_minimum_size(Size2(0, 180) * EDSCALE);
     vbox->set_v_size_flags(SIZE_EXPAND_FILL);
     vbox->set_h_size_flags(SIZE_EXPAND_FILL);
-    vbox->set_anchors_preset(PRESET_FULL_RECT, false);
     add_child(vbox);
 
     HBoxContainer* tool_bar_box = memnew(HBoxContainer);
@@ -58,17 +59,12 @@ GodotJSREPL::GodotJSREPL()
         start_tsc_button_->set_focus_mode(FOCUS_NONE);
         start_tsc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_start_tsc_pressed));
     }
-    output_box_ = memnew(RichTextLabel);
-    output_box_->set_threaded(true);
-    output_box_->set_use_bbcode(true);
-    output_box_->set_scroll_follow(true);
-    output_box_->set_selection_enabled(true);
-    output_box_->set_context_menu_enabled(true);
-    output_box_->set_focus_mode(FOCUS_CLICK);
-    output_box_->set_v_size_flags(SIZE_EXPAND_FILL);
-    output_box_->set_h_size_flags(SIZE_EXPAND_FILL);
-    output_box_->set_deselect_on_focus_loss_enabled(false);
-    vbox->add_child(output_box_);
+
+    Panel* output_container = memnew(Panel);
+    output_container->set_h_size_flags(SIZE_EXPAND_FILL);
+    output_container->set_v_size_flags(SIZE_EXPAND_FILL);
+    output_container->set_grow_direction_preset(PRESET_FULL_RECT);
+    vbox->add_child(output_container);
 
     input_box_ = memnew(LineEdit);
     input_box_->set_h_size_flags(SIZE_EXPAND_FILL);
@@ -81,17 +77,29 @@ GodotJSREPL::GodotJSREPL()
     input_box_->connect(SceneStringNames::get_singleton()->focus_exited, callable_mp(this, &GodotJSREPL::_input_focus_exit));
     vbox->add_child(input_box_);
 
+    output_box_ = memnew(RichTextLabel);
+    output_box_->set_threaded(true);
+    output_box_->set_use_bbcode(true);
+    output_box_->set_scroll_follow(true);
+    output_box_->set_selection_enabled(true);
+    output_box_->set_context_menu_enabled(true);
+    output_box_->set_focus_mode(FOCUS_CLICK);
+    output_box_->set_deselect_on_focus_loss_enabled(false);
+    output_box_->set_v_size_flags(SIZE_EXPAND_FILL);
+    output_box_->set_h_size_flags(SIZE_EXPAND_FILL);
+    output_box_->set_grow_direction_preset(PRESET_FULL_RECT);
+    output_box_->set_offsets_preset(PRESET_FULL_RECT);
+    output_box_->set_anchors_preset(PRESET_FULL_RECT);
+    output_container->add_child(output_box_);
+
     candidate_list_ = memnew(ItemList);
-    for (int i = 0; i < 20; i++)
-    {
-        candidate_list_->add_item(vformat("List Item %d", i));
-    }
     candidate_list_->hide();
     candidate_list_->set_focus_mode(FOCUS_NONE);
     candidate_list_->set_mouse_filter(MOUSE_FILTER_IGNORE);
     candidate_list_->set_disable_visibility_clip(true);
     candidate_list_->set_size(Size2(600, 160));
-    add_child(candidate_list_);
+    output_container->add_child(candidate_list_);
+
 }
 
 GodotJSREPL::~GodotJSREPL()
@@ -202,7 +210,8 @@ void GodotJSREPL::_input_changed(const String &p_text)
     }
     const Size2 size = candidate_list_->get_size();
     const Vector2 origin = input_box_->get_position();
-    const Vector2 pos(origin.x, origin.y - size.y - 16);
+    const Vector2 input_size = input_box_->get_size();
+    const Vector2 pos(origin.x, origin.y - size.y - input_size.y);
     candidate_list_->set_current(0);
     candidate_list_->set_position(pos);
     candidate_list_->show();
