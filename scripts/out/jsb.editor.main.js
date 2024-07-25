@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.run_npm_install = exports.auto_complete = void 0;
+exports.auto_complete = auto_complete;
+exports.run_npm_install = run_npm_install;
 // entry point (editor only)
 const godot_1 = require("godot");
 function auto_complete(pattern) {
@@ -32,7 +33,6 @@ function auto_complete(pattern) {
     }
     return results;
 }
-exports.auto_complete = auto_complete;
 function run_npm_install() {
     let exe_path = godot_1.OS.get_name() != "Windows" ? "npm" : "npm.cmd";
     let pid = godot_1.OS.create_process(exe_path, ["install"], true);
@@ -43,5 +43,4 @@ function run_npm_install() {
         console.log("Started process: npm install");
     }
 }
-exports.run_npm_install = run_npm_install;
 //# sourceMappingURL=jsb.editor.main.js.map

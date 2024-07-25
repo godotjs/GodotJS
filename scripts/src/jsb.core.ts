@@ -11,6 +11,34 @@ export function signal() {
     }
 }
 
+export function export_multiline() {
+    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_MULTILINE_TEXT });
+}
+
+function __export_range(type: Variant.Type, min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+    let hint_string = `${min},${max},${step}`;
+    if (typeof extra_hints !== "undefined") {
+        hint_string += "," + extra_hints.join(",");
+    }
+    return export_(type, { hint: PropertyHint.PROPERTY_HINT_RANGE, hint_string: hint_string });
+}
+
+export function export_range(min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+    return __export_range(Variant.Type.TYPE_FLOAT, min, max, step, ...extra_hints);
+}
+
+export function export_range_i(min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+    return __export_range(Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
+}
+
+export function export_file(filter: string) {
+    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
+}
+
+export function export_exp_easing(hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only") {
+    return export_(Variant.Type.TYPE_FLOAT, { hint: PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
+}
+
 export function export_(type: Variant.Type, details?: { class_?: Function, hint?: number, hint_string?: string, usage?: number }) {
     return function (target: any, key: string) {
         let ebd = { name: key, type: type, hint: PropertyHint.PROPERTY_HINT_NONE, hint_string: "" };
