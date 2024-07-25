@@ -1,6 +1,8 @@
 #ifndef GODOTJS_INDEX_H
 #define GODOTJS_INDEX_H
 
+#include "jsb_macros.h"
+
 namespace jsb::internal
 {
     template<typename UnderlyingType, uint8_t TMaskBit = 6, UnderlyingType TMask = 0x3f>
@@ -33,6 +35,7 @@ namespace jsb::internal
         operator UnderlyingType() const { return packed_; }
         UnderlyingType value() const { return packed_; }
         UnderlyingType operator *() const { return packed_; }
+        String to_string() const { return uitos(packed_); }
 
         TIndex(const TIndex& other) = default;
         TIndex(TIndex&& other) = default;

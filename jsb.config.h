@@ -1,12 +1,26 @@
 #ifndef GODOTJS_CONFIG_H
 #define GODOTJS_CONFIG_H
 
-#if defined(DEBUG_ENABLED)
-// jsb_check is only evaluated when `JSB_DEBUG` is true
-#   define JSB_DEBUG 1
-#else
-#   define JSB_DEBUG 0
+#ifndef JSB_DEBUG
+#   if defined(DEBUG_ENABLED)
+#       define JSB_DEBUG 1  // jsb_check is only evaluated when `JSB_DEBUG` is true
+#   else
+#       define JSB_DEBUG 0
+#   endif
 #endif
+
+// lower log levels are completely skipped (at compile-time)
+// see `internal/jsb_log_severity.def.h`
+#ifndef JSB_MIN_LOG_LEVEL
+#   if JSB_DEBUG
+#       define JSB_MIN_LOG_LEVEL Verbose
+#   else
+#       define JSB_MIN_LOG_LEVEL Warning
+#   endif
+#endif // JSB_MIN_LOG_LEVEL
+
+// print benchmark
+#define JSB_BENCHMARK 1
 
 #define JSB_VERIFY_OBJECT 1
 
@@ -16,18 +30,7 @@
 // only for debug, print gc time
 #define JSB_PRINT_GC_TIME 1
 
-#if JSB_DEBUG
-// lower log levels are completely skipped (at compile-time)
-// see `internal/jsb_log_severity.def.h`
-#   define JSB_MIN_LOG_LEVEL Verbose
-#else
-#   define JSB_MIN_LOG_LEVEL Warning
-#endif
-
 #define JSB_SUPPORT_RELOAD 1
-
-// print benchmark
-#define JSB_BENCHMARK 1
 
 // enable to debug with Chrome devtools with the following link by default:
 // devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1

@@ -324,10 +324,6 @@ namespace jsb::internal
 				_first_index = new_index;
 			}
 			++_version;
-			if (_version == 49)
-			{
-				jsb_check(pivot_slot.previous == new_index);
-			}
 			jsb_check(is_consistent());
 			return IndexType(new_index, new_slot.revision);
 		}
