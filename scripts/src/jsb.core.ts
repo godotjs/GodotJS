@@ -1,5 +1,5 @@
 
-import { PropertyHint, Variant  } from "godot";
+import { PropertyHint, PropertyUsageFlags, Variant  } from "godot";
 import * as jsb from "godot-jsb";
 
 /**
@@ -35,16 +35,29 @@ export function export_file(filter: string) {
     return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
 }
 
+export function export_dir(filter: string) {
+    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_DIR, hint_string: filter });
+}
+
+export function export_global_file(filter: string) {
+    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_FILE, hint_string: filter });
+}
+
+export function export_global_dir(filter: string) {
+    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_DIR, hint_string: filter });
+}
+
 export function export_exp_easing(hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only") {
     return export_(Variant.Type.TYPE_FLOAT, { hint: PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
 }
 
-export function export_(type: Variant.Type, details?: { class_?: Function, hint?: number, hint_string?: string, usage?: number }) {
+export function export_(type: Variant.Type, details?: { class_?: Function, hint?: PropertyHint, hint_string?: string, usage?: PropertyUsageFlags }) {
     return function (target: any, key: string) {
-        let ebd = { name: key, type: type, hint: PropertyHint.PROPERTY_HINT_NONE, hint_string: "" };
+        let ebd = { name: key, type: type, hint: PropertyHint.PROPERTY_HINT_NONE, hint_string: "", usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         if (typeof details === "object") {
             if (typeof details.hint === "number") ebd.hint = details.hint;
             if (typeof details.hint_string === "string") ebd.hint_string = details.hint_string;
+            if (typeof details.usage === "number") ebd.usage = details.usage;
         }
         jsb.internal.add_script_property(target, ebd);
     }
@@ -62,7 +75,7 @@ export function export_enum(enum_type: any) {
                 enum_vs.push(v+":"+c);
             }
         }
-        let ebd = { name: key, type: Variant.Type.TYPE_INT, hint: PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(",") };
+        let ebd = { name: key, type: Variant.Type.TYPE_INT, hint: PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(","), usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         jsb.internal.add_script_property(target, ebd);
     }
 }
@@ -79,7 +92,7 @@ export function export_flags(enum_type: any) {
                 enum_vs.push(v+":"+c);
             }
         }
-        let ebd = { name: key, type: Variant.Type.TYPE_INT, hint: PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(",") };
+        let ebd = { name: key, type: Variant.Type.TYPE_INT, hint: PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(","), usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         jsb.internal.add_script_property(target, ebd);
     }
 }

@@ -365,8 +365,9 @@ namespace jsb
                     GodotJSPropertyInfo property_info;
                     property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(name)).ToLocalChecked()); // string
                     property_info.type = (Variant::Type) obj->Get(context, environment->GetStringValue(type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
-                    property_info.hint = (PropertyHint) obj->Get(context, environment->GetStringValue(hint)).ToLocalChecked()->Int32Value(context).ToChecked();;
+                    property_info.hint = V8Helper::to_enum<PropertyHint>(context, obj->Get(context, environment->GetStringValue(hint)), PROPERTY_HINT_NONE);
                     property_info.hint_string = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(hint_string)).ToLocalChecked());
+                    property_info.usage = V8Helper::to_enum<PropertyUsageFlags>(context, obj->Get(context, environment->GetStringValue(usage)), PROPERTY_USAGE_DEFAULT);
                     p_class_info.properties.insert(property_info.name, property_info);
                     JSB_LOG(VeryVerbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
                 }

@@ -28,6 +28,9 @@ exports.export_multiline = export_multiline;
 exports.export_range = export_range;
 exports.export_range_i = export_range_i;
 exports.export_file = export_file;
+exports.export_dir = export_dir;
+exports.export_global_file = export_global_file;
+exports.export_global_dir = export_global_dir;
 exports.export_exp_easing = export_exp_easing;
 exports.export_ = export_;
 exports.export_enum = export_enum;
@@ -65,17 +68,28 @@ function export_range_i(min, max, step = 1, ...extra_hints) {
 function export_file(filter) {
     return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
 }
+function export_dir(filter) {
+    return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_DIR, hint_string: filter });
+}
+function export_global_file(filter) {
+    return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_GLOBAL_FILE, hint_string: filter });
+}
+function export_global_dir(filter) {
+    return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_GLOBAL_DIR, hint_string: filter });
+}
 function export_exp_easing(hint) {
     return export_(godot_1.Variant.Type.TYPE_FLOAT, { hint: godot_1.PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
 }
 function export_(type, details) {
     return function (target, key) {
-        let ebd = { name: key, type: type, hint: godot_1.PropertyHint.PROPERTY_HINT_NONE, hint_string: "" };
+        let ebd = { name: key, type: type, hint: godot_1.PropertyHint.PROPERTY_HINT_NONE, hint_string: "", usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         if (typeof details === "object") {
             if (typeof details.hint === "number")
                 ebd.hint = details.hint;
             if (typeof details.hint_string === "string")
                 ebd.hint_string = details.hint_string;
+            if (typeof details.usage === "number")
+                ebd.usage = details.usage;
         }
         jsb.internal.add_script_property(target, ebd);
     };
@@ -92,7 +106,7 @@ function export_enum(enum_type) {
                 enum_vs.push(v + ":" + c);
             }
         }
-        let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(",") };
+        let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(","), usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         jsb.internal.add_script_property(target, ebd);
     };
 }
@@ -108,7 +122,7 @@ function export_flags(enum_type) {
                 enum_vs.push(v + ":" + c);
             }
         }
-        let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(",") };
+        let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(","), usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         jsb.internal.add_script_property(target, ebd);
     };
 }

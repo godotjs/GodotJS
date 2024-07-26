@@ -15,6 +15,23 @@ namespace jsb
             return v8::Int32::New(isolate, (int32_t) p_val);
         }
 
+        static int32_t to_int32(const v8::Local<v8::Context>& context, v8::MaybeLocal<v8::Value> obj, const int32_t p_default_value)
+        {
+            int32_t value;
+            v8::Local<v8::Value> local;
+            if (obj.ToLocal(&local) && local->Int32Value(context).To(&value)) return value;
+            return p_default_value;
+        }
+
+        template<typename TEnum>
+        static TEnum to_enum(const v8::Local<v8::Context>& context, v8::MaybeLocal<v8::Value> obj, const TEnum p_default_value)
+        {
+            int32_t value;
+            v8::Local<v8::Value> local;
+            if (obj.ToLocal(&local) && local->Int32Value(context).To(&value)) return (TEnum) value;
+            return p_default_value;
+        }
+
         jsb_force_inline static v8::Local<v8::Boolean> to_boolean(v8::Isolate* isolate, bool p_val)
         {
             return v8::Boolean::New(isolate, p_val);
