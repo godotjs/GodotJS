@@ -140,3 +140,16 @@ export function $wait(signal: any) {
         signal.connect(fn, 0);
     })
 }
+
+/**
+ * Wait for seconds
+ * @param secs time to wait in seconds
+ * @returns Promise to await
+ */
+export function seconds(secs: number) {
+    return new Promise(function (resolve) {
+        setTimeout(function () {
+            resolve(undefined);
+        }, secs * 1000);
+    });
+}

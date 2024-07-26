@@ -39,6 +39,7 @@ exports.onready = onready;
 exports.tool = tool;
 exports.icon = icon;
 exports.$wait = $wait;
+exports.seconds = seconds;
 const godot_1 = require("godot");
 const jsb = __importStar(require("godot-jsb"));
 /**
@@ -164,6 +165,18 @@ function $wait(signal) {
             jsb.internal.notify_microtasks_run();
         });
         signal.connect(fn, 0);
+    });
+}
+/**
+ * Wait for seconds
+ * @param secs time to wait in seconds
+ * @returns Promise to await
+ */
+function seconds(secs) {
+    return new Promise(function (resolve) {
+        setTimeout(function () {
+            resolve(undefined);
+        }, secs * 1000);
     });
 }
 //# sourceMappingURL=jsb.core.js.map
