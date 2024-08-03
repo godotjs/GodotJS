@@ -1675,9 +1675,8 @@ namespace jsb
             return {};
         }
 
-        //TODO if a function returns a Promise for godot script callbacks (such as _ready), it's safe to return as nothing?
         v8::Local<v8::Value> rval_checked;
-        if (!rval.ToLocal(&rval_checked) || rval_checked->IsPromise())
+        if (!rval.ToLocal(&rval_checked))
         {
             return {};
         }
@@ -1685,8 +1684,12 @@ namespace jsb
         Variant rvar;
         if (!Realm::js_to_gd_var(isolate, context, rval_checked, rvar))
         {
-            JSB_LOG(Error, "failed to translate returned value");
-            r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
+            //TODO if a function returns a Promise for godot script callbacks (such as _ready), it's safe to return as nothing without error?
+            if (!rval_checked->IsPromise())
+            {
+                JSB_LOG(Error, "failed to translate returned value");
+                r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
+            }
             return {};
         }
         return rvar;
