@@ -134,7 +134,7 @@ function get_primitive_type_name_as_input(type) {
         default: return primitive_name;
     }
 }
-function replace(name) {
+function replace_var_name(name) {
     const rep = KeywordReplacement[name];
     return typeof rep !== "undefined" ? rep : name;
 }
@@ -343,6 +343,12 @@ class ClassWriter extends IndentWriter {
     }
     head() {
         if (typeof this._super !== "string" || this._super.length == 0) {
+            if (this._name == "Signal") {
+                return "class Signal implements AnySignal";
+            }
+            else if (this._name == "Callable") {
+                return "class Callable implements AnyCallable";
+            }
             return `class ${this._name}`;
         }
         return `class ${this._name} extends ${this._super}`;
@@ -399,7 +405,7 @@ class ClassWriter extends IndentWriter {
     }
     constructor_(constructor_info) {
         this._separator_line = true;
-        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${get_primitive_type_name_as_input(it.type)}`).join(", ");
+        const args = constructor_info.arguments.map(it => `${replace_var_name(it.name)}: ${this.types.replace_type_inplace(get_primitive_type_name_as_input(it.type), this.get_scoped_type_replacer())}`).join(", ");
         this.line(`constructor(${args})`);
     }
     constructor_ex_() {
@@ -407,9 +413,9 @@ class ClassWriter extends IndentWriter {
     }
     operator_(operator_info) {
         this._separator_line = true;
-        const return_type_name = get_primitive_type_name(operator_info.return_type);
-        const left_type_name = get_primitive_type_name_as_input(operator_info.left_type);
-        const right_type_name = get_primitive_type_name_as_input(operator_info.right_type);
+        const return_type_name = this.types.replace_type_inplace(get_primitive_type_name(operator_info.return_type), this.get_scoped_type_replacer());
+        const left_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.left_type), this.get_scoped_type_replacer());
+        const right_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.right_type), this.get_scoped_type_replacer());
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
     virtual_method_(method_info) {
@@ -418,12 +424,24 @@ class ClassWriter extends IndentWriter {
     ordinary_method_(method_info) {
         this.method_(method_info, "");
     }
+    get_scoped_type_replacer() {
+        if (this._name == "Signal" || this._name == "Callable") {
+            return function (type_name) {
+                if (type_name == "Signal")
+                    return "AnySignal";
+                if (type_name == "Callable")
+                    return "AnyCallable";
+                return type_name;
+            };
+        }
+        return undefined;
+    }
     method_(method_info, category) {
         var _a, _b;
         DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.methods[method_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
         this._separator_line = true;
-        const args = this.types.make_args(method_info);
-        const rval = this.types.make_return(method_info);
+        const args = this.types.make_args(method_info, this.get_scoped_type_replacer());
+        const rval = this.types.make_return(method_info, this.get_scoped_type_replacer());
         const prefix = this.make_method_prefix(method_info);
         // some godot methods declared with special characters which can not be declared literally
         if (!this.types.is_valid_method_name(method_info.name)) {
@@ -436,14 +454,12 @@ class ClassWriter extends IndentWriter {
         var _a, _b;
         DocCommentHelper.write(this, (_b = (_a = this._doc) === null || _a === void 0 ? void 0 : _a.signals[signal_info.name]) === null || _b === void 0 ? void 0 : _b.description, this._separator_line);
         this._separator_line = true;
-        const args = this.types.make_args(signal_info.method_);
-        const rval = this.types.make_return(signal_info.method_);
-        const sig = `// ${args} => ${rval}`;
+        const sig = this.types.make_signal_type(signal_info.method_);
         if (this._singleton_mode) {
-            this.line(`static readonly ${signal_info.name}: Signal ${sig}`);
+            this.line(`static readonly ${signal_info.name}: ${sig}`);
         }
         else {
-            this.line(`readonly ${signal_info.name}: Signal ${sig}`);
+            this.line(`readonly ${signal_info.name}: ${sig}`);
         }
     }
 }
@@ -603,8 +619,8 @@ class TypeDB {
         }
         return this.make_classname(info.class_name, used_as_input);
     }
-    make_arg(info) {
-        return `${replace(info.name)}: ${this.make_typename(info, true)}`;
+    make_arg(info, type_replacer) {
+        return `${replace_var_name(info.name)}: ${this.replace_type_inplace(this.make_typename(info, true), type_replacer)}`;
     }
     make_literal_value(value) {
         // plain types
@@ -673,32 +689,48 @@ class TypeDB {
         //TODO value sig for compound types
         return `<any> {} /*compound.type from ${godot_1.Variant.Type[value.type]} (${value.value})*/`;
     }
-    make_arg_default_value(method_info, index) {
+    replace_type_inplace(name, type_replacer) {
+        return typeof type_replacer === "function" ? type_replacer(name) : name;
+    }
+    make_arg_default_value(method_info, index, type_replacer) {
         const default_arguments = method_info.default_arguments || [];
         const def_index = index - (method_info.args_.length - default_arguments.length);
         if (def_index < 0 || def_index >= default_arguments.length)
-            return this.make_arg(method_info.args_[index]);
-        return this.make_arg(method_info.args_[index]) + " = " + this.make_literal_value(default_arguments[def_index]);
+            return this.make_arg(method_info.args_[index], type_replacer);
+        return this.make_arg(method_info.args_[index], type_replacer) + " = " + this.make_literal_value(default_arguments[def_index]);
     }
-    make_args(method_info) {
+    make_args(method_info, type_replacer) {
         //TODO consider default arguments
         const varargs = "...vargargs: any[]";
         const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
         if (method_info.args_.length == 0) {
             return is_vararg ? varargs : "";
         }
-        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index)).join(", ");
+        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index, type_replacer)).join(", ");
         if (is_vararg) {
             return `${args}, ${varargs}`;
         }
         return args;
     }
-    make_return(method_info) {
+    make_return(method_info, type_replacer) {
         //TODO
         if (typeof method_info.return_ != "undefined") {
-            return this.make_typename(method_info.return_, false);
+            return this.replace_type_inplace(this.make_typename(method_info.return_, false), type_replacer);
         }
         return "void";
+    }
+    make_signal_type(method_info) {
+        const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
+        if (is_vararg || method_info.args_.length > 5) {
+            // too difficult to declare as strongly typed, just fallback to raw signal type
+            return "Signal";
+        }
+        const base_name = "Signal" + method_info.args_.length;
+        if (method_info.args_.length == 0) {
+            return base_name;
+        }
+        const args = method_info.args_.map((it, index) => this.make_typename(method_info.args_[index], true)).join(", ");
+        return `${base_name}<${args}>`;
     }
 }
 // d.ts generator

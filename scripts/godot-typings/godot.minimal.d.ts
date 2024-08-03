@@ -1,9 +1,8 @@
 
 declare module "godot-jsb" {
-    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant } from "godot";
+    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable4 } from "godot";
 
     const DEV_ENABLED: boolean;
-    const DEBUG_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
 
     const VERSION_MAJOR: number;
@@ -13,12 +12,24 @@ declare module "godot-jsb" {
     /**
      * Create godot Callable with a bound object `self`
      */
-    function callable(self: GDObject, fn: Function): GDCallable;
+    function callable(self: GDObject, fn: () => void): Callable0;
+    function callable<T1>(self: GDObject, fn: (v1: T1) => void): Callable1<T1>;
+    function callable<T1, T2>(self: GDObject, fn: (v1: T1, v2: T2) => void): Callable2<T1, T2>;
+    function callable<T1, T2, T3>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3) => void): Callable3<T1, T2, T3>;
+    function callable<T1, T2, T3, T4>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => void): Callable4<T1, T2, T3, T4>;
+    function callable<T1, T2, T3, T4, T5>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => void): Callable5<T1, T2, T3, T4, T5>;
+    // function callable(self: GDObject, fn: Function): GDCallable;
 
     /**
      * Create godot Callable without a bound object
      */
-    function callable(fn: Function): GDCallable;
+    function callable(fn: ()=>void): Callable0;
+    function callable<T1>(fn: (v1: T1) => void): Callable1<T1>;
+    function callable<T1, T2>(fn: (v1: T1, v2: T2) => void): Callable2<T1, T2>;
+    function callable<T1, T2, T3>(fn: (v1: T1, v2: T2, v3: T3) => void): Callable3<T1, T2, T3>;
+    function callable<T1, T2, T3, T4>(fn: (v1: T1, v2: T2, v3: T3, v4: T4) => void): Callable4<T1, T2, T3, T4>;
+    function callable<T1, T2, T3, T4, T5>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => void): Callable5<T1, T2, T3, T4, T5>;
+    // function callable(fn: Function): GDCallable;
 
     /**
      * Explicitly convert a `PackedByteArray`(aka Vector<uint8_t>) into a javascript `ArrayBuffer`
@@ -77,7 +88,7 @@ declare module "godot-jsb" {
         interface MethodBind {
             id: number;
             name: string;
-            
+
             hint_flags: MethodFlags;
             is_static: boolean;
             is_const: boolean;
@@ -198,7 +209,7 @@ declare module "godot-jsb" {
         function get_utility_functions(): Array<MethodBind>;
 
         function delete_file(filepath: string): void;
-        
+
         const VERSION_DOCS_URL: string;
     }
 }

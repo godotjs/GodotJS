@@ -63,7 +63,7 @@ const KeywordReplacement: { [name: string]: string } = {
     ["vargargs"]: "vargargs_",
 }
 
-const PrimitiveTypeNames : { [type: number]: string } = {
+const PrimitiveTypeNames: { [type: number]: string } = {
     [Variant.Type.TYPE_NIL]: "any",
     [Variant.Type.TYPE_BOOL]: "boolean",
     [Variant.Type.TYPE_INT]: "int64",
@@ -99,10 +99,10 @@ const IgnoredTypes = new Set([
     "GDScriptSyntaxHighlighter",
 ])
 
-const PrimitiveTypesSet =  (function (): Set<string> {
+const PrimitiveTypesSet = (function (): Set<string> {
     let set = new Set<string>();
-    for (let name in Variant.Type) { 
-        let str = type_string(<any> Variant.Type[name]); 
+    for (let name in Variant.Type) {
+        let str = type_string(<any>Variant.Type[name]);
         if (str.length != 0) {
             set.add(str);
         }
@@ -133,7 +133,7 @@ function join_type_name(...args: (string | undefined)[]) {
 
 function get_primitive_type_name_as_input(type: Variant.Type): string | undefined {
     const primitive_name = get_primitive_type_name(type);
-    
+
     switch (type) {
         case Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_COLOR)));
         case Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_VECTOR2)));
@@ -149,7 +149,7 @@ function get_primitive_type_name_as_input(type: Variant.Type): string | undefine
     }
 }
 
-function replace(name: string) {
+function replace_var_name(name: string) {
     const rep = KeywordReplacement[name];
     return typeof rep !== "undefined" ? rep : name;
 }
@@ -295,7 +295,7 @@ class DocCommentHelper {
         for (let i = 0; i < lines.length; ++i) {
             // additional tailing whitespaces for better text format rendered
             if (i == 0) {
-                writer.line(`/** ${lines[i]}  `); 
+                writer.line(`/** ${lines[i]}  `);
             } else {
                 writer.line(` *  ${lines[i]}  `);
             }
@@ -402,6 +402,11 @@ class ClassWriter extends IndentWriter {
 
     protected head() {
         if (typeof this._super !== "string" || this._super.length == 0) {
+            if (this._name == "Signal") {
+                return "class Signal implements AnySignal";
+            } else if (this._name == "Callable") {
+                return "class Callable implements AnyCallable";
+            }
             return `class ${this._name}`
         }
         return `class ${this._name} extends ${this._super}`
@@ -440,7 +445,7 @@ class ClassWriter extends IndentWriter {
         if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
             return;
         }
-        console.assert(getset_info.getter.length != 0);        
+        console.assert(getset_info.getter.length != 0);
         DocCommentHelper.write(this, this._doc?.properties[getset_info.name]?.description, this._separator_line);
         this._separator_line = true;
 
@@ -464,7 +469,9 @@ class ClassWriter extends IndentWriter {
 
     constructor_(constructor_info: jsb.editor.ConstructorInfo) {
         this._separator_line = true;
-        const args = constructor_info.arguments.map(it => `${replace(it.name)}: ${get_primitive_type_name_as_input(it.type)}`).join(", ");
+        const args = constructor_info.arguments.map(it => 
+            `${replace_var_name(it.name)}: ${this.types.replace_type_inplace(get_primitive_type_name_as_input(it.type), this.get_scoped_type_replacer())}`
+            ).join(", ");
         this.line(`constructor(${args})`);
     }
 
@@ -474,9 +481,9 @@ class ClassWriter extends IndentWriter {
 
     operator_(operator_info: jsb.editor.OperatorInfo) {
         this._separator_line = true;
-        const return_type_name = get_primitive_type_name(operator_info.return_type);
-        const left_type_name = get_primitive_type_name_as_input(operator_info.left_type);
-        const right_type_name = get_primitive_type_name_as_input(operator_info.right_type);
+        const return_type_name = this.types.replace_type_inplace(get_primitive_type_name(operator_info.return_type), this.get_scoped_type_replacer());
+        const left_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.left_type), this.get_scoped_type_replacer());
+        const right_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.right_type), this.get_scoped_type_replacer());
         this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
     }
 
@@ -488,11 +495,22 @@ class ClassWriter extends IndentWriter {
         this.method_(method_info, "");
     }
 
+    private get_scoped_type_replacer() {
+        if (this._name == "Signal" || this._name == "Callable") {
+            return function(type_name: string): string {
+                if (type_name == "Signal") return "AnySignal";
+                if (type_name == "Callable") return "AnyCallable";
+                return type_name;
+            }
+        }
+        return undefined;
+    }
+
     method_(method_info: jsb.editor.MethodBind, category: string) {
         DocCommentHelper.write(this, this._doc?.methods[method_info.name]?.description, this._separator_line);
         this._separator_line = true;
-        const args = this.types.make_args(method_info);
-        const rval = this.types.make_return(method_info);
+        const args = this.types.make_args(method_info, this.get_scoped_type_replacer());
+        const rval = this.types.make_return(method_info, this.get_scoped_type_replacer());
         const prefix = this.make_method_prefix(method_info);
 
         // some godot methods declared with special characters which can not be declared literally
@@ -506,15 +524,12 @@ class ClassWriter extends IndentWriter {
     signal_(signal_info: jsb.editor.SignalInfo) {
         DocCommentHelper.write(this, this._doc?.signals[signal_info.name]?.description, this._separator_line);
         this._separator_line = true;
-        
-        const args = this.types.make_args(signal_info.method_);
-        const rval = this.types.make_return(signal_info.method_);
-        const sig = `// ${args} => ${rval}`;
+        const sig = this.types.make_signal_type(signal_info.method_);
 
         if (this._singleton_mode) {
-            this.line(`static readonly ${signal_info.name}: Signal ${sig}`);
+            this.line(`static readonly ${signal_info.name}: ${sig}`);
         } else {
-            this.line(`readonly ${signal_info.name}: Signal ${sig}`);
+            this.line(`readonly ${signal_info.name}: ${sig}`);
         }
     }
 }
@@ -624,7 +639,7 @@ class TypeDB {
     find_doc(class_name: string): jsb.editor.ClassDoc | undefined {
         let class_doc = this.class_docs[class_name];
         if (typeof class_doc === "object") {
-            return <jsb.editor.ClassDoc> class_doc;
+            return <jsb.editor.ClassDoc>class_doc;
         }
         if (typeof class_doc === "boolean") {
             return undefined;
@@ -647,7 +662,7 @@ class TypeDB {
         }
         return true;
     }
-    
+
     make_classname(class_name: string, used_as_input: boolean): string {
         const types = this;
         const remap_name: string | undefined = RemapTypes[class_name];
@@ -698,12 +713,12 @@ class TypeDB {
             }
             return `any /*unhandled: ${info.type}*/`;
         }
-        
+
         return this.make_classname(info.class_name, used_as_input);
     }
 
-    make_arg(info: jsb.editor.PropertyInfo): string {
-        return `${replace(info.name)}: ${this.make_typename(info, true)}`
+    make_arg(info: jsb.editor.PropertyInfo, type_replacer?: (name: string) => string): string {
+        return `${replace_var_name(info.name)}: ${this.replace_type_inplace(this.make_typename(info, true), type_replacer)}`
     }
 
     make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
@@ -711,7 +726,7 @@ class TypeDB {
         const type_name = get_primitive_type_name(value.type);
         switch (value.type) {
             case Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
-            case Variant.Type.TYPE_FLOAT: 
+            case Variant.Type.TYPE_FLOAT:
             case Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
             case Variant.Type.TYPE_STRING:
             case Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
@@ -766,34 +781,54 @@ class TypeDB {
         return `<any> {} /*compound.type from ${Variant.Type[value.type]} (${value.value})*/`;
     }
 
-    make_arg_default_value(method_info: jsb.editor.MethodBind, index: number): string {
-        const default_arguments = method_info.default_arguments || [];
-        const def_index = index - (method_info.args_.length - default_arguments.length);
-        if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index]);
-        return this.make_arg(method_info.args_[index]) + " = " + this.make_literal_value(default_arguments[def_index]);
+    replace_type_inplace(name: string | undefined, type_replacer?: (name: string) => string): string {
+        return typeof type_replacer === "function" ? type_replacer(name!) : name!;
     }
 
-    make_args(method_info: jsb.editor.MethodBind): string {
+    make_arg_default_value(method_info: jsb.editor.MethodBind, index: number, type_replacer?: (name: string) => string): string {
+        const default_arguments = method_info.default_arguments || [];
+        const def_index = index - (method_info.args_.length - default_arguments.length);
+        if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index], type_replacer);
+        return this.make_arg(method_info.args_[index], type_replacer) + " = " + this.make_literal_value(default_arguments[def_index]);
+    }
+
+    make_args(method_info: jsb.editor.MethodBind, type_replacer?: (name: string) => string): string {
         //TODO consider default arguments
         const varargs = "...vargargs: any[]";
         const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
         if (method_info.args_.length == 0) {
             return is_vararg ? varargs : "";
         }
-        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index)).join(", ");
+        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index, type_replacer)).join(", ");
         if (is_vararg) {
             return `${args}, ${varargs}`;
         }
         return args;
     }
 
-    make_return(method_info: jsb.editor.MethodBind): string {
+    make_return(method_info: jsb.editor.MethodBind, type_replacer?: (name: string) => string): string {
         //TODO
         if (typeof method_info.return_ != "undefined") {
-            return this.make_typename(method_info.return_, false)
+            return this.replace_type_inplace(this.make_typename(method_info.return_, false), type_replacer);
         }
         return "void"
     }
+
+    make_signal_type(method_info: jsb.editor.MethodBind): string {
+        const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
+        if (is_vararg || method_info.args_.length > 5) {
+            // too difficult to declare as strongly typed, just fallback to raw signal type
+            return "Signal";
+        }
+
+        const base_name = "Signal" + method_info.args_.length;
+        if (method_info.args_.length == 0) {
+            return base_name;
+        }
+        const args = method_info.args_.map((it, index) => this.make_typename(method_info.args_[index], true)).join(", ");
+        return `${base_name}<${args}>`;
+    }
+
 }
 
 // d.ts generator

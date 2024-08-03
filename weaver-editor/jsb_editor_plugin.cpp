@@ -81,6 +81,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 
     // type declaration files
     install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
 
     // ts source files
     install_files_.push_back({ "jsb.core.ts", "res://jsb", jsb::CH_TYPESCRIPT });
