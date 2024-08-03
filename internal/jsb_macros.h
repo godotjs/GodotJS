@@ -71,6 +71,7 @@
 #define jsb_deprecated(...)
 #define jsb_experimental(...)
 #define jsb_no_discard [[nodiscard]]
+#define jsb_unused(value) ((void) (value))
 
 #define jsb_stackalloc(type, size) (type*) alloca(sizeof(type) * (size))
 

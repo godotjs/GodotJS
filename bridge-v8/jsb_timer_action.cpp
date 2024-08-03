@@ -11,7 +11,7 @@ namespace jsb
 
         jsb_checkf(Realm::wrap(context), "timer triggered after Realm diposed");
         v8::Context::Scope context_scope(context);
-        v8::Local<v8::Value> result;
+        v8::MaybeLocal<v8::Value> result;
         v8::TryCatch try_catch(isolate);
 
         if (argc_ > 0)
@@ -23,7 +23,7 @@ namespace jsb
                 memnew_placement(&argv[index], LocalValue);
                 argv[index] = argv_[index].Get(isolate);
             }
-            func->Call(context, v8::Undefined(isolate), argc_, argv).ToLocal(&result);
+            result = func->Call(context, v8::Undefined(isolate), argc_, argv);
             for (int index = 0; index < argc_; ++index)
             {
                 argv[index].~LocalValue();
@@ -32,13 +32,18 @@ namespace jsb
         }
         else
         {
-            func->Call(context, v8::Undefined(isolate), 0, nullptr).ToLocal(&result);
+            result = func->Call(context, v8::Undefined(isolate), 0, nullptr);
         }
 
-        if (!result.IsEmpty() && !result->IsUndefined())
+#if JSB_DEBUG
+        v8::Local<v8::Value> result_checked;
+        if (result.ToLocal(&result_checked) && !result_checked->IsUndefined())
         {
             JSB_LOG(Verbose, "discarding the return value of TimerAction");
         }
+#else
+        jsb_unused(result);
+#endif
         if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch))
         {
             JSB_LOG(Error, "timer error %s", (String) exception_info);

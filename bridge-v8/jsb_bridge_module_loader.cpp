@@ -663,7 +663,7 @@ namespace jsb
                 for (const DocData::ConstantDoc& constant_doc : class_doc.constants)
                 {
                     v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
-                    constants_obj->Set(context, V8Helper::to_string(isolate, constant_doc.name), constant_obj);
+                    constants_obj->Set(context, V8Helper::to_string(isolate, constant_doc.name), constant_obj).Check();
 
                     set_field(isolate, context, constant_obj, "description", constant_doc.description);
                 }
@@ -674,7 +674,7 @@ namespace jsb
                 for (const DocData::MethodDoc& method_doc : class_doc.methods)
                 {
                     v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
-                    methods_obj->Set(context, V8Helper::to_string(isolate, method_doc.name), method_obj);
+                    methods_obj->Set(context, V8Helper::to_string(isolate, method_doc.name), method_obj).Check();
 
                     set_field(isolate, context, method_obj, "description", method_doc.description);
                 }
@@ -685,7 +685,7 @@ namespace jsb
                 for (const DocData::PropertyDoc& property_doc : class_doc.properties)
                 {
                     v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
-                    properties_obj->Set(context, V8Helper::to_string(isolate, property_doc.name), property_obj);
+                    properties_obj->Set(context, V8Helper::to_string(isolate, property_doc.name), property_obj).Check();
 
                     set_field(isolate, context, property_obj, "description", property_doc.description);
                 }
@@ -696,7 +696,7 @@ namespace jsb
                 for (const DocData::MethodDoc& signal_doc : class_doc.signals)
                 {
                     v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
-                    signals_obj->Set(context, V8Helper::to_string(isolate, signal_doc.name), signal_obj);
+                    signals_obj->Set(context, V8Helper::to_string(isolate, signal_doc.name), signal_obj).Check();
 
                     set_field(isolate, context, signal_obj, "description", signal_doc.description);
                 }
