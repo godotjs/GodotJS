@@ -1654,7 +1654,7 @@ namespace jsb
             memnew_placement(&argv[index], LocalValue);
             if (!Realm::gd_var_to_js(isolate, context, *p_args[index], argv[index]))
             {
-                // revert constructed values if error occured
+                // revert constructed values if error occurred
                 while (index >= 0) argv[index--].~LocalValue();
                 r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
                 return {};
