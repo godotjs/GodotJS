@@ -38,6 +38,8 @@ curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8
 # NOTE: no white space after the switch `-o`
 7z x -o"YourGodotEngineSource/modules/GodotJS" your/download/path/v8.zip 
 ```
+> [!NOTE]
+> Don't forget to put the headers/libraries of `v8` into the same directory structure used in prebuilt `v8` if you decide to compile it by yourself.
 
 The module directroy structure looks like this:
 ```
@@ -63,14 +65,16 @@ The currently used version of `v8` is `12.4.254.20`.
 
 **STEP 3:** Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
-A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/releases).
-
 > [!NOTE]
 > Since the prebuilt `v8` library is built with the `windows-latest` github runner which uses VS2022, encountering `Unresolved external symbol` errors during linkage with `v8_monolith.lib` or `libucrt.lib` may be addressed by updating to the latest version of the `MSVC v143` toolchain, `Windows Universal CRT SDK` and `Visual Studio 2022` itself.
 
+A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/releases).  
+**Because the GodotJS-Build workflow is currently run manually, it may not be built from the latest commit of `GodotJS`.**
+
 ## Examples 
 
-For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.
+For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.  
+**And, don't forget to run `npx tsc` before opening the example project.**
 
 [![Example: Snake](./docs/assets/snake_01.gif)](https://github.com/ialex32x/GodotJSExample.git)
 [![Example: Jummpy Bird](./docs/assets/jumpybird.gif)](https://github.com/ialex32x/GodotJSExample.git)
