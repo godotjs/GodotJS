@@ -74,7 +74,7 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 ## Examples 
 
 For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.  
-**And, don't forget to run `npx tsc` before opening the example project.**
+**And, don't forget to run `npm install` and `npx tsc` before opening the example project.**
 
 [![Example: Snake](./docs/assets/snake_01.gif)](https://github.com/ialex32x/GodotJSExample.git)
 [![Example: Jummpy Bird](./docs/assets/jumpybird.gif)](https://github.com/ialex32x/GodotJSExample.git)
