@@ -126,9 +126,12 @@ Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
         parsed = parsed.replacen("__MODULE__", "CommonJS"); // CommonJS is the only option currently supported
         parsed = parsed.replacen("__TYPE_ROOTS__", String(",").join({ R"("./node_modules/@types")", "\"./" JSB_TYPE_ROOT "\"" }));
         outfile->store_string(parsed);
-        return OK;
     }
-    outfile->store_buffer((const uint8_t*) data, size);
+    else
+    {
+        outfile->store_buffer((const uint8_t*) data, size);
+    }
+    EditorFileSystem::get_singleton()->update_file(target_name);
     return OK;
 }
 
@@ -220,7 +223,6 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
         JSB_LOG(Verbose, "install file '%s' to '%s'", info.source_name, info.target_dir);
     }
 
-    EditorFileSystem::get_singleton()->scan();
     generate_godot_dts();
     load_editor_entry_module();
     ensure_tsc_installed();
