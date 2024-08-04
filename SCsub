@@ -213,6 +213,7 @@ if env.editor_build:
         "scripts/src/jsb.editor.codegen.ts": "",
 
         "scripts/godot-typings/godot.minimal.d.ts": "",
+        "scripts/godot-typings/godot.mix.d.ts": "",
 
         "scripts/presets/package.json.txt": "package.json",
         "scripts/presets/tsconfig.json.txt": "tsconfig.json",
