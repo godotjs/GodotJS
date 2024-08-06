@@ -1,6 +1,7 @@
 ﻿#ifndef GODOTJS_VARIANT_INFO_H
 #define GODOTJS_VARIANT_INFO_H
 #include "jsb_macros.h"
+#include "jsb_variant_util.h"
 
 namespace jsb::internal
 {
@@ -9,31 +10,26 @@ namespace jsb::internal
         bool is_vararg;
         Variant::Type return_type;
         Vector<Variant::Type> argument_types;
+
+#if JSB_DEBUG
+        // only for debug
+        StringName name_;
+        jsb_force_inline void set_debug_name(const StringName& p_name) { name_ = p_name; }
+#else
+        jsb_force_inline void set_debug_name(const StringName& p_name) {}
+#endif
     };
 
-    //TODO avoid unnecessary runtime lookup, use the version with validated function pointer of variant
-    struct FMethodInfo : FMethodInfoBase
+    struct FBuiltinMethodInfo : FMethodInfoBase
     {
-        StringName name;
+        Variant::ValidatedBuiltInMethod builtin_func;
         Vector<Variant> default_arguments;
 
         jsb_force_inline bool check_argc(int p_argc) const
         {
-            return check_argc(is_vararg, p_argc, default_arguments.size(), argument_types.size());
+            return VariantUtil::check_argc(is_vararg, p_argc, default_arguments.size(), argument_types.size());
         }
 
-        jsb_force_inline static bool check_argc(bool p_is_vararg, int p_argc, int p_default_num, int p_expected_num)
-        {
-            if (p_is_vararg)
-            {
-                return p_argc + p_default_num >= p_expected_num;
-            }
-            if (p_default_num == 0)
-            {
-                return p_argc == p_expected_num;
-            }
-            return p_argc <= p_expected_num && p_argc + p_default_num >= p_expected_num;
-        }
     };
 
     struct FUtilityMethodInfo : FMethodInfoBase
@@ -42,12 +38,7 @@ namespace jsb::internal
 
         jsb_force_inline bool check_argc(int p_argc) const
         {
-            return check_argc(is_vararg, p_argc, argument_types.size());
-        }
-
-        jsb_force_inline static bool check_argc(bool p_is_vararg, int p_argc, int p_expected_num)
-        {
-            return p_is_vararg ? p_argc >= p_expected_num : p_argc == p_expected_num;
+            return is_vararg ? p_argc >= argument_types.size() : p_argc == argument_types.size();
         }
     };
 
@@ -61,7 +52,7 @@ namespace jsb::internal
     struct VariantInfoCollection
     {
         Vector<FUtilityMethodInfo> utility_funcs;
-        Vector<FMethodInfo> methods;
+        Vector<FBuiltinMethodInfo> methods;
         Vector<FGetSetInfo> getsets;
     };
 }

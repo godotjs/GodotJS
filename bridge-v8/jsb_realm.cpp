@@ -1345,7 +1345,7 @@ namespace jsb
         }
 
         // prepare argv
-        if (!internal::FMethodInfo::check_argc(method_bind->is_vararg(), argc, method_bind->get_default_argument_count(), method_bind->get_argument_count()))
+        if (!internal::VariantUtil::check_argc(method_bind->is_vararg(), argc, method_bind->get_default_argument_count(), method_bind->get_argument_count()))
         {
             jsb_throw(isolate, "num of arguments does not meet the requirement");
             return;
@@ -1451,6 +1451,7 @@ namespace jsb
             // method_info.default_arguments = ...
             method_info.return_type = Variant::get_utility_function_return_type(type_name);
             method_info.is_vararg = Variant::is_utility_function_vararg(type_name);
+            method_info.set_debug_name(type_name);
             method_info.utility_func = Variant::get_validated_utility_function(type_name);
             jsb_check(method_info.utility_func);
             JSB_LOG(VeryVerbose, "expose godot utility function %s (%d)", type_name, utility_func_index);

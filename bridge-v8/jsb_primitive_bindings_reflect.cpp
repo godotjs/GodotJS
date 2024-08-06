@@ -162,8 +162,9 @@ namespace jsb
         {
             const int collection_index = GetVariantInfoCollection(p_env.realm).methods.size();
             GetVariantInfoCollection(p_env.realm).methods.append({});
-            internal::FMethodInfo& method_info = GetVariantInfoCollection(p_env.realm).methods.write[collection_index];
-            method_info.name = p_name;
+            internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.realm).methods.write[collection_index];
+            method_info.set_debug_name(p_name);
+            method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, p_name);
             method_info.return_type = Variant::get_builtin_method_return_type(TYPE, p_name);
             method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, p_name);
             const int argument_count = Variant::get_builtin_method_argument_count(TYPE, p_name);
@@ -380,65 +381,71 @@ namespace jsb
             info.GetReturnValue().Set(r_val);
         }
 
-        static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void call_builtin_function(Variant* self, const internal::FBuiltinMethodInfo& method_info,
+            const v8::FunctionCallbackInfo<v8::Value>& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context)
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
             const int argc = info.Length();
-            if (info.This()->InternalFieldCount() != IF_VariantFieldCount)
-            {
-                jsb_throw(isolate, "no bound this");
-                return;
-            }
-            Variant* self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
-            if (!self)
-            {
-                jsb_throw(isolate, "no bound this");
-                return;
-            }
-
-            // prepare argv
             if (!method_info.check_argc(argc))
             {
                 jsb_throw(isolate, "num of arguments does not meet the requirement");
                 return;
             }
-            const Variant** argv = jsb_stackalloc(const Variant*, argc);
+
+            // prepare argv
             const int known_argc = method_info.argument_types.size();
-            Variant* args = jsb_stackalloc(Variant, argc);
-            for (int index = 0; index < argc; ++index)
+            const int allocated_argc = MAX(known_argc, argc);
+            const Variant** argv = jsb_stackalloc(const Variant*, allocated_argc);
+            Variant* args = jsb_stackalloc(Variant, allocated_argc);
+            for (int index = 0; index < allocated_argc; ++index)
             {
                 memnew_placement(&args[index], Variant);
                 argv[index] = &args[index];
-                if (index < known_argc
-                    ? !Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
-                    : !Realm::js_to_gd_var(isolate, context, info[index], args[index]))
+                if (index < known_argc)
                 {
-                    // revert all constructors
-                    v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
-                    while (index >= 0) { args[index--].~Variant(); }
-                    isolate->ThrowError(error_message);
-                    return;
+                    if (index < argc)
+                    {
+                        if (Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index]))
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // identical to: i - p_argcount + (dvs - missing)
+                        const int default_index = index - (known_argc - method_info.default_arguments.size());
+                        if (default_index >= 0)
+                        {
+                            args[index] = method_info.default_arguments[default_index];
+                            continue;
+                        }
+                    }
                 }
+                else
+                {
+                    if (Realm::js_to_gd_var(isolate, context, info[index], args[index]))
+                    {
+                        continue;
+                    }
+                }
+
+                // revert all constructors
+                v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
+                while (index >= 0) { args[index--].~Variant(); }
+                isolate->ThrowError(error_message);
+                return;
             }
 
             // call godot method
-            Callable::CallError error;
             Variant crval;
-            self->callp(method_info.name, argv, argc, crval, error);
+            internal::VariantUtil::construct_variant(crval, method_info.return_type);
+            method_info.builtin_func(self, argv, allocated_argc, &crval);
 
             // don't forget to destruct all stack allocated variants
-            for (int index = 0; index < argc; ++index)
+            for (int index = 0; index < allocated_argc; ++index)
             {
                 args[index].~Variant();
             }
 
-            if (error.error != Callable::CallError::CALL_OK)
-            {
-                jsb_throw(isolate, "failed to call");
-                return;
-            }
             v8::Local<v8::Value> jrval;
             if (Realm::gd_var_to_js(isolate, context, crval, jrval))
             {
@@ -448,61 +455,30 @@ namespace jsb
             jsb_throw(isolate, "failed to translate godot variant to v8 value");
         }
 
+        static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
+            Variant* self = info.This()->InternalFieldCount() == IF_VariantFieldCount
+                ? (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer)
+                : nullptr;
+            if (!self)
+            {
+                jsb_throw(isolate, "no bound this");
+                return;
+            }
+
+            call_builtin_function(self, method_info, info, isolate, context);
+        }
+
         static void _static_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
-            const int argc = info.Length();
+            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
 
-            // prepare argv
-            if (!method_info.check_argc(argc))
-            {
-                jsb_throw(isolate, "num of arguments does not meet the requirement");
-                return;
-            }
-            const Variant** argv = jsb_stackalloc(const Variant*, argc);
-            const int known_argc = method_info.argument_types.size();
-            Variant* args = jsb_stackalloc(Variant, argc);
-            for (int index = 0; index < argc; ++index)
-            {
-                memnew_placement(&args[index], Variant);
-                argv[index] = &args[index];
-                if (index < known_argc
-                    ? !Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
-                    : !Realm::js_to_gd_var(isolate, context, info[index], args[index]))
-                {
-                    // revert all constructors
-                    v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
-                    while (index >= 0) { args[index--].~Variant(); }
-                    isolate->ThrowError(error_message);
-                    return;
-                }
-            }
-
-            // call godot method
-            Callable::CallError error;
-            Variant crval;
-            Variant::call_static(TYPE, method_info.name, argv, argc, crval, error);
-
-            // don't forget to destruct all stack allocated variants
-            for (int index = 0; index < argc; ++index)
-            {
-                args[index].~Variant();
-            }
-
-            if (error.error != Callable::CallError::CALL_OK)
-            {
-                jsb_throw(isolate, "failed to call");
-                return;
-            }
-            v8::Local<v8::Value> jrval;
-            if (Realm::gd_var_to_js(isolate, context, crval, jrval))
-            {
-                info.GetReturnValue().Set(jrval);
-                return;
-            }
-            jsb_throw(isolate, "failed to translate godot variant to v8 value");
+            call_builtin_function(nullptr, method_info, info, isolate, context);
         }
 
         static NativeClassID reflect_bind(const FBindingEnv& p_env)
@@ -544,11 +520,13 @@ namespace jsb
                     const int index = register_builtin_method(p_env, name);
                     if (Variant::is_builtin_method_static(TYPE, name))
                     {
-                        function_template->Set(V8Helper::to_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, _static_method, v8::Int32::New(p_env.isolate, index)));
+                        function_template->Set(V8Helper::to_string(p_env.isolate, name),
+                            v8::FunctionTemplate::New(p_env.isolate, _static_method, v8::Int32::New(p_env.isolate, index)));
                     }
                     else
                     {
-                        prototype_template->Set(V8Helper::to_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, _instance_method, v8::Int32::New(p_env.isolate, index)));
+                        prototype_template->Set(V8Helper::to_string(p_env.isolate, name),
+                            v8::FunctionTemplate::New(p_env.isolate, _instance_method, v8::Int32::New(p_env.isolate, index)));
                     }
                 }
             }
