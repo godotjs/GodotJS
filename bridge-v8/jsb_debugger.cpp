@@ -163,12 +163,12 @@ namespace jsb
 	        return true;
 	    }
 
-	    virtual void sendResponse(int callId, std::unique_ptr<v8_inspector::StringBuffer> message) override { send_mseeage(message->string()); }
-	    virtual void sendNotification(std::unique_ptr<v8_inspector::StringBuffer> message) override { send_mseeage(message->string()); }
+	    virtual void sendResponse(int callId, std::unique_ptr<v8_inspector::StringBuffer> message) override { send_message(message->string()); }
+	    virtual void sendNotification(std::unique_ptr<v8_inspector::StringBuffer> message) override { send_message(message->string()); }
 		virtual void flushProtocolNotifications() override {}
 
 	private:
-	    void send_mseeage(const v8_inspector::StringView& view)
+	    void send_message(const v8_inspector::StringView& view)
 	    {
 	        if (view.is8Bit())
 	        {
