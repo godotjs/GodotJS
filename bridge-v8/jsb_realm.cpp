@@ -548,25 +548,28 @@ namespace jsb
         return ERR_COMPILATION_FAILED;
     }
 
-    const NativeClassInfo* Realm::_expose_godot_primitive_class(Variant::Type p_type, NativeClassID* r_class_id)
+    const NativeClassInfo* Realm::_expose_class(const StringName& p_type_name, NativeClassID* r_class_id)
     {
-        GodotPrimitiveImport& importer = godot_primitive_index_[p_type];
-        if (!importer.id.is_valid())
+        ClassRegister* class_register = class_register_map_.getptr(p_type_name);
+        if (jsb_unlikely(!class_register)) return nullptr;
+
+        if (!class_register->id.is_valid())
         {
-            importer.id = importer.register_func(FBindingEnv {
+            class_register->id = class_register->register_func(FBindingEnv {
                 environment_.get(),
                 this,
-                importer.type_name,
+                p_type_name,
                 environment_->isolate_,
                 this->context_.Get(environment_->isolate_),
                 this->function_pointers_
             });
-            jsb_check(importer.id.is_valid());
-            JSB_LOG(VeryVerbose, "import primitive type %s", (String) importer.type_name);
+            jsb_check(class_register->id.is_valid());
+            JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, (uint32_t) class_register->id);
         }
-        if (r_class_id) *r_class_id = importer.id;
-        NativeClassInfo& class_info = environment_->get_native_class(importer.id);
-        jsb_check(class_info.name == importer.type_name);
+
+        if (r_class_id) *r_class_id = class_register->id;
+        const NativeClassInfo& class_info = environment_->get_native_class(class_register->id);
+        jsb_check(class_info.name == p_type_name);
         return &class_info;
     }
 
@@ -1201,7 +1204,6 @@ namespace jsb
         case Variant::PACKED_COLOR_ARRAY:
             {
                 jsb_checkf(Variant::can_convert(p_cvar.get_type(), p_type), "variant type can't convert to %s from %s", Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
-                //TODO TEMP SOLUTION
                 Realm* realm = Realm::wrap(context);
                 NativeClassID class_id;
                 if (const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(p_type, &class_id))
@@ -1210,10 +1212,7 @@ namespace jsb
                     v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
                     r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
                     jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
-                    // void* pointer = r_jval.As<v8::Object>()->GetAlignedPointerFromInternalField(kObjectFieldPointer);
-                    // *(Variant*)pointer = p_cvar;
 
-                    // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
                     Environment* environment = realm->environment_.get();
                     environment->bind_valuetype(class_id, environment->alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
@@ -1232,10 +1231,7 @@ namespace jsb
     void Realm::_godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        // v8::Isolate::Scope isolate_scope(isolate);
-        // v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        // v8::Context::Scope context_scope(context);
 
         Environment* environment = Environment::wrap(isolate);
         const StringName name = environment->string_name_cache_.get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
@@ -1250,7 +1246,7 @@ namespace jsb
         v8::Local<v8::Value> rval;
         if (!gd_var_to_js(isolate, context, signal, rval))
         {
-            isolate->ThrowError("bad signal");
+            jsb_throw(isolate, "bad signal");
             return;
         }
         info.GetReturnValue().Set(rval);
@@ -1473,22 +1469,17 @@ namespace jsb
             return;
         }
 
-        // (4) classes in ClassDB or PrimitiveTypes
+        // (4) classes in ClassDB/PrimitiveTypes
         {
-            //TODO check static bindings at first, and dynamic bindings as a fallback
-
-            // dynamic binding:
-            // - primitive types
-            if (const Variant::Type* it = realm->godot_primitive_map_.getptr(type_name))
+            if (const NativeClassInfo* class_info = realm->_expose_class(type_name))
             {
-                const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(*it);
-                jsb_check(class_info);
+                jsb_check(class_info->name == type_name);
                 jsb_check(!class_info->template_.IsEmpty());
                 info.GetReturnValue().Set(class_info->get_function(isolate, context));
                 return;
             }
 
-            // - class types
+            // dynamic binding: godot class types
             if (const ClassDB::ClassInfo* it = ClassDB::classes.getptr(type_name))
             {
                 if (const NativeClassID class_id = realm->_expose_godot_class(it))

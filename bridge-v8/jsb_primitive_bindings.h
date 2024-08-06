@@ -22,7 +22,7 @@ namespace jsb
         internal::CFunctionPointers& function_pointers;
     };
 
-    typedef NativeClassID (*PrimitiveTypeRegisterFunc)(const FBindingEnv& p_env);
+    typedef NativeClassID (*ClassRegisterFunc)(const FBindingEnv& p_env);
 
     void register_primitive_bindings(class Realm* p_realm);
 }

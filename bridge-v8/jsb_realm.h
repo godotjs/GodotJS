@@ -44,15 +44,14 @@ namespace jsb
         std::unordered_map<TWeakRef<v8::Function>, internal::Index32, TWeakRef<v8::Function>::hasher, TWeakRef<v8::Function>::equaler> function_refs_; // backlink
         internal::SArray<TStrongRef<v8::Function>, internal::Index32> function_bank_;
 
-        struct GodotPrimitiveImport
+        struct ClassRegister
         {
             NativeClassID id = {};
-            StringName type_name;
-            PrimitiveTypeRegisterFunc register_func = nullptr;
+            ClassRegisterFunc register_func = nullptr;
         };
 
-        GodotPrimitiveImport godot_primitive_index_[Variant::VARIANT_MAX] = {};
-        HashMap<StringName, Variant::Type> godot_primitive_map_;
+        HashMap<StringName, ClassRegister> class_register_map_;
+        StringName godot_primitive_map_[Variant::VARIANT_MAX];
 
         internal::VariantInfoCollection variant_info_collection_;
 
@@ -78,11 +77,19 @@ namespace jsb
             return nullptr;
         }
 
-        void register_primitive_binding(Variant::Type p_type, PrimitiveTypeRegisterFunc p_func)
+        void add_class_register(const Variant::Type p_type, const ClassRegisterFunc p_func)
         {
+            jsb_check(!internal::VariantUtil::is_valid_name(godot_primitive_map_[p_type]));
             const StringName type_name = Variant::get_type_name(p_type);
-            godot_primitive_map_.insert(type_name, p_type);
-            godot_primitive_index_[p_type] = { {}, type_name, p_func };
+            godot_primitive_map_[p_type] = type_name;
+            add_class_register(type_name, p_func);
+        }
+
+        void add_class_register(const StringName& p_type_name, const ClassRegisterFunc p_func)
+        {
+            jsb_check(internal::VariantUtil::is_valid_name(p_type_name));
+            jsb_check(!class_register_map_.has(p_type_name));
+            class_register_map_.insert(p_type_name, { {}, p_func });
         }
 
         jsb_force_inline static Realm* wrap(const v8::Local<v8::Context>& p_context)
@@ -171,17 +178,18 @@ namespace jsb
         static void _load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         NativeClassID _expose_godot_class(const ClassDB::ClassInfo* p_class_info);
-        NativeClassID _expose_godot_class(const StringName& p_class_name)
+        jsb_force_inline NativeClassID _expose_godot_class(const StringName& p_class_name)
         {
-            const HashMap<StringName, ClassDB::ClassInfo>::ConstIterator& it = ClassDB::classes.find(p_class_name);
-            return it != ClassDB::classes.end() ? _expose_godot_class(&it->value) : NativeClassID();
+            return _expose_godot_class(ClassDB::classes.getptr(p_class_name));
         }
 
-        const NativeClassInfo* _expose_godot_primitive_class(Variant::Type p_type, NativeClassID* r_class_id = nullptr);
-        const NativeClassInfo* _expose_godot_primitive_class(const StringName& p_type_name, NativeClassID* r_class_id = nullptr)
+        // return nullptr if no register for `p_type_name`
+        const NativeClassInfo* _expose_class(const StringName& p_type_name, NativeClassID* r_class_id = nullptr);
+
+        const NativeClassInfo* _expose_godot_primitive_class(const Variant::Type p_type, NativeClassID* r_class_id = nullptr)
         {
-            const HashMap<StringName, Variant::Type>::ConstIterator& it = godot_primitive_map_.find(p_type_name);
-            return it != godot_primitive_map_.end() ? _expose_godot_primitive_class(it->value, r_class_id) : nullptr;
+            jsb_check(internal::VariantUtil::is_valid_name(godot_primitive_map_[p_type]));
+            return _expose_class(godot_primitive_map_[p_type], r_class_id);
         }
 
         // return false if something wrong with an exception thrown
@@ -207,7 +215,6 @@ namespace jsb
         static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, Variant::Type p_type, v8::Local<v8::Value>& r_jval);
         static bool js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar);
 
-        //TODO not fully implemented
         /**
          * Translate js val into gd variant without any type hint
          */

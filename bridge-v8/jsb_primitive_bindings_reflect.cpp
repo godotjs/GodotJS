@@ -7,7 +7,7 @@
 #include "../internal/jsb_variant_info.h"
 #include "../internal/jsb_variant_util.h"
 
-#define RegisterPrimitiveType(TypeName) register_primitive_binding(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
+#define RegisterPrimitiveType(TypeName) add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
 #define GetVariantInfoCollection(p_realm) (p_realm)->get_variant_info_collection() // ::jsb::internal::VariantInfoCollection::global
 
 #define JSB_DEFINE_OPERATOR2(op_code) function_template->\

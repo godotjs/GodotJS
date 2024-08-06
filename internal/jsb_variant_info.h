@@ -63,14 +63,6 @@ namespace jsb::internal
         Vector<FMethodInfo> methods;
         Vector<FGetSetInfo> getsets;
 
-        // Vector<MethodInfo> utility_funcs;
-        //
-        // jsb_force_inline const MethodInfo& get_utility_func(int p_index)
-        // {
-        //     jsb_check(p_index >= 0 && p_index < utility_funcs.size());
-        //     return utility_funcs[p_index];
-        // }
-
         jsb_force_inline const FGetSetInfo& get_setter(int p_index)
         {
             jsb_check(p_index >= 0 && p_index < getsets.size());
