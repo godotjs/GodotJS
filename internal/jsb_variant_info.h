@@ -49,8 +49,21 @@ namespace jsb::internal
         Variant::Type type;
     };
 
+    struct FConstructorVariantInfo
+    {
+        Variant::ValidatedConstructor ctor_func;
+        Vector<Variant::Type> argument_types;
+    };
+
+    struct FConstructorInfo
+    {
+        NativeClassID class_id;
+        Vector<FConstructorVariantInfo> variants;
+    };
+
     struct VariantInfoCollection
     {
+        Vector<FConstructorInfo> constructors;
         Vector<FUtilityMethodInfo> utility_funcs;
         Vector<FBuiltinMethodInfo> methods;
         Vector<FGetSetInfo> getsets;

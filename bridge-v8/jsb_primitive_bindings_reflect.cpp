@@ -206,19 +206,21 @@ namespace jsb
                 return;
             }
             v8::Local<v8::Object> self = info.This();
-            const internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
+            const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(Realm::wrap(context)).constructors[info.Data().As<v8::Int32>()->Value()];
+            jsb_check(constructor_info.class_id.is_valid());
             Environment* environment = Environment::wrap(isolate);
 
             const int argc = info.Length();
 
-            const int constructor_count = Variant::get_constructor_count(TYPE);
+            const int constructor_count = constructor_info.variants.size();
             for (int constructor_index = 0; constructor_index < constructor_count; ++constructor_index)
             {
-                if (Variant::get_constructor_argument_count(TYPE, constructor_index) != argc) continue;
+                const internal::FConstructorVariantInfo& constructor_variant = constructor_info.variants[constructor_index];
+                if (constructor_variant.argument_types.size() != argc) continue;
                 bool argument_type_match = true;
                 for (int argument_index = 0; argument_index < argc; ++argument_index)
                 {
-                    const Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, argument_index);
+                    const Variant::Type argument_type = constructor_variant.argument_types[argument_index];
                     if (!Realm::can_convert_strict(isolate, context, info[argument_index], argument_type))
                     {
                         argument_type_match = false;
@@ -233,24 +235,30 @@ namespace jsb
 
                 const Variant** argv = jsb_stackalloc(const Variant*, argc);
                 Variant* args = jsb_stackalloc(Variant, argc);
-                for (int index = 0; index < argc; ++index)
+                for (int argument_index = 0; argument_index < argc; ++argument_index)
                 {
-                    memnew_placement(&args[index], Variant);
-                    argv[index] = &args[index];
-                    const Variant::Type argument_type = Variant::get_constructor_argument_type(TYPE, constructor_index, index);
-                    if (!Realm::js_to_gd_var(isolate, context, info[index], argument_type, args[index]))
+                    memnew_placement(&args[argument_index], Variant);
+                    argv[argument_index] = &args[argument_index];
+                    const Variant::Type argument_type = constructor_variant.argument_types[argument_index];
+                    if (!Realm::js_to_gd_var(isolate, context, info[argument_index], argument_type, args[argument_index]))
                     {
                         // revert all constructors
-                        v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
-                        while (index >= 0) { args[index--].~Variant(); }
+                        v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", argument_index));
+                        while (argument_index >= 0) { args[argument_index--].~Variant(); }
                         isolate->ThrowError(error_message);
                         return;
                     }
+
+                    jsb_checkf(Variant::can_convert_strict(args[argument_index].get_type(), argument_type),
+                        "Realm::can_convert_strict returned inconsistent type %s while %s is expected",
+                        Variant::get_type_name(args[argument_index].get_type()),
+                        Variant::get_type_name(argument_type));
                 }
 
+                // we only need to alloc a dummy instance here because the validated constructor will cast it to the expected type by itself
+                // BE CAUTIOUS: DON'T FORGET TO call `Environment::dealloc_variant(instance)` if `bind_valuetype` is not eventually called
                 Variant* instance = Environment::alloc_variant();
-                Callable::CallError err;
-                Variant::construct(TYPE, *instance, argv, argc, err);
+                constructor_variant.ctor_func(instance, argv);
 
                 // don't forget to destruct all stack allocated variants
                 for (int index = 0; index < argc; ++index)
@@ -258,18 +266,11 @@ namespace jsb
                     args[index].~Variant();
                 }
 
-                if (err.error != Callable::CallError::CALL_OK)
-                {
-                    Environment::dealloc_variant(instance);
-                    jsb_throw(isolate, "bad call");
-                    return;
-                }
-
-                environment->bind_valuetype(class_id, instance, self);
+                environment->bind_valuetype(constructor_info.class_id, instance, self);
                 return;
             }
 
-            jsb_throw(isolate, "bad params");
+            jsb_throw(isolate, "no suitable constructor");
         }
 
         static void finalizer(Environment* environment, void* pointer, bool p_persistent)
@@ -486,7 +487,28 @@ namespace jsb
             const StringName& class_name = p_env.type_name;
             const NativeClassID class_id = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name);
 
-            v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Uint32::NewFromUnsigned(p_env.isolate, class_id));
+            // constructors
+            const int constructor_index = GetVariantInfoCollection(p_env.realm).constructors.size();
+            {
+                GetVariantInfoCollection(p_env.realm).constructors.append({});
+                internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.realm).constructors.write[constructor_index];
+                constructor_info.class_id = class_id;
+                const int count = Variant::get_constructor_count(TYPE);
+                constructor_info.variants.resize_zeroed(count);
+                for (int index = 0; index < count; ++index)
+                {
+                    internal::FConstructorVariantInfo& variant_info = constructor_info.variants.write[index];
+                    variant_info.ctor_func = Variant::get_validated_constructor(TYPE, index);
+                    const int arg_count = Variant::get_constructor_argument_count(TYPE, index);
+                    variant_info.argument_types.resize(arg_count);
+                    for (int arg_index = 0; arg_index < arg_count; ++arg_index)
+                    {
+                        variant_info.argument_types.write[arg_index] = Variant::get_constructor_argument_type(TYPE, index, arg_index);
+                    }
+                }
+            }
+
+            v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Int32::New(p_env.isolate, constructor_index));
             function_template->InstanceTemplate()->SetInternalFieldCount(IF_VariantFieldCount);
             function_template->SetClassName(p_env.environment->get_string_name_cache().get_string_value(p_env.isolate, class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();
