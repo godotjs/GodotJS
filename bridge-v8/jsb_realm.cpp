@@ -562,6 +562,7 @@ namespace jsb
                 this->function_pointers_
             });
             jsb_check(importer.id.is_valid());
+            JSB_LOG(VeryVerbose, "import primitive type %s", (String) importer.type_name);
         }
         if (r_class_id) *r_class_id = importer.id;
         NativeClassInfo& class_info = environment_->get_native_class(importer.id);
@@ -1279,8 +1280,6 @@ namespace jsb
     void Realm::_godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        // v8::HandleScope handle_scope(isolate);
-        // v8::Isolate::Scope isolate_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         const internal::FMethodInfo& method_info = Realm::wrap(context)->get_variant_info_collection().get_method(info.Data().As<v8::Int32>()->Value());
         const int argc = info.Length();
@@ -1417,25 +1416,14 @@ namespace jsb
             return;
         }
 
-        // v8::String::Utf8Value str_utf8(isolate, arg0);
         const StringName type_name(V8Helper::to_string(v8::String::Value(isolate, arg0)));
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         Realm* realm = Realm::wrap(context);
 
-        //NOTE keep the same order with `GDScriptLanguage::init()`
-        // (1) primitive types
-        if (const auto it = realm->godot_primitive_map_.find(type_name); it != realm->godot_primitive_map_.end())
-        {
-            JSB_LOG(VeryVerbose, "import primitive type %s", (String) type_name);
-            const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(it->value);
-            jsb_check(class_info);
-            jsb_check(!class_info->template_.IsEmpty());
-            info.GetReturnValue().Set(class_info->get_function(isolate, context));
-            return;
-        }
+        //NOTE do not break the order in `GDScriptLanguage::init()`
 
-        // (2) singletons have the top priority (in GDScriptLanguage::init, singletons will overwrite the globals slot even if a type/const has the same name)
-        //     checking before getting to avoid error prints in `get_singleton_object`
+        // (1) singletons have the top priority (in GDScriptLanguage::init, singletons will overwrite the globals slot even if a type/const has the same name)
+        //     check before getting to avoid error prints in `get_singleton_object`
         if (Engine::get_singleton()->has_singleton(type_name))
         if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(type_name))
         {
@@ -1452,9 +1440,12 @@ namespace jsb
             return;
         }
 
-        // (3) utility functions.
+        // (2) (global) utility functions.
         if (Variant::has_utility_function(type_name))
         {
+            //TODO check static bindings at first, and dynamic bindings as a fallback
+
+            // dynamic binding:
             jsb_check(sizeof(Variant::ValidatedUtilityFunction) == sizeof(void*));
             const int32_t utility_func_index = (int32_t) realm->get_variant_info_collection().methods.size();
             realm->get_variant_info_collection().methods.append({});
@@ -1464,7 +1455,7 @@ namespace jsb
             return;
         }
 
-        // (4) global_constants
+        // (3) global_constants
         if (CoreConstants::is_global_constant(type_name))
         {
             const int constant_index = CoreConstants::get_global_constant_index(type_name);
@@ -1482,21 +1473,36 @@ namespace jsb
             return;
         }
 
-        // (5) classes in ClassDB
-        const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(type_name);
-        if (it != ClassDB::classes.end())
+        // (4) classes in ClassDB or PrimitiveTypes
         {
-            if (const NativeClassID class_id = realm->_expose_godot_class(&it->value))
+            //TODO check static bindings at first, and dynamic bindings as a fallback
+
+            // dynamic binding:
+            // - primitive types
+            if (const Variant::Type* it = realm->godot_primitive_map_.getptr(type_name))
             {
-                NativeClassInfo& godot_class = realm->environment_->get_native_class(class_id);
-                jsb_check(godot_class.name == type_name);
-                jsb_check(!godot_class.template_.IsEmpty());
-                info.GetReturnValue().Set(godot_class.get_function(isolate, context));
+                const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(*it);
+                jsb_check(class_info);
+                jsb_check(!class_info->template_.IsEmpty());
+                info.GetReturnValue().Set(class_info->get_function(isolate, context));
                 return;
+            }
+
+            // - class types
+            if (const ClassDB::ClassInfo* it = ClassDB::classes.getptr(type_name))
+            {
+                if (const NativeClassID class_id = realm->_expose_godot_class(it))
+                {
+                    const NativeClassInfo& godot_class = realm->environment_->get_native_class(class_id);
+                    jsb_check(godot_class.name == type_name);
+                    jsb_check(!godot_class.template_.IsEmpty());
+                    info.GetReturnValue().Set(godot_class.get_function(isolate, context));
+                    return;
+                }
             }
         }
 
-        // (6) global_enums
+        // (5) global_enums
         if (CoreConstants::is_global_enum(type_name))
         {
             HashMap<StringName, int64_t> enum_values;
@@ -1505,7 +1511,7 @@ namespace jsb
             return;
         }
 
-        // (7) special case: `Variant` (`Variant` is not exposed as it-self in js, but we still need to access the nested enums in it)
+        // (6) special case: `Variant` (`Variant` is not exposed as it-self in js, but we still need to access the nested enums in it)
         // seealso: core/variant/binder_common.h
         //          VARIANT_ENUM_CAST(Variant::Type);
         //          VARIANT_ENUM_CAST(Variant::Operator);
