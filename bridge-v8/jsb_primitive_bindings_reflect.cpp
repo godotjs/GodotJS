@@ -287,7 +287,7 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
             const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
+            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
             internal::VariantUtil::construct_variant(value, getset.type);
@@ -309,7 +309,7 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
             Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).get_setter(info.Data().As<v8::Int32>()->Value());
+            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
             if (!Realm::js_to_gd_var(isolate, context, info[0], getset.type, value))
@@ -384,7 +384,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
+            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
             const int argc = info.Length();
             if (info.This()->InternalFieldCount() != IF_VariantFieldCount)
             {
@@ -452,7 +452,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).get_method(info.Data().As<v8::Int32>()->Value());
+            const internal::FMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
             const int argc = info.Length();
 
             // prepare argv

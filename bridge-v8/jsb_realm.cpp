@@ -1277,7 +1277,7 @@ namespace jsb
     {
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        const internal::FMethodInfo& method_info = Realm::wrap(context)->get_variant_info_collection().get_method(info.Data().As<v8::Int32>()->Value());
+        const internal::FUtilityMethodInfo& method_info = Realm::wrap(context)->get_variant_info_collection().utility_funcs[info.Data().As<v8::Int32>()->Value()];
         const int argc = info.Length();
 
         // prepare argv
@@ -1306,9 +1306,8 @@ namespace jsb
         }
 
         // call godot method
-        Callable::CallError error;
         Variant crval;
-        Variant::call_utility_function(method_info.name, &crval, argv, argc, error);
+        method_info.utility_func(&crval, argv, argc);
 
         // don't forget to destruct all stack allocated variants
         for (int index = 0; index < argc; ++index)
@@ -1316,11 +1315,6 @@ namespace jsb
             args[index].~Variant();
         }
 
-        if (error.error != Callable::CallError::CALL_OK)
-        {
-            jsb_throw(isolate, "failed to call");
-            return;
-        }
         v8::Local<v8::Value> jrval;
         if (Realm::gd_var_to_js(isolate, context, crval, jrval))
         {
@@ -1443,10 +1437,24 @@ namespace jsb
 
             // dynamic binding:
             jsb_check(sizeof(Variant::ValidatedUtilityFunction) == sizeof(void*));
-            const int32_t utility_func_index = (int32_t) realm->get_variant_info_collection().methods.size();
-            realm->get_variant_info_collection().methods.append({});
-            internal::FMethodInfo& method_info = realm->get_variant_info_collection().methods.write[utility_func_index];
-            method_info = Variant::get_utility_function_info(type_name);
+            const int32_t utility_func_index = (int32_t) realm->get_variant_info_collection().utility_funcs.size();
+            realm->get_variant_info_collection().utility_funcs.append({});
+            internal::FUtilityMethodInfo& method_info = realm->get_variant_info_collection().utility_funcs.write[utility_func_index];
+
+            const int argument_count = Variant::get_utility_function_argument_count(type_name);
+            method_info.argument_types.resize(argument_count);
+            for (int index = 0, num = argument_count; index < num; ++index)
+            {
+                method_info.argument_types.write[index] = Variant::get_utility_function_argument_type(type_name, index);
+            }
+            //NOTE currently, utility functions have no default argument.
+            // method_info.default_arguments = ...
+            method_info.return_type = Variant::get_utility_function_return_type(type_name);
+            method_info.is_vararg = Variant::is_utility_function_vararg(type_name);
+            method_info.utility_func = Variant::get_validated_utility_function(type_name);
+            jsb_check(method_info.utility_func);
+            JSB_LOG(VeryVerbose, "expose godot utility function %s (%d)", type_name, utility_func_index);
+
             info.GetReturnValue().Set(v8::Function::New(context, _godot_utility_func, v8::Int32::New(isolate, utility_func_index)).ToLocalChecked());
             return;
         }

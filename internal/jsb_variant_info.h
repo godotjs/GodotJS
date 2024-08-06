@@ -4,50 +4,50 @@
 
 namespace jsb::internal
 {
-    struct FMethodInfo
+    struct FMethodInfoBase
+    {
+        bool is_vararg;
+        Variant::Type return_type;
+        Vector<Variant::Type> argument_types;
+    };
+
+    //TODO avoid unnecessary runtime lookup, use the version with validated function pointer of variant
+    struct FMethodInfo : FMethodInfoBase
     {
         StringName name;
-        Vector<Variant::Type> argument_types;
         Vector<Variant> default_arguments;
-        Variant::Type return_type;
 
-        bool is_vararg;
-
-        jsb_force_inline bool check_argc(int argc) const
+        jsb_force_inline bool check_argc(int p_argc) const
         {
-            return check_argc(is_vararg, argc, default_arguments.size(), argument_types.size());
+            return check_argc(is_vararg, p_argc, default_arguments.size(), argument_types.size());
         }
 
-        jsb_force_inline static bool check_argc(bool is_vararg, int argc, int default_num, int expected_num)
+        jsb_force_inline static bool check_argc(bool p_is_vararg, int p_argc, int p_default_num, int p_expected_num)
         {
-            if (is_vararg)
+            if (p_is_vararg)
             {
-                return argc + default_num >= expected_num;
+                return p_argc + p_default_num >= p_expected_num;
             }
+            if (p_default_num == 0)
+            {
+                return p_argc == p_expected_num;
+            }
+            return p_argc <= p_expected_num && p_argc + p_default_num >= p_expected_num;
+        }
+    };
 
-            if (default_num == 0)
-            {
-                return argc == expected_num;
-            }
-            return argc <= expected_num && argc + default_num >= expected_num;
+    struct FUtilityMethodInfo : FMethodInfoBase
+    {
+        Variant::ValidatedUtilityFunction utility_func;
+
+        jsb_force_inline bool check_argc(int p_argc) const
+        {
+            return check_argc(is_vararg, p_argc, argument_types.size());
         }
 
-        FMethodInfo& operator=(const MethodInfo& p_method_info)
+        jsb_force_inline static bool check_argc(bool p_is_vararg, int p_argc, int p_expected_num)
         {
-            name = p_method_info.name;
-            argument_types.resize(p_method_info.arguments.size());
-            for (int index = 0, num = p_method_info.arguments.size(); index < num; ++index)
-            {
-                argument_types.write[index] = p_method_info.arguments[index].type;
-            }
-            default_arguments.resize(p_method_info.default_arguments.size());
-            for (int index = 0, num = p_method_info.default_arguments.size(); index < num; ++index)
-            {
-                default_arguments.write[index] = p_method_info.default_arguments[index];
-            }
-            return_type = p_method_info.return_val.type;
-            is_vararg = (p_method_info.flags & METHOD_FLAG_VARARG) != 0;
-            return *this;
+            return p_is_vararg ? p_argc >= p_expected_num : p_argc == p_expected_num;
         }
     };
 
@@ -60,20 +60,9 @@ namespace jsb::internal
 
     struct VariantInfoCollection
     {
+        Vector<FUtilityMethodInfo> utility_funcs;
         Vector<FMethodInfo> methods;
         Vector<FGetSetInfo> getsets;
-
-        jsb_force_inline const FGetSetInfo& get_setter(int p_index)
-        {
-            jsb_check(p_index >= 0 && p_index < getsets.size());
-            return getsets[p_index];
-        }
-
-        jsb_force_inline const FMethodInfo& get_method(int p_index)
-        {
-            jsb_check(p_index >= 0 && p_index < methods.size());
-            return methods[p_index];
-        }
     };
 }
 #endif
