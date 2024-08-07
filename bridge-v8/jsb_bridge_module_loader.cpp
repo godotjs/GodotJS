@@ -345,7 +345,7 @@ namespace jsb
                     build_property_info(isolate, context, property_info, property_info_obj);
                     build_property_info(isolate, context, property_name, getset_info, getset_info_obj);
                     properties_obj->Set(context, index++, getset_info_obj).Check();
-                    if (pair.value.index > 0)
+                    if (pair.value.index >= 0)
                     {
                         // we do not exclude get/set methods in this case, because the method may not be covered by all properties
                     }
