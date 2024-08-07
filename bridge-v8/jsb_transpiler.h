@@ -15,7 +15,7 @@
         NativeClassInfo& class_info = env->get_native_class(class_id);\
         class_info.finalizer = &finalizer;\
         class_info.template_.Reset(isolate, template_);\
-        template_->SetClassName(env->get_string_name_cache().get_string_value(isolate, class_info.name));\
+        template_->SetClassName(env->get_string_value(class_info.name));\
         return template_;\
     }
 
@@ -29,7 +29,7 @@
         NativeClassInfo& class_info = env->get_native_class(class_id);\
         class_info.finalizer = &finalizer;\
         class_info.template_.Reset(isolate, template_);\
-        template_->SetClassName(env->get_string_name_cache().get_string_value(isolate, class_info.name));\
+        template_->SetClassName(env->get_string_value(class_info.name));\
         return template_;\
     }
 

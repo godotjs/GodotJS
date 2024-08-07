@@ -163,7 +163,7 @@ namespace jsb
             return;
         }
         Environment* environment = Environment::wrap(isolate);
-        const StringName module_id_str = environment->get_string_name_cache().get_string_name(isolate, info[0].As<v8::String>());
+        const StringName module_id_str = environment->get_string_name(info[0].As<v8::String>());
         // const StringName module_id_str = V8Helper::to_string(v8::String::Value(isolate, info[0]));
         if (!internal::VariantUtil::is_valid_name(module_id_str))
         {

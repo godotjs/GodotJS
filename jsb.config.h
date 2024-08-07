@@ -22,7 +22,8 @@
 // print benchmark
 #define JSB_BENCHMARK 1
 
-#define JSB_VERIFY_OBJECT 1
+// Check if the type of `p_pointer` is really NativeClassType::GodotObject.
+#define JSB_VERIFY_GODOT_OBJECT 1
 
 // enable `RequestGarbageCollectionForTesting`
 #define JSB_EXPOSE_GC_FOR_TESTING 0

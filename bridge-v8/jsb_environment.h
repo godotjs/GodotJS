@@ -27,6 +27,7 @@ namespace jsb
         kIsolateEmbedderData = 0,
     };
 
+    // pre-allocated Symbols which usually used as key of Object to store some hidden info on it.
     namespace Symbols
     {
         enum Type : uint8_t
@@ -125,8 +126,10 @@ namespace jsb
         static jsb_force_inline void dealloc_variant(Variant* p_var) { variant_allocator_.free(p_var); }
 
         jsb_force_inline internal::TTimerManager<JavaScriptTimerAction>& get_timer_manager() { return timer_manager_; }
+
         jsb_force_inline StringNameCache& get_string_name_cache() { return string_name_cache_; }
         jsb_force_inline v8::Local<v8::String> get_string_value(const StringName& p_name) { return string_name_cache_.get_string_value(isolate_, p_name); }
+        jsb_force_inline StringName get_string_name(const v8::Local<v8::String>& p_value) { return string_name_cache_.get_string_name(isolate_, p_value); }
 
         jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const { return symbols_[p_type].Get(isolate_); }
 
@@ -160,12 +163,14 @@ namespace jsb
                         // possible reference based elements included, they're required to be released in the main thread for simplicity.
                         if (const std::shared_ptr<Environment> env = _access(deleter_data))
                         {
-                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d thread:%s", Variant::get_type_name(type), uitos((uintptr_t) variant), env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
+                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d thread:%s",
+                                Variant::get_type_name(type), uitos((uintptr_t) variant), env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
                             // we assume that there is only one scavenger thread (or one active thread at most)
                             env->pending_delete_.write(variant);
                             return;
                         }
-                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
+                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)",
+                            Variant::get_type_name(type), uitos((uintptr_t) variant));
                     }
                     else
                     {
@@ -238,12 +243,12 @@ namespace jsb
          * \note the return value does not stand for an alive object.
          * \note return true if the pointer is null, since null can be treated as any null Object.
          */
-        jsb_force_inline bool verify_object(void* p_pointer) const
+        jsb_force_inline static bool verify_godot_object(v8::Isolate* isolate, void* p_pointer)
         {
-#if JSB_VERIFY_OBJECT
+#if JSB_VERIFY_GODOT_OBJECT
             if (jsb_likely(p_pointer))
             {
-                if (const NativeClassInfo* class_info = find_object_class(p_pointer);
+                if (const NativeClassInfo* class_info = wrap(isolate)->find_object_class(p_pointer);
                     !class_info || class_info->type != NativeClassType::GodotObject)
                 {
                     return false;

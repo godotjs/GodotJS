@@ -510,7 +510,7 @@ namespace jsb
 
             v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Int32::New(p_env.isolate, constructor_index));
             function_template->InstanceTemplate()->SetInternalFieldCount(IF_VariantFieldCount);
-            function_template->SetClassName(p_env.environment->get_string_name_cache().get_string_value(p_env.isolate, class_name));
+            function_template->SetClassName(p_env.environment->get_string_value(class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();
 
             // getsets

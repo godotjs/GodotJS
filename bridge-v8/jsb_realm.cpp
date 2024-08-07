@@ -260,7 +260,7 @@ namespace jsb
 
         jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
-        existed_class_info->js_class_name = environment->get_string_name_cache().get_string_name(isolate, name_str);
+        existed_class_info->js_class_name = environment->get_string_name(name_str);
         existed_class_info->native_class_id = native_class_id;
         existed_class_info->native_class_name = native_class_info.name;
         existed_class_info->js_class.Reset(isolate, default_obj);
@@ -794,7 +794,7 @@ namespace jsb
         {
             // directly return from cached StringName only if it exists
             StringName sn;
-            if (Environment::wrap(isolate)->string_name_cache_.try_get_string_name(isolate, p_jval, sn))
+            if (Environment::wrap(isolate)->get_string_name_cache().try_get_string_name(isolate, p_jval, sn))
             {
                 r_cvar = sn;
                 return true;
@@ -821,7 +821,7 @@ namespace jsb
             case IF_ObjectFieldCount:
                 {
                     void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                    if (!Environment::wrap(isolate)->verify_object(pointer))
+                    if (!Environment::verify_godot_object(isolate, pointer))
                     {
                         return false;
                     }
@@ -857,9 +857,9 @@ namespace jsb
                 v8::Local<v8::Object> self = p_val.As<v8::Object>();
                 if (self->InternalFieldCount() != IF_ObjectFieldCount) return false;
 
-#if JSB_VERIFY_OBJECT
+#if JSB_VERIFY_GODOT_OBJECT
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                if (!Environment::wrap(isolate)->verify_object(pointer))
+                if (!Environment::verify_godot_object(isolate, pointer))
                 {
                     return false;
                 }
@@ -935,7 +935,7 @@ namespace jsb
         }
 
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-        if (!Environment::wrap(isolate)->verify_object(pointer))
+        if (!Environment::verify_godot_object(isolate, pointer))
         {
             return false;
         }
@@ -1017,7 +1017,7 @@ namespace jsb
                 }
 
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                if (!Environment::wrap(isolate)->verify_object(pointer))
+                if (!Environment::verify_godot_object(isolate, pointer))
                 {
                     return false;
                 }
@@ -1032,7 +1032,7 @@ namespace jsb
             if (p_jval->IsString())
             {
                 StringName sn;
-                if (Environment::wrap(isolate)->string_name_cache_.try_get_string_name(isolate, p_jval, sn))
+                if (Environment::wrap(isolate)->get_string_name_cache().try_get_string_name(isolate, p_jval, sn))
                 {
                     r_cvar = (String) sn;
                     return true;
@@ -1053,7 +1053,7 @@ namespace jsb
             if (p_jval->IsString())
             {
                 StringName sn;
-                if (Environment::wrap(isolate)->string_name_cache_.try_get_string_name(isolate, p_jval, sn))
+                if (Environment::wrap(isolate)->get_string_name_cache().try_get_string_name(isolate, p_jval, sn))
                 {
                     r_cvar = NodePath((String) sn);
                     return true;
@@ -1163,7 +1163,7 @@ namespace jsb
             }
         case Variant::STRING_NAME:
             {
-                r_jval = Environment::wrap(isolate)->get_string_name_cache().get_string_value(isolate, (StringName) p_cvar);
+                r_jval = Environment::wrap(isolate)->get_string_value((StringName) p_cvar);
                 return true;
             }
         // math types
@@ -1234,7 +1234,7 @@ namespace jsb
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         Environment* environment = Environment::wrap(isolate);
-        const StringName name = environment->string_name_cache_.get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
+        const StringName name = environment->get_string_name_cache().get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
 
         v8::Local<v8::Object> self = info.This();
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -1622,9 +1622,8 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Context> context = context_.Get(isolate);
             v8::Local<v8::Object> obj = handle->ref_.Get(isolate);
-            const CharString name = ((String) p_method).utf8();
             v8::Local<v8::Value> find;
-            if (obj->Get(context, v8::String::NewFromOneByte(isolate, (const uint8_t* ) name.ptr(), v8::NewStringType::kNormal, name.length()).ToLocalChecked()).ToLocal(&find) && find->IsFunction())
+            if (obj->Get(context, environment_->get_string_value(p_method)).ToLocal(&find) && find->IsFunction())
             {
                 return get_cached_function(find.As<v8::Function>());
             }
@@ -1749,7 +1748,7 @@ namespace jsb
             // pretend nothing's wrong if failed by constructing a default value in-place
             v8::Local<v8::Object> cdo = instance.As<v8::Object>();
             v8::Local<v8::Value> value;
-            if (!cdo->Get(context, environment_->get_string_name_cache().get_string_value(isolate, p_name)).ToLocal(&value)
+            if (!cdo->Get(context, environment_->get_string_value(p_name)).ToLocal(&value)
                 || !js_to_gd_var(isolate, context, value, it->value.type, r_val))
             {
                 JSB_LOG(Warning, "failed to get/translate default value of '%s' from CDO", p_name);
@@ -1775,7 +1774,7 @@ namespace jsb
         v8::Local<v8::Context> context = this->unwrap();
         v8::Context::Scope context_scope(context);
         v8::Local<v8::Object> self = environment->get_object(p_object_id);
-        v8::Local<v8::String> name = environment->get_string_name_cache().get_string_value(isolate, p_info.name);
+        v8::Local<v8::String> name = environment->get_string_value(p_info.name);
         v8::Local<v8::Value> value;
         if (!self->Get(context, name).ToLocal(&value))
         {
@@ -1803,7 +1802,7 @@ namespace jsb
         v8::Local<v8::Context> context = this->unwrap();
         v8::Context::Scope context_scope(context);
         v8::Local<v8::Object> self = environment->get_object(p_object_id);
-        v8::Local<v8::String> name = environment->get_string_name_cache().get_string_value(isolate, p_info.name);
+        v8::Local<v8::String> name = environment->get_string_value(p_info.name);
         v8::Local<v8::Value> value;
         if (!gd_var_to_js(isolate, context, p_val, p_info.type, value))
         {
