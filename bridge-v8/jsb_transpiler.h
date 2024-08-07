@@ -523,14 +523,10 @@ namespace jsb
             v8::Local<v8::Value> new_target = info.NewTarget();
             v8::Local<v8::Function> constructor = native_class.get_function(isolate, context);
 
+            // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
             if (constructor == new_target)
             {
                 const v8::Local<v8::Object> self = info.This();
-                // const HashMap<StringName, ClassDB::ClassInfo>::Iterator it = ClassDB::classes.find(native_class.name);
-                // jsb_check(it != ClassDB::classes.end());
-                // const ClassDB::ClassInfo& gd_class_info = it->value;
-                // Object* gd_object = gd_class_info.creation_func();
-
                 Object* gd_object = ClassDB::instantiate(native_class.name);
 
                 // IS IT A TRUTH that ref_count==1 after creation_func??
@@ -545,17 +541,18 @@ namespace jsb
             //
             // The currently used solution is unsafe if the end user overrides the default constructor of a script.
             // super(...arguments) must be called if constructor is explicitly defined in a script class.
+            //TODO (new solution) use a stub FunctionTemplate (inherited from the script class) with an explicit constructor for case(2,3)
 
             if (info.Length())
             {
-                // constructing CDO from C++ (nothing more to do, it's a pure javascript)
+                // (case-2) constructing CDO from C++ (nothing more to do, it's a pure javascript)
                 if (info[0] == environment->SymbolFor(CDO))
                 {
                     JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", native_class.name, class_id.value());
                     return;
                 }
 
-                // constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
+                // (case-3) constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
                 if (info[0] == environment->SymbolFor(CrossBind))
                 {
                     JSB_LOG(Verbose, "cross binding from C++. %s(%d)", native_class.name, class_id.value());
@@ -566,8 +563,7 @@ namespace jsb
                 return;
             }
 
-            // new from scripts
-            //TODO NOT IMPLEMENTED YET
+            // (case-1) new from scripts
             v8::Local<v8::Value> cross_bind_sym;
             if (new_target.As<v8::Object>()->Get(context, environment->SymbolFor(CrossBind)).ToLocal(&cross_bind_sym))
             {

@@ -6,13 +6,11 @@ namespace jsb
 {
     void ScriptClassInfo::_newbind(const v8::Local<v8::Object>& p_self)
     {
-        //TODO a dirty temp approach
-
         const String source_path = internal::PathUtil::convert_javascript_path(module_id);
         Ref<GodotJSScript> script = ResourceLoader::load(source_path);
         if (script.is_valid())
         {
-            script->can_instantiate(); // make it loaded immediately
+            jsb_unused(script->can_instantiate()); // make it loaded immediately
             const ScriptInstance* script_instance = script->instance_create(p_self);
             jsb_check(script_instance);
         }
