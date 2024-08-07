@@ -608,24 +608,47 @@ namespace jsb
             // class: properties (getset)
             for (const KeyValue<StringName, ::ClassDB::PropertySetGet>& pair : p_class_info->property_setget)
             {
-                //TODO properties with enclosed argument are not supported for now. these properties should still be exposed as methods
-                if (pair.value.index >= 0) continue;
                 if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
 
                 const StringName& property_name = pair.key;
                 const ::ClassDB::PropertySetGet& getset_info = pair.value;
 
-                v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
-                    ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._getptr))
-                    : v8::Local<v8::FunctionTemplate>();
-                v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
-                    ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._setptr))
-                    : v8::Local<v8::FunctionTemplate>();
-                object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
+                if (pair.value.index >= 0)
+                {
+                    const int remap_index = property_collection_.size();
+                    PropertyInfo2 property_info2;
+                    property_info2.getter_func = getset_info._getptr;
+                    property_info2.setter_func = getset_info._setptr;
+                    property_info2.index = pair.value.index;
+                    property_collection_.append(property_info2);
+
+                    v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
+                        ? v8::FunctionTemplate::New(isolate, _godot_object_get2, v8::Int32::New(isolate, remap_index))
+                        : v8::Local<v8::FunctionTemplate>();
+                    v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
+                        ? v8::FunctionTemplate::New(isolate, _godot_object_set2, v8::Int32::New(isolate, remap_index))
+                        : v8::Local<v8::FunctionTemplate>();
+                    object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
+
+                    // we do not exclude get/set methods in this case, because the method may not be covered by all properties
+                }
+                else
+                {
+                    // not using `property_collection_` in this case due to lower memory cost
+
+                    v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
+                        ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._getptr))
+                        : v8::Local<v8::FunctionTemplate>();
+                    v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
+                        ? v8::FunctionTemplate::New(isolate, _godot_object_method, v8::External::New(isolate, getset_info._setptr))
+                        : v8::Local<v8::FunctionTemplate>();
+                    object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
+
 #if JSB_EXCLUDE_GETSET_METHODS
-                if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
-                if (internal::VariantUtil::is_valid_name(getset_info.setter)) omitted_methods.insert(getset_info.setter);
+                    if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
+                    if (internal::VariantUtil::is_valid_name(getset_info.setter)) omitted_methods.insert(getset_info.setter);
 #endif
+                }
             }
 
             // class: methods
@@ -1392,6 +1415,92 @@ namespace jsb
             return;
         }
         isolate->ThrowError("failed to translate godot variant to v8 value");
+    }
+
+    void Realm::_godot_object_get2(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        jsb_check(info.Data()->IsInt32());
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const PropertyInfo2& property_info = wrap(context)->property_collection_[info.Data().As<v8::Int32>()->Value()];
+        Environment::wrap(isolate)->check_internal_state();
+        // prepare argv
+        if (info.Length() != 0)
+        {
+            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            return;
+        }
+
+        Object* gd_object = nullptr;
+        if (!property_info.getter_func->is_static() && (!js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
+        {
+            jsb_throw(isolate, "bad this");
+            return;
+        }
+
+        Variant args[] = { property_info.index };
+        const Variant* argv[] = { &args[0] };
+
+        // call godot method
+        Callable::CallError error;
+        Variant crval = property_info.getter_func->call(gd_object, argv, ::std::size(argv), error);
+
+        if (error.error != Callable::CallError::CALL_OK)
+        {
+            isolate->ThrowError("failed to call");
+            return;
+        }
+        v8::Local<v8::Value> jrval;
+        const Variant::Type return_type = property_info.getter_func->get_argument_type(-1);
+        jsb_check(return_type == property_info.getter_func->get_return_info().type);
+        if (gd_var_to_js(isolate, context, crval, return_type, jrval))
+        {
+            info.GetReturnValue().Set(jrval);
+            return;
+        }
+        isolate->ThrowError("failed to translate godot variant to v8 value");
+    }
+
+    void Realm::_godot_object_set2(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        jsb_check(info.Data()->IsInt32());
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const PropertyInfo2& property_info = wrap(context)->property_collection_[info.Data().As<v8::Int32>()->Value()];
+        Environment::wrap(isolate)->check_internal_state();
+        // prepare argv
+        if (info.Length() != 1)
+        {
+            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            return;
+        }
+
+        Object* gd_object = nullptr;
+        if (!property_info.setter_func->is_static() && (!js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
+        {
+            jsb_throw(isolate, "bad this");
+            return;
+        }
+
+        Variant cvar;
+        if (!js_to_gd_var(isolate, context, info[0], property_info.setter_func->get_argument_type(1), cvar))
+        {
+            jsb_throw(isolate, "bad argument");
+            return;
+        }
+
+        Variant args[] = { property_info.index, cvar };
+        const Variant* argv[] = { &args[0], &args[1] };
+
+        // call godot method
+        Callable::CallError error;
+        property_info.setter_func->call(gd_object, argv, ::std::size(argv), error);
+
+        if (error.error != Callable::CallError::CALL_OK)
+        {
+            isolate->ThrowError("failed to call");
+            return;
+        }
     }
 
     // [JS] function load_type(type_name: string): Class;

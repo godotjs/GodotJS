@@ -28,6 +28,15 @@ namespace jsb
         friend class JavaScriptLanguage;
         friend class Builtins;
 
+        struct PropertyInfo2
+        {
+            MethodBind* getter_func;
+            MethodBind* setter_func;
+
+            // extra parameter at the first position for getter/setter
+            int index;
+        };
+
         static SpinLock realms_lock_;
         static internal::SArray<Realm*, RealmID> realms_;
 
@@ -54,6 +63,9 @@ namespace jsb
         StringName godot_primitive_map_[Variant::VARIANT_MAX];
 
         internal::VariantInfoCollection variant_info_collection_;
+
+        // for godot properties which have an implicit parameter for getter/setter calls
+        Vector<PropertyInfo2> property_collection_;
 
     public:
         Realm(const std::shared_ptr<class Environment>& runtime);
@@ -230,6 +242,8 @@ namespace jsb
     private:
         static void _godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_object_get2(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_object_set2(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info);
 

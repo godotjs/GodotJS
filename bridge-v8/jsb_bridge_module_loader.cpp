@@ -334,8 +334,6 @@ namespace jsb
                 int index = 0;
                 for (const KeyValue<StringName, ClassDB::PropertySetGet>& pair : class_info.property_setget)
                 {
-                    //TODO properties with enclosed argument are not supported for now. these properties should still be exposed as methods
-                    if (pair.value.index >= 0) continue;
                     if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
 
                     const StringName& property_name = pair.key;
@@ -347,10 +345,17 @@ namespace jsb
                     build_property_info(isolate, context, property_info, property_info_obj);
                     build_property_info(isolate, context, property_name, getset_info, getset_info_obj);
                     properties_obj->Set(context, index++, getset_info_obj).Check();
+                    if (pair.value.index > 0)
+                    {
+                        // we do not exclude get/set methods in this case, because the method may not be covered by all properties
+                    }
+                    else
+                    {
 #if JSB_EXCLUDE_GETSET_METHODS
-                    if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
-                    if (internal::VariantUtil::is_valid_name(getset_info.setter)) omitted_methods.insert(getset_info.setter);
+                        if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
+                        if (internal::VariantUtil::is_valid_name(getset_info.setter)) omitted_methods.insert(getset_info.setter);
 #endif
+                    }
                 }
             }
 
