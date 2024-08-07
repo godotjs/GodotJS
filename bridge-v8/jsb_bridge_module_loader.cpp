@@ -334,8 +334,9 @@ namespace jsb
                 int index = 0;
                 for (const KeyValue<StringName, ClassDB::PropertySetGet>& pair : class_info.property_setget)
                 {
+                    //TODO properties with enclosed argument are not supported for now. these properties should still be exposed as methods
+                    if (pair.value.index >= 0) continue;
                     if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
-
 
                     const StringName& property_name = pair.key;
                     const ClassDB::PropertySetGet& getset_info = pair.value;
