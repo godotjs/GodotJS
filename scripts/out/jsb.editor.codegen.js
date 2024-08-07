@@ -383,7 +383,7 @@ class ClassWriter extends IndentWriter {
     property_(getset_info) {
         var _a, _b;
         // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
-        if (getset_info.index >= 0 || getset_info.name.indexOf("/") >= 0) {
+        if (getset_info.name.indexOf("/") >= 0) {
             return;
         }
         console.assert(getset_info.getter.length != 0);
