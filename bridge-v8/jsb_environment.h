@@ -354,6 +354,7 @@ namespace jsb
          * [unsafe] it's dangerous to hold the `NativeClassInfo` reference/pointer because the address is not ensured stable.
          */
         jsb_force_inline NativeClassInfo& get_native_class(NativeClassID p_class_id) { return native_classes_.get_value(p_class_id); }
+        jsb_force_inline internal::SArray<NativeClassInfo, NativeClassID>::ScopedPointer _get_native_class(NativeClassID p_class_id) { return native_classes_.get_value_scoped(p_class_id); }
         jsb_force_inline const NativeClassInfo& get_native_class(NativeClassID p_class_id) const { return native_classes_.get_value(p_class_id); }
 
         jsb_force_inline ScriptClassInfo& add_script_class(ScriptClassID& r_class_id)

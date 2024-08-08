@@ -28,15 +28,6 @@ namespace jsb
         friend class JavaScriptLanguage;
         friend class Builtins;
 
-        struct PropertyInfo2
-        {
-            MethodBind* getter_func;
-            MethodBind* setter_func;
-
-            // extra parameter at the first position for getter/setter
-            int index;
-        };
-
         static SpinLock realms_lock_;
         static internal::SArray<Realm*, RealmID> realms_;
 
@@ -63,9 +54,6 @@ namespace jsb
         StringName godot_primitive_map_[Variant::VARIANT_MAX];
 
         internal::VariantInfoCollection variant_info_collection_;
-
-        // for godot properties which have an implicit parameter for getter/setter calls
-        Vector<PropertyInfo2> property_collection_;
 
     public:
         Realm(const std::shared_ptr<class Environment>& runtime);
@@ -219,6 +207,7 @@ namespace jsb
 
         /**
          * Translate a Godot object into a javascript object. The type of `p_object_obj` will be automatically exposed to the context if not existed.
+         * @param p_godot_obj non-null godot object pointer
          */
         static bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval);
         static bool js_to_gd_obj(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Object*& r_godot_obj);
@@ -240,13 +229,6 @@ namespace jsb
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
 
     private:
-        static void _godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _godot_object_get2(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _godot_object_set2(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _godot_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void _godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info);
-
         static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
         static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info);
 

@@ -61,12 +61,25 @@ namespace jsb::internal
         Vector<FConstructorVariantInfo> variants;
     };
 
+    struct FPropertyInfo2
+    {
+        MethodBind* getter_func;
+        MethodBind* setter_func;
+
+        // extra parameter at the first position for getter/setter
+        int index;
+    };
+
     struct VariantInfoCollection
     {
         Vector<FConstructorInfo> constructors;
         Vector<FUtilityMethodInfo> utility_funcs;
         Vector<FBuiltinMethodInfo> methods;
         Vector<FGetSetInfo> getsets;
+
+        // for godot properties which have an implicit parameter for getter/setter calls
+        Vector<FPropertyInfo2> properties2;
+
     };
 }
 #endif

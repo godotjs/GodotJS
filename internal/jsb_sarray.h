@@ -64,10 +64,10 @@ namespace jsb::internal
 			return (Slot*)allocator.get_data();
 		}
 
-	public:
+    public:
         struct AddressScope
         {
-			SArray* container_;
+            SArray* container_;
 
             AddressScope(SArray* p_container) : container_(p_container) { container_->lock_address(); }
             ~AddressScope() { if (container_) container_->unlock_address(); }
@@ -77,6 +77,45 @@ namespace jsb::internal
 
             AddressScope(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; }
             AddressScope& operator=(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; return *this; }
+        };
+
+        struct ScopedPointer
+        {
+        private:
+            SArray* container_;
+            T* ptr_;
+
+        public:
+            ScopedPointer(SArray* p_container, const IndexType& p_index) : container_(p_container) { container_->lock_address(); ptr_ = &container_->get_value(p_index); }
+            ~ScopedPointer() { if (container_) container_->unlock_address(); }
+
+            ScopedPointer(const ScopedPointer&) = delete;
+            ScopedPointer& operator=(const ScopedPointer&) = delete;
+
+            T* operator->() { return ptr_; }
+            const T* operator->() const { return ptr_; }
+
+            ScopedPointer(ScopedPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; }
+            ScopedPointer& operator=(ScopedPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; return *this; }
+        };
+
+        struct ScopedConstPointer
+        {
+        private:
+            SArray* container_;
+            const T* ptr_;
+
+        public:
+            ScopedConstPointer(SArray* p_container, const IndexType& p_index) : container_(p_container) { container_->lock_address(); ptr_ = &container_->get_value(p_index); }
+            ~ScopedConstPointer() { if (container_) container_->unlock_address(); }
+
+            ScopedConstPointer(const ScopedConstPointer&) = delete;
+            ScopedConstPointer& operator=(const ScopedConstPointer&) = delete;
+
+            const T* operator->() const { return ptr_; }
+
+            ScopedConstPointer(ScopedConstPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; }
+            ScopedConstPointer& operator=(ScopedConstPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; return *this; }
         };
 
 		struct LowLevelAccess
@@ -401,6 +440,9 @@ namespace jsb::internal
 		{
 			return get_value(get_last_index());
 		}
+
+		ScopedPointer get_value_scoped(const IndexType& p_index) { return ScopedPointer(this, p_index); }
+		ScopedConstPointer get_value_scoped(const IndexType& p_index) const { return ScopedConstPointer(this, p_index); }
 
 		T& get_value(const IndexType& p_index)
 		{

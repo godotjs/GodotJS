@@ -541,7 +541,6 @@ namespace jsb
             //
             // The currently used solution is unsafe if the end user overrides the default constructor of a script.
             // super(...arguments) must be called if constructor is explicitly defined in a script class.
-            //TODO (new solution) use a stub FunctionTemplate (inherited from the script class) with an explicit constructor for case(2,3)
 
             if (info.Length())
             {
