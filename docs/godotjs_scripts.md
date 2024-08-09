@@ -56,6 +56,16 @@ Compile the typescript source into javascript, and attach the compiled script to
 
 ![attach a script](./assets/attach_script.png)
 
+## About using code from npm packages
+
+Currently, `GodotJS` hasn't particularly support using code from npm packages. Because many factors are involved in it, such as:
+* scripts depend on functionalities of node.js which is not supported
+* how the typescript/javascript project is packaged (archive into a single script file or not) 
+* different javascript modular standards
+
+If a packages just works, use it only in editor, for now, since the exporter hasn't process any scripts from `node_modules`. It'll fail in an exported game.  
+So, you can use a npm package if it's purely written in javascript which not using any features of node.js, but not recommended.  
+
 ## Exported Properties
 In `GodotJS`, class member properties/variables can be exported. This means their value gets saved along with the resource (such as the scene) they're attached to. They will also be available for editing in the property editor. Exporting is done by using the `@export_` annotation.
 
@@ -81,10 +91,10 @@ The retrieval of default value is implemented through `Class Default Object (CDO
 
 ```ts 
 @export_(Variant.Type.TYPE_STRING)
-address: string = "somewhere";
+address: string = "somewhere"; // `:string` can be omitted here
 
 @export_(Variant.Type.TYPE_INT)
-age: number = 0;
+age: number = 0; // `:number` can be omitted here
 ```
 
 If there's no default value, `default value` of the give type will be used (`0` in this case).
@@ -110,9 +120,6 @@ The value can be easily chose from a dropdown list in the editor.
 
 ### Grouping Exports
 NOT IMPLEMENTED FOR NOW
-
-## Signals
-WRITE SOMETHING HERE
 
 ## Icon annotation
 
