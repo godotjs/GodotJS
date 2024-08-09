@@ -357,7 +357,6 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
-            const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
             if (info.Length() != 1
                 || !info[0]->IsInt32())
             {
@@ -374,7 +373,72 @@ namespace jsb
                 return;
             }
             v8::Local<v8::Value> r_val;
-            if (!Realm::gd_var_to_js(isolate, context, value, element_type, r_val))
+            // nil type is treated as any type
+            if (const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
+                !Realm::gd_var_to_js(isolate, context, value, element_type, r_val))
+            {
+                jsb_throw(isolate, "bad translation");
+                return;
+            }
+            info.GetReturnValue().Set(r_val);
+        }
+
+        static void _set_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            if (info.Length() != 2)
+            {
+                jsb_throw(isolate, "bad params");
+                return;
+            }
+
+            //TODO it's restricted since we don't know anything about the type
+            Variant key;
+            Variant value;
+            if (!Realm::js_to_gd_var(isolate, context, info[0], key)
+                || !Realm::js_to_gd_var(isolate, context, info[1], value))
+            {
+                jsb_throw(isolate, "bad value");
+                return;
+            }
+            bool r_valid;
+            Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            self->set_keyed(key, value, r_valid);
+            if (!r_valid)
+            {
+                jsb_throw(isolate, "invalid call");
+                return;
+            }
+        }
+
+        static void _get_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            if (info.Length() != 1)
+            {
+                jsb_throw(isolate, "bad params");
+                return;
+            }
+            Variant key;
+            if (!Realm::js_to_gd_var(isolate, context, info[0], key))
+            {
+                jsb_throw(isolate, "bad value");
+                return;
+            }
+            bool r_valid;
+            const Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            const Variant value = self->get_keyed(key, r_valid);
+            if (!r_valid)
+            {
+                jsb_throw(isolate, "invalid key?");
+                return;
+            }
+            v8::Local<v8::Value> r_val;
+            if (!Realm::gd_var_to_js(isolate, context, value, r_val))
             {
                 jsb_throw(isolate, "bad translation");
                 return;
@@ -531,6 +595,13 @@ namespace jsb
             {
                 prototype_template->Set(V8Helper::to_string(p_env.isolate, "set_indexed"), v8::FunctionTemplate::New(p_env.isolate, _set_indexed));
                 prototype_template->Set(V8Helper::to_string(p_env.isolate, "get_indexed"), v8::FunctionTemplate::New(p_env.isolate, _get_indexed));
+            }
+
+            // keyed accessor
+            if (Variant::is_keyed(TYPE))
+            {
+                prototype_template->Set(V8Helper::to_string(p_env.isolate, "set_keyed"), v8::FunctionTemplate::New(p_env.isolate, _set_keyed));
+                prototype_template->Set(V8Helper::to_string(p_env.isolate, "get_keyed"), v8::FunctionTemplate::New(p_env.isolate, _get_keyed));
             }
 
             // methods

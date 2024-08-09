@@ -517,6 +517,7 @@ namespace jsb
         {
             set_field(isolate, context, class_info_obj, "element_type", Variant::get_indexed_element_type(TYPE));
         }
+        set_field(isolate, context, class_info_obj, "is_keyed", Variant::is_keyed(TYPE));
 
         // constructors
         {

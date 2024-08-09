@@ -166,6 +166,9 @@ declare module "godot-jsb" {
             // valid only if has_indexing
             element_type?: Variant.Type;
 
+            // true only if is_keyed
+            is_keyed: boolean;
+
             constructors: Array<ConstructorInfo>;
             operators: Array<OperatorInfo>;
             properties: Array<PrimitiveGetSetInfo>;
