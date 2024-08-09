@@ -1095,7 +1095,13 @@ namespace jsb
                 }
                 return false;
             }
-        case Variant::NIL: r_jval = v8::Null(isolate); return true;
+        case Variant::NIL:
+            if (const Variant::Type var_type = p_cvar.get_type(); var_type != Variant::NIL)
+            {
+                return gd_var_to_js(isolate, context, p_cvar, var_type, r_jval);
+            }
+            r_jval = v8::Null(isolate);
+            return true;
         default:
             {
                 JSB_LOG(Error, "unhandled type %s", Variant::get_type_name(p_type));
