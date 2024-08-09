@@ -500,23 +500,6 @@ namespace jsb
         }
     }
 
-    void Environment::print_statistics()
-    {
-        v8::HeapStatistics statistics;
-        isolate_->GetHeapStatistics(&statistics);
-
-        JSB_LOG(Verbose, "Global Handles: %s/%s", uitos(statistics.used_global_handles_size()), uitos(statistics.total_global_handles_size()));
-        JSB_LOG(Verbose, "Heap: %s/%s", uitos(statistics.used_heap_size()), uitos(statistics.total_heap_size()));
-        JSB_LOG(Verbose, "Malloc: %s", uitos(statistics.malloced_memory()));
-        JSB_LOG(Verbose, "External: %s", uitos(statistics.external_memory()));
-        JSB_LOG(Verbose, "jsb.traced_objects: %d", objects_.size());
-        JSB_LOG(Verbose, "jsb.classes: %d", native_classes_.size());
-        JSB_LOG(Verbose, "jsb.scripts: %d", script_classes_.size());
-        JSB_LOG(Verbose, "jsb.string_name_cache: %d", string_name_cache_.size());
-        JSB_LOG(Verbose, "jsb.persistent_objects: %d", persistent_objects_.size());
-        JSB_LOG(Verbose, "jsb.alive_variants: %s", uitos(variant_allocator_.get_allocated_num()));
-    }
-
     void Environment::start_debugger()
     {
 #if JSB_WITH_DEBUGGER

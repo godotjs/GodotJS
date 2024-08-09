@@ -1631,4 +1631,27 @@ namespace jsb
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
     }
 
+    Statistics Realm::get_statistics() const
+    {
+        v8::HeapStatistics v8_statistics;
+        environment_->isolate_->GetHeapStatistics(&v8_statistics);
+
+        Statistics stats;
+        stats.used_global_handles_size = v8_statistics.used_global_handles_size();
+        stats.total_global_handles_size = v8_statistics.total_global_handles_size();
+        stats.used_heap_size = v8_statistics.used_heap_size();
+        stats.total_heap_size = v8_statistics.total_heap_size();
+        stats.allocated_mem = v8_statistics.malloced_memory();
+        stats.external_mem = v8_statistics.external_memory();
+
+        stats.objects = environment_->objects_.size();
+        stats.native_classes = environment_->native_classes_.size();
+        stats.script_classes = environment_->script_classes_.size();
+        stats.cached_string_names = environment_->string_name_cache_.size();
+        stats.persistent_objects = environment_->persistent_objects_.size();
+        stats.allocated_variants = environment_->variant_allocator_.get_allocated_num();
+
+        return stats;
+    }
+
 }

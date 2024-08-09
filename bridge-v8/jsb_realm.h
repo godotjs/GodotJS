@@ -7,6 +7,7 @@
 #include "jsb_module.h"
 #include "jsb_primitive_bindings.h"
 #include "jsb_value_move.h"
+#include "jsb_statistics.h"
 #include "../internal/jsb_variant_info.h"
 
 #include <unordered_map>
@@ -227,6 +228,8 @@ namespace jsb
         static bool can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type);
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
+
+        Statistics get_statistics() const;
 
     private:
         static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
