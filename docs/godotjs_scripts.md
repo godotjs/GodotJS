@@ -122,7 +122,7 @@ Enum value properties can be exported with the built-in support in the property 
 color: MyColor = MyColor.White;
 ```
 
-The value can be easily chose from a dropdown list in the editor.  
+The value can be easily chosen from a dropdown list in the editor.  
 
 ![enum_prop](./assets/export_enum_inspector.png)
 
