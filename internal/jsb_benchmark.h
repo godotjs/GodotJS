@@ -4,7 +4,7 @@
 
 #if JSB_BENCHMARK
 #   define JSB_BENCHMARK_SCOPE(RegionName, DetailName) \
-    static String __String__##RegionName##DetailName = #RegionName "." #DetailName; \
+    static const char* __String__##RegionName##DetailName = #RegionName "." #DetailName; \
     ::jsb::internal::Benchmark __Benchmark__##RegionName##DetailName(__String__##RegionName##DetailName, __FILE__, __LINE__)
 #else
 #   define JSB_BENCHMARK_SCOPE(RegionName, DetailName) (void) 0
@@ -15,7 +15,7 @@ namespace jsb::internal
     // simple implementation of benchmark
     struct Benchmark
     {
-        Benchmark(const String& p_name, const char* p_file, int p_line): name_(p_name), file_(p_file), line_(p_line)
+        Benchmark(const char* p_name, const char* p_file, int p_line): name_(p_name), file_(p_file), line_(p_line)
         {
             start_ = OS::get_singleton()->get_ticks_usec();
             // OS::get_singleton()->benchmark_begin_measure(name_);
@@ -34,7 +34,7 @@ namespace jsb::internal
         }
 
     private:
-        String name_;
+        const char* name_;
         const char* file_;
         int line_;
         uint64_t start_;
