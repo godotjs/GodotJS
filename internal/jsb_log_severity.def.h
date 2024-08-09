@@ -2,7 +2,7 @@
 // all log levels <=Verbose are not printed in Editor.
 
 DEF(VeryVerbose) // very trivial (omitted by default even if JSB_DEBUG is on)
-DEF(Verbose)     // trivial
+DEF(Verbose)     // trivial (will not output in editor panel)
 
 DEF(Debug)   // not important
 DEF(Info)    // general level

@@ -200,7 +200,7 @@ Error GodotJSScript::reload(bool p_keep_state)
     }
 
     //TODO discard the object and crossbind again
-    JSB_LOG(Log, "discard the object and crossbind again");
+    JSB_LOG(Warning, "TODO: discard the object and crossbind again");
     return OK;
 }
 
