@@ -3,7 +3,7 @@
 
 #ifndef JSB_DEBUG
 #   if defined(DEBUG_ENABLED)
-#       define JSB_DEBUG 1  // jsb_check is only evaluated when `JSB_DEBUG` is true
+#       define JSB_DEBUG 1
 #   else
 #       define JSB_DEBUG 0
 #   endif
@@ -18,6 +18,11 @@
 #       define JSB_MIN_LOG_LEVEL Warning
 #   endif
 #endif // JSB_MIN_LOG_LEVEL
+
+// enable jsb_check()
+#ifndef JSB_WITH_CHECK
+#define JSB_WITH_CHECK JSB_DEBUG
+#endif
 
 // print benchmark
 #define JSB_BENCHMARK 1

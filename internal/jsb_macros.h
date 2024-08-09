@@ -24,13 +24,12 @@
 
 #define JSB_MODULE_NAME_STRING JSB_STRINGIFY(JSB_MODULE_NAME)
 
-#define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
-
 #define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) ::jsb::internal::Logger::output<::jsb::internal::ELogSeverity::Severity>(__FILE__, __LINE__, __FUNCTION__, "[" #CategoryName "][" #Severity "] " Format, ##__VA_ARGS__)
 
 #define JSB_LOG(Severity, Format, ...) JSB_LOG_IMPL(jsb, Severity, Format, ##__VA_ARGS__)
 
-#if JSB_DEBUG
+// similar to assert() in C, jsb_check() will be thoroughly omitted if not JSB_WITH_CHECK, otherwise it traps the execution on false evaluation
+#if JSB_WITH_CHECK
 #   define jsb_check(Condition) CRASH_COND(!(Condition))
 #   define jsb_checkf(Condition, Format, ...) CRASH_COND_MSG(!(Condition), vformat(Format, ##__VA_ARGS__))
 #else
@@ -38,6 +37,7 @@
 #   define jsb_checkf(Condition, Format, ...) (void) 0
 #endif
 
+// jsb_ensure() is always evaluated, but only trap the execution if JSB_DEBUG
 #if JSB_DEBUG
 #   define jsb_ensure(Condition) (jsb_likely(Condition) || ([] { GENERATE_TRAP(); } (), false))
 #   define jsb_ensuref(Condition, Format, ...) (jsb_likely(Condition) || ([] { JSB_LOG(Error, Format, ##__VA_ARGS__); GENERATE_TRAP(); } (), false))
@@ -79,5 +79,8 @@
 #define jsb_throw(isolate, literal) { ERR_PRINT((literal)); (isolate)->ThrowError((literal)); } (void) 0
 
 #define jsb_underlying_value(enum_type, enum_value) (__underlying_type(enum_type) (enum_value))
+
+// generate an error string with source position info
+#define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
 #endif
