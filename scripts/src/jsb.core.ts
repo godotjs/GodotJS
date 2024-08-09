@@ -1,5 +1,5 @@
 
-import { PropertyHint, PropertyUsageFlags, Variant  } from "godot";
+import { EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant  } from "godot";
 import * as jsb from "godot-jsb";
 
 /**
@@ -152,4 +152,17 @@ export function seconds(secs: number) {
             resolve(undefined);
         }, secs * 1000);
     });
+}
+
+/** shorthand for getting project settings */
+export function GLOBAL_GET(entry_path: StringName): any {
+    return ProjectSettings.get_setting_with_override(entry_path);
+}
+
+/** 
+ * shorthand for getting editor settings  
+ * NOTE: calling before EditorSettings created will cause null reference exception.
+ */
+export function EDITOR_GET(entry_path: StringName): any {
+    return EditorInterface.get_editor_settings().get(entry_path);
 }

@@ -40,6 +40,8 @@ exports.tool = tool;
 exports.icon = icon;
 exports.$wait = $wait;
 exports.seconds = seconds;
+exports.GLOBAL_GET = GLOBAL_GET;
+exports.EDITOR_GET = EDITOR_GET;
 const godot_1 = require("godot");
 const jsb = __importStar(require("godot-jsb"));
 /**
@@ -178,5 +180,16 @@ function seconds(secs) {
             resolve(undefined);
         }, secs * 1000);
     });
+}
+/** shorthand for getting project settings */
+function GLOBAL_GET(entry_path) {
+    return godot_1.ProjectSettings.get_setting_with_override(entry_path);
+}
+/**
+ * shorthand for getting editor settings
+ * NOTE: calling before EditorSettings created will cause null reference exception.
+ */
+function EDITOR_GET(entry_path) {
+    return godot_1.EditorInterface.get_editor_settings().get(entry_path);
 }
 //# sourceMappingURL=jsb.core.js.map

@@ -2,9 +2,13 @@
 // godot.xxx.d.ts files will be generated in a target project.
 
 declare module "godot" {
-    class Node {
+    class Node { }
 
-    }
+    type StringName = string;
+
+    class EditorSettings { get(path: StringName): any; }
+    class EditorInterface { static get_editor_settings(): EditorSettings; }
+    class ProjectSettings { static get_setting_with_override(path: StringName): any; }
 
     class OS {
         static get_name(): string
@@ -12,15 +16,11 @@ declare module "godot" {
     }
 
     // singleton
-    namespace Engine {
-        function get_time_scale(): number;
-    }
+    namespace Engine { function get_time_scale(): number; }
 
-    class PackedByteArray {
-    }
-    class PackedStringArray {
-        append(value: string): boolean
-    }
+    class PackedByteArray { }
+
+    class PackedStringArray { append(value: string): boolean }
 
     namespace FileAccess {
         enum ModeFlags {
@@ -259,6 +259,6 @@ declare module "godot" {
         }
     }
 
-    static function type_string(type: int64): string
-    static function str(o: any): string
+    static function type_string(type: int64): string;
+    static function str(o: any): string;
 }
