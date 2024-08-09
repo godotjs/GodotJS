@@ -97,6 +97,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 * [QuickJS (PLANNED)](./docs/quickjs.md)
 * [Dependencies](./docs/deps.md)
 * [Compiler Options](./docs/compiler_options.md)
+* [Misc](./docs/misc.md)
 
 ## Auxiliary Repositories
 * [GodotJSExample](https://github.com/ialex32x/GodotJSExample): An example godot project for demonstrating how to use GodotJS

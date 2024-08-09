@@ -1,6 +1,10 @@
 
 # Signals
 
+Leveraging TypeScript's strong type checking, when you connect an incorrect callable object to a signal, the code editor will directly prompt you about the error.
+
+![strongly_typed](./assets/strongly_typed_01.png)
+
 ## Callable
 
 `jsb.callable` returns a `Callable` javascript object.  

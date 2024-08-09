@@ -83,7 +83,7 @@ import { Input, Node2D } from 'godot';
 class MyActor extends Node2D {
     _process() {
         // so it's relatively lightweight to directly use a string here
-        if (Input.is_action_just_pressed("confirm", true)) {
+        if (Input.is_action_just_pressed("confirm")) {
             // ...
         }
     }
@@ -114,9 +114,6 @@ b1.append_array(new ArrayBuffer(16));
 ### PackedByteArray and ArrayBuffer
 
 A javascript `ArrayBuffer` can be used as a `PackedByteArray` implicitly.
-
-> [!NOTE]
-> The generated `godot.d.ts` files do not handle `ArrayBuffer` as `PackedByteArray` for now, but it's actually fine to do so. This will be fixed later.
 
 ```ts
 let file = FileAccess.open(filePath, FileAccess.ModeFlags.WRITE);

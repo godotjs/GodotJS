@@ -8,6 +8,8 @@
 | godot | 4.2.2-stable | https://github.com/godotengine/godot |
 | libwebsockets | 4.3.3-13-g6901c32a | https://libwebsockets.org/ |
 
+> [!NOTE]
+> QuickJS is included with minor modifications for directly compiling with MSVC.
 
 ---
 

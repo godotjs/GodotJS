@@ -42,7 +42,10 @@ export default class MyEditorSprite extends Sprite2D {
 
     _process(delta: number) {
         const step = Math.PI * delta * (this._clockwise ? this._speed : -this._speed);
-        this.set_rotation(this.get_rotation() + step);
+        this.rotation = this.rotation + step;
+
+        // this version is available only if `JSB_EXCLUDE_GETSET_METHODS` is disabled on your side
+        // this.set_rotation(this.get_rotation() + step);
     }
 
     _get_configuration_warnings() {
@@ -51,6 +54,12 @@ export default class MyEditorSprite extends Sprite2D {
             warnings.append("speed is too low");
         }
         return warnings;
+
+        // it's OK to directly use javascript Array as the return value (except the complains from ts compiler):
+        // return this._speed >= -0.01 && this._speed < 0.01 ? ["speed is too low"] : [];
+        
+        // So, you need to write it like this one which would be slightly ugly:
+        // return <any> (this._speed >= -0.01 && this._speed < 0.01 ? ["speed is too low"] : []);
     }
 }
 ```
