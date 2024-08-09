@@ -6,10 +6,10 @@ namespace jsb
     {
         Dictionary dict;
 
-        dict["used_global_handles_size"] = used_global_handles_size;
-        dict["total_global_handles_size"] = total_global_handles_size;
-        dict["used_heap_size"] = used_heap_size;
-        dict["total_heap_size"] = total_heap_size;
+        dict["used_global_handles_size"] = (uint64_t) used_global_handles_size;
+        dict["total_global_handles_size"] = (uint64_t) total_global_handles_size;
+        dict["used_heap_size"] = (uint64_t) used_heap_size;
+        dict["total_heap_size"] = (uint64_t) total_heap_size;
 
         // num of traced objects
         dict["objects"] = objects;
