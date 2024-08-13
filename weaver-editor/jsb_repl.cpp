@@ -32,6 +32,14 @@ GodotJSREPL::GodotJSREPL()
         clear_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_clear_pressed));
     }
     {
+        gc_button_ = memnew(Button);
+        tool_bar_box->add_child(gc_button_);
+        gc_button_->set_theme_type_variation("FlatButton");
+        gc_button_->set_focus_mode(FOCUS_NONE);
+        gc_button_->set_tooltip_text(TTR("Explicit GC"));
+        gc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_gc_pressed));
+    }
+    {
         dts_button_ = memnew(Button);
         tool_bar_box->add_child(dts_button_);
         dts_button_->set_theme_type_variation("FlatButton");
@@ -129,6 +137,7 @@ void GodotJSREPL::_notification(int p_what)
 
 void GodotJSREPL::_update_theme()
 {
+    gc_button_->set_icon(get_editor_theme_icon("CollapseTree"));
     clear_button_->set_icon(get_editor_theme_icon("Clear"));
     dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
     preset_button_->set_icon(get_editor_theme_icon("Window"));
@@ -162,6 +171,14 @@ void GodotJSREPL::check_install()
         return;
     } while (false);
     preset_hint_label_->set_visible(true);
+}
+
+void GodotJSREPL::_gc_pressed()
+{
+    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    jsb_check(lang);
+    lang->get_realm()->get_environment()->gc();
+    add_line("Explicit GC requested");
 }
 
 void GodotJSREPL::_clear_pressed()

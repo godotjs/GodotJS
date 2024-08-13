@@ -19,6 +19,7 @@ private:
     class RichTextLabel* output_box_;
 
     class Button* clear_button_;
+    class Button* gc_button_;
     class Button* dts_button_;
     class Button* preset_button_;
     class Label* preset_hint_label_;
@@ -38,6 +39,7 @@ protected:
     void _input_gui_input(const Ref<InputEvent> &p_event);
     void _input_focus_exit();
     void _clear_pressed();
+    void _gc_pressed();
     void _generate_dts_pressed();
     void _install_preset_pressed();
     void _start_tsc_pressed();
