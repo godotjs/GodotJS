@@ -19,7 +19,7 @@ public:
 
 private:
     void on_timer();
-    void add_column(int p_index, const String& p_name, size_t p_usage, size_t p_total, bool p_humanized_size = false);
-    void add_column(int p_index, const String& p_name, const String& p_text);
+    void add_row(int p_index, const String& p_name, size_t p_usage, size_t p_total, bool p_humanized_size = false);
+    void add_row(int p_index, const String& p_name, const String& p_text);
 };
 #endif

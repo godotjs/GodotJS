@@ -53,34 +53,34 @@ void GodotJSStatisticsViewer::on_timer()
     realm->get_statistics(stats);
 
     int index = 0;
-    add_column(index++, "v8:global_handles_size", stats.used_global_handles_size, stats.total_global_handles_size);
-    add_column(index++, "v8:heap_size", stats.used_heap_size, stats.total_heap_size, true);
-    add_column(index++, "v8:malloced_memory", String::humanize_size(stats.malloced_memory));
-    add_column(index++, "v8:peak_malloced_memory", String::humanize_size(stats.peak_malloced_memory));
-    add_column(index++, "v8:external_memory", String::humanize_size(stats.external_memory));
-    add_column(index++, "jsb:objects", vformat("%d (%s)", stats.objects, String::humanize_size(stats.objects * jsb::internal::SArray<jsb::ObjectHandle>::get_slot_size())));
-    add_column(index++, "jsb:native_classes", itos(stats.native_classes));
-    add_column(index++, "jsb:script_classes", itos(stats.script_classes));
-    add_column(index++, "jsb:cached_string_names", itos(stats.cached_string_names));
-    add_column(index++, "jsb:persistent_objects", uitos(stats.persistent_objects));
-    add_column(index++, "jsb:allocated_variants", uitos(stats.allocated_variants));
+    add_row(index++, "v8:global_handles_size", stats.used_global_handles_size, stats.total_global_handles_size);
+    add_row(index++, "v8:heap_size", stats.used_heap_size, stats.total_heap_size, true);
+    add_row(index++, "v8:malloced_memory", String::humanize_size(stats.malloced_memory));
+    add_row(index++, "v8:peak_malloced_memory", String::humanize_size(stats.peak_malloced_memory));
+    add_row(index++, "v8:external_memory", String::humanize_size(stats.external_memory));
+    add_row(index++, "jsb:objects", vformat("%d (%s)", stats.objects, String::humanize_size(stats.objects * jsb::internal::SArray<jsb::ObjectHandle>::get_slot_size())));
+    add_row(index++, "jsb:native_classes", itos(stats.native_classes));
+    add_row(index++, "jsb:script_classes", itos(stats.script_classes));
+    add_row(index++, "jsb:cached_string_names", itos(stats.cached_string_names));
+    add_row(index++, "jsb:persistent_objects", uitos(stats.persistent_objects));
+    add_row(index++, "jsb:allocated_variants", uitos(stats.allocated_variants));
     for (; index < tree_root->get_child_count(); ++index)
     {
         tree_root->get_child(index)->set_visible(false);
     }
 }
 
-void GodotJSStatisticsViewer::add_column(int p_index, const String& p_name, size_t p_usage, size_t p_total, bool p_humanized_size)
+void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, size_t p_usage, size_t p_total, bool p_humanized_size)
 {
     if (p_humanized_size)
     {
-        add_column(p_index, p_name, vformat("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), (int) (((double) p_usage / (double) p_total) * 100)));
+        add_row(p_index, p_name, vformat("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), (int) (((double) p_usage / (double) p_total) * 100)));
         return;
     }
-    add_column(p_index, p_name, vformat("%d / %d (%d %%)", p_usage, p_total, (int) (((double) p_usage / (double) p_total) * 100)));
+    add_row(p_index, p_name, vformat("%d / %d (%d %%)", p_usage, p_total, (int) (((double) p_usage / (double) p_total) * 100)));
 }
 
-void GodotJSStatisticsViewer::add_column(int p_index, const String& p_name, const String& p_text)
+void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, const String& p_text)
 {
     TreeItem* item = p_index < tree_root->get_child_count() ? tree_root->get_child(p_index) : tree_root->create_child();
     item->set_text(0, p_name);
