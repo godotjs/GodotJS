@@ -229,7 +229,7 @@ namespace jsb
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
 
-        Statistics get_statistics() const;
+        void get_statistics(Statistics& r_stats) const;
 
     private:
         static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);

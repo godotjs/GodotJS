@@ -1637,27 +1637,25 @@ namespace jsb
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
     }
 
-    Statistics Realm::get_statistics() const
+    void Realm::get_statistics(Statistics& r_stats) const
     {
         v8::HeapStatistics v8_statistics;
         environment_->isolate_->GetHeapStatistics(&v8_statistics);
 
-        Statistics stats;
-        stats.used_global_handles_size = v8_statistics.used_global_handles_size();
-        stats.total_global_handles_size = v8_statistics.total_global_handles_size();
-        stats.used_heap_size = v8_statistics.used_heap_size();
-        stats.total_heap_size = v8_statistics.total_heap_size();
-        stats.allocated_mem = v8_statistics.malloced_memory();
-        stats.external_mem = v8_statistics.external_memory();
+        r_stats.used_global_handles_size = v8_statistics.used_global_handles_size();
+        r_stats.total_global_handles_size = v8_statistics.total_global_handles_size();
+        r_stats.used_heap_size = v8_statistics.used_heap_size();
+        r_stats.total_heap_size = v8_statistics.total_heap_size();
+        r_stats.peak_malloced_memory = v8_statistics.peak_malloced_memory();
+        r_stats.malloced_memory = v8_statistics.malloced_memory();
+        r_stats.external_memory = v8_statistics.external_memory();
 
-        stats.objects = environment_->objects_.size();
-        stats.native_classes = environment_->native_classes_.size();
-        stats.script_classes = environment_->script_classes_.size();
-        stats.cached_string_names = environment_->string_name_cache_.size();
-        stats.persistent_objects = environment_->persistent_objects_.size();
-        stats.allocated_variants = environment_->variant_allocator_.get_allocated_num();
-
-        return stats;
+        r_stats.objects = environment_->objects_.size();
+        r_stats.native_classes = environment_->native_classes_.size();
+        r_stats.script_classes = environment_->script_classes_.size();
+        r_stats.cached_string_names = environment_->string_name_cache_.size();
+        r_stats.persistent_objects = environment_->persistent_objects_.size();
+        r_stats.allocated_variants = environment_->variant_allocator_.get_allocated_num();
     }
 
 }

@@ -2,29 +2,4 @@
 
 namespace jsb
 {
-    Variant Statistics::to_dictionary() const
-    {
-        Dictionary dict;
-
-        dict["used_global_handles_size"] = (uint64_t) used_global_handles_size;
-        dict["total_global_handles_size"] = (uint64_t) total_global_handles_size;
-        dict["used_heap_size"] = (uint64_t) used_heap_size;
-        dict["total_heap_size"] = (uint64_t) total_heap_size;
-
-        // num of traced objects
-        dict["objects"] = objects;
-
-        // num of registered native classes
-        dict["native_classes"] = native_classes;
-
-        // num of registered script classes
-        dict["script_classes"] = script_classes;
-
-        dict["cached_string_names"] = cached_string_names;
-        dict["persistent_objects"] = persistent_objects;
-        dict["allocated_variants"] = allocated_variants;
-
-        return dict;
-    }
-
 }

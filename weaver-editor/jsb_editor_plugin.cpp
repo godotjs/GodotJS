@@ -1,7 +1,7 @@
 #include "jsb_editor_plugin.h"
 
+#include "jsb_docked_panel.h"
 #include "jsb_project_preset.h"
-#include "jsb_repl.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 #include "../weaver/jsb_gdjs_lang.h"
@@ -69,7 +69,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_child(confirm_dialog_);
     confirm_dialog_->connect("confirmed", callable_mp(this, &GodotJSEditorPlugin::_on_confirm_overwrite));
 
-    add_control_to_bottom_panel(memnew(GodotJSREPL), TTR("GodotJS"));
+    add_control_to_bottom_panel(memnew(GodotJSDockedPanel), TTR("GodotJS"));
 
     const String tsc_out_path = jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb");
 

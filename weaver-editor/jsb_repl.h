@@ -7,6 +7,7 @@
 class GodotJSREPL : public HBoxContainer, public jsb::internal::IConsoleOutput
 {
     GDCLASS(GodotJSREPL, HBoxContainer)
+
     struct OutputLine
     {
         String text;
