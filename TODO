@@ -3,8 +3,9 @@ Core:
     ✔ directly use typescripts in `godot editor`, hide compiled results (.js files) @done(24-07-08)
     ✔ global scope defined constants (such as PropertyHint) @done
     ☐ source-map: incorrect Ln:Col on bundle scripts
+    ✔ embed jsb sources in C++ @done(24-08-15 23:16)
     ✔ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52) @done(24-07-05 21:42)
-    ☐ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.)
+    ✔ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.) @done(24-08-15)
     ✔ errors on script reloading @done(24-07-20)
     ✔ codegen: generate `signal` with type annotation for arguments @done(24-08-03)
     ✔ codegen: accept JS Array as godot packed array @done(24-07-16)
