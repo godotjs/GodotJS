@@ -81,9 +81,12 @@ namespace jsb
         void add_class_register(const Variant::Type p_type, const ClassRegisterFunc p_func)
         {
             jsb_check(!internal::VariantUtil::is_valid_name(godot_primitive_map_[p_type]));
-            const StringName type_name = Variant::get_type_name(p_type);
+            const StringName type_name = internal::VariantUtil::get_type_name(p_type);
             godot_primitive_map_[p_type] = type_name;
             add_class_register(type_name, p_func);
+
+            //TODO only for backward compatibility (old preset scripts). remove after all preset scripts internally loaded from C++.
+            if (Variant::get_type_name(p_type) != type_name) add_class_register(Variant::get_type_name(p_type), p_func);
         }
 
         void add_class_register(const StringName& p_type_name, const ClassRegisterFunc p_func)

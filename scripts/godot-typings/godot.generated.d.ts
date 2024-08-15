@@ -3,7 +3,14 @@
 
 declare module "godot" {
     class Node { }
-
+    class GArray { 
+        get_indexed(index: number): any
+        size(): number
+    }
+    class GDictionary { 
+        get_keyed(index: any): any
+        keys(): GArray
+    }
     type StringName = string;
 
     class EditorSettings { get(path: StringName): any; }

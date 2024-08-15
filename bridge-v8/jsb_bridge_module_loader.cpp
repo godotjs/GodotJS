@@ -513,6 +513,7 @@ namespace jsb
         constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
         v8::Local<v8::Object> class_info_obj = v8::Object::New(isolate);
         set_field(isolate, context, class_info_obj, "name", Variant::get_type_name(TYPE));
+        set_field(isolate, context, class_info_obj, "type", TYPE);
         if (Variant::has_indexing(TYPE))
         {
             set_field(isolate, context, class_info_obj, "element_type", Variant::get_indexed_element_type(TYPE));
@@ -859,11 +860,6 @@ namespace jsb
             info.GetReturnValue().Set(array);
         }
 
-        static void _benchmark_dump(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            OS::get_singleton()->benchmark_dump();
-        }
-
         static void _delete_file(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -973,6 +969,22 @@ namespace jsb
             target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true)).Check();
             JSB_LOG(VeryVerbose, "script %s (tool)",
                 V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))));
+        }
+
+        void _get_type_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            Variant type;
+            if (Realm::js_to_gd_var(isolate, context, info[0], Variant::INT, type))
+            {
+                const Variant type_name = internal::VariantUtil::get_type_name((Variant::Type)(int) type);
+                v8::Local<v8::Value> rval;
+                Realm::gd_var_to_js(isolate, context, type_name, rval);
+                info.GetReturnValue().Set(rval);
+                return;
+            }
+            jsb_throw(isolate, "bad param");
         }
 
         void _notify_microtasks_run(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -1220,6 +1232,7 @@ namespace jsb
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
                 internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "notify_microtasks_run"), v8::Function::New(context, _notify_microtasks_run).ToLocalChecked()).Check();
+                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_type_name"), v8::Function::New(context, _get_type_name).ToLocalChecked()).Check();
             }
 
 #ifdef TOOLS_ENABLED
@@ -1235,7 +1248,6 @@ namespace jsb
                 editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
                 editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
                 editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "benchmark_dump"), v8::Function::New(context, JavaScriptEditorUtility::_benchmark_dump).ToLocalChecked()).Check();
                 editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_DOCS_URL"), V8Helper::to_string(isolate, VERSION_DOCS_URL)).Check();
             }
 #endif

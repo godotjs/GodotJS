@@ -102,6 +102,8 @@ const IgnoredTypes = new Set([
 const PrimitiveTypesSet = (function (): Set<string> {
     let set = new Set<string>();
     for (let name in Variant.Type) {
+        // use the original type name of Variant.Type, 
+        // because this set is used with type name from the original godot class info (PropertyInfo)
         let str = type_string(<any>Variant.Type[name]);
         if (str.length != 0) {
             set.add(str);
@@ -116,7 +118,8 @@ function get_primitive_type_name(type: Variant.Type): string | undefined {
         return primitive_name;
     }
 
-    return type_string(type);
+    return jsb.internal.get_type_name(type);
+    // return type_string(type);
 }
 
 function get_js_array_type_name(element_type_name: string | undefined) {
@@ -630,6 +633,7 @@ class TypeDB {
     singletons: { [name: string]: jsb.editor.SingletonInfo } = {};
     classes: { [name: string]: jsb.editor.ClassInfo } = {};
     primitive_types: { [name: string]: jsb.editor.PrimitiveClassInfo } = {};
+    primitive_type_names: { [type: number /* Variant.Type */]: string } = {};
     globals: { [name: string]: jsb.editor.GlobalConstantInfo } = {};
     utilities: { [name: string]: jsb.editor.MethodBind } = {};
 
@@ -852,6 +856,7 @@ export default class TSDCodeGen {
         }
         for (let cls of primitive_types) {
             this._types.primitive_types[cls.name] = cls;
+            this._types.primitive_type_names[cls.type] = cls.name;
         }
         for (let singleton of singletons) {
             this._types.singletons[singleton.name] = singleton;
@@ -1011,7 +1016,7 @@ export default class TSDCodeGen {
         }
         class_ns_cg.finish();
 
-        const class_cg = cg.valuetype_(cls.name, "", false, class_doc);
+        const class_cg = cg.valuetype_(jsb.internal.get_type_name(cls.type), "", false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -1035,9 +1040,9 @@ export default class TSDCodeGen {
             class_cg.line(`get_keyed(index: any): any`)
         }
         // special iterator methods injected in jsb.core
-        if (cls.name == "Dictionary") {
+        if (cls.type == Variant.Type.TYPE_DICTIONARY) {
             class_cg.line("[Symbol.iterator](): IteratorObject<{ key: any, value: any}>");
-        } else if (cls.name == "Array") {
+        } else if (cls.type == Variant.Type.TYPE_ARRAY) {
             class_cg.line("[Symbol.iterator](): IteratorObject<any>");
         }
 

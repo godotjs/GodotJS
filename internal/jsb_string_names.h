@@ -26,8 +26,8 @@ namespace jsb::internal
         // for instance, the GodotJS script name is determined with the `name` property of a javascript class.
         HashSet<StringName> ignored_;
 
-        //TODO replace instead of ignore
-        // HashMap<StringName, StringName> replacements_;
+        // replace confusing names (such as Dictionary/Array)
+        HashMap<StringName, StringName> replacements_;
 
         StringNames();
 
@@ -35,6 +35,12 @@ namespace jsb::internal
         jsb_force_inline static StringNames& get_singleton() { return *singleton_; }
 
         jsb_force_inline bool is_ignored(const StringName& p_name) const { return ignored_.has(p_name); }
+
+        jsb_force_inline StringName get_replaced_name(const StringName& p_name) const
+        {
+            if (const StringName* ptr = replacements_.getptr(p_name)) return *ptr;
+            return p_name;
+        }
 
 #pragma push_macro("DEF")
 #   undef DEF

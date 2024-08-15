@@ -1,6 +1,6 @@
 
 declare module "godot-jsb" {
-    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable4 } from "godot";
+    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable4, StringName } from "godot";
 
     const DEV_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
@@ -57,6 +57,11 @@ declare module "godot-jsb" {
         function add_module(id: string, obj: any): void;
         function find_module(id: string): any;
         function notify_microtasks_run(): void;
+
+        /**
+         * Get the transformed type name of a Variant.Type
+         */
+        function get_type_name(type: Variant.Type): StringName;
     }
 
     namespace editor {
@@ -152,6 +157,7 @@ declare module "godot-jsb" {
             enums?: Array<EnumInfo>;
         }
 
+        // godot class
         interface ClassInfo extends BasicClassInfo {
             super: string;
 
@@ -161,8 +167,11 @@ declare module "godot-jsb" {
             constants?: Array<ConstantInfo>;
         }
 
+        // variant class
         interface PrimitiveClassInfo extends BasicClassInfo {
-            name: string;
+            // self type
+            type: Variant.Type;
+
             // valid only if has_indexing
             element_type?: Variant.Type;
 

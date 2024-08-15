@@ -1,5 +1,5 @@
 
-import { Array as GodotArray, Dictionary as GodotDictionary, EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant  } from "godot";
+import { GArray, GDictionary, EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant  } from "godot";
 import * as jsb from "godot-jsb";
 
 /**
@@ -174,9 +174,9 @@ export function EDITOR_GET(entry_path: StringName): any {
 })(
     [
         {
-            class: GodotDictionary,
+            class: GDictionary,
             func: function* () {
-                let self: GodotDictionary = <any>this;
+                let self: GDictionary = <any>this;
                 let keys = self.keys();
                 for (let i = 0; i < keys.size(); ++i) {
                     const key = keys.get_indexed(i);
@@ -185,9 +185,9 @@ export function EDITOR_GET(entry_path: StringName): any {
             }
         }, 
         {
-            class: GodotArray, 
+            class: GArray, 
             func: function* () {
-                let self: GodotArray = <any>this;
+                let self: GArray = <any>this;
                 for (let i = 0; i < self.size(); ++i) {
                     yield self.get_indexed(i); 
                 }

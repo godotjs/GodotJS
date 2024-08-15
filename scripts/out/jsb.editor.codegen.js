@@ -94,6 +94,8 @@ const IgnoredTypes = new Set([
 const PrimitiveTypesSet = (function () {
     let set = new Set();
     for (let name in godot_1.Variant.Type) {
+        // use the original type name of Variant.Type, 
+        // because this set is used with type name from the original godot class info (PropertyInfo)
         let str = (0, godot_1.type_string)(godot_1.Variant.Type[name]);
         if (str.length != 0) {
             set.add(str);
@@ -106,7 +108,8 @@ function get_primitive_type_name(type) {
     if (typeof primitive_name !== "undefined") {
         return primitive_name;
     }
-    return (0, godot_1.type_string)(type);
+    return jsb.internal.get_type_name(type);
+    // return type_string(type);
 }
 function get_js_array_type_name(element_type_name) {
     if (typeof element_type_name === "undefined" || element_type_name.length == 0)
@@ -539,6 +542,7 @@ class TypeDB {
         this.singletons = {};
         this.classes = {};
         this.primitive_types = {};
+        this.primitive_type_names = {};
         this.globals = {};
         this.utilities = {};
         // `class_doc` is loaded lazily once used, and be cached in `class_docs`
@@ -749,6 +753,7 @@ class TSDCodeGen {
         }
         for (let cls of primitive_types) {
             this._types.primitive_types[cls.name] = cls;
+            this._types.primitive_type_names[cls.type] = cls.name;
         }
         for (let singleton of singletons) {
             this._types.singletons[singleton.name] = singleton;
@@ -896,7 +901,7 @@ class TSDCodeGen {
             }
         }
         class_ns_cg.finish();
-        const class_cg = cg.valuetype_(cls.name, "", false, class_doc);
+        const class_cg = cg.valuetype_(jsb.internal.get_type_name(cls.type), "", false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -919,10 +924,10 @@ class TSDCodeGen {
             class_cg.line(`get_keyed(index: any): any`);
         }
         // special iterator methods injected in jsb.core
-        if (cls.name == "Dictionary") {
+        if (cls.type == godot_1.Variant.Type.TYPE_DICTIONARY) {
             class_cg.line("[Symbol.iterator](): IteratorObject<{ key: any, value: any}>");
         }
-        else if (cls.name == "Array") {
+        else if (cls.type == godot_1.Variant.Type.TYPE_ARRAY) {
             class_cg.line("[Symbol.iterator](): IteratorObject<any>");
         }
         for (let method_info of cls.methods) {

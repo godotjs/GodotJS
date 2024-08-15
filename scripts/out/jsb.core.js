@@ -198,7 +198,7 @@ function EDITOR_GET(entry_path) {
     }
 })([
     {
-        class: godot_1.Dictionary,
+        class: godot_1.GDictionary,
         func: function* () {
             let self = this;
             let keys = self.keys();
@@ -209,7 +209,7 @@ function EDITOR_GET(entry_path) {
         }
     },
     {
-        class: godot_1.Array,
+        class: godot_1.GArray,
         func: function* () {
             let self = this;
             for (let i = 0; i < self.size(); ++i) {

@@ -12,6 +12,8 @@ namespace jsb::internal
 #pragma pop_macro("DEF")
 
         ignored_.insert(sn_name);
+        replacements_.insert(Variant::get_type_name(Variant::DICTIONARY), "GDictionary");
+        replacements_.insert(Variant::get_type_name(Variant::ARRAY), "GArray");
     }
 
 }

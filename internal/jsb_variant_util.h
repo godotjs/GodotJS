@@ -6,6 +6,11 @@ namespace jsb::internal
 {
     struct VariantUtil
     {
+        jsb_force_inline static StringName get_type_name(const Variant::Type p_type)
+        {
+            return StringNames::get_singleton().get_replaced_name(Variant::get_type_name(p_type));
+        }
+
         jsb_force_inline static bool check_argc(bool p_is_vararg, int p_argc, int p_default_num, int p_expected_num)
         {
             if (p_is_vararg)
