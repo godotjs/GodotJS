@@ -77,7 +77,7 @@ void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, size_t 
         add_row(p_index, p_name, vformat("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), (int) (((double) p_usage / (double) p_total) * 100)));
         return;
     }
-    add_row(p_index, p_name, vformat("%d / %d (%d %%)", p_usage, p_total, (int) (((double) p_usage / (double) p_total) * 100)));
+    add_row(p_index, p_name, vformat("%d / %d (%d %%)", (uint64_t) p_usage, (uint64_t) p_total, (int) (((double) p_usage / (double) p_total) * 100)));
 }
 
 void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, const String& p_text)
