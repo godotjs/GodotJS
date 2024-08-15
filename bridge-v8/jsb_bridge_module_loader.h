@@ -7,6 +7,7 @@
 
 namespace jsb
 {
+    // internal module 'godot-jsb'
     class BridgeModuleLoader : public IModuleLoader
     {
     public:

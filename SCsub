@@ -45,6 +45,11 @@ def set_defined(name, value):
             t.value = value
     check(False, f"can not set value to '{name}' which is not defined")
 
+def remove_file(filename):
+    if os.path.exists(filename):
+        print(f"deleting deprecated file {filename}")
+        os.remove(filename)
+
 # def write_file(filename, ostream: io.StringIO):
 def write_file(filename, ostream):
     ostream.seek(0)
@@ -55,8 +60,8 @@ def write_file(filename, ostream):
                 print(f"generate {filename}: no diff")
                 return
     with open(filename, "wt", encoding="utf-8") as output:
+        print(f"generating {filename}")
         output.write(content)
-        print(f"generate {filename}")
 
 def generate_method_code(output, methodname, indent, filenames):
     output.write(f"const char* GodotJSPorjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
@@ -98,16 +103,22 @@ def generate_method_code(output, methodname, indent, filenames):
     output.write(indent+"return nullptr;\n")
     output.write("}\n")
 
-def generate_code(filenames):
+def generate_code(filenames, ed_filenames):
     indent = "    "
     output = io.StringIO()
-    outfile = "weaver-editor/jsb_project_preset.cpp"
+    
+    remove_file("weaver-editor/jsb_project_preset.cpp")
+    outfile = "jsb_project_preset.cpp"
+    
     # with open(outfile, "wt", encoding="utf-8") as output:
     if True:
         output.write("// AUTO-GENERATED\n")
         output.write("\n")
         output.write("#include \"jsb_project_preset.h\"\n")
-        generate_method_code(output, "get_source", indent, filenames)
+        generate_method_code(output, "get_source_rt", indent, filenames)
+        output.write("#ifdef TOOLS_ENABLED\n")
+        generate_method_code(output, "get_source_ed", indent, ed_filenames)
+        output.write("#endif\n")
     write_file(outfile, output)
 
 def generate_jsb_gen_header():
@@ -197,32 +208,38 @@ if websocket_lib == "lws":
         env.Append(LIBS=[File("lws/windows.x86_64.release/websockets.lib")])
     #TODO lws builds on other platforms
 
+generate_code({
+        # presets for runtime
+        "scripts/out/jsb.core.js": "",
+        "scripts/out/jsb.editor.main.js": "",
+        "scripts/out/jsb.editor.codegen.js": "",
+
+    }, {
+        # presets for editor only
+        "scripts/godot-typings/godot.minimal.d.ts": "",
+        "scripts/godot-typings/godot.mix.d.ts": "",
+
+        #TODO use generated d.ts after embedding them into cpp
+        # "scripts/godot-typings/jsb.core.d.ts": "",
+        # "scripts/godot-typings/jsb.editor.main.d.ts": "",
+        # "scripts/godot-typings/jsb.editor.codegen.d.ts": "",
+        #TODO remove source after embedding them into cpp
+        "scripts/src/jsb.core.ts": "",
+        "scripts/src/jsb.editor.main.ts": "",
+        "scripts/src/jsb.editor.codegen.ts": "",
+
+        "scripts/presets/package.json.txt": "package.json",
+        "scripts/presets/tsconfig.json.txt": "tsconfig.json",
+        "scripts/presets/gdignore.txt": ".gdignore",
+    })
+    
 # common parts
-env_jsb.add_source_files(module_obj, ["register_types.cpp"])
+env_jsb.add_source_files(module_obj, ["register_types.cpp", "jsb_project_preset.cpp"])
 env_jsb.add_source_files(module_obj, "internal/*.cpp")
 env_jsb.add_source_files(module_obj, "weaver/*.cpp")
 
 # editor functionalities
 if env.editor_build:
-    generate_code({
-        # editor presets
-        "scripts/out/jsb.editor.codegen.js": "",
-        "scripts/src/jsb.editor.main.ts": "",
-
-        "scripts/out/jsb.editor.main.js": "",
-        "scripts/src/jsb.editor.codegen.ts": "",
-
-        "scripts/godot-typings/godot.minimal.d.ts": "",
-        "scripts/godot-typings/godot.mix.d.ts": "",
-
-        "scripts/presets/package.json.txt": "package.json",
-        "scripts/presets/tsconfig.json.txt": "tsconfig.json",
-        "scripts/presets/gdignore.txt": ".gdignore",
-        
-        # runtime presets
-        "scripts/out/jsb.core.js": "",
-        "scripts/src/jsb.core.ts": "",
-    })
     env_jsb.add_source_files(module_obj, "weaver-editor/*.cpp")
     SConscript("weaver-editor/templates/SCsub")
 

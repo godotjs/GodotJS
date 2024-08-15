@@ -1,7 +1,7 @@
 #include "jsb_editor_plugin.h"
 
 #include "jsb_docked_panel.h"
-#include "jsb_project_preset.h"
+#include "../jsb_project_preset.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 #include "../weaver/jsb_gdjs_lang.h"

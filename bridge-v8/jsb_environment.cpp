@@ -6,6 +6,7 @@
 
 #include "jsb_bridge_module_loader.h"
 #include "jsb_godot_module_loader.h"
+#include "jsb_internal_module_loader.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 #include "editor/editor_settings.h"
@@ -208,6 +209,10 @@ namespace jsb
 
         module_loaders_.insert("godot", memnew(GodotModuleLoader));
         module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
+        //TODO internal jsb modules
+        // module_loaders_.insert("jsb/editor.codegen", memnew(InternalModuleLoader("jsb.editor.codegen.js")));
+        // module_loaders_.insert("jsb/editor.main", memnew(InternalModuleLoader("jsb.editor.main.js")));
+        // module_loaders_.insert("jsb/core", memnew(InternalModuleLoader("jsb.core.js.js")));
         EnvironmentStore::get_shared().add(this);
 
         //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
