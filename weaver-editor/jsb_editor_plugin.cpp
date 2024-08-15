@@ -4,6 +4,7 @@
 #include "../jsb_project_preset.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
+#include "../internal/jsb_path_util.h"
 #include "../weaver/jsb_gdjs_lang.h"
 
 #include "core/config/project_settings.h"
@@ -71,10 +72,8 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 
     add_control_to_bottom_panel(memnew(GodotJSDockedPanel), TTR("GodotJS"));
 
-    const String tsc_out_path = jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb");
-
     // config files
-    install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY | jsb::CH_REPLACE_VARS });
+    install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_REPLACE_VARS });
     install_files_.push_back({ "package.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
     install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT });
     install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
@@ -82,17 +81,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // type declaration files
     install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
     install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
-
-    // ts source files
-    install_files_.push_back({ "jsb.core.ts", "res://jsb", jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ "jsb.editor.codegen.ts", "res://jsb", jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ "jsb.editor.main.ts", "res://jsb", jsb::CH_TYPESCRIPT });
-
-    // files which could be generated from ts source with tsc by the user
-    // we copy these files for the first run of generating d.ts even if `npm install` and `tsc -w` are not executed
-    install_files_.push_back({ "jsb.core.js", tsc_out_path, jsb::CH_JAVASCRIPT });
-    install_files_.push_back({ "jsb.editor.codegen.js", tsc_out_path, jsb::CH_JAVASCRIPT });
-    install_files_.push_back({ "jsb.editor.main.js", tsc_out_path, jsb::CH_JAVASCRIPT });
+    install_files_.push_back({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
 }
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
@@ -103,6 +92,18 @@ GodotJSEditorPlugin::~GodotJSEditorPlugin()
         tsc_.reset();
     }
     JSB_LOG(VeryVerbose, "~GodotJSEditorPlugin");
+}
+
+void GodotJSEditorPlugin::delete_file(const String &p_file)
+{
+    Ref<FileAccess> fa = FileAccess::open(p_file, FileAccess::READ);
+    if (fa.is_null()) return;
+    const String& path = fa->get_path_absolute();
+    fa.unref();
+
+    JSB_LOG(Verbose, "delete file %s", path);
+    const CharString str = path.utf8();
+    jsb::internal::PathUtil::delete_file(str.get_data(), str.length());
 }
 
 Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
@@ -121,6 +122,7 @@ Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
         String parsed;
         parsed.parse_utf8(data, (int) size);
         parsed = parsed.replacen("__OUT_DIR__", jsb::internal::Settings::get_jsb_out_dir_name());
+        parsed = parsed.replacen("__BUILD_INFO_FILE__", jsb::internal::Settings::get_tsbuildinfo_path());
         parsed = parsed.replacen("__SRC_DIR__", "./");  // locate typescripts at the project root path for better dev experience
         parsed = parsed.replacen("__NEW_LINE__", "crlf");
         parsed = parsed.replacen("__MODULE__", "CommonJS"); // CommonJS is the only option currently supported
@@ -141,8 +143,16 @@ void GodotJSEditorPlugin::on_successfully_installed()
     EditorToaster::get_singleton()->popup_str(toast_message, EditorToaster::SEVERITY_INFO);
 }
 
+void GodotJSEditorPlugin::remove_obsolete_files()
+{
+    delete_file("res://jsb/jsb.core.ts");
+    delete_file("res://jsb/jsb.editor.main.ts");
+    delete_file("res://jsb/jsb.editor.codegen.ts");
+}
+
 void GodotJSEditorPlugin::try_install_ts_project()
 {
+    remove_obsolete_files();
     Vector<jsb::InstallFileInfo> modified;
     if (verify_files(install_files_, true, &modified))
     {
@@ -164,6 +174,9 @@ void GodotJSEditorPlugin::try_install_ts_project()
 
 bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file, bool p_verify_content)
 {
+    //TODO skip all d.ts files during the INSTALL phase (do it in the GENERATE phase)
+    // if ((p_file.hint & jsb::CH_D_TS) != 0) return true;
+
     size_t size;
     const char* data = GodotJSPorjectPreset::get_source(p_file.source_name, size);
     if (size == 0 || data == nullptr) return false;
@@ -231,12 +244,10 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
 
 void GodotJSEditorPlugin::generate_godot_dts()
 {
-    ERR_FAIL_COND_MSG(!FileAccess::exists(jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb/jsb.editor.codegen.js")), "install and compile ts source at first");
-
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
-    lang->eval_source(R"--((function(){const mod = require("jsb/jsb.editor.codegen"); (new mod.default("./typings")).emit();})())--", err).ignore();
+    lang->eval_source(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.default("./typings")).emit();})())--", err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 
     const String toast_message = TTR("godot.d.ts generated successfully");
@@ -245,11 +256,9 @@ void GodotJSEditorPlugin::generate_godot_dts()
 
 void GodotJSEditorPlugin::load_editor_entry_module()
 {
-    ERR_FAIL_COND_MSG(!FileAccess::exists(jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb/jsb.editor.main.js")), "install and compile ts source at first");
-
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
-    const Error err = lang->get_realm()->load("jsb/jsb.editor.main");
+    const Error err = lang->get_realm()->load("jsb.editor.main");
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.main");
 }
 
@@ -323,10 +332,9 @@ GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
 
 void GodotJSEditorPlugin::ensure_tsc_installed()
 {
-    const String code_snippet = "require('jsb/jsb.editor.main').run_npm_install()";
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
 
     Error err;
-    lang->eval_source(code_snippet, err);
+    lang->eval_source(R"--(require("jsb.editor.main").run_npm_install())--", err);
 }

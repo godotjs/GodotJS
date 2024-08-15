@@ -18,6 +18,7 @@ namespace jsb
         CH_CREATE_ONLY = 1 << 3,
         CH_REPLACE_VARS = 1 << 4,
 
+        CH_D_TS = 1 << 6,
         CH_OPTIONAL = 1 << 7,
     };
 
@@ -59,6 +60,7 @@ protected:
     void _scan_external_changes();
 
     static Error write_file(const jsb::InstallFileInfo& p_file);
+    static void delete_file(const String& p_file);
 
 public:
     GodotJSEditorPlugin();
@@ -68,6 +70,7 @@ public:
     bool is_tsc_watching();
     void kill_tsc();
 
+    void remove_obsolete_files();
     void try_install_ts_project();
     bool verify_ts_project() const;
 

@@ -18,6 +18,9 @@ namespace jsb::internal
         // get the project relative path for `outDir` (it's `.godot/jsb` for now)
         static String get_jsb_out_dir_name();
 
+        // get path for .tsbuildinfo (.godot/.tsbuildinfo)
+        static String get_tsbuildinfo_path();
+
         // get the res path for `outDir`, it's equivalent to `res://` + get_jsb_out_dir_name()
         static String get_jsb_out_res_path();
 

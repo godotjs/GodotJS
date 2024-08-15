@@ -51,6 +51,7 @@ namespace jsb::internal
         // convert javascript path back into typescript path
         static String convert_javascript_path(const String& p_source_path);
 
+        static void delete_file(const char* p_path, int p_length);
     };
 
 }

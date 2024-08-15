@@ -27,7 +27,17 @@ public:
     // main context
     jsb_force_inline std::shared_ptr<jsb::Realm> get_realm() const { jsb_check(once_inited_ && realm_); return realm_; }
 
-    jsb::JSValueMove eval_source(const String& p_code, Error& r_err);
+    template<size_t N>
+    jsb::JSValueMove eval_source(const char (&p_code)[N], Error& r_err)
+    {
+        return realm_->eval_source(p_code, (int) N - 1, "eval", r_err);
+    }
+
+    jsb::JSValueMove eval_source(const String& p_code, Error& r_err)
+    {
+        const CharString str = p_code.utf8();
+        return realm_->eval_source(str.get_data(), str.length(), "eval", r_err);
+    }
 
     GodotJSScriptLanguage();
     virtual ~GodotJSScriptLanguage() override;

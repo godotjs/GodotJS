@@ -7,7 +7,7 @@ __pycache__
 /v8
 
 /scripts/node_modules
-/scripts/out/*.js.map
+/scripts/.tsbuildinfo
 
 # macOS
 .DS_Store

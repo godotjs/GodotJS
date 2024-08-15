@@ -210,23 +210,16 @@ if websocket_lib == "lws":
 
 generate_code({
         # presets for runtime
-        "scripts/out/jsb.core.js": "",
-        "scripts/out/jsb.editor.main.js": "",
-        "scripts/out/jsb.editor.codegen.js": "",
+        "scripts/out/jsb.bundle.js": "",
+
 
     }, {
         # presets for editor only
         "scripts/godot-typings/godot.minimal.d.ts": "",
         "scripts/godot-typings/godot.mix.d.ts": "",
 
-        #TODO use generated d.ts after embedding them into cpp
-        # "scripts/godot-typings/jsb.core.d.ts": "",
-        # "scripts/godot-typings/jsb.editor.main.d.ts": "",
-        # "scripts/godot-typings/jsb.editor.codegen.d.ts": "",
-        #TODO remove source after embedding them into cpp
-        "scripts/src/jsb.core.ts": "",
-        "scripts/src/jsb.editor.main.ts": "",
-        "scripts/src/jsb.editor.codegen.ts": "",
+        "scripts/out/jsb.bundle.d.ts": "",
+        "scripts/out/jsb.bundle.js.map": "",
 
         "scripts/presets/package.json.txt": "package.json",
         "scripts/presets/tsconfig.json.txt": "tsconfig.json",

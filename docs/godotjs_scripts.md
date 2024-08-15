@@ -6,7 +6,7 @@ A javascript class can extend a Godot Object class:
 
 ```ts
 import { Node, Signal0 } from "godot";
-import { signal, seconds } from "./jsb/jsb.core";
+import { signal, seconds } from "jsb.core";
 
 export default class MyJSNode extends Node {
     @signal()

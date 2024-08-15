@@ -5,19 +5,12 @@
 #include "core/core_constants.h"
 #include "core/version.h"
 
+#include "../internal/jsb_path_util.h"
 #include "../weaver/jsb_callable_custom.h"
 
 #ifdef TOOLS_ENABLED
 
 #include "editor/editor_help.h"
-
-// for windows api (like 'DeleteFileW')
-#if WINDOWS_ENABLED
-#   define WIN32_LEAN_AND_MEAN
-#   include <windows.h>
-#else
-#   include <unistd.h>
-#endif
 
 namespace jsb_private
 {
@@ -870,12 +863,8 @@ namespace jsb
                 isolate->ThrowError("bad path");
                 return;
             }
-            v8::String::Utf8Value cstr(isolate, info[0]);
-#if WINDOWS_ENABLED
-            DeleteFileW((LPCWSTR) String(*cstr, cstr.length()).utf16().get_data());
-#else
-            unlink(*cstr);
-#endif
+            const v8::String::Utf8Value str(isolate, info[0]);
+            internal::PathUtil::delete_file(*str, str.length());
         }
     };
 }

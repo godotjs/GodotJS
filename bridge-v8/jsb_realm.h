@@ -146,7 +146,7 @@ namespace jsb
 
         //NOTE AVOID USING THIS CALL, CONSIDERING REMOVING IT.
         //     eval from source
-        JSValueMove eval_source(const CharString& p_source, const String& p_filename, Error& r_err);
+        JSValueMove eval_source(const char* p_source, int p_length, const String& p_filename, Error& r_err);
 
         /**
          * \brief load a module script

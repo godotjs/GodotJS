@@ -40,7 +40,7 @@ With a simple wrapper, `Signal` can be awaitable in javascript:
 
 ```ts
 import { Node, Signal } from "godot";
-import { $wait, signal } from "./jsb/jsb.core";
+import { $wait, signal } from "jsb.core";
 
 class ExampleClass extends Node {
     @signal()

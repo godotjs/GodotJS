@@ -9,6 +9,14 @@
 #include "core/io/dir_access.h"
 #include "../jsb.config.h"
 
+// for windows api (like 'DeleteFileW')
+#if WINDOWS_ENABLED
+#   define WIN32_LEAN_AND_MEAN
+#   include <windows.h>
+#else
+#   include <unistd.h>
+#endif
+
 namespace jsb::internal
 {
     String PathUtil::to_platform_specific_path(const String& p_path)
@@ -104,6 +112,19 @@ namespace jsb::internal
             return replaced;
         }
         return p_source_path;
+    }
+
+    void PathUtil::delete_file(const char* p_path, int p_length)
+    {
+#if WINDOWS_ENABLED
+        const String path(p_path, p_length);
+        if (!DeleteFileW((LPCWSTR) path.utf16().get_data()))
+        {
+            JSB_LOG(Warning, "failed to delete %s", path);
+        }
+#else
+        unlink(p_path);
+#endif
     }
 
 }

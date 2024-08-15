@@ -2,6 +2,7 @@
 
 #include <iterator>
 
+#include "../jsb_project_preset.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 #include "../internal/jsb_string_names.h"
@@ -54,12 +55,16 @@ void GodotJSScriptLanguage::init()
 #endif
         ;
 
-#ifdef TOOLS_ENABLED
-        if (FileAccess::exists(jsb::internal::Settings::get_jsb_out_res_path().path_join("jsb/jsb.editor.main.js")))
+        // load internal script (jsb.core, jsb.editor.main, jsb.editor.codegen)
         {
-            realm_->load("jsb/jsb.editor.main");
+            size_t len;
+            Error err;
+            if (const char* str = GodotJSPorjectPreset::get_source_rt("jsb.bundle.js", len))
+            {
+                jsb_check(len == (size_t)(int) len);
+                realm_->eval_source(str, (int) len, "eval", err);
+            }
         }
-#endif
     }
 }
 
@@ -199,11 +204,6 @@ void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions
 {
     p_extensions->push_back(JSB_TYPESCRIPT_EXT);
     p_extensions->push_back(JSB_JAVASCRIPT_EXT);
-}
-
-jsb::JSValueMove GodotJSScriptLanguage::eval_source(const String& p_code, Error& r_err)
-{
-    return realm_->eval_source(p_code.utf8(), "eval", r_err);
 }
 
 String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path) const

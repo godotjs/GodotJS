@@ -53,6 +53,11 @@ namespace jsb::internal
         return ProjectSettings::get_singleton()->get_project_data_dir_name().path_join(JSB_MODULE_NAME_STRING);
     }
 
+    String Settings::get_tsbuildinfo_path()
+    {
+        return ProjectSettings::get_singleton()->get_project_data_dir_name().path_join(".tsbuildinfo");
+    }
+
     String Settings::get_jsb_out_res_path()
     {
         return "res://" + get_jsb_out_dir_name();

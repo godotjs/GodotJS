@@ -1283,7 +1283,7 @@ namespace jsb
         isolate->ThrowError(v8::String::NewFromUtf8(isolate, message.ptr(), v8::NewStringType::kNormal, message.length()).ToLocalChecked());
     }
 
-    JSValueMove Realm::eval_source(const CharString& p_source, const String& p_filename, Error& r_err)
+    JSValueMove Realm::eval_source(const char* p_source, int p_length, const String& p_filename, Error& r_err)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, eval_source);
         v8::Isolate* isolate = get_isolate();
@@ -1293,7 +1293,7 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         v8::TryCatch try_catch_run(isolate);
-        v8::MaybeLocal<v8::Value> maybe = _compile_run(p_source, p_source.length(), p_filename);
+        v8::MaybeLocal<v8::Value> maybe = _compile_run(p_source, p_length, p_filename);
         if (try_catch_run.HasCaught())
         {
             v8::Local<v8::Message> message = try_catch_run.Message();
