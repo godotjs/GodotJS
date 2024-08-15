@@ -742,6 +742,22 @@ namespace jsb
 #endif
                 return true;
             }
+
+        case Variant::ARRAY:
+        // typed arrays
+        case Variant::PACKED_BYTE_ARRAY:
+        case Variant::PACKED_INT32_ARRAY:
+        case Variant::PACKED_INT64_ARRAY:
+        case Variant::PACKED_FLOAT32_ARRAY:
+        case Variant::PACKED_FLOAT64_ARRAY:
+        case Variant::PACKED_STRING_ARRAY:
+        case Variant::PACKED_VECTOR2_ARRAY:
+        case Variant::PACKED_VECTOR3_ARRAY:
+        case Variant::PACKED_COLOR_ARRAY:
+#if JSB_IMPLICIT_PACKED_ARRAY_CONVERSION
+            //TODO is loose conversion check for JS primitive array as Godot array a bad idea?
+            if (p_val->IsArray()) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+#endif
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
         case Variant::RECT2:
@@ -764,18 +780,6 @@ namespace jsb
         case Variant::CALLABLE:
         case Variant::SIGNAL:
         case Variant::DICTIONARY:
-        case Variant::ARRAY:
-
-        // typed arrays
-        case Variant::PACKED_BYTE_ARRAY:
-        case Variant::PACKED_INT32_ARRAY:
-        case Variant::PACKED_INT64_ARRAY:
-        case Variant::PACKED_FLOAT32_ARRAY:
-        case Variant::PACKED_FLOAT64_ARRAY:
-        case Variant::PACKED_STRING_ARRAY:
-        case Variant::PACKED_VECTOR2_ARRAY:
-        case Variant::PACKED_VECTOR3_ARRAY:
-        case Variant::PACKED_COLOR_ARRAY:
             {
                 FALLBACK_TO_VARIANT:
                 if (!p_val->IsObject())
@@ -853,7 +857,41 @@ namespace jsb
             {
                 // be cautious here, we silently omit conversion failures
                 packed.write[index] = T {};
-                JSB_LOG(Warning, "failed to convert array element %d as %s, it'll be left as the default value", index, Variant::get_type_name(GetTypeInfo<T>::VARIANT_TYPE));
+                JSB_LOG(Warning, "failed to convert array element %d (strictly, as %s), it'll be left as the default value", index, Variant::get_type_name(GetTypeInfo<T>::VARIANT_TYPE));
+            }
+        }
+        r_packed = packed;
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    static bool try_convert_array_any(v8::Isolate* isolate, const v8::Local<v8::Context>& context, v8::Local<v8::Value> p_val, Variant& r_packed)
+    {
+#if JSB_IMPLICIT_PACKED_ARRAY_CONVERSION
+        if (!p_val->IsArray())
+        {
+            return false;
+        }
+
+        const v8::Local<v8::Array> array = p_val.As<v8::Array>();
+        const uint32_t len = array->Length();
+        Array packed;
+        packed.resize((int)len);
+        for (uint32_t index = 0; index < len; ++index)
+        {
+            v8::Local<v8::Value> element;
+            Variant element_var;
+            if (array->Get(context, index).ToLocal(&element) && Realm::js_to_gd_var(isolate, context, element, element_var))
+            {
+                packed.set(index, element_var);
+            }
+            else
+            {
+                // be cautious here, we silently omit conversion failures
+                packed.set(index, {});
+                JSB_LOG(Warning, "failed to convert array element %d (loosely), it'll be left as the default value", index);
             }
         }
         r_packed = packed;
@@ -947,6 +985,7 @@ namespace jsb
         case Variant::PACKED_VECTOR2_ARRAY: if (try_convert_array<Vector2>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         case Variant::PACKED_VECTOR3_ARRAY: if (try_convert_array<Vector3>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         case Variant::PACKED_COLOR_ARRAY:   if (try_convert_array<Color>(isolate, context, p_jval, r_cvar))   return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::ARRAY:                if (try_convert_array_any(isolate, context, p_jval, r_cvar))      return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         // math types
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
@@ -970,10 +1009,8 @@ namespace jsb
         case Variant::CALLABLE:
         case Variant::SIGNAL:
         case Variant::DICTIONARY:
-        case Variant::ARRAY:
             {
                 FALLBACK_TO_VARIANT:
-                //TODO TEMP SOLUTION
                 if (!p_jval->IsObject())
                 {
                     return false;
