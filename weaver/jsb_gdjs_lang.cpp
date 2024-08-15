@@ -55,15 +55,14 @@ void GodotJSScriptLanguage::init()
 #endif
         ;
 
-        // load internal script (jsb.core, jsb.editor.main, jsb.editor.codegen)
+        // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
         {
             size_t len;
             Error err;
-            if (const char* str = GodotJSPorjectPreset::get_source_rt("jsb.bundle.js", len))
-            {
-                jsb_check(len == (size_t)(int) len);
-                realm_->eval_source(str, (int) len, "eval", err);
-            }
+            const char* str = GodotJSPorjectPreset::get_source_rt("jsb.bundle.js", len);
+            jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
+            jsb_check(len == (size_t)(int) len);
+            realm_->eval_source(str, (int) len, "eval", err);
         }
     }
 }
