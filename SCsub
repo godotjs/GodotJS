@@ -107,8 +107,11 @@ def generate_code(filenames, ed_filenames):
     indent = "    "
     output = io.StringIO()
     
+    # delete obsolete files
     remove_file("weaver-editor/jsb_project_preset.cpp")
-    outfile = "jsb_project_preset.cpp"
+    remove_file("jsb_project_preset.cpp")
+
+    outfile = "jsb_project_preset.gen.cpp"
     
     # with open(outfile, "wt", encoding="utf-8") as output:
     if True:
@@ -227,7 +230,7 @@ generate_code({
     })
     
 # common parts
-env_jsb.add_source_files(module_obj, ["register_types.cpp", "jsb_project_preset.cpp"])
+env_jsb.add_source_files(module_obj, ["register_types.cpp", "jsb_project_preset.gen.cpp"])
 env_jsb.add_source_files(module_obj, "internal/*.cpp")
 env_jsb.add_source_files(module_obj, "weaver/*.cpp")
 
