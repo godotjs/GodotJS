@@ -192,4 +192,30 @@ function GLOBAL_GET(entry_path) {
 function EDITOR_GET(entry_path) {
     return godot_1.EditorInterface.get_editor_settings().get(entry_path);
 }
+(function (items) {
+    for (let item of items) {
+        item.class.prototype[Symbol.iterator] = item.func;
+    }
+})([
+    {
+        class: godot_1.Dictionary,
+        func: function* () {
+            let self = this;
+            let keys = self.keys();
+            for (let i = 0; i < keys.size(); ++i) {
+                const key = keys.get_indexed(i);
+                yield { key: key, value: self.get_keyed(key) };
+            }
+        }
+    },
+    {
+        class: godot_1.Array,
+        func: function* () {
+            let self = this;
+            for (let i = 0; i < self.size(); ++i) {
+                yield self.get_indexed(i);
+            }
+        }
+    }
+]);
 //# sourceMappingURL=jsb.core.js.map

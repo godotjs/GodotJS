@@ -1022,15 +1022,25 @@ export default class TSDCodeGen {
         for (let constructor_info of cls.constructors) {
             class_cg.constructor_(constructor_info);
         }
+
+        // 
         if (typeof cls.element_type !== "undefined") {
             const element_type_name = get_primitive_type_name(cls.element_type);
             class_cg.line(`set_indexed(index: number, value: ${element_type_name})`)
             class_cg.line(`get_indexed(index: number): ${element_type_name}`)
         }
+        //
         if (cls.is_keyed) {
             class_cg.line(`set_keyed(index: any, value: any)`)
             class_cg.line(`get_keyed(index: any): any`)
         }
+        // special iterator methods injected in jsb.core
+        if (cls.name == "Dictionary") {
+            class_cg.line("[Symbol.iterator](): IteratorObject<{ key: any, value: any}>");
+        } else if (cls.name == "Array") {
+            class_cg.line("[Symbol.iterator](): IteratorObject<any>");
+        }
+
         for (let method_info of cls.methods) {
             class_cg.ordinary_method_(method_info);
         }

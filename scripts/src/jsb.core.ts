@@ -1,5 +1,5 @@
 
-import { EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant  } from "godot";
+import { Array as GodotArray, Dictionary as GodotDictionary, EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant  } from "godot";
 import * as jsb from "godot-jsb";
 
 /**
@@ -166,3 +166,32 @@ export function GLOBAL_GET(entry_path: StringName): any {
 export function EDITOR_GET(entry_path: StringName): any {
     return EditorInterface.get_editor_settings().get(entry_path);
 }
+
+(function (items: Array<{ class: any, func: Function }>) {
+    for (let item of items) {
+        item.class.prototype[Symbol.iterator] = item.func;
+    }
+})(
+    [
+        {
+            class: GodotDictionary,
+            func: function* () {
+                let self: GodotDictionary = <any>this;
+                let keys = self.keys();
+                for (let i = 0; i < keys.size(); ++i) {
+                    const key = keys.get_indexed(i);
+                    yield { key: key, value: self.get_keyed(key) };
+                }
+            }
+        }, 
+        {
+            class: GodotArray, 
+            func: function* () {
+                let self: GodotArray = <any>this;
+                for (let i = 0; i < self.size(); ++i) {
+                    yield self.get_indexed(i); 
+                }
+            }
+        }
+    ]
+);
