@@ -4,7 +4,30 @@ Import("env")
 
 import editor.template_builders as build_template_ts
 
-if env.version_info["major"] == 4 and env.version_info["minor"] <= 2:
+def get_godot_version_info():
+    try:
+        # it's available since godot 4.3
+        return env.version_info
+    except:
+        # fallback to the tricky way
+        import os
+        import sys
+        from os.path import dirname
+
+        # We want ../../../methods.py.
+        script_path = dirname(os.path.abspath(__file__))
+        root_path = dirname(dirname(dirname(script_path)))
+
+        sys.path.insert(0, root_path)
+        from methods import get_version_info
+
+        version_info = get_version_info("")
+        sys.path.remove(root_path)
+        return version_info
+
+version_info = get_godot_version_info()
+
+if version_info["major"] == 4 and version_info["minor"] <= 2:
     env["BUILDERS"]["MakeGodotJSTemplateBuilder"] = Builder(
         action = env.Run(build_template_ts.make_templates, "Generating GodotJSScript templates header."),
         suffix = ".h",
