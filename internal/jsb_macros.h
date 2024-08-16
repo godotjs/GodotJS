@@ -7,9 +7,7 @@
 
 #include <memory>
 
-#include "jsb_console_output.h"
-#include "jsb_logger.h"
-
+#include "core/version.h"
 #include "core/object/object.h"
 #include "core/variant/variant_utility.h"
 #include "core/string/print_string.h"
@@ -18,6 +16,9 @@
 #include "core/io/dir_access.h"
 #include "core/os/thread.h"
 #include "core/os/os.h"
+
+#include "jsb_console_output.h"
+#include "jsb_logger.h"
 
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)

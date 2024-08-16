@@ -477,13 +477,13 @@ namespace jsb::internal
 			return false;
 		}
 
-        _NO_DISCARD_
+        [[nodiscard]]
 		bool contains(const T& p_item) const
 		{
 			return index_of(p_item) != IndexType::none();
 		}
 
-        _NO_DISCARD_
+        [[nodiscard]]
 		IndexType index_of(const T& p_item) const
 		{
 			int current = _first_index;
@@ -499,7 +499,7 @@ namespace jsb::internal
 			return IndexType::none();
 		}
 
-        _NO_DISCARD_
+        [[nodiscard]]
 		IndexType last_index_of(const T& p_item) const
 		{
 			int current = _last_index;

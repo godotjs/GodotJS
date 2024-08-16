@@ -3,7 +3,6 @@
 
 #include "jsb_editor_macros.h"
 #include "scene/gui/dialogs.h"
-#include "editor/editor_plugin.h"
 #include "modules/GodotJS/internal/jsb_process.h"
 
 namespace jsb
