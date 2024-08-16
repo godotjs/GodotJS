@@ -151,8 +151,40 @@ def generate_jsb_gen_header():
         output.write("#endif\n")
     write_file("jsb.gen.h", output)
 
+def get_godot_version_info():
+    try:
+        # it's available since godot 4.3
+        return env.version_info
+    except:
+        # fallback to the tricky way
+        import os
+        import sys
+
+        # We want /methods.py.
+        engine_path = os.path.join(os.curdir, "../..")
+
+        sys.path.insert(0, engine_path)
+        from methods import get_version_info
+
+        version_info = get_version_info("")
+        sys.path.remove(engine_path)
+        return version_info
+
+# godot 4.3.1 generates `ActiveProjectItemList_` variable name with the path name (see methods.py)
+# it'll fail if the path contains '.' or any other characters invalid as variable name
+# detect and rename them for better compatibility
+def update_path_for_4_3(old_path):
+    new_path = old_path if '.' not in old_path else old_path.replace('.', '_')
+    if not os.path.exists(new_path) and os.path.exists(old_path):
+        os.rename(old_path, new_path)
+    return new_path
+
+version_info = get_godot_version_info()
+# GODOT_4_3_OR_NEWER = version_info["major"] >= 4 and version_info["minor"] >= 3
 env_jsb = env_modules.Clone()
 module_obj = []
+
+print(f"godot engine: {version_info['major']}.{version_info['minor']}")
 
 if javascript_engine == "v8":
     # it seems godot always links MT_StaticRelease even if env["dev_build"]
@@ -170,8 +202,9 @@ if javascript_engine == "v8":
         check(os.path.exists("v8/linux.x86_64.release/libv8_monolith.a"), v8_missing_msg)
         env.Append(LIBS=[File('v8/linux.x86_64.release/libv8_monolith.a')])
     else:
-        check(os.path.exists("v8/windows.x86_64.release/v8_monolith.lib"), v8_missing_msg)
-        env.Append(LIBS=[File("v8/windows.x86_64.release/v8_monolith.lib")])
+        v8_lib_path = update_path_for_4_3("v8/windows.x86_64.release")
+        check(os.path.exists(v8_lib_path+"/v8_monolith.lib"), v8_missing_msg)
+        env.Append(LIBS=[File(v8_lib_path+"/v8_monolith.lib")])
         env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
 
     # platform-specific defines
@@ -197,18 +230,18 @@ env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
 # lws
 if websocket_lib == "lws":
     if env["platform"] == "macos":
-        env_jsb.Append(CPPPATH=["lws/macos.arm64.release/include"])
-        env.Append(LIBPATH=[f'#modules/{module_name}/lws/macos.arm64.release'])
+        env_jsb.Append(CPPPATH=["lws/macos_arm64_release/include"])
+        env.Append(LIBPATH=[f'#modules/{module_name}/lws/macos_arm64_release'])
         env.Append(LINKFLAGS=["-lwebsockets"])
     elif env["platform"] == "linuxbsd":
-        env_jsb.Append(CPPPATH=["lws/linux.x86_64.release/include"])
-        env.Append(LIBS=[File('lws/linux.x86_64.release/libwebsockets.a')])
+        env_jsb.Append(CPPPATH=["lws/linux_x86_64_release/include"])
+        env.Append(LIBS=[File('lws/linux_x86_64_release/libwebsockets.a')])
     elif env["platform"] == "windows":
         if env.msvc and env["vsproj"]:
-            env.Append(CPPPATH=[f"#modules/{module_name}/lws/windows.x86_64.release/include"])
-        env_jsb.Append(CPPPATH=["lws/windows.x86_64.release/include"])
+            env.Append(CPPPATH=[f"#modules/{module_name}/lws/windows_x86_64_release/include"])
+        env_jsb.Append(CPPPATH=["lws/windows_x86_64_release/include"])
 
-        env.Append(LIBS=[File("lws/windows.x86_64.release/websockets.lib")])
+        env.Append(LIBS=[File("lws/windows_x86_64_release/websockets.lib")])
     #TODO lws builds on other platforms
 
 generate_code({
