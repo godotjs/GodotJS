@@ -12,17 +12,15 @@ def get_godot_version_info():
         # fallback to the tricky way
         import os
         import sys
-        from os.path import dirname
 
-        # We want ../../../methods.py.
-        script_path = dirname(os.path.abspath(__file__))
-        root_path = dirname(dirname(dirname(script_path)))
+        # We want /methods.py.
+        engine_path = os.path.join(os.curdir, "../..")
 
-        sys.path.insert(0, root_path)
+        sys.path.insert(0, engine_path)
         from methods import get_version_info
 
         version_info = get_version_info("")
-        sys.path.remove(root_path)
+        sys.path.remove(engine_path)
         return version_info
 
 version_info = get_godot_version_info()
