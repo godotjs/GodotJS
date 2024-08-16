@@ -115,7 +115,7 @@ struct JavaScriptControlFlowKeywords
     }
 };
 
-bool GodotJSScriptLanguage::is_control_flow_keyword(String p_keyword) const
+bool GodotJSScriptLanguage::is_control_flow_keyword(ConstStringRefCompat p_keyword) const
 {
     static JavaScriptControlFlowKeywords collection;
     return collection.values.has(p_keyword);
@@ -174,7 +174,7 @@ Ref<Script> GodotJSScriptLanguage::make_template(const String& p_template, const
     return spt;
 }
 
-Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguage::get_built_in_templates(StringName p_object)
+Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguage::get_built_in_templates(ConstStringNameRefCompat p_object)
 {
     Vector<ScriptTemplate> templates;
 #ifdef TOOLS_ENABLED
@@ -186,6 +186,18 @@ Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguage::get_built_in_templ
 #endif
     return templates;
 }
+
+#if GODOT_4_3_OR_NEWER
+void GodotJSScriptLanguage::reload_scripts(const Array& p_scripts, bool p_soft_reload)
+{
+    JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_scripts] NOT IMPLEMENTED");
+}
+
+void GodotJSScriptLanguage::profiling_set_save_native_calls(bool p_enable) 
+{
+    JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::profiling_set_save_native_calls] NOT IMPLEMENTED");
+}
+#endif
 
 void GodotJSScriptLanguage::reload_all_scripts()
 {

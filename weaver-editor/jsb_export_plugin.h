@@ -1,7 +1,7 @@
 ﻿#ifndef GODOTJS_EXPORT_PLUGIN_H
 #define GODOTJS_EXPORT_PLUGIN_H
 
-#include "jsb_editor_macros.h"
+#include "jsb_editor_pch.h"
 #include "editor/export/editor_export_plugin.h"
 
 // improve the pipeline of using typescripts

@@ -1,6 +1,5 @@
 #include "jsb_statistics_viewer.h"
-
-#include "editor/editor_scale.h"
+#include "jsb_editor_pch.h"
 #include "modules/GodotJS/weaver/jsb_gdjs_lang.h"
 #include "scene/gui/tree.h"
 

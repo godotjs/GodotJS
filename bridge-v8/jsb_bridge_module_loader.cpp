@@ -254,16 +254,22 @@ namespace jsb
                 set_field(isolate, context, object, "return_", property_info_obj);
             }
 
+            const int argument_num = method_info.arguments.size();
+            Vector<Variant::Type> argument_types;
+
+            argument_types.resize(argument_num);
             // write type info for `arguments`
             {
-                const int argc = method_info.arguments.size();
-                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argc);
-                for (int index = 0; index < argc; ++index)
+                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argument_num);
+                int index = 0;
+                for (List<PropertyInfo>::ConstIterator it = method_info.arguments.begin(); it != method_info.arguments.end(); ++it) 
                 {
-                    const PropertyInfo& arg_info = method_info.arguments[index];
+                    jsb_check(index < argument_num);
+                    const PropertyInfo& arg_info = *it;
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     build_property_info(isolate, context, arg_info, property_info_obj);
-                    args_obj->Set(context, index, property_info_obj).Check();
+                    argument_types.write[index] = arg_info.type;
+                    args_obj->Set(context, index++, property_info_obj).Check();
                 }
                 set_field(isolate, context, object, "args_", args_obj);
             }
@@ -276,7 +282,7 @@ namespace jsb
                 {
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
                     const Variant value = method_info.default_arguments[index];
-                    const Variant::Type type = method_info.arguments[method_info.arguments.size() - (argc - index)].type;
+                    const Variant::Type type = argument_types[argument_types.size() - (argc - index)];
                     build_property_default_value(isolate, context, value, type, property_info_obj);
                     args_obj->Set(context, index, property_info_obj).Check();
                 }
@@ -288,9 +294,10 @@ namespace jsb
         {
             const int num = enum_info.constants.size();
             v8::Local<v8::Array> elements_array = v8::Array::New(isolate, num);
-            for (int index = 0; index < num; ++index)
+            int index = 0;
+            for (List<StringName>::ConstIterator it = enum_info.constants.begin(); it != enum_info.constants.end(); ++it, ++index) 
             {
-                const StringName& name = enum_info.constants[index];
+                const StringName& name = *it;
                 elements_array->Set(context, index, V8Helper::to_string(isolate, name)).Check();
             }
             set_field(isolate, context, object, "literals", elements_array);
@@ -716,9 +723,10 @@ namespace jsb
             ClassDB::get_class_list(&list);
 
             v8::Local<v8::Array> array = v8::Array::New(isolate, list.size());
-            for (int index = 0, num = list.size(); index < num; ++index)
+            int index = 0;
+            for (List<StringName>::ConstIterator it = list.begin(); it != list.end(); ++it, ++index)
             {
-                array->Set(context, index, build_class_info(isolate, context, list[index])).Check();
+                array->Set(context, index, build_class_info(isolate, context, *it)).Check();
             }
             info.GetReturnValue().Set(array);
         }
@@ -814,9 +822,10 @@ namespace jsb
             List<StringName> utility_function_list;
             Variant::get_utility_function_list(&utility_function_list);
             v8::Local<v8::Array> array = v8::Array::New(isolate, utility_function_list.size());
-            for (int index = 0, num = utility_function_list.size(); index < num; ++index)
+            int index = 0;
+            for (List<StringName>::ConstIterator it = utility_function_list.begin(); it != utility_function_list.end(); ++it, ++index)
             {
-                const MethodInfo method_info = Variant::get_utility_function_info(utility_function_list[index]);
+                const MethodInfo method_info = Variant::get_utility_function_info(*it);
                 v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                 build_method_info(isolate, context, method_info, method_info_obj);
                 array->Set(context, index, method_info_obj).Check();
@@ -833,11 +842,12 @@ namespace jsb
             List<Engine::Singleton> singletons;
             Engine::get_singleton()->get_singletons(&singletons);
             v8::Local<v8::Array> array = v8::Array::New(isolate, singletons.size());
-            for (int index = 0, num = singletons.size(); index < num; ++index)
+            int index = 0;
+            for (List<Engine::Singleton>::ConstIterator it = singletons.begin(); it != singletons.end(); ++it, ++index)
             {
-                Engine::Singleton singleton = singletons[index];
+                Engine::Singleton singleton = *it;
                 v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
-                const StringName class_name = singleton.ptr->get_class_name();
+                const StringName& class_name = singleton.ptr->get_class_name();
                 if (!internal::VariantUtil::is_valid_name(singleton.class_name))
                 {
                     singleton.class_name = class_name;

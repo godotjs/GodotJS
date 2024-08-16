@@ -46,17 +46,23 @@ public:
     virtual void finish() override;
     virtual void frame() override;
 
+    virtual bool is_control_flow_keyword(ConstStringRefCompat p_keyword) const override;
+    virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) override;
+
     virtual void get_reserved_words(List<String>* p_words) const override;
-    virtual bool is_control_flow_keyword(String p_keyword) const override;
     virtual void get_doc_comment_delimiters(List<String>* p_delimiters) const override;
     virtual void get_comment_delimiters(List<String>* p_delimiters) const override;
     virtual void get_string_delimiters(List<String>* p_delimiters) const override;
     virtual Script* create_script() const override;
     virtual bool validate(const String& p_script, const String& p_path = "", List<String>* r_functions = nullptr, List<ScriptError>* r_errors = nullptr, List<Warning>* r_warnings = nullptr, HashSet<int>* r_safe_lines = nullptr) const override;
     virtual Ref<Script> make_template(const String& p_template, const String& p_class_name, const String& p_base_class_name) const override;
-    virtual Vector<ScriptTemplate> get_built_in_templates(StringName p_object) override;
     virtual void reload_all_scripts() override;
     virtual void get_recognized_extensions(List<String>* p_extensions) const override;
+
+#if GODOT_4_3_OR_NEWER
+	virtual void reload_scripts(const Array& p_scripts, bool p_soft_reload) override;
+    virtual void profiling_set_save_native_calls(bool p_enable) override;
+#endif
 
 #pragma region DEFAULTLY AND PARTIALLY SUPPORTED
     virtual String get_name() const override;

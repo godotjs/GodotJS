@@ -1,7 +1,7 @@
 #ifndef GODOTJS_EDITOR_PLUGINS_H
 #define GODOTJS_EDITOR_PLUGINS_H
 
-#include "jsb_editor_macros.h"
+#include "jsb_editor_pch.h"
 #include "scene/gui/dialogs.h"
 #include "modules/GodotJS/internal/jsb_process.h"
 

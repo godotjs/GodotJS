@@ -84,4 +84,15 @@
 // generate an error string with source position info
 #define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
+
+#define GODOT_4_3_OR_NEWER VERSION_MAJOR >= 4 && VERSION_MINOR >= 3
+
+#if GODOT_4_3_OR_NEWER
+#define ConstStringRefCompat const String&
+#define ConstStringNameRefCompat const StringName&
+#else 
+#define ConstStringRefCompat String
+#define ConstStringNameRefCompat StringName
+#endif
+
 #endif
