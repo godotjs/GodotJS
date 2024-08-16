@@ -243,9 +243,9 @@ namespace jsb::internal
 
                 Vector<CharString> builder;
                 builder.push_back(p_path.utf8());
-                for (int i = 0; i < p_arguments.size(); ++i)
+                for (auto it = p_arguments.begin(); it != p_arguments.end(); ++it)
                 {
-                    builder.push_back(p_arguments[i].utf8());
+                    builder.push_back(it->utf8());
                 }
 
                 Vector<char*> args;
