@@ -4,11 +4,19 @@ Import("env")
 
 import editor.template_builders as build_template_ts
 
-env["BUILDERS"]["MakeGodotJSTemplateBuilder"] = Builder(
-    action = env.Run(build_template_ts.make_templates, "Generating GodotJSScript templates header."),
-    suffix = ".h",
-    src_suffix = ".ts",
-)
+if env.version_info["major"] == 4 and env.version_info["minor"] <= 2:
+    env["BUILDERS"]["MakeGodotJSTemplateBuilder"] = Builder(
+        action = env.Run(build_template_ts.make_templates, "Generating GodotJSScript templates header."),
+        suffix = ".h",
+        src_suffix = ".ts",
+    )
+else:
+    # 4.3.1 changed env.Run() (in methods.py)
+    env["BUILDERS"]["MakeGodotJSTemplateBuilder"] = Builder(
+        action = env.Run(build_template_ts.make_templates),
+        suffix = ".h",
+        src_suffix = ".ts",
+    )
 
 # Template files 
 # the suffix should be `.ts`, but `editor/template_builders.py` hardcoded the delimiter with `.cs`
