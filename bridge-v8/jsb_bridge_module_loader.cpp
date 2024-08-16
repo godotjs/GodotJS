@@ -724,7 +724,7 @@ namespace jsb
 
             v8::Local<v8::Array> array = v8::Array::New(isolate, list.size());
             int index = 0;
-            for (List<StringName>::ConstIterator it = list.begin(); it != list.end(); ++it, ++index)
+            for (auto it = list.begin(); it != list.end(); ++it, ++index)
             {
                 array->Set(context, index, build_class_info(isolate, context, *it)).Check();
             }
@@ -823,7 +823,7 @@ namespace jsb
             Variant::get_utility_function_list(&utility_function_list);
             v8::Local<v8::Array> array = v8::Array::New(isolate, utility_function_list.size());
             int index = 0;
-            for (List<StringName>::ConstIterator it = utility_function_list.begin(); it != utility_function_list.end(); ++it, ++index)
+            for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it, ++index)
             {
                 const MethodInfo method_info = Variant::get_utility_function_info(*it);
                 v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
@@ -843,7 +843,7 @@ namespace jsb
             Engine::get_singleton()->get_singletons(&singletons);
             v8::Local<v8::Array> array = v8::Array::New(isolate, singletons.size());
             int index = 0;
-            for (List<Engine::Singleton>::ConstIterator it = singletons.begin(); it != singletons.end(); ++it, ++index)
+            for (auto it = singletons.begin(); it != singletons.end(); ++it, ++index)
             {
                 Engine::Singleton singleton = *it;
                 v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
