@@ -62,7 +62,7 @@ void GodotJSScriptLanguage::init()
             const char* str = GodotJSPorjectPreset::get_source_rt("jsb.bundle.js", len);
             jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
             jsb_check(len == (size_t)(int) len);
-            realm_->eval_source(str, (int) len, "eval", err);
+            realm_->eval_source(str, (int) len, "jsb.bundle.js", err);
         }
     }
 }
@@ -193,7 +193,7 @@ void GodotJSScriptLanguage::reload_scripts(const Array& p_scripts, bool p_soft_r
     JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_scripts] NOT IMPLEMENTED");
 }
 
-void GodotJSScriptLanguage::profiling_set_save_native_calls(bool p_enable) 
+void GodotJSScriptLanguage::profiling_set_save_native_calls(bool p_enable)
 {
     JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::profiling_set_save_native_calls] NOT IMPLEMENTED");
 }
