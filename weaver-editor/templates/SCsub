@@ -25,16 +25,19 @@ def get_godot_version_info():
 
 version_info = get_godot_version_info()
 
-if version_info["major"] == 4 and version_info["minor"] <= 2:
+def check_godot_version_newer_than(major, minor, patch):
+    return version_info["major"] > major or (version_info["major"] == major and (version_info["minor"] > minor or (version_info["minor"] == minor and version_info["patch"] >= patch)))
+
+if check_godot_version_newer_than(4, 3, 0):
+    # 4.3.1 changed env.Run() (in methods.py)
     env["BUILDERS"]["MakeGodotJSTemplateBuilder"] = Builder(
-        action = env.Run(build_template_ts.make_templates, "Generating GodotJSScript templates header."),
+        action = env.Run(build_template_ts.make_templates),
         suffix = ".h",
         src_suffix = ".ts",
     )
 else:
-    # 4.3.1 changed env.Run() (in methods.py)
     env["BUILDERS"]["MakeGodotJSTemplateBuilder"] = Builder(
-        action = env.Run(build_template_ts.make_templates),
+        action = env.Run(build_template_ts.make_templates, "Generating GodotJSScript templates header."),
         suffix = ".h",
         src_suffix = ".ts",
     )

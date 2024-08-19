@@ -180,7 +180,9 @@ def update_path_for_4_3(old_path):
     return new_path
 
 version_info = get_godot_version_info()
-# GODOT_4_3_OR_NEWER = version_info["major"] >= 4 and version_info["minor"] >= 3
+def check_godot_version_newer_than(major, minor, patch):
+    return version_info["major"] > major or (version_info["major"] == major and (version_info["minor"] > minor or (version_info["minor"] == minor and version_info["patch"] >= patch)))
+
 env_jsb = env_modules.Clone()
 module_obj = []
 
