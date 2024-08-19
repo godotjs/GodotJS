@@ -85,14 +85,16 @@
 #define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
 
-#define GODOT_4_3_OR_NEWER VERSION_MAJOR >= 4 && VERSION_MINOR >= 3
+#define GODOT_VERSION_COMPARE(Current, MinExpected, ComparisonChain) (((Current) > (MinExpected)) || ((Current) == (MinExpected) && (ComparisonChain)))
+#define GODOT_VERSION_NEWER_THAN(major, minor, patch) GODOT_VERSION_COMPARE(VERSION_MAJOR, major, GODOT_VERSION_COMPARE(VERSION_MINOR, minor, GODOT_VERSION_COMPARE(VERSION_PATCH, patch, false)))
+#define GODOT_4_3_OR_NEWER GODOT_VERSION_NEWER_THAN(4, 3, 0)
 
 #if GODOT_4_3_OR_NEWER
-#define ConstStringRefCompat const String&
-#define ConstStringNameRefCompat const StringName&
-#else 
-#define ConstStringRefCompat String
-#define ConstStringNameRefCompat StringName
+#	define ConstStringRefCompat const String&
+#	define ConstStringNameRefCompat const StringName&
+#else
+#	define ConstStringRefCompat String
+#	define ConstStringNameRefCompat StringName
 #endif
 
 #endif
