@@ -267,7 +267,7 @@ namespace jsb
 	        context_creation_info.options = LWS_SERVER_OPTION_DISABLE_IPV6;
 
 	        wss_ = lws_create_context(&context_creation_info);
-            JSB_DEBUGGER_LOG(Debug, "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:%d/1", port_);
+            JSB_DEBUGGER_LOG(Debug, "devtools://devtools/bundled/inspector.html?v8only=true&ws=127.0.0.1:%d/1", port_);
         }
 
 	    virtual void update() override
