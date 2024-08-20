@@ -184,7 +184,7 @@ Error GodotJSScript::reload(bool p_keep_state)
 
     if (p_keep_state)
     {
-        // (common situation) preserve the object and change it's prototype
+        // (common situation) preserve the object and change its prototype
         const StringName& module_id = get_script_class_info().module_id;
         if (get_realm()->mark_as_reloading(module_id) == jsb::EReloadResult::Requested)
         {
@@ -256,8 +256,7 @@ ScriptLanguage* GodotJSScript::get_language() const
 
 bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 {
-    jsb_check(loaded_);
-    return get_script_class_info().signals.has(p_signal);
+    return is_valid() ? get_script_class_info().signals.has(p_signal) : false;
 }
 
 void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
@@ -357,6 +356,15 @@ void GodotJSScript::attach_source(const String& p_path)
     //TODO we can't immediately compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
 }
 
+void GodotJSScript::load_module_if_missing()
+{
+	if (!loaded_ || !realm_id_ || valid_) return;
+
+	JSB_LOG(Verbose, "force to load missing script %s", get_path());
+	loaded_ = false;
+	load_module();
+}
+
 void GodotJSScript::load_module()
 {
     if (loaded_ && realm_id_) return;
@@ -372,6 +380,8 @@ void GodotJSScript::load_module()
     jsb::JavaScriptModule* module;
     if (const Error err = realm->load(path, &module); err != OK)
     {
+    	gdjs_class_id_ = {};
+    	valid_ = false;
         JSB_LOG(Error, "failed to attach module %s (%d)", path, err);
         return;
     }
@@ -519,7 +529,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
     // do not crash the engine if the script not loaded successfully
     if (!is_valid())
     {
-        JSB_LOG(Error, "the script not propertly loaded (%s)", get_path());
+        JSB_LOG(Error, "the script not properly loaded (%s)", get_path());
         return;
     }
 

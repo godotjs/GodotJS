@@ -27,6 +27,8 @@ public:
     // main context
     jsb_force_inline std::shared_ptr<jsb::Realm> get_realm() const { jsb_check(once_inited_ && realm_); return realm_; }
 
+	void scan_external_changes();
+
     template<size_t N>
     jsb::JSValueMove eval_source(const char (&p_code)[N], Error& r_err)
     {

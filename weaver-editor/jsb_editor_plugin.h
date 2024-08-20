@@ -56,7 +56,6 @@ protected:
     void _notification(int p_what);
     void _on_menu_pressed(int p_what);
     void _on_confirm_overwrite();
-    void _scan_external_changes();
 
     static Error write_file(const jsb::InstallFileInfo& p_file);
     static void delete_file(const String& p_file);

@@ -32,17 +32,12 @@ void GodotJSEditorPlugin::_notification(int p_what)
     switch (p_what)
     {
     case NOTIFICATION_APPLICATION_FOCUS_IN:
-        _scan_external_changes();
+    	if (GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton())
+    	{
+    		lang->scan_external_changes();
+    	}
         break;
     default: break;
-    }
-}
-
-void GodotJSEditorPlugin::_scan_external_changes()
-{
-    if (GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton())
-    {
-        lang->get_realm()->scan_external_changes();
     }
 }
 

@@ -57,6 +57,7 @@ public:
     virtual ~GodotJSScript() override;
 
     void attach_source(const String& p_path);
+	void load_module_if_missing();
 
     const jsb::ScriptClassInfo& get_script_class_info() const;
 

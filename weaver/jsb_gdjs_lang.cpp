@@ -31,6 +31,7 @@ GodotJSScriptLanguage::~GodotJSScriptLanguage()
     singleton_ = nullptr;
 
     //TODO manage script list in a safer way (access and ref with script.id)
+    MutexLock lock(mutex_);
     while (SelfList<GodotJSScript>* script_el = script_list_.first())
     {
         script_el->remove_from_list();
@@ -232,4 +233,22 @@ String GodotJSScriptLanguage::get_name() const
 String GodotJSScriptLanguage::get_type() const
 {
     return jsb_typename(GodotJSScript);
+}
+
+void GodotJSScriptLanguage::scan_external_changes()
+{
+	get_realm()->scan_external_changes();
+
+#ifdef TOOLS_ENABLED
+	// fix scripts with no .js counterpart found (only missing scripts)
+	{
+		MutexLock lock(mutex_);
+		SelfList<GodotJSScript> *elem = script_list_.first();
+		while (elem)
+		{
+			elem->self()->load_module_if_missing();
+			elem = elem->next();
+		}
+	}
+#endif
 }
