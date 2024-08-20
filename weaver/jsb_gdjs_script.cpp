@@ -382,6 +382,16 @@ void GodotJSScript::load_module()
     {
     	gdjs_class_id_ = {};
     	valid_ = false;
+#ifdef TOOLS_ENABLED
+    	if (FileAccess::exists(get_path()) && !FileAccess::exists(path))
+    	{
+    		JSB_LOG(Error, "the javascript file is missing: %s (source: %s), "
+    			"please ensure that all typescript source files have already been compiled "
+    			"using the typescript compiler ('tsc').",
+    			path, get_path());
+    		return;
+    	}
+#endif
         JSB_LOG(Error, "failed to attach module %s (%d)", path, err);
         return;
     }
