@@ -222,12 +222,11 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
 define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_2, jsb) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    exports.TypeDB = void 0;
     jsb = __importStar(jsb);
     if (!jsb.TOOLS_ENABLED) {
         throw new Error("codegen is only allowed in editor mode");
     }
-    //TODO use godot.MethodFlags.METHOD_FLAG_VARARG
-    const METHOD_FLAG_VARARG = 16;
     const MockLines = [
         "type byte = number",
         "type int32 = number",
@@ -745,6 +744,27 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             this.utilities = {};
             // `class_doc` is loaded lazily once used, and be cached in `class_docs`
             this.class_docs = {};
+            const classes = jsb.editor.get_classes();
+            const primitive_types = jsb.editor.get_primitive_types();
+            const singletons = jsb.editor.get_singletons();
+            const globals = jsb.editor.get_global_constants();
+            const utilities = jsb.editor.get_utility_functions();
+            for (let cls of classes) {
+                this.classes[cls.name] = cls;
+            }
+            for (let cls of primitive_types) {
+                this.primitive_types[cls.name] = cls;
+                this.primitive_type_names[cls.type] = cls.name;
+            }
+            for (let singleton of singletons) {
+                this.singletons[singleton.name] = singleton;
+            }
+            for (let global_ of globals) {
+                this.globals[global_.name] = global_;
+            }
+            for (let utility of utilities) {
+                this.utilities[utility.name] = utility;
+            }
         }
         find_doc(class_name) {
             let class_doc = this.class_docs[class_name];
@@ -904,7 +924,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
         make_args(method_info, type_replacer) {
             //TODO consider default arguments
             const varargs = "...vargargs: any[]";
-            const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
+            const is_vararg = !!(method_info.hint_flags & godot_2.MethodFlags.METHOD_FLAG_VARARG);
             if (method_info.args_.length == 0) {
                 return is_vararg ? varargs : "";
             }
@@ -922,7 +942,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             return "void";
         }
         make_signal_type(method_info) {
-            const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
+            const is_vararg = !!(method_info.hint_flags & godot_2.MethodFlags.METHOD_FLAG_VARARG);
             if (is_vararg || method_info.args_.length > 5) {
                 // too difficult to declare as strongly typed, just fallback to raw signal type
                 return "Signal";
@@ -935,33 +955,13 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             return `${base_name}<${args}>`;
         }
     }
+    exports.TypeDB = TypeDB;
     // d.ts generator
     class TSDCodeGen {
         constructor(outDir) {
-            this._types = new TypeDB();
             this._split_index = 0;
             this._outDir = outDir;
-            const classes = jsb.editor.get_classes();
-            const primitive_types = jsb.editor.get_primitive_types();
-            const singletons = jsb.editor.get_singletons();
-            const globals = jsb.editor.get_global_constants();
-            const utilities = jsb.editor.get_utility_functions();
-            for (let cls of classes) {
-                this._types.classes[cls.name] = cls;
-            }
-            for (let cls of primitive_types) {
-                this._types.primitive_types[cls.name] = cls;
-                this._types.primitive_type_names[cls.type] = cls.name;
-            }
-            for (let singleton of singletons) {
-                this._types.singletons[singleton.name] = singleton;
-            }
-            for (let global_ of globals) {
-                this._types.globals[global_.name] = global_;
-            }
-            for (let utility of utilities) {
-                this._types.utilities[utility.name] = utility;
-            }
+            this._types = new TypeDB();
         }
         make_path(index) {
             const filename = `godot${index}.gen.d.ts`;

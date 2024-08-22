@@ -1,13 +1,10 @@
 
-import { FileAccess, PropertyHint, Variant, str as gd_to_string, type_string } from "godot";
+import { FileAccess, PropertyHint, Variant, str as gd_to_string, type_string, MethodFlags } from "godot";
 import * as jsb from "godot-jsb";
 
 if (!jsb.TOOLS_ENABLED) {
     throw new Error("codegen is only allowed in editor mode")
 }
-
-//TODO use godot.MethodFlags.METHOD_FLAG_VARARG
-const METHOD_FLAG_VARARG = 16;
 
 interface CodeWriter {
     get types(): TypeDB;
@@ -629,7 +626,7 @@ class FileSplitter {
     get_lineno() { return this._toplevel.lineno; }
 }
 
-class TypeDB {
+export class TypeDB {
     singletons: { [name: string]: jsb.editor.SingletonInfo } = {};
     classes: { [name: string]: jsb.editor.ClassInfo } = {};
     primitive_types: { [name: string]: jsb.editor.PrimitiveClassInfo } = {};
@@ -639,6 +636,30 @@ class TypeDB {
 
     // `class_doc` is loaded lazily once used, and be cached in `class_docs`
     class_docs: { [name: string]: jsb.editor.ClassDoc | false } = {};
+
+    constructor() {
+        const classes = jsb.editor.get_classes();
+        const primitive_types = jsb.editor.get_primitive_types();
+        const singletons = jsb.editor.get_singletons();
+        const globals = jsb.editor.get_global_constants();
+        const utilities = jsb.editor.get_utility_functions();
+        for (let cls of classes) {
+            this.classes[cls.name] = cls;
+        }
+        for (let cls of primitive_types) {
+            this.primitive_types[cls.name] = cls;
+            this.primitive_type_names[cls.type] = cls.name;
+        }
+        for (let singleton of singletons) {
+            this.singletons[singleton.name] = singleton;
+        }
+        for (let global_ of globals) {
+            this.globals[global_.name] = global_;
+        }
+        for (let utility of utilities) {
+            this.utilities[utility.name] = utility;
+        }
+    }
 
     find_doc(class_name: string): jsb.editor.ClassDoc | undefined {
         let class_doc = this.class_docs[class_name];
@@ -799,7 +820,7 @@ class TypeDB {
     make_args(method_info: jsb.editor.MethodBind, type_replacer?: (name: string) => string): string {
         //TODO consider default arguments
         const varargs = "...vargargs: any[]";
-        const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
+        const is_vararg = !!(method_info.hint_flags & MethodFlags.METHOD_FLAG_VARARG);
         if (method_info.args_.length == 0) {
             return is_vararg ? varargs : "";
         }
@@ -819,7 +840,7 @@ class TypeDB {
     }
 
     make_signal_type(method_info: jsb.editor.MethodBind): string {
-        const is_vararg = !!(method_info.hint_flags & METHOD_FLAG_VARARG);
+        const is_vararg = !!(method_info.hint_flags & MethodFlags.METHOD_FLAG_VARARG);
         if (is_vararg || method_info.args_.length > 5) {
             // too difficult to declare as strongly typed, just fallback to raw signal type
             return "Signal";
@@ -840,33 +861,13 @@ export default class TSDCodeGen {
     private _split_index: number;
     private _outDir: string;
     private _splitter: FileSplitter | undefined;
-    private _types: TypeDB = new TypeDB();
+    private _types: TypeDB;
 
     constructor(outDir: string) {
         this._split_index = 0;
         this._outDir = outDir;
 
-        const classes = jsb.editor.get_classes();
-        const primitive_types = jsb.editor.get_primitive_types();
-        const singletons = jsb.editor.get_singletons();
-        const globals = jsb.editor.get_global_constants();
-        const utilities = jsb.editor.get_utility_functions();
-        for (let cls of classes) {
-            this._types.classes[cls.name] = cls;
-        }
-        for (let cls of primitive_types) {
-            this._types.primitive_types[cls.name] = cls;
-            this._types.primitive_type_names[cls.type] = cls.name;
-        }
-        for (let singleton of singletons) {
-            this._types.singletons[singleton.name] = singleton;
-        }
-        for (let global_ of globals) {
-            this._types.globals[global_.name] = global_;
-        }
-        for (let utility of utilities) {
-            this._types.utilities[utility.name] = utility;
-        }
+        this._types = new TypeDB();
     }
 
     private make_path(index: number) {

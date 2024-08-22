@@ -90,7 +90,31 @@ declare module "godot" {
         PROPERTY_HINT_PASSWORD = 36,
         PROPERTY_HINT_MAX = 38,
     }
-    
+    enum MethodFlags {
+        /** Flag for a normal method. */
+        METHOD_FLAG_NORMAL = 1,
+        
+        /** Flag for an editor method. */
+        METHOD_FLAG_EDITOR = 2,
+        
+        /** Flag for a constant method. */
+        METHOD_FLAG_CONST = 4,
+        
+        /** Flag for a virtual method. */
+        METHOD_FLAG_VIRTUAL = 8,
+        
+        /** Flag for a method with a variable number of arguments. */
+        METHOD_FLAG_VARARG = 16,
+        
+        /** Flag for a static method. */
+        METHOD_FLAG_STATIC = 32,
+        
+        /** Used internally. Allows to not dump core virtual methods (such as [method Object._notification]) to the JSON API. */
+        METHOD_FLAG_OBJECT_CORE = 64,
+        
+        /** Default method flags (normal). */
+        METHOD_FLAGS_DEFAULT = 1,
+    }
     enum PropertyUsageFlags {
         /** The property is not stored, and does not display in the editor. This is the default for non-exported properties. */
         PROPERTY_USAGE_NONE = 0,
