@@ -5,7 +5,7 @@
 #include "jsb_pch.h"
 #include "jsb_environment.h"
 #include "jsb_module.h"
-#include "jsb_primitive_bindings.h"
+#include "jsb_binding_env.h"
 #include "jsb_value_move.h"
 #include "jsb_statistics.h"
 #include "../internal/jsb_variant_info.h"

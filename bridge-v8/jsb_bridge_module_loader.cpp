@@ -1,7 +1,6 @@
 #include "jsb_bridge_module_loader.h"
 
 #include "jsb_realm.h"
-#include "jsb_primitive_bindings.h"
 #include "core/core_constants.h"
 #include "core/version.h"
 

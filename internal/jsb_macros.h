@@ -23,6 +23,8 @@
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
 
+#define JSB_OPERATOR_NAME(op_code) #op_code
+
 #define JSB_MODULE_NAME_STRING JSB_STRINGIFY(JSB_MODULE_NAME)
 
 #define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) ::jsb::internal::Logger::output<::jsb::internal::ELogSeverity::Severity>(__FILE__, __LINE__, __FUNCTION__, "[" #CategoryName "][" #Severity "] " Format, ##__VA_ARGS__)
@@ -83,7 +85,6 @@
 
 // generate an error string with source position info
 #define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
-
 
 #define GODOT_VERSION_COMPARE(Current, MinExpected, ComparisonChain) (((Current) > (MinExpected)) || ((Current) == (MinExpected) && (ComparisonChain)))
 #define GODOT_VERSION_NEWER_THAN(major, minor, patch) GODOT_VERSION_COMPARE(VERSION_MAJOR, major, GODOT_VERSION_COMPARE(VERSION_MINOR, minor, GODOT_VERSION_COMPARE(VERSION_PATCH, patch, false)))

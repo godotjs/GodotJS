@@ -1,6 +1,7 @@
-#include "jsb_primitive_bindings.h"
-#if !JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS
+#include "jsb_primitive_bindings_reflect.h"
+#if !JSB_WITH_STATIC_BINDINGS
 
+#include "jsb_binding_env.h"
 #include "jsb_class_info.h"
 #include "jsb_transpiler.h"
 #include "jsb_v8_helper.h"
@@ -287,8 +288,8 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
-            const Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            const Variant* p_self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
@@ -309,8 +310,8 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
-            Variant* p_self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            Variant* p_self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
@@ -326,7 +327,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
             if (info.Length() != 2
                 || !info[0]->IsInt32()
@@ -343,7 +344,7 @@ namespace jsb
                 return;
             }
             bool r_valid, r_oob;
-            Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            Variant* self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             self->set_indexed(index, value, r_valid, r_oob);
             if (!r_valid || r_oob)
             {
@@ -356,7 +357,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             if (info.Length() != 1
                 || !info[0]->IsInt32())
             {
@@ -365,7 +366,7 @@ namespace jsb
             }
             const int32_t index = info[0].As<v8::Int32>()->Value();
             bool r_valid, r_oob;
-            const Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            const Variant* self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const Variant value = self->get_indexed(index, r_valid, r_oob);
             if (!r_valid || r_oob)
             {
@@ -387,7 +388,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             if (info.Length() != 2)
             {
                 jsb_throw(isolate, "bad params");
@@ -404,7 +405,7 @@ namespace jsb
                 return;
             }
             bool r_valid;
-            Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            Variant* self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             self->set_keyed(key, value, r_valid);
             if (!r_valid)
             {
@@ -417,7 +418,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This().As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             if (info.Length() != 1)
             {
                 jsb_throw(isolate, "bad params");
@@ -430,7 +431,7 @@ namespace jsb
                 return;
             }
             bool r_valid;
-            const Variant* self = (Variant*) info.This().As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
+            const Variant* self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const Variant value = self->get_keyed(key, r_valid);
             if (!r_valid)
             {
@@ -675,7 +676,7 @@ namespace jsb
         }
     };
 
-    void register_primitive_bindings(class Realm* p_realm)
+    void register_primitive_bindings_reflect(class Realm* p_realm)
     {
         p_realm->RegisterPrimitiveType(Vector2);
         p_realm->RegisterPrimitiveType(Vector2i);

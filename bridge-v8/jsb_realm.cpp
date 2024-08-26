@@ -12,6 +12,14 @@
 #include "../internal/jsb_class_util.h"
 #include "../internal/jsb_variant_util.h"
 
+#if !JSB_WITH_STATIC_BINDINGS
+#include "jsb_primitive_bindings_reflect.h"
+#define register_primitive_bindings(param) register_primitive_bindings_reflect(param)
+#else
+#include "jsb_primitive_bindings_static.h"
+#define register_primitive_bindings(param) register_primitive_bindings_static(param)
+#endif
+
 namespace jsb
 {
     internal::SArray<Realm*, RealmID> Realm::realms_;

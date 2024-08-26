@@ -7,7 +7,6 @@
 #include "jsb_class_info.h"
 #include "jsb_module_loader.h"
 #include "jsb_module_resolver.h"
-#include "jsb_primitive_bindings.h"
 #include "jsb_timer_action.h"
 #include "jsb_string_name_cache.h"
 #include "../internal/jsb_sarray.h"

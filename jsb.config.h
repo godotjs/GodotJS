@@ -60,8 +60,8 @@
 // construct a Variant with `Variant::construct` instead of `VariantUtilityFunctions::type_convert`
 #define JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW 0
 
-//TODO not implemented yet
-#define JSB_WITH_STATIC_PRIMITIVE_TYPE_BINDINGS 0
+// #define JSB_WITH_STATIC_BINDINGS 1
+#define JSB_WITH_STATIC_BINDINGS 0
 
 // implicitly convert a javascript array as godot Vector<T> which is convenient but less performant if massively used
 #define JSB_IMPLICIT_PACKED_ARRAY_CONVERSION 1
