@@ -577,7 +577,7 @@ namespace jsb
             function_template->SetClassName(p_env.environment->get_string_value(class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();
 
-            // getsets
+        	// properties (getset)
             {
                 List<StringName> members;
                 Variant::get_member_list(TYPE, &members);
