@@ -262,7 +262,7 @@ namespace jsb
             {
                 v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argument_num);
                 int index = 0;
-                for (List<PropertyInfo>::ConstIterator it = method_info.arguments.begin(); it != method_info.arguments.end(); ++it) 
+                for (List<PropertyInfo>::ConstIterator it = method_info.arguments.begin(); it != method_info.arguments.end(); ++it)
                 {
                     jsb_check(index < argument_num);
                     const PropertyInfo& arg_info = *it;
@@ -295,7 +295,7 @@ namespace jsb
             const int num = enum_info.constants.size();
             v8::Local<v8::Array> elements_array = v8::Array::New(isolate, num);
             int index = 0;
-            for (List<StringName>::ConstIterator it = enum_info.constants.begin(); it != enum_info.constants.end(); ++it, ++index) 
+            for (List<StringName>::ConstIterator it = enum_info.constants.begin(); it != enum_info.constants.end(); ++it, ++index)
             {
                 const StringName& name = *it;
                 elements_array->Set(context, index, V8Helper::to_string(isolate, name)).Check();
@@ -465,6 +465,22 @@ namespace jsb
         }
     };
 
+	struct UnaryOperator
+	{
+		template<typename TypeName>
+		static void Define(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
+		{
+			v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
+
+			set_field(context->GetIsolate(), context, obj, "name", op_name);
+			set_field(context->GetIsolate(), context, obj, "return_type", (int) GetTypeInfo<TypeName>::VARIANT_TYPE);
+			set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TypeName>::VARIANT_TYPE);
+			set_field(context->GetIsolate(), context, obj, "right_type", (int) Variant::NIL);
+			const uint32_t len = operators->Length();
+			operators->Set(context, len, obj).Check();
+		}
+	};
+
     struct Comparator
     {
         template<typename TLeft, typename TRight>
@@ -476,22 +492,6 @@ namespace jsb
             set_field(context->GetIsolate(), context, obj, "return_type", (int) GetTypeInfo<bool>::VARIANT_TYPE);
             set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TLeft>::VARIANT_TYPE);
             set_field(context->GetIsolate(), context, obj, "right_type", (int) GetTypeInfo<TRight>::VARIANT_TYPE);
-            const uint32_t len = operators->Length();
-            operators->Set(context, len, obj).Check();
-        }
-    };
-
-    struct UnaryOperator
-    {
-        template<typename TypeName>
-        static void Define(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
-        {
-            v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
-
-            set_field(context->GetIsolate(), context, obj, "name", op_name);
-            set_field(context->GetIsolate(), context, obj, "return_type", (int) GetTypeInfo<bool>::VARIANT_TYPE);
-            set_field(context->GetIsolate(), context, obj, "left_type", (int) GetTypeInfo<TypeName>::VARIANT_TYPE);
-            set_field(context->GetIsolate(), context, obj, "right_type", (int) Variant::NIL);
             const uint32_t len = operators->Length();
             operators->Set(context, len, obj).Check();
         }

@@ -55,6 +55,7 @@ const KeywordReplacement: { [name: string]: string } = {
     ["Symbol"]: "Symbol_",
     ["typeof"]: "typeof_",
     ["arguments"]: "arguments_",
+    ["function"]: "function_",
 
     // a special item which used as the name of variadic arguments placement
     ["vargargs"]: "vargargs_",
@@ -483,8 +484,12 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
         const return_type_name = this.types.replace_type_inplace(get_primitive_type_name(operator_info.return_type), this.get_scoped_type_replacer());
         const left_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.left_type), this.get_scoped_type_replacer());
-        const right_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.right_type), this.get_scoped_type_replacer());
-        this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
+        if (operator_info.right_type == Variant.Type.TYPE_NIL) {
+            this.line(`static ${operator_info.name}(left: ${left_type_name}): ${return_type_name}`);
+        } else {
+            const right_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.right_type), this.get_scoped_type_replacer());
+            this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
+        }
     }
 
     virtual_method_(method_info: jsb.editor.MethodBind) {
