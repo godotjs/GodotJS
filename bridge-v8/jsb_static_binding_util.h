@@ -6,6 +6,7 @@
 #define DEF_VARIANT_THIS_UTIL(Type, ReaderFunc) \
 	struct PrimitiveInstanceUtil<Type> {\
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& p_input, Type*& r_value) {\
+			if (p_input->InternalFieldCount() != IF_VariantFieldCount) return false;\
 			r_value = VariantInternal::ReaderFunc((Variant*) p_input->GetAlignedPointerFromInternalField(IF_Pointer));\
 			return true;\
 		}\
