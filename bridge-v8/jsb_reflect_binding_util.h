@@ -3,6 +3,7 @@
 #include "jsb_object_handle.h"
 #include "jsb_pch.h"
 #include "jsb_realm.h"
+#include "jsb_static_binding_util.h"
 #include "../internal/jsb_variant_info.h"
 
 #define RegisterPrimitiveType(TypeName) add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
@@ -191,6 +192,169 @@ namespace jsb
             setter_func(ReflectThis<true>::from(info), &value);
         }
 
+    };
+
+    template<typename>
+    struct ReflectConstructorCall
+    {
+        static constexpr bool is_supported(Variant::Type type) { return false; }
+        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info);
+    };
+
+    template<>
+    struct ReflectConstructorCall<Vector2>
+    {
+        static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR2; }
+
+        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            if (!info.IsConstructCall())
+            {
+                jsb_throw(isolate, "bad constructor call");
+                return;
+            }
+            v8::Local<v8::Object> self = info.This();
+            const int v8_argc = info.Length();
+            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
+            if (v8_argc == 0)
+            {
+                static Variant zero = Vector2();
+                Variant* instance = Environment::alloc_variant();
+                *instance = zero;
+                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                return;
+            }
+            else if (v8_argc == 1)
+            {
+                do
+                {
+                    Vector2 loc_0;
+                    if (!StaticBindingUtil<Vector2>::get(isolate, context, info[0], loc_0))
+                    {
+                        break;
+                    }
+                    Variant* instance = Environment::alloc_variant();
+                    *instance = Vector2(loc_0);
+                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    return;
+                } while (false);
+                do
+                {
+                    Vector2i loc_0;
+                    if (!StaticBindingUtil<Vector2i>::get(isolate, context, info[0], loc_0))
+                    {
+                        break;
+                    }
+                    Variant* instance = Environment::alloc_variant();
+                    *instance = Vector2(loc_0);
+                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    return;
+                } while (false);
+            }
+            else if (v8_argc == 2)
+            {
+                real_t loc_0;
+                if (!StaticBindingUtil<real_t>::get(isolate, context, info[0], loc_0))
+                {
+                    jsb_throw(isolate, "bad param at 0");
+                    return;
+                }
+                real_t loc_1;
+                if (!StaticBindingUtil<real_t>::get(isolate, context, info[1], loc_1))
+                {
+                    jsb_throw(isolate, "bad param at 1");
+                    return;
+                }
+                Variant* instance = Environment::alloc_variant();
+                *instance = Vector2(loc_0, loc_1);
+                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                return;
+            }
+            jsb_throw(isolate, "no suitable constructor");
+        }
+    };
+
+    template<>
+    struct ReflectConstructorCall<Vector3>
+    {
+        static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR3; }
+
+        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            if (!info.IsConstructCall())
+            {
+                jsb_throw(isolate, "bad constructor call");
+                return;
+            }
+            v8::Local<v8::Object> self = info.This();
+            const int v8_argc = info.Length();
+            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
+            if (v8_argc == 0)
+            {
+                static Variant zero = Vector3();
+                Variant* instance = Environment::alloc_variant();
+                *instance = zero;
+                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                return;
+            }
+            else if (v8_argc == 1)
+            {
+                do
+                {
+                    Vector3 loc_0;
+                    if (!StaticBindingUtil<Vector3>::get(isolate, context, info[0], loc_0))
+                    {
+                        break;
+                    }
+                    Variant* instance = Environment::alloc_variant();
+                    *instance = Vector3(loc_0);
+                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    return;
+                } while (false);
+                do
+                {
+                    Vector3i loc_0;
+                    if (!StaticBindingUtil<Vector3i>::get(isolate, context, info[0], loc_0))
+                    {
+                        break;
+                    }
+                    Variant* instance = Environment::alloc_variant();
+                    *instance = Vector3(loc_0);
+                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    return;
+                } while (false);
+            }
+            else if (v8_argc == 3)
+            {
+                real_t loc_0;
+                if (!StaticBindingUtil<real_t>::get(isolate, context, info[0], loc_0))
+                {
+                    jsb_throw(isolate, "bad param at 0");
+                    return;
+                }
+                real_t loc_1;
+                if (!StaticBindingUtil<real_t>::get(isolate, context, info[1], loc_1))
+                {
+                    jsb_throw(isolate, "bad param at 1");
+                    return;
+                }
+                real_t loc_2;
+                if (!StaticBindingUtil<real_t>::get(isolate, context, info[2], loc_2))
+                {
+                    jsb_throw(isolate, "bad param at 2");
+                    return;
+                }
+                Variant* instance = Environment::alloc_variant();
+                *instance = Vector3(loc_0, loc_1, loc_2);
+                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                return;
+            }
+            jsb_throw(isolate, "no suitable constructor");
+        }
     };
 
 }

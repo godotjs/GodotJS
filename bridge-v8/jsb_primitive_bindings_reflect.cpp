@@ -25,8 +25,14 @@
             v8::FunctionTemplate::New(p_env.isolate, ReflectGetSetPointerCall<ForType>::_setter, v8::External::New(p_env.isolate, (void*) Variant::get_member_ptr_setter(TYPE, PropName))));\
         continue;\
     } (void) 0
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType) \
+    if constexpr (ReflectConstructorCall<ForType>::is_supported(TYPE))\
+    {\
+        return v8::FunctionTemplate::New(p_env.isolate, &ReflectConstructorCall<ForType>::constructor);\
+    } (void) 0
 #else
 #define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) (void) 0
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType) (void) 0
 #endif
 
 #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
@@ -571,17 +577,19 @@ namespace jsb
         //     return false;
         // }
 
-        static NativeClassID reflect_bind(const FBindingEnv& p_env)
+        static v8::Local<v8::FunctionTemplate> get_template(const FBindingEnv& p_env, const NativeClassID p_class_id)
         {
-            const StringName& class_name = p_env.type_name;
-            const NativeClassID class_id = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2);
+            // JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3);
+            // JSB_DEFINE_FAST_CONSTRUCTOR(Vector3i);
 
-            // constructors
-            const int constructor_index = GetVariantInfoCollection(p_env.realm).constructors.size();
+            // fallback
             {
+                const int constructor_index = GetVariantInfoCollection(p_env.realm).constructors.size();
                 GetVariantInfoCollection(p_env.realm).constructors.append({});
                 internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.realm).constructors.write[constructor_index];
-                constructor_info.class_id = class_id;
+                constructor_info.class_id = p_class_id;
                 const int count = Variant::get_constructor_count(TYPE);
                 constructor_info.variants.resize_zeroed(count);
                 for (int index = 0; index < count; ++index)
@@ -595,9 +603,16 @@ namespace jsb
                         variant_info.argument_types.write[arg_index] = Variant::get_constructor_argument_type(TYPE, index, arg_index);
                     }
                 }
+                return v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Int32::New(p_env.isolate, constructor_index));
             }
+        }
 
-            v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(p_env.isolate, &constructor, v8::Int32::New(p_env.isolate, constructor_index));
+        static NativeClassID reflect_bind(const FBindingEnv& p_env)
+        {
+            const StringName& class_name = p_env.type_name;
+            const NativeClassID class_id = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name);
+
+            v8::Local<v8::FunctionTemplate> function_template = get_template(p_env, class_id);
             function_template->InstanceTemplate()->SetInternalFieldCount(IF_VariantFieldCount);
             function_template->SetClassName(p_env.environment->get_string_value(class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();

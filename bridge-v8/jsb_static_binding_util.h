@@ -4,6 +4,7 @@
 #include "jsb_realm.h"
 
 #define DEF_VARIANT_THIS_UTIL(Type, ReaderFunc) \
+    template<>\
 	struct PrimitiveInstanceUtil<Type> {\
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& p_input, Type*& r_value) {\
 			if (p_input->InternalFieldCount() != IF_VariantFieldCount) return false;\
@@ -96,6 +97,7 @@ namespace jsb
 		}
 	};
 
+    template<>
 	struct StaticBindingUtil<Object*>
 	{
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, Object*& r_value)
@@ -115,6 +117,7 @@ namespace jsb
 		}
 	};
 
+    template<>
 	struct StaticBindingUtil<float>
 	{
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, float& r_value)
@@ -134,6 +137,7 @@ namespace jsb
 		}
 	};
 
+    template<>
 	struct StaticBindingUtil<double>
 	{
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, double& r_value)
@@ -153,6 +157,7 @@ namespace jsb
 		}
 	};
 
+    template<>
 	struct StaticBindingUtil<int64_t>
 	{
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, int64_t& r_value)
@@ -173,6 +178,7 @@ namespace jsb
 		}
 	};
 
+    template<>
 	struct StaticBindingUtil<int32_t>
 	{
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, int32_t& r_value)
