@@ -1,15 +1,12 @@
 #include "jsb_primitive_bindings_reflect.h"
 #if !JSB_WITH_STATIC_BINDINGS
-
+#include "jsb_reflect_binding_util.h"
 #include "jsb_binding_env.h"
 #include "jsb_class_info.h"
 #include "jsb_transpiler.h"
 #include "jsb_v8_helper.h"
 #include "../internal/jsb_variant_info.h"
 #include "../internal/jsb_variant_util.h"
-
-#define RegisterPrimitiveType(TypeName) add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
-#define GetVariantInfoCollection(p_realm) (p_realm)->get_variant_info_collection() // ::jsb::internal::VariantInfoCollection::global
 
 #define JSB_DEFINE_OPERATOR2(op_code) function_template->\
     Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, BinaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
@@ -18,6 +15,16 @@
 #define JSB_DEFINE_OPERATOR1(op_code) function_template->\
     Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, UnaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
     JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+
+#define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) \
+    if (ReflectGetSetPointerCall<ForType>::is_supported && ForMemberType == ReflectGetSetPointerCall<ForType>::member_type)\
+    {\
+        prototype_template->SetAccessorProperty(V8Helper::to_string(p_env.isolate, PropName),\
+            v8::FunctionTemplate::New(p_env.isolate, ReflectGetSetPointerCall<ForType>::_getter, v8::External::New(p_env.isolate, (void*) Variant::get_member_ptr_getter(TYPE, PropName))),\
+            v8::FunctionTemplate::New(p_env.isolate, ReflectGetSetPointerCall<ForType>::_setter, v8::External::New(p_env.isolate, (void*) Variant::get_member_ptr_setter(TYPE, PropName))));\
+        continue;\
+    } (void) 0
+
 
 #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
 #define JSB_DEFINE_OVERLOADED_BINARY_END()
@@ -149,16 +156,6 @@ namespace jsb
     {
         constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
 
-        jsb_force_inline static int register_getset_method(const FBindingEnv& p_env, const StringName& p_name)
-        {
-            const int collection_index = GetVariantInfoCollection(p_env.realm).getsets.size();
-            GetVariantInfoCollection(p_env.realm).getsets.append({
-                Variant::get_member_validated_setter(TYPE, p_name),
-                Variant::get_member_validated_getter(TYPE, p_name),
-                Variant::get_member_type(TYPE, p_name)});
-            return collection_index;
-        }
-
         jsb_force_inline static int register_builtin_method(const FBindingEnv& p_env, const StringName& p_name)
         {
             const int collection_index = GetVariantInfoCollection(p_env.realm).methods.size();
@@ -289,7 +286,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
-            const Variant* p_self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
+            const Variant* p_self = (Variant*)info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
@@ -584,7 +581,18 @@ namespace jsb
                 Variant::get_member_list(TYPE, &members);
                 for (const StringName& name : members)
                 {
-                    const v8::Local<v8::Integer> index = v8::Int32::New(p_env.isolate, register_getset_method(p_env, name));
+                	const Variant::Type member_type = Variant::get_member_type(TYPE, name);
+
+                    JSB_DEFINE_FAST_GETSET(member_type, real_t, name);
+                    JSB_DEFINE_FAST_GETSET(member_type, int32_t, name);
+
+                    // fallback to reflection invocation
+                    const int collection_index = (int) GetVariantInfoCollection(p_env.realm).getsets.size();
+                    GetVariantInfoCollection(p_env.realm).getsets.append({
+                       Variant::get_member_validated_setter(TYPE, name),
+                       Variant::get_member_validated_getter(TYPE, name),
+                       member_type});
+                    const v8::Local<v8::Integer> index = v8::Int32::New(p_env.isolate, collection_index);
                     prototype_template->SetAccessorProperty(V8Helper::to_string(p_env.isolate, name),
                         v8::FunctionTemplate::New(p_env.isolate, _getter, index),
                         v8::FunctionTemplate::New(p_env.isolate, _setter, index));

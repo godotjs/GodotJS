@@ -63,6 +63,8 @@
 // #define JSB_WITH_STATIC_BINDINGS 1
 #define JSB_WITH_STATIC_BINDINGS 0
 
+#define JSB_EXPERIMENTAL_REFLECT_FAST 1
+
 // implicitly convert a javascript array as godot Vector<T> which is convenient but less performant if massively used
 #define JSB_IMPLICIT_PACKED_ARRAY_CONVERSION 1
 
