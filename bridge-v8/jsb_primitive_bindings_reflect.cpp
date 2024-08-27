@@ -16,15 +16,18 @@
     Set(V8Helper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, UnaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
     JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
+#if JSB_FAST_REFLECTION
 #define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) \
-    if (ReflectGetSetPointerCall<ForType>::is_supported && ForMemberType == ReflectGetSetPointerCall<ForType>::member_type)\
+    if (ReflectGetSetPointerCall<ForType>::is_supported(ForMemberType))\
     {\
         prototype_template->SetAccessorProperty(V8Helper::to_string(p_env.isolate, PropName),\
             v8::FunctionTemplate::New(p_env.isolate, ReflectGetSetPointerCall<ForType>::_getter, v8::External::New(p_env.isolate, (void*) Variant::get_member_ptr_getter(TYPE, PropName))),\
             v8::FunctionTemplate::New(p_env.isolate, ReflectGetSetPointerCall<ForType>::_setter, v8::External::New(p_env.isolate, (void*) Variant::get_member_ptr_setter(TYPE, PropName))));\
         continue;\
     } (void) 0
-
+#else
+#define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) (void) 0
+#endif
 
 #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
 #define JSB_DEFINE_OVERLOADED_BINARY_END()
@@ -155,26 +158,6 @@ namespace jsb
     struct VariantBind
     {
         constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
-
-        jsb_force_inline static int register_builtin_method(const FBindingEnv& p_env, const StringName& p_name)
-        {
-            const int collection_index = GetVariantInfoCollection(p_env.realm).methods.size();
-            GetVariantInfoCollection(p_env.realm).methods.append({});
-            internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.realm).methods.write[collection_index];
-            method_info.set_debug_name(p_name);
-            method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, p_name);
-            method_info.return_type = Variant::get_builtin_method_return_type(TYPE, p_name);
-            method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, p_name);
-            const int argument_count = Variant::get_builtin_method_argument_count(TYPE, p_name);
-            method_info.argument_types.resize_zeroed(argument_count);
-            method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, p_name);
-            for (int argument_index = 0; argument_index < argument_count; ++argument_index)
-            {
-                const Variant::Type type = Variant::get_builtin_method_argument_type(TYPE, p_name, argument_index);
-                method_info.argument_types.write[argument_index] = type;
-            }
-            return collection_index;
-        }
 
         static void _get_constant_value_lazy(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info)
         {
@@ -444,6 +427,7 @@ namespace jsb
             info.GetReturnValue().Set(r_val);
         }
 
+        template<bool HasReturnValueT>
         static void call_builtin_function(Variant* self, const internal::FBuiltinMethodInfo& method_info,
             const v8::FunctionCallbackInfo<v8::Value>& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context)
         {
@@ -499,25 +483,40 @@ namespace jsb
             }
 
             // call godot method
-            Variant crval;
-            internal::VariantUtil::construct_variant(crval, method_info.return_type);
-            method_info.builtin_func(self, argv, allocated_argc, &crval);
-
-            // don't forget to destruct all stack allocated variants
-            for (int index = 0; index < allocated_argc; ++index)
+            if constexpr (HasReturnValueT)
             {
-                args[index].~Variant();
-            }
+                Variant crval;
+                internal::VariantUtil::construct_variant(crval, method_info.return_type);
+                method_info.builtin_func(self, argv, allocated_argc, &crval);
 
-            v8::Local<v8::Value> jrval;
-            if (Realm::gd_var_to_js(isolate, context, crval, jrval))
-            {
-                info.GetReturnValue().Set(jrval);
-                return;
+                // don't forget to destruct all stack allocated variants
+                for (int index = 0; index < allocated_argc; ++index)
+                {
+                    args[index].~Variant();
+                }
+
+                v8::Local<v8::Value> jrval;
+                if (Realm::gd_var_to_js(isolate, context, crval, jrval))
+                {
+                    info.GetReturnValue().Set(jrval);
+                    return;
+                }
+                jsb_throw(isolate, "failed to translate godot variant to v8 value");
             }
-            jsb_throw(isolate, "failed to translate godot variant to v8 value");
+            else
+            {
+                method_info.builtin_func(self, argv, allocated_argc, nullptr);
+
+                // don't forget to destruct all stack allocated variants
+                for (int index = 0; index < allocated_argc; ++index)
+                {
+                    args[index].~Variant();
+                }
+
+            }
         }
 
+        template<bool HasReturnValueT>
         static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -532,17 +531,45 @@ namespace jsb
                 return;
             }
 
-            call_builtin_function(self, method_info, info, isolate, context);
+            call_builtin_function<HasReturnValueT>(self, method_info, info, isolate, context);
         }
 
+        template<bool HasReturnValueT>
         static void _static_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
 
-            call_builtin_function(nullptr, method_info, info, isolate, context);
+            call_builtin_function<HasReturnValueT>(nullptr, method_info, info, isolate, context);
         }
+
+        // template<typename ReturnTypeT>
+        // static constexpr bool bind_fast_method(const FBindingEnv& p_env, Variant::Type return_type, const StringName& name,
+        //     v8::Local<v8::FunctionTemplate> function_template,
+        //     v8::Local<v8::ObjectTemplate> prototype_template)
+        // {
+        //     // if (argument_count == 0)
+        //     {
+        //         if (ReflectBuiltinMethodPointerCall<ReturnTypeT>::is_supported && return_type == ReflectBuiltinMethodPointerCall<ReturnTypeT>::return_type)
+        //         {
+        //             if (Variant::is_builtin_method_static(TYPE, name))
+        //             {
+        //                 function_template->Set(V8Helper::to_string(p_env.isolate, name),
+        //                     v8::FunctionTemplate::New(p_env.isolate, &ReflectBuiltinMethodPointerCall<ReturnTypeT>::_call<false>,
+        //                         v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
+        //             }
+        //             else
+        //             {
+        //                 prototype_template->Set(V8Helper::to_string(p_env.isolate, name),
+        //                     v8::FunctionTemplate::New(p_env.isolate, &ReflectBuiltinMethodPointerCall<ReturnTypeT>::_call<true>,
+        //                         v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
+        //             }
+        //             return true;
+        //         }
+        //     }
+        //     return false;
+        // }
 
         static NativeClassID reflect_bind(const FBindingEnv& p_env)
         {
@@ -619,16 +646,96 @@ namespace jsb
                 Variant::get_builtin_method_list(TYPE, &methods);
                 for (const StringName& name : methods)
                 {
-                    const int index = register_builtin_method(p_env, name);
-                    if (Variant::is_builtin_method_static(TYPE, name))
+                    const int argument_count = Variant::get_builtin_method_argument_count(TYPE, name);
+                    const bool has_return_value = Variant::has_builtin_method_return_value(TYPE, name);
+                    const Variant::Type return_type = Variant::get_builtin_method_return_type(TYPE, name);
+
+#if JSB_FAST_REFLECTION
+                    if (has_return_value)
                     {
-                        function_template->Set(V8Helper::to_string(p_env.isolate, name),
-                            v8::FunctionTemplate::New(p_env.isolate, _static_method, v8::Int32::New(p_env.isolate, index)));
+                        if (ReflectBuiltinMethodPointerCall<real_t>::is_supported(return_type))
+                        {
+                            if (argument_count == 0)
+                            {
+                                if (Variant::is_builtin_method_static(TYPE, name))
+                                {
+                                    function_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                        v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<real_t>::_call<false>,
+                                            v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
+                                }
+                                else
+                                {
+                                    prototype_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                        v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<real_t>::_call<true>,
+                                            v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
+                                }
+                                continue;
+                            }
+                        }
+                    }
+                    else if (ReflectBuiltinMethodPointerCall<void>::is_supported(return_type))
+                    {
+                        if (argument_count == 0)
+                        {
+                            if (Variant::is_builtin_method_static(TYPE, name))
+                            {
+                                function_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                    v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<void>::_call<false>,
+                                        v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
+                            }
+                            else
+                            {
+                                prototype_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                    v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<void>::_call<true>,
+                                        v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
+                            }
+                            continue;
+                        }
+                    }
+#endif
+
+                    // convert method info, and store
+                    const int collection_index = GetVariantInfoCollection(p_env.realm).methods.size();
+                    GetVariantInfoCollection(p_env.realm).methods.append({});
+                    internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.realm).methods.write[collection_index];
+                    method_info.set_debug_name(name);
+                    method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, name);
+                    method_info.return_type = return_type;
+                    method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
+                    method_info.argument_types.resize_zeroed(argument_count);
+                    method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, name);
+                    for (int argument_index = 0; argument_index < argument_count; ++argument_index)
+                    {
+                        const Variant::Type type = Variant::get_builtin_method_argument_type(TYPE, name, argument_index);
+                        method_info.argument_types.write[argument_index] = type;
+                    }
+
+                    // function wrapper
+                    if (has_return_value)
+                    {
+                        if (Variant::is_builtin_method_static(TYPE, name))
+                        {
+                            function_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                v8::FunctionTemplate::New(p_env.isolate, _static_method<true>, v8::Int32::New(p_env.isolate, collection_index)));
+                        }
+                        else
+                        {
+                            prototype_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                v8::FunctionTemplate::New(p_env.isolate, _instance_method<true>, v8::Int32::New(p_env.isolate, collection_index)));
+                        }
                     }
                     else
                     {
-                        prototype_template->Set(V8Helper::to_string(p_env.isolate, name),
-                            v8::FunctionTemplate::New(p_env.isolate, _instance_method, v8::Int32::New(p_env.isolate, index)));
+                        if (Variant::is_builtin_method_static(TYPE, name))
+                        {
+                            function_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                v8::FunctionTemplate::New(p_env.isolate, _static_method<false>, v8::Int32::New(p_env.isolate, collection_index)));
+                        }
+                        else
+                        {
+                            prototype_template->Set(V8Helper::to_string(p_env.isolate, name),
+                                v8::FunctionTemplate::New(p_env.isolate, _instance_method<false>, v8::Int32::New(p_env.isolate, collection_index)));
+                        }
                     }
                 }
             }

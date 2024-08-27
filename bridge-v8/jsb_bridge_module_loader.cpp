@@ -233,7 +233,7 @@ namespace jsb
             }
         }
 
-        void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const MethodInfo& method_info, const v8::Local<v8::Object>& object)
+        void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const MethodInfo& method_info, bool has_return_value, const v8::Local<v8::Object>& object)
         {
             set_field(isolate, context, object, "id", method_info.id);
             set_field(isolate, context, object, "name", method_info.name);
@@ -245,7 +245,7 @@ namespace jsb
             set_field(isolate, context, object, "argument_count", method_info.arguments.size());
 
             // write type info for `return`
-            if (method_info.return_val.type != Variant::NIL)
+            if (has_return_value)
             {
                 const PropertyInfo& return_info = method_info.return_val;
                 v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
@@ -307,7 +307,7 @@ namespace jsb
         {
             v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
 
-            build_method_info(isolate, context, method_info, method_obj);
+            build_method_info(isolate, context, method_info, false, method_obj);
             set_field(isolate, context, signal_obj, "method_", method_obj);
         }
 
@@ -388,7 +388,8 @@ namespace jsb
                 for (const KeyValue<StringName, MethodInfo>& pair : class_info.virtual_methods_map)
                 {
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
-                    build_method_info(isolate, context, pair.value, method_info_obj);
+                    //TODO whether a virtual method has return value or not?
+                    build_method_info(isolate, context, pair.value, pair.value.return_val.type != Variant::NIL, method_info_obj);
                     methods_obj->Set(context, index++, method_info_obj).Check();
                 }
             }
@@ -584,8 +585,9 @@ namespace jsb
                 if (Variant::is_builtin_method_const(TYPE, name)) method_info.flags |= METHOD_FLAG_CONST;
                 if (Variant::is_builtin_method_static(TYPE, name)) method_info.flags |= METHOD_FLAG_STATIC;
                 if (Variant::is_builtin_method_vararg(TYPE, name)) method_info.flags |= METHOD_FLAG_VARARG;
+                const bool has_return_value = Variant::has_builtin_method_return_value(TYPE, name);
                 v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
-                build_method_info(isolate, context, method_info, method_info_obj);
+                build_method_info(isolate, context, method_info, has_return_value, method_info_obj);
                 methods_obj->Set(context, index++, method_info_obj).Check();
             }
         }
@@ -825,8 +827,9 @@ namespace jsb
             for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it, ++index)
             {
                 const MethodInfo method_info = Variant::get_utility_function_info(*it);
+                const bool has_return_value = Variant::has_utility_function_return_value(*it);
                 v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
-                build_method_info(isolate, context, method_info, method_info_obj);
+                build_method_info(isolate, context, method_info, has_return_value, method_info_obj);
                 array->Set(context, index, method_info_obj).Check();
             }
             info.GetReturnValue().Set(array);
