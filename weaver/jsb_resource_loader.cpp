@@ -15,6 +15,10 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
         {
             if (elem->self()->get_path() == p_path)
             {
+                if (p_cache_mode == CACHE_MODE_IGNORE)
+                {
+                    elem->self()->load_source_code_from_path();
+                }
                 return Ref(elem->self());
             }
             elem = elem->next();

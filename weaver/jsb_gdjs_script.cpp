@@ -337,21 +337,27 @@ bool GodotJSScript::instance_has(const Object* p_this) const
     return instances_.has(const_cast<Object*>(p_this));
 }
 
-void GodotJSScript::attach_source(const String& p_path)
+void GodotJSScript::load_source_code_from_path()
 {
-    set_path(p_path);
-
-#ifdef TOOLS_ENABLED
     Error err;
-    const String source_code = FileAccess::get_file_as_string(p_path, &err);
+    const String path = get_path();
+    const String source_code = FileAccess::get_file_as_string(path, &err);
     if (err != OK)
     {
-        JSB_LOG(Warning, "can not read source from %s", p_path);
+        JSB_LOG(Warning, "can not read source from %s", path);
     }
     else
     {
         set_source_code(source_code);
     }
+}
+
+void GodotJSScript::attach_source(const String& p_path)
+{
+    set_path(p_path);
+
+#ifdef TOOLS_ENABLED
+    load_source_code_from_path();
 #endif
     //TODO we can't immediately compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
 }
