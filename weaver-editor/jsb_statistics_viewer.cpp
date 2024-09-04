@@ -52,11 +52,15 @@ void GodotJSStatisticsViewer::on_timer()
     realm->get_statistics(stats);
 
     int index = 0;
+#if JSB_WITH_V8
     add_row(index++, "v8:global_handles_size", stats.used_global_handles_size, stats.total_global_handles_size);
     add_row(index++, "v8:heap_size", stats.used_heap_size, stats.total_heap_size, true);
     add_row(index++, "v8:malloced_memory", String::humanize_size(stats.malloced_memory));
     add_row(index++, "v8:peak_malloced_memory", String::humanize_size(stats.peak_malloced_memory));
     add_row(index++, "v8:external_memory", String::humanize_size(stats.external_memory));
+#elif JSB_WITH_QUICKJS
+    // ...
+#endif
     add_row(index++, "jsb:objects", jsb_format("%d (%s)", stats.objects, String::humanize_size(stats.objects * jsb::internal::SArray<jsb::ObjectHandle>::get_slot_size())));
     add_row(index++, "jsb:native_classes", itos(stats.native_classes));
     add_row(index++, "jsb:script_classes", itos(stats.script_classes));

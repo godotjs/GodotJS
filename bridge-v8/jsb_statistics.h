@@ -6,19 +6,6 @@ namespace jsb
 {
     struct Statistics
     {
-        // v8 statistics:
-
-        size_t used_global_handles_size;
-        size_t total_global_handles_size;
-        size_t used_heap_size;
-        size_t total_heap_size;
-
-        size_t peak_malloced_memory;
-        size_t malloced_memory;
-        size_t external_memory;
-
-        // GodotJS statistics:
-
         // num of traced objects
         int objects;
 
@@ -31,6 +18,19 @@ namespace jsb
         int cached_string_names;
         uint32_t persistent_objects;
         uint32_t allocated_variants;
+
+#if JSB_WITH_V8
+        size_t used_global_handles_size;
+        size_t total_global_handles_size;
+        size_t used_heap_size;
+        size_t total_heap_size;
+
+        size_t peak_malloced_memory;
+        size_t malloced_memory;
+        size_t external_memory;
+#elif JSB_WITH_QUICKJS
+        #error not implemented yet
+#endif
     };
 }
 #endif

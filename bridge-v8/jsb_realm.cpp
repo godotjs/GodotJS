@@ -1684,6 +1684,7 @@ namespace jsb
 
     void Realm::get_statistics(Statistics& r_stats) const
     {
+#if JSB_WITH_V8
         v8::HeapStatistics v8_statistics;
         environment_->isolate_->GetHeapStatistics(&v8_statistics);
 
@@ -1694,6 +1695,9 @@ namespace jsb
         r_stats.peak_malloced_memory = v8_statistics.peak_malloced_memory();
         r_stats.malloced_memory = v8_statistics.malloced_memory();
         r_stats.external_memory = v8_statistics.external_memory();
+#elif JSB_WITH_QUICKJS
+        #error not implemented yet
+#endif
 
         r_stats.objects = environment_->objects_.size();
         r_stats.native_classes = environment_->native_classes_.size();
