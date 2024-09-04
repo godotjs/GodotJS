@@ -1,6 +1,7 @@
 #ifndef GODOTJS_PROCESS_H
 #define GODOTJS_PROCESS_H
-#include "jsb_macros.h"
+#include "jsb_internal_pch.h"
+
 namespace jsb::internal
 {
     class Process

@@ -1,6 +1,7 @@
 #ifndef GODOTJS_INDEX_H
 #define GODOTJS_INDEX_H
 
+#include "core/string/ustring.h"
 #include "jsb_macros.h"
 
 namespace jsb::internal

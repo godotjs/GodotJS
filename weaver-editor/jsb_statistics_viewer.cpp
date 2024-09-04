@@ -57,7 +57,7 @@ void GodotJSStatisticsViewer::on_timer()
     add_row(index++, "v8:malloced_memory", String::humanize_size(stats.malloced_memory));
     add_row(index++, "v8:peak_malloced_memory", String::humanize_size(stats.peak_malloced_memory));
     add_row(index++, "v8:external_memory", String::humanize_size(stats.external_memory));
-    add_row(index++, "jsb:objects", vformat("%d (%s)", stats.objects, String::humanize_size(stats.objects * jsb::internal::SArray<jsb::ObjectHandle>::get_slot_size())));
+    add_row(index++, "jsb:objects", jsb_format("%d (%s)", stats.objects, String::humanize_size(stats.objects * jsb::internal::SArray<jsb::ObjectHandle>::get_slot_size())));
     add_row(index++, "jsb:native_classes", itos(stats.native_classes));
     add_row(index++, "jsb:script_classes", itos(stats.script_classes));
     add_row(index++, "jsb:cached_string_names", itos(stats.cached_string_names));
@@ -73,10 +73,10 @@ void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, size_t 
 {
     if (p_humanized_size)
     {
-        add_row(p_index, p_name, vformat("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), (int) (((double) p_usage / (double) p_total) * 100)));
+        add_row(p_index, p_name, jsb_format("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), (int) (((double) p_usage / (double) p_total) * 100)));
         return;
     }
-    add_row(p_index, p_name, vformat("%d / %d (%d %%)", (uint64_t) p_usage, (uint64_t) p_total, (int) (((double) p_usage / (double) p_total) * 100)));
+    add_row(p_index, p_name, jsb_format("%d / %d (%d %%)", (uint64_t) p_usage, (uint64_t) p_total, (int) (((double) p_usage / (double) p_total) * 100)));
 }
 
 void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, const String& p_text)

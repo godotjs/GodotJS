@@ -309,7 +309,7 @@ namespace jsb
     protected:
         virtual void on_context_created(const v8::Local<v8::Context>& p_context) override
 	    {
-	        const CharString context_name = vformat("context.%d", ++context_index_).utf8();
+	        const CharString context_name = jsb_format("context.%d", ++context_index_).utf8();
 	        v8_inspector::StringView name((const uint8_t*) context_name.ptr(), context_name.length());
 	        inspector_->contextCreated(v8_inspector::V8ContextInfo(p_context, kContextGroupId, name));
 	    }
@@ -405,7 +405,7 @@ namespace jsb
                             "\"webSocketDebuggerUrl\" : \"ws://localhost:%d\""
                             "}]";
 
-	                    const CharString content = vformat(kJsonListFormat, impl->port_).utf8();
+	                    const CharString content = jsb_format(kJsonListFormat, impl->port_).utf8();
 	                    JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/list");
 	                    _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
 	                }
@@ -419,7 +419,7 @@ namespace jsb
                             "    \"V8-Version\" : \"" V8_VERSION_STRING "\","
                             "	 \"webSocketDebuggerUrl\" : \"ws://localhost:%d\""
                             "}";
-	                    const CharString content = vformat(kJsonVersionFormat, impl->port_).utf8();
+	                    const CharString content = jsb_format(kJsonVersionFormat, impl->port_).utf8();
 	                    JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/version");
 	                    _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
 	                }

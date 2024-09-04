@@ -1,6 +1,6 @@
 ﻿#ifndef GODOTJS_SOURCE_READER_H
 #define GODOTJS_SOURCE_READER_H
-#include "jsb_macros.h"
+#include "jsb_internal_pch.h"
 
 namespace jsb::internal
 {

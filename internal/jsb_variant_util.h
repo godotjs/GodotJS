@@ -1,6 +1,6 @@
 #ifndef GODOTJS_VARIANT_UTIL_H
 #define GODOTJS_VARIANT_UTIL_H
-#include "jsb_macros.h"
+#include "jsb_internal_pch.h"
 
 namespace jsb::internal
 {

@@ -207,7 +207,7 @@ namespace jsb
             }
         }
 
-        isolate->ThrowError(V8Helper::to_string(isolate, vformat("unknown module: %s", normalized_id)));
+        isolate->ThrowError(V8Helper::to_string(isolate, jsb_format("unknown module: %s", normalized_id)));
         return nullptr;
     }
 
@@ -1287,7 +1287,7 @@ namespace jsb
             return;
         }
 
-        const CharString message = vformat("godot class not found '%s'", type_name).utf8();
+        const CharString message = jsb_format("godot class not found '%s'", type_name).utf8();
         isolate->ThrowError(v8::String::NewFromUtf8(isolate, message.ptr(), v8::NewStringType::kNormal, message.length()).ToLocalChecked());
     }
 

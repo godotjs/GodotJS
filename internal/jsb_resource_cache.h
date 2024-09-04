@@ -1,7 +1,7 @@
 #ifndef GODOTJS_RESOURCE_CACHE_H
 #define GODOTJS_RESOURCE_CACHE_H
 
-#include "jsb_macros.h"
+#include "jsb_internal_pch.h"
 #include "scene/resources/packed_scene.h"
 
 namespace jsb::internal

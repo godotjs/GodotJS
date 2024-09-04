@@ -1,6 +1,6 @@
 ﻿#ifndef GODOTJS_BENCHMARK_H
 #define GODOTJS_BENCHMARK_H
-#include "jsb_macros.h"
+#include "jsb_internal_pch.h"
 
 #if JSB_BENCHMARK
 #   define JSB_BENCHMARK_SCOPE(RegionName, DetailName) \

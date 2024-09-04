@@ -18,7 +18,7 @@ namespace jsb
                 {
                     const Variant* variant = (Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
                     const String type_name = Variant::get_type_name(variant->get_type());
-                    return vformat("[%s %s]", type_name, variant->operator String());
+                    return jsb_format("[%s %s]", type_name, variant->operator String());
                 }
             case IF_ObjectFieldCount:
                 {
@@ -26,11 +26,11 @@ namespace jsb
                     const NativeClassInfo* class_info = environment->find_object_class(pointer);
                     if (jsb_unlikely(!class_info))
                     {
-                        return vformat("[dead_object @%s]", uitos((uint64_t) pointer));
+                        return jsb_format("[dead_object @%s]", uitos((uint64_t) pointer));
                     }
                     jsb_check(class_info->type == NativeClassType::GodotObject);
                     const NativeObjectID object_id = environment->get_object_id(pointer);
-                    return vformat("[%s #%s @%s]", class_info->name, uitos(object_id.value()), uitos((uint64_t) pointer));
+                    return jsb_format("[%s #%d @%s]", class_info->name, object_id, uitos((uint64_t) pointer));
                 }
             default: break;
             }

@@ -1,12 +1,8 @@
 #ifndef GODOTJS_TIMER_MANAGER_H
 #define GODOTJS_TIMER_MANAGER_H
 
-#include "jsb_macros.h"
-#include "jsb_sindex.h"
-#include "jsb_sarray.h"
+#include "jsb_internal_pch.h"
 #include <vector>
-
-#include "core/variant/variant.h"
 
 namespace jsb::internal
 {
@@ -51,7 +47,6 @@ namespace jsb::internal
 			uint64_t rate;
 			uint64_t expires;
 			bool loop;
-			// String to_string() const { return vformat("[TimerData] id:%d rate:%d loop:%d", (int64_t)id, rate, loop); }
 		};
 
 		struct WheelSlot

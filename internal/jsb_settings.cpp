@@ -1,6 +1,11 @@
 #include "jsb_settings.h"
 
-#include "jsb_macros.h"
+#include "core/config/engine.h"
+#include "core/config/project_settings.h"
+#include "core/variant/variant.h"
+#include "editor/editor_settings.h"
+
+#include "jsb_internal_pch.h"
 
 #define JSB_SET_RESTART(val) (val)
 #define JSB_SET_IGNORE_DOCS(val) (val)

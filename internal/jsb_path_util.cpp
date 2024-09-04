@@ -3,9 +3,8 @@
 // std::size
 #include <iterator>
 
-#include "jsb_macros.h"
+#include "jsb_internal_pch.h"
 #include "jsb_settings.h"
-#include "core/variant/variant.h"
 #include "core/io/dir_access.h"
 #include "../jsb.config.h"
 

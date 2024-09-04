@@ -13,7 +13,9 @@
 #include "core/variant/variant_utility.h"
 #include "scene/main/node.h"
 
-#include "../internal/jsb_macros.h"
+#include "../jsb.config.h"
+#include "../jsb.gen.h"
+#include "../jsb_version.h"
 
 #if JSB_WITH_V8
 #   include <v8.h>
@@ -27,6 +29,11 @@
 #else
 #   error unknown javascript runtime
 #endif
+
+#include "../internal/jsb_macros.h"
+#include "../internal/jsb_format.h"
+#include "../internal/jsb_console_output.h"
+#include "../internal/jsb_logger.h"
 
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_function_pointer.h"

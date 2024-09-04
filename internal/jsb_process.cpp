@@ -1,5 +1,4 @@
 #include "jsb_process.h"
-#include "jsb_macros.h"
 #include "jsb_path_util.h"
 
 #if defined(WINDOWS_ENABLED)

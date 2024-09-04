@@ -1,7 +1,7 @@
 ﻿#ifndef GODOTJS_SOURCE_MAP_CACHE_H
 #define GODOTJS_SOURCE_MAP_CACHE_H
 
-#include "jsb_macros.h"
+#include "jsb_internal_pch.h"
 #include "jsb_source_map.h"
 #include "modules/regex/regex.h"
 

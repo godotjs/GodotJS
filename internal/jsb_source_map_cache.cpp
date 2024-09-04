@@ -1,6 +1,7 @@
 ﻿#include "jsb_source_map_cache.h"
 #include "jsb_path_util.h"
 #include "jsb_settings.h"
+
 #include "modules/regex/regex.h"
 
 namespace jsb::internal
@@ -36,8 +37,8 @@ namespace jsb::internal
             const String& source_root = map->get_source_root();
             const String original_path = PathUtil::to_platform_specific_path(PathUtil::combine("res://", source_root, source));
 
-            if (hint.is_empty()) st_line = vformat("    at %s:%d:%d", original_path, position.line, position.column);
-            else st_line = vformat("    at %s (%s:%d:%d)", hint, original_path, position.line, position.column);
+            if (hint.is_empty()) st_line = jsb_format("    at %s:%d:%d", original_path, position.line, position.column);
+            else st_line = jsb_format("    at %s (%s:%d:%d)", hint, original_path, position.line, position.column);
 
             if (!is_position_set)
             {

@@ -1,24 +1,11 @@
 #ifndef GODOTJS_INTERNAL_MACROS_H
 #define GODOTJS_INTERNAL_MACROS_H
 
+#include "jsb_engine_version_comparison.h"
+
 #include "../jsb.config.h"
 #include "../jsb.gen.h"
 #include "../jsb_version.h"
-
-#include <memory>
-
-#include "core/version.h"
-#include "core/object/object.h"
-#include "core/variant/variant_utility.h"
-#include "core/string/print_string.h"
-#include "core/templates/hash_map.h"
-#include "core/io/file_access.h"
-#include "core/io/dir_access.h"
-#include "core/os/thread.h"
-#include "core/os/os.h"
-
-#include "jsb_console_output.h"
-#include "jsb_logger.h"
 
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
@@ -34,7 +21,7 @@
 // similar to assert() in C, jsb_check() will be thoroughly omitted if not JSB_WITH_CHECK, otherwise it traps the execution on false evaluation
 #if JSB_WITH_CHECK
 #   define jsb_check(Condition) CRASH_COND(!(Condition))
-#   define jsb_checkf(Condition, Format, ...) CRASH_COND_MSG(!(Condition), vformat(Format, ##__VA_ARGS__))
+#   define jsb_checkf(Condition, Format, ...) CRASH_COND_MSG(!(Condition), jsb_format(Format, ##__VA_ARGS__))
 #else
 #   define jsb_check(Condition) (void) 0
 #   define jsb_checkf(Condition, Format, ...) (void) 0
@@ -61,7 +48,7 @@
 #define jsb_typename(TypeName) ((void) sizeof(TypeName), #TypeName)
 #define jsb_nameof(TypeName, MemberName) ((void) sizeof(TypeName::MemberName), #MemberName)
 #define jsb_methodbind(TypeName, MemberName) &TypeName::MemberName, #MemberName
-#define jsb_not_implemented(Condition, Format, ...) CRASH_COND_MSG((Condition), vformat(Format, ##__VA_ARGS__))
+#define jsb_not_implemented(Condition, Format, ...) CRASH_COND_MSG((Condition), jsb_format(Format, ##__VA_ARGS__))
 
 #if defined(__GNUC__) || defined(__clang__)
 #   define jsb_force_inline  __attribute__((always_inline))
@@ -83,12 +70,10 @@
 
 #define jsb_underlying_value(enum_type, enum_value) (__underlying_type(enum_type) (enum_value))
 
-// generate an error string with source position info
-#define jsb_errorf(Format, ...) vformat("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
+#define jsb_format(Format, ...) ::jsb::internal::format(Format, ##__VA_ARGS__)
 
-#define GODOT_VERSION_COMPARE(Current, MinExpected, ComparisonChain) (((Current) > (MinExpected)) || ((Current) == (MinExpected) && (ComparisonChain)))
-#define GODOT_VERSION_NEWER_THAN(major, minor, patch) GODOT_VERSION_COMPARE(VERSION_MAJOR, major, GODOT_VERSION_COMPARE(VERSION_MINOR, minor, GODOT_VERSION_COMPARE(VERSION_PATCH, patch, false)))
-#define GODOT_4_3_OR_NEWER GODOT_VERSION_NEWER_THAN(4, 3, 0)
+// generate an error string with source position info
+#define jsb_errorf(Format, ...) jsb_format("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
 #if GODOT_4_3_OR_NEWER
 #	define ConstStringRefCompat const String&

@@ -1,9 +1,8 @@
 #ifndef GODOTJS_SETTINGS_H
 #define GODOTJS_SETTINGS_H
-#include "core/config/engine.h"
-#include "core/config/project_settings.h"
-#include "core/variant/variant.h"
-#include "editor/editor_settings.h"
+
+#include <cstdint>
+#include "core/string/ustring.h"
 
 namespace jsb::internal
 {

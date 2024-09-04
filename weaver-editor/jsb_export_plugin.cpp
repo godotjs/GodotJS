@@ -1,5 +1,5 @@
 ﻿#include "jsb_export_plugin.h"
-#include "../internal/jsb_macros.h"
+#include "../internal/jsb_internal_pch.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 
