@@ -35,7 +35,6 @@ namespace jsb_private
 #define JSB_DEFINE_OVERLOADED_BINARY_END() ;
 #define JSB_DEFINE_UNARY(InOperator) UnaryOperator::Define<CurrentType>(context, operators, JSB_OPERATOR_NAME(InOperator));
 #define JSB_DEFINE_COMPARATOR(InOperator) Comparator::Define<CurrentType, CurrentType>(context, operators, JSB_OPERATOR_NAME(InOperator));
-#define GeneratePrimitiveType(Type) array->Set(context, index++, generate_primitive_type<Type>(isolate, context)).Check()
 
 namespace jsb
 {
@@ -777,39 +776,11 @@ namespace jsb
             int index = 0;
             v8::Local<v8::Array> array = v8::Array::New(isolate);
 
-            GeneratePrimitiveType(Vector2);
-            GeneratePrimitiveType(Vector2i);
-            GeneratePrimitiveType(Rect2);
-            GeneratePrimitiveType(Rect2i);
-            GeneratePrimitiveType(Vector3);
-            GeneratePrimitiveType(Vector3i);
-            GeneratePrimitiveType(Transform2D);
-            GeneratePrimitiveType(Vector4);
-            GeneratePrimitiveType(Vector4i);
-            GeneratePrimitiveType(Plane);
-            GeneratePrimitiveType(Quaternion);
-            GeneratePrimitiveType(AABB);
-            GeneratePrimitiveType(Basis);
-            GeneratePrimitiveType(Transform3D);
-            GeneratePrimitiveType(Projection);
-            GeneratePrimitiveType(Color);
-            // - StringName
-            GeneratePrimitiveType(NodePath);
-            GeneratePrimitiveType(RID);
-            // - Object
-            GeneratePrimitiveType(Callable);
-            GeneratePrimitiveType(Signal);
-            GeneratePrimitiveType(Dictionary);
-            GeneratePrimitiveType(Array);
-            GeneratePrimitiveType(PackedByteArray);
-            GeneratePrimitiveType(PackedInt32Array);
-            GeneratePrimitiveType(PackedInt64Array);
-            GeneratePrimitiveType(PackedFloat32Array);
-            GeneratePrimitiveType(PackedFloat64Array);
-            GeneratePrimitiveType(PackedStringArray);
-            GeneratePrimitiveType(PackedVector2Array);
-            GeneratePrimitiveType(PackedVector3Array);
-            GeneratePrimitiveType(PackedColorArray);
+#pragma push_macro("DEF")
+#   undef   DEF
+#   define  DEF(TypeName) array->Set(context, index++, generate_primitive_type<TypeName>(isolate, context)).Check();
+#   include "jsb_primitive_types.def.h"
+#pragma pop_macro("DEF")
 
             info.GetReturnValue().Set(array);
         }

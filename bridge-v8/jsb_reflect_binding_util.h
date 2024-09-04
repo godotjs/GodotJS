@@ -6,7 +6,6 @@
 #include "jsb_static_binding_util.h"
 #include "../internal/jsb_variant_info.h"
 
-#define RegisterPrimitiveType(TypeName) add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind)
 #define GetVariantInfoCollection(p_realm) (p_realm)->get_variant_info_collection() // ::jsb::internal::VariantInfoCollection::global
 
 namespace jsb

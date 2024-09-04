@@ -808,39 +808,12 @@ namespace jsb
 
     void register_primitive_bindings_reflect(class Realm* p_realm)
     {
-        p_realm->RegisterPrimitiveType(Vector2);
-        p_realm->RegisterPrimitiveType(Vector2i);
-        p_realm->RegisterPrimitiveType(Rect2);
-        p_realm->RegisterPrimitiveType(Rect2i);
-        p_realm->RegisterPrimitiveType(Vector3);
-        p_realm->RegisterPrimitiveType(Vector3i);
-        p_realm->RegisterPrimitiveType(Transform2D);
-        p_realm->RegisterPrimitiveType(Vector4);
-        p_realm->RegisterPrimitiveType(Vector4i);
-        p_realm->RegisterPrimitiveType(Plane);
-        p_realm->RegisterPrimitiveType(Quaternion);
-        p_realm->RegisterPrimitiveType(AABB);
-        p_realm->RegisterPrimitiveType(Basis);
-        p_realm->RegisterPrimitiveType(Transform3D);
-        p_realm->RegisterPrimitiveType(Projection);
-        p_realm->RegisterPrimitiveType(Color);
-        // - StringName
-        p_realm->RegisterPrimitiveType(NodePath);
-        p_realm->RegisterPrimitiveType(RID);
-        // - Object
-        p_realm->RegisterPrimitiveType(Callable);
-        p_realm->RegisterPrimitiveType(Signal);
-        p_realm->RegisterPrimitiveType(Dictionary);
-        p_realm->RegisterPrimitiveType(Array);
-        p_realm->RegisterPrimitiveType(PackedByteArray);
-        p_realm->RegisterPrimitiveType(PackedInt32Array);
-        p_realm->RegisterPrimitiveType(PackedInt64Array);
-        p_realm->RegisterPrimitiveType(PackedFloat32Array);
-        p_realm->RegisterPrimitiveType(PackedFloat64Array);
-        p_realm->RegisterPrimitiveType(PackedStringArray);
-        p_realm->RegisterPrimitiveType(PackedVector2Array);
-        p_realm->RegisterPrimitiveType(PackedVector3Array);
-        p_realm->RegisterPrimitiveType(PackedColorArray);
+#pragma push_macro("DEF")
+#   undef   DEF
+#   define  DEF(TypeName) p_realm->add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind);
+#   include "jsb_primitive_types.def.h"
+#pragma pop_macro("DEF")
+
     }
 }
 
