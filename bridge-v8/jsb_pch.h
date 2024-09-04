@@ -6,9 +6,7 @@
 
 #include "core/core_constants.h"
 #include "core/string/string_builder.h"
-#include "core/math/vector2.h"
-#include "core/math/vector3.h"
-#include "core/math/vector4.h"
+#include "core/variant/variant.h"
 #include "core/config/project_settings.h"
 #include "core/variant/variant_utility.h"
 #include "scene/main/node.h"

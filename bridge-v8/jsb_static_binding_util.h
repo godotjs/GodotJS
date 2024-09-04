@@ -73,7 +73,9 @@ namespace jsb
 	DEF_VARIANT_THIS_UTIL(PackedVector2Array, get_vector2_array);
 	DEF_VARIANT_THIS_UTIL(PackedVector3Array, get_vector3_array);
 	DEF_VARIANT_THIS_UTIL(PackedColorArray, get_color_array);
+#if GODOT_VERSION_NEWER_THAN(4, 3, 0)
 	DEF_VARIANT_THIS_UTIL(PackedVector4Array, get_vector4_array);
+#endif
 
 	// fallback to Variant transpiler
 	template<typename T>
