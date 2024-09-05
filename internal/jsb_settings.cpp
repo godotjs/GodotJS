@@ -9,6 +9,7 @@
 #endif
 
 #include "jsb_internal_pch.h"
+#include "main/main.h"
 
 #define JSB_SET_RESTART(val) (val)
 #define JSB_SET_IGNORE_DOCS(val) (val)
@@ -33,9 +34,17 @@ namespace jsb::internal
         {
             inited = true;
 #ifdef TOOLS_ENABLED
-            if (!EditorSettings::get_singleton()) {
-                EditorSettings::create();
-                jsb_check(EditorSettings::get_singleton());
+            if (!EditorSettings::get_singleton())
+            {
+            	if (Engine::get_singleton()->is_editor_hint() || Engine::get_singleton()->is_project_manager_hint() || Main::is_cmdline_tool())
+            	{
+            		EditorSettings::create();
+            		jsb_check(EditorSettings::get_singleton());
+            	}
+            	else
+            	{
+            		JSB_LOG(Warning, "EditorSettings is not available for %s", jsb_typename(jsb::internal::Settings));
+            	}
             }
             _EDITOR_DEF(kEdDebuggerPort, 9230, true);
             _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
