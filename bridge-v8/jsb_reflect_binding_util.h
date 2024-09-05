@@ -45,7 +45,6 @@ namespace jsb
         template<bool IsInstanceCallT>
         static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
-            v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
             func(ReflectThis<IsInstanceCallT>::from(info), nullptr, nullptr, 0);
         }
