@@ -244,9 +244,6 @@ namespace jsb
 	        v8::Isolate::Scope isolate_scope(isolate);
 	        v8::HandleScope handle_scope(isolate);
 
-	        inspector_ = v8_inspector::V8Inspector::create(isolate, this);
-	        state_ = ECS_READY;
-
 	        //lws_set_log_level(LLL_USER | LLL_DEBUG | LLL_NOTICE | LLL_ERR | LLL_WARN | LLL_INFO | LLL_CLIENT | LLL_THREAD, _lws_log_callback);
 	        lws_set_log_level(LLL_USER | LLL_ERR | LLL_WARN, _lws_log_callback);
 
@@ -256,22 +253,34 @@ namespace jsb
 	        protocols_[0].per_session_data_size = 0;
 	        protocols_[0].rx_buffer_size = (size_t)kMaxProtocolBufSize;
 
-	        lws_context_creation_info context_creation_info = {};
-            context_creation_info.port = port_;
-	        context_creation_info.iface = nullptr;
-	        context_creation_info.protocols = protocols_;
-	        context_creation_info.extensions = nullptr;
-	        context_creation_info.gid = -1;
-	        context_creation_info.uid = -1;
-	        context_creation_info.user = this;
-	        context_creation_info.options = LWS_SERVER_OPTION_DISABLE_IPV6;
+        	if (port_ != 0)
+        	{
+        		lws_context_creation_info context_creation_info = {};
+        		context_creation_info.port = port_;
+        		context_creation_info.iface = nullptr;
+        		context_creation_info.protocols = protocols_;
+        		context_creation_info.extensions = nullptr;
+        		context_creation_info.gid = -1;
+        		context_creation_info.uid = -1;
+        		context_creation_info.user = this;
+        		context_creation_info.options = LWS_SERVER_OPTION_DISABLE_IPV6;
 
-	        wss_ = lws_create_context(&context_creation_info);
-            JSB_DEBUGGER_LOG(Debug, "devtools://devtools/bundled/inspector.html?v8only=true&ws=127.0.0.1:%d/1", port_);
+        		inspector_ = v8_inspector::V8Inspector::create(isolate, this);
+        		state_ = ECS_READY;
+        		wss_ = lws_create_context(&context_creation_info);
+        		JSB_DEBUGGER_LOG(Debug, "devtools://devtools/bundled/inspector.html?v8only=true&ws=127.0.0.1:%d/1", port_);
+        	}
+        	else
+        	{
+        		state_ = ECS_NONE;
+        		wss_ = nullptr;
+        	}
         }
 
 	    virtual void update() override
 	    {
+        	if (jsb_unlikely(state_ == ECS_NONE)) return;
+
 	        lws_service(wss_, -1);
 	        lws_callback_on_writable_all_protocol(wss_, protocols_);
 	    }
