@@ -24,6 +24,28 @@ namespace jsb::internal
             return p_argc <= p_expected_num && p_argc + p_default_num >= p_expected_num;
         }
 
+#if GODOT_4_4_OR_NEWER
+    	jsb_force_inline static String to_snake_case_id(const String& p_name)
+        {
+        	return p_name.to_snake_case().validate_ascii_identifier();
+        }
+
+    	jsb_force_inline static String to_pascal_case_id(const String& p_name)
+        {
+        	return p_name.to_pascal_case().validate_ascii_identifier();
+        }
+#else
+    	jsb_force_inline static String to_snake_case_id(const String& p_name)
+        {
+        	return p_name.to_snake_case().validate_identifier();
+        }
+
+    	jsb_force_inline static String to_pascal_case_id(const String& p_name)
+        {
+        	return p_name.to_pascal_case().validate_identifier();
+        }
+#endif
+
         jsb_force_inline static Variant::Type get_element_type(Variant::Type p_type)
         {
             static Variant::Type mappings[] = {

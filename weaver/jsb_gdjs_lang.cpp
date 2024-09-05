@@ -168,8 +168,8 @@ Ref<Script> GodotJSScriptLanguage::make_template(const String& p_template, const
     spt.instantiate();
 	String processed_template = p_template;
     processed_template = processed_template.replace("_BASE_", p_base_class_name)
-                                 .replace("_CLASS_SNAKE_CASE_", p_class_name.to_snake_case().validate_identifier())
-                                 .replace("_CLASS_", p_class_name.to_pascal_case().validate_identifier())
+                                 .replace("_CLASS_SNAKE_CASE_", jsb::internal::VariantUtil::to_snake_case_id(p_class_name))
+                                 .replace("_CLASS_", jsb::internal::VariantUtil::to_pascal_case_id(p_class_name))
                                  .replace("_TS_", jsb::internal::Settings::get_indentation());
     spt->set_source_code(processed_template);
     return spt;
