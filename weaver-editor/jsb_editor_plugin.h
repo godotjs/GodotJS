@@ -3,7 +3,7 @@
 
 #include "jsb_editor_pch.h"
 #include "scene/gui/dialogs.h"
-#include "modules/GodotJS/internal/jsb_process.h"
+#include "../internal/jsb_process.h"
 
 namespace jsb
 {
@@ -12,10 +12,11 @@ namespace jsb
         CH_JAVASCRIPT = 1 << 0,
         CH_TYPESCRIPT = 1 << 1,
         CH_MISC = 1 << 2,
+        CH_GDIGNORE = 1 << 3,
 
         // only write file if not existed since some files would be modified in projects, such as package.json, by users
-        CH_CREATE_ONLY = 1 << 3,
-        CH_REPLACE_VARS = 1 << 4,
+        CH_CREATE_ONLY = 1 << 4,
+        CH_REPLACE_VARS = 1 << 5,
 
         CH_D_TS = 1 << 6,
         CH_OPTIONAL = 1 << 7,
@@ -58,6 +59,8 @@ protected:
     void _on_confirm_overwrite();
 
     static Error write_file(const jsb::InstallFileInfo& p_file);
+    static bool install_files(const Vector<jsb::InstallFileInfo>& p_files);
+    static Vector<jsb::InstallFileInfo> filter_files(const Vector<jsb::InstallFileInfo>& p_files, int p_hint);
     static void delete_file(const String& p_file);
 
 public:

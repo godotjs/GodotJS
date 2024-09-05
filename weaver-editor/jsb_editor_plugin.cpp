@@ -70,13 +70,13 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // config files
     install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_REPLACE_VARS });
     install_files_.push_back({ "package.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
-    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT | jsb::CH_GDIGNORE });
+    install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_GDIGNORE | jsb::CH_D_TS });
 
     // type declaration files
-    install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
-    install_files_.push_back({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT });
+    install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
+    install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
+    install_files_.push_back({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
 }
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
@@ -216,7 +216,20 @@ bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_fil
     return verified;
 }
 
-void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>& p_files)
+Vector<jsb::InstallFileInfo> GodotJSEditorPlugin::filter_files(const Vector<jsb::InstallFileInfo>& p_files, int p_hint)
+{
+    Vector<jsb::InstallFileInfo> results;
+    for (const jsb::InstallFileInfo& info: p_files)
+    {
+        if ((info.hint & p_hint) != 0 && !verify_file(info, true))
+        {
+            results.append(info);
+        }
+    }
+    return results;
+}
+
+bool GodotJSEditorPlugin::install_files(const Vector<jsb::InstallFileInfo>& p_files)
 {
     for (const jsb::InstallFileInfo& info: p_files)
     {
@@ -225,12 +238,17 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
             JSB_LOG(Warning, "failed to write file '%s' to '%s': %s", info.source_name, info.target_dir, VariantUtilityFunctions::error_string(err));
             if ((info.hint & jsb::CH_OPTIONAL) == 0)
             {
-                return;
+                return false;
             }
         }
         JSB_LOG(Verbose, "install file '%s' to '%s'", info.source_name, info.target_dir);
     }
+    return true;
+}
 
+void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>& p_files)
+{
+    if (!install_files(p_files)) return;
     generate_godot_dts();
     load_editor_entry_module();
     ensure_tsc_installed();
@@ -239,10 +257,16 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
 
 void GodotJSEditorPlugin::generate_godot_dts()
 {
+    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
+    {
+        install_files(filter_files(editor_plugin->install_files_, jsb::CH_GDIGNORE | jsb::CH_D_TS));
+    }
+
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
-    lang->eval_source(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.default("./typings")).emit();})())--", err).ignore();
+    const String code = jsb_format(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.default("%s")).emit();})())--", "./" JSB_TYPE_ROOT);
+    lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 
     const String toast_message = TTR("godot.d.ts generated successfully");
