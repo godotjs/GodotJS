@@ -31,7 +31,7 @@ DEF(PackedFloat64Array)
 DEF(PackedStringArray)
 DEF(PackedVector2Array)
 DEF(PackedVector3Array)
-#if GODOT_VERSION_NEWER_THAN(4, 3, 0)
+#if GODOT_4_3_OR_NEWER
 DEF(PackedVector4Array)
 #endif
 DEF(PackedColorArray)
