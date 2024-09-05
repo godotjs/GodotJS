@@ -6,14 +6,10 @@
 
 namespace jsb::internal
 {
-    template<typename T>
-    static Variant convert(const T& p_item) { return p_item; }
-
-    template<>
-    static Variant convert<Index64>(const Index64& p_item) { return p_item.value(); }
-
-    template<>
-    static Variant convert<Index32>(const Index32& p_item) { return p_item.value(); }
+    template<typename T> struct TFormat         { static Variant from(const T& p_item) { return p_item; } };
+    template<>           struct TFormat<Index64>{ static Variant from(const Index64& p_item) { return p_item.value(); } };
+    template<>           struct TFormat<Index32>{ static Variant from(const Index32& p_item) { return p_item.value(); } };
+    template<typename T> static Variant convert(const T& p_item) { return TFormat<T>::from(p_item); }
 
     template <typename... VarArgs>
     String format(const String &p_text, const VarArgs... p_args)
@@ -21,7 +17,7 @@ namespace jsb::internal
         Variant args[sizeof...(p_args) + 1] = { convert(p_args)..., Variant() }; // +1 makes sure zero sized arrays are also supported.
         Array args_array;
         args_array.resize(sizeof...(p_args));
-        for (int i = 0; i < sizeof...(p_args); i++)
+        for (int i = 0; i < (int) sizeof...(p_args); i++)
         {
             args_array[i] = args[i];
         }
