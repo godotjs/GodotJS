@@ -5,6 +5,7 @@
 #include "core/version.h"
 
 #include "../internal/jsb_path_util.h"
+#include "../internal/jsb_settings.h"
 #include "../weaver/jsb_callable_custom.h"
 
 #ifdef TOOLS_ENABLED
@@ -218,13 +219,21 @@ namespace jsb
             // write type info for `defaults`
             {
                 const Vector<Variant>& default_arguments = method_bind->get_default_arguments();
-                jsb_check(method_bind->get_default_argument_count() == default_arguments.size());
-                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, default_arguments.size());
-                for (int index = 0; index < default_arguments.size(); ++index)
+                const int argument_count = method_bind->get_argument_count();
+                const int default_argument_count = (int) default_arguments.size();
+                jsb_check(method_bind->get_default_argument_count() == default_argument_count);
+                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, default_argument_count);
+                for (int index = 0; index < default_argument_count; ++index)
                 {
+                    const Variant& value = default_arguments[index];
                     v8::Local<v8::Object> property_info_obj = v8::Object::New(isolate);
-                    const Variant::Type type = method_bind->get_argument_info(method_bind->get_argument_count() - (default_arguments.size() - index)).type;
-                    const Variant value = default_arguments[index];
+                    const int argument_index = argument_count - (default_argument_count - index);
+                    // avoid error reporting in `method_bind->get_argument_info`
+                    //NOTE is it a bug of godot? in dir_access.cpp "ClassDB::bind_method(D_METHOD("list_dir_begin"), &DirAccess::list_dir_begin, DEFVAL(false), DEFVAL(false));"
+                    //     which actually has no argument but default arguments are still given in binding
+                    const Variant::Type type = argument_index >= 0 && argument_index < argument_count
+                        ? method_bind->get_argument_info(argument_index).type
+                        : Variant::NIL;
                     build_property_default_value(isolate, context, value, type, property_info_obj);
                     args_obj->Set(context, index, property_info_obj).Check();
                 }
@@ -722,11 +731,23 @@ namespace jsb
             List<StringName> list;
             ClassDB::get_class_list(&list);
 
-            v8::Local<v8::Array> array = v8::Array::New(isolate, list.size());
+            v8::Local<v8::Array> array = v8::Array::New(isolate);
             int index = 0;
-            for (auto it = list.begin(); it != list.end(); ++it, ++index)
+            const PackedStringArray ignored_classes = internal::Settings::get_ignored_classes();
+            const int ignored_classes_num = (int) ignored_classes.size();
+            HashSet<StringName> ignored_classes_set(ignored_classes_num);
+            for (int i = 0; i < ignored_classes_num; ++i)
             {
-                array->Set(context, index, build_class_info(isolate, context, *it)).Check();
+                ignored_classes_set.insert(ignored_classes[i]);
+            }
+            for (auto it = list.begin(); it != list.end(); ++it)
+            {
+                if (ignored_classes_set.has(*it))
+                {
+                    JSB_LOG(Verbose, "ignoring %s", *it);
+                    continue;
+                }
+                array->Set(context, index++, build_class_info(isolate, context, *it)).Check();
             }
             info.GetReturnValue().Set(array);
         }

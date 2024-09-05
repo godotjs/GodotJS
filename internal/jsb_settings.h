@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include "core/string/ustring.h"
+#include "core/variant/variant.h"
 
 namespace jsb::internal
 {
@@ -24,6 +25,10 @@ namespace jsb::internal
         static String get_jsb_out_res_path();
 
         static String get_indentation();
+
+#ifdef TOOLS_ENABLED
+        static PackedStringArray get_ignored_classes();
+#endif
     };
 }
 
