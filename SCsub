@@ -128,7 +128,6 @@ def generate_code(rt_filenames, ed_filenames):
         output.write("// AUTO-GENERATED\n")
         output.write("\n")
         output.write("#include \"jsb_project_preset.h\"\n")
-        output.write("#include \"jsb.gen.h\"\n")
         output.write("#include \"jsb.config.h\"\n")
         
         # js.bundle version checker
