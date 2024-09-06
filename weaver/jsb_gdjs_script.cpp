@@ -220,9 +220,11 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
     class_doc_data.is_script_doc = true;
     class_doc_data.brief_description = class_info.doc.brief_description;
     class_doc_data.is_deprecated = class_info.doc.is_deprecated;
-    class_doc_data.deprecated_message = class_info.doc.deprecated_message;
     class_doc_data.is_experimental = class_info.doc.is_experimental;
+#if GODOT_4_3_OR_NEWER
+    class_doc_data.deprecated_message = class_info.doc.deprecated_message;
     class_doc_data.experimental_message = class_info.doc.experimental_message;
+#endif
     class_doc_data.script_path = get_path();
     for (const auto& item : class_info.properties)
     {
@@ -230,9 +232,11 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
         property_doc_data.name = item.key;
         property_doc_data.description = item.value.doc.brief_description;
         property_doc_data.is_deprecated = item.value.doc.is_deprecated;
-        property_doc_data.deprecated_message = item.value.doc.deprecated_message;
         property_doc_data.is_experimental = item.value.doc.is_experimental;
+#if GODOT_4_3_OR_NEWER
+        property_doc_data.deprecated_message = item.value.doc.deprecated_message;
         property_doc_data.experimental_message = item.value.doc.experimental_message;
+#endif
         class_doc_data.properties.append(property_doc_data);
     }
     //TODO script class inherits info
