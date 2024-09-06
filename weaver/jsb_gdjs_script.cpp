@@ -219,7 +219,7 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
     const String class_name = GodotJSScriptLanguage::get_singleton()->get_global_class_name(get_path(), &base_type);
     DocData::ClassDoc class_doc_data;
 
-    class_doc_data.name = class_name.is_empty() ? class_info.js_class_name : class_name;
+    class_doc_data.name = class_name;
     class_doc_data.inherits = base_type.is_empty() ? "Object" : base_type;
     class_doc_data.is_script_doc = true;
     class_doc_data.brief_description = class_info.doc.brief_description;
