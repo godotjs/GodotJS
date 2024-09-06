@@ -2,6 +2,7 @@
 import os
 import io
 import time
+import re
 
 Import("env")
 Import("env_modules")
@@ -103,7 +104,16 @@ def generate_method_code(output, methodname, indent, filenames):
     output.write(indent+"return nullptr;\n")
     output.write("}\n")
 
-def generate_code(filenames, ed_filenames):
+def read_bundle_version():
+    with open("jsb.config.h", "rt", encoding="utf-8") as input:
+        regex = r"^#define\s+JSB_BUNDLE_VERSION\s+(\d+)$"
+        for line in input:
+            matches = re.finditer(regex, line)
+            for _, match in enumerate(matches, start=1):
+                return match.group(1)
+    raise ValueError("no JSB_BUNDLE_VERSION defined in jsb.config.h")
+
+def generate_code(rt_filenames, ed_filenames):
     indent = "    "
     output = io.StringIO()
     
@@ -118,7 +128,16 @@ def generate_code(filenames, ed_filenames):
         output.write("// AUTO-GENERATED\n")
         output.write("\n")
         output.write("#include \"jsb_project_preset.h\"\n")
-        generate_method_code(output, "get_source_rt", indent, filenames)
+        output.write("#include \"jsb.gen.h\"\n")
+        output.write("#include \"jsb.config.h\"\n")
+        
+        # js.bundle version checker
+        output.write(f"static_assert({read_bundle_version()} == JSB_BUNDLE_VERSION, \"obsolete preset data found, please regenerate project sources with scon\");\n")
+
+        # bundled source for runtime
+        generate_method_code(output, "get_source_rt", indent, rt_filenames)
+
+        # bundled source for editor
         output.write("#ifdef TOOLS_ENABLED\n")
         generate_method_code(output, "get_source_ed", indent, ed_filenames)
         output.write("#endif\n")
