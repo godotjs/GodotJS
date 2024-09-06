@@ -1100,7 +1100,7 @@ namespace jsb
                 if (v8::Local<v8::Value> val; !member_doc_map->Get(context, property).ToLocal(&val) || !val->IsObject())
                 {
                     doc = v8::Object::New(isolate);
-                    member_doc_map->Set(context, property, doc);
+                    member_doc_map->Set(context, property, doc).Check();
                 }
                 else
                 {
