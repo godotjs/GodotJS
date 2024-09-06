@@ -7,6 +7,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
+#include "editor/editor_help.h"
 #endif
 
 #define GODOTJS_LOAD_SCRIPT_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); }
@@ -214,9 +215,12 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
     if (!loaded_ || !gdjs_class_id_) return {};
 
     const jsb::ScriptClassInfo& class_info = get_script_class_info();
+    String base_type;
+    const String class_name = GodotJSScriptLanguage::get_singleton()->get_global_class_name(get_path(), &base_type);
     DocData::ClassDoc class_doc_data;
 
-    class_doc_data.name = class_info.js_class_name;
+    class_doc_data.name = class_name.is_empty() ? class_info.js_class_name : class_name;
+    class_doc_data.inherits = base_type.is_empty() ? "Object" : base_type;
     class_doc_data.is_script_doc = true;
     class_doc_data.brief_description = class_info.doc.brief_description;
     class_doc_data.is_deprecated = class_info.doc.is_deprecated;
@@ -239,8 +243,7 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 #endif
         class_doc_data.properties.append(property_doc_data);
     }
-    //TODO script class inherits info
-    class_doc_data.inherits = "Node";
+
     return { class_doc_data };
 }
 
@@ -458,9 +461,13 @@ void GodotJSScript::load_module()
         // update the default value cache
         update_exports();
 #ifdef TOOLS_ENABLED
-        //TODO temp and tricky way. fix the issue of not being scanned as script in EditorFileSystem::_register_global_class_script
-	    // EditorNode::get_editor_data().script_class_set_icon_path(get_global_name(), get_class_icon_path());
-     //    EditorNode::get_editor_data().script_class_set_name(get_path(), get_global_name());
+        // temp and tricky workaround to avoid missing doc when showing on inspector the first time after load
+        const Vector<DocData::ClassDoc> documentations = get_documentation();
+        for (int i = 0; i < documentations.size(); i++)
+        {
+            const DocData::ClassDoc &doc = documentations.get(i);
+            EditorHelp::get_doc_data()->add_doc(doc);
+        }
 #endif
         return;
     }

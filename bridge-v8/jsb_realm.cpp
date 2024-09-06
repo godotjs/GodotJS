@@ -291,7 +291,7 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
 
             // (@deprecated)
-            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(deprecated)).ToLocal(&val))
+            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(deprecated)).ToLocal(&val) && val->IsString())
             {
                 r_doc.is_deprecated = true;
                 r_doc.deprecated_message = V8Helper::to_string(isolate, val);
@@ -301,7 +301,7 @@ namespace jsb
                 r_doc.is_deprecated = false;
             }
             // (@experimental)
-            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(experimental)).ToLocal(&val))
+            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(experimental)).ToLocal(&val) && val->IsString())
             {
                 r_doc.is_experimental = true;
                 r_doc.experimental_message = V8Helper::to_string(isolate, val);
@@ -311,7 +311,7 @@ namespace jsb
                 r_doc.is_experimental = false;
             }
             // (@help)
-            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(help)).ToLocal(&val))
+            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(help)).ToLocal(&val) && val->IsString())
             {
                 r_doc.brief_description = V8Helper::to_string(isolate, val);
             }

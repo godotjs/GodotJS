@@ -1044,7 +1044,7 @@ namespace jsb
                 V8Helper::to_string_opt(isolate, evaluator->Get(context, environment->GetStringValue(name))));
         }
 
-        // function (target: any, cat: [0, 1, 2], message)
+        // function (target: any, prop?: string, cat: [0, 1, 2], message?: string)
         void _set_script_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
 #ifdef TOOLS_ENABLED
@@ -1072,7 +1072,8 @@ namespace jsb
             if (property->IsUndefined())
             {
                 // doc for class
-                v8::Local<v8::Object> prototype = target->Get(context, environment->GetStringValue(prototype)).ToLocalChecked().As<v8::Object>();
+                const v8::Local<v8::Object> prototype = target->Get(context, environment->GetStringValue(prototype)).ToLocalChecked().As<v8::Object>();
+                jsb_check(prototype->IsObject());
                 if (v8::Local<v8::Value> val; !prototype->Get(context, environment->SymbolFor(Doc)).ToLocal(&val) || !val->IsObject())
                 {
                     doc = v8::Object::New(isolate);
@@ -1086,6 +1087,7 @@ namespace jsb
             else
             {
                 // doc for member
+                jsb_check(property->IsString() && property.As<v8::String>()->Length() != 0);
                 v8::Local<v8::Map> member_doc_map;
                 if (v8::Local<v8::Value> val; !target->Get(context, environment->SymbolFor(MemberDocMap)).ToLocal(&val) || !val->IsMap())
                 {

@@ -34,9 +34,9 @@ declare module "jsb.core" {
     export function onready(evaluator: string | jsb.internal.OnReadyEvaluatorFunc): (target: any, key: string) => void;
     export function tool(): (target: any) => void;
     export function icon(path: string): (target: any) => void;
-    export function deprecated(message?: string): (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => void;
-    export function experimental(message?: string): (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => void;
-    export function help(message?: string): (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => void;
+    export function deprecated(message?: string): (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) => void;
+    export function experimental(message?: string): (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) => void;
+    export function help(message?: string): (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) => void;
     export function $wait(signal: any): Promise<unknown>;
     /**
      * Wait for seconds

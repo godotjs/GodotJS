@@ -154,17 +154,35 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
     }
     function deprecated(message) {
         return function (target, propertyKey, descriptor) {
-            jsb.internal.set_script_doc(target, propertyKey !== null && propertyKey !== void 0 ? propertyKey : "", 0, message !== null && message !== void 0 ? message : "");
+            if (typeof propertyKey === "undefined") {
+                jsb.internal.set_script_doc(target, undefined, 0, message !== null && message !== void 0 ? message : "");
+                return;
+            }
+            if (typeof propertyKey !== "string" || propertyKey.length == 0)
+                throw new Error("only string key is allowed for doc");
+            jsb.internal.set_script_doc(target, propertyKey, 0, message !== null && message !== void 0 ? message : "");
         };
     }
     function experimental(message) {
         return function (target, propertyKey, descriptor) {
-            jsb.internal.set_script_doc(target, propertyKey !== null && propertyKey !== void 0 ? propertyKey : "", 1, message !== null && message !== void 0 ? message : "");
+            if (typeof propertyKey === "undefined") {
+                jsb.internal.set_script_doc(target, undefined, 1, message !== null && message !== void 0 ? message : "");
+                return;
+            }
+            if (typeof propertyKey !== "string" || propertyKey.length == 0)
+                throw new Error("only string key is allowed for doc");
+            jsb.internal.set_script_doc(target, propertyKey, 1, message !== null && message !== void 0 ? message : "");
         };
     }
     function help(message) {
         return function (target, propertyKey, descriptor) {
-            jsb.internal.set_script_doc(target, propertyKey !== null && propertyKey !== void 0 ? propertyKey : "", 2, message !== null && message !== void 0 ? message : "");
+            if (typeof propertyKey === "undefined") {
+                jsb.internal.set_script_doc(target, undefined, 2, message !== null && message !== void 0 ? message : "");
+                return;
+            }
+            if (typeof propertyKey !== "string" || propertyKey.length == 0)
+                throw new Error("only string key is allowed for doc");
+            jsb.internal.set_script_doc(target, propertyKey, 2, message !== null && message !== void 0 ? message : "");
         };
     }
     function $wait(signal) {

@@ -1,5 +1,5 @@
 
-import { GArray, GDictionary, EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant  } from "godot";
+import { GArray, GDictionary, EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant } from "godot";
 import * as jsb from "godot-jsb";
 
 /**
@@ -72,7 +72,7 @@ export function export_enum(enum_type: any) {
         for (let c in enum_type) {
             const v = enum_type[c];
             if (typeof v === "string") {
-                enum_vs.push(v+":"+c);
+                enum_vs.push(v + ":" + c);
             }
         }
         let ebd = { name: key, type: Variant.Type.TYPE_INT, hint: PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(","), usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
@@ -89,7 +89,7 @@ export function export_flags(enum_type: any) {
         for (let c in enum_type) {
             const v = enum_type[c];
             if (typeof v === "string" && enum_type[v] != 0) {
-                enum_vs.push(v+":"+c);
+                enum_vs.push(v + ":" + c);
             }
         }
         let ebd = { name: key, type: Variant.Type.TYPE_INT, hint: PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(","), usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
@@ -121,20 +121,35 @@ export function icon(path: string) {
 }
 
 export function deprecated(message?: string) {
-    return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
-        jsb.internal.set_script_doc(target, propertyKey ?? "", 0, message ?? "");
+    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+        if (typeof propertyKey === "undefined") {
+            jsb.internal.set_script_doc(target, undefined, 0, message ?? "");
+            return;
+        }
+        if (typeof propertyKey !== "string" || propertyKey.length == 0) throw new Error("only string key is allowed for doc");
+        jsb.internal.set_script_doc(target, propertyKey, 0, message ?? "");
     }
 }
 
 export function experimental(message?: string) {
-    return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
-        jsb.internal.set_script_doc(target, propertyKey ?? "", 1, message ?? "");
+    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+        if (typeof propertyKey === "undefined") {
+            jsb.internal.set_script_doc(target, undefined, 1, message ?? "");
+            return;
+        }
+        if (typeof propertyKey !== "string" || propertyKey.length == 0) throw new Error("only string key is allowed for doc");
+        jsb.internal.set_script_doc(target, propertyKey, 1, message ?? "");
     }
 }
 
 export function help(message?: string) {
-    return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
-        jsb.internal.set_script_doc(target, propertyKey ?? "", 2, message ?? "");
+    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+        if (typeof propertyKey === "undefined") {
+            jsb.internal.set_script_doc(target, undefined, 2, message ?? "");
+            return;
+        }
+        if (typeof propertyKey !== "string" || propertyKey.length == 0) throw new Error("only string key is allowed for doc");
+        jsb.internal.set_script_doc(target, propertyKey, 2, message ?? "");
     }
 }
 
@@ -201,13 +216,13 @@ export function EDITOR_GET(entry_path: StringName): any {
                     yield { key: key, value: self.get_keyed(key) };
                 }
             }
-        }, 
+        },
         {
-            class: GArray, 
+            class: GArray,
             func: function* () {
                 let self: GArray = <any>this;
                 for (let i = 0; i < self.size(); ++i) {
-                    yield self.get_indexed(i); 
+                    yield self.get_indexed(i);
                 }
             }
         }

@@ -55,7 +55,7 @@ declare module "godot-jsb" {
         function add_script_icon(target: any, path: string): void;
 
         // 0: deprecated, 1: experimental, 2: help
-        function set_script_doc(target: any, propertyKey: string, field: 0 | 1 | 2, message: string): void;
+        function set_script_doc(target: any, propertyKey?: string, field: 0 | 1 | 2, message: string): void;
 
         function add_module(id: string, obj: any): void;
         function find_module(id: string): any;
