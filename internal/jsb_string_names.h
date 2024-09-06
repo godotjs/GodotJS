@@ -44,7 +44,7 @@ namespace jsb::internal
 
 #pragma push_macro("DEF")
 #   undef DEF
-#   define DEF(KeyName) StringName sn_##KeyName
+#   define DEF(KeyName) StringName sn_##KeyName;
 #   include "jsb_string_names.def.h"
 
 #pragma pop_macro("DEF")

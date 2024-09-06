@@ -21,6 +21,8 @@ private:
     std::shared_ptr<jsb::Environment> environment_;
     std::shared_ptr<jsb::Realm> realm_;
 
+    Ref<RegEx> class_name_matcher_;
+
 public:
     jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
 
@@ -60,6 +62,8 @@ public:
     virtual Ref<Script> make_template(const String& p_template, const String& p_class_name, const String& p_base_class_name) const override;
     virtual void reload_all_scripts() override;
     virtual void get_recognized_extensions(List<String>* p_extensions) const override;
+
+    virtual bool supports_documentation() const override { return true; }
 
 #if GODOT_4_3_OR_NEWER
 	virtual void reload_scripts(const Array& p_scripts, bool p_soft_reload) override;
@@ -132,7 +136,7 @@ public:
     virtual int profiling_get_accumulated_data(ProfilingInfo* p_info_arr, int p_info_max) override { return -1; }
     virtual int profiling_get_frame_data(ProfilingInfo* p_info_arr, int p_info_max) override { return -1; }
 
-    virtual bool handles_global_class_type(const String& p_type) const override { return false; }
+    virtual bool handles_global_class_type(const String& p_type) const override;
     virtual String get_global_class_name(const String& p_path, String* r_base_type = nullptr, String* r_icon_path = nullptr) const override;
 #pragma endregion
 

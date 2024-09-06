@@ -54,6 +54,36 @@ namespace jsb
         }
     };
 
+    namespace ScriptClassDocField
+    {
+        enum Type
+        {
+            Deprecated = 0,
+            Experimental = 1,
+            Help = 2,
+        };
+    }
+
+#ifdef TOOLS_ENABLED
+    struct ScriptBaseDoc
+    {
+        String brief_description;
+
+        bool is_deprecated = false;
+        String deprecated_message;
+        bool is_experimental = false;
+        String experimental_message;
+    };
+
+    struct ScriptClassDoc : ScriptBaseDoc {};
+    struct ScriptMethodDoc : ScriptBaseDoc {};
+    struct ScriptPropertyDoc : ScriptBaseDoc {};
+#else
+    struct ScriptClassDoc {};
+    struct ScriptMethodDoc {};
+    struct ScriptPropertyDoc {};
+#endif
+
     namespace GodotJSMethodFlags
     {
         enum Type : uint8_t
@@ -67,7 +97,11 @@ namespace jsb
     {
         GodotJSMethodFlags::Type flags;
 
+        // only valid with TOOLS_ENABLED
+        ScriptMethodDoc doc;
+
         jsb_force_inline bool is_static() const { return flags & GodotJSMethodFlags::Static; }
+
     };
 
     struct GodotJSPropertyInfo
@@ -82,6 +116,7 @@ namespace jsb
         String hint_string;
         uint32_t usage = PROPERTY_USAGE_DEFAULT;
 
+        ScriptPropertyDoc doc;
         // Variant default_value;
     };
 
@@ -125,6 +160,9 @@ namespace jsb
         GodotJSClassFlags::Type flags = GodotJSClassFlags::None;
 
         String icon;
+
+        // only valid with TOOLS_ENABLED
+        ScriptClassDoc doc;
 
         HashMap<StringName, GodotJSMethodInfo> methods;
         HashMap<StringName, GodotJSMethodInfo> signals;

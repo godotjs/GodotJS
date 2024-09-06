@@ -7,7 +7,7 @@ namespace jsb::internal
     {
 #pragma push_macro("DEF")
 #   undef DEF
-#   define DEF(KeyName) sn_##KeyName = _scs_create(#KeyName)
+#   define DEF(KeyName) sn_##KeyName = _scs_create(#KeyName);
 #   include "jsb_string_names.def.h"
 #pragma pop_macro("DEF")
 

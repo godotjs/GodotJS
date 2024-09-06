@@ -120,6 +120,24 @@ export function icon(path: string) {
     }
 }
 
+export function deprecated(message?: string) {
+    return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
+        jsb.internal.set_script_doc(target, propertyKey ?? "", 0, message ?? "");
+    }
+}
+
+export function experimental(message?: string) {
+    return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
+        jsb.internal.set_script_doc(target, propertyKey ?? "", 1, message ?? "");
+    }
+}
+
+export function help(message?: string) {
+    return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
+        jsb.internal.set_script_doc(target, propertyKey ?? "", 2, message ?? "");
+    }
+}
+
 export function $wait(signal: any) {
     return new Promise(resolve => {
         let fn: any = null;

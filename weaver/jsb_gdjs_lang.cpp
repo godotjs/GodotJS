@@ -10,6 +10,8 @@
 #include "jsb_gdjs_script.h"
 #include "editor/editor_settings.h"
 
+#include "modules/regex/regex.h"
+
 #ifdef TOOLS_ENABLED
 #include "../weaver-editor/templates/templates.gen.h"
 #endif
@@ -21,7 +23,6 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
     jsb_check(!singleton_);
     singleton_ = this;
     jsb::internal::StringNames::create();
-    // jsb::internal::Settings::on_init();
 }
 
 GodotJSScriptLanguage::~GodotJSScriptLanguage()
@@ -220,9 +221,33 @@ void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions
 
 String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path) const
 {
-    //TODO threading issue
-    JSB_LOG(Verbose, "get_global_class_name %s (thread: %s)", p_path, Thread::is_main_thread() ? "main" : "background");
+    // we can not load the script module in-place because `get_global_class_name` could be called from EditorFileSystem (background) scan
+    Error err;
+    Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::READ, &err);
+    if (err)
+    {
+        return String();
+    }
+
+    const String source = f->get_as_utf8_string();
+    if (class_name_matcher_.is_null())
+    {
+        const_cast<GodotJSScriptLanguage*>(this)->class_name_matcher_ =
+            RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
+    }
+    const Ref<RegExMatch> match = class_name_matcher_->search(source);
+    if (match.is_valid() && match->get_group_count() == 2)
+    {
+        const String class_name = match->get_string(1);
+        if (r_base_type) *r_base_type = match->get_string(2);
+        return class_name;
+    }
     return {};
+}
+
+bool GodotJSScriptLanguage::handles_global_class_type(const String& p_type) const
+{
+    return p_type == jsb_typename(GodotJSScript);
 }
 
 String GodotJSScriptLanguage::get_name() const
@@ -243,7 +268,7 @@ void GodotJSScriptLanguage::scan_external_changes()
 	// fix scripts with no .js counterpart found (only missing scripts)
 	{
 		MutexLock lock(mutex_);
-		SelfList<GodotJSScript> *elem = script_list_.first();
+		const SelfList<GodotJSScript>* elem = script_list_.first();
 		while (elem)
 		{
 			elem->self()->load_module_if_missing();

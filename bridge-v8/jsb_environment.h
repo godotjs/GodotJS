@@ -37,6 +37,8 @@ namespace jsb
             ClassImplicitReadyFuncs, // array of all @onready annotations
             ClassToolScript,         // @tool annotated scripts
             ClassIcon,               // @icon
+            Doc,
+            MemberDocMap,
 
             CrossBind,               // a symbol can only be used from C++ to indicate calling from cross-bind
             CDO,                     // constructing class default object for a script

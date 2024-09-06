@@ -39,6 +39,9 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
     exports.onready = onready;
     exports.tool = tool;
     exports.icon = icon;
+    exports.deprecated = deprecated;
+    exports.experimental = experimental;
+    exports.help = help;
     exports.$wait = $wait;
     exports.seconds = seconds;
     exports.GLOBAL_GET = GLOBAL_GET;
@@ -147,6 +150,21 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
     function icon(path) {
         return function (target) {
             jsb.internal.add_script_icon(target, path);
+        };
+    }
+    function deprecated(message) {
+        return function (target, propertyKey, descriptor) {
+            jsb.internal.set_script_doc(target, propertyKey !== null && propertyKey !== void 0 ? propertyKey : "", 0, message !== null && message !== void 0 ? message : "");
+        };
+    }
+    function experimental(message) {
+        return function (target, propertyKey, descriptor) {
+            jsb.internal.set_script_doc(target, propertyKey !== null && propertyKey !== void 0 ? propertyKey : "", 1, message !== null && message !== void 0 ? message : "");
+        };
+    }
+    function help(message) {
+        return function (target, propertyKey, descriptor) {
+            jsb.internal.set_script_doc(target, propertyKey !== null && propertyKey !== void 0 ? propertyKey : "", 2, message !== null && message !== void 0 ? message : "");
         };
     }
     function $wait(signal) {

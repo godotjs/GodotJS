@@ -278,6 +278,51 @@ namespace jsb
         _parse_script_class_iterate(p_realm, p_context, *existed_class_info);
     }
 
+#ifdef TOOLS_ENABLED
+    void _parse_script_doc(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::MaybeLocal<v8::Value> holder, ScriptBaseDoc& r_doc)
+    {
+        if (v8::Local<v8::Value> tv; holder.IsEmpty() || !holder.ToLocal(&tv) || !tv->IsObject())
+        {
+            // invalid
+        }
+        else
+        {
+            const v8::Local<v8::Object> obj = tv.As<v8::Object>();
+            Environment* environment = Environment::wrap(isolate);
+
+            // (@deprecated)
+            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(deprecated)).ToLocal(&val))
+            {
+                r_doc.is_deprecated = true;
+                r_doc.deprecated_message = V8Helper::to_string(isolate, val);
+            }
+            else
+            {
+                r_doc.is_deprecated = false;
+            }
+            // (@experimental)
+            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(experimental)).ToLocal(&val))
+            {
+                r_doc.is_experimental = true;
+                r_doc.experimental_message = V8Helper::to_string(isolate, val);
+            }
+            else
+            {
+                r_doc.is_experimental = false;
+            }
+            // (@help)
+            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(help)).ToLocal(&val))
+            {
+                r_doc.brief_description = V8Helper::to_string(isolate, val);
+            }
+            else
+            {
+                r_doc.brief_description.clear();
+            }
+        }
+    }
+#endif
+
     void Realm::_parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info)
     {
         Environment* environment = p_realm->environment_.get();
@@ -287,6 +332,20 @@ namespace jsb
         //TODO collect methods/signals/properties
         v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(isolate);
         v8::Local<v8::Object> prototype = default_obj->Get(p_context, environment->GetStringValue(prototype)).ToLocalChecked().As<v8::Object>();
+
+#ifdef TOOLS_ENABLED
+        // class doc
+        v8::Local<v8::Map> doc_map;
+        if (v8::Local<v8::Value> val; prototype->Get(p_context, environment->SymbolFor(MemberDocMap)).ToLocal(&val) && val->IsMap())
+        {
+            doc_map = val.As<v8::Map>();
+        }
+        else
+        {
+            doc_map = v8::Map::New(isolate);
+        }
+        _parse_script_doc(isolate, p_context, prototype->Get(p_context, environment->SymbolFor(Doc)), p_class_info.doc);
+#endif
 
         // methods
         {
@@ -307,6 +366,12 @@ namespace jsb
                     {
                         //TODO property categories
                         GodotJSMethodInfo method_info = {};
+#ifdef TOOLS_ENABLED
+                        if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
+                        {
+                            _parse_script_doc(isolate, p_context, val.As<v8::Object>(), method_info.doc);
+                        }
+#endif // TOOLS_ENABLED
                         p_class_info.methods.insert((StringName) name_s, method_info);
                         JSB_LOG(VeryVerbose, "... method %s", name_s);
                     }
@@ -372,11 +437,18 @@ namespace jsb
                     jsb_check(element->IsObject());
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     GodotJSPropertyInfo property_info;
-                    property_info.name = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(name)).ToLocalChecked()); // string
+                    v8::Local<v8::Value> prop_name = obj->Get(context, environment->GetStringValue(name)).ToLocalChecked();
+                    property_info.name = V8Helper::to_string(isolate, prop_name); // string
                     property_info.type = (Variant::Type) obj->Get(context, environment->GetStringValue(type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
                     property_info.hint = V8Helper::to_enum<PropertyHint>(context, obj->Get(context, environment->GetStringValue(hint)), PROPERTY_HINT_NONE);
                     property_info.hint_string = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(hint_string)).ToLocalChecked());
                     property_info.usage = V8Helper::to_enum<PropertyUsageFlags>(context, obj->Get(context, environment->GetStringValue(usage)), PROPERTY_USAGE_DEFAULT);
+#ifdef TOOLS_ENABLED
+                    if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
+                    {
+                        _parse_script_doc(isolate, p_context, val.As<v8::Object>(), property_info.doc);
+                    }
+#endif // TOOLS_ENABLED
                     p_class_info.properties.insert(property_info.name, property_info);
                     JSB_LOG(VeryVerbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
                 }

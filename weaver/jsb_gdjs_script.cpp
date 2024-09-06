@@ -5,6 +5,10 @@
 #include "../internal/jsb_path_util.h"
 #include "scene/scene_string_names.h"
 
+#ifdef TOOLS_ENABLED
+#include "editor/editor_node.h"
+#endif
+
 #define GODOTJS_LOAD_SCRIPT_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); }
 #define GODOTJS_LOAD_SCRIPT_WARN() { if (jsb_unlikely(!loaded_)) JSB_LOG(Warning, "script not loaded (%s)", get_path()); }
 
@@ -73,9 +77,8 @@ Ref<Script> GodotJSScript::get_base_script() const
 
 StringName GodotJSScript::get_global_name() const
 {
-    jsb_check(loaded_);
-    //TODO
-    return {};
+    GODOTJS_LOAD_SCRIPT_MODULE()
+    return valid_ ? get_script_class_info().js_class_name : StringName();
 }
 
 bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
@@ -207,8 +210,34 @@ Error GodotJSScript::reload(bool p_keep_state)
 #ifdef TOOLS_ENABLED
 Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 {
-    //TODO
-    return {};
+    GODOTJS_LOAD_SCRIPT_MODULE();
+    if (!loaded_ || !gdjs_class_id_) return {};
+
+    const jsb::ScriptClassInfo& class_info = get_script_class_info();
+    DocData::ClassDoc class_doc_data;
+
+    class_doc_data.name = class_info.js_class_name;
+    class_doc_data.is_script_doc = true;
+    class_doc_data.brief_description = class_info.doc.brief_description;
+    class_doc_data.is_deprecated = class_info.doc.is_deprecated;
+    class_doc_data.deprecated_message = class_info.doc.deprecated_message;
+    class_doc_data.is_experimental = class_info.doc.is_experimental;
+    class_doc_data.experimental_message = class_info.doc.experimental_message;
+    class_doc_data.script_path = get_path();
+    for (const auto& item : class_info.properties)
+    {
+        DocData::PropertyDoc property_doc_data;
+        property_doc_data.name = item.key;
+        property_doc_data.description = item.value.doc.brief_description;
+        property_doc_data.is_deprecated = item.value.doc.is_deprecated;
+        property_doc_data.deprecated_message = item.value.doc.deprecated_message;
+        property_doc_data.is_experimental = item.value.doc.is_experimental;
+        property_doc_data.experimental_message = item.value.doc.experimental_message;
+        class_doc_data.properties.append(property_doc_data);
+    }
+    //TODO script class inherits info
+    class_doc_data.inherits = "Node";
+    return { class_doc_data };
 }
 
 String GodotJSScript::get_class_icon_path() const
@@ -424,6 +453,11 @@ void GodotJSScript::load_module()
 
         // update the default value cache
         update_exports();
+#ifdef TOOLS_ENABLED
+        //TODO temp and tricky way. fix the issue of not being scanned as script in EditorFileSystem::_register_global_class_script
+	    // EditorNode::get_editor_data().script_class_set_icon_path(get_global_name(), get_class_icon_path());
+     //    EditorNode::get_editor_data().script_class_set_name(get_path(), get_global_name());
+#endif
         return;
     }
     JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class %s", path);
