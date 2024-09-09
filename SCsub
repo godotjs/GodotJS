@@ -276,8 +276,8 @@ generate_code({
         "scripts/jsb.bundle/out/jsb.bundle.js": "",
     }, {
         # presets for editor only
-        "scripts/typings/godot.minimal.d.ts": "",
-        "scripts/typings/godot.mix.d.ts": "",
+        "scripts/jsb.bundle/typings/godot.minimal.d.ts": "",
+        "scripts/jsb.bundle/typings/godot.mix.d.ts": "",
 
         "scripts/jsb.bundle/out/jsb.bundle.d.ts": "",
         "scripts/jsb.bundle/out/jsb.bundle.js.map": "",
