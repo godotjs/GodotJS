@@ -19,7 +19,7 @@
 #   endif
 #endif // JSB_MIN_LOG_LEVEL
 
-// enable jsb_check()
+// enable jsb_check
 #ifndef JSB_WITH_CHECK
 #define JSB_WITH_CHECK JSB_DEBUG
 #endif
@@ -45,12 +45,6 @@
 // translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)
 #define JSB_WITH_SOURCEMAP 1
 
-// JSB_WITH_LWS must be enabled if JSB_WITH_DEBUGGER is used.
-// currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`
-// `devtools` do not response the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`
-// and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`
-#define JSB_WITH_LWS 1
-
 // log with [source filename, line number, function name]
 #define JSB_LOG_WITH_SOURCE 0
 
@@ -60,9 +54,10 @@
 // construct a Variant with `Variant::construct` instead of `VariantUtilityFunctions::type_convert`
 #define JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW 0
 
-// #define JSB_WITH_STATIC_BINDINGS 1
+// NOT IMPLEMENTED YET
 #define JSB_WITH_STATIC_BINDINGS 0
 
+// [EXPERIMENTAL] use optimized wrapper function calls if possible
 #define JSB_FAST_REFLECTION 1
 
 // implicitly convert a javascript array as godot Vector<T> which is convenient but less performant if massively used

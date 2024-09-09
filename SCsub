@@ -7,9 +7,6 @@ import re
 Import("env")
 Import("env_modules")
 
-def is_v8_available():
-    return env["platform"] != "web"
-
 def check(condition, text):
     if not condition:
         print("Error: " + text)
@@ -17,11 +14,12 @@ def check(condition, text):
 
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
-javascript_engine = "v8" if is_v8_available() else "quickjs"
-websocket_lib = "lws"
+javascript_engine = "v8" if env["platform"] != "web" else "quickjs"
+websocket_lib = "lws" if env["platform"] != "web" else "none"
 
 print("compiling:", module_name)
 print("javascript engine:", javascript_engine)
+print("websocket lib:", websocket_lib)
 
 class CompileDefines:
     def __init__(self, name, value, help = None):
@@ -32,6 +30,11 @@ class CompileDefines:
 jsb_defines = [
     CompileDefines("JSB_WITH_V8", 1 if javascript_engine == "v8" else 0),
     CompileDefines("JSB_WITH_QUICKJS", 1 if javascript_engine == "quickjs" else 0),
+    CompileDefines("JSB_WITH_LWS", 1 if websocket_lib == "lws" else 0, [
+        "NOTE: currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`", 
+        "`devtools` do not response the upgrading request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`", 
+        "and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`", 
+    ]),
 ]
 
 def is_defined(name, value):
@@ -249,14 +252,18 @@ env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
 
 # lws
 if websocket_lib == "lws":
+    lws_missing_msg = "The prebuilt lws lib is missing? Please build it at first."
     if env["platform"] == "macos":
+        check(os.path.exists("lws/macos_arm64_release/libwebsockets.a"), lws_missing_msg)
         env_jsb.Append(CPPPATH=["lws/macos_arm64_release/include"])
         env.Append(LIBPATH=[f'#modules/{module_name}/lws/macos_arm64_release'])
         env.Append(LINKFLAGS=["-lwebsockets"])
     elif env["platform"] == "linuxbsd":
+        check(os.path.exists("lws/linux_x86_64_release/libwebsockets.a"), lws_missing_msg)
         env_jsb.Append(CPPPATH=["lws/linux_x86_64_release/include"])
         env.Append(LIBS=[File('lws/linux_x86_64_release/libwebsockets.a')])
     elif env["platform"] == "windows":
+        check(os.path.exists("lws/windows_x86_64_release/websockets.lib"), lws_missing_msg)
         if env.msvc and env["vsproj"]:
             env.Append(CPPPATH=[f"#modules/{module_name}/lws/windows_x86_64_release/include"])
         env_jsb.Append(CPPPATH=["lws/windows_x86_64_release/include"])
@@ -266,16 +273,14 @@ if websocket_lib == "lws":
 
 generate_code({
         # presets for runtime
-        "scripts/out/jsb.bundle.js": "",
-
-
+        "scripts/jsb.bundle/out/jsb.bundle.js": "",
     }, {
         # presets for editor only
-        "scripts/godot-typings/godot.minimal.d.ts": "",
-        "scripts/godot-typings/godot.mix.d.ts": "",
+        "scripts/typings/godot.minimal.d.ts": "",
+        "scripts/typings/godot.mix.d.ts": "",
 
-        "scripts/out/jsb.bundle.d.ts": "",
-        "scripts/out/jsb.bundle.js.map": "",
+        "scripts/jsb.bundle/out/jsb.bundle.d.ts": "",
+        "scripts/jsb.bundle/out/jsb.bundle.js.map": "",
 
         "scripts/presets/package.json.txt": "package.json",
         "scripts/presets/tsconfig.json.txt": "tsconfig.json",
