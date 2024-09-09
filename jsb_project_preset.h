@@ -3,7 +3,7 @@
 
 #include "core/string/ustring.h"
 
-struct GodotJSPorjectPreset
+struct GodotJSProjectPreset
 {
     //TODO explicitly use _rt/_ed instead
     static const char* get_source(const String& p_filename, size_t& r_len)

@@ -61,7 +61,7 @@ void GodotJSScriptLanguage::init()
         {
             size_t len;
             Error err;
-            const char* str = GodotJSPorjectPreset::get_source_rt("jsb.bundle.js", len);
+            const char* str = GodotJSProjectPreset::get_source_rt("jsb.bundle.js", len);
             jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
             jsb_check(len == (size_t)(int) len);
             realm_->eval_source(str, (int) len, "jsb.bundle.js", err);

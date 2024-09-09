@@ -65,7 +65,7 @@ def write_file(filename, ostream):
         output.write(content)
 
 def generate_method_code(output, methodname, indent, filenames):
-    output.write(f"const char* GodotJSPorjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
+    output.write(f"const char* GodotJSProjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
     output.write("{\n")
     output.write(indent+"static const char data[] = {\n")
     positions = {}
@@ -131,7 +131,7 @@ def generate_code(rt_filenames, ed_filenames):
         output.write("#include \"jsb.config.h\"\n")
         
         # js.bundle version checker
-        output.write(f"static_assert({read_bundle_version()} == JSB_BUNDLE_VERSION, \"obsolete preset data found, please regenerate project sources with scon\");\n")
+        output.write(f"static_assert({read_bundle_version()} == JSB_BUNDLE_VERSION, \"obsolete preset data found, please regenerate project sources with scons\");\n")
 
         # bundled source for runtime
         generate_method_code(output, "get_source_rt", indent, rt_filenames)
