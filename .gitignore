@@ -6,8 +6,11 @@ __pycache__
 
 /v8
 
-/scripts/node_modules
-/scripts/.tsbuildinfo
+/scripts/jsb.bundle/node_modules
+/scripts/jsb.bundle/.tsbuildinfo
+
+/scripts/jsb.static/node_modules
+/scripts/jsb.static/.tsbuildinfo
 
 # macOS
 .DS_Store
