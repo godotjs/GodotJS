@@ -197,7 +197,7 @@ namespace jsb
 	    }
 	};
 
-    class JavaScriptDebuggerImpl : public JavaScriptDebugger, public v8_inspector::V8InspectorClient
+    class JavaScriptDebuggerImpl : public v8_inspector::V8InspectorClient
     {
         static void _lws_log_callback(int level, const char* msg)
         {
@@ -277,7 +277,7 @@ namespace jsb
         	}
         }
 
-	    virtual void update() override
+	    void update()
 	    {
         	if (jsb_unlikely(state_ == ECS_NONE)) return;
 
@@ -315,15 +315,14 @@ namespace jsb
             // }
         }
 
-    protected:
-        virtual void on_context_created(const v8::Local<v8::Context>& p_context) override
+        void on_context_created(const v8::Local<v8::Context>& p_context)
 	    {
 	        const CharString context_name = jsb_format("context.%d", ++context_index_).utf8();
 	        v8_inspector::StringView name((const uint8_t*) context_name.ptr(), context_name.length());
 	        inspector_->contextCreated(v8_inspector::V8ContextInfo(p_context, kContextGroupId, name));
 	    }
 
-        virtual void on_context_destroyed(const v8::Local<v8::Context>& p_context) override
+        void on_context_destroyed(const v8::Local<v8::Context>& p_context)
 	    {
 	        inspector_->contextDestroyed(p_context);
 	    }
@@ -461,29 +460,49 @@ namespace jsb
 #else
 namespace jsb
 {
-    class JavaScriptDebuggerImpl : public JavaScriptDebugger
+    class JavaScriptDebuggerImpl
     {
     public:
         JavaScriptDebuggerImpl(v8::Isolate* p_isolate, uint16_t p_port) {}
-        virtual ~JavaScriptDebuggerImpl() override {}
+        ~JavaScriptDebuggerImpl() = default;
 
         void init() {}
-        virtual void update() override {}
+        void update() {}
 
-    protected:
-        virtual void on_context_created(const v8::Local<v8::Context>& p_context) override {}
-        virtual void on_context_destroyed(const v8::Local<v8::Context>& p_context) override {}
+        void on_context_created(const v8::Local<v8::Context>& p_context) {}
+        void on_context_destroyed(const v8::Local<v8::Context>& p_context) {}
 
     };
 }
 #endif
 namespace jsb
 {
-    std::unique_ptr<JavaScriptDebugger> JavaScriptDebugger::create(v8::Isolate* p_isolate, uint16_t p_port)
+    void JavaScriptDebugger::init(v8::Isolate* p_isolate, uint16_t p_port)
     {
-        std::unique_ptr<JavaScriptDebuggerImpl> impl = std::make_unique<JavaScriptDebuggerImpl>(p_isolate, p_port);
+        jsb_check(!impl);
+        impl = std::make_unique<JavaScriptDebuggerImpl>(p_isolate, p_port);
         impl->init();
-        return impl;
     }
+
+    void JavaScriptDebugger::update()
+    {
+        if (impl) impl->update();
+    }
+
+    void JavaScriptDebugger::drop()
+    {
+        if (impl) impl.reset();
+    }
+
+    void JavaScriptDebugger::on_context_created(const v8::Local<v8::Context>& p_context)
+    {
+        if (impl) impl->on_context_created(p_context);
+    }
+
+    void JavaScriptDebugger::on_context_destroyed(const v8::Local<v8::Context>& p_context)
+    {
+        if (impl) impl->on_context_destroyed(p_context);
+    }
+
 }
 #endif

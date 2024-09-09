@@ -1,9 +1,5 @@
 #include "jsb_environment.h"
 
-#if JSB_WITH_DEBUGGER
-#   include "jsb_debugger.h"
-#endif
-
 #include "jsb_bridge_module_loader.h"
 #include "jsb_godot_module_loader.h"
 #include "jsb_internal_module_loader.h"
@@ -162,14 +158,14 @@ namespace jsb
     void Environment::on_context_created(const v8::Local<v8::Context>& p_context)
     {
 #if JSB_WITH_DEBUGGER
-        debugger_->on_context_created(p_context);
+        debugger_.on_context_created(p_context);
 #endif
     }
 
     void Environment::on_context_destroyed(const v8::Local<v8::Context>& p_context)
     {
 #if JSB_WITH_DEBUGGER
-        debugger_->on_context_destroyed(p_context);
+        debugger_.on_context_destroyed(p_context);
 #endif
     }
 
@@ -229,7 +225,7 @@ namespace jsb
         }
 
 #if JSB_WITH_DEBUGGER
-        debugger_.reset();
+        debugger_.drop();
 #endif
         EnvironmentStore::get_shared().remove(this);
         timer_manager_.clear_all();
@@ -302,7 +298,7 @@ namespace jsb
             isolate_->PerformMicrotaskCheckpoint();
         }
 #if JSB_WITH_DEBUGGER
-        debugger_->update();
+        debugger_.update();
 #endif
         if (pending_delete_.data_left())
         {
@@ -504,11 +500,7 @@ namespace jsb
     void Environment::start_debugger()
     {
 #if JSB_WITH_DEBUGGER
-        if (debugger_)
-        {
-            return;
-        }
-        debugger_ = JavaScriptDebugger::create(isolate_, internal::Settings::get_debugger_port());
+        debugger_.init(isolate_, internal::Settings::get_debugger_port());
 #endif
     }
 

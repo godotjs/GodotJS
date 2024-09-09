@@ -8,20 +8,22 @@ namespace jsb
     class JavaScriptDebugger
     {
     public:
-        virtual ~JavaScriptDebugger() {}
+        ~JavaScriptDebugger() {}
 
-        virtual void update() = 0;
-
-        static std::unique_ptr<JavaScriptDebugger> create(v8::Isolate* p_isolate, uint16_t p_port);
+        void init(v8::Isolate* p_isolate, uint16_t p_port);
+        void update();
+        void drop();
 
     protected:
-        virtual void on_context_created(const v8::Local<v8::Context>& p_context) = 0;
-        virtual void on_context_destroyed(const v8::Local<v8::Context>& p_context) = 0;
+        void on_context_created(const v8::Local<v8::Context>& p_context);
+        void on_context_destroyed(const v8::Local<v8::Context>& p_context);
+
+        std::unique_ptr<class JavaScriptDebuggerImpl> impl;
 
         friend class Realm;
         friend class Environment;
     };
 }
-#endif
+#endif // JSB_WITH_DEBUGGER
 
 #endif

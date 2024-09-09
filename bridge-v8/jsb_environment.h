@@ -5,6 +5,7 @@
 #include "jsb_array_buffer_allocator.h"
 #include "jsb_object_handle.h"
 #include "jsb_class_info.h"
+#include "jsb_debugger.h"
 #include "jsb_module_loader.h"
 #include "jsb_module_resolver.h"
 #include "jsb_timer_action.h"
@@ -104,7 +105,7 @@ namespace jsb
         bool microtasks_run_ = false;
 
 #if JSB_WITH_DEBUGGER
-        std::unique_ptr<class JavaScriptDebugger> debugger_;
+        JavaScriptDebugger debugger_;
 #endif
 
         internal::SourceMapCache _source_map_cache;
