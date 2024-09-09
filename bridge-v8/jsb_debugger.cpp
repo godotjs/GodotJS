@@ -477,10 +477,18 @@ namespace jsb
 #endif
 namespace jsb
 {
+    JavaScriptDebugger::JavaScriptDebugger() : impl(nullptr)
+    {}
+
+    JavaScriptDebugger::~JavaScriptDebugger()
+    {
+        drop();
+    }
+
     void JavaScriptDebugger::init(v8::Isolate* p_isolate, uint16_t p_port)
     {
         jsb_check(!impl);
-        impl = std::make_unique<JavaScriptDebuggerImpl>(p_isolate, p_port);
+        impl = memnew(JavaScriptDebuggerImpl(p_isolate, p_port));
         impl->init();
     }
 
@@ -491,7 +499,11 @@ namespace jsb
 
     void JavaScriptDebugger::drop()
     {
-        if (impl) impl.reset();
+        if (impl)
+        {
+            memdelete(impl);
+            impl = nullptr;
+        }
     }
 
     void JavaScriptDebugger::on_context_created(const v8::Local<v8::Context>& p_context)

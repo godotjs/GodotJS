@@ -8,7 +8,8 @@ namespace jsb
     class JavaScriptDebugger
     {
     public:
-        ~JavaScriptDebugger() {}
+        JavaScriptDebugger();
+        ~JavaScriptDebugger();
 
         void init(v8::Isolate* p_isolate, uint16_t p_port);
         void update();
@@ -18,7 +19,7 @@ namespace jsb
         void on_context_created(const v8::Local<v8::Context>& p_context);
         void on_context_destroyed(const v8::Local<v8::Context>& p_context);
 
-        std::unique_ptr<class JavaScriptDebuggerImpl> impl;
+        class JavaScriptDebuggerImpl* impl;
 
         friend class Realm;
         friend class Environment;
