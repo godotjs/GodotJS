@@ -67,7 +67,8 @@ void GodotJSScript::set_source_code(const String& p_code)
 
 Ref<Script> GodotJSScript::get_base_script() const
 {
-    jsb_check(loaded_);
+    GODOTJS_LOAD_SCRIPT_MODULE()
+    jsb_notice(loaded_, "script not loaded");
     //TODO
     //if (base_)
     //{
