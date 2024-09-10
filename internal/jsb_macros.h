@@ -15,8 +15,16 @@
 #define JSB_MODULE_NAME_STRING JSB_STRINGIFY(JSB_MODULE_NAME)
 
 #define JSB_LOG_FORMAT(CategoryName, Severity, Format) "[" #CategoryName "][" #Severity "] " Format
+#define JSB_LOG_SEVERITY(Severity) ::jsb::internal::ELogSeverity::Severity
 
-#define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) ::jsb::internal::Logger::output<::jsb::internal::ELogSeverity::Severity>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__)
+#define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) \
+    if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(JSB_MIN_LOG_LEVEL))\
+    {\
+        if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(Error)) ::jsb::internal::Logger::error<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
+        else if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(Warning)) ::jsb::internal::Logger::warn<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
+        else if constexpr (JSB_LOG_SEVERITY(Severity) > JSB_LOG_SEVERITY(Verbose)) ::jsb::internal::Logger::info<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
+        else ::jsb::internal::Logger::verbose<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
+    }
 
 #define JSB_LOG(Severity, Format, ...) JSB_LOG_IMPL(jsb, Severity, Format, ##__VA_ARGS__)
 
