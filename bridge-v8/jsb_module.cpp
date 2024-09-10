@@ -7,7 +7,7 @@ namespace jsb
     void JavaScriptModule::on_load(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
     {
         Environment* environment = Environment::wrap(isolate);
-        module.Get(isolate)->Set(context, environment->GetStringValue(loaded), v8::Boolean::New(isolate, true)).Check();
+        module.Get(isolate)->Set(context, jsb_name(environment, loaded), v8::Boolean::New(isolate, true)).Check();
 
         if (!path.is_empty())
         {
@@ -63,8 +63,8 @@ namespace jsb
         cache_object_.Get(isolate)->Set(context, module_id, module_obj).Check();
 
         // init the new module obj
-        module_obj->Set(context, environment->GetStringValue(id), module_id).Check();
-        module_obj->Set(context, environment->GetStringValue(loaded), v8::Boolean::New(isolate, p_init_loaded)).Check();
+        module_obj->Set(context, jsb_name(environment, id), module_id).Check();
+        module_obj->Set(context, jsb_name(environment, loaded), v8::Boolean::New(isolate, p_init_loaded)).Check();
 
         module->id = p_name;
         module->module.Reset(isolate, module_obj);

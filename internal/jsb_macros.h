@@ -24,7 +24,7 @@
         else if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(Warning)) ::jsb::internal::Logger::warn<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
         else if constexpr (JSB_LOG_SEVERITY(Severity) > JSB_LOG_SEVERITY(Verbose)) ::jsb::internal::Logger::info<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
         else ::jsb::internal::Logger::verbose<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
-    }
+    } (void) 0
 
 #define JSB_LOG(Severity, Format, ...) JSB_LOG_IMPL(jsb, Severity, Format, ##__VA_ARGS__)
 

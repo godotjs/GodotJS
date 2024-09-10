@@ -113,7 +113,7 @@ namespace jsb
             if (p_class_info->name == jsb_string_name(Object))
             {
                 // class: special methods
-                object_template->Set(environment_->GetStringValue(free), v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_free));
+                object_template->Set(jsb_name(environment_, free), v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_free));
             }
 
             // class: signals
@@ -149,7 +149,7 @@ namespace jsb
             }
 
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
-            function_template->Set(environment_->SymbolFor(ClassId), v8::Uint32::NewFromUnsigned(isolate, class_id));
+            function_template->Set(jsb_symbol(environment_, ClassId), v8::Uint32::NewFromUnsigned(isolate, class_id));
 
             // build the prototype chain (inherit)
             if (const NativeClassID super_class_id = p_realm->_expose_godot_class(p_class_info->inherits_ptr))

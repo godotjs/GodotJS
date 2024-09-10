@@ -158,8 +158,8 @@ namespace jsb
                 v8::Local<v8::Object> module_obj = module.module.Get(isolate);
 
                 // init the new module obj
-                module_obj->Set(context, environment_->GetStringValue(children), v8::Array::New(isolate)).Check();
-                module_obj->Set(context, environment_->GetStringValue(exports), exports_obj).Check();
+                module_obj->Set(context, jsb_name(environment_, children), v8::Array::New(isolate)).Check();
+                module_obj->Set(context, jsb_name(environment_, exports), exports_obj).Check();
                 module.path = asset_path;
                 module.exports.Reset(isolate, exports_obj);
 
@@ -177,7 +177,7 @@ namespace jsb
                     {
                         v8::Local<v8::Object> jparent_module = cparent_module->module.Get(isolate);
                         v8::Local<v8::Value> jparent_children_v;
-                        if (jparent_module->Get(context, environment_->GetStringValue(children)).ToLocal(&jparent_children_v) && jparent_children_v->IsArray())
+                        if (jparent_module->Get(context, jsb_name(environment_, children)).ToLocal(&jparent_children_v) && jparent_children_v->IsArray())
                         {
                             v8::Local<v8::Array> jparent_children = jparent_children_v.As<v8::Array>();
                             const uint32_t children_num = jparent_children->Length();
@@ -227,16 +227,16 @@ namespace jsb
         Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
         v8::Local<v8::Value> default_val;
-        if (!exports->Get(p_context, environment->GetStringValue(default)).ToLocal(&default_val)
+        if (!exports->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val)
             || !default_val->IsObject())
         {
             return;
         }
 
         v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
-        v8::Local<v8::String> name_str = default_obj->Get(p_context, environment->GetStringValue(name)).ToLocalChecked().As<v8::String>();
+        v8::Local<v8::String> name_str = default_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>();
         v8::Local<v8::Value> class_id_val;
-        if (!default_obj->Get(p_context, environment->SymbolFor(ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
+        if (!default_obj->Get(p_context, jsb_symbol(environment, ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
         {
             // ignore a javascript which does not inherit from a native class (directly and indirectly both)
             return;
@@ -265,7 +265,7 @@ namespace jsb
         }
 
         // trick: save godot class id for getting it in constructor
-        default_obj->Set(p_context, environment->SymbolFor(CrossBind), v8::Uint32::NewFromUnsigned(isolate, p_module.default_class_id)).Check();
+        default_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, p_module.default_class_id)).Check();
 
         jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
@@ -291,7 +291,7 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
 
             // (@deprecated)
-            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(deprecated)).ToLocal(&val) && val->IsString())
+            if (v8::Local<v8::Value> val; obj->Get(context, jsb_name(environment, deprecated)).ToLocal(&val) && val->IsString())
             {
                 r_doc.is_deprecated = true;
                 r_doc.deprecated_message = V8Helper::to_string(isolate, val);
@@ -301,7 +301,7 @@ namespace jsb
                 r_doc.is_deprecated = false;
             }
             // (@experimental)
-            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(experimental)).ToLocal(&val) && val->IsString())
+            if (v8::Local<v8::Value> val; obj->Get(context, jsb_name(environment, experimental)).ToLocal(&val) && val->IsString())
             {
                 r_doc.is_experimental = true;
                 r_doc.experimental_message = V8Helper::to_string(isolate, val);
@@ -311,7 +311,7 @@ namespace jsb
                 r_doc.is_experimental = false;
             }
             // (@help)
-            if (v8::Local<v8::Value> val; obj->Get(context, environment->GetStringValue(help)).ToLocal(&val) && val->IsString())
+            if (v8::Local<v8::Value> val; obj->Get(context, jsb_name(environment, help)).ToLocal(&val) && val->IsString())
             {
                 r_doc.brief_description = V8Helper::to_string(isolate, val);
             }
@@ -331,12 +331,12 @@ namespace jsb
 
         //TODO collect methods/signals/properties
         v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(isolate);
-        v8::Local<v8::Object> prototype = default_obj->Get(p_context, environment->GetStringValue(prototype)).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Object> prototype = default_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
 
 #ifdef TOOLS_ENABLED
         // class doc
         v8::Local<v8::Map> doc_map;
-        if (v8::Local<v8::Value> val; prototype->Get(p_context, environment->SymbolFor(MemberDocMap)).ToLocal(&val) && val->IsMap())
+        if (v8::Local<v8::Value> val; prototype->Get(p_context, jsb_symbol(environment, MemberDocMap)).ToLocal(&val) && val->IsMap())
         {
             doc_map = val.As<v8::Map>();
         }
@@ -344,7 +344,7 @@ namespace jsb
         {
             doc_map = v8::Map::New(isolate);
         }
-        _parse_script_doc(isolate, p_context, prototype->Get(p_context, environment->SymbolFor(Doc)), p_class_info.doc);
+        _parse_script_doc(isolate, p_context, prototype->Get(p_context, jsb_symbol(environment, Doc)), p_class_info.doc);
 #endif
 
         // methods
@@ -362,7 +362,7 @@ namespace jsb
                 if (prototype->GetOwnPropertyDescriptor(p_context, prop_name).ToLocal(&prop_descriptor) && prop_descriptor->IsObject())
                 {
                     v8::Local<v8::Value> prop_val;
-                    if (prop_descriptor.As<v8::Object>()->Get(p_context, environment->GetStringValue(value)).ToLocal(&prop_val) && prop_val->IsFunction())
+                    if (prop_descriptor.As<v8::Object>()->Get(p_context, jsb_name(environment, value)).ToLocal(&prop_val) && prop_val->IsFunction())
                     {
                         //TODO property categories
                         GodotJSMethodInfo method_info = {};
@@ -381,7 +381,7 @@ namespace jsb
 
         // tool (@tool_)
         {
-            const bool is_tool = default_obj->HasOwnProperty(p_context, environment->SymbolFor(ClassToolScript)).FromMaybe(false);
+            const bool is_tool = default_obj->HasOwnProperty(p_context, jsb_symbol(environment, ClassToolScript)).FromMaybe(false);
             if (is_tool)
             {
                 p_class_info.flags = (GodotJSClassFlags::Type) (p_class_info.flags | GodotJSClassFlags::Tool);
@@ -390,7 +390,7 @@ namespace jsb
 
         // icon (@icon)
         {
-            if (v8::Local<v8::Value> val; default_obj->Get(p_context, environment->SymbolFor(ClassIcon)).ToLocal(&val))
+            if (v8::Local<v8::Value> val; default_obj->Get(p_context, jsb_symbol(environment, ClassIcon)).ToLocal(&val))
             {
                 p_class_info.icon = V8Helper::to_string(isolate, val);
             }
@@ -400,7 +400,7 @@ namespace jsb
         {
             v8::Local<v8::Value> val_test;
             //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
-            if (prototype->Get(p_context, environment->SymbolFor(ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
+            if (prototype->Get(p_context, jsb_symbol(environment, ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
@@ -425,8 +425,8 @@ namespace jsb
         {
             v8::Local<v8::Value> val_test;
             //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
-            if (prototype->Get(p_context, environment->SymbolFor(ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
-            // if (prototype->Get(p_context, environment->SymbolFor(ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
+            if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
+            // if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
@@ -437,12 +437,12 @@ namespace jsb
                     jsb_check(element->IsObject());
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     GodotJSPropertyInfo property_info;
-                    v8::Local<v8::Value> prop_name = obj->Get(context, environment->GetStringValue(name)).ToLocalChecked();
+                    v8::Local<v8::Value> prop_name = obj->Get(context, jsb_name(environment, name)).ToLocalChecked();
                     property_info.name = V8Helper::to_string(isolate, prop_name); // string
-                    property_info.type = (Variant::Type) obj->Get(context, environment->GetStringValue(type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
-                    property_info.hint = V8Helper::to_enum<PropertyHint>(context, obj->Get(context, environment->GetStringValue(hint)), PROPERTY_HINT_NONE);
-                    property_info.hint_string = V8Helper::to_string(isolate, obj->Get(context, environment->GetStringValue(hint_string)).ToLocalChecked());
-                    property_info.usage = V8Helper::to_enum<PropertyUsageFlags>(context, obj->Get(context, environment->GetStringValue(usage)), PROPERTY_USAGE_DEFAULT);
+                    property_info.type = (Variant::Type) obj->Get(context, jsb_name(environment, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    property_info.hint = V8Helper::to_enum<PropertyHint>(context, obj->Get(context, jsb_name(environment, hint)), PROPERTY_HINT_NONE);
+                    property_info.hint_string = V8Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
+                    property_info.usage = V8Helper::to_enum<PropertyUsageFlags>(context, obj->Get(context, jsb_name(environment, usage)), PROPERTY_USAGE_DEFAULT);
 #ifdef TOOLS_ENABLED
                     if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
                     {
@@ -471,7 +471,7 @@ namespace jsb
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
         jsb_check(!constructor->IsUndefined() && !constructor->IsNull());
         v8::TryCatch try_catch_run(isolate);
-        v8::Local<v8::Value> identifier = environment_->SymbolFor(CrossBind);
+        v8::Local<v8::Value> identifier = jsb_symbol(environment_, CrossBind);
         v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
         jsb_check(!constructed_value.IsEmpty() && !constructed_value.ToLocalChecked()->IsUndefined());
         if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
@@ -510,7 +510,7 @@ namespace jsb
         const ScriptClassInfo& class_info = environment_->get_script_class(p_class_id);
         const StringName class_name = class_info.js_class_name;
         v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
-        v8::Local<v8::Value> prototype = constructor->Get(context, environment_->GetStringValue(prototype)).ToLocalChecked();
+        v8::Local<v8::Value> prototype = constructor->Get(context, jsb_name(environment_, prototype)).ToLocalChecked();
 
         v8::TryCatch try_catch(isolate);
         jsb_check(instance->IsObject());
@@ -533,12 +533,12 @@ namespace jsb
         v8::Local<v8::Object> jmain_module;
         if (_get_main_module(&jmain_module))
         {
-            jrequire->Set(context, environment_->GetStringValue(main), jmain_module).Check();
+            jrequire->Set(context, jsb_name(environment_, main), jmain_module).Check();
         }
         else
         {
             JSB_LOG(Warning, "invalid main module");
-            jrequire->Set(context, environment_->GetStringValue(main), v8::Undefined(isolate)).Check();
+            jrequire->Set(context, jsb_name(environment_, main), v8::Undefined(isolate)).Check();
         }
         return jrequire;
     }
@@ -1551,7 +1551,7 @@ namespace jsb
             {
                 v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
                 v8::TryCatch try_catch_run(isolate);
-                v8::Local<v8::Value> identifier = environment_->SymbolFor(CDO);
+                v8::Local<v8::Value> identifier = jsb_symbol(environment_, CDO);
                 v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
                 if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
                 {
@@ -1669,7 +1669,7 @@ namespace jsb
 
         // handle all @onready properties
         v8::Local<v8::Value> val_test;
-        if (self->Get(context, environment_->SymbolFor(ClassImplicitReadyFuncs)).ToLocal(&val_test) && val_test->IsArray())
+        if (self->Get(context, jsb_symbol(environment_, ClassImplicitReadyFuncs)).ToLocal(&val_test) && val_test->IsArray())
         {
             v8::Local<v8::Array> collection = val_test.As<v8::Array>();
             const uint32_t len = collection->Length();
@@ -1678,8 +1678,8 @@ namespace jsb
             for (uint32_t index = 0; index < len; ++index)
             {
                 v8::Local<v8::Object> element = collection->Get(context, index).ToLocalChecked().As<v8::Object>();
-                v8::Local<v8::String> element_name = element->Get(context, environment_->GetStringValue(name)).ToLocalChecked().As<v8::String>();
-                v8::Local<v8::Value> element_value = element->Get(context, environment_->GetStringValue(evaluator)).ToLocalChecked();
+                v8::Local<v8::String> element_name = element->Get(context, jsb_name(environment_, name)).ToLocalChecked().As<v8::String>();
+                v8::Local<v8::Value> element_value = element->Get(context, jsb_name(environment_, evaluator)).ToLocalChecked();
 
                 if (element_value->IsString())
                 {

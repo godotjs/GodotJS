@@ -58,7 +58,7 @@ namespace jsb
         }
 
         // update `exports`, because its value may be covered during the execution process of the elevator script.
-        v8::Local<v8::Value> updated_exports = module_obj->Get(context, environment->GetStringValue(exports)).ToLocalChecked();
+        v8::Local<v8::Value> updated_exports = module_obj->Get(context, jsb_name(environment, exports)).ToLocalChecked();
 #if JSB_DEBUG
         if (updated_exports != argv[kIndexExports]) { JSB_LOG(Log, "`exports` is overwritten in module"); }
 #endif

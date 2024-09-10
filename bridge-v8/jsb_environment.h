@@ -17,8 +17,11 @@
 
 #include "../internal/jsb_source_map_cache.h"
 
-#define GetStringValue(name) get_string_value(jsb_string_name(name))
-#define SymbolFor(name) get_symbol(Symbols::name)
+// get v8 string value from string name cache with the given name
+#define jsb_name(env, name) (env)->get_string_value(jsb_string_name(name))
+
+// get v8 symbol value from pre-allocated symbol registry
+#define jsb_symbol(env, name) (env)->get_symbol(Symbols::name)
 
 namespace jsb
 {

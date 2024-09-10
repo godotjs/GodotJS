@@ -959,9 +959,9 @@ namespace jsb
             }
             Environment* environment = Environment::wrap(isolate);
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
-            target->Set(context, environment->SymbolFor(ClassToolScript), v8::Boolean::New(isolate, true)).Check();
+            target->Set(context, jsb_symbol(environment, ClassToolScript), v8::Boolean::New(isolate, true)).Check();
             JSB_LOG(VeryVerbose, "script %s (tool)",
-                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))));
+                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))));
         }
 
         void _get_type_name(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -1000,9 +1000,9 @@ namespace jsb
             }
             Environment* environment = Environment::wrap(isolate);
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
-            target->Set(context, environment->SymbolFor(ClassIcon), info[1]).Check();
+            target->Set(context, jsb_symbol(environment, ClassIcon), info[1]).Check();
             JSB_LOG(VeryVerbose, "script %s (icon) %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
+                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
                 V8Helper::to_string(isolate, info[1]));
         }
 
@@ -1021,7 +1021,7 @@ namespace jsb
             v8::Local<v8::Object> evaluator = info[1].As<v8::Object>();
 
             Environment* environment = Environment::wrap(isolate);
-            v8::Local<v8::Symbol> symbol = environment->SymbolFor(ClassImplicitReadyFuncs);
+            v8::Local<v8::Symbol> symbol = jsb_symbol(environment, ClassImplicitReadyFuncs);
             v8::Local<v8::Array> collection;
             v8::Local<v8::Value> val_test;
             uint32_t index;
@@ -1040,8 +1040,8 @@ namespace jsb
 
             collection->Set(context, index, evaluator).Check();
             JSB_LOG(VeryVerbose, "script %s define property(onready) %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
-                V8Helper::to_string_opt(isolate, evaluator->Get(context, environment->GetStringValue(name))));
+                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
+                V8Helper::to_string_opt(isolate, evaluator->Get(context, jsb_name(environment, name))));
         }
 
         // function (target: any, prop?: string, cat: [0, 1, 2], message?: string)
@@ -1072,12 +1072,12 @@ namespace jsb
             if (property->IsUndefined())
             {
                 // doc for class
-                const v8::Local<v8::Object> prototype = target->Get(context, environment->GetStringValue(prototype)).ToLocalChecked().As<v8::Object>();
+                const v8::Local<v8::Object> prototype = target->Get(context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
                 jsb_check(prototype->IsObject());
-                if (v8::Local<v8::Value> val; !prototype->Get(context, environment->SymbolFor(Doc)).ToLocal(&val) || !val->IsObject())
+                if (v8::Local<v8::Value> val; !prototype->Get(context, jsb_symbol(environment, Doc)).ToLocal(&val) || !val->IsObject())
                 {
                     doc = v8::Object::New(isolate);
-                    prototype->Set(context, environment->SymbolFor(Doc), doc).Check();
+                    prototype->Set(context, jsb_symbol(environment, Doc), doc).Check();
                 }
                 else
                 {
@@ -1089,10 +1089,10 @@ namespace jsb
                 // doc for member
                 jsb_check(property->IsString() && property.As<v8::String>()->Length() != 0);
                 v8::Local<v8::Map> member_doc_map;
-                if (v8::Local<v8::Value> val; !target->Get(context, environment->SymbolFor(MemberDocMap)).ToLocal(&val) || !val->IsMap())
+                if (v8::Local<v8::Value> val; !target->Get(context, jsb_symbol(environment, MemberDocMap)).ToLocal(&val) || !val->IsMap())
                 {
                     member_doc_map = v8::Map::New(isolate);
-                    target->Set(context, environment->SymbolFor(MemberDocMap), member_doc_map).Check();
+                    target->Set(context, jsb_symbol(environment, MemberDocMap), member_doc_map).Check();
                 }
                 else
                 {
@@ -1112,9 +1112,9 @@ namespace jsb
 
             switch (doc_item)
             {
-            case ScriptClassDocField::Deprecated:   doc->Set(context, environment->GetStringValue(deprecated), message).Check(); return;
-            case ScriptClassDocField::Experimental: doc->Set(context, environment->GetStringValue(experimental), message).Check(); return;
-            case ScriptClassDocField::Help:         doc->Set(context, environment->GetStringValue(help), message).Check(); return;
+            case ScriptClassDocField::Deprecated:   doc->Set(context, jsb_name(environment, deprecated), message).Check(); return;
+            case ScriptClassDocField::Experimental: doc->Set(context, jsb_name(environment, experimental), message).Check(); return;
+            case ScriptClassDocField::Help:         doc->Set(context, jsb_name(environment, help), message).Check(); return;
             }
             jsb_throw(isolate, "bad param");
 #endif
@@ -1135,7 +1135,7 @@ namespace jsb
             v8::Local<v8::Object> details = info[1].As<v8::Object>();
 
             Environment* environment = Environment::wrap(isolate);
-            v8::Local<v8::Symbol> symbol = environment->SymbolFor(ClassProperties);
+            v8::Local<v8::Symbol> symbol = jsb_symbol(environment, ClassProperties);
             v8::Local<v8::Array> collection;
             v8::Local<v8::Value> val_test;
             uint32_t index;
@@ -1154,8 +1154,8 @@ namespace jsb
 
             collection->Set(context, index, details).Check();
             JSB_LOG(VeryVerbose, "script %s define property(export) %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
-                V8Helper::to_string_opt(isolate, details->Get(context, environment->GetStringValue(name))));
+                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
+                V8Helper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
         }
 
         void _find_module(const v8::FunctionCallbackInfo<v8::Value> &info)
@@ -1229,7 +1229,7 @@ namespace jsb
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
             v8::Local<v8::String> signal = info[1].As<v8::String>();
             Environment* environment = Environment::wrap(isolate);
-            v8::Local<v8::Symbol> symbol = environment->SymbolFor(ClassSignals);
+            v8::Local<v8::Symbol> symbol = jsb_symbol(environment, ClassSignals);
             v8::Local<v8::Array> collection;
             v8::Local<v8::Value> val_test;
             uint32_t index;
@@ -1248,7 +1248,7 @@ namespace jsb
 
             collection->Set(context, index, signal).Check();
             JSB_LOG(VeryVerbose, "script %s define signal %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, environment->GetStringValue(name))),
+                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
                 V8Helper::to_string(isolate, signal));
         }
     }

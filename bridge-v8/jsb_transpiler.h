@@ -545,14 +545,14 @@ namespace jsb
             if (info.Length())
             {
                 // (case-2) constructing CDO from C++ (nothing more to do, it's a pure javascript)
-                if (info[0] == environment->SymbolFor(CDO))
+                if (info[0] == jsb_symbol(environment, CDO))
                 {
                     JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", native_class.name, class_id.value());
                     return;
                 }
 
                 // (case-3) constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
-                if (info[0] == environment->SymbolFor(CrossBind))
+                if (info[0] == jsb_symbol(environment, CrossBind))
                 {
                     JSB_LOG(Verbose, "cross binding from C++. %s(%d)", native_class.name, class_id.value());
                     return;
@@ -564,7 +564,7 @@ namespace jsb
 
             // (case-1) new from scripts
             v8::Local<v8::Value> cross_bind_sym;
-            if (new_target.As<v8::Object>()->Get(context, environment->SymbolFor(CrossBind)).ToLocal(&cross_bind_sym))
+            if (new_target.As<v8::Object>()->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
             {
                 const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
                 ScriptClassInfo& script_class_info = environment->get_script_class(script_class_id);
