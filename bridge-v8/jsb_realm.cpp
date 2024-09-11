@@ -799,8 +799,8 @@ namespace jsb
         case Variant::BOOL: { return p_val->IsBoolean(); }
         case Variant::FLOAT: // return p_val->IsNumber();
         case Variant::INT: { return p_val->IsNumber(); } //TODO find a better way to check integer type?
-            case Variant::STRING:
-            case Variant::STRING_NAME: { return p_val->IsString(); }
+        case Variant::STRING:
+        case Variant::STRING_NAME: { return p_val->IsString(); }
         case Variant::NODE_PATH:
             if (p_val->IsString())
             {
