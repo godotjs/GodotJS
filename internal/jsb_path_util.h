@@ -38,8 +38,6 @@ namespace jsb::internal
 
         static String extends_with(const String& p_path, const String& p_ext);
 
-        static bool find(const String& p_path);
-
         /**
          * \brief if the given path string is absolute
          */

@@ -66,13 +66,6 @@ namespace jsb::internal
         return OK;
     }
 
-
-    bool PathUtil::find(const String& p_path)
-    {
-        const Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
-        return da->file_exists(p_path);
-    }
-
     bool PathUtil::is_absolute_path(const String& p_path)
     {
 #if !WINDOWS_ENABLED
