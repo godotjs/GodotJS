@@ -181,7 +181,7 @@ namespace jsb
                     }
                     else
                     {
-                        JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
+                        // JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
                         jsb_check(type != Variant::OBJECT);
                     }
                     Environment::dealloc_variant(variant);
