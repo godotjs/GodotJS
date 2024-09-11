@@ -6,7 +6,7 @@
 
 namespace jsb
 {
-    bool IModuleResolver::load_from_source(Realm* p_realm, JavaScriptModule& p_module, const String& p_filename_abs, const Vector<uint8_t>& p_source)
+    bool IModuleResolver::load_from_source(Realm* p_realm, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const Vector<uint8_t>& p_source)
     {
         v8::Isolate* isolate = p_realm->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -31,7 +31,11 @@ namespace jsb
         }
 
         Environment* environment = Environment::wrap(isolate);
-        const String dirname = internal::PathUtil::dirname(p_filename_abs);
+        // use resource path here (begins with `res://`)
+        // to make path identification easier during exporting
+        // (see `GodotJSExportPlugin::export_compiled_script`)
+        const String& filename = p_asset_path;
+        const String dirname = internal::PathUtil::dirname(filename);
         const v8::Local<v8::Function> elevator = func_local.As<v8::Function>();
         const v8::Local<v8::Object> module_obj = p_module.module.Get(isolate);
 
@@ -42,7 +46,7 @@ namespace jsb
             /* 0: exports  */ p_module.exports.Get(isolate),
             /* 1: require  */ p_realm->_new_require_func(p_module.id),
             /* 2: module   */ module_obj,
-            /* 3: filename */ V8Helper::to_string(isolate, p_filename_abs),
+            /* 3: filename */ V8Helper::to_string(isolate, filename),
             /* 4: dirname  */ V8Helper::to_string(isolate, dirname),
         };
 
@@ -196,7 +200,7 @@ namespace jsb
         p_module.time_modified = reader.get_time_modified();
         p_module.hash = reader.get_hash();
 #endif
-        return load_from_source(p_realm, p_module, filename_abs, source);
+        return load_from_source(p_realm, p_module, p_asset_path, filename_abs, source);
     }
 
 }
