@@ -160,17 +160,20 @@ namespace jsb
                 // in this way, the scavenger could gc it efficiently
                 v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(TStruct), [](void* data, size_t length, void* deleter_data)
                 {
-                    jsb_check(length == sizeof(TStruct));
                     Variant* variant = (Variant*) data;
-                    if (const Variant::Type type = variant->get_type(); type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
+                    // `Callable/Array/Dictionary` may contain reference-based objects.
+                    // executing the destructor of a reference-based object may cause crash (not thread-safe),
+                    // release them in main thread for simplicity.
+                    if (const Variant::Type type = variant->get_type();
+                        type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
                     {
-                        // possible reference based elements included, they're required to be released in the main thread for simplicity.
-                        if (const std::shared_ptr<Environment> env = _access(deleter_data))
+                        // use ringbuffer here, because we reckon there is only one scavenger thread involved (or one active thread at most)
+                        if (const std::shared_ptr<Environment> env = _access(deleter_data);
+                            env && env->pending_delete_.write(variant) == OK)
                         {
                             JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d thread:%s",
-                                Variant::get_type_name(type), uitos((uintptr_t) variant), env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
-                            // we assume that there is only one scavenger thread (or one active thread at most)
-                            env->pending_delete_.write(variant);
+                                Variant::get_type_name(type), uitos((uintptr_t) variant),
+                                env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
                             return;
                         }
                         JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)",
@@ -178,8 +181,8 @@ namespace jsb
                     }
                     else
                     {
+                        JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
                         jsb_check(type != Variant::OBJECT);
-                        // JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
                     }
                     Environment::dealloc_variant(variant);
                 }, this))
