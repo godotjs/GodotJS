@@ -69,8 +69,8 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
     }
 
     // export dependent files.
-    // based on a hypothesis that all exported scripts already exist in module cache on exporting.
-    if (const jsb::JavaScriptModule* module = realm_->get_module_cache().find(p_path))
+    // force module loading. ensure the module hierarchy available.
+    if (jsb::JavaScriptModule* module; realm_->load(p_path, &module) == OK)
     {
         v8::Isolate* isolate = realm_->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
