@@ -621,7 +621,10 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
             Variant default_value;
             get_realm()->get_script_default_property_value(gdjs_class_id_, pi.name, default_value);
             member_default_values_cache[pi.name] = default_value;
-            JSB_LOG(VeryVerbose, "GodotJS script default %s = %s", gdjs_class_id_ ? (String) get_script_class_info().js_class_name : "(unknown)", pi.name, (String) default_value);
+            JSB_LOG(VeryVerbose, "GodotJS script default %s.%s = %s",
+                gdjs_class_id_ ? (String) get_script_class_info().js_class_name : "(unknown)",
+                pi.name,
+                (String) default_value);
         }
     }
 
