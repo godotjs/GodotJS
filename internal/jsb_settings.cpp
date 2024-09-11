@@ -26,6 +26,7 @@ namespace jsb::internal
     static constexpr char kRtDebuggerPort[] =     JSB_MODULE_NAME_STRING "/debugger/runtime_port";
     static constexpr char kRtSourceMapEnabled[] = JSB_MODULE_NAME_STRING "/logger/source_map_enabled";
     static constexpr char kRtPackagingWithSourceMap[] = JSB_MODULE_NAME_STRING "/packaging/source_map_included";
+    static constexpr char kRtAdditionalSearchPaths[] = JSB_MODULE_NAME_STRING "/core/additional_search_paths";
 
     void init_settings()
     {
@@ -52,6 +53,7 @@ namespace jsb::internal
             _GLOBAL_DEF(kRtDebuggerPort, 9229, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtSourceMapEnabled, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtPackagingWithSourceMap, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtAdditionalSearchPaths, PackedStringArray(), JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
         }
     }
 
@@ -100,6 +102,12 @@ namespace jsb::internal
     String Settings::get_jsb_out_res_path()
     {
         return "res://" + get_jsb_out_dir_name();
+    }
+
+    PackedStringArray Settings::get_additional_search_paths()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtAdditionalSearchPaths);
     }
 
     String Settings::get_indentation()

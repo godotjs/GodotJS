@@ -26,6 +26,8 @@ namespace jsb::internal
 
         static String get_indentation();
 
+        static PackedStringArray get_additional_search_paths();
+
 #ifdef TOOLS_ENABLED
         static PackedStringArray get_ignored_classes();
 #endif
