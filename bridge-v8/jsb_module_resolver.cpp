@@ -30,16 +30,14 @@ namespace jsb
             return false;
         }
 
-        // const CharString cmodule_id = String(p_module.id).utf8();
-        // const CharString cfilename = p_filename_abs.utf8();
-        const String dirname = internal::PathUtil::dirname(p_filename_abs);
-
         Environment* environment = Environment::wrap(isolate);
-        v8::Local<v8::Function> elevator = func_local.As<v8::Function>();
-        v8::Local<v8::Object> module_obj = p_module.module.Get(isolate);
+        const String dirname = internal::PathUtil::dirname(p_filename_abs);
+        const v8::Local<v8::Function> elevator = func_local.As<v8::Function>();
+        const v8::Local<v8::Object> module_obj = p_module.module.Get(isolate);
 
-        constexpr int kIndexExports = 0;
-        constexpr int kIndexFileName = 3;
+        static constexpr int kIndexExports = 0;
+        static constexpr int kIndexFileName = 3;
+        static constexpr int kIndexPath = 4;
         v8::Local<v8::Value> argv[] = {
             /* 0: exports  */ p_module.exports.Get(isolate),
             /* 1: require  */ p_realm->_new_require_func(p_module.id),
@@ -48,22 +46,26 @@ namespace jsb
             /* 4: dirname  */ V8Helper::to_string(isolate, dirname),
         };
 
+        // init module properties (filename, path)
+        module_obj->Set(context, jsb_name(environment, filename), argv[kIndexFileName]).Check();
+        module_obj->Set(context, jsb_name(environment, path), argv[kIndexPath]).Check();
+
         //TODO set `require.cache`
         // ...
 
-        v8::MaybeLocal<v8::Value> type_maybe_local = elevator->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
-        if (type_maybe_local.IsEmpty())
+        if (const v8::MaybeLocal<v8::Value> result = elevator->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
+            result.IsEmpty())
         {
+            // failed, usually means error thrown
             return false;
         }
 
         // update `exports`, because its value may be covered during the execution process of the elevator script.
-        v8::Local<v8::Value> updated_exports = module_obj->Get(context, jsb_name(environment, exports)).ToLocalChecked();
+        const v8::Local<v8::Value> updated_exports = module_obj->Get(context, jsb_name(environment, exports)).ToLocalChecked();
 #if JSB_DEBUG
         if (updated_exports != argv[kIndexExports]) { JSB_LOG(Log, "`exports` is overwritten in module"); }
 #endif
         p_module.exports.Reset(isolate, updated_exports);
-        module_obj->Set(context, V8Helper::to_string(isolate, "filename"), argv[kIndexFileName]).Check();
         return true;
     }
 

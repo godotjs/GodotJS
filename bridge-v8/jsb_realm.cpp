@@ -153,6 +153,7 @@ namespace jsb
             }
             else
             {
+                JSB_LOG(Verbose, "instantiating module %s", module_id);
                 JavaScriptModule& module = module_cache_.insert(isolate, context, module_id, true, false);
                 v8::Local<v8::Object> exports_obj = v8::Object::New(isolate);
                 v8::Local<v8::Object> module_obj = module.module.Get(isolate);
@@ -173,15 +174,14 @@ namespace jsb
                 // build the module tree
                 if (!p_parent_id.is_empty())
                 {
-                    if (const JavaScriptModule* cparent_module = module_cache_.find(p_parent_id))
+                    if (const JavaScriptModule* parent_ptr = module_cache_.find(p_parent_id))
                     {
-                        v8::Local<v8::Object> jparent_module = cparent_module->module.Get(isolate);
-                        v8::Local<v8::Value> jparent_children_v;
-                        if (jparent_module->Get(context, jsb_name(environment_, children)).ToLocal(&jparent_children_v) && jparent_children_v->IsArray())
+                        const v8::Local<v8::Object> parent_module = parent_ptr->module.Get(isolate);
+                        if (v8::Local<v8::Value> temp; parent_module->Get(context, jsb_name(environment_, children)).ToLocal(&temp) && temp->IsArray())
                         {
-                            v8::Local<v8::Array> jparent_children = jparent_children_v.As<v8::Array>();
-                            const uint32_t children_num = jparent_children->Length();
-                            jparent_children->Set(context, children_num, module_obj).Check();
+                            const v8::Local<v8::Array> children = temp.As<v8::Array>();
+                            const uint32_t children_num = children->Length();
+                            children->Set(context, children_num, module_obj).Check();
                         }
                         else
                         {

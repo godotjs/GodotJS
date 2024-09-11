@@ -2,6 +2,7 @@
 #define GODOTJS_EXPORT_PLUGIN_H
 
 #include "jsb_editor_pch.h"
+#include "../weaver/jsb_gdjs_lang.h"
 #include "editor/export/editor_export_plugin.h"
 
 // improve the pipeline of using typescripts
@@ -21,8 +22,11 @@ protected:
     virtual PackedStringArray _get_export_features(const Ref<EditorExportPlatform>& p_export_platform, bool p_debug) const override;
 
 private:
-    HashSet<String> ignored_paths_;
+    bool export_compiled_script(const String& p_path);
 
+    HashSet<String> ignored_paths_;
+    HashSet<String> exported_paths_;
+    std::shared_ptr<jsb::Realm> realm_;
 };
 
 #endif
