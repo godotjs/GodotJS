@@ -163,7 +163,7 @@ namespace jsb
     template<typename T>
     struct VariantBind
     {
-        constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
+        static constexpr Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
 
         static void _get_constant_value_lazy(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info)
         {
@@ -260,8 +260,10 @@ namespace jsb
             jsb_throw(isolate, "no suitable constructor");
         }
 
+        //NOTE should never be called any more, since all valuetype bindings exist without a normal gc callback (object_gc_callback)
         static void finalizer(Environment* environment, void* pointer, bool p_persistent)
         {
+            jsb_check(false);
             Variant* self = (Variant*) pointer;
             jsb_checkf(Variant::can_convert(self->get_type(), TYPE), "variant type can't convert to %s from %s", Variant::get_type_name(TYPE), Variant::get_type_name(self->get_type()));
             if (!p_persistent)
@@ -580,9 +582,13 @@ namespace jsb
         static v8::Local<v8::FunctionTemplate> get_template(const FBindingEnv& p_env, const NativeClassID p_class_id)
         {
             JSB_DEFINE_FAST_CONSTRUCTOR(Vector2);
-            // JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i);
             JSB_DEFINE_FAST_CONSTRUCTOR(Vector3);
-            // JSB_DEFINE_FAST_CONSTRUCTOR(Vector3i);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3i);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4i);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2i);
 
             // fallback
             {
