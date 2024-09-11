@@ -64,7 +64,7 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
         }
         else
         {
-            JSB_EXPORTER_LOG(Warning, "can't read the sourcemap file from %s, please ensure that 'tsc' has being executed properly.", source_map_path);
+            JSB_EXPORTER_LOG(Verbose, "can't read the sourcemap file from %s, please ensure that 'tsc' has being executed properly.", source_map_path);
         }
     }
 
