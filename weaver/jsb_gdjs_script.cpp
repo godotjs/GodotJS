@@ -68,8 +68,9 @@ void GodotJSScript::set_source_code(const String& p_code)
 Ref<Script> GodotJSScript::get_base_script() const
 {
     GODOTJS_LOAD_SCRIPT_MODULE()
-    jsb_notice(loaded_, "script not loaded");
-    //TODO
+    //jsb_notice(loaded_, "script not loaded");
+    //TODO should return the base script in order to traverse methods/properties from inheritance hierarchy
+
     //if (base_)
     //{
     //    return Ref(base_);
