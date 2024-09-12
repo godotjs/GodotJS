@@ -66,13 +66,15 @@ Compile the typescript source into javascript, and attach the compiled script to
 
 ## About using code from npm packages
 
-Currently, `GodotJS` hasn't particularly support using code from npm packages. Because many factors are involved in it, such as:
-* scripts depend on functionalities of node.js which is not supported
-* how the typescript/javascript project is packaged (archive into a single script file or not) 
-* different javascript modular standards
+Currently, `GodotJS` doesn't provide sufficient support for using code from npm packages. Because many factors are involved in it, such as:
+* Scripts depend on functionalities of node.js which is not supported
+* How the typescript/javascript project is packaged (archive into a single script file or not) 
+* Javascript modular standard variants may be involved
 
-If a packages just works, use it only in editor, for now, since the exporter hasn't process any scripts from `node_modules`. It'll fail in an exported game.  
-So, you can use a npm package if it's purely written in javascript which not using any features of node.js, but not recommended.  
+If a npm package just works, there is no guarantee that it does also work after packaging, `GodotJS` tries to export all dependant javascript sources into the targeting package.
+
+> [!NOTE]
+> See [read_xlsx.ts](https://github.com/ialex32x/GodotJSExample/blob/main/tests/read_xlsx.ts) about using a npm package.
 
 ## Exported Properties
 In `GodotJS`, class member properties/variables can be exported. This means their value gets saved along with the resource (such as the scene) they're attached to. They will also be available for editing in the property editor. Exporting is done by using the `@export_` annotation.
