@@ -464,11 +464,14 @@ void GodotJSScript::load_module()
         update_exports();
 #ifdef TOOLS_ENABLED
         // temp and tricky workaround to avoid missing doc when showing on inspector the first time after load
-        const Vector<DocData::ClassDoc> documentations = get_documentation();
-        for (int i = 0; i < documentations.size(); i++)
+        if (DocTools* doc_tools = EditorHelp::get_doc_data())
         {
-            const DocData::ClassDoc &doc = documentations.get(i);
-            EditorHelp::get_doc_data()->add_doc(doc);
+            const Vector<DocData::ClassDoc> documentations = get_documentation();
+            for (int i = 0; i < documentations.size(); i++)
+            {
+                const DocData::ClassDoc &doc = documentations.get(i);
+                doc_tools->add_doc(doc);
+            }
         }
 #endif
         return;
