@@ -47,8 +47,12 @@ namespace jsb::internal
             		JSB_LOG(Warning, "EditorSettings is not available for %s", jsb_typename(jsb::internal::Settings));
             	}
             }
-            _EDITOR_DEF(kEdDebuggerPort, 9230, true);
-            _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
+            // check before read to avoid redundant warnings
+            if (!EditorSettings::get_singleton())
+            {
+                _EDITOR_DEF(kEdDebuggerPort, 9230, true);
+                _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
+            }
 #endif
             _GLOBAL_DEF(kRtDebuggerPort, 9229, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtSourceMapEnabled, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
