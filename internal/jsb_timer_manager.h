@@ -2,7 +2,6 @@
 #define GODOTJS_TIMER_MANAGER_H
 
 #include "jsb_internal_pch.h"
-#include <vector>
 
 namespace jsb::internal
 {
