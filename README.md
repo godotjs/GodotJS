@@ -32,7 +32,7 @@ git clone https://github.com/ialex32x/GodotJS.git
 
 ```sh
 # download the archive of prebuilt v8 
-curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8_r6.zip --output your/download/path/v8.zip
+curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r9/v8_r9.zip --output your/download/path/v8.zip
 
 # extract the zip file into your `GodotJS` directory, 
 # NOTE: no white space after the switch `-o`
@@ -66,7 +66,7 @@ The currently used version of `v8` is `12.4.254.20`.
 **STEP 3:** Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
 > [!NOTE]
-> Since the prebuilt `v8` library is built with the `windows-latest` github runner which uses VS2022, encountering `Unresolved external symbol` errors during linkage with `v8_monolith.lib` or `libucrt.lib` may be addressed by updating to the latest version of the `MSVC v143` toolchain, `Windows Universal CRT SDK` and `Visual Studio 2022` itself.
+> Since the prebuilt `v8` library is built with the `windows-latest` github runner which uses VS2022, encountering `Unresolved external symbol` errors during linkage with `v8_monolith.lib` or `libucrt.lib` may be addressed by updating to the latest version of the `MSVC v143` toolchain, `Windows Universal CRT SDK` and `Visual Studio 2022` itself. See [GodotJS-Dependencies README](https://github.com/ialex32x/GodotJS-Dependencies) for the version of MSVC C++ Compiler used in different prebuilt library packages.
 
 A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/releases).  
 **Because the GodotJS-Build workflow is currently run manually, it may not be built from the latest commit of `GodotJS`.**

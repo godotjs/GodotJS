@@ -12,6 +12,7 @@ def check(condition, text):
         print("Error: " + text)
         Exit(2)
 
+prebuilt_deps_url = "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r9/v8_r9.zip"
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
 javascript_engine = "v8" if env["platform"] != "web" else "quickjs"
@@ -214,7 +215,7 @@ if javascript_engine == "v8":
     # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will fail on `v8::ArrayBuffer::Allocator`
 
     # check existence of v8 (since it's setup manually)
-    v8_missing_msg = "The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8_r6.zip"
+    v8_missing_msg = f"The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from {prebuilt_deps_url}"
     check(os.path.exists("v8/include/v8.h"), v8_missing_msg)
 
     if env["platform"] == "macos":
