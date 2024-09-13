@@ -48,7 +48,7 @@ namespace jsb::internal
             	}
             }
             // check before read to avoid redundant warnings
-            if (!EditorSettings::get_singleton())
+            if (EditorSettings::get_singleton())
             {
                 _EDITOR_DEF(kEdDebuggerPort, 9230, true);
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
