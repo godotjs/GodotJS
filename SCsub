@@ -14,7 +14,7 @@ def check(condition, text):
 
 jsb_platform = "linux" if env["platform"] == "linuxbsd" else env["platform"]
 jsb_arch = env["arch"]
-prebuilt_deps_url = "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r10/v8_r10.zip"
+prebuilt_deps_url = "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r11/v8_r11.zip"
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
 javascript_engine = "v8" if jsb_platform in ["windows", "linux", "macos", "android", "ios"] else "quickjs"
@@ -25,6 +25,10 @@ print("javascript engine:", javascript_engine)
 print("websocket lib:", websocket_lib)
 print("platform:", jsb_platform)
 print("arch:", jsb_arch)
+
+if jsb_platform == "android":
+    print("ndk_platform:", env["ndk_platform"])
+    print("ANDROID_NDK_ROOT:", env["ANDROID_NDK_ROOT"])
 
 class CompileDefines:
     def __init__(self, name, value, help = None):
@@ -245,7 +249,7 @@ if javascript_engine == "v8":
         check(False, f'v8 is not supported on {env["platform"]}')
 
     # platform-specific defines
-    if jsb_platform != "ios":
+    if jsb_platform not in ["ios", "android"]:
         env_jsb.AppendUnique(CPPDEFINES=["V8_COMPRESS_POINTERS"])
         pass
     

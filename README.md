@@ -32,7 +32,7 @@ git clone https://github.com/ialex32x/GodotJS.git
 
 ```sh
 # download the archive of prebuilt v8 
-curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r9/v8_r9.zip --output your/download/path/v8.zip
+curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r11/v8_r11.zip --output your/download/path/v8.zip
 
 # extract the zip file into your `GodotJS` directory, 
 # NOTE: no white space after the switch `-o`
@@ -56,7 +56,8 @@ The module directroy structure looks like this:
         ┃        ┣━ include
         ┃        ┣━ linux.x86_64.release
         ┃        ┣━ macos.arm64.release
-        ┃        ┗━ windows.x86_64.release
+        ┃        ┣━ windows_x86_64_release
+        ┃        ┗━ ...
         ┣━ gridmap
         ┣━ ...
 ```
@@ -108,9 +109,9 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 - [x] Windows: x86_64
 - [ ] Windows: arm64, UWP
 - [x] MacOS: arm64
-- [ ] MacOS: x86_64
+- [x] MacOS: x86_64 (not tested)
 - [x] Linux: x86_64
 - [ ] Linux: arm64
-- [ ] Android
-- [ ] iOS
+- [x] Android: arm32, arm64, x86_64 (`ndk_platform=android-24`)
+- [x] iOS: arm64, x86_64 (not tested)
 - [ ] WebAssembly (quickjs only)
