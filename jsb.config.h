@@ -74,6 +74,6 @@
 #define JSB_TYPESCRIPT_EXT "ts"
 #define JSB_JAVASCRIPT_EXT "js"
 
-#define JSB_BUNDLE_VERSION 1
+#define JSB_BUNDLE_VERSION 2
 
 #endif

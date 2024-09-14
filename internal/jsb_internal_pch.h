@@ -2,6 +2,7 @@
 #define GODOTJS_INTERNAL_PCH_H
 
 #include <memory>
+#include <vector>
 
 #include "core/object/object.h"
 #include "core/variant/variant_utility.h"

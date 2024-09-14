@@ -47,7 +47,7 @@
 #endif
 
 #if JSB_DEBUG
-#   define jsb_notice(Condition, Format, ...) if (!!(Condition)) { JSB_LOG_IMPL(jsb, Warning, Format, ##__VA_ARGS__); } (void) 0
+#   define jsb_notice(Condition, Format, ...) if (!!(Condition)) { JSB_LOG_IMPL(jsb, Log, Format, ##__VA_ARGS__); } (void) 0
 #else
 #   define jsb_notice(Condition, Format, ...) (void) 0
 #endif

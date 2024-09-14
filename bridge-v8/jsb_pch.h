@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cstdint>
+#include <unordered_map>
 
 #include "core/core_constants.h"
 #include "core/string/string_builder.h"

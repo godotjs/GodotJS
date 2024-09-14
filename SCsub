@@ -12,14 +12,23 @@ def check(condition, text):
         print("Error: " + text)
         Exit(2)
 
+jsb_platform = "linux" if env["platform"] == "linuxbsd" else env["platform"]
+jsb_arch = env["arch"]
+prebuilt_deps_url = "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r11/v8_r11.zip"
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
-javascript_engine = "v8" if env["platform"] != "web" else "quickjs"
-websocket_lib = "lws" if env["platform"] != "web" else "none"
+javascript_engine = "v8" if jsb_platform in ["windows", "linux", "macos", "android", "ios"] else "quickjs"
+websocket_lib = "lws" if jsb_platform in ["windows", "linux", "macos"] else "none"
 
 print("compiling:", module_name)
 print("javascript engine:", javascript_engine)
 print("websocket lib:", websocket_lib)
+print("platform:", jsb_platform)
+print("arch:", jsb_arch)
+
+if jsb_platform == "android":
+    print("ndk_platform:", env["ndk_platform"])
+    print("ANDROID_NDK_ROOT:", env["ANDROID_NDK_ROOT"])
 
 class CompileDefines:
     def __init__(self, name, value, help = None):
@@ -214,24 +223,33 @@ if javascript_engine == "v8":
     # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will fail on `v8::ArrayBuffer::Allocator`
 
     # check existence of v8 (since it's setup manually)
-    v8_missing_msg = "The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r6/v8_r6.zip"
+    v8_missing_msg = f"The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from {prebuilt_deps_url}"
+    v8_basename = f"{jsb_platform}.{jsb_arch}.release"
     check(os.path.exists("v8/include/v8.h"), v8_missing_msg)
 
-    if env["platform"] == "macos":
-        check(os.path.exists("v8/macos.arm64.release/libv8_monolith.a"), v8_missing_msg)
-        env.Append(LIBPATH=[f'#modules/{module_name}/v8/macos.arm64.release'])
+    if jsb_platform == "macos":
+        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
+        env.Append(LIBPATH=[f'#modules/{module_name}/v8/{v8_basename}'])
         env.Append(LINKFLAGS=["-lv8_monolith"])
-    elif env["platform"] == "linuxbsd":
-        check(os.path.exists("v8/linux.x86_64.release/libv8_monolith.a"), v8_missing_msg)
-        env.Append(LIBS=[File('v8/linux.x86_64.release/libv8_monolith.a')])
-    else:
-        v8_lib_path = update_path_for_4_3("v8/windows.x86_64.release")
+    elif jsb_platform == "linux":
+        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
+        env.Append(LIBS=[File(f"v8/{v8_basename}/libv8_monolith.a")])
+    elif jsb_platform == "windows":
+        v8_lib_path = update_path_for_4_3(f"v8/{v8_basename}")
         check(os.path.exists(v8_lib_path+"/v8_monolith.lib"), v8_missing_msg)
         env.Append(LIBS=[File(v8_lib_path+"/v8_monolith.lib")])
         env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
+    elif jsb_platform == "android":
+        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
+        env.Append(LIBS=[File(f"v8/{v8_basename}/libv8_monolith.a")])
+    elif jsb_platform == "ios":
+        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
+        env.Append(LIBS=[File(f"v8/{v8_basename}/libv8_monolith.a")])
+    else:
+        check(False, f'v8 is not supported on {env["platform"]}')
 
     # platform-specific defines
-    if env["platform"] != "ios":
+    if jsb_platform not in ["ios", "android"]:
         env_jsb.AppendUnique(CPPDEFINES=["V8_COMPRESS_POINTERS"])
         pass
     
@@ -253,23 +271,25 @@ env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
 # lws
 if websocket_lib == "lws":
     lws_missing_msg = "The prebuilt lws lib is missing? Please build it at first."
-    if env["platform"] == "macos":
-        check(os.path.exists("lws/macos_arm64_release/libwebsockets.a"), lws_missing_msg)
-        env_jsb.Append(CPPPATH=["lws/macos_arm64_release/include"])
-        env.Append(LIBPATH=[f'#modules/{module_name}/lws/macos_arm64_release'])
-        env.Append(LINKFLAGS=["-lwebsockets"])
-    elif env["platform"] == "linuxbsd":
-        check(os.path.exists("lws/linux_x86_64_release/libwebsockets.a"), lws_missing_msg)
-        env_jsb.Append(CPPPATH=["lws/linux_x86_64_release/include"])
-        env.Append(LIBS=[File('lws/linux_x86_64_release/libwebsockets.a')])
-    elif env["platform"] == "windows":
-        check(os.path.exists("lws/windows_x86_64_release/websockets.lib"), lws_missing_msg)
-        if env.msvc and env["vsproj"]:
-            env.Append(CPPPATH=[f"#modules/{module_name}/lws/windows_x86_64_release/include"])
-        env_jsb.Append(CPPPATH=["lws/windows_x86_64_release/include"])
+    lws_basename = f"{jsb_platform}_{jsb_arch}_release"
 
-        env.Append(LIBS=[File("lws/windows_x86_64_release/websockets.lib")])
-    #TODO lws builds on other platforms
+    if jsb_platform == "macos":
+        check(os.path.exists(f"lws/{lws_basename}/libwebsockets.a"), lws_missing_msg)
+        env_jsb.Append(CPPPATH=[f"lws/{lws_basename}/include"])
+        env.Append(LIBPATH=[f'#modules/{module_name}/lws/{lws_basename}'])
+        env.Append(LINKFLAGS=["-lwebsockets"])
+    elif jsb_platform == "linux":
+        check(os.path.exists(f"lws/{lws_basename}/libwebsockets.a"), lws_missing_msg)
+        env_jsb.Append(CPPPATH=[f"lws/{lws_basename}/include"])
+        env.Append(LIBS=[File(f"lws/{lws_basename}/libwebsockets.a")])
+    elif jsb_platform == "windows":
+        check(os.path.exists(f"lws/{lws_basename}/websockets.lib"), lws_missing_msg)
+        if env.msvc and env["vsproj"]:
+            env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
+        env_jsb.Append(CPPPATH=[f"lws/{lws_basename}/include"])
+        env.Append(LIBS=[File(f"lws/{lws_basename}/websockets.lib")])
+    else:
+        check(False, f'lws is not supported on {env["platform"]}')
 
 generate_code({
         # presets for runtime
