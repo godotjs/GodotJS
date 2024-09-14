@@ -44,7 +44,7 @@ namespace jsb::internal
             	}
             	else
             	{
-            		JSB_LOG(Warning, "EditorSettings is not available for %s", jsb_typename(jsb::internal::Settings));
+            		JSB_LOG(Verbose, "EditorSettings is not available when initialising %s", jsb_typename(jsb::internal::Settings));
             	}
             }
             // check before read to avoid redundant warnings
