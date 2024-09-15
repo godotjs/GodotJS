@@ -13,13 +13,13 @@ namespace jsb
     template<bool IsInstancedT = false>
     struct ReflectThis
     {
-        static void* from(const v8::FunctionCallbackInfo<v8::Value>& info) { return nullptr; }
+        static void* from(const vm::FunctionCallbackInfo& info) { return nullptr; }
     };
 
     template<>
     struct ReflectThis<true>
     {
-        static void* from(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void* from(const vm::FunctionCallbackInfo& info)
         {
             // jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             return VariantInternal::get_opaque_pointer((Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer));
@@ -32,7 +32,7 @@ namespace jsb
         static constexpr bool is_supported(Variant::Type return_type) { return false; }
 
         template<bool, Variant::Type... Ts>
-        static void _call(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _call(const vm::FunctionCallbackInfo& info);
     };
 
     template<>
@@ -43,7 +43,7 @@ namespace jsb
 
         // no arg
         template<bool IsInstanceCallT>
-        static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _call(const vm::FunctionCallbackInfo& info)
         {
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
             func(ReflectThis<IsInstanceCallT>::from(info), nullptr, nullptr, 0);
@@ -58,7 +58,7 @@ namespace jsb
 
         // no arg
         template<bool IsInstanceCallT>
-        static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _call(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
@@ -68,7 +68,7 @@ namespace jsb
         }
 
         // template<bool IsInstanceCallT, Variant::Type A1>
-        // static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        // static void _call(const vm::FunctionCallbackInfo& info)
         // {
         //     v8::Isolate* isolate = info.GetIsolate();
         //     v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -86,7 +86,7 @@ namespace jsb
         // }
         //
         // template<bool IsInstanceCallT, Variant::Type A1, Variant::Type A2>
-        // static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        // static void _call(const vm::FunctionCallbackInfo& info)
         // {
         //     v8::Isolate* isolate = info.GetIsolate();
         //     v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -110,8 +110,8 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type member_type) { return false; }
 
-        static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info);  // no use
-        static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info);  // no use
+        static void _getter(const vm::FunctionCallbackInfo& info);  // no use
+        static void _setter(const vm::FunctionCallbackInfo& info);  // no use
     };
 
     template<>
@@ -127,7 +127,7 @@ namespace jsb
         typedef double GDTransitionNumber;
 
         // approx. 30% faster than plain reflection version of _getter/_setter
-        static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _getter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRGetter getter_func = (const Variant::PTRGetter) info.Data().As<v8::External>()->Value();
@@ -137,7 +137,7 @@ namespace jsb
             info.GetReturnValue().Set(v8::Number::New(isolate, value[0]));
         }
 
-        static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _setter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -165,7 +165,7 @@ namespace jsb
          */
         typedef int64_t GDTransitionNumber;
 
-        static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _getter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRGetter getter_func = (const Variant::PTRGetter) info.Data().As<v8::External>()->Value();
@@ -175,7 +175,7 @@ namespace jsb
             info.GetReturnValue().Set(v8::Int32::New(isolate, (int32_t) value[0]));
         }
 
-        static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _setter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -196,7 +196,7 @@ namespace jsb
     struct ReflectConstructorCall
     {
         static constexpr bool is_supported(Variant::Type type) { return false; }
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void constructor(const vm::FunctionCallbackInfo& info);
     };
 
     template<>
@@ -204,7 +204,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR2; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())
@@ -280,7 +280,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR2I; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())
@@ -356,7 +356,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR3; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())
@@ -438,7 +438,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR3I; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())
@@ -520,7 +520,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR4; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())
@@ -608,7 +608,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR4I; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())
@@ -696,7 +696,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::RECT2; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())
@@ -804,7 +804,7 @@ namespace jsb
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::RECT2I; }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             if (!info.IsConstructCall())

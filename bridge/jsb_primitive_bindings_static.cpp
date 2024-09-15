@@ -51,7 +51,7 @@ namespace jsb
     template<typename T>
     struct IndexAccess
     {
-        static void _set_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _set_indexed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -81,7 +81,7 @@ namespace jsb
             }
         }
 
-        static void _get_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _get_indexed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -115,7 +115,7 @@ namespace jsb
 
     struct Vector2StaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -195,7 +195,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_angle(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_angle(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -213,7 +213,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_angle_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_angle_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -237,7 +237,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_angle_to_point(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_angle_to_point(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -261,7 +261,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_direction_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_direction_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -285,7 +285,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -309,7 +309,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_squared_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_squared_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -333,7 +333,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -351,7 +351,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length_squared(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length_squared(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -369,7 +369,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_limit_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_limit_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -393,7 +393,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -411,7 +411,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -429,7 +429,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -453,7 +453,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_zero_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_zero_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -471,7 +471,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -489,7 +489,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_posmod(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_posmod(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -513,7 +513,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_posmodv(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_posmodv(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -537,7 +537,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_project(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_project(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -561,7 +561,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_lerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_lerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -591,7 +591,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -621,7 +621,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cubic_interpolate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cubic_interpolate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -663,7 +663,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cubic_interpolate_in_time(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cubic_interpolate_in_time(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -723,7 +723,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bezier_interpolate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bezier_interpolate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -765,7 +765,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bezier_derivative(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bezier_derivative(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -807,7 +807,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -825,7 +825,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -843,7 +843,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_move_toward(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_move_toward(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -873,7 +873,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rotated(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rotated(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -897,7 +897,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_orthogonal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_orthogonal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -915,7 +915,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_floor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_floor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -933,7 +933,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_ceil(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_ceil(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -951,7 +951,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_round(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_round(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -969,7 +969,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_aspect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_aspect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -987,7 +987,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_dot(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_dot(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1011,7 +1011,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slide(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slide(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1035,7 +1035,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bounce(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bounce(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1059,7 +1059,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reflect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reflect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1083,7 +1083,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cross(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cross(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1107,7 +1107,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1125,7 +1125,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sign(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sign(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1143,7 +1143,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clamp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clamp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1173,7 +1173,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clampf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clampf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1203,7 +1203,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snapped(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snapped(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1227,7 +1227,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snappedf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snappedf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1251,7 +1251,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1275,7 +1275,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_minf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_minf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1299,7 +1299,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1323,7 +1323,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_maxf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_maxf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1347,7 +1347,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_angle(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_angle(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1365,7 +1365,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1383,7 +1383,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1394,7 +1394,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1412,7 +1412,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1423,7 +1423,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1443,7 +1443,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1463,7 +1463,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1520,7 +1520,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1560,7 +1560,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1579,7 +1579,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1599,7 +1599,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1619,7 +1619,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1639,7 +1639,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1659,7 +1659,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1679,7 +1679,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1812,7 +1812,7 @@ namespace jsb
     };
     struct Vector2iStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1892,7 +1892,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_aspect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_aspect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1910,7 +1910,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1928,7 +1928,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1946,7 +1946,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1970,7 +1970,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_squared_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_squared_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -1994,7 +1994,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2012,7 +2012,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length_squared(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length_squared(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2030,7 +2030,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sign(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sign(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2048,7 +2048,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2066,7 +2066,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clamp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clamp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2096,7 +2096,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clampi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clampi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2126,7 +2126,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snapped(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snapped(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2150,7 +2150,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snappedi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snappedi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2174,7 +2174,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2198,7 +2198,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_mini(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_mini(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2222,7 +2222,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2246,7 +2246,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_maxi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_maxi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2270,7 +2270,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2288,7 +2288,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2299,7 +2299,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2317,7 +2317,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2328,7 +2328,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2348,7 +2348,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2368,7 +2368,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2425,7 +2425,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2465,7 +2465,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2484,7 +2484,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2504,7 +2504,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2524,7 +2524,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2544,7 +2544,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2564,7 +2564,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2584,7 +2584,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2687,7 +2687,7 @@ namespace jsb
     };
     struct Rect2StaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2797,7 +2797,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_center(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_center(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2815,7 +2815,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_area(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_area(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2833,7 +2833,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_area(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_area(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2851,7 +2851,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_point(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_point(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2875,7 +2875,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2899,7 +2899,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2917,7 +2917,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersects(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2947,7 +2947,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_encloses(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encloses(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2971,7 +2971,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersection(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersection(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -2995,7 +2995,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_merge(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_merge(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3019,7 +3019,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_expand(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_expand(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3043,7 +3043,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_grow(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_grow(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3067,7 +3067,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_grow_side(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_grow_side(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3097,7 +3097,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_grow_individual(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_grow_individual(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3139,7 +3139,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3157,7 +3157,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_position(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_position(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3175,7 +3175,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_position(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_position(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3186,7 +3186,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3204,7 +3204,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3215,7 +3215,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_end(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_end(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3233,7 +3233,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_end(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_end(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3300,7 +3300,7 @@ namespace jsb
     };
     struct Rect2iStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3410,7 +3410,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_center(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_center(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3428,7 +3428,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_area(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_area(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3446,7 +3446,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_area(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_area(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3464,7 +3464,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_point(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_point(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3488,7 +3488,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersects(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3512,7 +3512,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_encloses(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encloses(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3536,7 +3536,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersection(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersection(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3560,7 +3560,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_merge(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_merge(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3584,7 +3584,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_expand(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_expand(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3608,7 +3608,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_grow(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_grow(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3632,7 +3632,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_grow_side(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_grow_side(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3662,7 +3662,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_grow_individual(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_grow_individual(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3704,7 +3704,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3722,7 +3722,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_position(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_position(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3740,7 +3740,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_position(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_position(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3751,7 +3751,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3769,7 +3769,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3780,7 +3780,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_end(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_end(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3798,7 +3798,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_end(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_end(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3863,7 +3863,7 @@ namespace jsb
     };
     struct Vector3StaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3949,7 +3949,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3967,7 +3967,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -3985,7 +3985,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_angle_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_angle_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4009,7 +4009,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_signed_angle_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_signed_angle_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4039,7 +4039,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_direction_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_direction_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4063,7 +4063,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4087,7 +4087,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_squared_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_squared_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4111,7 +4111,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4129,7 +4129,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length_squared(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length_squared(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4147,7 +4147,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_limit_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_limit_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4171,7 +4171,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4189,7 +4189,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4207,7 +4207,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4231,7 +4231,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_zero_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_zero_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4249,7 +4249,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4267,7 +4267,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4285,7 +4285,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clamp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clamp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4315,7 +4315,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clampf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clampf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4345,7 +4345,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snapped(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snapped(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4369,7 +4369,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snappedf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snappedf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4393,7 +4393,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rotated(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rotated(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4423,7 +4423,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_lerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_lerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4453,7 +4453,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4483,7 +4483,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cubic_interpolate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cubic_interpolate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4525,7 +4525,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cubic_interpolate_in_time(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cubic_interpolate_in_time(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4585,7 +4585,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bezier_interpolate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bezier_interpolate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4627,7 +4627,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bezier_derivative(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bezier_derivative(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4669,7 +4669,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_move_toward(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_move_toward(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4699,7 +4699,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_dot(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_dot(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4723,7 +4723,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cross(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cross(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4747,7 +4747,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_outer(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_outer(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4771,7 +4771,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4789,7 +4789,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_floor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_floor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4807,7 +4807,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_ceil(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_ceil(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4825,7 +4825,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_round(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_round(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4843,7 +4843,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_posmod(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_posmod(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4867,7 +4867,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_posmodv(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_posmodv(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4891,7 +4891,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_project(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_project(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4915,7 +4915,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slide(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slide(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4939,7 +4939,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bounce(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bounce(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4963,7 +4963,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reflect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reflect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -4987,7 +4987,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sign(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sign(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5005,7 +5005,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_octahedron_encode(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_octahedron_encode(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5023,7 +5023,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5047,7 +5047,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_minf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_minf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5071,7 +5071,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5095,7 +5095,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_maxf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_maxf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5119,7 +5119,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_octahedron_decode(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_octahedron_decode(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5137,7 +5137,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5155,7 +5155,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5166,7 +5166,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5184,7 +5184,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5195,7 +5195,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5213,7 +5213,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5224,7 +5224,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5244,7 +5244,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5264,7 +5264,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5321,7 +5321,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5361,7 +5361,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5380,7 +5380,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5400,7 +5400,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5420,7 +5420,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5440,7 +5440,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5460,7 +5460,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5480,7 +5480,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5626,7 +5626,7 @@ namespace jsb
     };
     struct Vector3iStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5712,7 +5712,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5730,7 +5730,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5748,7 +5748,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5772,7 +5772,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_squared_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_squared_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5796,7 +5796,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5814,7 +5814,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length_squared(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length_squared(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5832,7 +5832,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sign(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sign(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5850,7 +5850,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5868,7 +5868,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clamp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clamp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5898,7 +5898,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clampi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clampi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5928,7 +5928,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snapped(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snapped(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5952,7 +5952,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snappedi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snappedi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -5976,7 +5976,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6000,7 +6000,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_mini(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_mini(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6024,7 +6024,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6048,7 +6048,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_maxi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_maxi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6072,7 +6072,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6090,7 +6090,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6101,7 +6101,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6119,7 +6119,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6130,7 +6130,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6148,7 +6148,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6159,7 +6159,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6179,7 +6179,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6199,7 +6199,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6256,7 +6256,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6296,7 +6296,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6315,7 +6315,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6335,7 +6335,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6355,7 +6355,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6375,7 +6375,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6395,7 +6395,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6415,7 +6415,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6524,7 +6524,7 @@ namespace jsb
     };
     struct Transform2DStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6645,7 +6645,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6663,7 +6663,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_affine_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_affine_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6681,7 +6681,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_rotation(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_rotation(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6699,7 +6699,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_origin(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_origin(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6717,7 +6717,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_scale(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_scale(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6735,7 +6735,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_skew(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_skew(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6753,7 +6753,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_orthonormalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_orthonormalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6771,7 +6771,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rotated(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rotated(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6795,7 +6795,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rotated_local(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rotated_local(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6819,7 +6819,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_scaled(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_scaled(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6843,7 +6843,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_scaled_local(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_scaled_local(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6867,7 +6867,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_translated(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_translated(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6891,7 +6891,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_translated_local(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_translated_local(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6915,7 +6915,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_determinant(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_determinant(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6933,7 +6933,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_basis_xform(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_basis_xform(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6957,7 +6957,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_basis_xform_inv(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_basis_xform_inv(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -6981,7 +6981,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_interpolate_with(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_interpolate_with(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7011,7 +7011,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_conformal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_conformal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7029,7 +7029,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7053,7 +7053,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7071,7 +7071,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_looking_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_looking_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7095,7 +7095,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7113,7 +7113,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7124,7 +7124,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7142,7 +7142,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7153,7 +7153,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_origin(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_origin(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7171,7 +7171,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_origin(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_origin(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7182,7 +7182,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7324,7 +7324,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7344,7 +7344,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7435,7 +7435,7 @@ namespace jsb
     };
     struct Vector4StaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7527,7 +7527,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7545,7 +7545,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7563,7 +7563,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7581,7 +7581,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length_squared(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length_squared(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7599,7 +7599,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7617,7 +7617,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sign(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sign(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7635,7 +7635,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_floor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_floor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7653,7 +7653,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_ceil(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_ceil(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7671,7 +7671,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_round(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_round(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7689,7 +7689,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_lerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_lerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7719,7 +7719,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cubic_interpolate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cubic_interpolate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7761,7 +7761,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_cubic_interpolate_in_time(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_cubic_interpolate_in_time(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7821,7 +7821,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_posmod(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_posmod(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7845,7 +7845,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_posmodv(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_posmodv(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7869,7 +7869,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snapped(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snapped(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7893,7 +7893,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snappedf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snappedf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7917,7 +7917,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clamp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clamp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7947,7 +7947,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clampf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clampf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7977,7 +7977,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -7995,7 +7995,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8013,7 +8013,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_direction_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_direction_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8037,7 +8037,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8061,7 +8061,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_squared_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_squared_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8085,7 +8085,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_dot(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_dot(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8109,7 +8109,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8127,7 +8127,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8151,7 +8151,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_zero_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_zero_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8169,7 +8169,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8187,7 +8187,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8211,7 +8211,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_minf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_minf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8235,7 +8235,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8259,7 +8259,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_maxf(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_maxf(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8283,7 +8283,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8301,7 +8301,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8312,7 +8312,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8330,7 +8330,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8341,7 +8341,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8359,7 +8359,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8370,7 +8370,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8388,7 +8388,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8399,7 +8399,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8419,7 +8419,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8439,7 +8439,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8496,7 +8496,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8536,7 +8536,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8555,7 +8555,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8575,7 +8575,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8595,7 +8595,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8615,7 +8615,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8635,7 +8635,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8655,7 +8655,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8778,7 +8778,7 @@ namespace jsb
     };
     struct Vector4iStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8870,7 +8870,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8888,7 +8888,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8906,7 +8906,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8924,7 +8924,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length_squared(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length_squared(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8942,7 +8942,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sign(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sign(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8960,7 +8960,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -8978,7 +8978,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clamp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clamp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9008,7 +9008,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clampi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clampi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9038,7 +9038,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snapped(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snapped(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9062,7 +9062,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_snappedi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_snappedi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9086,7 +9086,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_min(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9110,7 +9110,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_mini(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_mini(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9134,7 +9134,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9158,7 +9158,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_maxi(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_maxi(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9182,7 +9182,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9206,7 +9206,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_squared_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_squared_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9230,7 +9230,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9248,7 +9248,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9259,7 +9259,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9277,7 +9277,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9288,7 +9288,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9306,7 +9306,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9317,7 +9317,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9335,7 +9335,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9346,7 +9346,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9366,7 +9366,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9386,7 +9386,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9443,7 +9443,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9483,7 +9483,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9502,7 +9502,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9522,7 +9522,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9542,7 +9542,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9562,7 +9562,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9582,7 +9582,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9602,7 +9602,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9710,7 +9710,7 @@ namespace jsb
     };
     struct PlaneStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9861,7 +9861,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9879,7 +9879,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_center(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_center(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9897,7 +9897,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9921,7 +9921,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9939,7 +9939,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_point_over(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_point_over(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9963,7 +9963,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_distance_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_distance_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -9987,7 +9987,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_point(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_point(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10017,7 +10017,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_project(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_project(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10041,7 +10041,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersect_3(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersect_3(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10065,7 +10065,7 @@ namespace jsb
             }
             ((const Plane*) thiz)->intersect_3(loc_0, loc_1);
         }
-        static void method_intersects_ray(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects_ray(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10089,7 +10089,7 @@ namespace jsb
             }
             ((const Plane*) thiz)->intersects_ray(loc_0, loc_1);
         }
-        static void method_intersects_segment(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects_segment(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10113,7 +10113,7 @@ namespace jsb
             }
             ((const Plane*) thiz)->intersects_segment(loc_0, loc_1);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10131,7 +10131,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10142,7 +10142,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10160,7 +10160,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10171,7 +10171,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10189,7 +10189,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10200,7 +10200,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_d(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_d(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10218,7 +10218,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_d(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_d(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10229,7 +10229,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_normal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_normal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10247,7 +10247,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_normal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_normal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10258,7 +10258,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10277,7 +10277,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10297,7 +10297,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10383,7 +10383,7 @@ namespace jsb
     };
     struct QuaternionStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10510,7 +10510,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10528,7 +10528,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_length_squared(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_length_squared(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10546,7 +10546,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10564,7 +10564,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_normalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_normalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10582,7 +10582,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10606,7 +10606,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10624,7 +10624,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10642,7 +10642,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_log(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_log(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10660,7 +10660,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_exp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_exp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10678,7 +10678,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_angle_to(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_angle_to(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10702,7 +10702,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_dot(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_dot(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10726,7 +10726,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10756,7 +10756,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slerpni(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slerpni(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10786,7 +10786,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_spherical_cubic_interpolate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_spherical_cubic_interpolate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10828,7 +10828,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_spherical_cubic_interpolate_in_time(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_spherical_cubic_interpolate_in_time(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10888,7 +10888,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_euler(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_euler(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10912,7 +10912,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_euler(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_euler(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10930,7 +10930,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_axis(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_axis(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10948,7 +10948,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_angle(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_angle(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10966,7 +10966,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10984,7 +10984,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -10995,7 +10995,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11013,7 +11013,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11024,7 +11024,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11042,7 +11042,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11053,7 +11053,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11071,7 +11071,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11082,7 +11082,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11102,7 +11102,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11122,7 +11122,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11213,7 +11213,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11233,7 +11233,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11252,7 +11252,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11272,7 +11272,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11367,7 +11367,7 @@ namespace jsb
     };
     struct AABBStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11434,7 +11434,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_abs(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_abs(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11452,7 +11452,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_center(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_center(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11470,7 +11470,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_volume(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_volume(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11488,7 +11488,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_volume(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_volume(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11506,7 +11506,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_surface(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_surface(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11524,7 +11524,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_point(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_point(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11548,7 +11548,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11572,7 +11572,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11590,7 +11590,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersects(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11614,7 +11614,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_encloses(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encloses(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11638,7 +11638,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersects_plane(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects_plane(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11662,7 +11662,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersection(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersection(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11686,7 +11686,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_merge(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_merge(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11710,7 +11710,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_expand(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_expand(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11734,7 +11734,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_grow(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_grow(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11758,7 +11758,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_support(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_support(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11782,7 +11782,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_longest_axis(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_longest_axis(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11800,7 +11800,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_longest_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_longest_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11818,7 +11818,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_longest_axis_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_longest_axis_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11836,7 +11836,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_shortest_axis(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_shortest_axis(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11854,7 +11854,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_shortest_axis_index(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_shortest_axis_index(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11872,7 +11872,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_shortest_axis_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_shortest_axis_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11890,7 +11890,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_endpoint(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_endpoint(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11914,7 +11914,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_intersects_segment(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects_segment(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11938,7 +11938,7 @@ namespace jsb
             }
             ((const AABB*) thiz)->intersects_segment(loc_0, loc_1);
         }
-        static void method_intersects_ray(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_intersects_ray(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11962,7 +11962,7 @@ namespace jsb
             }
             ((const AABB*) thiz)->intersects_ray(loc_0, loc_1);
         }
-        static void get_position(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_position(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11980,7 +11980,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_position(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_position(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -11991,7 +11991,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12009,7 +12009,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12020,7 +12020,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_end(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_end(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12038,7 +12038,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_end(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_end(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12049,7 +12049,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12069,7 +12069,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12157,7 +12157,7 @@ namespace jsb
     };
     struct BasisStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12261,7 +12261,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12279,7 +12279,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_transposed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_transposed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12297,7 +12297,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_orthonormalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_orthonormalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12315,7 +12315,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_determinant(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_determinant(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12333,7 +12333,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rotated(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rotated(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12363,7 +12363,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_scaled(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_scaled(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12387,7 +12387,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_scale(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_scale(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12405,7 +12405,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_euler(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_euler(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12429,7 +12429,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_tdotx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_tdotx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12453,7 +12453,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_tdoty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_tdoty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12477,7 +12477,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_tdotz(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_tdotz(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12501,7 +12501,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12531,7 +12531,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_conformal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_conformal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12549,7 +12549,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12573,7 +12573,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12591,7 +12591,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_rotation_quaternion(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_rotation_quaternion(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12609,7 +12609,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_looking_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_looking_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12639,7 +12639,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_scale(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_scale(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12657,7 +12657,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_euler(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_euler(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12681,7 +12681,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12699,7 +12699,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12710,7 +12710,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12728,7 +12728,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12739,7 +12739,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12757,7 +12757,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12768,7 +12768,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12842,7 +12842,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12862,7 +12862,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -12952,7 +12952,7 @@ namespace jsb
     };
     struct Transform3DStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13062,7 +13062,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13080,7 +13080,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_affine_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_affine_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13098,7 +13098,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_orthonormalized(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_orthonormalized(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13116,7 +13116,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rotated(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rotated(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13146,7 +13146,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rotated_local(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rotated_local(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13176,7 +13176,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_scaled(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_scaled(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13200,7 +13200,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_scaled_local(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_scaled_local(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13224,7 +13224,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_translated(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_translated(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13248,7 +13248,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_translated_local(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_translated_local(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13272,7 +13272,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_looking_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_looking_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13308,7 +13308,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_interpolate_with(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_interpolate_with(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13338,7 +13338,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13362,7 +13362,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_finite(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_finite(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13380,7 +13380,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_basis(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_basis(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13398,7 +13398,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_basis(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_basis(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13409,7 +13409,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_origin(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_origin(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13427,7 +13427,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_origin(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_origin(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13438,7 +13438,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13614,7 +13614,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13634,7 +13634,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13711,7 +13711,7 @@ namespace jsb
     };
     struct ProjectionStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13803,7 +13803,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_depth_correction(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_depth_correction(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13821,7 +13821,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_light_atlas_rect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_light_atlas_rect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13839,7 +13839,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_perspective(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_perspective(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13881,7 +13881,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_perspective_hmd(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_perspective_hmd(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -13941,7 +13941,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_for_hmd(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_for_hmd(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14001,7 +14001,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_orthogonal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_orthogonal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14049,7 +14049,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_orthogonal_aspect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_orthogonal_aspect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14091,7 +14091,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_frustum(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_frustum(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14139,7 +14139,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_frustum_aspect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_frustum_aspect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14187,7 +14187,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create_fit_aabb(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create_fit_aabb(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14205,7 +14205,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_determinant(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_determinant(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14223,7 +14223,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_perspective_znear_adjusted(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_perspective_znear_adjusted(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14247,7 +14247,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_projection_plane(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_projection_plane(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14271,7 +14271,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_flipped_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_flipped_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14289,7 +14289,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_jitter_offseted(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_jitter_offseted(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14313,7 +14313,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_fovy(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_fovy(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14337,7 +14337,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_z_far(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_z_far(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14355,7 +14355,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_z_near(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_z_near(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14373,7 +14373,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_aspect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_aspect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14391,7 +14391,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_fov(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_fov(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14409,7 +14409,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_orthogonal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_orthogonal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14427,7 +14427,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_viewport_half_extents(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_viewport_half_extents(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14445,7 +14445,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_far_plane_half_extents(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_far_plane_half_extents(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14463,7 +14463,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14481,7 +14481,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_pixels_per_meter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_pixels_per_meter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14505,7 +14505,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_lod_multiplier(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_lod_multiplier(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14523,7 +14523,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14541,7 +14541,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_x(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_x(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14552,7 +14552,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14570,7 +14570,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_y(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_y(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14581,7 +14581,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14599,7 +14599,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_z(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_z(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14610,7 +14610,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14628,7 +14628,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_w(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_w(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14639,7 +14639,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14696,7 +14696,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14716,7 +14716,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14826,7 +14826,7 @@ namespace jsb
     };
     struct ColorStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14977,7 +14977,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_argb32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_argb32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -14995,7 +14995,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_abgr32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_abgr32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15013,7 +15013,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_rgba32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_rgba32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15031,7 +15031,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_argb64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_argb64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15049,7 +15049,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_abgr64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_abgr64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15067,7 +15067,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_rgba64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_rgba64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15085,7 +15085,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_html(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_html(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15109,7 +15109,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clamp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clamp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15139,7 +15139,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_inverted(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_inverted(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15157,7 +15157,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_lerp(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_lerp(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15187,7 +15187,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_lightened(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_lightened(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15211,7 +15211,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_darkened(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_darkened(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15235,7 +15235,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_blend(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_blend(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15259,7 +15259,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_luminance(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_luminance(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15277,7 +15277,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_srgb_to_linear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_srgb_to_linear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15295,7 +15295,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_linear_to_srgb(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_linear_to_srgb(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15313,7 +15313,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_equal_approx(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_equal_approx(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15337,7 +15337,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_hex(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_hex(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15355,7 +15355,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_hex64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_hex64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15373,7 +15373,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_html(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_html(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15391,7 +15391,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_html_is_valid(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_html_is_valid(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15409,7 +15409,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_string(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_string(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15433,7 +15433,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_hsv(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_hsv(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15469,7 +15469,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_ok_hsl(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_ok_hsl(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15505,7 +15505,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_from_rgbe9995(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_from_rgbe9995(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15523,7 +15523,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void get_r(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_r(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15541,7 +15541,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_r(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_r(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15552,7 +15552,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_g(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_g(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15570,7 +15570,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_g(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_g(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15581,7 +15581,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_b(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_b(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15599,7 +15599,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_b(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_b(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15610,7 +15610,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_a(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_a(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15628,7 +15628,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_a(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_a(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15639,7 +15639,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_r8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_r8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15657,7 +15657,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_r8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_r8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15668,7 +15668,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_g8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_g8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15686,7 +15686,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_g8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_g8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15697,7 +15697,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_b8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_b8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15715,7 +15715,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_b8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_b8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15726,7 +15726,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_a8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_a8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15744,7 +15744,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_a8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_a8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15755,7 +15755,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_h(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_h(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15773,7 +15773,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_h(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_h(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15784,7 +15784,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_s(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_s(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15802,7 +15802,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_s(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_s(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15813,7 +15813,7 @@ namespace jsb
                 return;
             }
         }
-        static void get_v(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void get_v(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15831,7 +15831,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void set_v(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void set_v(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15842,7 +15842,7 @@ namespace jsb
                 return;
             }
         }
-        static void op_ADD(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_ADD(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15862,7 +15862,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_SUBTRACT(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_SUBTRACT(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15882,7 +15882,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_MULTIPLY(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_MULTIPLY(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15939,7 +15939,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_DIVIDE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_DIVIDE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15979,7 +15979,7 @@ namespace jsb
             } while (false);
             jsb_throw(isolate, "no suitable overload");
         }
-        static void op_NEGATE(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NEGATE(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -15998,7 +15998,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16018,7 +16018,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16292,7 +16292,7 @@ namespace jsb
     };
     struct NodePathStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16354,7 +16354,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_absolute(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_absolute(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16372,7 +16372,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_name_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_name_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16390,7 +16390,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_name(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16414,7 +16414,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_subname_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_subname_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16432,7 +16432,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_hash(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_hash(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16450,7 +16450,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_subname(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_subname(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16474,7 +16474,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_concatenated_names(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_concatenated_names(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16492,7 +16492,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_concatenated_subnames(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_concatenated_subnames(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16510,7 +16510,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16540,7 +16540,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_as_property_path(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_as_property_path(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16558,7 +16558,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16576,7 +16576,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16596,7 +16596,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16658,7 +16658,7 @@ namespace jsb
     };
     struct RIDStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16707,7 +16707,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_valid(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_valid(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16725,7 +16725,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_id(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_id(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16743,7 +16743,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16763,7 +16763,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16783,7 +16783,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16803,7 +16803,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16823,7 +16823,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16843,7 +16843,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16900,7 +16900,7 @@ namespace jsb
     };
     struct CallableStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16967,7 +16967,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_create(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_create(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -16991,7 +16991,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_callv(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_callv(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17009,7 +17009,7 @@ namespace jsb
             }
             ((const Callable*) thiz)->callv(loc_0);
         }
-        static void method_is_null(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_null(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17027,7 +17027,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_custom(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_custom(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17045,7 +17045,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_standard(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_standard(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17063,7 +17063,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_valid(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_valid(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17081,7 +17081,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_object(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_object(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17099,7 +17099,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_object_id(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_object_id(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17117,7 +17117,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_method(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17135,7 +17135,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_argument_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_argument_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17153,7 +17153,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_bound_arguments_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_bound_arguments_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17171,7 +17171,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_bound_arguments(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_bound_arguments(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17189,7 +17189,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_hash(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_hash(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17207,7 +17207,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bindv(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bindv(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17231,7 +17231,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_unbind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_unbind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17255,7 +17255,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_call(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17267,7 +17267,7 @@ namespace jsb
             }
             ((const Callable*) thiz)->call();
         }
-        static void method_call_deferred(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_call_deferred(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17279,7 +17279,7 @@ namespace jsb
             }
             ((const Callable*) thiz)->call_deferred();
         }
-        static void method_rpc(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rpc(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17291,7 +17291,7 @@ namespace jsb
             }
             ((const Callable*) thiz)->rpc();
         }
-        static void method_rpc_id(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rpc_id(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17309,7 +17309,7 @@ namespace jsb
             }
             ((const Callable*) thiz)->rpc_id(loc_0);
         }
-        static void method_bind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17327,7 +17327,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17347,7 +17347,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17418,7 +17418,7 @@ namespace jsb
     };
     struct SignalStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17485,7 +17485,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_null(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_null(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17503,7 +17503,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_object(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_object(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17521,7 +17521,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_object_id(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_object_id(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17539,7 +17539,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_name(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17557,7 +17557,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_connect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_connect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17587,7 +17587,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_disconnect(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_disconnect(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17605,7 +17605,7 @@ namespace jsb
             }
             ((Signal*) thiz)->disconnect(loc_0);
         }
-        static void method_is_connected(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_connected(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17629,7 +17629,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_connections(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_connections(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17647,7 +17647,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_emit(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_emit(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17659,7 +17659,7 @@ namespace jsb
             }
             ((const Signal*) thiz)->emit();
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17679,7 +17679,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17739,7 +17739,7 @@ namespace jsb
     };
     struct DictionaryStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17788,7 +17788,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17806,7 +17806,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17824,7 +17824,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17836,7 +17836,7 @@ namespace jsb
             }
             ((Dictionary*) thiz)->clear();
         }
-        static void method_merge(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_merge(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17860,7 +17860,7 @@ namespace jsb
             }
             ((Dictionary*) thiz)->merge(loc_0, loc_1);
         }
-        static void method_merged(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_merged(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17890,7 +17890,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17914,7 +17914,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_all(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_all(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17938,7 +17938,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find_key(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find_key(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17956,7 +17956,7 @@ namespace jsb
             }
             ((const Dictionary*) thiz)->find_key(loc_0);
         }
-        static void method_erase(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_erase(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17980,7 +17980,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_hash(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_hash(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -17998,7 +17998,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_keys(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_keys(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18016,7 +18016,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_values(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_values(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18034,7 +18034,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18058,7 +18058,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18082,7 +18082,7 @@ namespace jsb
             }
             ((const Dictionary*) thiz)->get(loc_0, loc_1);
         }
-        static void method_get_or_add(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_or_add(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18106,7 +18106,7 @@ namespace jsb
             }
             ((Dictionary*) thiz)->get_or_add(loc_0, loc_1);
         }
-        static void method_make_read_only(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_make_read_only(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18118,7 +18118,7 @@ namespace jsb
             }
             ((Dictionary*) thiz)->make_read_only();
         }
-        static void method_is_read_only(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_read_only(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18136,7 +18136,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_recursive_equal(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_recursive_equal(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18166,7 +18166,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18186,7 +18186,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18207,7 +18207,7 @@ namespace jsb
             info.GetReturnValue().Set(rval);
         }
 
-            static void _set_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
+            static void _set_keyed(const vm::FunctionCallbackInfo& info)
             {
                 v8::Isolate* isolate = info.GetIsolate();
                 v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18237,7 +18237,7 @@ namespace jsb
                 }
             }
 
-            static void _get_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
+            static void _get_keyed(const vm::FunctionCallbackInfo& info)
             {
                 v8::Isolate* isolate = info.GetIsolate();
                 v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18325,7 +18325,7 @@ namespace jsb
     };
     struct ArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18516,7 +18516,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18534,7 +18534,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18552,7 +18552,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18564,7 +18564,7 @@ namespace jsb
             }
             ((Array*) thiz)->clear();
         }
-        static void method_hash(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_hash(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18582,7 +18582,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_assign(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_assign(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18600,7 +18600,7 @@ namespace jsb
             }
             ((Array*) thiz)->assign(loc_0);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18618,7 +18618,7 @@ namespace jsb
             }
             ((Array*) thiz)->push_back(loc_0);
         }
-        static void method_push_front(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_front(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18636,7 +18636,7 @@ namespace jsb
             }
             ((Array*) thiz)->push_front(loc_0);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18654,7 +18654,7 @@ namespace jsb
             }
             ((Array*) thiz)->append(loc_0);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18672,7 +18672,7 @@ namespace jsb
             }
             ((Array*) thiz)->append_array(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18696,7 +18696,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18726,7 +18726,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18744,7 +18744,7 @@ namespace jsb
             }
             ((Array*) thiz)->remove_at(loc_0);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18762,7 +18762,7 @@ namespace jsb
             }
             ((Array*) thiz)->fill(loc_0);
         }
-        static void method_erase(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_erase(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18780,7 +18780,7 @@ namespace jsb
             }
             ((Array*) thiz)->erase(loc_0);
         }
-        static void method_front(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_front(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18792,7 +18792,7 @@ namespace jsb
             }
             ((const Array*) thiz)->front();
         }
-        static void method_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18804,7 +18804,7 @@ namespace jsb
             }
             ((const Array*) thiz)->back();
         }
-        static void method_pick_random(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_pick_random(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18816,7 +18816,7 @@ namespace jsb
             }
             ((const Array*) thiz)->pick_random();
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18846,7 +18846,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18876,7 +18876,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18900,7 +18900,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18924,7 +18924,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_pop_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_pop_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18936,7 +18936,7 @@ namespace jsb
             }
             ((Array*) thiz)->pop_back();
         }
-        static void method_pop_front(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_pop_front(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18948,7 +18948,7 @@ namespace jsb
             }
             ((Array*) thiz)->pop_front();
         }
-        static void method_pop_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_pop_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18966,7 +18966,7 @@ namespace jsb
             }
             ((Array*) thiz)->pop_at(loc_0);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18978,7 +18978,7 @@ namespace jsb
             }
             ((Array*) thiz)->sort();
         }
-        static void method_sort_custom(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort_custom(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -18996,7 +18996,7 @@ namespace jsb
             }
             ((Array*) thiz)->sort_custom(loc_0);
         }
-        static void method_shuffle(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_shuffle(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19008,7 +19008,7 @@ namespace jsb
             }
             ((Array*) thiz)->shuffle();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19038,7 +19038,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_bsearch_custom(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch_custom(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19074,7 +19074,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19086,7 +19086,7 @@ namespace jsb
             }
             ((Array*) thiz)->reverse();
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19110,7 +19110,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19152,7 +19152,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_filter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_filter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19176,7 +19176,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_map(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_map(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19200,7 +19200,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reduce(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reduce(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19224,7 +19224,7 @@ namespace jsb
             }
             ((const Array*) thiz)->reduce(loc_0, loc_1);
         }
-        static void method_any(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_any(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19248,7 +19248,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_all(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_all(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19272,7 +19272,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_max(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_max(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19284,7 +19284,7 @@ namespace jsb
             }
             ((const Array*) thiz)->max();
         }
-        static void method_min(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_min(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19296,7 +19296,7 @@ namespace jsb
             }
             ((const Array*) thiz)->min();
         }
-        static void method_is_typed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_typed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19314,7 +19314,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_same_typed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_same_typed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19338,7 +19338,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_typed_builtin(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_typed_builtin(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19356,7 +19356,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_typed_class_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_typed_class_name(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19374,7 +19374,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_typed_script(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_typed_script(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19386,7 +19386,7 @@ namespace jsb
             }
             ((const Array*) thiz)->get_typed_script();
         }
-        static void method_make_read_only(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_make_read_only(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19398,7 +19398,7 @@ namespace jsb
             }
             ((Array*) thiz)->make_read_only();
         }
-        static void method_is_read_only(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_read_only(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19416,7 +19416,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19436,7 +19436,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19456,7 +19456,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19476,7 +19476,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_LESS_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_LESS_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19496,7 +19496,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19516,7 +19516,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_GREATER_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_GREATER_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19620,7 +19620,7 @@ namespace jsb
     };
     struct PackedByteArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19682,7 +19682,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19700,7 +19700,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19718,7 +19718,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19742,7 +19742,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19766,7 +19766,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19790,7 +19790,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19808,7 +19808,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19826,7 +19826,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19856,7 +19856,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19874,7 +19874,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19898,7 +19898,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19910,7 +19910,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19934,7 +19934,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19946,7 +19946,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19976,7 +19976,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -19988,7 +19988,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20018,7 +20018,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20036,7 +20036,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20066,7 +20066,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20096,7 +20096,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20120,7 +20120,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_string_from_ascii(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_string_from_ascii(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20138,7 +20138,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_string_from_utf8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_string_from_utf8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20156,7 +20156,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_string_from_utf16(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_string_from_utf16(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20174,7 +20174,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_string_from_utf32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_string_from_utf32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20192,7 +20192,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_get_string_from_wchar(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_get_string_from_wchar(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20210,7 +20210,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_hex_encode(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_hex_encode(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20228,7 +20228,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_compress(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_compress(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20252,7 +20252,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decompress(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decompress(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20282,7 +20282,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decompress_dynamic(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decompress_dynamic(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20312,7 +20312,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_u8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_u8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20336,7 +20336,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_s8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_s8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20360,7 +20360,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_u16(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_u16(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20384,7 +20384,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_s16(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_s16(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20408,7 +20408,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_u32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_u32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20432,7 +20432,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_s32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_s32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20456,7 +20456,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_u64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_u64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20480,7 +20480,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_s64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_s64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20504,7 +20504,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_half(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_half(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20528,7 +20528,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_float(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_float(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20552,7 +20552,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_double(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_double(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20576,7 +20576,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_has_encoded_var(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has_encoded_var(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20606,7 +20606,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_decode_var(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_var(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20630,7 +20630,7 @@ namespace jsb
             }
             ((const PackedByteArray*) thiz)->decode_var(loc_0, loc_1);
         }
-        static void method_decode_var_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_decode_var_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20660,7 +20660,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_int32_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_int32_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20678,7 +20678,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_int64_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_int64_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20696,7 +20696,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_float32_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_float32_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20714,7 +20714,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_float64_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_float64_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20732,7 +20732,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_encode_u8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_u8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20756,7 +20756,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_u8(loc_0, loc_1);
         }
-        static void method_encode_s8(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_s8(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20780,7 +20780,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_s8(loc_0, loc_1);
         }
-        static void method_encode_u16(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_u16(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20804,7 +20804,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_u16(loc_0, loc_1);
         }
-        static void method_encode_s16(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_s16(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20828,7 +20828,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_s16(loc_0, loc_1);
         }
-        static void method_encode_u32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_u32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20852,7 +20852,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_u32(loc_0, loc_1);
         }
-        static void method_encode_s32(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_s32(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20876,7 +20876,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_s32(loc_0, loc_1);
         }
-        static void method_encode_u64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_u64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20900,7 +20900,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_u64(loc_0, loc_1);
         }
-        static void method_encode_s64(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_s64(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20924,7 +20924,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_s64(loc_0, loc_1);
         }
-        static void method_encode_half(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_half(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20948,7 +20948,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_half(loc_0, loc_1);
         }
-        static void method_encode_float(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_float(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20972,7 +20972,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_float(loc_0, loc_1);
         }
-        static void method_encode_double(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_double(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -20996,7 +20996,7 @@ namespace jsb
             }
             ((PackedByteArray*) thiz)->encode_double(loc_0, loc_1);
         }
-        static void method_encode_var(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_encode_var(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21032,7 +21032,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21052,7 +21052,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21165,7 +21165,7 @@ namespace jsb
     };
     struct PackedInt32ArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21227,7 +21227,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21245,7 +21245,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21263,7 +21263,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21287,7 +21287,7 @@ namespace jsb
             }
             ((PackedInt32Array*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21311,7 +21311,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21335,7 +21335,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21353,7 +21353,7 @@ namespace jsb
             }
             ((PackedInt32Array*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21371,7 +21371,7 @@ namespace jsb
             }
             ((PackedInt32Array*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21401,7 +21401,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21419,7 +21419,7 @@ namespace jsb
             }
             ((PackedInt32Array*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21443,7 +21443,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21455,7 +21455,7 @@ namespace jsb
             }
             ((PackedInt32Array*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21479,7 +21479,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21491,7 +21491,7 @@ namespace jsb
             }
             ((PackedInt32Array*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21521,7 +21521,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21539,7 +21539,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21551,7 +21551,7 @@ namespace jsb
             }
             ((PackedInt32Array*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21581,7 +21581,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21599,7 +21599,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21629,7 +21629,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21659,7 +21659,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21683,7 +21683,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21703,7 +21703,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21778,7 +21778,7 @@ namespace jsb
     };
     struct PackedInt64ArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21840,7 +21840,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21858,7 +21858,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21876,7 +21876,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21900,7 +21900,7 @@ namespace jsb
             }
             ((PackedInt64Array*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21924,7 +21924,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21948,7 +21948,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21966,7 +21966,7 @@ namespace jsb
             }
             ((PackedInt64Array*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -21984,7 +21984,7 @@ namespace jsb
             }
             ((PackedInt64Array*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22014,7 +22014,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22032,7 +22032,7 @@ namespace jsb
             }
             ((PackedInt64Array*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22056,7 +22056,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22068,7 +22068,7 @@ namespace jsb
             }
             ((PackedInt64Array*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22092,7 +22092,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22104,7 +22104,7 @@ namespace jsb
             }
             ((PackedInt64Array*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22134,7 +22134,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22152,7 +22152,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22164,7 +22164,7 @@ namespace jsb
             }
             ((PackedInt64Array*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22194,7 +22194,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22212,7 +22212,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22242,7 +22242,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22272,7 +22272,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22296,7 +22296,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22316,7 +22316,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22391,7 +22391,7 @@ namespace jsb
     };
     struct PackedFloat32ArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22453,7 +22453,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22471,7 +22471,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22489,7 +22489,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22513,7 +22513,7 @@ namespace jsb
             }
             ((PackedFloat32Array*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22537,7 +22537,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22561,7 +22561,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22579,7 +22579,7 @@ namespace jsb
             }
             ((PackedFloat32Array*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22597,7 +22597,7 @@ namespace jsb
             }
             ((PackedFloat32Array*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22627,7 +22627,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22645,7 +22645,7 @@ namespace jsb
             }
             ((PackedFloat32Array*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22669,7 +22669,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22681,7 +22681,7 @@ namespace jsb
             }
             ((PackedFloat32Array*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22705,7 +22705,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22717,7 +22717,7 @@ namespace jsb
             }
             ((PackedFloat32Array*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22747,7 +22747,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22765,7 +22765,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22777,7 +22777,7 @@ namespace jsb
             }
             ((PackedFloat32Array*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22807,7 +22807,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22825,7 +22825,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22855,7 +22855,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22885,7 +22885,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22909,7 +22909,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -22929,7 +22929,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23004,7 +23004,7 @@ namespace jsb
     };
     struct PackedFloat64ArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23066,7 +23066,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23084,7 +23084,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23102,7 +23102,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23126,7 +23126,7 @@ namespace jsb
             }
             ((PackedFloat64Array*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23150,7 +23150,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23174,7 +23174,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23192,7 +23192,7 @@ namespace jsb
             }
             ((PackedFloat64Array*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23210,7 +23210,7 @@ namespace jsb
             }
             ((PackedFloat64Array*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23240,7 +23240,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23258,7 +23258,7 @@ namespace jsb
             }
             ((PackedFloat64Array*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23282,7 +23282,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23294,7 +23294,7 @@ namespace jsb
             }
             ((PackedFloat64Array*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23318,7 +23318,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23330,7 +23330,7 @@ namespace jsb
             }
             ((PackedFloat64Array*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23360,7 +23360,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23378,7 +23378,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23390,7 +23390,7 @@ namespace jsb
             }
             ((PackedFloat64Array*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23420,7 +23420,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23438,7 +23438,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23468,7 +23468,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23498,7 +23498,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23522,7 +23522,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23542,7 +23542,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23617,7 +23617,7 @@ namespace jsb
     };
     struct PackedStringArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23679,7 +23679,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23697,7 +23697,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23715,7 +23715,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23739,7 +23739,7 @@ namespace jsb
             }
             ((PackedStringArray*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23763,7 +23763,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23787,7 +23787,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23805,7 +23805,7 @@ namespace jsb
             }
             ((PackedStringArray*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23823,7 +23823,7 @@ namespace jsb
             }
             ((PackedStringArray*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23853,7 +23853,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23871,7 +23871,7 @@ namespace jsb
             }
             ((PackedStringArray*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23895,7 +23895,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23907,7 +23907,7 @@ namespace jsb
             }
             ((PackedStringArray*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23931,7 +23931,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23943,7 +23943,7 @@ namespace jsb
             }
             ((PackedStringArray*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23973,7 +23973,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -23991,7 +23991,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24003,7 +24003,7 @@ namespace jsb
             }
             ((PackedStringArray*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24033,7 +24033,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24051,7 +24051,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24081,7 +24081,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24111,7 +24111,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24135,7 +24135,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24155,7 +24155,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24230,7 +24230,7 @@ namespace jsb
     };
     struct PackedVector2ArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24292,7 +24292,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24310,7 +24310,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24328,7 +24328,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24352,7 +24352,7 @@ namespace jsb
             }
             ((PackedVector2Array*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24376,7 +24376,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24400,7 +24400,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24418,7 +24418,7 @@ namespace jsb
             }
             ((PackedVector2Array*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24436,7 +24436,7 @@ namespace jsb
             }
             ((PackedVector2Array*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24466,7 +24466,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24484,7 +24484,7 @@ namespace jsb
             }
             ((PackedVector2Array*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24508,7 +24508,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24520,7 +24520,7 @@ namespace jsb
             }
             ((PackedVector2Array*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24544,7 +24544,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24556,7 +24556,7 @@ namespace jsb
             }
             ((PackedVector2Array*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24586,7 +24586,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24604,7 +24604,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24616,7 +24616,7 @@ namespace jsb
             }
             ((PackedVector2Array*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24646,7 +24646,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24664,7 +24664,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24694,7 +24694,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24724,7 +24724,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24748,7 +24748,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24768,7 +24768,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24843,7 +24843,7 @@ namespace jsb
     };
     struct PackedVector3ArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24905,7 +24905,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24923,7 +24923,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24941,7 +24941,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24965,7 +24965,7 @@ namespace jsb
             }
             ((PackedVector3Array*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -24989,7 +24989,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25013,7 +25013,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25031,7 +25031,7 @@ namespace jsb
             }
             ((PackedVector3Array*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25049,7 +25049,7 @@ namespace jsb
             }
             ((PackedVector3Array*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25079,7 +25079,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25097,7 +25097,7 @@ namespace jsb
             }
             ((PackedVector3Array*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25121,7 +25121,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25133,7 +25133,7 @@ namespace jsb
             }
             ((PackedVector3Array*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25157,7 +25157,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25169,7 +25169,7 @@ namespace jsb
             }
             ((PackedVector3Array*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25199,7 +25199,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25217,7 +25217,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25229,7 +25229,7 @@ namespace jsb
             }
             ((PackedVector3Array*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25259,7 +25259,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25277,7 +25277,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25307,7 +25307,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25337,7 +25337,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25361,7 +25361,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25381,7 +25381,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25456,7 +25456,7 @@ namespace jsb
     };
     struct PackedColorArrayStaticBinding
     {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25518,7 +25518,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_size(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_size(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25536,7 +25536,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_is_empty(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_is_empty(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25554,7 +25554,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_set(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_set(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25578,7 +25578,7 @@ namespace jsb
             }
             ((PackedColorArray*) thiz)->set(loc_0, loc_1);
         }
-        static void method_push_back(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_push_back(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25602,7 +25602,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25626,7 +25626,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_append_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_append_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25644,7 +25644,7 @@ namespace jsb
             }
             ((PackedColorArray*) thiz)->append_array(loc_0);
         }
-        static void method_remove_at(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_remove_at(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25662,7 +25662,7 @@ namespace jsb
             }
             ((PackedColorArray*) thiz)->remove_at(loc_0);
         }
-        static void method_insert(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_insert(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25692,7 +25692,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_fill(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_fill(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25710,7 +25710,7 @@ namespace jsb
             }
             ((PackedColorArray*) thiz)->fill(loc_0);
         }
-        static void method_resize(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_resize(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25734,7 +25734,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_clear(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_clear(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25746,7 +25746,7 @@ namespace jsb
             }
             ((PackedColorArray*) thiz)->clear();
         }
-        static void method_has(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_has(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25770,7 +25770,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_reverse(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_reverse(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25782,7 +25782,7 @@ namespace jsb
             }
             ((PackedColorArray*) thiz)->reverse();
         }
-        static void method_slice(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_slice(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25812,7 +25812,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_to_byte_array(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_to_byte_array(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25830,7 +25830,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_sort(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_sort(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25842,7 +25842,7 @@ namespace jsb
             }
             ((PackedColorArray*) thiz)->sort();
         }
-        static void method_bsearch(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_bsearch(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25872,7 +25872,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_duplicate(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_duplicate(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25890,7 +25890,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_find(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_find(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25920,7 +25920,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_rfind(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_rfind(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25950,7 +25950,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void method_count(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method_count(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25974,7 +25974,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -25994,7 +25994,7 @@ namespace jsb
             }
             info.GetReturnValue().Set(rval);
         }
-        static void op_NOT_EQUAL(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void op_NOT_EQUAL(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();

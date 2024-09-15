@@ -59,7 +59,7 @@ namespace jsb
 {
     struct BinaryOperator
     {
-        static void invoke(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void invoke(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -105,7 +105,7 @@ namespace jsb
 
     struct UnaryOperator
     {
-        static void invoke(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void invoke(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -182,7 +182,7 @@ namespace jsb
             info.GetReturnValue().Set(rval);
         }
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -272,7 +272,7 @@ namespace jsb
             }
         }
 
-        static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _getter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -294,7 +294,7 @@ namespace jsb
             info.GetReturnValue().Set(rval);
         }
 
-        static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _setter(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -311,7 +311,7 @@ namespace jsb
             getset.setter_func(p_self, &value);
         }
 
-        static void _set_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _set_indexed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -341,7 +341,7 @@ namespace jsb
             }
         }
 
-        static void _get_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _get_indexed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -372,7 +372,7 @@ namespace jsb
             info.GetReturnValue().Set(r_val);
         }
 
-        static void _set_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _set_keyed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -402,7 +402,7 @@ namespace jsb
             }
         }
 
-        static void _get_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _get_keyed(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -437,7 +437,7 @@ namespace jsb
 
         template<bool HasReturnValueT>
         static void call_builtin_function(Variant* self, const internal::FBuiltinMethodInfo& method_info,
-            const v8::FunctionCallbackInfo<v8::Value>& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context)
+            const vm::FunctionCallbackInfo& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context)
         {
             const int argc = info.Length();
             if (!method_info.check_argc(argc))
@@ -525,7 +525,7 @@ namespace jsb
         }
 
         template<bool HasReturnValueT>
-        static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _instance_method(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -543,7 +543,7 @@ namespace jsb
         }
 
         template<bool HasReturnValueT>
-        static void _static_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void _static_method(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();

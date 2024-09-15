@@ -172,7 +172,7 @@ namespace jsb
         return class_id;
     }
 
-    void ObjectReflectBindingUtil::_godot_object_signal(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void ObjectReflectBindingUtil::_godot_object_signal(const vm::FunctionCallbackInfo& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -194,7 +194,7 @@ namespace jsb
         jsb_throw(isolate, "bad signal");
     }
 
-    void ObjectReflectBindingUtil::_godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void ObjectReflectBindingUtil::_godot_object_free(const vm::FunctionCallbackInfo& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -215,7 +215,7 @@ namespace jsb
         }
     }
 
-    void ObjectReflectBindingUtil::_godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void ObjectReflectBindingUtil::_godot_utility_func(const vm::FunctionCallbackInfo& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -266,7 +266,7 @@ namespace jsb
         jsb_throw(isolate, "failed to translate godot variant to v8 value");
     }
 
-    void ObjectReflectBindingUtil::_godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void ObjectReflectBindingUtil::_godot_object_method(const vm::FunctionCallbackInfo& info)
     {
         jsb_check(info.Data()->IsExternal());
         v8::Isolate* isolate = info.GetIsolate();
@@ -335,7 +335,7 @@ namespace jsb
         isolate->ThrowError("failed to translate godot variant to v8 value");
     }
 
-    void ObjectReflectBindingUtil::_godot_object_get2(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void ObjectReflectBindingUtil::_godot_object_get2(const vm::FunctionCallbackInfo& info)
     {
         jsb_check(info.Data()->IsInt32());
         v8::Isolate* isolate = info.GetIsolate();
@@ -379,7 +379,7 @@ namespace jsb
         isolate->ThrowError("failed to translate godot variant to v8 value");
     }
 
-    void ObjectReflectBindingUtil::_godot_object_set2(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void ObjectReflectBindingUtil::_godot_object_set2(const vm::FunctionCallbackInfo& info)
     {
         jsb_check(info.Data()->IsInt32());
         v8::Isolate* isolate = info.GetIsolate();

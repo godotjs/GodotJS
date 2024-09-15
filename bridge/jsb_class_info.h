@@ -5,7 +5,7 @@
 
 namespace jsb
 {
-    typedef void (*ConstructorFunc)(const v8::FunctionCallbackInfo<v8::Value>&);
+    typedef void (*ConstructorFunc)(const vm::FunctionCallbackInfo&);
     typedef void (*FinalizerFunc)(class Environment*, void*, bool /* p_persistent */);
 
     namespace NativeClassType

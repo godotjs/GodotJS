@@ -1228,7 +1228,7 @@ namespace jsb
     }
 
     // [JS] function load_type(type_name: string): Class;
-    void Realm::_load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void Realm::_load_godot_mod(const vm::FunctionCallbackInfo& info)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _load_godot_mod);
 

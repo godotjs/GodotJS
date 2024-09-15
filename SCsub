@@ -325,6 +325,8 @@ if lws_support is not None:
     if env.msvc and env["vsproj"]:
         env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
 
+    env_jsb.add_source_files(module_obj, "impl/v8/*.cpp")
+
 if is_defined("JSB_WITH_QUICKJS", 1):
     print("WARNING: quickjs support has not been implemented yet")
 

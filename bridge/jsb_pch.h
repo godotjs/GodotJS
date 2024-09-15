@@ -17,16 +17,12 @@
 #include "../jsb_version.h"
 
 #if JSB_WITH_V8
-#   include <v8.h>
-#   include <v8-persistent-handle.h>
-#   include <libplatform/libplatform.h>
-#   include <v8-inspector.h>
-#   include <v8-version-string.h>
+#   include "../impl/v8/jsb_v8.h"
 #elif JSB_WITH_QUICKJS
 #   error not implemented yet
-#   include "../impl/quickjs/jsb_quickjs_v8.h"
+#   include "../impl/quickjs/jsb_quickjs.h"
 #elif JSB_WITH_WEB
-#   include "../impl/web/jsb_web_interop.h"
+#   include "../impl/web/jsb_web.h"
 #else
 #   error unknown javascript runtime
 #endif

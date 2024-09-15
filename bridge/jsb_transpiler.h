@@ -115,7 +115,7 @@ namespace jsb
         }
 
         //TODO test
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, const T& val)
+        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const vm::FunctionCallbackInfo& info, const T& val)
         {
             Environment* environment = Environment::wrap(isolate);
             Realm* realm = Realm::wrap(context);
@@ -156,7 +156,7 @@ namespace jsb
         {
             return (real_t) p_val->NumberValue(context).ToChecked();
         }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, real_t val)
+        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const vm::FunctionCallbackInfo& info, real_t val)
         {
             info.GetReturnValue().Set(val);
             return true;
@@ -171,7 +171,7 @@ namespace jsb
         {
             return p_val->Int32Value(context).FromMaybe(0);
         }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, int32_t val)
+        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const vm::FunctionCallbackInfo& info, int32_t val)
         {
             info.GetReturnValue().Set(val);
             return true;
@@ -183,7 +183,7 @@ namespace jsb
         {
             return p_val->Uint32Value(context).ToChecked();
         }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, uint32_t val)
+        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const vm::FunctionCallbackInfo& info, uint32_t val)
         {
             info.GetReturnValue().Set(val);
             return true;
@@ -200,7 +200,7 @@ namespace jsb
         {
             return (Error) p_val->Int32Value(context).ToChecked();
         }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, Error val)
+        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const vm::FunctionCallbackInfo& info, Error val)
         {
             info.GetReturnValue().Set((int32_t) val);
             return true;
@@ -213,7 +213,7 @@ namespace jsb
         {
             return p_val->BooleanValue(context->GetIsolate());
         }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, bool val)
+        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const vm::FunctionCallbackInfo& info, bool val)
         {
             info.GetReturnValue().Set(val);
             return true;
@@ -225,7 +225,7 @@ namespace jsb
     struct SpecializedReturn
     {
         template<typename TSelf>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)();
             JSB_CONTEXT_BOILERPLATE();
@@ -239,7 +239,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)(P0);
             JSB_CONTEXT_BOILERPLATE();
@@ -254,7 +254,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0, typename P1>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1);
             JSB_CONTEXT_BOILERPLATE();
@@ -270,7 +270,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0, typename P1, typename P2>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2);
             JSB_CONTEXT_BOILERPLATE();
@@ -287,7 +287,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0, typename P1, typename P2, typename P3>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3);
             JSB_CONTEXT_BOILERPLATE();
@@ -305,7 +305,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3, P4);
             JSB_CONTEXT_BOILERPLATE();
@@ -324,7 +324,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3, P4, P5);
             JSB_CONTEXT_BOILERPLATE();
@@ -344,7 +344,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3, P4, P5, P6);
             JSB_CONTEXT_BOILERPLATE();
@@ -364,7 +364,7 @@ namespace jsb
             }
         }
 
-        static void function(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void function(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (*Functor)();
             JSB_CONTEXT_BOILERPLATE();
@@ -377,7 +377,7 @@ namespace jsb
         }
 
         template<typename P0>
-        static void function(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void function(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (*Functor)(P0);
             JSB_CONTEXT_BOILERPLATE();
@@ -390,7 +390,7 @@ namespace jsb
         }
 
         template<typename TSelf>
-        static void getter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void getter(const vm::FunctionCallbackInfo& info)
         {
             typedef TReturn (*Functor)(TSelf*);
             JSB_CONTEXT_BOILERPLATE();
@@ -409,7 +409,7 @@ namespace jsb
     struct SpecializedReturn<void>
     {
         template<typename TSelf>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef void (TSelf::*Functor)();
             JSB_CONTEXT_BOILERPLATE();
@@ -419,7 +419,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef void (TSelf::*Functor)(P0);
             JSB_CONTEXT_BOILERPLATE();
@@ -430,7 +430,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0, typename P1>
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void method(const vm::FunctionCallbackInfo& info)
         {
             typedef void (TSelf::*Functor)(P0, P1);
             JSB_CONTEXT_BOILERPLATE();
@@ -442,7 +442,7 @@ namespace jsb
         }
 
         template<typename TSelf, typename P0>
-        static void setter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void setter(const vm::FunctionCallbackInfo& info)
         {
             typedef void (*Functor)(TSelf*, P0);
             JSB_CONTEXT_BOILERPLATE();
@@ -460,7 +460,7 @@ namespace jsb
         JSB_CLASS_BOILERPLATE()
         JSB_CLASS_BOILERPLATE_ARGS()
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -474,7 +474,7 @@ namespace jsb
         }
 
         template<typename P0, typename P1, typename P2>
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -510,7 +510,7 @@ namespace jsb
     {
         JSB_CLASS_BOILERPLATE()
 
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void constructor(const vm::FunctionCallbackInfo& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();

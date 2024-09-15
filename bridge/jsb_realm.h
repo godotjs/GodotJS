@@ -179,7 +179,7 @@ namespace jsb
 
         // JS function (type_name: string): type
         // it's called from JS, load godot type with the `type_name` in the `godot` module (it can be type/singleton/constant/etc.)
-        static void _load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _load_godot_mod(const vm::FunctionCallbackInfo& info);
 
         NativeClassID _expose_godot_class(const ClassDB::ClassInfo* p_class_info);
         jsb_force_inline NativeClassID _expose_godot_class(const StringName& p_class_name)
