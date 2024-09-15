@@ -3,32 +3,56 @@ import os
 import io
 import time
 import re
+from typing import TypedDict
 
 Import("env")
 Import("env_modules")
 
-def check(condition, text):
-    if not condition:
-        print("Error: " + text)
-        Exit(2)
+class LibraryDetails:
+    def __init__(self, platform: str, arch: str, libname: str, delimiter: str):
+        self.platform = platform
+        self.arch = arch
+        self.libname = libname
+        self.delimiter = delimiter
+
+    def platform_base(self) -> str:
+        return self.platform + self.delimiter + self.arch + self.delimiter + "release"
+    
+class LibraryDescriptor:
+    def __init__(self, name: str, details: list[LibraryDetails]):
+        self.name = name
+        self.details = details
 
 jsb_platform = "linux" if env["platform"] == "linuxbsd" else env["platform"]
 jsb_arch = env["arch"]
+
 prebuilt_deps_url = "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r11/v8_r11.zip"
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
-javascript_engine = "v8" if jsb_platform in ["windows", "linux", "macos", "android", "ios"] else "quickjs"
-websocket_lib = "lws" if jsb_platform in ["windows", "linux", "macos"] else "none"
 
-print("compiling:", module_name)
-print("javascript engine:", javascript_engine)
-print("websocket lib:", websocket_lib)
-print("platform:", jsb_platform)
-print("arch:", jsb_arch)
+# godot 4.3.1 generates `ActiveProjectItemList_` variable name with the path name (see methods.py)
+# it'll fail if the path contains '.' or any other characters invalid as variable name
+# detect and rename them for better compatibility
 
-if jsb_platform == "android":
-    print("ndk_platform:", env["ndk_platform"])
-    print("ANDROID_NDK_ROOT:", env["ANDROID_NDK_ROOT"])
+v8_prebuilt_libs = LibraryDescriptor("v8", \
+[ 
+    LibraryDetails("windows", "x86_64", "v8_monolith.lib",  "_"), 
+    LibraryDetails("linux",   "x86_64", "libv8_monolith.a", "."), 
+    LibraryDetails("macos",   "x86_64", "libv8_monolith.a", "."), 
+    LibraryDetails("macos",   "arm64",  "libv8_monolith.a", "."), 
+    LibraryDetails("ios",     "x86_64", "libv8_monolith.a", "."), 
+    LibraryDetails("ios",     "arm64",  "libv8_monolith.a", "."), 
+    LibraryDetails("ios",     "arm32",  "libv8_monolith.a", "."), 
+    LibraryDetails("android", "x86_64", "libv8_monolith.a", "."), 
+    LibraryDetails("android", "arm64",  "libv8_monolith.a", "."), 
+    LibraryDetails("android", "arm32",  "libv8_monolith.a", "."), 
+])
+lws_prebuilt_libs = LibraryDescriptor("lws", \
+[
+    LibraryDetails("windows", "x86_64", "websockets.lib",  "_"), 
+    LibraryDetails("linux",   "x86_64", "libwebsockets.a", "_"), 
+    LibraryDetails("macos",   "arm64",  "libwebsockets.a", "_"), 
+])
 
 class CompileDefines:
     def __init__(self, name, value, help = None):
@@ -36,15 +60,49 @@ class CompileDefines:
         self.value = value
         self.help = help
 
+def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, LibraryDetails]:
+    for details in support.details:
+        if jsb_platform != details.platform or jsb_arch != details.arch:
+            continue
+        libpath = support.name + "/" \
+            + details.platform_base() + "/" \
+            + details.libname
+        if os.path.exists(libpath):
+            return (support, details)
+    return None
+
+v8_support = get_library_support(v8_prebuilt_libs)
+lws_support = get_library_support(lws_prebuilt_libs)
+
 jsb_defines = [
-    CompileDefines("JSB_WITH_V8", 1 if javascript_engine == "v8" else 0),
-    CompileDefines("JSB_WITH_QUICKJS", 1 if javascript_engine == "quickjs" else 0),
-    CompileDefines("JSB_WITH_LWS", 1 if websocket_lib == "lws" else 0, [
+    CompileDefines("JSB_WITH_V8", 1 if v8_support is not None else 0),
+    CompileDefines("JSB_WITH_WEB", 1 if jsb_platform == "web" else 0),
+    CompileDefines("JSB_WITH_DEBUGGER", 1 if v8_support is not None else 0, [
+        "enable to debug with Chrome devtools with the following link by default:",
+        "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1",
+    ]),
+    CompileDefines("JSB_WITH_QUICKJS", 0),
+    CompileDefines("JSB_WITH_LWS", 1 if lws_support is not None else 0, [
         "NOTE: currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`", 
         "`devtools` do not response the upgrading request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`", 
         "and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`", 
     ]),
 ]
+
+print("compiling:", module_name)
+print("javascript engine:", "none" if v8_support is None else v8_support[0].name)
+print("websocket lib:", "none" if lws_support is None else lws_support[0].name)
+print("platform:", jsb_platform)
+print("arch:", jsb_arch)
+
+if jsb_platform == "android":
+    print("ndk_platform:", env["ndk_platform"])
+    print("ANDROID_NDK_ROOT:", env["ANDROID_NDK_ROOT"])
+
+def check(condition, text):
+    if not condition:
+        print("Error: " + text)
+        Exit(2)
 
 def is_defined(name, value):
     for t in jsb_defines:
@@ -200,15 +258,6 @@ def get_godot_version_info():
         sys.path.remove(engine_path)
         return version_info
 
-# godot 4.3.1 generates `ActiveProjectItemList_` variable name with the path name (see methods.py)
-# it'll fail if the path contains '.' or any other characters invalid as variable name
-# detect and rename them for better compatibility
-def update_path_for_4_3(old_path):
-    new_path = old_path if '.' not in old_path else old_path.replace('.', '_')
-    if not os.path.exists(new_path) and os.path.exists(old_path):
-        os.rename(old_path, new_path)
-    return new_path
-
 version_info = get_godot_version_info()
 def check_godot_version_newer_than(major, minor, patch):
     return version_info["major"] > major or (version_info["major"] == major and (version_info["minor"] > minor or (version_info["minor"] == minor and version_info["patch"] >= patch)))
@@ -218,37 +267,28 @@ module_obj = []
 
 print(f"godot engine: {version_info['major']}.{version_info['minor']}")
 
-if javascript_engine == "v8":
+if v8_support is not None:
     # it seems godot always links MT_StaticRelease even if env["dev_build"]
     # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will fail on `v8::ArrayBuffer::Allocator`
 
     # check existence of v8 (since it's setup manually)
     v8_missing_msg = f"The v8 engine is not found in GodotJS, please build it initially or download the prebuilt v8 library from {prebuilt_deps_url}"
-    v8_basename = f"{jsb_platform}.{jsb_arch}.release"
+    v8_basename = v8_support[1].platform_base()
+    v8_lib_path = f"v8/{v8_basename}/{v8_support[1].libname}"
     check(os.path.exists("v8/include/v8.h"), v8_missing_msg)
+    check(os.path.exists(v8_lib_path), v8_missing_msg)
 
     if jsb_platform == "macos":
-        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
         env.Append(LIBPATH=[f'#modules/{module_name}/v8/{v8_basename}'])
         env.Append(LINKFLAGS=["-lv8_monolith"])
-    elif jsb_platform == "linux":
-        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
-        env.Append(LIBS=[File(f"v8/{v8_basename}/libv8_monolith.a")])
-    elif jsb_platform == "windows":
-        v8_lib_path = update_path_for_4_3(f"v8/{v8_basename}")
-        check(os.path.exists(v8_lib_path+"/v8_monolith.lib"), v8_missing_msg)
-        env.Append(LIBS=[File(v8_lib_path+"/v8_monolith.lib")])
-        env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
-    elif jsb_platform == "android":
-        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
-        env.Append(LIBS=[File(f"v8/{v8_basename}/libv8_monolith.a")])
-    elif jsb_platform == "ios":
-        check(os.path.exists(f"v8/{v8_basename}/libv8_monolith.a"), v8_missing_msg)
-        env.Append(LIBS=[File(f"v8/{v8_basename}/libv8_monolith.a")])
+    elif jsb_platform in ["linux", "windows", "android", "ios"]:
+        env.Append(LIBS=[File(v8_lib_path)])
     else:
         check(False, f'v8 is not supported on {env["platform"]}')
 
     # platform-specific defines
+    if jsb_platform == "windows":
+        env.Append(LINKFLAGS=["winmm.lib", "Dbghelp.lib"])
     if jsb_platform not in ["ios", "android"]:
         env_jsb.AppendUnique(CPPDEFINES=["V8_COMPRESS_POINTERS"])
         pass
@@ -261,35 +301,44 @@ if javascript_engine == "v8":
     if env.msvc and env["vsproj"]:
         env.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
     env_jsb.Append(CPPPATH=["v8/include"])
-else:
-    # quickjs is directly build from source
-    env_jsb.add_source_files(module_obj, "quickjs/*.c")
-    env_jsb.add_source_files(module_obj, "bridge-quickjs/*.cpp")
 
-env_jsb.add_source_files(module_obj, "bridge-v8/*.cpp")
+env_jsb.add_source_files(module_obj, "bridge/*.cpp")
 
 # lws
-if websocket_lib == "lws":
+if lws_support is not None:
     lws_missing_msg = "The prebuilt lws lib is missing? Please build it at first."
-    lws_basename = f"{jsb_platform}_{jsb_arch}_release"
+    lws_basename = lws_support[1].platform_base()
+    lws_lib_path = f"lws/{lws_basename}/{lws_support[1].libname}"
+    check(os.path.exists(lws_lib_path), lws_missing_msg)
 
     if jsb_platform == "macos":
-        check(os.path.exists(f"lws/{lws_basename}/libwebsockets.a"), lws_missing_msg)
         env_jsb.Append(CPPPATH=[f"lws/{lws_basename}/include"])
         env.Append(LIBPATH=[f'#modules/{module_name}/lws/{lws_basename}'])
         env.Append(LINKFLAGS=["-lwebsockets"])
-    elif jsb_platform == "linux":
-        check(os.path.exists(f"lws/{lws_basename}/libwebsockets.a"), lws_missing_msg)
+    elif jsb_platform in ["linux", "windows"]:
         env_jsb.Append(CPPPATH=[f"lws/{lws_basename}/include"])
-        env.Append(LIBS=[File(f"lws/{lws_basename}/libwebsockets.a")])
-    elif jsb_platform == "windows":
-        check(os.path.exists(f"lws/{lws_basename}/websockets.lib"), lws_missing_msg)
-        if env.msvc and env["vsproj"]:
-            env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
-        env_jsb.Append(CPPPATH=[f"lws/{lws_basename}/include"])
-        env.Append(LIBS=[File(f"lws/{lws_basename}/websockets.lib")])
+        env.Append(LIBS=[File(lws_lib_path)])
     else:
         check(False, f'lws is not supported on {env["platform"]}')
+
+    # platform-specific defines
+    if env.msvc and env["vsproj"]:
+        env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
+
+if is_defined("JSB_WITH_QUICKJS", 1):
+    print("WARNING: quickjs support has not been implemented yet")
+
+    # quickjs is directly built from source
+    env_jsb.add_source_files(module_obj, "quickjs/*.c")
+    env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
+
+if jsb_platform == "web":
+    print("WARNING: web support has not been implemented yet")
+
+    env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
+    env.AddJSLibraries([
+        "impl/web/bridge/library.js",
+    ])
 
 generate_code({
         # presets for runtime

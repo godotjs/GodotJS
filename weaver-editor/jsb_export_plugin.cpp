@@ -2,7 +2,7 @@
 #include "../internal/jsb_internal_pch.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
-#include "../bridge-v8/jsb_v8_helper.h"
+#include "../bridge/jsb_v8_helper.h"
 
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 

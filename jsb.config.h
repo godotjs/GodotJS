@@ -38,10 +38,6 @@
 
 #define JSB_SUPPORT_RELOAD 1
 
-// enable to debug with Chrome devtools with the following link by default:
-// devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1
-#define JSB_WITH_DEBUGGER 1
-
 // translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)
 #define JSB_WITH_SOURCEMAP 1
 

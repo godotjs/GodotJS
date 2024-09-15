@@ -24,7 +24,9 @@
 #   include <v8-version-string.h>
 #elif JSB_WITH_QUICKJS
 #   error not implemented yet
-#   include "../bridge-quickjs/jsb_quickjs_v8.h"
+#   include "../impl/quickjs/jsb_quickjs_v8.h"
+#elif JSB_WITH_WEB
+#   include "../impl/web/jsb_web_interop.h"
 #else
 #   error unknown javascript runtime
 #endif
