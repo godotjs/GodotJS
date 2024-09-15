@@ -2,6 +2,7 @@
 #define GODOTJS_STATIC_BINDING_UTIL_H
 #include "jsb_pch.h"
 #include "jsb_realm.h"
+#include "jsb_type_convert.h"
 
 #define DEF_VARIANT_THIS_UTIL(Type, ReaderFunc) \
     template<>\
@@ -84,7 +85,7 @@ namespace jsb
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, T& r_value)
 		{
 			Variant cv;
-			if (Realm::js_to_gd_var(isolate, context, p_input, GetTypeInfo<T>::VARIANT_TYPE, cv))
+			if (TypeConvert::js_to_gd_var(isolate, context, p_input, GetTypeInfo<T>::VARIANT_TYPE, cv))
 			{
 				jsb_check(cv.get_type() == GetTypeInfo<T>::VARIANT_TYPE);
 				r_value = cv;
@@ -95,7 +96,7 @@ namespace jsb
 
 		static bool set(v8::Isolate* isolate, const v8::Local<v8::Context>& context, T const& p_input, v8::Local<v8::Value>& r_value)
 		{
-			return Realm::gd_var_to_js(isolate, context, (Variant) p_input, r_value);
+			return TypeConvert::gd_var_to_js(isolate, context, (Variant) p_input, r_value);
 		}
 	};
 
@@ -104,13 +105,13 @@ namespace jsb
 	{
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, Object*& r_value)
 		{
-			return Realm::js_to_gd_obj(isolate, context, p_input, r_value);
+			return TypeConvert::js_to_gd_obj(isolate, context, p_input, r_value);
 		}
 
 		static bool set(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* const& p_input, v8::Local<v8::Value>& r_value)
 		{
 			v8::Local<v8::Object> obj;
-			if (Realm::gd_obj_to_js(isolate, context, p_input, obj))
+			if (TypeConvert::gd_obj_to_js(isolate, context, p_input, obj))
 			{
 				r_value = obj;
 				return true;

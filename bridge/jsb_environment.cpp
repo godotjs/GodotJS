@@ -504,6 +504,31 @@ namespace jsb
 #endif
     }
 
+    void Environment::get_statistics(Statistics& r_stats) const
+    {
+#if JSB_WITH_V8
+        v8::HeapStatistics v8_statistics;
+        isolate_->GetHeapStatistics(&v8_statistics);
+
+        r_stats.used_global_handles_size = v8_statistics.used_global_handles_size();
+        r_stats.total_global_handles_size = v8_statistics.total_global_handles_size();
+        r_stats.used_heap_size = v8_statistics.used_heap_size();
+        r_stats.total_heap_size = v8_statistics.total_heap_size();
+        r_stats.peak_malloced_memory = v8_statistics.peak_malloced_memory();
+        r_stats.malloced_memory = v8_statistics.malloced_memory();
+        r_stats.external_memory = v8_statistics.external_memory();
+#elif JSB_WITH_QUICKJS
+        #error not implemented yet
+#endif
+
+        r_stats.objects = objects_.size();
+        r_stats.native_classes = native_classes_.size();
+        r_stats.script_classes = script_classes_.size();
+        r_stats.cached_string_names = string_name_cache_.size();
+        r_stats.persistent_objects = persistent_objects_.size();
+        r_stats.allocated_variants = variant_allocator_.get_allocated_num();
+    }
+
 #pragma region Static Fields
     internal::VariantAllocator Environment::variant_allocator_;
 #pragma endregion

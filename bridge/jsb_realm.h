@@ -7,7 +7,7 @@
 #include "jsb_module.h"
 #include "jsb_binding_env.h"
 #include "jsb_value_move.h"
-#include "jsb_statistics.h"
+
 #include "../internal/jsb_variant_info.h"
 
 #include <unordered_map>
@@ -138,8 +138,8 @@ namespace jsb
          */
         void call_prelude(ScriptClassID p_gdjs_class_id, NativeObjectID p_object_id);
         bool get_script_default_property_value(ScriptClassID p_gdjs_class_id, const StringName& p_name, Variant& r_val);
-        bool get_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, Variant& r_val);
-        bool set_script_property_value(NativeObjectID p_object_id, const GodotJSPropertyInfo& p_info, const Variant& p_val);
+        bool get_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, Variant& r_val);
+        bool set_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, const Variant& p_val);
 
         jsb_force_inline const JavaScriptModuleCache& get_module_cache() const { return module_cache_; }
         jsb_force_inline JavaScriptModuleCache& get_module_cache() { return module_cache_; }
@@ -209,35 +209,9 @@ namespace jsb
         // will reload until next load.
         EReloadResult::Type mark_as_reloading(const StringName& p_name);
 
-        /**
-         * Translate a Godot object into a javascript object. The type of `p_object_obj` will be automatically exposed to the context if not existed.
-         * @param p_godot_obj non-null godot object pointer
-         */
-        static bool gd_obj_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, Object* p_godot_obj, v8::Local<v8::Object>& r_jval);
-        static bool js_to_gd_obj(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Object*& r_godot_obj);
-
-        jsb_force_inline static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, v8::Local<v8::Value>& r_jval) { return gd_var_to_js(isolate, context, p_cvar, p_cvar.get_type(), r_jval); }
-        static bool gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, Variant::Type p_type, v8::Local<v8::Value>& r_jval);
-        static bool js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar);
-
-        /**
-         * Translate js val into gd variant without any type hint
-         */
-        static bool js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant& r_cvar);
-
-        /**
-         * Check if a javascript value `p_val` could be converted into the expected primitive type `p_type`
-         */
-        static bool can_convert_strict(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val, Variant::Type p_type);
-
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
 
-        void get_statistics(Statistics& r_stats) const;
-
     private:
-        static void _parse_script_class(Realm* p_realm, const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
-        static void _parse_script_class_iterate(Realm* p_realm, const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info);
-
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
     };
 }

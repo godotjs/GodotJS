@@ -2,6 +2,7 @@
 #define GODOTJS_CLASS_INFO_H
 
 #include "jsb_pch.h"
+#include "jsb_module.h"
 
 namespace jsb
 {
@@ -84,7 +85,7 @@ namespace jsb
     struct ScriptPropertyDoc {};
 #endif
 
-    namespace GodotJSMethodFlags
+    namespace ScriptMethodFlags
     {
         enum Type : uint8_t
         {
@@ -93,18 +94,18 @@ namespace jsb
         };
     }
 
-    struct GodotJSMethodInfo
+    struct ScriptMethodInfo
     {
-        GodotJSMethodFlags::Type flags;
+        ScriptMethodFlags::Type flags;
 
         // only valid with TOOLS_ENABLED
         ScriptMethodDoc doc;
 
-        jsb_force_inline bool is_static() const { return flags & GodotJSMethodFlags::Static; }
+        jsb_force_inline bool is_static() const { return flags & ScriptMethodFlags::Static; }
 
     };
 
-    struct GodotJSPropertyInfo
+    struct ScriptPropertyInfo
     {
         Variant::Type type = Variant::NIL;
         StringName name;
@@ -120,7 +121,7 @@ namespace jsb
         // Variant default_value;
     };
 
-    namespace GodotJSClassFlags
+    namespace ScriptClassFlags
     {
         enum Type : uint8_t
         {
@@ -157,24 +158,27 @@ namespace jsb
         // it's a redundant field only for performance.
         StringName native_class_name;
 
-        GodotJSClassFlags::Type flags = GodotJSClassFlags::None;
+        ScriptClassFlags::Type flags = ScriptClassFlags::None;
 
         String icon;
 
         // only valid with TOOLS_ENABLED
         ScriptClassDoc doc;
 
-        HashMap<StringName, GodotJSMethodInfo> methods;
-        HashMap<StringName, GodotJSMethodInfo> signals;
-        HashMap<StringName, GodotJSPropertyInfo> properties;
+        HashMap<StringName, ScriptMethodInfo> methods;
+        HashMap<StringName, ScriptMethodInfo> signals;
+        HashMap<StringName, ScriptPropertyInfo> properties;
 
         //TODO whether the internal class object alive or not
         jsb_force_inline bool is_valid() const { return true; }
 
-        jsb_force_inline bool is_tool() const { return flags & GodotJSClassFlags::Tool; }
-        jsb_force_inline bool is_abstract() const { return flags & GodotJSClassFlags::Abstract; }
+        jsb_force_inline bool is_tool() const { return flags & ScriptClassFlags::Tool; }
+        jsb_force_inline bool is_abstract() const { return flags & ScriptClassFlags::Abstract; }
 
         void _newbind(const v8::Local<v8::Object>& p_self);
+
+        static void _parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
+        static void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info);
     };
 }
 

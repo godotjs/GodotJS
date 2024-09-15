@@ -5,6 +5,7 @@
 #include "jsb_class_info.h"
 #include "jsb_transpiler.h"
 #include "jsb_v8_helper.h"
+#include "jsb_type_convert.h"
 #include "../internal/jsb_variant_info.h"
 #include "../internal/jsb_variant_util.h"
 
@@ -70,7 +71,7 @@ namespace jsb
                 return;
             }
             Variant left, right;
-            if (!Realm::js_to_gd_var(isolate, context, info[0], left) || !Realm::js_to_gd_var(isolate, context, info[1], right))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], left) || !TypeConvert::js_to_gd_var(isolate, context, info[1], right))
             {
                 jsb_throw(isolate, "bad translation");
                 return;
@@ -94,7 +95,7 @@ namespace jsb
             }
 
             v8::Local<v8::Value> rval;
-            if (!Realm::gd_var_to_js(isolate, context, ret, rval))
+            if (!TypeConvert::gd_var_to_js(isolate, context, ret, rval))
             {
                 jsb_throw(isolate, "bad translation");
                 return;
@@ -117,7 +118,7 @@ namespace jsb
             }
             Variant left;
             const Variant right; // it's not really used
-            if (!Realm::js_to_gd_var(isolate, context, info[0], left))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], left))
             {
                 jsb_throw(isolate, "bad translation");
                 return;
@@ -141,7 +142,7 @@ namespace jsb
             }
 
             v8::Local<v8::Value> rval;
-            if (!Realm::gd_var_to_js(isolate, context, ret, rval))
+            if (!TypeConvert::gd_var_to_js(isolate, context, ret, rval))
             {
                 jsb_throw(isolate, "bad translation");
                 return;
@@ -174,7 +175,7 @@ namespace jsb
             const Variant constant_value = Variant::get_constant_value(TYPE, constant, &r_valid);
             jsb_check(r_valid);
             v8::Local<v8::Value> rval;
-            if (!Realm::gd_var_to_js(isolate, context, constant_value, rval))
+            if (!TypeConvert::gd_var_to_js(isolate, context, constant_value, rval))
             {
                 jsb_throw(isolate, "bad translate");
                 return;
@@ -208,7 +209,7 @@ namespace jsb
                 for (int argument_index = 0; argument_index < argc; ++argument_index)
                 {
                     const Variant::Type argument_type = constructor_variant.argument_types[argument_index];
-                    if (!Realm::can_convert_strict(isolate, context, info[argument_index], argument_type))
+                    if (!TypeConvert::can_convert_strict(isolate, context, info[argument_index], argument_type))
                     {
                         argument_type_match = false;
                         break;
@@ -227,7 +228,7 @@ namespace jsb
                     memnew_placement(&args[argument_index], Variant);
                     argv[argument_index] = &args[argument_index];
                     const Variant::Type argument_type = constructor_variant.argument_types[argument_index];
-                    if (!Realm::js_to_gd_var(isolate, context, info[argument_index], argument_type, args[argument_index]))
+                    if (!TypeConvert::js_to_gd_var(isolate, context, info[argument_index], argument_type, args[argument_index]))
                     {
                         // revert all constructors
                         v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", argument_index));
@@ -286,7 +287,7 @@ namespace jsb
             //NOTE the getter function will not touch the type of `Variant`, so we must set it properly before use in the above code
             getset.getter_func(p_self, &value);
             v8::Local<v8::Value> rval;
-            if (!Realm::gd_var_to_js(isolate, context, value, rval))
+            if (!TypeConvert::gd_var_to_js(isolate, context, value, rval))
             {
                 jsb_throw(isolate, "bad translate");
                 return;
@@ -303,7 +304,7 @@ namespace jsb
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
-            if (!Realm::js_to_gd_var(isolate, context, info[0], getset.type, value))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], getset.type, value))
             {
                 jsb_throw(isolate, "bad translate");
                 return;
@@ -319,14 +320,14 @@ namespace jsb
             const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
             if (info.Length() != 2
                 || !info[0]->IsInt32()
-                || !Realm::can_convert_strict(isolate, context, info[1], element_type))
+                || !TypeConvert::can_convert_strict(isolate, context, info[1], element_type))
             {
                 jsb_throw(isolate, "bad params");
                 return;
             }
             const int32_t index = info[0].As<v8::Int32>()->Value();
             Variant value;
-            if (!Realm::js_to_gd_var(isolate, context, info[1], element_type, value))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[1], element_type, value))
             {
                 jsb_throw(isolate, "bad value");
                 return;
@@ -364,7 +365,7 @@ namespace jsb
             v8::Local<v8::Value> r_val;
             // nil type is treated as any type
             if (const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
-                !Realm::gd_var_to_js(isolate, context, value, element_type, r_val))
+                !TypeConvert::gd_var_to_js(isolate, context, value, element_type, r_val))
             {
                 jsb_throw(isolate, "bad translation");
                 return;
@@ -386,8 +387,8 @@ namespace jsb
             //TODO it's restricted since we don't know anything about the type
             Variant key;
             Variant value;
-            if (!Realm::js_to_gd_var(isolate, context, info[0], key)
-                || !Realm::js_to_gd_var(isolate, context, info[1], value))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], key)
+                || !TypeConvert::js_to_gd_var(isolate, context, info[1], value))
             {
                 jsb_throw(isolate, "bad value");
                 return;
@@ -413,7 +414,7 @@ namespace jsb
                 return;
             }
             Variant key;
-            if (!Realm::js_to_gd_var(isolate, context, info[0], key))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], key))
             {
                 jsb_throw(isolate, "bad value");
                 return;
@@ -427,7 +428,7 @@ namespace jsb
                 return;
             }
             v8::Local<v8::Value> r_val;
-            if (!Realm::gd_var_to_js(isolate, context, value, r_val))
+            if (!TypeConvert::gd_var_to_js(isolate, context, value, r_val))
             {
                 jsb_throw(isolate, "bad translation");
                 return;
@@ -459,7 +460,7 @@ namespace jsb
                 {
                     if (index < argc)
                     {
-                        if (Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index]))
+                        if (TypeConvert::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index]))
                         {
                             continue;
                         }
@@ -477,7 +478,7 @@ namespace jsb
                 }
                 else
                 {
-                    if (Realm::js_to_gd_var(isolate, context, info[index], args[index]))
+                    if (TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
                     {
                         continue;
                     }
@@ -504,7 +505,7 @@ namespace jsb
                 }
 
                 v8::Local<v8::Value> jrval;
-                if (Realm::gd_var_to_js(isolate, context, crval, jrval))
+                if (TypeConvert::gd_var_to_js(isolate, context, crval, jrval))
                 {
                     info.GetReturnValue().Set(jrval);
                     return;

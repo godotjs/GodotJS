@@ -10,10 +10,11 @@
 #include "jsb_module_resolver.h"
 #include "jsb_timer_action.h"
 #include "jsb_string_name_cache.h"
+#include "jsb_statistics.h"
+
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_timer_manager.h"
 #include "../internal/jsb_variant_allocator.h"
-#include "core/templates/ring_buffer.h"
 
 #include "../internal/jsb_source_map_cache.h"
 
@@ -56,6 +57,9 @@ namespace jsb
     private:
         friend class Realm;
         friend struct InstanceBindingCallbacks;
+
+        //TODO remove this later
+        friend struct ScriptClassInfo;
 
         // symbol for class_id on FunctionTemplate of native class
         v8::Global<v8::Symbol> symbols_[Symbols::kNum];
@@ -371,6 +375,8 @@ namespace jsb
         }
         jsb_force_inline ScriptClassInfo& get_script_class(ScriptClassID p_class_id) { return script_classes_.get_value(p_class_id); }
         jsb_force_inline ScriptClassInfo* find_script_class(ScriptClassID p_class_id) { return script_classes_.is_valid_index(p_class_id) ? &script_classes_.get_value(p_class_id) : nullptr; }
+
+        void get_statistics(Statistics& r_stats) const;
 
     private:
         void on_context_created(const v8::Local<v8::Context>& p_context);

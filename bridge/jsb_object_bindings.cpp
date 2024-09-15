@@ -1,6 +1,7 @@
 #include "jsb_object_bindings.h"
 #include "jsb_realm.h"
 #include "jsb_transpiler.h"
+#include "jsb_type_convert.h"
 
 namespace jsb
 {
@@ -186,7 +187,7 @@ namespace jsb
 
         // signal must be instance-owned
         const Object* gd_object = (Object*) pointer;
-        if (v8::Local<v8::Value> rval; Realm::gd_var_to_js(isolate, context, Signal(gd_object, name), rval))
+        if (v8::Local<v8::Value> rval; TypeConvert::gd_var_to_js(isolate, context, Signal(gd_object, name), rval))
         {
             info.GetReturnValue().Set(rval);
             return;
@@ -199,7 +200,7 @@ namespace jsb
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         Object* gd_object;
-        if (!Realm::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object)
+        if (!TypeConvert::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object)
         {
             jsb_throw(isolate, "bad this");
             return;
@@ -236,8 +237,8 @@ namespace jsb
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
             if (index < known_argc
-                ? !Realm::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
-                : !Realm::js_to_gd_var(isolate, context, info[index], args[index]))
+                ? !TypeConvert::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
+                : !TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
             {
                 // revert all constructors
                 v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
@@ -258,7 +259,7 @@ namespace jsb
         }
 
         v8::Local<v8::Value> jrval;
-        if (Realm::gd_var_to_js(isolate, context, crval, jrval))
+        if (TypeConvert::gd_var_to_js(isolate, context, crval, jrval))
         {
             info.GetReturnValue().Set(jrval);
             return;
@@ -279,7 +280,7 @@ namespace jsb
         Object* gd_object = nullptr;
         if (!method_bind->is_static())
         {
-            if (!Realm::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object)
+            if (!TypeConvert::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object)
             {
                 jsb_throw(isolate, "bad this");
                 return;
@@ -299,7 +300,7 @@ namespace jsb
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
             Variant::Type type = method_bind->get_argument_type(index);
-            if (!Realm::js_to_gd_var(isolate, context, info[index], type, args[index]))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
                 v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
@@ -327,7 +328,7 @@ namespace jsb
         v8::Local<v8::Value> jrval;
         const Variant::Type return_type = method_bind->get_argument_type(-1);
         jsb_check(return_type == method_bind->get_return_info().type);
-        if (Realm::gd_var_to_js(isolate, context, crval, return_type, jrval))
+        if (TypeConvert::gd_var_to_js(isolate, context, crval, return_type, jrval))
         {
             info.GetReturnValue().Set(jrval);
             return;
@@ -350,7 +351,7 @@ namespace jsb
         }
 
         Object* gd_object = nullptr;
-        if (!property_info.getter_func->is_static() && (!Realm::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
+        if (!property_info.getter_func->is_static() && (!TypeConvert::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
         {
             jsb_throw(isolate, "bad this");
             return;
@@ -371,7 +372,7 @@ namespace jsb
         v8::Local<v8::Value> jrval;
         const Variant::Type return_type = property_info.getter_func->get_argument_type(-1);
         jsb_check(return_type == property_info.getter_func->get_return_info().type);
-        if (Realm::gd_var_to_js(isolate, context, crval, return_type, jrval))
+        if (TypeConvert::gd_var_to_js(isolate, context, crval, return_type, jrval))
         {
             info.GetReturnValue().Set(jrval);
             return;
@@ -394,14 +395,14 @@ namespace jsb
         }
 
         Object* gd_object = nullptr;
-        if (!property_info.setter_func->is_static() && (!Realm::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
+        if (!property_info.setter_func->is_static() && (!TypeConvert::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
         {
             jsb_throw(isolate, "bad this");
             return;
         }
 
         Variant cvar;
-        if (!Realm::js_to_gd_var(isolate, context, info[0], property_info.setter_func->get_argument_type(1), cvar))
+        if (!TypeConvert::js_to_gd_var(isolate, context, info[0], property_info.setter_func->get_argument_type(1), cvar))
         {
             jsb_throw(isolate, "bad argument");
             return;

@@ -614,9 +614,9 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
         members_cache.push_back(get_class_category());
 #endif
         const jsb::ScriptClassInfo& class_info = get_script_class_info();
-        for (const KeyValue<StringName, jsb::GodotJSPropertyInfo> &pair : class_info.properties)
+        for (const KeyValue<StringName, jsb::ScriptPropertyInfo> &pair : class_info.properties)
         {
-            const jsb::GodotJSPropertyInfo &pi = pair.value;
+            const jsb::ScriptPropertyInfo &pi = pair.value;
             members_cache.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
             // values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
 

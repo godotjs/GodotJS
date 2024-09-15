@@ -1,8 +1,7 @@
 #include "jsb_bridge_module_loader.h"
 
 #include "jsb_realm.h"
-#include "core/core_constants.h"
-#include "core/version.h"
+#include "jsb_type_convert.h"
 
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
@@ -128,7 +127,7 @@ namespace jsb
                 set_field(isolate, context, object, "value", v8::Null(isolate));
                 return;
             }
-            if (!Realm::gd_var_to_js(isolate, context, property_value, property_type, val))
+            if (!TypeConvert::gd_var_to_js(isolate, context, property_value, property_type, val))
             {
                 JSB_LOG(Error, "unresolved default value");
                 return;
@@ -884,7 +883,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant var;
-            if (!Realm::js_to_gd_var(isolate, context, info[0], Variant::PACKED_BYTE_ARRAY, var))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::PACKED_BYTE_ARRAY, var))
             {
                 jsb_throw(isolate, "bad parameter");
                 return;
@@ -913,7 +912,7 @@ namespace jsb
             case 2:
                 {
                     Variant obj_var;
-                    if (!Realm::js_to_gd_var(isolate, context, info[0], Variant::OBJECT, obj_var) || obj_var.is_null())
+                    if (!TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::OBJECT, obj_var) || obj_var.is_null())
                     {
                         isolate->ThrowError("bad object");
                         return;
@@ -938,7 +937,7 @@ namespace jsb
             const ObjectCacheID callback_id = realm->get_cached_function(js_func);
             Variant callable = Callable(memnew(GodotJSCallableCustom(caller_id, realm_id, callback_id)));
             v8::Local<v8::Value> rval;
-            if (!Realm::gd_var_to_js(isolate, context, callable, rval))
+            if (!TypeConvert::gd_var_to_js(isolate, context, callable, rval))
             {
                 isolate->ThrowError("bad callable");
                 return;
@@ -969,11 +968,11 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant type;
-            if (Realm::js_to_gd_var(isolate, context, info[0], Variant::INT, type))
+            if (TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::INT, type))
             {
                 const Variant type_name = internal::VariantUtil::get_type_name((Variant::Type)(int) type);
                 v8::Local<v8::Value> rval;
-                Realm::gd_var_to_js(isolate, context, type_name, rval);
+                TypeConvert::gd_var_to_js(isolate, context, type_name, rval);
                 info.GetReturnValue().Set(rval);
                 return;
             }

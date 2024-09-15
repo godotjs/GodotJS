@@ -1,6 +1,7 @@
 ﻿#include "jsb_value_move.h"
 #include "jsb_realm.h"
 #include "jsb_v8_helper.h"
+#include "jsb_type_convert.h"
 
 namespace jsb
 {
@@ -26,7 +27,7 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         Variant val;
-        Realm::js_to_gd_var(isolate, context, value_.Get(isolate), val);
+        TypeConvert::js_to_gd_var(isolate, context, value_.Get(isolate), val);
         return val;
     }
 

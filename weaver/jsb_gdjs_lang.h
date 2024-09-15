@@ -27,7 +27,11 @@ public:
     jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
 
     // main context
-    jsb_force_inline std::shared_ptr<jsb::Realm> get_realm() const { jsb_check(once_inited_ && realm_); return realm_; }
+    jsb_force_inline std::shared_ptr<jsb::Realm> get_realm() const
+    {
+        jsb_check(once_inited_ && realm_);
+        return realm_;
+    }
 
 	void scan_external_changes();
 

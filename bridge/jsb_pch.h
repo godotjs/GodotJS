@@ -6,10 +6,12 @@
 #include <unordered_map>
 
 #include "core/core_constants.h"
+#include "core/version.h"
+#include "core/templates/ring_buffer.h"
 #include "core/string/string_builder.h"
 #include "core/variant/variant.h"
-#include "core/config/project_settings.h"
 #include "core/variant/variant_utility.h"
+#include "core/config/project_settings.h"
 #include "scene/main/node.h"
 
 #include "../jsb.config.h"
