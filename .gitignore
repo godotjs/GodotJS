@@ -12,6 +12,8 @@ __pycache__
 /scripts/jsb.static/node_modules
 /scripts/jsb.static/.tsbuildinfo
 
+/impl/web/bridge/node_modules
+
 # macOS
 .DS_Store
 __MACOSX
