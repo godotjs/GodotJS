@@ -1,5 +1,4 @@
 #include "jsb_debugger.h"
-#include "jsb_realm.h"
 #include "jsb_exception_info.h"
 #include "jsb_environment.h"
 #include "core/io/tcp_server.h"

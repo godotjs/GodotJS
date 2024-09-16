@@ -1,6 +1,6 @@
 ﻿#include "jsb_type_convert.h"
 #include "jsb_environment.h"
-#include "jsb_realm.h"
+
 
 namespace jsb
 {
@@ -298,17 +298,16 @@ namespace jsb
         case Variant::PACKED_COLOR_ARRAY:
             {
                 jsb_checkf(Variant::can_convert(p_cvar.get_type(), p_type), "variant type can't convert to %s from %s", Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
-                Realm* realm = Realm::wrap(context);
+                Environment* env = Environment::wrap(isolate);
                 NativeClassID class_id;
-                if (const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(p_type, &class_id))
+                if (const NativeClassInfo* class_info = env->_expose_godot_primitive_class(p_type, &class_id))
                 {
                     jsb_check(class_info->type == NativeClassType::GodotPrimitive);
                     v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
                     r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
                     jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
 
-                    Environment* environment = Environment::wrap(isolate);
-                    environment->bind_valuetype(class_id, Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                    env->bind_valuetype(class_id, Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
                 }
                 return false;
@@ -339,8 +338,7 @@ namespace jsb
 
         // freshly bind existing gd object (not constructed in javascript)
         const StringName& class_name = p_godot_obj->get_class_name();
-        Realm* realm = Realm::wrap(context);
-        if (const NativeClassID class_id = realm->_expose_godot_class(class_name))
+        if (const NativeClassID class_id = environment->_expose_godot_class(class_name))
         {
             v8::Local<v8::FunctionTemplate> jtemplate = environment->get_native_class(class_id).template_.Get(isolate);
             r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();

@@ -5,7 +5,7 @@ namespace jsb
 {
     struct ObjectReflectBindingUtil
     {
-        static NativeClassID reflect_bind(Realm* p_realm, const ClassDB::ClassInfo* p_class_info);
+        static NativeClassID reflect_bind(class Environment* p_env, const ClassDB::ClassInfo* p_class_info);
 
         static void _godot_object_free(const vm::FunctionCallbackInfo& info);
         static void _godot_object_method(const vm::FunctionCallbackInfo& info);

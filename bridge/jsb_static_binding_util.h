@@ -1,7 +1,7 @@
 ﻿#ifndef GODOTJS_STATIC_BINDING_UTIL_H
 #define GODOTJS_STATIC_BINDING_UTIL_H
 #include "jsb_pch.h"
-#include "jsb_realm.h"
+
 #include "jsb_type_convert.h"
 
 #define DEF_VARIANT_THIS_UTIL(Type, ReaderFunc) \

@@ -1,15 +1,14 @@
 #include "jsb_amd_module_loader.h"
-#include "jsb_realm.h"
-#include "jsb_builtins.h"
+#include "jsb_environment.h"
 
 namespace jsb
 {
 
-    bool AMDModuleLoader::load(Realm* p_realm, JavaScriptModule& p_module)
+    bool AMDModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
     {
         typedef v8::Local<v8::Value> LocalValue;
 
-        v8::Isolate* isolate = p_realm->get_isolate();
+        v8::Isolate* isolate = p_env->get_isolate();
         const int len = deps_.size();
         bool succeeded = true;
         LocalValue* dep_vals = jsb_stackalloc(LocalValue, len);
@@ -29,7 +28,7 @@ namespace jsb
             // special case: `require` & `exports`
             if (dep_module_id == "require")
             {
-                dep_vals[index] = p_realm->_new_require_func(self_module_id);
+                dep_vals[index] = p_env->_new_require_func(self_module_id);
                 continue;
             }
             if (dep_module_id == "exports")
@@ -37,7 +36,7 @@ namespace jsb
                 dep_vals[index] = self_exports;
                 continue;
             }
-            if (JavaScriptModule* module = p_realm->_load_module(self_module_id, dep_module_id))
+            if (JavaScriptModule* module = p_env->_load_module(self_module_id, dep_module_id))
             {
                 JSB_LOG(Verbose, "load dep: %s", dep_module_id);
                 dep_vals[index] = module->exports.Get(isolate);

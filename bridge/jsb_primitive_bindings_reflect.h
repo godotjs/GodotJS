@@ -6,7 +6,7 @@
 #if !JSB_WITH_STATIC_BINDINGS
 namespace jsb
 {
-    void register_primitive_bindings_reflect(class Realm* p_realm);
+    void register_primitive_bindings_reflect(class Environment* p_env);
 }
 #endif
 

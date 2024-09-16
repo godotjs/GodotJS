@@ -1,23 +1,21 @@
 #include "jsb_module_resolver.h"
+#include "jsb_environment.h"
 
-#include "jsb_realm.h"
 #include "../internal/jsb_path_util.h"
-#include "core/io/json.h"
 
 namespace jsb
 {
-    bool IModuleResolver::load_from_source(Realm* p_realm, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const Vector<uint8_t>& p_source)
+    bool IModuleResolver::load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const Vector<uint8_t>& p_source)
     {
-        v8::Isolate* isolate = p_realm->get_isolate();
+        v8::Isolate* isolate = p_env->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = p_realm->unwrap();
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
         v8::Context::Scope context_scope(context);
-
-        jsb_check(p_realm->check(context));
+        jsb_check(context == p_env->get_context());
 
         // failed to compile or run, immediately return since an exception should already be thrown
-        v8::MaybeLocal<v8::Value> func_maybe_local = p_realm->_compile_run((const char*) p_source.ptr(), p_source.size(), p_filename_abs);
+        v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run((const char*) p_source.ptr(), p_source.size(), p_filename_abs);
         if (func_maybe_local.IsEmpty())
         {
             return false;
@@ -44,7 +42,7 @@ namespace jsb
         static constexpr int kIndexPath = 4;
         v8::Local<v8::Value> argv[] = {
             /* 0: exports  */ p_module.exports.Get(isolate),
-            /* 1: require  */ p_realm->_new_require_func(p_module.id),
+            /* 1: require  */ p_env->_new_require_func(p_module.id),
             /* 2: module   */ module_obj,
             /* 3: filename */ V8Helper::to_string(isolate, filename),
             /* 4: dirname  */ V8Helper::to_string(isolate, dirname),
@@ -184,13 +182,13 @@ namespace jsb
         return *this;
     }
 
-    bool DefaultModuleResolver::load(Realm* p_realm, const String& p_asset_path, JavaScriptModule& p_module)
+    bool DefaultModuleResolver::load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module)
     {
         // load source buffer
         const internal::FileAccessSourceReader reader(p_asset_path);
         if (reader.is_null() || reader.get_length() == 0)
         {
-            p_realm->get_isolate()->ThrowError("failed to read module source");
+            p_env->get_isolate()->ThrowError("failed to read module source");
             return false;
         }
         const String filename_abs = reader.get_path_absolute();
@@ -199,7 +197,7 @@ namespace jsb
         p_module.time_modified = reader.get_time_modified();
         p_module.hash = reader.get_hash();
 #endif
-        return load_from_source(p_realm, p_module, p_asset_path, filename_abs, source);
+        return load_from_source(p_env, p_module, p_asset_path, filename_abs, source);
     }
 
 }

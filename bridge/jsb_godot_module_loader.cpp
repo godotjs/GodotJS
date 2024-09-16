@@ -1,9 +1,9 @@
 #include "jsb_godot_module_loader.h"
-#include "jsb_realm.h"
+#include "jsb_environment.h"
 
 namespace jsb
 {
-    bool GodotModuleLoader::load(class Realm* p_realm, JavaScriptModule& p_module)
+    bool GodotModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
     {
         static const CharString on_demand_loader_source = ""
             "(function (type_loader_func) {"
@@ -28,14 +28,14 @@ namespace jsb
             "    });"
             "})"
             "";
-        v8::Isolate* isolate = p_realm->get_isolate();
+        v8::Isolate* isolate = p_env->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         v8::Context::Scope context_scope(context);
 
-        jsb_check(p_realm->check(context));
-        v8::MaybeLocal<v8::Value> func_maybe_local = p_realm->_compile_run(on_demand_loader_source, on_demand_loader_source.length(), "on_demand_loader_source");
+        jsb_check(p_env->get_context() == context);
+        v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run(on_demand_loader_source, on_demand_loader_source.length(), "on_demand_loader_source");
         if (func_maybe_local.IsEmpty())
         {
             return false;
@@ -49,7 +49,7 @@ namespace jsb
         }
 
         // load_type_impl: function(name)
-        v8::Local<v8::Value> argv[] = { v8::Function::New(context, Realm::_load_godot_mod).ToLocalChecked() };
+        v8::Local<v8::Value> argv[] = { v8::Function::New(context, Environment::_load_godot_mod).ToLocalChecked() };
         v8::Local<v8::Function> loader = func_local.As<v8::Function>();
         v8::MaybeLocal<v8::Value> type_maybe_local = loader->Call(context, v8::Undefined(isolate), std::size(argv), argv);
         if (type_maybe_local.IsEmpty())

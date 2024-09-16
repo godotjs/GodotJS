@@ -2,11 +2,11 @@
 #define GODOTJS_REFLECT_BINDING_UTIL_H
 #include "jsb_object_handle.h"
 #include "jsb_pch.h"
-#include "jsb_realm.h"
+#include "jsb_environment.h"
 #include "jsb_static_binding_util.h"
 #include "../internal/jsb_variant_info.h"
 
-#define GetVariantInfoCollection(p_realm) (p_realm)->get_variant_info_collection() // ::jsb::internal::VariantInfoCollection::global
+#define GetVariantInfoCollection(env) (env)->get_variant_info_collection() // ::jsb::internal::VariantInfoCollection::global
 
 namespace jsb
 {

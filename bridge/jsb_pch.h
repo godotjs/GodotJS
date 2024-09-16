@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "core/io/json.h"
 #include "core/core_constants.h"
 #include "core/version.h"
 #include "core/templates/ring_buffer.h"

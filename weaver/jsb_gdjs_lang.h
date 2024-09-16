@@ -1,9 +1,10 @@
 #ifndef GODOTJS_LANGUAGE_H
 #define GODOTJS_LANGUAGE_H
 
-#include "core/object/script_language.h"
-#include "../internal/jsb_macros.h"
 #include "jsb_bridge.h"
+#include "../internal/jsb_macros.h"
+
+#include "core/object/script_language.h"
 
 class GodotJSScriptLanguage : public ScriptLanguage
 {
@@ -19,7 +20,6 @@ private:
 
     bool once_inited_ = false;
     std::shared_ptr<jsb::Environment> environment_;
-    std::shared_ptr<jsb::Realm> realm_;
 
     Ref<RegEx> class_name_matcher_;
 
@@ -27,10 +27,10 @@ public:
     jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
 
     // main context
-    jsb_force_inline std::shared_ptr<jsb::Realm> get_realm() const
+    jsb_force_inline std::shared_ptr<jsb::Environment> get_environment() const
     {
-        jsb_check(once_inited_ && realm_);
-        return realm_;
+        jsb_check(once_inited_ && environment_);
+        return environment_;
     }
 
 	void scan_external_changes();
@@ -38,13 +38,13 @@ public:
     template<size_t N>
     jsb::JSValueMove eval_source(const char (&p_code)[N], Error& r_err)
     {
-        return realm_->eval_source(p_code, (int) N - 1, "eval", r_err);
+        return environment_->eval_source(p_code, (int) N - 1, "eval", r_err);
     }
 
     jsb::JSValueMove eval_source(const String& p_code, Error& r_err)
     {
         const CharString str = p_code.utf8();
-        return realm_->eval_source(str.get_data(), str.length(), "eval", r_err);
+        return environment_->eval_source(str.get_data(), str.length(), "eval", r_err);
     }
 
     GodotJSScriptLanguage();

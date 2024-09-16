@@ -52,7 +52,7 @@ namespace jsb
     struct JavaScriptModuleCache
     {
     private:
-        friend class Realm;
+        friend class Environment;
 
         StringName main_;
         HashMap<StringName, JavaScriptModule*> modules_;

@@ -119,18 +119,18 @@ void GodotJSREPL::_notification(int p_what)
     switch (p_what)
     {
     case NOTIFICATION_APPLICATION_FOCUS_IN:
-    {
-        check_install();
-        check_tsc();
-    } break;
+        {
+            check_install();
+            check_tsc();
+        } break;
     case NOTIFICATION_ENTER_TREE: {
-        _update_theme();
-        check_install();
-        // _load_state();
+            _update_theme();
+            check_install();
+            // _load_state();
     } break;
     case NOTIFICATION_THEME_CHANGED: {
-        _update_theme();
-        // _rebuild_log();
+            _update_theme();
+            // _rebuild_log();
     } break;
     }
 }
@@ -177,7 +177,7 @@ void GodotJSREPL::_gc_pressed()
 {
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
-    lang->get_realm()->get_environment()->gc();
+    lang->get_environment()->gc();
     add_line("Explicit GC requested");
 }
 

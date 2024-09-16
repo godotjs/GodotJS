@@ -5,16 +5,18 @@
 
 namespace jsb
 {
+    //TODO rename it
 	struct FBindingEnv
 	{
-		class Environment* environment;
-		class Realm* realm;
+		class Environment* env;
 		StringName type_name;
 
 		v8::Isolate* isolate;
 		const v8::Local<v8::Context>& context;
 
 		internal::CFunctionPointers& function_pointers;
+
+	    class Environment* operator->() const { return env; }
 	};
 
 	typedef NativeClassID (*ClassRegisterFunc)(const FBindingEnv& p_env);

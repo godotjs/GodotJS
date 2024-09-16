@@ -1,24 +1,23 @@
 #include "jsb_object_bindings.h"
-#include "jsb_realm.h"
 #include "jsb_transpiler.h"
 #include "jsb_type_convert.h"
 
 namespace jsb
 {
-    NativeClassID ObjectReflectBindingUtil::reflect_bind(Realm* p_realm, const ClassDB::ClassInfo* p_class_info)
+    NativeClassID ObjectReflectBindingUtil::reflect_bind(Environment* p_env, const ClassDB::ClassInfo* p_class_info)
     {
+        v8::Isolate* isolate = p_env->get_isolate();
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        jsb_check(p_env->get_context() == context);
         jsb_check(p_class_info);
-        v8::Isolate* isolate = p_realm->get_isolate();
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-        Environment* environment_ = Environment::wrap(isolate);
-        const NativeClassID class_id = environment_->add_class(NativeClassType::GodotObject, p_class_info->name);
+        const NativeClassID class_id = p_env->add_class(NativeClassType::GodotObject, p_class_info->name);
         JSB_LOG(VeryVerbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
 
         // construct type template
         {
 
-            v8::Local<v8::FunctionTemplate> function_template = ClassTemplate<Object>::create(environment_, class_id);
+            v8::Local<v8::FunctionTemplate> function_template = ClassTemplate<Object>::create(p_env, class_id);
             v8::Local<v8::ObjectTemplate> object_template = function_template->PrototypeTemplate();
 
             //NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
@@ -38,12 +37,12 @@ namespace jsb
 
                 if (pair.value.index >= 0)
                 {
-                    const int remap_index = p_realm->get_variant_info_collection().properties2.size();
+                    const int remap_index = p_env->get_variant_info_collection().properties2.size();
                     internal::FPropertyInfo2 property_info2;
                     property_info2.getter_func = getset_info._getptr;
                     property_info2.setter_func = getset_info._setptr;
                     property_info2.index = pair.value.index;
-                    p_realm->get_variant_info_collection().properties2.append(property_info2);
+                    p_env->get_variant_info_collection().properties2.append(property_info2);
 
                     v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
                         ? v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_get2, v8::Int32::New(isolate, remap_index))
@@ -114,7 +113,7 @@ namespace jsb
             if (p_class_info->name == jsb_string_name(Object))
             {
                 // class: special methods
-                object_template->Set(jsb_name(environment_, free), v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_free));
+                object_template->Set(jsb_name(p_env, free), v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_free));
             }
 
             // class: signals
@@ -122,7 +121,7 @@ namespace jsb
             {
                 const StringName& name_str = pair.key;
                 v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, name_str);
-                const StringNameID string_id = environment_->get_string_name_cache().get_string_id(name_str);
+                const StringNameID string_id = p_env->get_string_name_cache().get_string_id(name_str);
                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_id));
                 object_template->SetAccessorProperty(propkey_name, propval_func);
             }
@@ -150,19 +149,19 @@ namespace jsb
             }
 
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
-            function_template->Set(jsb_symbol(environment_, ClassId), v8::Uint32::NewFromUnsigned(isolate, class_id));
+            function_template->Set(jsb_symbol(p_env, ClassId), v8::Uint32::NewFromUnsigned(isolate, class_id));
 
             // build the prototype chain (inherit)
-            if (const NativeClassID super_class_id = p_realm->_expose_godot_class(p_class_info->inherits_ptr))
+            if (const NativeClassID super_class_id = p_env->_expose_godot_class(p_class_info->inherits_ptr))
             {
-                v8::Local<v8::FunctionTemplate> base_template = environment_->get_native_class(super_class_id).template_.Get(isolate);
+                v8::Local<v8::FunctionTemplate> base_template = p_env->get_native_class(super_class_id).template_.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
                 function_template->Inherit(base_template);
                 JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, (uint32_t) class_id, p_class_info->inherits_ptr->name, (uint32_t) super_class_id);
             }
 
             {
-                auto class_info = environment_->_get_native_class(class_id);
+                auto class_info = p_env->_get_native_class(class_id);
                 jsb_check(function_template == class_info->template_);
 
                 class_info->set_function(isolate, function_template->GetFunction(context).ToLocalChecked());
@@ -219,8 +218,8 @@ namespace jsb
     void ObjectReflectBindingUtil::_godot_utility_func(const vm::FunctionCallbackInfo& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        const internal::FUtilityMethodInfo& method_info = Realm::wrap(context)->get_variant_info_collection().utility_funcs[info.Data().As<v8::Int32>()->Value()];
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const internal::FUtilityMethodInfo& method_info = Environment::wrap(context)->get_variant_info_collection().utility_funcs[info.Data().As<v8::Int32>()->Value()];
         const int argc = info.Length();
 
         // prepare argv
@@ -340,9 +339,10 @@ namespace jsb
     {
         jsb_check(info.Data()->IsInt32());
         v8::Isolate* isolate = info.GetIsolate();
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        const internal::FPropertyInfo2& property_info = Realm::wrap(context)->get_variant_info_collection().properties2[info.Data().As<v8::Int32>()->Value()];
-        Environment::wrap(isolate)->check_internal_state();
+        Environment* env = Environment::wrap(isolate);
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const internal::FPropertyInfo2& property_info = env->get_variant_info_collection().properties2[info.Data().As<v8::Int32>()->Value()];
+        env->check_internal_state();
         // prepare argv
         if (info.Length() != 0)
         {
@@ -384,9 +384,10 @@ namespace jsb
     {
         jsb_check(info.Data()->IsInt32());
         v8::Isolate* isolate = info.GetIsolate();
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        const internal::FPropertyInfo2& property_info = Realm::wrap(context)->get_variant_info_collection().properties2[info.Data().As<v8::Int32>()->Value()];
-        Environment::wrap(isolate)->check_internal_state();
+        Environment* env = Environment::wrap(isolate);
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const internal::FPropertyInfo2& property_info = env->get_variant_info_collection().properties2[info.Data().As<v8::Int32>()->Value()];
+        env->check_internal_state();
         // prepare argv
         if (info.Length() != 1)
         {

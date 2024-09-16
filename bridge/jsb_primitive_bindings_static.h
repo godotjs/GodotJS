@@ -5,7 +5,7 @@
 namespace jsb
 {
 #if JSB_WITH_STATIC_BINDINGS
-	void register_primitive_bindings_static(class Realm* p_realm);
+	void register_primitive_bindings_static(class Environment* p_env);
 #endif
 }
 

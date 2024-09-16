@@ -3,13 +3,13 @@
 
 #include "jsb_pch.h"
 #include "jsb_environment.h"
-#include "jsb_realm.h"
+
 #include "jsb_object_handle.h"
 
 #define JSB_CLASS_BOILERPLATE() \
     jsb_force_inline static v8::Local<v8::FunctionTemplate> create(Environment* env, internal::Index32 class_id)\
     {\
-        v8::Isolate* isolate = env->unwrap();\
+        v8::Isolate* isolate = env->get_isolate();\
         v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor, v8::Uint32::NewFromUnsigned(isolate, class_id));\
         template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
         NativeClassInfo& class_info = env->get_native_class(class_id);\

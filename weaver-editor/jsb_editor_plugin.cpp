@@ -277,7 +277,7 @@ void GodotJSEditorPlugin::load_editor_entry_module()
 {
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
-    const Error err = lang->get_realm()->load("jsb.editor.main");
+    const Error err = lang->get_environment()->load("jsb.editor.main");
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.main");
 }
 

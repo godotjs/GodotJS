@@ -194,9 +194,9 @@ namespace jsb
                 return;
             }
             v8::Local<v8::Object> self = info.This();
-            const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(Realm::wrap(context)).constructors[info.Data().As<v8::Int32>()->Value()];
+            Environment* env = Environment::wrap(isolate);
+            const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(env).constructors[info.Data().As<v8::Int32>()->Value()];
             jsb_check(constructor_info.class_id.is_valid());
-            Environment* environment = Environment::wrap(isolate);
 
             const int argc = info.Length();
 
@@ -254,7 +254,7 @@ namespace jsb
                     args[index].~Variant();
                 }
 
-                environment->bind_valuetype(constructor_info.class_id, instance, self);
+                env->bind_valuetype(constructor_info.class_id, instance, self);
                 return;
             }
 
@@ -279,7 +279,7 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             const Variant* p_self = (Variant*)info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
-            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
+            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Environment::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
             internal::VariantUtil::construct_variant(value, getset.type);
@@ -301,7 +301,7 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             Variant* p_self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
-            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Realm::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
+            const internal::FGetSetInfo& getset = GetVariantInfoCollection(Environment::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
             if (!TypeConvert::js_to_gd_var(isolate, context, info[0], getset.type, value))
@@ -530,7 +530,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
+            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
             Variant* self = info.This()->InternalFieldCount() == IF_VariantFieldCount
                 ? (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer)
                 : nullptr;
@@ -548,7 +548,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Realm::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
+            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
 
             call_builtin_function<HasReturnValueT>(nullptr, method_info, info, isolate, context);
         }
@@ -593,9 +593,9 @@ namespace jsb
 
             // fallback
             {
-                const int constructor_index = GetVariantInfoCollection(p_env.realm).constructors.size();
-                GetVariantInfoCollection(p_env.realm).constructors.append({});
-                internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.realm).constructors.write[constructor_index];
+                const int constructor_index = GetVariantInfoCollection(p_env.env).constructors.size();
+                GetVariantInfoCollection(p_env.env).constructors.append({});
+                internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.env).constructors.write[constructor_index];
                 constructor_info.class_id = p_class_id;
                 const int count = Variant::get_constructor_count(TYPE);
                 constructor_info.variants.resize_zeroed(count);
@@ -617,11 +617,11 @@ namespace jsb
         static NativeClassID reflect_bind(const FBindingEnv& p_env)
         {
             const StringName& class_name = p_env.type_name;
-            const NativeClassID class_id = p_env.environment->add_class(NativeClassType::GodotPrimitive, class_name);
+            const NativeClassID class_id = p_env->add_class(NativeClassType::GodotPrimitive, class_name);
 
             v8::Local<v8::FunctionTemplate> function_template = get_template(p_env, class_id);
             function_template->InstanceTemplate()->SetInternalFieldCount(IF_VariantFieldCount);
-            function_template->SetClassName(p_env.environment->get_string_value(class_name));
+            function_template->SetClassName(p_env->get_string_value(class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();
 
         	// properties (getset)
@@ -636,8 +636,8 @@ namespace jsb
                     JSB_DEFINE_FAST_GETSET(member_type, int32_t, name);
 
                     // fallback to reflection invocation
-                    const int collection_index = (int) GetVariantInfoCollection(p_env.realm).getsets.size();
-                    GetVariantInfoCollection(p_env.realm).getsets.append({
+                    const int collection_index = (int) GetVariantInfoCollection(p_env.env).getsets.size();
+                    GetVariantInfoCollection(p_env.env).getsets.append({
                        Variant::get_member_validated_setter(TYPE, name),
                        Variant::get_member_validated_getter(TYPE, name),
                        member_type});
@@ -717,9 +717,9 @@ namespace jsb
 #endif
 
                     // convert method info, and store
-                    const int collection_index = GetVariantInfoCollection(p_env.realm).methods.size();
-                    GetVariantInfoCollection(p_env.realm).methods.append({});
-                    internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.realm).methods.write[collection_index];
+                    const int collection_index = GetVariantInfoCollection(p_env.env).methods.size();
+                    GetVariantInfoCollection(p_env.env).methods.append({});
+                    internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.env).methods.write[collection_index];
                     method_info.set_debug_name(name);
                     method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, name);
                     method_info.return_type = return_type;
@@ -802,7 +802,7 @@ namespace jsb
             }
 
             {
-                NativeClassInfo& class_info = p_env.environment->get_native_class(class_id);
+                NativeClassInfo& class_info = p_env.env->get_native_class(class_id);
                 class_info.finalizer = &finalizer;
                 class_info.template_.Reset(p_env.isolate, function_template);
                 class_info.set_function(p_env.isolate, function_template->GetFunction(p_env.context).ToLocalChecked());
@@ -813,11 +813,11 @@ namespace jsb
         }
     };
 
-    void register_primitive_bindings_reflect(class Realm* p_realm)
+    void register_primitive_bindings_reflect(class Environment* p_env)
     {
 #pragma push_macro("DEF")
 #   undef   DEF
-#   define  DEF(TypeName) p_realm->add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind);
+#   define  DEF(TypeName) p_env->add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind);
 #   include "jsb_primitive_types.def.h"
 #pragma pop_macro("DEF")
 

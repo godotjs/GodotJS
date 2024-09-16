@@ -13,7 +13,7 @@ namespace jsb
     public:
         virtual ~BridgeModuleLoader() override = default;
 
-        virtual bool load(class Realm* p_realm, JavaScriptModule& p_module) override;
+        virtual bool load(class Environment* p_env, JavaScriptModule& p_module) override;
     };
 
 }

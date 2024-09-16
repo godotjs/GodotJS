@@ -26,7 +26,7 @@ private:
 
     HashSet<String> ignored_paths_;
     HashSet<String> exported_paths_;
-    std::shared_ptr<jsb::Realm> realm_;
+    std::shared_ptr<jsb::Environment> env_;
 };
 
 #endif

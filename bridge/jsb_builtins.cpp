@@ -2,7 +2,7 @@
 
 #include "jsb_amd_module_loader.h"
 #include "jsb_exception_info.h"
-#include "jsb_realm.h"
+
 
 namespace jsb
 {
@@ -130,11 +130,11 @@ namespace jsb
 
         // the root 'require' function
         {
-            Realm* realm = Realm::wrap(context);
+            Environment* env = Environment::wrap(context);
             v8::Local<v8::Function> require_func = v8::Function::New(context, _require).ToLocalChecked();
             self->Set(context, V8Helper::to_string_ascii(isolate, "require"), require_func).Check();
             self->Set(context, V8Helper::to_string_ascii(isolate, "define"), v8::Function::New(context, _define).ToLocalChecked()).Check();
-            require_func->Set(context, V8Helper::to_string_ascii(isolate, "cache"), realm->get_module_cache().unwrap(isolate)).Check();
+            require_func->Set(context, V8Helper::to_string_ascii(isolate, "cache"), env->get_module_cache().unwrap(isolate)).Check();
             require_func->Set(context, V8Helper::to_string_ascii(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
         }
 
@@ -155,22 +155,21 @@ namespace jsb
     {
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        Realm* realm = Realm::wrap(context);
 
         if (info.Length() != 3 || !info[0]->IsString() || !info[1]->IsArray() || !info[2]->IsFunction())
         {
             isolate->ThrowError("bad param");
             return;
         }
-        Environment* environment = Environment::wrap(isolate);
-        const StringName module_id_str = environment->get_string_name(info[0].As<v8::String>());
+        Environment* env = Environment::wrap(context);
+        const StringName module_id_str = env->get_string_name(info[0].As<v8::String>());
         // const StringName module_id_str = V8Helper::to_string(v8::String::Value(isolate, info[0]));
         if (!internal::VariantUtil::is_valid_name(module_id_str))
         {
             isolate->ThrowError("bad module_id");
             return;
         }
-        if (realm->module_cache_.find(module_id_str))
+        if (env->module_cache_.find(module_id_str))
         {
             isolate->ThrowError("conflicted module_id");
             return;
@@ -194,7 +193,7 @@ namespace jsb
             deps.push_back(item_str);
         }
         JSB_LOG(VeryVerbose, "new AMD module loader %s deps: %s", module_id_str, String(", ").join(deps));
-        realm->environment_->add_module_loader<AMDModuleLoader>(module_id_str,
+        env->add_module_loader<AMDModuleLoader>(module_id_str,
             deps, v8::Global<v8::Function>(isolate, info[2].As<v8::Function>()));
     }
 
@@ -220,8 +219,8 @@ namespace jsb
         // read parent module id from magic data
         const String parent_id = V8Helper::to_string(isolate, info.Data());
         const String module_id = V8Helper::to_string(isolate, arg0);
-        Realm* realm = Realm::wrap(context);
-        if (const JavaScriptModule* module = realm->_load_module(parent_id, module_id))
+        Environment* env = Environment::wrap(context);
+        if (const JavaScriptModule* module = env->_load_module(parent_id, module_id))
         {
             info.GetReturnValue().Set(module->exports);
         }

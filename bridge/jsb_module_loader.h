@@ -12,7 +12,7 @@ namespace jsb
     public:
         virtual ~IModuleLoader() = default;
 
-        virtual bool load(class Realm* p_realm, JavaScriptModule& p_module) = 0;
+        virtual bool load(class Environment* p_env, JavaScriptModule& p_module) = 0;
     };
 
 }

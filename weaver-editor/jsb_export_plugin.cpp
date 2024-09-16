@@ -12,8 +12,8 @@ GodotJSExportPlugin::GodotJSExportPlugin() : super()
     ignored_paths_.insert("res://tsconfig.json");
     ignored_paths_.insert("res://package.json");
     ignored_paths_.insert("res://package-lock.json");
-    realm_ = GodotJSScriptLanguage::get_singleton()->get_realm();
-    jsb_check(realm_);
+    env_ = GodotJSScriptLanguage::get_singleton()->get_environment();
+    jsb_check(env_);
 }
 
 PackedStringArray GodotJSExportPlugin::_get_export_features(const Ref<EditorExportPlatform>& p_export_platform, bool p_debug) const
@@ -70,12 +70,12 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
 
     // export dependent files.
     // force module loading. ensure the module hierarchy available.
-    if (jsb::JavaScriptModule* module; realm_->load(p_path, &module) == OK)
+    if (jsb::JavaScriptModule* module; env_->load(p_path, &module) == OK)
     {
-        v8::Isolate* isolate = realm_->get_isolate();
+        v8::Isolate* isolate = env_->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = realm_->unwrap();
+        v8::Local<v8::Context> context = env_->get_context();
         v8::Context::Scope context_scope(context);
 
         jsb::Environment* environment = jsb::Environment::wrap(isolate);

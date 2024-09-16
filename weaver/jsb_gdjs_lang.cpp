@@ -3,9 +3,9 @@
 #include <iterator>
 
 #include "../jsb_project_preset.h"
-#include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 #include "../internal/jsb_string_names.h"
+
 #include "jsb_gdjs_script_instance.h"
 #include "jsb_gdjs_script.h"
 #include "editor/editor_settings.h"
@@ -47,7 +47,6 @@ void GodotJSScriptLanguage::init()
         once_inited_ = true;
         JSB_LOG(VeryVerbose, "jsb lang init");
         environment_ = std::make_shared<jsb::Environment>();
-        realm_ = std::make_shared<jsb::Realm>(environment_);
 
         jsb::DefaultModuleResolver& resolver = environment_->add_module_resolver<jsb::DefaultModuleResolver>()
             .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
@@ -69,7 +68,7 @@ void GodotJSScriptLanguage::init()
             const char* str = GodotJSProjectPreset::get_source_rt("jsb.bundle.js", len);
             jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
             jsb_check(len == (size_t)(int) len);
-            realm_->eval_source(str, (int) len, "jsb.bundle.js", err);
+            environment_->eval_source(str, (int) len, "jsb.bundle.js", err);
         }
     }
 }
@@ -78,7 +77,6 @@ void GodotJSScriptLanguage::finish()
 {
     jsb_check(once_inited_);
     once_inited_ = false;
-    realm_.reset();
     environment_.reset();
     JSB_LOG(VeryVerbose, "jsb lang finish");
 }
@@ -154,7 +152,7 @@ Script* GodotJSScriptLanguage::create_script() const
 bool GodotJSScriptLanguage::validate(const String& p_script, const String& p_path, List<String>* r_functions, List<ScriptError>* r_errors, List<Warning>* r_warnings, HashSet<int>* r_safe_lines) const
 {
     jsb::JavaScriptExceptionInfo exception_info;
-    if (realm_->validate_script(p_path, &exception_info))
+    if (environment_->validate_script(p_path, &exception_info))
     {
         return true;
     }
@@ -267,7 +265,7 @@ String GodotJSScriptLanguage::get_type() const
 
 void GodotJSScriptLanguage::scan_external_changes()
 {
-	get_realm()->scan_external_changes();
+	environment_->scan_external_changes();
 
 #ifdef TOOLS_ENABLED
 	// fix scripts with no .js counterpart found (only missing scripts)

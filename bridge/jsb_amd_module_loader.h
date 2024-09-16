@@ -21,7 +21,7 @@ namespace jsb
 
         virtual ~AMDModuleLoader() override { evaluator_.Reset(); }
 
-        virtual bool load(class Realm* p_realm, JavaScriptModule& p_module) override;
+        virtual bool load(class Environment* p_env, JavaScriptModule& p_module) override;
     };
 
 }

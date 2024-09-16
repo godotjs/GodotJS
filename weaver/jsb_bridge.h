@@ -14,7 +14,6 @@ static_assert(
 #pragma endregion
 
 #include "../bridge/jsb_environment.h"
-#include "../bridge/jsb_realm.h"
 #include "../bridge/jsb_exception_info.h"
 #include "../bridge/jsb_class_info.h"
 #include "../bridge/jsb_ref.h"

@@ -46,11 +46,11 @@ void GodotJSStatisticsViewer::on_timer()
 {
     const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     if (!lang) return;
-    const std::shared_ptr<jsb::Realm> realm = lang->get_realm();
-    if (!realm) return;
+    const std::shared_ptr<jsb::Environment> env = lang->get_environment();
+    if (!env) return;
 
     jsb::Statistics stats;
-    realm->get_environment()->get_statistics(stats);
+    env->get_statistics(stats);
 
     int index = 0;
 #if JSB_WITH_V8

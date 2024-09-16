@@ -2,7 +2,7 @@
 
 namespace jsb
 {
-    bool InternalModuleLoader::load(Realm* p_realm, JavaScriptModule& p_module)
+    bool InternalModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
     {
         //TODO evaluate source from presets with file_name_
         return true;

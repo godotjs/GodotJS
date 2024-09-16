@@ -6,14 +6,14 @@ namespace jsb
 {
     struct JSValueMove
     {
-        friend class Realm;
+        friend class Environment;
 
     private:
-        std::shared_ptr<class Realm> realm_;
+        std::shared_ptr<class Environment> env_;
         v8::Global<v8::Value> value_;
 
         JSValueMove() = default;
-        JSValueMove(const std::shared_ptr<class Realm>& p_realm, const v8::Local<v8::Value>& p_value);
+        JSValueMove(const std::shared_ptr<class Environment>& p_env, const v8::Local<v8::Value>& p_value);
 
     public:
         // disable copy to avoid unpredictable behaviours (for now)

@@ -14,7 +14,7 @@ namespace jsb
         InternalModuleLoader(const String& p_filename) : file_name_(p_filename) {}
         virtual ~InternalModuleLoader() override = default;
 
-        virtual bool load(class Realm* p_realm, JavaScriptModule& p_module) override;
+        virtual bool load(class Environment* p_env, JavaScriptModule& p_module) override;
 
     private:
         String file_name_;

@@ -1,15 +1,15 @@
 #include "jsb_timer_action.h"
 #include "jsb_exception_info.h"
-#include "jsb_realm.h"
+
 
 namespace jsb
 {
     void JavaScriptTimerAction::operator()(v8::Isolate* isolate)
     {
-        v8::Local<v8::Function> func = function_.Get(isolate);
-        v8::Local<v8::Context> context = func->GetCreationContextChecked();
+        const v8::Local<v8::Function> func = function_.Get(isolate);
+        const v8::Local<v8::Context> context = func->GetCreationContextChecked();
 
-        jsb_checkf(Realm::wrap(context), "timer triggered after Realm diposed");
+        jsb_checkf(Environment::wrap(context), "timer triggered after Environment disposed");
         v8::Context::Scope context_scope(context);
         v8::MaybeLocal<v8::Value> result;
         v8::TryCatch try_catch(isolate);

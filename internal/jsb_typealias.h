@@ -8,7 +8,7 @@ namespace jsb
     typedef internal::Index32 StringNameID;
     typedef internal::Index32 NativeClassID;
     typedef internal::Index32 ScriptClassID;
-    typedef internal::Index32 RealmID;
+    typedef void* EnvironmentID;
     typedef internal::Index64 NativeObjectID;
 
     typedef internal::Index32 ObjectCacheID;

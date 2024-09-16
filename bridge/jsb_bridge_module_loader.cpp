@@ -1,6 +1,4 @@
 #include "jsb_bridge_module_loader.h"
-
-#include "jsb_realm.h"
 #include "jsb_type_convert.h"
 
 #include "../internal/jsb_path_util.h"
@@ -899,7 +897,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            Realm* realm = Realm::wrap(context);
+            Environment* env = Environment::wrap(isolate);
 
             const int argc = info.Length();
             int func_arg_index;
@@ -932,10 +930,10 @@ namespace jsb
                 isolate->ThrowError("bad function");
                 return;
             }
-            RealmID realm_id = realm->id();
+            EnvironmentID env_id = env->id();
             v8::Local<v8::Function> js_func = info[func_arg_index].As<v8::Function>();
-            const ObjectCacheID callback_id = realm->get_cached_function(js_func);
-            Variant callable = Callable(memnew(GodotJSCallableCustom(caller_id, realm_id, callback_id)));
+            const ObjectCacheID callback_id = env->get_cached_function(js_func);
+            Variant callable = Callable(memnew(GodotJSCallableCustom(caller_id, env_id, callback_id)));
             v8::Local<v8::Value> rval;
             if (!TypeConvert::gd_var_to_js(isolate, context, callable, rval))
             {
@@ -1174,9 +1172,9 @@ namespace jsb
                 jsb_throw(isolate, "bad module_id");
                 return;
             }
-            Realm* realm = Realm::wrap(context);
+            Environment* env = Environment::wrap(context);
             const StringName module_id_sn = module_id;
-            if (JavaScriptModule* module = realm->get_module_cache().find(module_id_sn))
+            if (JavaScriptModule* module = env->get_module_cache().find(module_id_sn))
             {
                 info.GetReturnValue().Set(module->module);
             }
@@ -1200,14 +1198,14 @@ namespace jsb
                 return;
             }
             v8::Local<v8::Object> target = info[1].As<v8::Object>();
-            Realm* realm = Realm::wrap(context);
+            Environment* env = Environment::wrap(context);
             const StringName module_id_sn = module_id;
-            if (realm->get_module_cache().find(module_id_sn))
+            if (env->get_module_cache().find(module_id_sn))
             {
                 jsb_throw(isolate, "can not overwrite an existing module");
                 return;
             }
-            JavaScriptModule& module = realm->get_module_cache().insert(isolate, context, module_id_sn, false, true);
+            JavaScriptModule& module = env->get_module_cache().insert(isolate, context, module_id_sn, false, true);
             module.exports.Reset(isolate, target);
             info.GetReturnValue().Set(module.module);
         }
@@ -1252,9 +1250,9 @@ namespace jsb
         }
     }
 
-    bool BridgeModuleLoader::load(class Realm* p_realm, JavaScriptModule& p_module)
+    bool BridgeModuleLoader::load(class Environment* p_env, JavaScriptModule& p_module)
     {
-        v8::Isolate* isolate = p_realm->get_isolate();
+        v8::Isolate* isolate = p_env->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();

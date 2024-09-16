@@ -28,7 +28,7 @@ private:
     RBSet<Object*> instances_;
 
     //TODO improvement needed
-    jsb::RealmID realm_id_;
+    jsb::EnvironmentID env_id_;
 
     String source_;
     String path_;
@@ -50,7 +50,7 @@ private:
     void _update_exports(PlaceHolderScriptInstance *p_instance_to_update, bool p_base_exports_changed = false);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
 
-    std::shared_ptr<jsb::Realm> get_realm() const { return jsb::Realm::get_realm(realm_id_); }
+    std::shared_ptr<jsb::Environment> get_environment() const { return jsb::Environment::_access(env_id_); }
 
 public:
     GodotJSScript();
@@ -60,7 +60,7 @@ public:
     void load_source_code_from_path();
 	void load_module_if_missing();
 
-    const jsb::ScriptClassInfo& get_script_class_info() const;
+    const jsb::ScriptClassInfo& get_script_class() const;
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;
@@ -97,7 +97,7 @@ public:
     // we expect Godot calling this after loaded_?
     virtual bool is_valid() const override { jsb_check(loaded_); return valid_; }
     virtual bool is_tool() const override;
-    virtual bool is_abstract() const override { return valid_ && get_script_class_info().is_abstract(); }
+    virtual bool is_abstract() const override { return valid_ && get_script_class().is_abstract(); }
 
     virtual ScriptLanguage* get_language() const override;
 
