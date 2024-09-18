@@ -2,18 +2,9 @@
 #define GODOTJS_WEB_VM_H
 
 #include <emscripten/emscripten.h>
-#include <cstdint>
 
 namespace jsb::vm
 {
-    namespace internal
-    {
-        struct Any
-        {
-            uint32_t address;
-        };
-    }
-
     struct FunctionCallbackInfo
     {
 
@@ -23,13 +14,12 @@ namespace jsb::vm
 namespace v8
 {
     template<typename T>
-    class Local
+    class Global
     {
 
     };
 
-    template<typename T>
-    class Global
+    class HandleScope
     {
 
     };
