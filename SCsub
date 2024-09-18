@@ -339,7 +339,7 @@ if jsb_platform == "web":
 
     env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
     env.AddJSLibraries([
-        "impl/web/bridge/out/library.js",
+        "impl/web/jsb_web.library.js",
     ])
 
 generate_code({

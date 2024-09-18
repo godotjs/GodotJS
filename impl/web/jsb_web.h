@@ -1,7 +1,7 @@
 #ifndef GODOTJS_WEB_VM_H
 #define GODOTJS_WEB_VM_H
 
-#include <emscripten/emscripten.h>
+#include "jsb_web_interop.h"
 
 namespace jsb::vm
 {
