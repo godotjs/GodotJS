@@ -53,6 +53,25 @@ class ObjectDB {
     }
 }
 
+class Stack {
+    private values: Array<any> = [];
+
+    get(index: number) {
+        return this.values[index];
+    }
+
+    // return stack pos
+    push(val: any): number {
+        const index = this.values.length;
+        this.values.push(val);
+        return index;
+    }
+
+    pop(n = 1) {
+        this.values.length -= n;
+    }
+}
+
 let API: InteropApi;
 export class Engine {
     finalizers: Array<number>;
