@@ -37,8 +37,8 @@ namespace v8
 
         Local<T> Get(Isolate* isolate) const
         {
-            CRASH_COND(value_.type >= 0);
-            return Local<T>(isolate_, isolate_->alloc_value(value_.type, value_.u.ptr));
+            CRASH_COND(IsEmpty());
+            return Local<T>(isolate_, isolate_->alloc_value(value_));
         }
 
         template<typename S>
