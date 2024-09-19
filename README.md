@@ -114,4 +114,4 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 - [ ] Linux: arm64
 - [x] Android: arm32, arm64, x86_64 (`ndk_platform=android-24`)
 - [x] iOS: arm64, x86_64 (not tested)
-- [ ] WebAssembly (quickjs only)
+- [ ] WebAssembly
