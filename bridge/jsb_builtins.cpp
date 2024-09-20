@@ -19,7 +19,7 @@ namespace jsb
     }
 
     template<internal::ELogSeverity::Type ActiveSeverity>
-    void _print(const vm::FunctionCallbackInfo& info)
+    void _print(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         if constexpr (ActiveSeverity < internal::ELogSeverity::JSB_MIN_LOG_LEVEL) return;
 
@@ -151,7 +151,7 @@ namespace jsb
         }
     }
 
-    void Builtins::_define(const vm::FunctionCallbackInfo& info)
+    void Builtins::_define(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -197,7 +197,7 @@ namespace jsb
             deps, v8::Global<v8::Function>(isolate, info[2].As<v8::Function>()));
     }
 
-    void Builtins::_require(const vm::FunctionCallbackInfo& info)
+    void Builtins::_require(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _require);
         v8::Isolate* isolate = info.GetIsolate();
@@ -226,7 +226,7 @@ namespace jsb
         }
     }
 
-    void Builtins::_set_timer(const vm::FunctionCallbackInfo& info)
+    void Builtins::_set_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
         const int argc = info.Length();
@@ -283,7 +283,7 @@ namespace jsb
         }
     }
 
-    void Builtins::_clear_timer(const vm::FunctionCallbackInfo& info)
+    void Builtins::_clear_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
         if (info.Length() < 1 || !info[0]->IsUint32())

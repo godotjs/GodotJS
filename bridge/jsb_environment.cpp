@@ -939,7 +939,7 @@ namespace jsb
     }
 
     // [JS] function load_type(type_name: string): Class;
-    void Environment::_load_godot_mod(const vm::FunctionCallbackInfo& info)
+    void Environment::_load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _load_godot_mod);
 

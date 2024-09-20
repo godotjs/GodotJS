@@ -4,55 +4,76 @@
 
 namespace v8
 {
+    Local<Primitive> Undefined(Isolate* isolate)
+    {
+        return Local<Primitive>(isolate, isolate->top_->depth_, jsapi_stack_push_undefined(isolate->id_));
+    }
+
+    Local<Primitive> Null(Isolate* isolate)
+    {
+        return Local<Primitive>(isolate, isolate->top_->depth_, jsapi_stack_push_null(isolate->id_));
+    }
+
     int64_t Int32::Value() const
     {
-        const jsb::vm::JSValue& jv = isolate_->get_value(address_);
-        CRASH_COND(jv.type != jsb::vm::JSValue::Int);
-        return jv.u.int32;
+        return ::jsapi_sv_to_integer(isolate_->id_, stack_, index_);
+    }
+
+    Local<Boolean> Boolean::New(Isolate* isolate, bool value)
+    {
+        return Local<Boolean>(isolate, isolate->top_->depth_, jsapi_stack_push_boolean(isolate->id_, value));
     }
 
     Local<Int32> Int32::New(Isolate* isolate, int32_t value)
     {
-        jsb::vm::JSValue jv;
-        jv.type = jsb::vm::JSValue::Int;
-        jv.u.int32 = value;
-        return Local<Int32>(isolate, isolate->alloc_value(jv));
+        return Local<Int32>(isolate, isolate->top_->depth_, jsapi_stack_push_int(isolate->id_, value));
     }
 
     Local<Int32> Int32::New(Isolate* isolate, uint32_t value)
     {
-        jsb::vm::JSValue jv;
-        jv.type = jsb::vm::JSValue::Int;
-        jv.u.int32 = (int32_t) value;
-        return Local<Int32>(isolate, isolate->alloc_value(jv));
+        return Local<Int32>(isolate, isolate->top_->depth_, jsapi_stack_push_int(isolate->id_, (int32_t) value));
     }
 
     Local<Symbol> Symbol::New(Isolate* isolate)
     {
-        jsb::vm::JSValue jv;
-        jv.type = jsb::vm::JSValue::Symbol;
-        jv.u.ptr = ::jsb_web_new_symbol(isolate->id_);
-        const uint32_t addr = isolate->alloc_value(jv);
-        ::jsb_web_value_remove_ref(isolate->id_, jv.u.ptr);
-        return Local<Symbol>(isolate, addr);
+        return Local<Symbol>(isolate, isolate->top_->depth_, jsapi_stack_push_symbol(isolate->id_));
+    }
+
+    Local<Number> Number::New(Isolate* isolate, double value)
+    {
+        return Local<Number>(isolate, isolate->top_->depth_, jsapi_stack_push_number(isolate->id_, value));
     }
 
     Local<Object> Object::New(Isolate* isolate)
     {
-        jsb::vm::JSValue jv;
-        jv.type = jsb::vm::JSValue::Object;
-        jv.u.ptr = ::jsb_web_new_object(isolate->id_);
-        const uint32_t addr = isolate->alloc_value(jv);
-        ::jsb_web_value_remove_ref(isolate->id_, jv.u.ptr);
-        return Local<Object>(isolate, addr);
+        return Local<Object>(isolate, isolate->top_->depth_, jsapi_stack_push_object(isolate->id_));
     }
 
-    void Object::SetAlignedPointerInInternalField(int index, void* value)
+    Local<External> External::New(Isolate* isolate, void* data)
     {
-        CRASH_COND_MSG(index != 0 && index != 1, "not supported");
-        jsb::vm::JSValue& jv = isolate_->_at(address_);
-        CRASH_COND(jv.type >= 0);
-        ::jsb_web_value_set_internal_field(isolate_->id_, jv.u.ptr, index, value);
+        //TODO
+    }
+
+    MaybeLocal<String> String::NewFromUtf8(Isolate* isolate, const char* data, NewStringType type, int length)
+    {
+        //TODO
+    }
+
+    int Object::InternalFieldCount() const
+    {
+        return jsapi_sv_internal_num(isolate_->id_, stack_, index_);
+    }
+
+    void Object::SetAlignedPointerInInternalField(int slot, void* value)
+    {
+        CRASH_COND_MSG(slot != 0 && slot != 1, "not supported");
+        jsapi_sv_internal_set(isolate_->id_, stack_, index_, slot, value);
+    }
+
+    void* Object::GetAlignedPointerFromInternalField(int slot)
+    {
+        CRASH_COND_MSG(slot != 0 && slot != 1, "not supported");
+        return jsapi_sv_internal_get(isolate_->id_, stack_, index_, slot);
     }
 
     Maybe<bool> Object::Set(const Local<Context>& context, Local<Value> key, Local<Value> value)
@@ -77,6 +98,11 @@ namespace v8
     {
         //TODO
         return {};
+    }
+
+    MaybeLocal<Value> Function::Call(Local<Context> context, Local<Value> recv, int argc, Local<Value> argv[])
+    {
+        //TODO
     }
 
 }

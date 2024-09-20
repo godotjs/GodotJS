@@ -656,7 +656,7 @@ namespace jsb
 
     struct JavaScriptEditorUtility
     {
-        static void _get_class_doc(const vm::FunctionCallbackInfo& info)
+        static void _get_class_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -719,7 +719,7 @@ namespace jsb
             }
         }
 
-        static void _get_classes(const vm::FunctionCallbackInfo& info)
+        static void _get_classes(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -749,7 +749,7 @@ namespace jsb
             info.GetReturnValue().Set(array);
         }
 
-        static void _get_global_constants(const vm::FunctionCallbackInfo& info)
+        static void _get_global_constants(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -785,7 +785,7 @@ namespace jsb
             info.GetReturnValue().Set(array);
         }
 
-        static void _get_primitive_types(const vm::FunctionCallbackInfo& info)
+        static void _get_primitive_types(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -803,7 +803,7 @@ namespace jsb
             info.GetReturnValue().Set(array);
         }
 
-        static void _get_utility_functions(const vm::FunctionCallbackInfo& info)
+        static void _get_utility_functions(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -824,7 +824,7 @@ namespace jsb
             info.GetReturnValue().Set(array);
         }
 
-        static void _get_singletons(const vm::FunctionCallbackInfo& info)
+        static void _get_singletons(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -854,7 +854,7 @@ namespace jsb
             info.GetReturnValue().Set(array);
         }
 
-        static void _delete_file(const vm::FunctionCallbackInfo& info)
+        static void _delete_file(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -876,7 +876,7 @@ namespace jsb
 {
     namespace
     {
-        void _to_array_buffer(const vm::FunctionCallbackInfo& info)
+        void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -892,7 +892,7 @@ namespace jsb
         // construct a callable object
         // [js] function callable(fn: Function): godot.Callable;
         // [js] function callable(thiz: godot.Object, fn: Function): godot.Callable;
-        void _new_callable(const vm::FunctionCallbackInfo& info)
+        void _new_callable(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -944,7 +944,7 @@ namespace jsb
         }
 
         // function (target: any): void;
-        void _add_script_tool(const vm::FunctionCallbackInfo& info)
+        void _add_script_tool(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -961,7 +961,7 @@ namespace jsb
                 V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))));
         }
 
-        void _get_type_name(const vm::FunctionCallbackInfo& info)
+        void _get_type_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -977,7 +977,7 @@ namespace jsb
             jsb_throw(isolate, "bad param");
         }
 
-        void _notify_microtasks_run(const vm::FunctionCallbackInfo& info)
+        void _notify_microtasks_run(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Environment* environment = Environment::wrap(info.GetIsolate());
             jsb_check(environment);
@@ -985,7 +985,7 @@ namespace jsb
         }
 
         // function (target: any): void;
-        void _add_script_icon(const vm::FunctionCallbackInfo& info)
+        void _add_script_icon(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -1004,7 +1004,7 @@ namespace jsb
         }
 
         // function add_script_ready(target: any, name: string,  evaluator: string | Function): void;
-        void _add_script_ready(const vm::FunctionCallbackInfo &info)
+        void _add_script_ready(const v8::FunctionCallbackInfo<v8::Value> &info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -1042,7 +1042,7 @@ namespace jsb
         }
 
         // function (target: any, prop?: string, cat: [0, 1, 2], message?: string)
-        void _set_script_doc(const vm::FunctionCallbackInfo& info)
+        void _set_script_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
 #ifdef TOOLS_ENABLED
             constexpr int kTarget = 0; // constructor | prototype
@@ -1118,7 +1118,7 @@ namespace jsb
         }
 
         // function (target: any, name: string, details: ScriptPropertyInfo): void;
-        void _add_script_property(const vm::FunctionCallbackInfo &info)
+        void _add_script_property(const v8::FunctionCallbackInfo<v8::Value> &info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -1155,7 +1155,7 @@ namespace jsb
                 V8Helper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
         }
 
-        void _find_module(const vm::FunctionCallbackInfo &info)
+        void _find_module(const v8::FunctionCallbackInfo<v8::Value> &info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -1180,7 +1180,7 @@ namespace jsb
             }
         }
 
-        void _add_module(const vm::FunctionCallbackInfo &info)
+        void _add_module(const v8::FunctionCallbackInfo<v8::Value> &info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -1211,7 +1211,7 @@ namespace jsb
         }
 
         // function add_script_signal(target: any, signal_name: string): void;
-        void _add_script_signal(const vm::FunctionCallbackInfo &info)
+        void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value> &info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);

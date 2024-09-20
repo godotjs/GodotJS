@@ -19,13 +19,15 @@ namespace v8
 
     Local<Context> Context::New(Isolate* isolate)
     {
-        return Local<Context>(isolate, 0);
+        return Local<Context>(isolate, isolate->top_->depth_, 0);
     }
 
     Local<Object> Context::Global()
     {
-        return Local<Object>(isolate_,
-            isolate_->alloc_value(jsb::vm::JSValue::Object, ::jsb_web_get_global(isolate_->id_)));
+        return Local<Object>(
+            isolate_,
+            isolate_->top_->depth_,
+            ::jsapi_stack_push_global(isolate_->id_));
     }
 
 }

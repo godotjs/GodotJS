@@ -1,8 +1,7 @@
 #ifndef GODOTJS_WEB_PRIMITIVE_DATA_H
 #define GODOTJS_WEB_PRIMITIVE_DATA_H
 
-#include <climits>
-#include <cstdint>
+#include "jsb_web_interop.h"
 
 namespace v8
 {
@@ -11,11 +10,26 @@ namespace v8
     struct Data
     {
         Isolate* isolate_ = nullptr;
-        uint32_t address_ = UINT_MAX;
+        int stack_ = 0;
+        int index_ = 0;
 
-        bool is_valid() const { return isolate_ != nullptr && address_ != UINT_MAX; }
-        bool operator==(const Data& other) const { return isolate_ == other.isolate_ && address_ == other.address_; }
+        Data() {}
+        Data(Isolate* isolate, int stack, int index) : isolate_(isolate), stack_(stack), index_(index) {}
 
+        bool is_valid() const { return isolate_ != nullptr && stack_ != 0; }
+        bool equals_to(const Data& other) const;
+
+        bool operator==(const Data& other) const
+        {
+            if (isolate_ != other.isolate_) return false;
+            if (stack_ == other.stack_ && index_ == other.index_) return true;
+            return equals_to(other);
+        }
+
+        bool IsInt32() const;
+        bool IsNumber() const;
+        bool IsBoolean() const;
+        bool IsString() const;
         bool IsArray() const;
         bool IsUndefined() const;
         bool IsNull() const;

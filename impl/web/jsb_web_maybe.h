@@ -13,6 +13,12 @@ namespace v8
         Maybe() {}
         Maybe(const T& value) : value_(value), has_value_(true) {}
         void Check() const {}
+
+        T ToChecked() const
+        {
+            CRASH_COND(!has_value_);
+            return value_;
+        }
     };
 }
 #endif

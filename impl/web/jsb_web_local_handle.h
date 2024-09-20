@@ -6,18 +6,18 @@
 
 namespace v8
 {
+    class Isolate;
+
     template<typename T>
     class Local
     {
-    private:
+    public:
         Data data_;
 
-    public:
-        Local() : data_() {}
-        Local(class Isolate* isolate, uint32_t address)
-            : data_ { isolate, address }
-        {
-        }
+        Local() {}
+        Local(Data data): data_(data) {}
+        Local(Isolate* isolate, int depth, int offset)
+            : data_(isolate, depth, offset) {}
 
         template<typename S>
         Local(const Local<S>& other) : data_(other.data()) {}
@@ -25,35 +25,36 @@ namespace v8
         template<typename S>
         Local<S> As() const { return Local<S>(*this); }
 
-        bool IsEmpty() const
-        {
-            return !data_.is_valid();
-        }
+        bool IsEmpty() const { return !data_.is_valid(); }
 
         T* operator->() const { return static_cast<T*>(&data_); }
-        bool operator==(const Local<T>& other) const { return data_ == other.data_; }
+
+        template<typename S>
+        bool operator==(const Local<T>& other) const
+        {
+            return data_ == other.data_;
+        }
     };
 
     template<typename T>
     class MaybeLocal
     {
-    private:
+    public:
         Data data_;
 
-    public:
+        bool IsEmpty() const { return data_.is_valid(); }
+
         template<typename S>
         bool ToLocal(Local<S>* out) const
         {
-            *out = Local<S>(data_.isolate_, data_.address_);
-            return data_.is_valid();
+            *out = Local<S>(data_);
+            return !out->IsEmpty();
         }
-
-        bool IsEmpty() const { return data_.is_valid(); }
 
         Local<T> ToLocalChecked()
         {
             CRASH_COND(IsEmpty());
-            return Local<T>(data_.isolate_, data_.address_);
+            return Local<T>(data_);
         }
     };
 }

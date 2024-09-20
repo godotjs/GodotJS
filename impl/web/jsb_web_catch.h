@@ -7,10 +7,12 @@ namespace v8
     class TryCatch
     {
     public:
-        TryCatch(Isolate* isolate)
-        {
-            //TODO
-        }
+        Isolate* isolate_;
+
+        TryCatch(Isolate* isolate) : isolate_(isolate) {}
+        ~TryCatch();
+
+        bool HasCaught() const;
     };
 }
 #endif

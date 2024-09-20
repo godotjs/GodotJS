@@ -7,12 +7,12 @@ namespace jsb
     {
         static NativeClassID reflect_bind(class Environment* p_env, const ClassDB::ClassInfo* p_class_info);
 
-        static void _godot_object_free(const vm::FunctionCallbackInfo& info);
-        static void _godot_object_method(const vm::FunctionCallbackInfo& info);
-        static void _godot_object_get2(const vm::FunctionCallbackInfo& info);
-        static void _godot_object_set2(const vm::FunctionCallbackInfo& info);
-        static void _godot_object_signal(const vm::FunctionCallbackInfo& info);
-        static void _godot_utility_func(const vm::FunctionCallbackInfo& info);
+        static void _godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_object_get2(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_object_set2(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_object_signal(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void _godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info);
 
     };
 }

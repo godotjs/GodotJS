@@ -10,10 +10,14 @@ const GodotJSApi = {
             jsb_web_invoke_gc_callback: Module._jsb_web_invoke_gc_callback,
         });
     },
-    create_engine: function () { return GodotJSApi().create_engine(); },
-    drop_engine: function (engine_id) { return GodotJSApi().drop_engine(engine_id);  },
 
-    // listing all public engine API here
+    // free functions
+    create_engine: function () { return GodotJSApi().create_engine(); },
+    drop_engine: function (engine_id) { return GodotJSApi().drop_engine(engine_id); },
+    
+    // utility functions
+
+    // engine api functions
     eval: function (engine_id, pcode) { const engine = GodotJSApi().get_engine(engine_id); return engine.eval(pcode); },
     set_finalizer: function (engine_id, pfunc) { const engine = GodotJSApi().get_engine(engine_id); return engine.set_finalizer(pfunc); },
     new_binding_object: function (engine_id, pobj) { const engine = GodotJSApi().get_engine(engine_id); return engine.new_binding_object(pobj); },

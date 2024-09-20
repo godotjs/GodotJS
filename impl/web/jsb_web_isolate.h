@@ -6,7 +6,6 @@
 
 #include "jsb_web_interop.h"
 #include "jsb_web_stub_types.h"
-#include "jsb_web_value.h"
 #include "jsb_web_primitive.h"
 #include "jsb_web_local_handle.h"
 
@@ -25,27 +24,16 @@ namespace v8
 
     class Isolate
     {
-    private:
-		friend class HandleScope;
-        friend class Context;
-        friend class ScopedValue;
+    public:
+		static struct StaticInitializer { StaticInitializer() { jsapi_init(); } } init;
+        int id_;
 
-        friend class Symbol;
-        friend class Object;
-
-        template<typename T>
-        friend class Global;
-
-		static struct StaticInitializer { StaticInitializer() { jsb_web_init(); } } init;
-        JSB_WEB_TYPE(EngineHandle) id_;
-        void* data_;
+        void* isolate_data_;
         void* context_data_;
 
-        class HandleScope* handle_scope_;
-        std::vector<jsb::vm::JSValue> stack_;
+        class HandleScope* top_;
 
         Isolate();
-    public:
         ~Isolate();
 
         enum GarbageCollectionType
@@ -58,7 +46,7 @@ namespace v8
 			ArrayBuffer::Allocator* array_buffer_allocator;
 		};
 
-        // nothing to do
+        // Isolate::Scope nothing to do
         struct Scope { Scope(Isolate* isolate) {} };
 
         static Isolate* New(const CreateParams& params)
@@ -74,11 +62,12 @@ namespace v8
 
         Local<Context> GetCurrentContext();
 
+        Local<Value> ThrowError(Local<String> message);
         template <int N>
-        Local<Value> ThrowError(const char (&message)[N]) {
+        Local<Value> ThrowError(const char (&message)[N])
+        {
             return ThrowError(String::NewFromUtf8Literal(this, message));
         }
-        Local<Value> ThrowError(Local<String> message);
 
         // STUB CALLS
         void AddGCPrologueCallback(GCCallback cb, GCType type = kGCTypeAll) {}
@@ -88,33 +77,18 @@ namespace v8
         void RequestGarbageCollectionForTesting(GarbageCollectionType type) {}
         void SetBatterySaverMode(bool) {}
 
-    public:
-        // INTERNAL
-        uint32_t alloc_value(const jsb::vm::JSValue& value);
-        const jsb::vm::JSValue& get_value(uint32_t index);
-
-        jsb::vm::JSValue& _at(uint32_t index)
-        {
-            if (stack_.size() <= index)
-            {
-                stack_.resize(index + 64);
-            }
-            return stack_[index];
-        }
     };
 
     class HandleScope
     {
-    private:
-        friend class Isolate;
-
+    public:
         Isolate* isolate_;
         HandleScope* last_;
-        uint32_t base_;
-        uint32_t size_;
+        int depth_;
+        bool is_native_;
 
-    public:
         HandleScope(Isolate* isolate);
+        HandleScope(Isolate* isolate, int depth);
         ~HandleScope();
     };
 }

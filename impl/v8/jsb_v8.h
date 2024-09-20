@@ -11,11 +11,6 @@ namespace jsb::vm
 {
     typedef v8::FunctionCallbackInfo<v8::Value> FunctionCallbackInfo;
 
-    struct Runtime
-    {
-        v8::Isolate* isolate;
-        v8::Global<v8::Context> context;
-    };
 }
 
 #endif
