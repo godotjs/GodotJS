@@ -38,20 +38,24 @@ JSAPI_EXTERN int jsapi_stack_push_number(int engine_id, double value);
 
 // stack-based calls
 
-JSAPI_EXTERN int64_t jsapi_sv_to_integer(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_int32(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_number(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_boolean(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_string(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_array(int engine_id, int depth, int index);
+JSAPI_EXTERN bool jsapi_sv_is_map(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_undefined(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_null(int engine_id, int depth, int index);
+JSAPI_EXTERN bool jsapi_sv_is_function(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_object(int engine_id, int depth, int index);
+
+JSAPI_EXTERN int64_t jsapi_sv_to_integer(int engine_id, int depth, int index);
+
 JSAPI_EXTERN void jsapi_sv_internal_set(int engine_id, int depth, int index, int slot, void* value);
 JSAPI_EXTERN void* jsapi_sv_internal_get(int engine_id, int depth, int index, int slot);
 JSAPI_EXTERN int jsapi_sv_internal_num(int engine_id, int depth, int index);
 
-JSAPI_EXTERN bool jsapi_stack_equals(int engine_id, int from_depth, int from_index, int to_depth, int to_index);
+JSAPI_EXTERN bool jsapi_sv_equals(int engine_id, int from_depth, int from_index, int to_depth, int to_index);
 JSAPI_EXTERN void jsapi_sv_copy(int engine_id, int from_depth, int from_index, int to_depth, int to_index);
 
 // persistent-based value calls
@@ -60,6 +64,7 @@ JSAPI_EXTERN int jsapi_pv_add(int engine_id, int depth, int index);
 JSAPI_EXTERN void jsapi_pv_remove(int engine_id, int pid);
 JSAPI_EXTERN void jsapi_pv_set_weak(int engine_id, int pid, void* cb, void* parameter);
 JSAPI_EXTERN void jsapi_pv_clear_weak(int engine_id, int pid);
+JSAPI_EXTERN void jsapi_pv_equals(int engine_id, int from_pid, int to_pid);
 
 // exception calls
 

@@ -26,7 +26,9 @@ namespace v8
             return equals_to(other);
         }
 
+        bool IsMap() const;
         bool IsInt32() const;
+        bool IsUint32() const;
         bool IsNumber() const;
         bool IsBoolean() const;
         bool IsString() const;
@@ -34,6 +36,7 @@ namespace v8
         bool IsUndefined() const;
         bool IsNull() const;
         bool IsObject() const;
+        bool IsFunction() const;
     };
 }
 

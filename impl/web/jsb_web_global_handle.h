@@ -3,8 +3,8 @@
 #include "jsb_web_local_handle.h"
 #include "jsb_web_weak_callback_info.h"
 #include "jsb_web_isolate.h"
+#include "jsb_web_handle_scope.h"
 #include "core/error/error_macros.h"
-#include "platform/macos/godot_open_save_delegate.h"
 
 namespace v8
 {
@@ -18,6 +18,13 @@ namespace v8
         int handle_ = 0;
 
     public:
+        Global() {}
+        Global(Isolate* isolate, const Local<T>& other)
+        {
+            isolate_ = isolate;
+            handle_ = ::jsapi_pv_add(isolate_->id_, other.data_.stack_, other.data_.index_);
+        }
+
         bool IsEmpty() const { return isolate_ == nullptr || handle_ == 0; }
 
         void Reset()
@@ -55,6 +62,42 @@ namespace v8
         {
             CRASH_COND(IsEmpty());
             jsapi_pv_clear_weak(isolate_->id_, handle_);
+        }
+
+        template<typename S>
+        bool operator==(const Global<S>& b)
+        {
+            return jsapi_pv_equals(isolate_->id_, handle_, b.handle_);
+        }
+
+        template<typename S>
+        bool operator!=(const Global<S>& b)
+        {
+            return !jsapi_pv_equals(isolate_->id_, handle_, b.handle_);
+        }
+
+        template<typename S>
+        friend bool operator==(const Global& a, const Local<S>& b)
+        {
+            return a.Get(b.isolate_) == b;
+        }
+
+        template<typename S>
+        friend bool operator==(const Local<S>& a, const Global& b)
+        {
+            return a == b.Get(b.isolate_);
+        }
+
+        template<typename S>
+        friend bool operator!=(const Global& a, const Local<S>& b)
+        {
+            return a.Get(b.isolate_) != b;
+        }
+
+        template<typename S>
+        friend bool operator!=(const Local<S>& a, const Global& b)
+        {
+            return a != b.Get(b.isolate_);
         }
     };
 }

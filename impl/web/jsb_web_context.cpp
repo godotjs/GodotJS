@@ -1,6 +1,6 @@
 ﻿#include "jsb_web_context.h"
 #include "jsb_web_isolate.h"
-
+#include "jsb_web_handle_scope.h"
 #include "core/error/error_macros.h"
 
 namespace v8

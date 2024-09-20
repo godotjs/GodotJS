@@ -1,5 +1,6 @@
 ﻿#include "jsb_web_isolate.h"
-// #include ""
+#include "jsb_web_handle_scope.h"
+
 namespace v8
 {
     Isolate::Isolate()
@@ -35,6 +36,11 @@ namespace v8
     {
         CRASH_COND(top_ == nullptr);
         return Local<Context>(this, top_->depth_, 0);
+    }
+
+    Local<Value> Isolate::ThrowError(Local<String> message)
+    {
+        //TODO
     }
 
     HandleScope::HandleScope(Isolate* isolate)

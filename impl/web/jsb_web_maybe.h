@@ -1,5 +1,7 @@
 #ifndef GODOTJS_WEB_MAYBE_H
 #define GODOTJS_WEB_MAYBE_H
+#include "core/error/error_macros.h"
+
 namespace v8
 {
     template<typename T>
@@ -13,6 +15,14 @@ namespace v8
         Maybe() {}
         Maybe(const T& value) : value_(value), has_value_(true) {}
         void Check() const {}
+
+        bool IsEmpty() const { return !has_value_; }
+
+        bool To(T* out)
+        {
+            if (has_value_) *out = value_;
+            return has_value_;
+        }
 
         T ToChecked() const
         {

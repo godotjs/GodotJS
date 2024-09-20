@@ -8,6 +8,16 @@ namespace v8
         return jsapi_sv_is_int32(isolate_->id_, stack_, index_);
     }
 
+    bool Data::IsUint32() const
+    {
+        return jsapi_sv_is_int32(isolate_->id_, stack_, index_);
+    }
+
+    bool Data::IsMap() const
+    {
+        return jsapi_sv_is_map(isolate_->id_, stack_, index_);
+    }
+
     bool Data::IsNumber() const
     {
         return jsapi_sv_is_number(isolate_->id_, stack_, index_);
@@ -38,6 +48,11 @@ namespace v8
         return jsapi_sv_is_null(isolate_->id_, stack_, index_);
     }
 
+    bool Data::IsFunction() const
+    {
+        return jsapi_sv_is_function(isolate_->id_, stack_, index_);
+    }
+
     bool Data::IsObject() const
     {
         return jsapi_sv_is_object(isolate_->id_, stack_, index_);
@@ -45,7 +60,7 @@ namespace v8
 
     bool Data::equals_to(const Data& other) const
     {
-        return jsapi_stack_equals(isolate_->id_,
+        return jsapi_sv_equals(isolate_->id_,
                 stack_, index_,
                 other.stack_, other.index_);
     }

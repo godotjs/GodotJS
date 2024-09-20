@@ -6,7 +6,6 @@
 
 #include "jsb_web_interop.h"
 #include "jsb_web_stub_types.h"
-#include "jsb_web_primitive.h"
 #include "jsb_web_local_handle.h"
 
 namespace v8
@@ -22,6 +21,11 @@ namespace v8
         };
     };
 
+    class HandleScope;
+    class Context;
+    class Value;
+    class String;
+
     class Isolate
     {
     public:
@@ -31,7 +35,7 @@ namespace v8
         void* isolate_data_;
         void* context_data_;
 
-        class HandleScope* top_;
+        HandleScope* top_;
 
         Isolate();
         ~Isolate();
@@ -63,6 +67,7 @@ namespace v8
         Local<Context> GetCurrentContext();
 
         Local<Value> ThrowError(Local<String> message);
+
         template <int N>
         Local<Value> ThrowError(const char (&message)[N])
         {
@@ -77,19 +82,6 @@ namespace v8
         void RequestGarbageCollectionForTesting(GarbageCollectionType type) {}
         void SetBatterySaverMode(bool) {}
 
-    };
-
-    class HandleScope
-    {
-    public:
-        Isolate* isolate_;
-        HandleScope* last_;
-        int depth_;
-        bool is_native_;
-
-        HandleScope(Isolate* isolate);
-        HandleScope(Isolate* isolate, int depth);
-        ~HandleScope();
     };
 }
 #endif

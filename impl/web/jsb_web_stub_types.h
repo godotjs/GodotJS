@@ -11,6 +11,18 @@ namespace v8
     enum GCType { kGCTypeAll = 0 };
     enum GCCallbackFlags {};
     enum class NewStringType { kNormal, kInternalized };
+    enum class KeyCollectionMode { kOwnOnly, kIncludePrototypes };
+    enum PropertyFilter
+    {
+        ALL_PROPERTIES = 0,
+        ONLY_WRITABLE = 1,
+        ONLY_ENUMERABLE = 2,
+        ONLY_CONFIGURABLE = 4,
+        SKIP_STRINGS = 8,
+        SKIP_SYMBOLS = 16
+    };
+    enum class IndexFilter { kIncludeIndices, kSkipIndices };
+    enum class KeyConversionMode { kConvertToString, kKeepNumbers, kNoNumbers };
 
     typedef void (*GCCallback)(class Isolate* isolate, GCType type, GCCallbackFlags flags);
 

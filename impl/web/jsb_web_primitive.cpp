@@ -1,4 +1,6 @@
 #include "jsb_web_primitive.h"
+
+#include "jsb_web_handle_scope.h"
 #include "jsb_web_isolate.h"
 #include "core/error/error_macros.h"
 
@@ -22,6 +24,11 @@ namespace v8
     Local<Boolean> Boolean::New(Isolate* isolate, bool value)
     {
         return Local<Boolean>(isolate, isolate->top_->depth_, jsapi_stack_push_boolean(isolate->id_, value));
+    }
+
+    Local<Integer> Integer::NewFromUnsigned(Isolate* isolate, uint32_t value)
+    {
+        return Local<Integer>(isolate, isolate->top_->depth_, jsapi_stack_push_int(isolate->id_, (int32_t) value));
     }
 
     Local<Int32> Int32::New(Isolate* isolate, int32_t value)
@@ -49,12 +56,82 @@ namespace v8
         return Local<Object>(isolate, isolate->top_->depth_, jsapi_stack_push_object(isolate->id_));
     }
 
+    Local<Array> Array::New(Isolate* isolate, int length)
+    {
+        //TODO
+    }
+
     Local<External> External::New(Isolate* isolate, void* data)
     {
         //TODO
     }
 
+    Local<FunctionTemplate> FunctionTemplate::New(Isolate* isolate, FunctionCallback callback, Local<Value> data)
+    {
+        //TODO
+    }
+
+    MaybeLocal<Function> Function::New(Local<Context> context, FunctionCallback callback, Local<Value> data, int length)
+    {
+        //TODO
+    }
+
+    MaybeLocal<Function> FunctionTemplate::GetFunction(Local<Context> context)
+    {
+        //TODO
+    }
+
+    void FunctionTemplate::Inherit(Local<FunctionTemplate> parent)
+    {
+        //TODO
+    }
+
     MaybeLocal<String> String::NewFromUtf8(Isolate* isolate, const char* data, NewStringType type, int length)
+    {
+        //TODO
+    }
+
+    Local<String> String::Empty(Isolate* isolate)
+    {
+        //TODO
+    }
+
+    int String::Length() const
+    {
+        //TODO
+    }
+
+    String::Utf8Value::Utf8Value(Isolate* isolate, Local<Value> obj)
+    {
+        //TODO
+    }
+
+    String::Utf8Value::~Utf8Value()
+    {
+        //TODO
+    }
+
+    String::Value::Value(Isolate* isolate, Local<Value> obj)
+    {
+        //TODO
+    }
+
+    String::Value::~Value()
+    {
+        //TODO
+    }
+
+    Local<ObjectTemplate> FunctionTemplate::PrototypeTemplate()
+    {
+        //TODO
+    }
+
+    void Template::Set(Local<Name> name, Local<Data> value)
+    {
+        //TODO
+    }
+
+    void Template::SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter, Local<FunctionTemplate> setter)
     {
         //TODO
     }
@@ -76,16 +153,21 @@ namespace v8
         return jsapi_sv_internal_get(isolate_->id_, stack_, index_, slot);
     }
 
-    Maybe<bool> Object::Set(const Local<Context>& context, Local<Value> key, Local<Value> value)
+    Maybe<bool> Object::Set(Local<Context> context, Local<Value> key, Local<Value> value)
     {
         //TODO
         return Maybe<bool>(true);
     }
 
-    MaybeLocal<Value> Object::Get(const Local<Context>& context, Local<Value> key)
+    MaybeLocal<Value> Object::Get(Local<Context> context, Local<Value> key)
     {
         //TODO
         return {};
+    }
+
+    MaybeLocal<Value> Object::Get(Local<Context> context, uint32_t index)
+    {
+        //TODO
     }
 
     uint32_t Array::Length() const

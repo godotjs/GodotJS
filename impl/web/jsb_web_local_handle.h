@@ -25,14 +25,23 @@ namespace v8
         template<typename S>
         Local<S> As() const { return Local<S>(*this); }
 
+        template<typename S>
+        static Local<S> Cast(const Local<S>& other) { return other.template As<S>(); }
+
         bool IsEmpty() const { return !data_.is_valid(); }
 
         T* operator->() const { return static_cast<T*>(&data_); }
 
         template<typename S>
-        bool operator==(const Local<T>& other) const
+        bool operator==(const Local<S>& b) const
         {
-            return data_ == other.data_;
+            return data_ == b.data_;
+        }
+
+        template<typename S>
+        bool operator!=(const Local<S>& b) const
+        {
+            return !(data_ == b.data_);
         }
     };
 
@@ -41,6 +50,11 @@ namespace v8
     {
     public:
         Data data_;
+
+        MaybeLocal() {}
+
+        template<typename S>
+        MaybeLocal(Local<T> other) : data_(other.data_) {}
 
         bool IsEmpty() const { return data_.is_valid(); }
 
