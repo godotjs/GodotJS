@@ -16,7 +16,7 @@ namespace v8
         Maybe(const T& value) : value_(value), has_value_(true) {}
         void Check() const {}
 
-        bool IsEmpty() const { return !has_value_; }
+        bool IsNothing() const { return !has_value_; }
 
         bool To(T* out)
         {

@@ -8,7 +8,7 @@ namespace v8
 {
     Local<Primitive> Undefined(Isolate* isolate)
     {
-        return Local<Primitive>(isolate, isolate->top_->depth_, jsapi_stack_push_undefined(isolate->id_));
+        return Local<Primitive>(isolate, isolate->top_->depth_, 0);
     }
 
     Local<Primitive> Null(Isolate* isolate)

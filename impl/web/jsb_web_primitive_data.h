@@ -37,6 +37,7 @@ namespace v8
         bool IsNull() const;
         bool IsObject() const;
         bool IsFunction() const;
+        bool IsPromise() const;
     };
 }
 

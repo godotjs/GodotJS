@@ -13,4 +13,15 @@ namespace v8
     {
         jsapi_exception_clear(isolate_->id_);
     }
+
+    Local<Message> TryCatch::Message() const
+    {
+        //TODO
+    }
+
+    MaybeLocal<Value> TryCatch::StackTrace(Local<Context> context) const
+    {
+        //TODO
+    }
+
 }

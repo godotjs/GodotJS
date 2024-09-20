@@ -8,6 +8,11 @@ namespace v8
         return jsapi_sv_is_int32(isolate_->id_, stack_, index_);
     }
 
+    bool Data::IsPromise() const
+    {
+        return jsapi_sv_is_promise(isolate_->id_, stack_, index_);
+    }
+
     bool Data::IsUint32() const
     {
         return jsapi_sv_is_int32(isolate_->id_, stack_, index_);

@@ -239,10 +239,11 @@ export class Engine {
         const depth = this.stack.Enter();
 
         // prepare
-        this.stack.Push(undefined); // return value
-        this.stack.Push(self); // this
-        this.stack.Push(new_target); // new.target
-        this.stack.Push(data);
+        this.stack.Push(undefined);  // 0 undefined
+        this.stack.Push(undefined);  // 1 return value (placeholder)
+        this.stack.Push(self);       // 2 this
+        this.stack.Push(new_target); // 3 new.target
+        this.stack.Push(data);       // 4 data
         const argc = typeof args === "undefined" ? 0 : args.length;
         for (let i = 0; i < argc; ++i) {
             this.stack.Push(args![i]);

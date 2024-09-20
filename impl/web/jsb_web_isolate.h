@@ -6,7 +6,7 @@
 
 #include "jsb_web_interop.h"
 #include "jsb_web_stub_types.h"
-#include "jsb_web_local_handle.h"
+#include "jsb_web_promise.h"
 
 namespace v8
 {
@@ -40,6 +40,8 @@ namespace v8
         Isolate();
         ~Isolate();
 
+        void GetHeapStatistics(HeapStatistics* heap_statistics);
+
         enum GarbageCollectionType
         {
             kFullGarbageCollection,
@@ -61,6 +63,7 @@ namespace v8
 
         void Dispose();
 
+        void SetPromiseRejectCallback(PromiseRejectCallback callback);
         void SetData(uint32_t slot, void* data);
         void* GetData(uint32_t slot) const;
 

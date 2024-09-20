@@ -32,6 +32,16 @@ namespace v8
         return isolate_data_;
     }
 
+    void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback)
+    {
+        //TODO
+    }
+
+    void Isolate::GetHeapStatistics(HeapStatistics* heap_statistics)
+    {
+        //TODO
+    }
+
     Local<Context> Isolate::GetCurrentContext()
     {
         CRASH_COND(top_ == nullptr);

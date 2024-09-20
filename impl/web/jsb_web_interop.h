@@ -26,7 +26,6 @@ JSAPI_EXTERN int jsapi_stack_enter(int engine_id);
 JSAPI_EXTERN void jsapi_stack_exit(int engine_id);
 
 JSAPI_EXTERN int jsapi_stack_push_global(int engine_id);
-JSAPI_EXTERN int jsapi_stack_push_undefined(int engine_id);
 JSAPI_EXTERN int jsapi_stack_push_null(int engine_id);
 JSAPI_EXTERN int jsapi_stack_push_symbol(int engine_id);
 JSAPI_EXTERN int jsapi_stack_push_object(int engine_id);
@@ -48,6 +47,7 @@ JSAPI_EXTERN bool jsapi_sv_is_undefined(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_null(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_function(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_object(int engine_id, int depth, int index);
+JSAPI_EXTERN bool jsapi_sv_is_promise(int engine_id, int depth, int index);
 
 JSAPI_EXTERN int64_t jsapi_sv_to_integer(int engine_id, int depth, int index);
 

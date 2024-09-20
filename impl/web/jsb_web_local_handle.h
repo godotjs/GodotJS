@@ -20,7 +20,10 @@ namespace v8
             : data_(isolate, depth, offset) {}
 
         template<typename S>
-        Local(const Local<S>& other) : data_(other.data()) {}
+        Local(Local<S> other) : data_(other.data())
+        {
+            static_assert(std::is_base_of_v<T, S>, "type check");
+        }
 
         template<typename S>
         Local<S> As() const { return Local<S>(*this); }

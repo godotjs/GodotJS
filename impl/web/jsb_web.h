@@ -8,5 +8,6 @@
 #include "jsb_web_local_handle.h"
 #include "jsb_web_callback.h"
 #include "jsb_web_catch.h"
+#include "jsb_web_promise.h"
 
 #endif

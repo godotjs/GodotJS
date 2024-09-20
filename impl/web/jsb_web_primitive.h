@@ -120,6 +120,12 @@ namespace v8
 
     typedef Symbol Private;
 
+    class Script : public Data
+    {
+    public:
+        MaybeLocal<Value> Run(Local<Context> context);
+    };
+
     class Number : public Primitive
     {
     public:
@@ -166,6 +172,8 @@ namespace v8
         MaybeLocal<Value> Get(Local<Context> context, Local<Value> key);
         MaybeLocal<Value> Get(Local<Context> context, uint32_t index);
 
+        Maybe<bool> SetPrototype(Local<Context> context, Local<Value> prototype);
+        MaybeLocal<Value> CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[]);
         void SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter = Local<FunctionTemplate>(), Local<FunctionTemplate> setter = Local<FunctionTemplate>());
 
         static Local<Object> New(Isolate* isolate);

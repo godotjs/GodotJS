@@ -4,7 +4,6 @@
 #include "jsb_web_local_handle.h"
 #include "jsb_web_global_handle.h"
 #include "jsb_web_primitive.h"
-#include "jsb_web_isolate.h"
 
 namespace v8
 {
@@ -12,7 +11,7 @@ namespace v8
 
     namespace internal
     {
-        enum { kReturn, kThis, kNewTarget, kData, kArgs };
+        enum { kUndefined, kReturn, kThis, kNewTarget, kData, kArgs };
     }
 
     template<typename T>
