@@ -22,7 +22,6 @@
 #if JSB_WITH_V8
 #   include "../impl/v8/jsb_v8.h"
 #elif JSB_WITH_QUICKJS
-#   error not implemented yet
 #   include "../impl/quickjs/jsb_quickjs.h"
 #elif JSB_WITH_WEB
 #   include "../impl/web/jsb_web.h"

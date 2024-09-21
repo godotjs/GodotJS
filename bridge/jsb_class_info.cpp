@@ -6,7 +6,8 @@
 namespace jsb
 {
 #ifdef TOOLS_ENABLED
-    void _parse_script_doc(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::MaybeLocal<v8::Value> holder, ScriptBaseDoc& r_doc)
+    void _parse_script_doc(v8::Isolate* isolate, const v8::Local<v8::Context>& context,
+        const v8::MaybeLocal<v8::Value> holder, ScriptBaseDoc& r_doc)
     {
         if (v8::Local<v8::Value> tv; holder.IsEmpty() || !holder.ToLocal(&tv) || !tv->IsObject())
         {
@@ -177,7 +178,7 @@ namespace jsb
 #ifdef TOOLS_ENABLED
                         if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
                         {
-                            _parse_script_doc(isolate, p_context, val.As<v8::Object>(), method_info.doc);
+                            _parse_script_doc(isolate, p_context, val, method_info.doc);
                         }
 #endif // TOOLS_ENABLED
                         p_class_info.methods.insert((StringName) name_s, method_info);
@@ -254,7 +255,7 @@ namespace jsb
 #ifdef TOOLS_ENABLED
                     if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
                     {
-                        _parse_script_doc(isolate, p_context, val.As<v8::Object>(), property_info.doc);
+                        _parse_script_doc(isolate, p_context, val, property_info.doc);
                     }
 #endif // TOOLS_ENABLED
                     p_class_info.properties.insert(property_info.name, property_info);
