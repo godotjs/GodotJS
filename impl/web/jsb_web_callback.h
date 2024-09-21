@@ -3,6 +3,7 @@
 
 #include "jsb_web_local_handle.h"
 #include "jsb_web_global_handle.h"
+#include "jsb_web_value.h"
 #include "jsb_web_primitive.h"
 
 namespace v8
@@ -42,6 +43,14 @@ namespace v8
             const Local<Value> lv = Uint32::NewFromUnsigned(isolate_, value);
             jsapi_sv_copy(isolate_->id_, lv->stack_, lv->index_, stack_, internal::kReturn);
         }
+    };
+
+    template <typename T>
+    class PropertyCallbackInfo
+    {
+    public:
+        Isolate* GetIsolate() const;
+        ReturnValue<T> GetReturnValue() const;
     };
 
     template<typename T>

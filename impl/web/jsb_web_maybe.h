@@ -18,6 +18,11 @@ namespace v8
 
         bool IsNothing() const { return !has_value_; }
 
+        T FromMaybe(const T& default_value) const
+        {
+            return has_value_ ? value_ : default_value;
+        }
+
         bool To(T* out)
         {
             if (has_value_) *out = value_;

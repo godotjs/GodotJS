@@ -1,10 +1,15 @@
 ﻿#ifndef GODOTJS_WEB_PROMISE_H
 #define GODOTJS_WEB_PROMISE_H
 #include "jsb_web_local_handle.h"
-#include "jsb_web_primitive.h"
+#include "jsb_web_object.h"
 
 namespace v8
 {
+    class Promise : public Object
+    {
+
+    };
+
     class PromiseRejectMessage
     {
     public:

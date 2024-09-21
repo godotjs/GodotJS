@@ -8,9 +8,19 @@ namespace v8
         return jsapi_sv_is_int32(isolate_->id_, stack_, index_);
     }
 
+    bool Data::IsExternal() const
+    {
+        return jsapi_sv_is_external(isolate_->id_, stack_, index_);
+    }
+
     bool Data::IsPromise() const
     {
         return jsapi_sv_is_promise(isolate_->id_, stack_, index_);
+    }
+
+    bool Data::IsArrayBuffer() const
+    {
+        return jsapi_sv_is_array_buffer(isolate_->id_, stack_, index_);
     }
 
     bool Data::IsUint32() const
@@ -46,6 +56,11 @@ namespace v8
     bool Data::IsUndefined() const
     {
         return jsapi_sv_is_undefined(isolate_->id_, stack_, index_);
+    }
+
+    bool Data::IsNullOrUndefined() const
+    {
+        return IsNull() || IsUndefined();
     }
 
     bool Data::IsNull() const

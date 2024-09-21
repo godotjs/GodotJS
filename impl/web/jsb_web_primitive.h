@@ -4,21 +4,15 @@
 
 #include "jsb_web_primitive_data.h"
 #include "jsb_web_context.h"
-#include "jsb_web_maybe.h"
-#include "jsb_web_callback.h"
+#include "jsb_web_value.h"
+#include "jsb_web_local_handle.h"
 
 namespace v8
 {
     class Isolate;
 
-    class Value : public Data
-    {
-    public:
-        Maybe<int32_t> Int32Value(const Local<Context>& context) const;
-        Maybe<uint32_t> Uint32Value(const Local<Context>& context) const;
-        Maybe<double> NumberValue(const Local<Context>& context) const;
-        bool BooleanValue(Isolate* isolate) const;
-    };
+    template<typename T>
+    class MaybeLocal;
 
     class Primitive: public Value {};
     class Name : public Primitive {};
@@ -27,37 +21,11 @@ namespace v8
     {
     public:
         static Local<External> New(Isolate* isolate, void* data);
+        void* Value() const;
     };
 
     class Function;
     class FunctionTemplate;
-
-    class Template : public Data
-    {
-    public:
-        void Set(Local<Name> name, Local<Data> value);
-
-        void SetAccessorProperty(
-            Local<Name> name,
-            Local<FunctionTemplate> getter = Local<FunctionTemplate>(),
-            Local<FunctionTemplate> setter = Local<FunctionTemplate>());
-    };
-
-    class ObjectTemplate: public Template
-    {
-    public:
-    };
-
-    class FunctionTemplate : public Template
-    {
-    public:
-        void SetClassName(Local<String> name) {}
-        void Inherit(Local<FunctionTemplate> parent);
-        MaybeLocal<Function> GetFunction(Local<Context> context);
-        Local<ObjectTemplate> PrototypeTemplate();
-
-        static Local<FunctionTemplate> New(Isolate* isolate, FunctionCallback callback = nullptr, Local<Value> data = Local<Value>());
-    };
 
     class Symbol : public Name
     {
@@ -150,59 +118,13 @@ namespace v8
     class Uint32 : public Integer
     {
     public:
-
+        uint32_t Value() const;
     };
 
     class Boolean : public Primitive
     {
     public:
         static Local<Boolean> New(Isolate* isolate, bool value);
-    };
-
-    class Object : public Value
-    {
-    public:
-        Isolate* GetIsolate() { return isolate_; }
-
-        int InternalFieldCount() const;
-        void SetAlignedPointerInInternalField(int slot, void* value);
-        void* GetAlignedPointerFromInternalField(int slot);
-
-        Maybe<bool> Set(Local<Context> context, Local<Value> key, Local<Value> value);
-        MaybeLocal<Value> Get(Local<Context> context, Local<Value> key);
-        MaybeLocal<Value> Get(Local<Context> context, uint32_t index);
-
-        Maybe<bool> SetPrototype(Local<Context> context, Local<Value> prototype);
-        MaybeLocal<Value> CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[]);
-        void SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter = Local<FunctionTemplate>(), Local<FunctionTemplate> setter = Local<FunctionTemplate>());
-
-        static Local<Object> New(Isolate* isolate);
-    };
-
-    class Array : public Object
-    {
-    public:
-        static Local<Array> New(Isolate* isolate, int length = 0);
-
-        uint32_t Length() const;
-        Maybe<bool> Set(const Local<Context>& context, uint32_t index, Local<Value> value);
-    };
-
-    class Map : public Object
-    {
-
-    };
-
-    class Promise : public Object
-    {
-
-    };
-
-    class Function : public Object
-    {
-    public:
-        MaybeLocal<Value> Call(Local<Context> context, Local<Value> recv, int argc, Local<Value> argv[]);
-        static MaybeLocal<Function> New(Local<Context> context, FunctionCallback callback, Local<Value> data = Local<Value>(), int length = 0);
     };
 
     Local<Primitive> Undefined(Isolate* isolate);

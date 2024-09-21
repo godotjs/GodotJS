@@ -48,6 +48,8 @@ JSAPI_EXTERN bool jsapi_sv_is_null(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_function(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_object(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_promise(int engine_id, int depth, int index);
+JSAPI_EXTERN bool jsapi_sv_is_array_buffer(int engine_id, int depth, int index);
+JSAPI_EXTERN bool jsapi_sv_is_external(int engine_id, int depth, int index);
 
 JSAPI_EXTERN int64_t jsapi_sv_to_integer(int engine_id, int depth, int index);
 

@@ -15,7 +15,6 @@ namespace v8
         Data data_;
 
         Local() {}
-        Local(Data data): data_(data) {}
         Local(Isolate* isolate, int depth, int offset)
             : data_(isolate, depth, offset) {}
 
@@ -29,7 +28,7 @@ namespace v8
         Local<S> As() const { return Local<S>(*this); }
 
         template<typename S>
-        static Local<S> Cast(const Local<S>& other) { return other.template As<S>(); }
+        static Local<S> Cast(Local<S> other) { return other.template As<S>(); }
 
         bool IsEmpty() const { return !data_.is_valid(); }
 
@@ -57,21 +56,21 @@ namespace v8
         MaybeLocal() {}
 
         template<typename S>
-        MaybeLocal(Local<T> other) : data_(other.data_) {}
+        MaybeLocal(Local<S> other) : data_(other.data_) {}
 
         bool IsEmpty() const { return data_.is_valid(); }
 
         template<typename S>
         bool ToLocal(Local<S>* out) const
         {
-            *out = Local<S>(data_);
+            *out = Local<S>(data_.isolate_, data_.stack_, data_.index_);
             return !out->IsEmpty();
         }
 
         Local<T> ToLocalChecked()
         {
             CRASH_COND(IsEmpty());
-            return Local<T>(data_);
+            return Local<T>(data_.isolate_, data_.stack_, data_.index_);
         }
     };
 }

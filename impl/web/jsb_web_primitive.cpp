@@ -51,37 +51,7 @@ namespace v8
         return Local<Number>(isolate, isolate->top_->depth_, jsapi_stack_push_number(isolate->id_, value));
     }
 
-    Local<Object> Object::New(Isolate* isolate)
-    {
-        return Local<Object>(isolate, isolate->top_->depth_, jsapi_stack_push_object(isolate->id_));
-    }
-
-    Local<Array> Array::New(Isolate* isolate, int length)
-    {
-        //TODO
-    }
-
     Local<External> External::New(Isolate* isolate, void* data)
-    {
-        //TODO
-    }
-
-    Local<FunctionTemplate> FunctionTemplate::New(Isolate* isolate, FunctionCallback callback, Local<Value> data)
-    {
-        //TODO
-    }
-
-    MaybeLocal<Function> Function::New(Local<Context> context, FunctionCallback callback, Local<Value> data, int length)
-    {
-        //TODO
-    }
-
-    MaybeLocal<Function> FunctionTemplate::GetFunction(Local<Context> context)
-    {
-        //TODO
-    }
-
-    void FunctionTemplate::Inherit(Local<FunctionTemplate> parent)
     {
         //TODO
     }
@@ -117,72 +87,6 @@ namespace v8
     }
 
     String::Value::~Value()
-    {
-        //TODO
-    }
-
-    Local<ObjectTemplate> FunctionTemplate::PrototypeTemplate()
-    {
-        //TODO
-    }
-
-    void Template::Set(Local<Name> name, Local<Data> value)
-    {
-        //TODO
-    }
-
-    void Template::SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter, Local<FunctionTemplate> setter)
-    {
-        //TODO
-    }
-
-    int Object::InternalFieldCount() const
-    {
-        return jsapi_sv_internal_num(isolate_->id_, stack_, index_);
-    }
-
-    void Object::SetAlignedPointerInInternalField(int slot, void* value)
-    {
-        CRASH_COND_MSG(slot != 0 && slot != 1, "not supported");
-        jsapi_sv_internal_set(isolate_->id_, stack_, index_, slot, value);
-    }
-
-    void* Object::GetAlignedPointerFromInternalField(int slot)
-    {
-        CRASH_COND_MSG(slot != 0 && slot != 1, "not supported");
-        return jsapi_sv_internal_get(isolate_->id_, stack_, index_, slot);
-    }
-
-    Maybe<bool> Object::Set(Local<Context> context, Local<Value> key, Local<Value> value)
-    {
-        //TODO
-        return Maybe<bool>(true);
-    }
-
-    MaybeLocal<Value> Object::Get(Local<Context> context, Local<Value> key)
-    {
-        //TODO
-        return {};
-    }
-
-    MaybeLocal<Value> Object::Get(Local<Context> context, uint32_t index)
-    {
-        //TODO
-    }
-
-    uint32_t Array::Length() const
-    {
-        //TODO
-        return 0;
-    }
-
-    Maybe<bool> Array::Set(const Local<Context>& context, uint32_t index, Local<Value> value)
-    {
-        //TODO
-        return {};
-    }
-
-    MaybeLocal<Value> Function::Call(Local<Context> context, Local<Value> recv, int argc, Local<Value> argv[])
     {
         //TODO
     }

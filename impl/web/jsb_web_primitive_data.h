@@ -35,9 +35,12 @@ namespace v8
         bool IsArray() const;
         bool IsUndefined() const;
         bool IsNull() const;
+        bool IsNullOrUndefined() const;
         bool IsObject() const;
         bool IsFunction() const;
         bool IsPromise() const;
+        bool IsArrayBuffer() const;
+        bool IsExternal() const;
     };
 }
 
