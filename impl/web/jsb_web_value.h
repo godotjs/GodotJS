@@ -15,6 +15,11 @@ namespace v8
     template<typename T>
     class Maybe;
 
+    template<typename T>
+    class MaybeLocal;
+
+    class String;
+
     class Value : public Data
     {
     public:
@@ -22,6 +27,8 @@ namespace v8
         Maybe<uint32_t> Uint32Value(const Local<Context>& context) const;
         Maybe<double> NumberValue(const Local<Context>& context) const;
         bool BooleanValue(Isolate* isolate) const;
+
+        MaybeLocal<String> ToDetailString(Local<Context> context) const;
     };
 }
 #endif

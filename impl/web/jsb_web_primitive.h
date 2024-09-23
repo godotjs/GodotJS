@@ -81,6 +81,7 @@ namespace v8
 
         static Local<String> Empty(Isolate* isolate);
 
+        static MaybeLocal<String> NewFromOneByte(Isolate* isolate, const uint8_t* data, NewStringType type = NewStringType::kNormal, int length = -1);
         static MaybeLocal<String> NewFromUtf8(Isolate* isolate, const char* data, NewStringType type = NewStringType::kNormal, int length = -1);
 
         int Length() const;

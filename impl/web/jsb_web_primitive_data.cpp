@@ -38,6 +38,11 @@ namespace v8
         return jsapi_sv_is_number(isolate_->id_, stack_, index_);
     }
 
+    bool Data::IsSymbol() const
+    {
+        return jsapi_sv_is_symbol(isolate_->id_, stack_, index_);
+    }
+
     bool Data::IsString() const
     {
         return jsapi_sv_is_string(isolate_->id_, stack_, index_);

@@ -40,6 +40,7 @@ JSAPI_EXTERN int jsapi_stack_push_number(int engine_id, double value);
 JSAPI_EXTERN bool jsapi_sv_is_int32(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_number(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_boolean(int engine_id, int depth, int index);
+JSAPI_EXTERN bool jsapi_sv_is_symbol(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_string(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_array(int engine_id, int depth, int index);
 JSAPI_EXTERN bool jsapi_sv_is_map(int engine_id, int depth, int index);

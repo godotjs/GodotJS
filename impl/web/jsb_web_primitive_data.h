@@ -32,6 +32,7 @@ namespace v8
         bool IsNumber() const;
         bool IsBoolean() const;
         bool IsString() const;
+        bool IsSymbol() const;
         bool IsArray() const;
         bool IsUndefined() const;
         bool IsNull() const;

@@ -19,6 +19,10 @@ namespace v8
             virtual void* AllocateUninitialized(size_t length) = 0;
             virtual void Free(void* data, size_t length) = 0;
         };
+        size_t ByteLength() const;
+        void* Data() const;
+
+        static Local<ArrayBuffer> New(Isolate* isolate, size_t byte_length);
     };
 
     class HandleScope;
