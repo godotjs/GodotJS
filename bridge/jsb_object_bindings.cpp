@@ -94,22 +94,6 @@ namespace jsb
                 }
             }
 
-            // class: virtual methods
-//             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->virtual_methods_map)
-//             {
-// #if JSB_EXCLUDE_GETSET_METHODS
-//                 if (omitted_methods.has(pair.key)) continue;
-// #endif
-//                 const StringName& method_name = pair.key;
-//                 const MethodInfo& method_bind = pair.value;
-//                 int method_index = ...;
-//                 v8::Local<v8::String> propkey_name = BridgeHelper::to_string(isolate, method_name); // BridgeHelper::to_string_ascii(isolate, method_name);
-//                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_virtual_method, v8::Int32::New(isolate, method_index));
-//
-//                 jsb_check((method_bind.flags & METHOD_FLAG_STATIC) == 0);
-//                 object_template->Set(propkey_name, propval_func);
-//             }
-
             if (p_class_info->name == jsb_string_name(Object))
             {
                 // class: special methods

@@ -513,7 +513,6 @@ namespace jsb
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
@@ -521,7 +520,7 @@ namespace jsb
             const NativeClassInfo& native_class = environment->get_native_class(class_id);
             jsb_check(native_class.type == NativeClassType::GodotObject);
             v8::Local<v8::Value> new_target = info.NewTarget();
-            v8::Local<v8::Function> constructor = native_class.get_function(isolate, context);
+            v8::Local<v8::Function> constructor = native_class.get_function(isolate);
 
             // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
             if (constructor == new_target)
@@ -564,6 +563,7 @@ namespace jsb
 
             // (case-1) new from scripts
             v8::Local<v8::Value> cross_bind_sym;
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
             if (new_target.As<v8::Object>()->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
             {
                 const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();

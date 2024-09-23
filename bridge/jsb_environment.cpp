@@ -1008,7 +1008,7 @@ namespace jsb
             {
                 jsb_check(class_info->name == type_name);
                 jsb_check(!class_info->template_.IsEmpty());
-                info.GetReturnValue().Set(class_info->get_function(isolate, context));
+                info.GetReturnValue().Set(class_info->get_function(isolate));
                 return;
             }
 
@@ -1020,7 +1020,7 @@ namespace jsb
                     const NativeClassInfo& godot_class = env->get_native_class(class_id);
                     jsb_check(godot_class.name == type_name);
                     jsb_check(!godot_class.template_.IsEmpty());
-                    info.GetReturnValue().Set(godot_class.get_function(isolate, context));
+                    info.GetReturnValue().Set(godot_class.get_function(isolate));
                     return;
                 }
             }

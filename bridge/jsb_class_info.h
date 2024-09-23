@@ -48,7 +48,7 @@ namespace jsb
             target_.Reset(isolate, func);
         }
 
-        jsb_force_inline v8::Local<v8::Function> get_function(v8::Isolate* isolate, const v8::Local<v8::Context>& context) const
+        jsb_force_inline v8::Local<v8::Function> get_function(v8::Isolate* isolate) const
         {
             jsb_check(!target_.IsEmpty());
             return target_.Get(isolate);
