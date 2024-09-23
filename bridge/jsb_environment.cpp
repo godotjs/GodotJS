@@ -2,12 +2,9 @@
 
 #include "jsb_bridge_module_loader.h"
 #include "jsb_godot_module_loader.h"
-#include "jsb_internal_module_loader.h"
-#include "jsb_exception_info.h"
-#include "jsb_amd_module_loader.h"
 #include "jsb_transpiler.h"
 #include "jsb_ref.h"
-#include "jsb_v8_helper.h"
+#include "jsb_bridge_helper.h"
 #include "jsb_builtins.h"
 #include "jsb_object_bindings.h"
 #include "jsb_type_convert.h"
@@ -15,7 +12,6 @@
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_class_util.h"
 #include "../internal/jsb_variant_util.h"
-#include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
 
 #include "editor/editor_settings.h"
@@ -171,7 +167,7 @@ namespace jsb
             const v8::Local<v8::Promise> promise = message.GetPromise();
             v8::Isolate* isolate = promise->GetIsolate();
 
-            const String str = V8Helper::to_string_without_side_effect(isolate, message.GetValue());
+            const String str = BridgeHelper::to_string_without_side_effect(isolate, message.GetValue());
             JSB_LOG(Error, "unhandled promise rejection: %s", str);
         }
     }
@@ -753,18 +749,18 @@ namespace jsb
 
                 module.on_load(isolate, context);
                 {
-                    v8::TryCatch try_catch_run(isolate);
+                    const impl::TryCatch try_catch_run(isolate);
                     ScriptClassInfo::_parse_script_class(context, module);
-                    if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+                    if (try_catch_run.has_caught())
                     {
-                        JSB_LOG(Error, "something wrong when parsing '%s'\n%s", module_id, (String) exception_info);
+                        JSB_LOG(Error, "something wrong when parsing '%s'\n%s", module_id, BridgeHelper::get_exception(try_catch_run));
                     }
                 }
                 return &module;
             }
         }
 
-        isolate->ThrowError(V8Helper::to_string(isolate, jsb_format("unknown module: %s", normalized_id)));
+        isolate->ThrowError(BridgeHelper::to_string(isolate, jsb_format("unknown module: %s", normalized_id)));
         return nullptr;
     }
 
@@ -781,13 +777,13 @@ namespace jsb
 
         const v8::Local<v8::Object> constructor = class_info->js_class.Get(isolate);
         jsb_check(!constructor->IsUndefined() && !constructor->IsNull());
-        v8::TryCatch try_catch_run(isolate);
+        const impl::TryCatch try_catch_run(isolate);
         v8::Local<v8::Value> identifier = jsb_symbol(this, CrossBind);
         v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
         jsb_check(!constructed_value.IsEmpty() && !constructed_value.ToLocalChecked()->IsUndefined());
-        if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+        if (try_catch_run.has_caught())
         {
-            JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_name, (String) exception_info);
+            JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_name, BridgeHelper::get_exception(try_catch_run));
             return {};
         }
         v8::Local<v8::Value> instance;
@@ -822,14 +818,14 @@ namespace jsb
         const v8::Local<v8::Object> constructor = class_info->js_class.Get(isolate);
         const v8::Local<v8::Value> prototype = constructor->Get(context, jsb_name(this, prototype)).ToLocalChecked();
 
-        v8::TryCatch try_catch(isolate);
+        const impl::TryCatch try_catch(isolate);
         jsb_check(instance->IsObject());
         jsb_check(prototype->IsObject());
         if (instance->SetPrototype(context, prototype).IsNothing())
         {
-            if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch))
+            if (try_catch.has_caught())
             {
-                JSB_LOG(Warning, "something wrong\n%s", (String) exception_info);
+                JSB_LOG(Warning, "something wrong\n%s", BridgeHelper::get_exception(try_catch));
             }
         }
     }
@@ -838,7 +834,7 @@ namespace jsb
     {
         v8::Isolate* isolate = this->isolate_;
         v8::Local<v8::Context> context = context_.Get(isolate);
-        v8::Local<v8::String> jmodule_id = V8Helper::to_string(isolate, p_module_id);
+        v8::Local<v8::String> jmodule_id = BridgeHelper::to_string(isolate, p_module_id);
         v8::Local<v8::Function> jrequire = v8::Function::New(context, Builtins::_require, /* magic: module_id */ jmodule_id).ToLocalChecked();
         v8::Local<v8::Object> jmain_module;
         if (_get_main_module(&jmain_module))
@@ -864,30 +860,20 @@ namespace jsb
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
 
-        v8::TryCatch try_catch_run(isolate);
-        if (JavaScriptModule* module = _load_module("", p_name))
+        const impl::TryCatch try_catch_run(isolate);
+        JavaScriptModule* module = _load_module("", p_name);
+        if (r_module)
         {
-            // no exception should be thrown if module loaded successfully
-            if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
-            {
-                JSB_LOG(Warning, "something wrong when loading '%s'\n%s", p_name, (String) exception_info);
-            }
-            if (r_module)
-            {
-                *r_module = module;
-            }
-            return OK;
+            *r_module = module;
         }
 
-        if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+        // no exception should be thrown if module loaded successfully
+        if (try_catch_run.has_caught())
         {
-            JSB_LOG(Error, "failed to load '%s'\n%s", p_name, (String) exception_info);
+            JSB_LOG(Warning, "something went wrong on loading '%s'\n%s", p_name, BridgeHelper::get_exception(try_catch_run));
+            return ERR_COMPILATION_FAILED;
         }
-        else
-        {
-            JSB_LOG(Error, "something wrong");
-        }
-        return ERR_COMPILATION_FAILED;
+        return OK;
     }
 
     const NativeClassInfo* Environment::_expose_class(const StringName& p_type_name, NativeClassID* r_class_id)
@@ -943,7 +929,7 @@ namespace jsb
             return;
         }
 
-        const StringName type_name(V8Helper::to_string(v8::String::Value(isolate, arg0)));
+        const StringName type_name(BridgeHelper::to_string(v8::String::Value(isolate, arg0)));
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         Environment* env = Environment::wrap(context);
         jsb_check(env);
@@ -1045,7 +1031,7 @@ namespace jsb
         {
             HashMap<StringName, int64_t> enum_values;
             CoreConstants::get_enum_values(type_name, &enum_values);
-            info.GetReturnValue().Set(V8Helper::to_global_enum(isolate, context, enum_values));
+            info.GetReturnValue().Set(BridgeHelper::to_global_enum(isolate, context, enum_values));
             return;
         }
 
@@ -1057,8 +1043,8 @@ namespace jsb
         if (type_name == jsb_string_name(Variant))
         {
             v8::Local<v8::Object> obj = v8::Object::New(isolate);
-            obj->Set(context, V8Helper::to_string(isolate, "Type"), V8Helper::to_global_enum(isolate, context, "Variant.Type")).Check();
-            obj->Set(context, V8Helper::to_string(isolate, "Operator"), V8Helper::to_global_enum(isolate, context, "Variant.Operator")).Check();
+            obj->Set(context, BridgeHelper::to_string(isolate, "Type"), BridgeHelper::to_global_enum(isolate, context, "Variant.Type")).Check();
+            obj->Set(context, BridgeHelper::to_string(isolate, "Operator"), BridgeHelper::to_global_enum(isolate, context, "Variant.Operator")).Check();
             info.GetReturnValue().Set(obj);
             return;
         }
@@ -1073,30 +1059,14 @@ namespace jsb
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = context_.Get(isolate);
-        v8::Context::Scope context_scope(context);
+        v8::Context::Scope context_scope(context_.Get(isolate));
 
-        v8::TryCatch try_catch_run(isolate);
-        v8::MaybeLocal<v8::Value> maybe = _compile_run(p_source, p_length, p_filename);
-        if (try_catch_run.HasCaught())
+        const impl::TryCatch try_catch_run(isolate);
+        const v8::MaybeLocal<v8::Value> maybe = _compile_run(p_source, p_length, p_filename);
+        if (try_catch_run.has_caught())
         {
-            v8::Local<v8::Message> message = try_catch_run.Message();
-            v8::Local<v8::Value> stack_trace;
-            if (try_catch_run.StackTrace(context).ToLocal(&stack_trace))
-            {
-                v8::String::Utf8Value stack_trace_utf8(isolate, stack_trace);
-                if (stack_trace_utf8.length() != 0)
-                {
-                    r_err = ERR_COMPILATION_FAILED;
-                    JSB_LOG(Error, "%s", String(*stack_trace_utf8, stack_trace_utf8.length()));
-                    return JSValueMove();
-                }
-            }
-
-            // fallback to plain message
-            const v8::String::Utf8Value message_utf8(isolate, message->Get());
             r_err = ERR_COMPILATION_FAILED;
-            JSB_LOG(Error, "%s", String(*message_utf8, message_utf8.length()));
+            JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch_run));
             return JSValueMove();
         }
 
@@ -1122,31 +1092,10 @@ namespace jsb
         return false;
     }
 
-    bool Environment::validate_script(const String &p_path, JavaScriptExceptionInfo *r_err)
+    bool Environment::validate_script(const String &p_path)
     {
         //TODO try to compile?
         return true;
-    }
-
-    v8::MaybeLocal<v8::Value> Environment::_compile_run(const char* p_source, int p_source_len, const String& p_filename)
-    {
-        v8::Isolate* isolate = get_isolate();
-        v8::Local<v8::Context> context = context_.Get(isolate);
-        v8::MaybeLocal<v8::String> source = v8::String::NewFromUtf8(isolate, p_source, v8::NewStringType::kNormal, p_source_len);
-        v8::MaybeLocal<v8::Script> script = V8Helper::compile(context, source.ToLocalChecked(), p_filename);
-        if (script.IsEmpty())
-        {
-            return {};
-        }
-
-        v8::MaybeLocal<v8::Value> maybe_value = script.ToLocalChecked()->Run(context);
-        if (maybe_value.IsEmpty())
-        {
-            return {};
-        }
-
-        JSB_LOG(VeryVerbose, "script compiled %s", p_filename);
-        return maybe_value;
     }
 
     ObjectCacheID Environment::retain_function(NativeObjectID p_object_id, const StringName& p_method)
@@ -1204,16 +1153,16 @@ namespace jsb
             }
         }
 
-        v8::TryCatch try_catch_run(isolate);
+        const impl::TryCatch try_catch_run(isolate);
         v8::MaybeLocal<v8::Value> rval = p_func->Call(context, p_self, p_argcount, argv);
 
         for (int index = 0; index < p_argcount; ++index)
         {
             argv[index].~LocalValue();
         }
-        if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+        if (try_catch_run.has_caught())
         {
-            JSB_LOG(Error, "exception thrown in function:\n%s", (String) exception_info);
+            JSB_LOG(Error, "exception thrown in function:\n%s", BridgeHelper::get_exception(try_catch_run));
             r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
             return {};
         }
@@ -1252,13 +1201,15 @@ namespace jsb
             v8::Local<v8::Value> instance;
             if (p_script_class_info.js_default_object.IsEmpty())
             {
-                v8::Local<v8::Object> constructor = p_script_class_info.js_class.Get(isolate);
-                v8::TryCatch try_catch_run(isolate);
                 v8::Local<v8::Value> identifier = jsb_symbol(this, CDO);
-                v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
-                if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+                const v8::Local<v8::Object> constructor = p_script_class_info.js_class.Get(isolate);
+                const impl::TryCatch try_catch_run(isolate);
+                const v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
+                if (try_catch_run.has_caught())
                 {
-                    JSB_LOG(Error, "something wrong when constructing '%s'\n%s", p_script_class_info.js_class_name, (String) exception_info);
+                    JSB_LOG(Error, "something wrong when constructing '%s'\n%s",
+                        p_script_class_info.js_class_name,
+                        BridgeHelper::get_exception(try_catch_run));
                     p_script_class_info.js_default_object.Reset(isolate, v8::Null(isolate));
                     return false;
                 }
@@ -1384,7 +1335,7 @@ namespace jsb
 
                 if (element_value->IsString())
                 {
-                    const String node_path_str = V8Helper::to_string(isolate, element_value);
+                    const String node_path_str = BridgeHelper::to_string(isolate, element_value);
                     Node* child_node = node->get_node(node_path_str);
                     if (!child_node)
                     {
@@ -1403,11 +1354,13 @@ namespace jsb
                 {
                     jsb_not_implemented(true, "function evaluator not implemented yet");
                     v8::Local<v8::Value> argv[] = { self };
-                    v8::TryCatch try_catch_run(isolate);
+                    const impl::TryCatch try_catch_run(isolate);
                     v8::MaybeLocal<v8::Value> result = element_value.As<v8::Function>()->Call(context, self, std::size(argv), argv);
-                    if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
+                    if (try_catch_run.has_caught())
                     {
-                        JSB_LOG(Warning, "something wrong when evaluating onready '%s'\n%s", V8Helper::to_string(isolate, element_name), (String) exception_info);
+                        JSB_LOG(Warning, "something wrong when evaluating onready '%s'\n%s",
+                            BridgeHelper::to_string(isolate, element_name),
+                            BridgeHelper::get_exception(try_catch_run));
                         return;
                     }
                     if (!result.IsEmpty())

@@ -2,7 +2,6 @@
 #include "../internal/jsb_internal_pch.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
-#include "../bridge/jsb_v8_helper.h"
 
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 
@@ -91,7 +90,7 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
                     const v8::Local<v8::Object> child = temp.As<v8::Object>();
                     if (child->Get(context, jsb_name(environment, filename)).ToLocal(&temp))
                     {
-                        const String filename = jsb::V8Helper::to_string(isolate, temp);
+                        const String filename = jsb::BridgeHelper::to_string(isolate, temp);
                         if (export_compiled_script(filename))
                         {
                             JSB_EXPORTER_LOG(Verbose, "export dependent source: %s", filename);

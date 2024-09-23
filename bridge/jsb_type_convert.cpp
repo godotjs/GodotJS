@@ -11,7 +11,7 @@ namespace jsb
         {
             if (p_val->IsArrayBuffer())
             {
-                r_packed = V8Helper::to_packed_byte_array(isolate, p_val.As<v8::ArrayBuffer>());
+                r_packed = BridgeHelper::to_packed_byte_array(isolate, p_val.As<v8::ArrayBuffer>());
                 return true;
             }
         }
@@ -132,7 +132,7 @@ namespace jsb
                     r_cvar = (String) sn;
                     return true;
                 }
-                r_cvar = V8Helper::to_string(isolate, p_jval.As<v8::String>());
+                r_cvar = BridgeHelper::to_string(isolate, p_jval.As<v8::String>());
                 return true;
             }
             return false;
@@ -153,7 +153,7 @@ namespace jsb
                     r_cvar = NodePath((String) sn);
                     return true;
                 }
-                r_cvar = NodePath(V8Helper::to_string(isolate, p_jval));
+                r_cvar = NodePath(BridgeHelper::to_string(isolate, p_jval));
                 return true;
             }
             goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
@@ -226,7 +226,7 @@ namespace jsb
             {
                 const int64_t raw_val = p_cvar;
                 jsb_verify_int64(raw_val, "");
-                r_jval = V8Helper::to_int32(isolate, raw_val);
+                r_jval = BridgeHelper::to_int32(isolate, raw_val);
                 return true;
             }
         case Variant::OBJECT:
@@ -411,13 +411,13 @@ namespace jsb
                 r_cvar = sn;
                 return true;
             }
-            r_cvar = V8Helper::to_string(isolate, p_jval.As<v8::String>());
+            r_cvar = BridgeHelper::to_string(isolate, p_jval.As<v8::String>());
             return true;
         }
         // is it proper to convert a ArrayBuffer into Vector<uint8_t>?
         if (p_jval->IsArrayBuffer())
         {
-            r_cvar = V8Helper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
+            r_cvar = BridgeHelper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
             return true;
         }
         //TODO

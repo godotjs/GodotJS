@@ -1,7 +1,7 @@
 #ifndef GODOTJS_CALLABLE_H
 #define GODOTJS_CALLABLE_H
-#include "../internal/jsb_macros.h"
-#include "jsb_bridge.h"
+
+#include "../bridge/jsb_bridge.h"
 
 class GodotJSCallableCustom : public CallableCustom
 {

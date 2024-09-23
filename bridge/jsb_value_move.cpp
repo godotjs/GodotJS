@@ -1,5 +1,5 @@
 ﻿#include "jsb_value_move.h"
-#include "jsb_v8_helper.h"
+#include "jsb_bridge_helper.h"
 #include "jsb_environment.h"
 #include "jsb_type_convert.h"
 
@@ -40,6 +40,6 @@ namespace jsb
         v8::Local<v8::Context> context = env_->get_context();
         v8::Context::Scope context_scope(context);
 
-        return V8Helper::stringify(isolate, context, value_.Get(isolate));
+        return BridgeHelper::stringify(isolate, context, value_.Get(isolate));
     }
 }

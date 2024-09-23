@@ -151,8 +151,7 @@ Script* GodotJSScriptLanguage::create_script() const
 
 bool GodotJSScriptLanguage::validate(const String& p_script, const String& p_path, List<String>* r_functions, List<ScriptError>* r_errors, List<Warning>* r_warnings, HashSet<int>* r_safe_lines) const
 {
-    jsb::JavaScriptExceptionInfo exception_info;
-    if (environment_->validate_script(p_path, &exception_info))
+    if (environment_->validate_script(p_path))
     {
         return true;
     }
@@ -161,7 +160,7 @@ bool GodotJSScriptLanguage::validate(const String& p_script, const String& p_pat
     ScriptError err;
     err.line = 0;
     err.column = 0;
-    err.message = exception_info;
+    err.message = "NOT_IMPLEMENTED";
     r_errors->push_back(err);
     return false;
 }

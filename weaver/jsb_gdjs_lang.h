@@ -1,8 +1,7 @@
 #ifndef GODOTJS_LANGUAGE_H
 #define GODOTJS_LANGUAGE_H
 
-#include "jsb_bridge.h"
-#include "../internal/jsb_macros.h"
+#include "../bridge/jsb_bridge.h"
 
 #include "core/object/script_language.h"
 

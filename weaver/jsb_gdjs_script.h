@@ -2,8 +2,9 @@
 #define GODOTJS_SCRIPT_H
 
 #include "core/object/script_language.h"
-#include "jsb_bridge.h"
 #include "core/templates/rb_set.h"
+
+#include "../bridge/jsb_bridge.h"
 
 class GodotJSScript : public Script
 {

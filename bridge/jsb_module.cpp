@@ -1,5 +1,5 @@
 #include "jsb_module.h"
-#include "jsb_v8_helper.h"
+#include "jsb_bridge_helper.h"
 #include "jsb_environment.h"
 
 namespace jsb
@@ -56,7 +56,7 @@ namespace jsb
         Environment* environment = Environment::wrap(isolate);
         JavaScriptModule* module = memnew(JavaScriptModule);
         v8::Local<v8::Object> module_obj = v8::Object::New(isolate);
-        v8::Local<v8::String> module_id = V8Helper::to_string(isolate, p_name);
+        v8::Local<v8::String> module_id = BridgeHelper::to_string(isolate, p_name);
         modules_.insert(p_name, module);
 
         // register the new module obj into module_cache obj

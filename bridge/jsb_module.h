@@ -8,7 +8,7 @@ namespace jsb
 {
     namespace EReloadResult
     {
-        enum Type
+        enum Type : uint8_t
         {
             NoSuchModule,
             NoChanges,

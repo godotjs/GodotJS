@@ -1,6 +1,6 @@
 #include "jsb_timer_action.h"
-#include "jsb_exception_info.h"
-
+#include "jsb_bridge_helper.h"
+#include "jsb_environment.h"
 
 namespace jsb
 {
@@ -12,7 +12,7 @@ namespace jsb
         jsb_checkf(Environment::wrap(context), "timer triggered after Environment disposed");
         v8::Context::Scope context_scope(context);
         v8::MaybeLocal<v8::Value> result;
-        v8::TryCatch try_catch(isolate);
+        const impl::TryCatch try_catch(isolate);
 
         if (argc_ > 0)
         {
@@ -44,9 +44,9 @@ namespace jsb
 #else
         jsb_unused(result);
 #endif
-        if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch))
+        if (try_catch.has_caught())
         {
-            JSB_LOG(Error, "timer error %s", (String) exception_info);
+            JSB_LOG(Error, "timer error %s", BridgeHelper::get_exception(try_catch));
         }
     }
 }

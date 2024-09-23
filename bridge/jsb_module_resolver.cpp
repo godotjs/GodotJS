@@ -44,8 +44,8 @@ namespace jsb
             /* 0: exports  */ p_module.exports.Get(isolate),
             /* 1: require  */ p_env->_new_require_func(p_module.id),
             /* 2: module   */ module_obj,
-            /* 3: filename */ V8Helper::to_string(isolate, filename),
-            /* 4: dirname  */ V8Helper::to_string(isolate, dirname),
+            /* 3: filename */ BridgeHelper::to_string(isolate, filename),
+            /* 4: dirname  */ BridgeHelper::to_string(isolate, dirname),
         };
 
         // init module properties (filename, path)
@@ -72,6 +72,7 @@ namespace jsb
 
     Vector<uint8_t> DefaultModuleResolver::read_all_bytes(const internal::ISourceReader& p_reader)
     {
+        //TODO (consider) add `global, globalThis` to shadow the real global object
         constexpr static char header[] = "(function(exports,require,module,__filename,__dirname){";
         constexpr static char footer[] = "\n})";
 

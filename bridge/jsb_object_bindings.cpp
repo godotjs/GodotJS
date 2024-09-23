@@ -50,7 +50,7 @@ namespace jsb
                     v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
                         ? v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_set2, v8::Int32::New(isolate, remap_index))
                         : v8::Local<v8::FunctionTemplate>();
-                    object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
+                    object_template->SetAccessorProperty(BridgeHelper::to_string(isolate, property_name), getter, setter);
 
                     // we do not exclude get/set methods in this case, because the method may not be covered by all properties
                 }
@@ -64,7 +64,7 @@ namespace jsb
                     v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
                         ? v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_method, v8::External::New(isolate, getset_info._setptr))
                         : v8::Local<v8::FunctionTemplate>();
-                    object_template->SetAccessorProperty(V8Helper::to_string(isolate, property_name), getter, setter);
+                    object_template->SetAccessorProperty(BridgeHelper::to_string(isolate, property_name), getter, setter);
 
 #if JSB_EXCLUDE_GETSET_METHODS
                     if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
@@ -81,7 +81,7 @@ namespace jsb
 #endif
                 const StringName& method_name = pair.key;
                 MethodBind* method_bind = pair.value;
-                v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, method_name); // V8Helper::to_string_ascii(isolate, method_name);
+                v8::Local<v8::String> propkey_name = BridgeHelper::to_string(isolate, method_name); // BridgeHelper::to_string_ascii(isolate, method_name);
                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_method, v8::External::New(isolate, method_bind));
 
                 if (method_bind->is_static())
@@ -103,7 +103,7 @@ namespace jsb
 //                 const StringName& method_name = pair.key;
 //                 const MethodInfo& method_bind = pair.value;
 //                 int method_index = ...;
-//                 v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, method_name); // V8Helper::to_string_ascii(isolate, method_name);
+//                 v8::Local<v8::String> propkey_name = BridgeHelper::to_string(isolate, method_name); // BridgeHelper::to_string_ascii(isolate, method_name);
 //                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_virtual_method, v8::Int32::New(isolate, method_index));
 //
 //                 jsb_check((method_bind.flags & METHOD_FLAG_STATIC) == 0);
@@ -120,7 +120,7 @@ namespace jsb
             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
             {
                 const StringName& name_str = pair.key;
-                v8::Local<v8::String> propkey_name = V8Helper::to_string(isolate, name_str);
+                v8::Local<v8::String> propkey_name = BridgeHelper::to_string(isolate, name_str);
                 const StringNameID string_id = p_env->get_string_name_cache().get_string_id(name_str);
                 v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_id));
                 object_template->SetAccessorProperty(propkey_name, propval_func);
@@ -131,8 +131,8 @@ namespace jsb
             for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
             {
                 template_for_static->Set(
-                    V8Helper::to_string(isolate, pair.key),
-                    V8Helper::to_template_enum(isolate, context, pair.value, p_class_info->constant_map, &enum_consts));
+                    BridgeHelper::to_string(isolate, pair.key),
+                    BridgeHelper::to_template_enum(isolate, context, pair.value, p_class_info->constant_map, &enum_consts));
             }
 
             // class: constants
@@ -144,8 +144,8 @@ namespace jsb
                 jsb_verify_int64(pair.value, "%s.%s %s", p_class_info->name, pair.key, uitos(pair.value));
 
                 template_for_static->Set(
-                    V8Helper::to_string(isolate, const_name_str),
-                    V8Helper::to_int32(isolate, pair.value));
+                    BridgeHelper::to_string(isolate, const_name_str),
+                    BridgeHelper::to_int32(isolate, pair.value));
             }
 
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
@@ -240,7 +240,7 @@ namespace jsb
                 : !TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
             {
                 // revert all constructors
-                v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
+                v8::Local<v8::String> error_message = BridgeHelper::to_string(isolate, jsb_errorf("bad argument: %d", index));
                 while (index >= 0) { args[index--].~Variant(); }
                 isolate->ThrowError(error_message);
                 return;
@@ -302,7 +302,7 @@ namespace jsb
             if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
-                v8::Local<v8::String> error_message = V8Helper::to_string(isolate, jsb_errorf("bad argument: %d", index));
+                v8::Local<v8::String> error_message = BridgeHelper::to_string(isolate, jsb_errorf("bad argument: %d", index));
                 while (index >= 0) { args[index--].~Variant(); }
                 isolate->ThrowError(error_message);
                 return;

@@ -88,12 +88,6 @@ namespace v8
 
     typedef Symbol Private;
 
-    class Script : public Data
-    {
-    public:
-        MaybeLocal<Value> Run(Local<Context> context);
-    };
-
     class Number : public Primitive
     {
     public:

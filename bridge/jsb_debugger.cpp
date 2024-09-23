@@ -1,5 +1,4 @@
 #include "jsb_debugger.h"
-#include "jsb_exception_info.h"
 #include "jsb_environment.h"
 #include "core/io/tcp_server.h"
 
@@ -120,13 +119,13 @@ namespace jsb
 	            v8::Isolate* isolate = isolate_;
 	            v8::Isolate::Scope isolate_scope(isolate);
 	            v8::HandleScope handle_scope(isolate);
-	            v8::TryCatch try_catch(isolate);
+	            const impl::TryCatch try_catch(isolate);
 
 	            v8_inspector::StringView message(recv_buffer_->get_data_array().ptr(), recv_buffer_->get_position());
 	            session_->dispatchProtocolMessage(message);
-	            if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch))
+	            if (try_catch.has_caught())
 	            {
-	                JSB_DEBUGGER_LOG(Error, "dispatchProtocolMessage failed: %s", (String) exception_info);
+	                JSB_DEBUGGER_LOG(Error, "dispatchProtocolMessage failed: %s", BridgeHelper::get_exception(try_catch));
 	            }
 
 	            if (!_send_queue.is_empty())

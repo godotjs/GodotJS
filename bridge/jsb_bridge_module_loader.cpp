@@ -61,7 +61,7 @@ namespace jsb
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], const StringName& field_value)
         {
-            set_field(isolate, context, obj, field_name, V8Helper::to_string(isolate, field_value));
+            set_field(isolate, context, obj, field_name, BridgeHelper::to_string(isolate, field_value));
         }
 
         template<int N>
@@ -79,13 +79,13 @@ namespace jsb
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], const String& field_value)
         {
-            set_field(isolate, context, obj, field_name, V8Helper::to_string(isolate, field_value));
+            set_field(isolate, context, obj, field_name, BridgeHelper::to_string(isolate, field_value));
         }
 
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], const char*& field_value)
         {
-            set_field(isolate, context, obj, field_name, V8Helper::to_string(isolate, field_value));
+            set_field(isolate, context, obj, field_name, BridgeHelper::to_string(isolate, field_value));
         }
 
         template<int N>
@@ -302,7 +302,7 @@ namespace jsb
             for (List<StringName>::ConstIterator it = enum_info.constants.begin(); it != enum_info.constants.end(); ++it, ++index)
             {
                 const StringName& name = *it;
-                elements_array->Set(context, index, V8Helper::to_string(isolate, name)).Check();
+                elements_array->Set(context, index, BridgeHelper::to_string(isolate, name)).Check();
             }
             set_field(isolate, context, object, "literals", elements_array);
             set_field(isolate, context, object, JSB_GET_FIELD_NAME_PRESET(enum_info, is_bitfield));
@@ -662,7 +662,7 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-            const String name = V8Helper::to_string(isolate, info[0]);
+            const String name = BridgeHelper::to_string(isolate, info[0]);
             if (const DocData::ClassDoc* ptr = EditorHelp::get_doc_data()->class_list.getptr(name))
             {
                 const DocData::ClassDoc& class_doc = *ptr;
@@ -677,7 +677,7 @@ namespace jsb
                 for (const DocData::ConstantDoc& constant_doc : class_doc.constants)
                 {
                     v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
-                    constants_obj->Set(context, V8Helper::to_string(isolate, constant_doc.name), constant_obj).Check();
+                    constants_obj->Set(context, BridgeHelper::to_string(isolate, constant_doc.name), constant_obj).Check();
 
                     set_field(isolate, context, constant_obj, "description", constant_doc.description);
                 }
@@ -688,7 +688,7 @@ namespace jsb
                 for (const DocData::MethodDoc& method_doc : class_doc.methods)
                 {
                     v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
-                    methods_obj->Set(context, V8Helper::to_string(isolate, method_doc.name), method_obj).Check();
+                    methods_obj->Set(context, BridgeHelper::to_string(isolate, method_doc.name), method_obj).Check();
 
                     set_field(isolate, context, method_obj, "description", method_doc.description);
                 }
@@ -699,7 +699,7 @@ namespace jsb
                 for (const DocData::PropertyDoc& property_doc : class_doc.properties)
                 {
                     v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
-                    properties_obj->Set(context, V8Helper::to_string(isolate, property_doc.name), property_obj).Check();
+                    properties_obj->Set(context, BridgeHelper::to_string(isolate, property_doc.name), property_obj).Check();
 
                     set_field(isolate, context, property_obj, "description", property_doc.description);
                 }
@@ -710,7 +710,7 @@ namespace jsb
                 for (const DocData::MethodDoc& signal_doc : class_doc.signals)
                 {
                     v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
-                    signals_obj->Set(context, V8Helper::to_string(isolate, signal_doc.name), signal_obj).Check();
+                    signals_obj->Set(context, BridgeHelper::to_string(isolate, signal_doc.name), signal_obj).Check();
 
                     set_field(isolate, context, signal_obj, "description", signal_doc.description);
                 }
@@ -777,7 +777,7 @@ namespace jsb
                 for (const KeyValue<StringName, int64_t>& kv : map)
                 {
                     values_obj->Set(context,
-                        V8Helper::to_string(isolate, kv.key),
+                        BridgeHelper::to_string(isolate, kv.key),
                         build_int64(isolate, kv.key, kv.value)).Check();
                 }
                 array->Set(context, array_index++, enum_obj).Check();
@@ -886,7 +886,7 @@ namespace jsb
                 jsb_throw(isolate, "bad parameter");
                 return;
             }
-            info.GetReturnValue().Set(V8Helper::to_array_buffer(isolate, var));
+            info.GetReturnValue().Set(BridgeHelper::to_array_buffer(isolate, var));
         }
 
         // construct a callable object
@@ -958,7 +958,7 @@ namespace jsb
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
             target->Set(context, jsb_symbol(environment, ClassToolScript), v8::Boolean::New(isolate, true)).Check();
             JSB_LOG(VeryVerbose, "script %s (tool)",
-                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))));
+                BridgeHelper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))));
         }
 
         void _get_type_name(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -999,8 +999,8 @@ namespace jsb
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
             target->Set(context, jsb_symbol(environment, ClassIcon), info[1]).Check();
             JSB_LOG(VeryVerbose, "script %s (icon) %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                V8Helper::to_string(isolate, info[1]));
+                BridgeHelper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
+                BridgeHelper::to_string(isolate, info[1]));
         }
 
         // function add_script_ready(target: any, name: string,  evaluator: string | Function): void;
@@ -1037,8 +1037,8 @@ namespace jsb
 
             collection->Set(context, index, evaluator).Check();
             JSB_LOG(VeryVerbose, "script %s define property(onready) %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                V8Helper::to_string_opt(isolate, evaluator->Get(context, jsb_name(environment, name))));
+                BridgeHelper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
+                BridgeHelper::to_string_opt(isolate, evaluator->Get(context, jsb_name(environment, name))));
         }
 
         // function (target: any, prop?: string, cat: [0, 1, 2], message?: string)
@@ -1151,8 +1151,8 @@ namespace jsb
 
             collection->Set(context, index, details).Check();
             JSB_LOG(VeryVerbose, "script %s define property(export) %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                V8Helper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
+                BridgeHelper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
+                BridgeHelper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
         }
 
         void _find_module(const v8::FunctionCallbackInfo<v8::Value> &info)
@@ -1166,7 +1166,7 @@ namespace jsb
                 return;
             }
 
-            const String module_id = V8Helper::to_string(isolate, info[0].As<v8::String>());
+            const String module_id = BridgeHelper::to_string(isolate, info[0].As<v8::String>());
             if (module_id.is_empty())
             {
                 jsb_throw(isolate, "bad module_id");
@@ -1191,7 +1191,7 @@ namespace jsb
                 return;
             }
 
-            const String module_id = V8Helper::to_string(isolate, info[0].As<v8::String>());
+            const String module_id = BridgeHelper::to_string(isolate, info[0].As<v8::String>());
             if (module_id.is_empty())
             {
                 jsb_throw(isolate, "bad module_id");
@@ -1245,8 +1245,8 @@ namespace jsb
 
             collection->Set(context, index, signal).Check();
             JSB_LOG(VeryVerbose, "script %s define signal %s",
-                V8Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                V8Helper::to_string(isolate, signal));
+                BridgeHelper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
+                BridgeHelper::to_string(isolate, signal));
         }
     }
 
@@ -1263,43 +1263,43 @@ namespace jsb
         // internal bridge functions & variables
         {
 #ifdef DEV_ENABLED
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, true)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, true)).Check();
 #else
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, false)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "DEV_ENABLED"), v8::Boolean::New(isolate, false)).Check();
 #endif
 #ifdef TOOLS_ENABLED
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, true)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, true)).Check();
 #else
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, false)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "TOOLS_ENABLED"), v8::Boolean::New(isolate, false)).Check();
 #endif
 #ifdef DEBUG_ENABLED
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "DEBUG_ENABLED"), v8::Boolean::New(isolate, true)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "DEBUG_ENABLED"), v8::Boolean::New(isolate, true)).Check();
 #else
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "DEBUG_ENABLED"), v8::Boolean::New(isolate, false)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "DEBUG_ENABLED"), v8::Boolean::New(isolate, false)).Check();
 #endif
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_MAJOR"), v8::Int32::New(isolate, VERSION_MAJOR)).Check();
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_MINOR"), v8::Int32::New(isolate, VERSION_MINOR)).Check();
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_PATCH"), v8::Int32::New(isolate, VERSION_PATCH)).Check();
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
-            jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "to_array_buffer"), v8::Function::New(context, _to_array_buffer).ToLocalChecked()).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "VERSION_MAJOR"), v8::Int32::New(isolate, VERSION_MAJOR)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "VERSION_MINOR"), v8::Int32::New(isolate, VERSION_MINOR)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "VERSION_PATCH"), v8::Int32::New(isolate, VERSION_PATCH)).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
+            jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "to_array_buffer"), v8::Function::New(context, _to_array_buffer).ToLocalChecked()).Check();
 
             // jsb.internal
             {
                 v8::Local<v8::Object> internal_obj = v8::Object::New(isolate);
 
-                jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "internal"), internal_obj).Check();
+                jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "internal"), internal_obj).Check();
 
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "find_module"), v8::Function::New(context, _find_module).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_module"), v8::Function::New(context, _add_module).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "find_module"), v8::Function::New(context, _find_module).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "add_module"), v8::Function::New(context, _add_module).ToLocalChecked()).Check();
 
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "set_script_doc"), v8::Function::New(context, _set_script_doc).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "notify_microtasks_run"), v8::Function::New(context, _notify_microtasks_run).ToLocalChecked()).Check();
-                internal_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_type_name"), v8::Function::New(context, _get_type_name).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "set_script_doc"), v8::Function::New(context, _set_script_doc).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "notify_microtasks_run"), v8::Function::New(context, _notify_microtasks_run).ToLocalChecked()).Check();
+                internal_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "get_type_name"), v8::Function::New(context, _get_type_name).ToLocalChecked()).Check();
             }
 
 #ifdef TOOLS_ENABLED
@@ -1307,15 +1307,15 @@ namespace jsb
             {
                 v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
 
-                jsb_obj->Set(context, V8Helper::to_string_ascii(isolate, "editor"), editor_obj).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_class_doc"), v8::Function::New(context, JavaScriptEditorUtility::_get_class_doc).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_classes"), v8::Function::New(context, JavaScriptEditorUtility::_get_classes).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_global_constants"), v8::Function::New(context, JavaScriptEditorUtility::_get_global_constants).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_singletons"), v8::Function::New(context, JavaScriptEditorUtility::_get_singletons).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
-                editor_obj->Set(context, V8Helper::to_string_ascii(isolate, "VERSION_DOCS_URL"), V8Helper::to_string(isolate, VERSION_DOCS_URL)).Check();
+                jsb_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "editor"), editor_obj).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "get_class_doc"), v8::Function::New(context, JavaScriptEditorUtility::_get_class_doc).ToLocalChecked()).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "get_classes"), v8::Function::New(context, JavaScriptEditorUtility::_get_classes).ToLocalChecked()).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "get_global_constants"), v8::Function::New(context, JavaScriptEditorUtility::_get_global_constants).ToLocalChecked()).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "get_singletons"), v8::Function::New(context, JavaScriptEditorUtility::_get_singletons).ToLocalChecked()).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "get_utility_functions"), v8::Function::New(context, JavaScriptEditorUtility::_get_utility_functions).ToLocalChecked()).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "get_primitive_types"), v8::Function::New(context, JavaScriptEditorUtility::_get_primitive_types).ToLocalChecked()).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "delete_file"), v8::Function::New(context, JavaScriptEditorUtility::_delete_file).ToLocalChecked()).Check();
+                editor_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "VERSION_DOCS_URL"), BridgeHelper::to_string(isolate, VERSION_DOCS_URL)).Check();
             }
 #endif
         }

@@ -214,7 +214,7 @@ namespace jsb
         Error load(const String& p_name, JavaScriptModule** r_module = nullptr);
 
         //TODO is there a simple way to compile (validate) the script without any side effect?
-        bool validate_script(const String& p_path, struct JavaScriptExceptionInfo* r_err = nullptr);
+        bool validate_script(const String& p_path);
 
         NativeObjectID crossbind(Object* p_this, ScriptClassID p_class_id);
 
@@ -227,7 +227,11 @@ namespace jsb
          * \param p_filename SourceOrigin (compile the code snippet without ScriptOrigin if `p_filename` is empty)
          * \return js rval
          */
-        v8::MaybeLocal<v8::Value> _compile_run(const char* p_source, int p_source_len, const String& p_filename);
+        v8::MaybeLocal<v8::Value> _compile_run(const char* p_source, int p_source_len, const String& p_filename)
+        {
+            return impl::Helper::compile_run(context_.Get(isolate_), p_source, p_source_len, p_filename);
+        }
+
         v8::Local<v8::Function> _new_require_func(const String& p_module_id);
 
         bool _get_main_module(v8::Local<v8::Object>* r_main_module) const;

@@ -4,7 +4,6 @@
 #include "../jsb_project_preset.h"
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_settings.h"
-#include "../internal/jsb_path_util.h"
 #include "../weaver/jsb_gdjs_lang.h"
 
 #include "core/config/project_settings.h"

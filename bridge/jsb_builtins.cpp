@@ -1,8 +1,8 @@
 #include "jsb_builtins.h"
 
+#include "jsb_environment.h"
 #include "jsb_amd_module_loader.h"
-#include "jsb_exception_info.h"
-
+#include "jsb_bridge_helper.h"
 
 namespace jsb
 {
@@ -10,11 +10,11 @@ namespace jsb
 
     static void _generate_stacktrace(v8::Isolate* isolate, String& r_stacktrace, internal::SourcePosition& r_source_position)
     {
-        v8::TryCatch try_catch(isolate);
+        const impl::TryCatch try_catch(isolate);
         isolate->ThrowError("");
-        if (const JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch, false, &r_source_position))
+        if (try_catch.has_caught())
         {
-            r_stacktrace = exception_info.get_stacktrace();
+            r_stacktrace = BridgeHelper::get_stacktrace(try_catch, r_source_position);
         }
     }
 
@@ -48,7 +48,7 @@ namespace jsb
         // join all data
         for (const int n = info.Length(); index < n; ++index)
         {
-            if (String str = V8Helper::stringify(isolate, context, info[index]); str.length() > 0)
+            if (String str = BridgeHelper::stringify(isolate, context, info[index]); str.length() > 0)
             {
                 sb.append(" ");
                 sb.append(str);
@@ -57,7 +57,7 @@ namespace jsb
 
         if constexpr (ActiveSeverity == internal::ELogSeverity::Assert)
         {
-            isolate->ThrowError(V8Helper::to_string(isolate, sb.as_string()));
+            isolate->ThrowError(BridgeHelper::to_string(isolate, sb.as_string()));
             return;
         }
 
@@ -118,24 +118,24 @@ namespace jsb
         {
             v8::Local<v8::Object> console_obj = v8::Object::New(isolate);
 
-            self->Set(context, V8Helper::to_string_ascii(isolate, "console"), console_obj).Check();
-            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "log"), v8::Function::New(context, _print<internal::ELogSeverity::Log>).ToLocalChecked()).Check();
-            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "info"), v8::Function::New(context, _print<internal::ELogSeverity::Info>).ToLocalChecked()).Check();
-            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "debug"), v8::Function::New(context, _print<internal::ELogSeverity::Debug>).ToLocalChecked()).Check();
-            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "warn"), v8::Function::New(context, _print<internal::ELogSeverity::Warning>).ToLocalChecked()).Check();
-            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "error"), v8::Function::New(context, _print<internal::ELogSeverity::Error>).ToLocalChecked()).Check();
-            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "assert"), v8::Function::New(context, _print<internal::ELogSeverity::Assert>).ToLocalChecked()).Check();
-            console_obj->Set(context, V8Helper::to_string_ascii(isolate, "trace"), v8::Function::New(context, _print<internal::ELogSeverity::Trace>).ToLocalChecked()).Check();
+            self->Set(context, BridgeHelper::to_string_ascii(isolate, "console"), console_obj).Check();
+            console_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "log"), v8::Function::New(context, _print<internal::ELogSeverity::Log>).ToLocalChecked()).Check();
+            console_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "info"), v8::Function::New(context, _print<internal::ELogSeverity::Info>).ToLocalChecked()).Check();
+            console_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "debug"), v8::Function::New(context, _print<internal::ELogSeverity::Debug>).ToLocalChecked()).Check();
+            console_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "warn"), v8::Function::New(context, _print<internal::ELogSeverity::Warning>).ToLocalChecked()).Check();
+            console_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "error"), v8::Function::New(context, _print<internal::ELogSeverity::Error>).ToLocalChecked()).Check();
+            console_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "assert"), v8::Function::New(context, _print<internal::ELogSeverity::Assert>).ToLocalChecked()).Check();
+            console_obj->Set(context, BridgeHelper::to_string_ascii(isolate, "trace"), v8::Function::New(context, _print<internal::ELogSeverity::Trace>).ToLocalChecked()).Check();
         }
 
         // the root 'require' function
         {
             Environment* env = Environment::wrap(context);
             v8::Local<v8::Function> require_func = v8::Function::New(context, _require).ToLocalChecked();
-            self->Set(context, V8Helper::to_string_ascii(isolate, "require"), require_func).Check();
-            self->Set(context, V8Helper::to_string_ascii(isolate, "define"), v8::Function::New(context, _define).ToLocalChecked()).Check();
-            require_func->Set(context, V8Helper::to_string_ascii(isolate, "cache"), env->get_module_cache().unwrap(isolate)).Check();
-            require_func->Set(context, V8Helper::to_string_ascii(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
+            self->Set(context, BridgeHelper::to_string_ascii(isolate, "require"), require_func).Check();
+            self->Set(context, BridgeHelper::to_string_ascii(isolate, "define"), v8::Function::New(context, _define).ToLocalChecked()).Check();
+            require_func->Set(context, BridgeHelper::to_string_ascii(isolate, "cache"), env->get_module_cache().unwrap(isolate)).Check();
+            require_func->Set(context, BridgeHelper::to_string_ascii(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
         }
 
         //TODO the root 'import' function (async module loading?)
@@ -144,10 +144,10 @@ namespace jsb
 
         // essential timer support
         {
-            self->Set(context, V8Helper::to_string_ascii(isolate, "setInterval"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Interval)).ToLocalChecked()).Check();
-            self->Set(context, V8Helper::to_string_ascii(isolate, "setTimeout"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout)).ToLocalChecked()).Check();
-            self->Set(context, V8Helper::to_string_ascii(isolate, "setImmediate"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate)).ToLocalChecked()).Check();
-            self->Set(context, V8Helper::to_string_ascii(isolate, "clearInterval"), v8::Function::New(context, _clear_timer).ToLocalChecked()).Check();
+            self->Set(context, BridgeHelper::to_string_ascii(isolate, "setInterval"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Interval)).ToLocalChecked()).Check();
+            self->Set(context, BridgeHelper::to_string_ascii(isolate, "setTimeout"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout)).ToLocalChecked()).Check();
+            self->Set(context, BridgeHelper::to_string_ascii(isolate, "setImmediate"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate)).ToLocalChecked()).Check();
+            self->Set(context, BridgeHelper::to_string_ascii(isolate, "clearInterval"), v8::Function::New(context, _clear_timer).ToLocalChecked()).Check();
         }
     }
 
@@ -163,7 +163,7 @@ namespace jsb
         }
         Environment* env = Environment::wrap(context);
         const StringName module_id_str = env->get_string_name(info[0].As<v8::String>());
-        // const StringName module_id_str = V8Helper::to_string(v8::String::Value(isolate, info[0]));
+        // const StringName module_id_str = BridgeHelper::to_string(v8::String::Value(isolate, info[0]));
         if (!internal::VariantUtil::is_valid_name(module_id_str))
         {
             isolate->ThrowError("bad module_id");
@@ -184,7 +184,7 @@ namespace jsb
                 isolate->ThrowError("bad param");
                 return;
             }
-            const String item_str = V8Helper::to_string(v8::String::Value(isolate, item));
+            const String item_str = BridgeHelper::to_string(v8::String::Value(isolate, item));
             if (item_str.is_empty())
             {
                 isolate->ThrowError("bad param");
@@ -217,8 +217,8 @@ namespace jsb
         }
 
         // read parent module id from magic data
-        const String parent_id = V8Helper::to_string(isolate, info.Data());
-        const String module_id = V8Helper::to_string(isolate, arg0);
+        const String parent_id = BridgeHelper::to_string(isolate, info.Data());
+        const String module_id = BridgeHelper::to_string(isolate, arg0);
         Environment* env = Environment::wrap(context);
         if (const JavaScriptModule* module = env->_load_module(parent_id, module_id))
         {
