@@ -190,7 +190,11 @@ namespace jsb
          * This method will not throw any exception.
          */
         void call_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id);
-        bool get_script_default_property_value(ScriptClassID p_script_class_id, const StringName& p_name, Variant& r_val);
+
+        // Get default property value of a script class.
+        // Potential side effects: This procedure may construct a new CDO instance (in p_script_class_info).
+        bool get_script_default_property_value(ScriptClassInfo& p_script_class_info, const StringName& p_name, Variant& r_val);
+
         bool get_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, const Variant& p_val);
 
@@ -467,7 +471,7 @@ namespace jsb
          * \param p_class_name class_name must be unique if it's a GodotObject class
          * \return
          */
-        NativeClassID add_class(NativeClassType::Type p_type, const StringName& p_class_name)
+        NativeClassID add_native_class(const NativeClassType::Type p_type, const StringName& p_class_name)
         {
             const NativeClassID class_id = native_classes_.add(NativeClassInfo());
             NativeClassInfo& class_info = native_classes_.get_value(class_id);
@@ -482,6 +486,8 @@ namespace jsb
             return class_id;
         }
 
+        // A variant of get_native_class() to find native class info of godot object class.
+        // Returns `nullptr` if not found
         jsb_force_inline const NativeClassInfo* find_godot_class(const StringName& p_name, NativeClassID& r_class_id) const
         {
             if (const NativeClassID* it = godot_classes_index_.getptr(p_name))
@@ -504,7 +510,8 @@ namespace jsb
             r_class_id = script_classes_.add({});
             return script_classes_.get_value(r_class_id);
         }
-        jsb_force_inline ScriptClassInfo& get_script_class(ScriptClassID p_class_id) { return script_classes_.get_value(p_class_id); }
+        jsb_force_inline ScriptClassInfo& get_script_class(const ScriptClassID p_class_id) { return script_classes_.get_value(p_class_id); }
+        jsb_force_inline internal::SArray<ScriptClassInfo, ScriptClassID>::ScopedPointer _get_script_class(ScriptClassID p_class_id) { return script_classes_.get_value_scoped(p_class_id); }
         jsb_force_inline ScriptClassInfo* find_script_class(ScriptClassID p_class_id) { return script_classes_.is_valid_index(p_class_id) ? &script_classes_.get_value(p_class_id) : nullptr; }
 
         void get_statistics(Statistics& r_stats) const;

@@ -776,11 +776,10 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         jsb_checkf(!this->get_object_id(p_this), "duplicated object binding is not allowed (%s)", uitos((uintptr_t) p_this));
-        jsb_address_guard(this->script_classes_, godotjs_classes_address_guard);
-        const ScriptClassInfo& class_info = this->get_script_class(p_class_id);
-        const StringName class_name = class_info.js_class_name;
+        auto class_info = this->_get_script_class(p_class_id);
+        const StringName class_name = class_info->js_class_name;
 
-        v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
+        const v8::Local<v8::Object> constructor = class_info->js_class.Get(isolate);
         jsb_check(!constructor->IsUndefined() && !constructor->IsNull());
         v8::TryCatch try_catch_run(isolate);
         v8::Local<v8::Value> identifier = jsb_symbol(this, CrossBind);
@@ -797,8 +796,8 @@ namespace jsb
             JSB_LOG(Error, "bad instance '%s", class_name);
             return {};
         }
-        const NativeObjectID object_id = this->bind_godot_object(class_info.native_class_id, p_this, instance.As<v8::Object>());
-        JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %s", class_info.js_class_name,  class_info.native_class_name, (uint32_t) class_info.native_class_id, uitos((uintptr_t) p_this));
+        const NativeObjectID object_id = this->bind_godot_object(class_info->native_class_id, p_this, instance.As<v8::Object>());
+        JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %s", class_info->js_class_name,  class_info->native_class_name, (uint32_t) class_info->native_class_id, uitos((uintptr_t) p_this));
         return object_id;
     }
 
@@ -818,11 +817,10 @@ namespace jsb
             return;
         }
 
-        jsb_address_guard(this->script_classes_, godotjs_classes_address_guard);
-        const ScriptClassInfo& class_info = this->get_script_class(p_class_id);
-        const StringName class_name = class_info.js_class_name;
-        v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
-        v8::Local<v8::Value> prototype = constructor->Get(context, jsb_name(this, prototype)).ToLocalChecked();
+        auto class_info = this->_get_script_class(p_class_id);
+        const StringName class_name = class_info->js_class_name;
+        const v8::Local<v8::Object> constructor = class_info->js_class.Get(isolate);
+        const v8::Local<v8::Value> prototype = constructor->Get(context, jsb_name(this, prototype)).ToLocalChecked();
 
         v8::TryCatch try_catch(isolate);
         jsb_check(instance->IsObject());
@@ -1240,7 +1238,7 @@ namespace jsb
         return rvar;
     }
 
-    bool Environment::get_script_default_property_value(ScriptClassID p_script_class_id, const StringName& p_name, Variant& r_val)
+    bool Environment::get_script_default_property_value(ScriptClassInfo& p_script_class_info, const StringName& p_name, Variant& r_val)
     {
         this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
@@ -1249,38 +1247,37 @@ namespace jsb
         v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
 
-        ScriptClassInfo& class_info = this->get_script_class(p_script_class_id);
-        if (const auto& it = class_info.properties.find(p_name))
+        if (const auto& it = p_script_class_info.properties.find(p_name))
         {
             v8::Local<v8::Value> instance;
-            if (class_info.js_default_object.IsEmpty())
+            if (p_script_class_info.js_default_object.IsEmpty())
             {
-                v8::Local<v8::Object> constructor = class_info.js_class.Get(isolate);
+                v8::Local<v8::Object> constructor = p_script_class_info.js_class.Get(isolate);
                 v8::TryCatch try_catch_run(isolate);
                 v8::Local<v8::Value> identifier = jsb_symbol(this, CDO);
                 v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
                 if (JavaScriptExceptionInfo exception_info = JavaScriptExceptionInfo(isolate, try_catch_run))
                 {
-                    JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_info.js_class_name, (String) exception_info);
-                    class_info.js_default_object.Reset(isolate, v8::Null(isolate));
+                    JSB_LOG(Error, "something wrong when constructing '%s'\n%s", p_script_class_info.js_class_name, (String) exception_info);
+                    p_script_class_info.js_default_object.Reset(isolate, v8::Null(isolate));
                     return false;
                 }
                 if (!constructed_value.ToLocal(&instance))
                 {
-                    JSB_LOG(Error, "bad instance '%s", class_info.js_class_name);
-                    class_info.js_default_object.Reset(isolate, v8::Null(isolate));
+                    JSB_LOG(Error, "bad instance '%s", p_script_class_info.js_class_name);
+                    p_script_class_info.js_default_object.Reset(isolate, v8::Null(isolate));
                     return false;
                 }
-                class_info.js_default_object.Reset(isolate, instance);
+                p_script_class_info.js_default_object.Reset(isolate, instance);
             }
             else
             {
-                instance = class_info.js_default_object.Get(isolate);
+                instance = p_script_class_info.js_default_object.Get(isolate);
             }
 
             if (!instance->IsObject())
             {
-                JSB_LOG(Error, "bad instance '%s", class_info.js_class_name);
+                JSB_LOG(Error, "bad instance '%s", p_script_class_info.js_class_name);
                 return false;
             }
 
@@ -1310,10 +1307,10 @@ namespace jsb
             return false;
         }
 
-        v8::Local<v8::Context> context = this->get_context();
+        const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
-        v8::Local<v8::Object> self = this->get_object(p_object_id);
-        v8::Local<v8::String> name = this->get_string_value(p_info.name);
+        const v8::Local<v8::Object> self = this->get_object(p_object_id);
+        const v8::Local<v8::String> name = this->get_string_value(p_info.name);
         v8::Local<v8::Value> value;
         if (!self->Get(context, name).ToLocal(&value))
         {
@@ -1337,10 +1334,10 @@ namespace jsb
             return false;
         }
 
-        v8::Local<v8::Context> context = this->get_context();
+        const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
-        v8::Local<v8::Object> self = this->get_object(p_object_id);
-        v8::Local<v8::String> name = this->get_string_value(p_info.name);
+        const v8::Local<v8::Object> self = this->get_object(p_object_id);
+        const v8::Local<v8::String> name = this->get_string_value(p_info.name);
         v8::Local<v8::Value> value;
         if (!TypeConvert::gd_var_to_js(isolate, context, p_val, p_info.type, value))
         {

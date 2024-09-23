@@ -51,96 +51,28 @@ namespace jsb
     }
 #endif
 
-    void ScriptClassInfo::_newbind(const v8::Local<v8::Object>& p_self)
-    {
-        const String source_path = internal::PathUtil::convert_javascript_path(module_id);
-        Ref<GodotJSScript> script = ResourceLoader::load(source_path);
-        if (script.is_valid())
-        {
-            jsb_unused(script->can_instantiate()); // make it loaded immediately
-            const ScriptInstance* script_instance = script->instance_create(p_self);
-            jsb_check(script_instance);
-        }
-    }
-
-    void ScriptClassInfo::_parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module)
-    {
-        // only classes in files of godot package system could be used as godot js script
-        if (!p_module.path.begins_with("res://") || p_module.exports.IsEmpty())
-        {
-            return;
-        }
-        v8::Isolate* isolate = p_context->GetIsolate();
-        v8::Local<v8::Value> exports_val = p_module.exports.Get(isolate);
-        if (!exports_val->IsObject())
-        {
-            return;
-        }
-        Environment* environment = Environment::wrap(isolate);
-        v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
-        v8::Local<v8::Value> default_val;
-        if (!exports->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val)
-            || !default_val->IsObject())
-        {
-            return;
-        }
-
-        v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
-        v8::Local<v8::String> name_str = default_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>();
-        v8::Local<v8::Value> class_id_val;
-        if (!default_obj->Get(p_context, jsb_symbol(environment, ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
-        {
-            // ignore a javascript which does not inherit from a native class (directly and indirectly both)
-            return;
-        }
-
-        // unsafe
-        const NativeClassID native_class_id = (NativeClassID) class_id_val->Uint32Value(p_context).ToChecked();
-        jsb_address_guard(environment->native_classes_, native_classes_address_guard);
-        const NativeClassInfo& native_class_info = environment->get_native_class(native_class_id);
-
-        //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
-        ScriptClassInfo* existed_class_info = environment->find_script_class(p_module.default_class_id);
-        if (existed_class_info)
-        {
-            existed_class_info->methods.clear();
-            existed_class_info->signals.clear();
-            existed_class_info->properties.clear();
-            existed_class_info->flags = ScriptClassFlags::None;
-        }
-        else
-        {
-            ScriptClassID script_class_id;
-            existed_class_info = &environment->add_script_class(script_class_id);
-            p_module.default_class_id = script_class_id;
-            existed_class_info->module_id = p_module.id;
-        }
-
-        // trick: save godot class id for getting it in constructor
-        default_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, p_module.default_class_id)).Check();
-
-        jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
-        jsb_check(existed_class_info->module_id == p_module.id);
-        existed_class_info->js_class_name = environment->get_string_name(name_str);
-        existed_class_info->native_class_id = native_class_id;
-        existed_class_info->native_class_name = native_class_info.name;
-        existed_class_info->js_class.Reset(isolate, default_obj);
-        existed_class_info->js_default_object.Reset();
-        JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", existed_class_info->js_class_name, existed_class_info->native_class_name);
-        _parse_script_class_iterate(p_context, *existed_class_info);
-    }
-
-    void ScriptClassInfo::_parse_script_class_iterate(const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info)
+    //NOTE ensure the address of p_class_info being locked during this procedure
+    void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info, const v8::Local<v8::Object>& default_obj)
     {
         v8::Isolate* isolate = p_context->GetIsolate();
         Environment* environment = Environment::wrap(isolate);
-
-        //TODO get rid of private access
-        jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
 
         //TODO collect methods/signals/properties
-        v8::Local<v8::Object> default_obj = p_class_info.js_class.Get(isolate);
-        v8::Local<v8::Object> prototype = default_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
+        const v8::Local<v8::Object> prototype = default_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
+
+        // reset CDO of the legacy JS class
+        p_class_info.js_default_object.Reset();
+
+        // update the latest script class info
+        p_class_info.native_class_name = environment->get_native_class(p_class_info.native_class_id).name;
+        p_class_info.js_class.Reset(isolate, default_obj);
+        p_class_info.js_class_name = environment->get_string_name(default_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>());
+        p_class_info.methods.clear();
+        p_class_info.signals.clear();
+        p_class_info.properties.clear();
+        p_class_info.flags = ScriptClassFlags::None;
+
+        JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", p_class_info.js_class_name, p_class_info.native_class_name);
 
 #ifdef TOOLS_ENABLED
         // class doc
@@ -263,6 +195,72 @@ namespace jsb
                 }
             }
         }
+    }
+
+    void ScriptClassInfo::_newbind(const v8::Local<v8::Object>& p_self)
+    {
+        const String source_path = internal::PathUtil::convert_javascript_path(module_id);
+        Ref<GodotJSScript> script = ResourceLoader::load(source_path);
+        if (script.is_valid())
+        {
+            jsb_unused(script->can_instantiate()); // make it loaded immediately
+            const ScriptInstance* script_instance = script->instance_create(p_self);
+            jsb_check(script_instance);
+        }
+    }
+
+    void ScriptClassInfo::_parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module)
+    {
+        // only classes in files of godot package system could be used as godot js script
+        if (!p_module.path.begins_with("res://") || p_module.exports.IsEmpty())
+        {
+            return;
+        }
+        v8::Isolate* isolate = p_context->GetIsolate();
+        v8::Local<v8::Value> exports_val = p_module.exports.Get(isolate);
+        if (!exports_val->IsObject())
+        {
+            return;
+        }
+        Environment* environment = Environment::wrap(isolate);
+        v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
+        v8::Local<v8::Value> default_val;
+        if (!exports->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val)
+            || !default_val->IsObject())
+        {
+            return;
+        }
+
+        const v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
+        v8::Local<v8::Value> class_id_val;
+        if (!default_obj->Get(p_context, jsb_symbol(environment, ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
+        {
+            // ignore a javascript which does not inherit from a native class (directly and indirectly both)
+            return;
+        }
+
+        // unsafe
+        const NativeClassID native_class_id = (NativeClassID) class_id_val->Uint32Value(p_context).ToChecked();
+        jsb_address_guard(environment->native_classes_, native_classes_address_guard);
+
+        //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
+        ScriptClassInfo* existed_class_info = environment->find_script_class(p_module.default_class_id);
+        if (!existed_class_info)
+        {
+            ScriptClassID script_class_id;
+            existed_class_info = &environment->add_script_class(script_class_id);
+            p_module.default_class_id = script_class_id;
+            existed_class_info->module_id = p_module.id;
+        }
+
+        // trick: save godot class id for convenience of getting it in JS class constructor
+        default_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, p_module.default_class_id)).Check();
+
+        jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
+        jsb_check(existed_class_info->module_id == p_module.id);
+        existed_class_info->native_class_id = native_class_id;
+
+        _parse_script_class_iterate(p_context, *existed_class_info, default_obj);
     }
 
 }

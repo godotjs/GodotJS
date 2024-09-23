@@ -617,7 +617,7 @@ namespace jsb
         static NativeClassID reflect_bind(const FBindingEnv& p_env)
         {
             const StringName& class_name = p_env.type_name;
-            const NativeClassID class_id = p_env->add_class(NativeClassType::GodotPrimitive, class_name);
+            const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotPrimitive, class_name);
 
             v8::Local<v8::FunctionTemplate> function_template = get_template(p_env, class_id);
             function_template->InstanceTemplate()->SetInternalFieldCount(IF_VariantFieldCount);

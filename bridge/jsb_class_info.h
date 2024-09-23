@@ -101,7 +101,7 @@ namespace jsb
         // only valid with TOOLS_ENABLED
         ScriptMethodDoc doc;
 
-        ScriptMethodFlags::Type flags;
+        ScriptMethodFlags::Type flags = ScriptMethodFlags::None;
 
         jsb_force_inline bool is_static() const { return flags & ScriptMethodFlags::Static; }
 
@@ -181,7 +181,7 @@ namespace jsb
         void _newbind(const v8::Local<v8::Object>& p_self);
 
         static void _parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
-        static void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info);
+
     };
 }
 

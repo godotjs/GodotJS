@@ -11,7 +11,7 @@ namespace jsb
         jsb_check(p_env->get_context() == context);
         jsb_check(p_class_info);
 
-        const NativeClassID class_id = p_env->add_class(NativeClassType::GodotObject, p_class_info->name);
+        const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotObject, p_class_info->name);
         JSB_LOG(VeryVerbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
 
         // construct type template

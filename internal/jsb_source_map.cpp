@@ -55,7 +55,7 @@ namespace jsb::internal
         const int size = source_lines_.size();
         if (size == 0 || source_lines_[size - 1].result_line != p_line)
         {
-            source_lines_.push_back({ p_line, {} });
+            source_lines_.push_back({ {}, p_line });
             return source_lines_.write[size];
         }
         return source_lines_.write[size - 1];

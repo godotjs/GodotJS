@@ -567,11 +567,11 @@ namespace jsb
             if (new_target.As<v8::Object>()->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
             {
                 const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
-                ScriptClassInfo& script_class_info = environment->get_script_class(script_class_id);
+                auto script_class_info = environment->_get_script_class(script_class_id);
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
-                    script_class_info.js_class_name, script_class_info.module_id, native_class.name, class_id.value());
+                    script_class_info->js_class_name, script_class_info->module_id, native_class.name, class_id.value());
                 const v8::Local<v8::Object> self = info.This();
-                script_class_info._newbind(self);
+                script_class_info->_newbind(self);
                 return;
             }
 

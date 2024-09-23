@@ -615,7 +615,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
 #ifdef TOOLS_ENABLED
         members_cache.push_back(get_class_category());
 #endif
-        const jsb::ScriptClassInfo& class_info = get_script_class();
+        jsb::ScriptClassInfo& class_info = get_environment()->get_script_class(gdjs_class_id_);
         for (const KeyValue<StringName, jsb::ScriptPropertyInfo> &pair : class_info.properties)
         {
             const jsb::ScriptPropertyInfo &pi = pair.value;
@@ -624,7 +624,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
 
             //TODO maybe this behaviour is not expected
             Variant default_value;
-            env->get_script_default_property_value(gdjs_class_id_, pi.name, default_value);
+            env->get_script_default_property_value(class_info, pi.name, default_value);
             member_default_values_cache[pi.name] = default_value;
             JSB_LOG(VeryVerbose, "GodotJS script default %s.%s = %s",
                 gdjs_class_id_ ? (String) get_script_class().js_class_name : "(unknown)",
