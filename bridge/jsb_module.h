@@ -24,11 +24,11 @@ namespace jsb
         // asset path
         String path;
 
-        //
-        ScriptClassID default_class_id;
-
         v8::Global<v8::Object> module;
         v8::Global<v8::Value> exports;
+
+        //
+        ScriptClassID default_class_id;
 
 #if JSB_SUPPORT_RELOAD
         bool reload_requested = false;

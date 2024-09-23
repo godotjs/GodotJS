@@ -70,10 +70,12 @@ namespace jsb
     {
         String brief_description;
 
-        bool is_deprecated = false;
         String deprecated_message;
-        bool is_experimental = false;
         String experimental_message;
+
+        bool is_deprecated = false;
+        bool is_experimental = false;
+
     };
 
     struct ScriptClassDoc : ScriptBaseDoc {};
@@ -96,10 +98,10 @@ namespace jsb
 
     struct ScriptMethodInfo
     {
-        ScriptMethodFlags::Type flags;
-
         // only valid with TOOLS_ENABLED
         ScriptMethodDoc doc;
+
+        ScriptMethodFlags::Type flags;
 
         jsb_force_inline bool is_static() const { return flags & ScriptMethodFlags::Static; }
 
@@ -108,14 +110,15 @@ namespace jsb
     struct ScriptPropertyInfo
     {
         Variant::Type type = Variant::NIL;
+        PropertyHint hint = PROPERTY_HINT_NONE;
+        uint32_t usage = PROPERTY_USAGE_DEFAULT;
+
         StringName name;
 
         //TODO class_name is needed if type is OBJECT
         StringName class_name;
 
-        PropertyHint hint = PROPERTY_HINT_NONE;
         String hint_string;
-        uint32_t usage = PROPERTY_USAGE_DEFAULT;
 
         ScriptPropertyDoc doc;
         // Variant default_value;
@@ -151,12 +154,12 @@ namespace jsb
         // it's null if failed to construct the CDO.
         v8::Global<v8::Value> js_default_object;
 
-        // the native class id the current class inherits from.
-        NativeClassID native_class_id;
-
         // a fastpath to read the name of native class (the GodotJS class inherits from).
         // it's a redundant field only for performance.
         StringName native_class_name;
+
+        // the native class id the current class inherits from.
+        NativeClassID native_class_id;
 
         ScriptClassFlags::Type flags = ScriptClassFlags::None;
 

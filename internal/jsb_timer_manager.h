@@ -42,10 +42,12 @@ namespace jsb::internal
 		struct TimerData
 		{
 			Index32 id;
-			TFunction action;
+			bool loop;
+
 			uint64_t rate;
 			uint64_t expires;
-			bool loop;
+
+			TFunction action;
 		};
 
 		struct WheelSlot
@@ -70,9 +72,11 @@ namespace jsb::internal
 		struct WheelState
 		{
 			uint8_t depth;
+			uint8_t index;
+
 			uint64_t interval;
 			uint64_t range;
-			uint8_t index;
+
 			WheelSlot slots[kWheelSlotNum];
 
 			WheelState() = default;

@@ -22,20 +22,24 @@ namespace jsb::internal
     struct SourceMap
     {
     private:
-        struct InternalPosition {
+        struct InternalPosition
+        {
             // DO NOT CHANGE THE ORDER
             int result_column = 0;
             int source_index = 0;
             int source_line = 0;
             int source_column = 0;
             int _reserved = 0; // name index
+
             jsb_force_inline int& operator[](uint8_t index) { jsb_check(index < 5); return *((int*)this + index); }
         };
+
         struct InternalLine
         {
-            int result_line = 0;
             Vector<InternalPosition> elements;
+            int result_line = 0;
         };
+
         Vector<InternalLine> source_lines_;
         Vector<String> sources_;
         String source_root_;
