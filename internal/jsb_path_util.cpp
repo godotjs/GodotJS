@@ -106,16 +106,17 @@ namespace jsb::internal
         return p_source_path;
     }
 
-    void PathUtil::delete_file(const char* p_path, int p_length)
+    void PathUtil::delete_file(const String& p_path)
     {
 #if WINDOWS_ENABLED
-        const String path(p_path, p_length);
-        if (!DeleteFileW((LPCWSTR) path.utf16().get_data()))
+        const Char16String str16 = p_path.utf16();
+        if (!DeleteFileW((LPCWSTR) str16.get_data()))
         {
-            JSB_LOG(Warning, "failed to delete %s", path);
+            JSB_LOG(Warning, "failed to delete %s", p_path);
         }
 #else
-        unlink(p_path);
+        const CharString str8 = p_path.utf8();
+        unlink(str8.get_data());
 #endif
     }
 

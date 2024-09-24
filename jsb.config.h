@@ -53,6 +53,9 @@
 // NOT IMPLEMENTED YET
 #define JSB_WITH_STATIC_BINDINGS 0
 
+// utf16 conversion may have less overhead, but uses more memory?
+#define JSB_UTF16_CONV_PREFERRED 1
+
 // [EXPERIMENTAL] use optimized wrapper function calls if possible
 #define JSB_FAST_REFLECTION 1
 

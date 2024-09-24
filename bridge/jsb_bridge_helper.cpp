@@ -5,7 +5,7 @@
 
 namespace jsb
 {
-    String BridgeHelper::stringify(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
+    String BridgeHelper::stringify(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
     {
         if (p_val->IsObject())
         {
@@ -36,20 +36,7 @@ namespace jsb
             }
         }
 
-        // without side effects
-        // v8::Local<v8::String> str_value;
-        // if (const v8::MaybeLocal<v8::String> maybe = p_val->ToDetailString(context); maybe.ToLocal(&str_value))
-        // {
-        //     return BridgeHelper::to_string(isolate, str_value);
-        // }
-
-        // with side effects
-        if (v8::String::Utf8Value str(isolate, p_val); str.length() > 0)
-        {
-            return String::utf8(*str, str.length());
-        }
-
-        return String();
+        return impl::Helper::to_string(isolate, p_val);
     }
 
     // Get full exception info (Message+Stacktrace)

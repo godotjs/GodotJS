@@ -132,7 +132,7 @@ namespace jsb
                     r_cvar = (String) sn;
                     return true;
                 }
-                r_cvar = BridgeHelper::to_string(isolate, p_jval.As<v8::String>());
+                r_cvar = impl::Helper::to_string(isolate, p_jval);
                 return true;
             }
             return false;
@@ -153,7 +153,7 @@ namespace jsb
                     r_cvar = NodePath((String) sn);
                     return true;
                 }
-                r_cvar = NodePath(BridgeHelper::to_string(isolate, p_jval));
+                r_cvar = NodePath(impl::Helper::to_string(isolate, p_jval));
                 return true;
             }
             goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
@@ -250,14 +250,14 @@ namespace jsb
         case Variant::STRING:
             {
                 //TODO optimize with cache?
-                const String raw_val = p_cvar;
-                const CharString repr_val = raw_val.utf8();
-                r_jval = v8::String::NewFromUtf8(isolate, repr_val.get_data(), v8::NewStringType::kNormal, repr_val.length()).ToLocalChecked();
+                const String str = p_cvar;
+                r_jval = impl::Helper::new_string(isolate, str);
                 return true;
             }
         case Variant::STRING_NAME:
             {
-                r_jval = Environment::wrap(isolate)->get_string_value((StringName) p_cvar);
+                const StringName name = p_cvar;
+                r_jval = Environment::wrap(isolate)->get_string_value(name);
                 return true;
             }
         // math types
@@ -411,7 +411,7 @@ namespace jsb
                 r_cvar = sn;
                 return true;
             }
-            r_cvar = BridgeHelper::to_string(isolate, p_jval.As<v8::String>());
+            r_cvar = impl::Helper::to_string(isolate, p_jval);
             return true;
         }
         // is it proper to convert a ArrayBuffer into Vector<uint8_t>?

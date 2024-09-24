@@ -53,7 +53,7 @@ namespace jsb
 
         StringName get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value)
         {
-            const StringName name = BridgeHelper::to_string(isolate, p_value);
+            const StringName name = impl::Helper::to_string(isolate, p_value);
             if (const auto& it = value_index_.find(TWeakRef(isolate, p_value)); it != value_index_.end())
             {
                 const StringNameID id = it->second;
@@ -106,7 +106,7 @@ namespace jsb
             Slot& slot = values_[id];
             if (!slot.ref_)
             {
-                v8::Local<v8::String> str_val = BridgeHelper::to_string(isolate, p_name);
+                const v8::Local<v8::String> str_val = impl::Helper::new_string(isolate, p_name);
                 slot.ref_ = TStrongRef(isolate, str_val);
                 value_index_.insert(std::pair(TWeakRef(isolate, str_val), id));
                 JSB_LOG(VeryVerbose, "new string name pair (cpp) %s %d [slots:%d]", p_name, (uint32_t) id, values_.size());

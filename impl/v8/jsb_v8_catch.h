@@ -38,18 +38,14 @@ namespace jsb::impl
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             if (r_message)
             {
-                const v8::String::Utf8Value message_utf8(isolate, message->Get());
-                *r_message = String::utf8(*message_utf8, message_utf8.length());
+                *r_message = Helper::to_string(isolate, message->Get());
             }
 
             if (r_stacktrace)
             {
                 if (v8::Local<v8::Value> stack_trace; try_catch_.StackTrace(context).ToLocal(&stack_trace))
                 {
-                    if (v8::String::Utf8Value stack_trace_utf8(isolate, stack_trace); stack_trace_utf8.length())
-                    {
-                        *r_stacktrace = String(*stack_trace_utf8, stack_trace_utf8.length());
-                    }
+                    *r_stacktrace = Helper::to_string(isolate, stack_trace);
                 }
             }
         }

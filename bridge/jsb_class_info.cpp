@@ -22,7 +22,7 @@ namespace jsb
             if (v8::Local<v8::Value> val; obj->Get(context, jsb_name(environment, deprecated)).ToLocal(&val) && val->IsString())
             {
                 r_doc.is_deprecated = true;
-                r_doc.deprecated_message = BridgeHelper::to_string(isolate, val);
+                r_doc.deprecated_message = impl::Helper::to_string(isolate, val);
             }
             else
             {
@@ -32,7 +32,7 @@ namespace jsb
             if (v8::Local<v8::Value> val; obj->Get(context, jsb_name(environment, experimental)).ToLocal(&val) && val->IsString())
             {
                 r_doc.is_experimental = true;
-                r_doc.experimental_message = BridgeHelper::to_string(isolate, val);
+                r_doc.experimental_message = impl::Helper::to_string(isolate, val);
             }
             else
             {
@@ -41,7 +41,7 @@ namespace jsb
             // (@help)
             if (v8::Local<v8::Value> val; obj->Get(context, jsb_name(environment, help)).ToLocal(&val) && val->IsString())
             {
-                r_doc.brief_description = BridgeHelper::to_string(isolate, val);
+                r_doc.brief_description = impl::Helper::to_string(isolate, val);
             }
             else
             {
@@ -95,7 +95,7 @@ namespace jsb
             for (uint32_t index = 0; index < len; ++index)
             {
                 const v8::Local<v8::Name> prop_name = property_names->Get(p_context, index).ToLocalChecked().As<v8::Name>();
-                const String name_s = BridgeHelper::to_string(isolate, prop_name);
+                const String name_s = impl::Helper::to_string(isolate, prop_name);
                 if (name_s.is_empty() || name_s == "constructor") continue;
 
                 // check property type with 'GetOwnPropertyDescriptor' instead of direct 'Get' to avoid triggering code execution
@@ -133,7 +133,7 @@ namespace jsb
         {
             if (v8::Local<v8::Value> val; default_obj->Get(p_context, jsb_symbol(environment, ClassIcon)).ToLocal(&val))
             {
-                p_class_info.icon = BridgeHelper::to_string(isolate, val);
+                p_class_info.icon = impl::Helper::to_string(isolate, val);
             }
         }
 
@@ -149,7 +149,7 @@ namespace jsb
                 {
                     v8::Local<v8::Value> element = collection->Get(p_context, index).ToLocalChecked();
                     jsb_check(element->IsString());
-                    const StringName signal = BridgeHelper::to_string(isolate, element);
+                    const StringName signal = impl::Helper::to_string(isolate, element);
                     p_class_info.signals.insert(signal, {});
 
                     // instantiate a fake Signal property
@@ -179,10 +179,10 @@ namespace jsb
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     ScriptPropertyInfo property_info;
                     v8::Local<v8::Value> prop_name = obj->Get(context, jsb_name(environment, name)).ToLocalChecked();
-                    property_info.name = BridgeHelper::to_string(isolate, prop_name); // string
+                    property_info.name = impl::Helper::to_string(isolate, prop_name); // string
                     property_info.type = (Variant::Type) obj->Get(context, jsb_name(environment, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
                     property_info.hint = BridgeHelper::to_enum<PropertyHint>(context, obj->Get(context, jsb_name(environment, hint)), PROPERTY_HINT_NONE);
-                    property_info.hint_string = BridgeHelper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
+                    property_info.hint_string = impl::Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
                     property_info.usage = BridgeHelper::to_enum<PropertyUsageFlags>(context, obj->Get(context, jsb_name(environment, usage)), PROPERTY_USAGE_DEFAULT);
 #ifdef TOOLS_ENABLED
                     if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())

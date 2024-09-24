@@ -36,43 +36,6 @@ namespace v8
     class String : public Name
     {
     public:
-        class Utf8Value
-        {
-        public:
-            Utf8Value(Isolate* isolate, Local<Value> obj);
-            ~Utf8Value();
-
-            char* operator*() { return str_; }
-            const char* operator*() const { return str_; }
-            int length() const { return length_; }
-
-            // Disallow copying and assigning.
-            Utf8Value(const Utf8Value&) = delete;
-            void operator=(const Utf8Value&) = delete;
-
-        private:
-            char* str_;
-            int length_;
-        };
-
-        class Value {
-        public:
-            Value(Isolate* isolate, Local<v8::Value> obj);
-            ~Value();
-
-            uint16_t* operator*() { return str_; }
-            const uint16_t* operator*() const { return str_; }
-            int length() const { return length_; }
-
-            // Disallow copying and assigning.
-            Value(const Value&) = delete;
-            void operator=(const Value&) = delete;
-
-        private:
-            uint16_t* str_;
-            int length_;
-        };
-
         template<int N>
         static Local<String> NewFromUtf8Literal(Isolate* isolate, const char (&message)[N])
         {

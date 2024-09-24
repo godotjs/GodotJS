@@ -71,24 +71,4 @@ namespace v8
         //TODO
     }
 
-    String::Utf8Value::Utf8Value(Isolate* isolate, Local<Value> obj)
-    {
-        //TODO
-    }
-
-    String::Utf8Value::~Utf8Value()
-    {
-        //TODO
-    }
-
-    String::Value::Value(Isolate* isolate, Local<Value> obj)
-    {
-        //TODO
-    }
-
-    String::Value::~Value()
-    {
-        //TODO
-    }
-
 }

@@ -10,18 +10,18 @@
 #include "../internal/jsb_variant_util.h"
 
 #define JSB_DEFINE_OPERATOR2(op_code) function_template->\
-    Set(BridgeHelper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, BinaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
+    Set(impl::Helper::new_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, BinaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
     JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
 #define JSB_DEFINE_OPERATOR1(op_code) function_template->\
-    Set(BridgeHelper::to_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, UnaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
+    Set(impl::Helper::new_string(p_env.isolate, JSB_OPERATOR_NAME(op_code)), v8::FunctionTemplate::New(p_env.isolate, UnaryOperator::invoke, v8::Int32::New(p_env.isolate, Variant::OP_##op_code)));\
     JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
 #if JSB_FAST_REFLECTION
 #define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) \
     if (ReflectGetSetPointerCall<ForType>::is_supported(ForMemberType))\
     {\
-        prototype_template->SetAccessorProperty(BridgeHelper::to_string(p_env.isolate, PropName),\
+        prototype_template->SetAccessorProperty(impl::Helper::new_string(p_env.isolate, PropName),\
             v8::FunctionTemplate::New(p_env.isolate, ReflectGetSetPointerCall<ForType>::_getter, v8::External::New(p_env.isolate, (void*) Variant::get_member_ptr_getter(TYPE, PropName))),\
             v8::FunctionTemplate::New(p_env.isolate, ReflectGetSetPointerCall<ForType>::_setter, v8::External::New(p_env.isolate, (void*) Variant::get_member_ptr_setter(TYPE, PropName))));\
         continue;\
@@ -170,7 +170,7 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const StringName constant = BridgeHelper::to_string(isolate, name);
+            const StringName constant = impl::Helper::to_string(isolate, name);
             bool r_valid;
             const Variant constant_value = Variant::get_constant_value(TYPE, constant, &r_valid);
             jsb_check(r_valid);
@@ -200,7 +200,7 @@ namespace jsb
 
             const int argc = info.Length();
 
-            const int constructor_count = constructor_info.variants.size();
+            const int constructor_count = (int) constructor_info.variants.size();
             for (int constructor_index = 0; constructor_index < constructor_count; ++constructor_index)
             {
                 const internal::FConstructorVariantInfo& constructor_variant = constructor_info.variants[constructor_index];
@@ -231,7 +231,7 @@ namespace jsb
                     if (!TypeConvert::js_to_gd_var(isolate, context, info[argument_index], argument_type, args[argument_index]))
                     {
                         // revert all constructors
-                        v8::Local<v8::String> error_message = BridgeHelper::to_string(isolate, jsb_errorf("bad argument: %d", argument_index));
+                        v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", argument_index));
                         while (argument_index >= 0) { args[argument_index--].~Variant(); }
                         isolate->ThrowError(error_message);
                         return;
@@ -468,7 +468,7 @@ namespace jsb
                     else
                     {
                         // identical to: i - p_argcount + (dvs - missing)
-                        const int default_index = index - (known_argc - method_info.default_arguments.size());
+                        const int default_index = index - (int) (known_argc - method_info.default_arguments.size());
                         if (default_index >= 0)
                         {
                             args[index] = method_info.default_arguments[default_index];
@@ -485,7 +485,7 @@ namespace jsb
                 }
 
                 // revert all constructors
-                v8::Local<v8::String> error_message = BridgeHelper::to_string(isolate, jsb_errorf("bad argument: %d", index));
+                v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", index));
                 while (index >= 0) { args[index--].~Variant(); }
                 isolate->ThrowError(error_message);
                 return;
@@ -593,7 +593,7 @@ namespace jsb
 
             // fallback
             {
-                const int constructor_index = GetVariantInfoCollection(p_env.env).constructors.size();
+                const int constructor_index = (int) GetVariantInfoCollection(p_env.env).constructors.size();
                 GetVariantInfoCollection(p_env.env).constructors.append({});
                 internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.env).constructors.write[constructor_index];
                 constructor_info.class_id = p_class_id;
@@ -642,7 +642,7 @@ namespace jsb
                        Variant::get_member_validated_getter(TYPE, name),
                        member_type});
                     const v8::Local<v8::Integer> index = v8::Int32::New(p_env.isolate, collection_index);
-                    prototype_template->SetAccessorProperty(BridgeHelper::to_string(p_env.isolate, name),
+                    prototype_template->SetAccessorProperty(impl::Helper::new_string(p_env.isolate, name),
                         v8::FunctionTemplate::New(p_env.isolate, _getter, index),
                         v8::FunctionTemplate::New(p_env.isolate, _setter, index));
                 }
@@ -651,15 +651,15 @@ namespace jsb
             // indexed accessor
             if (Variant::has_indexing(TYPE))
             {
-                prototype_template->Set(BridgeHelper::to_string(p_env.isolate, "set_indexed"), v8::FunctionTemplate::New(p_env.isolate, _set_indexed));
-                prototype_template->Set(BridgeHelper::to_string(p_env.isolate, "get_indexed"), v8::FunctionTemplate::New(p_env.isolate, _get_indexed));
+                prototype_template->Set(impl::Helper::new_string(p_env.isolate, "set_indexed"), v8::FunctionTemplate::New(p_env.isolate, _set_indexed));
+                prototype_template->Set(impl::Helper::new_string(p_env.isolate, "get_indexed"), v8::FunctionTemplate::New(p_env.isolate, _get_indexed));
             }
 
             // keyed accessor
             if (Variant::is_keyed(TYPE))
             {
-                prototype_template->Set(BridgeHelper::to_string(p_env.isolate, "set_keyed"), v8::FunctionTemplate::New(p_env.isolate, _set_keyed));
-                prototype_template->Set(BridgeHelper::to_string(p_env.isolate, "get_keyed"), v8::FunctionTemplate::New(p_env.isolate, _get_keyed));
+                prototype_template->Set(impl::Helper::new_string(p_env.isolate, "set_keyed"), v8::FunctionTemplate::New(p_env.isolate, _set_keyed));
+                prototype_template->Set(impl::Helper::new_string(p_env.isolate, "get_keyed"), v8::FunctionTemplate::New(p_env.isolate, _get_keyed));
             }
 
             // methods
@@ -681,13 +681,13 @@ namespace jsb
                             {
                                 if (Variant::is_builtin_method_static(TYPE, name))
                                 {
-                                    function_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                                    function_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                         v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<real_t>::_call<false>,
                                             v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
                                 }
                                 else
                                 {
-                                    prototype_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                                    prototype_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                         v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<real_t>::_call<true>,
                                             v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
                                 }
@@ -701,13 +701,13 @@ namespace jsb
                         {
                             if (Variant::is_builtin_method_static(TYPE, name))
                             {
-                                function_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                                function_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                     v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<void>::_call<false>,
                                         v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
                             }
                             else
                             {
-                                prototype_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                                prototype_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                     v8::FunctionTemplate::New(p_env.isolate, ReflectBuiltinMethodPointerCall<void>::_call<true>,
                                         v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
                             }
@@ -717,7 +717,7 @@ namespace jsb
 #endif
 
                     // convert method info, and store
-                    const int collection_index = GetVariantInfoCollection(p_env.env).methods.size();
+                    const int collection_index = (int) GetVariantInfoCollection(p_env.env).methods.size();
                     GetVariantInfoCollection(p_env.env).methods.append({});
                     internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.env).methods.write[collection_index];
                     method_info.set_debug_name(name);
@@ -737,12 +737,12 @@ namespace jsb
                     {
                         if (Variant::is_builtin_method_static(TYPE, name))
                         {
-                            function_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                            function_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                 v8::FunctionTemplate::New(p_env.isolate, _static_method<true>, v8::Int32::New(p_env.isolate, collection_index)));
                         }
                         else
                         {
-                            prototype_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                            prototype_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                 v8::FunctionTemplate::New(p_env.isolate, _instance_method<true>, v8::Int32::New(p_env.isolate, collection_index)));
                         }
                     }
@@ -750,12 +750,12 @@ namespace jsb
                     {
                         if (Variant::is_builtin_method_static(TYPE, name))
                         {
-                            function_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                            function_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                 v8::FunctionTemplate::New(p_env.isolate, _static_method<false>, v8::Int32::New(p_env.isolate, collection_index)));
                         }
                         else
                         {
-                            prototype_template->Set(BridgeHelper::to_string(p_env.isolate, name),
+                            prototype_template->Set(impl::Helper::new_string(p_env.isolate, name),
                                 v8::FunctionTemplate::New(p_env.isolate, _instance_method<false>, v8::Int32::New(p_env.isolate, collection_index)));
                         }
                     }
@@ -776,14 +776,14 @@ namespace jsb
                 {
                     List<StringName> enumerations;
                     v8::Local<v8::ObjectTemplate> enum_obj = v8::ObjectTemplate::New(p_env.isolate);
-                    function_template->Set(BridgeHelper::to_string(p_env.isolate, enum_name), enum_obj);
+                    function_template->Set(impl::Helper::new_string(p_env.isolate, enum_name), enum_obj);
                     Variant::get_enumerations_for_enum(TYPE, enum_name, &enumerations);
                     for (const StringName& enumeration : enumerations)
                     {
                         bool r_valid;
                         const int enum_value = Variant::get_enum_value(TYPE, enum_name, enumeration, &r_valid);
                         jsb_check(r_valid);
-                        enum_obj->Set(BridgeHelper::to_string(p_env.isolate, enumeration), v8::Int32::New(p_env.isolate, enum_value));
+                        enum_obj->Set(impl::Helper::new_string(p_env.isolate, enumeration), v8::Int32::New(p_env.isolate, enum_value));
                         enum_constants.insert(enumeration);
                     }
                 }
@@ -797,7 +797,7 @@ namespace jsb
                 {
                     // exclude all enum constants
                     if (enum_constants.has(constant)) continue;
-                    function_template->SetLazyDataProperty(BridgeHelper::to_string(p_env.isolate, constant), _get_constant_value_lazy);
+                    function_template->SetLazyDataProperty(impl::Helper::new_string(p_env.isolate, constant), _get_constant_value_lazy);
                 }
             }
 

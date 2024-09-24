@@ -96,8 +96,7 @@ void GodotJSEditorPlugin::delete_file(const String &p_file)
     fa.unref();
 
     JSB_LOG(Verbose, "delete file %s", path);
-    const CharString str = path.utf8();
-    jsb::internal::PathUtil::delete_file(str.get_data(), str.length());
+    jsb::internal::PathUtil::delete_file(path);
 }
 
 Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)

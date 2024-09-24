@@ -40,6 +40,6 @@ namespace jsb
         v8::Local<v8::Context> context = env_->get_context();
         v8::Context::Scope context_scope(context);
 
-        return BridgeHelper::stringify(isolate, context, value_.Get(isolate));
+        return BridgeHelper::stringify(isolate, value_.Get(isolate));
     }
 }

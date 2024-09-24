@@ -167,7 +167,7 @@ namespace jsb
             const v8::Local<v8::Promise> promise = message.GetPromise();
             v8::Isolate* isolate = promise->GetIsolate();
 
-            const String str = BridgeHelper::to_string_without_side_effect(isolate, message.GetValue());
+            const String str = impl::Helper::to_string_without_side_effect(isolate, message.GetValue());
             JSB_LOG(Error, "unhandled promise rejection: %s", str);
         }
     }
@@ -760,7 +760,7 @@ namespace jsb
             }
         }
 
-        isolate->ThrowError(BridgeHelper::to_string(isolate, jsb_format("unknown module: %s", normalized_id)));
+        isolate->ThrowError(impl::Helper::new_string(isolate, jsb_format("unknown module: %s", normalized_id)));
         return nullptr;
     }
 
@@ -832,21 +832,19 @@ namespace jsb
 
     v8::Local<v8::Function> Environment::_new_require_func(const String &p_module_id)
     {
-        v8::Isolate* isolate = this->isolate_;
-        v8::Local<v8::Context> context = context_.Get(isolate);
-        v8::Local<v8::String> jmodule_id = BridgeHelper::to_string(isolate, p_module_id);
-        v8::Local<v8::Function> jrequire = v8::Function::New(context, Builtins::_require, /* magic: module_id */ jmodule_id).ToLocalChecked();
-        v8::Local<v8::Object> jmain_module;
-        if (_get_main_module(&jmain_module))
+        const v8::Local<v8::Context> context = context_.Get(isolate_);
+        const v8::Local<v8::String> module_id = impl::Helper::new_string(isolate_, p_module_id);
+        const v8::Local<v8::Function> require = v8::Function::New(context, Builtins::_require, /* magic: module_id */ module_id).ToLocalChecked();
+        if (v8::Local<v8::Object> main_module; _get_main_module(&main_module))
         {
-            jrequire->Set(context, jsb_name(this, main), jmain_module).Check();
+            require->Set(context, jsb_name(this, main), main_module).Check();
         }
         else
         {
             JSB_LOG(Warning, "invalid main module");
-            jrequire->Set(context, jsb_name(this, main), v8::Undefined(isolate)).Check();
+            require->Set(context, jsb_name(this, main), v8::Undefined(isolate_)).Check();
         }
-        return jrequire;
+        return require;
     }
 
 
@@ -922,15 +920,15 @@ namespace jsb
         JSB_BENCHMARK_SCOPE(JSRealm, _load_godot_mod);
 
         v8::Isolate* isolate = info.GetIsolate();
-        v8::Local<v8::Value> arg0 = info[0];
+        const v8::Local<v8::Value> arg0 = info[0];
         if (!arg0->IsString())
         {
             isolate->ThrowError("bad parameter");
             return;
         }
 
-        const StringName type_name(BridgeHelper::to_string(v8::String::Value(isolate, arg0)));
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const StringName type_name(impl::Helper::to_string(isolate, arg0));
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
         Environment* env = Environment::wrap(context);
         jsb_check(env);
 
@@ -1043,14 +1041,13 @@ namespace jsb
         if (type_name == jsb_string_name(Variant))
         {
             v8::Local<v8::Object> obj = v8::Object::New(isolate);
-            obj->Set(context, BridgeHelper::to_string(isolate, "Type"), BridgeHelper::to_global_enum(isolate, context, "Variant.Type")).Check();
-            obj->Set(context, BridgeHelper::to_string(isolate, "Operator"), BridgeHelper::to_global_enum(isolate, context, "Variant.Operator")).Check();
+            obj->Set(context, impl::Helper::new_string(isolate, "Type"), BridgeHelper::to_global_enum(isolate, context, "Variant.Type")).Check();
+            obj->Set(context, impl::Helper::new_string(isolate, "Operator"), BridgeHelper::to_global_enum(isolate, context, "Variant.Operator")).Check();
             info.GetReturnValue().Set(obj);
             return;
         }
 
-        const CharString message = jsb_format("godot class not found '%s'", type_name).utf8();
-        isolate->ThrowError(v8::String::NewFromUtf8(isolate, message.ptr(), v8::NewStringType::kNormal, message.length()).ToLocalChecked());
+        isolate->ThrowError(impl::Helper::new_string(isolate, jsb_format("godot class not found '%s'", type_name)));
     }
 
     JSValueMove Environment::eval_source(const char* p_source, int p_length, const String& p_filename, Error& r_err)
@@ -1335,7 +1332,7 @@ namespace jsb
 
                 if (element_value->IsString())
                 {
-                    const String node_path_str = BridgeHelper::to_string(isolate, element_value);
+                    const String node_path_str = impl::Helper::to_string(isolate, element_value);
                     Node* child_node = node->get_node(node_path_str);
                     if (!child_node)
                     {
@@ -1359,7 +1356,7 @@ namespace jsb
                     if (try_catch_run.has_caught())
                     {
                         JSB_LOG(Warning, "something wrong when evaluating onready '%s'\n%s",
-                            BridgeHelper::to_string(isolate, element_name),
+                            impl::Helper::to_string(isolate, element_name),
                             BridgeHelper::get_exception(try_catch_run));
                         return;
                     }

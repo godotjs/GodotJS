@@ -44,8 +44,8 @@ namespace jsb
             /* 0: exports  */ p_module.exports.Get(isolate),
             /* 1: require  */ p_env->_new_require_func(p_module.id),
             /* 2: module   */ module_obj,
-            /* 3: filename */ BridgeHelper::to_string(isolate, filename),
-            /* 4: dirname  */ BridgeHelper::to_string(isolate, dirname),
+            /* 3: filename */ impl::Helper::new_string(isolate, filename),
+            /* 4: dirname  */ impl::Helper::new_string(isolate, dirname),
         };
 
         // init module properties (filename, path)
