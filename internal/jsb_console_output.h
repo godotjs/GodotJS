@@ -6,14 +6,10 @@
 
 namespace jsb
 {
-    class Realm;
-
     namespace internal
     {
         class IConsoleOutput
         {
-            friend class jsb::Realm;
-
         public:
             virtual void write(ELogSeverity::Type p_severity, const String& p_text) = 0;
 
