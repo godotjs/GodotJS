@@ -1,7 +1,6 @@
 #ifndef GODOTJS_AMD_MODULE_LOADER_H
 #define GODOTJS_AMD_MODULE_LOADER_H
-#include "jsb_pch.h"
-#include "jsb_module.h"
+#include "jsb_bridge_pch.h"
 #include "jsb_module_loader.h"
 
 namespace jsb
@@ -21,7 +20,7 @@ namespace jsb
 
         virtual ~AMDModuleLoader() override { evaluator_.Reset(); }
 
-        virtual bool load(class Environment* p_env, JavaScriptModule& p_module) override;
+        virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
     };
 
 }

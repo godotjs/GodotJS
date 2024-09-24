@@ -1,4 +1,6 @@
 #include "jsb_resource_cache.h"
+#include "jsb_macros.h"
+#include "jsb_logger.h"
 
 namespace jsb::internal
 {

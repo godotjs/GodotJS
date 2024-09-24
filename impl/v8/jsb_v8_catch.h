@@ -2,7 +2,7 @@
 #define GODOTJS_V8_CATCH_H
 
 #include "core/string/ustring.h"
-#include "jsb_v8_headers.h"
+#include "jsb_v8_pch.h"
 
 namespace jsb::impl
 {

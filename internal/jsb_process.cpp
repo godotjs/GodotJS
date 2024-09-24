@@ -1,5 +1,6 @@
 #include "jsb_process.h"
 #include "jsb_path_util.h"
+#include "jsb_logger.h"
 
 #if defined(WINDOWS_ENABLED)
 #define WIN32_LEAN_AND_MEAN

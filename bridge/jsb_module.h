@@ -1,11 +1,12 @@
 #ifndef GODOTJS_MODULE_H
 #define GODOTJS_MODULE_H
 
-#include "jsb_pch.h"
-#include "../internal/jsb_variant_util.h"
+#include "jsb_bridge_pch.h"
 
 namespace jsb
 {
+    class Environment;
+
     namespace EReloadResult
     {
         enum Type : uint8_t

@@ -1,7 +1,7 @@
 ﻿#ifndef GODOTJS_TYPE_CONVERT_H
 #define GODOTJS_TYPE_CONVERT_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 namespace jsb
 {
     struct TypeConvert

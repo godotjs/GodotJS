@@ -1,6 +1,8 @@
 ﻿#include "jsb_source_map_cache.h"
 #include "jsb_path_util.h"
 #include "jsb_settings.h"
+#include "jsb_format.h"
+#include "jsb_logger.h"
 
 #include "modules/regex/regex.h"
 

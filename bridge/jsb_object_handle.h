@@ -1,7 +1,7 @@
 #ifndef GODOTJS_OBJECT_HANDLE_H
 #define GODOTJS_OBJECT_HANDLE_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 
 namespace jsb
 {

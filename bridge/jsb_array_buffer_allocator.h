@@ -1,7 +1,7 @@
 #ifndef GODOTJS_ARRAY_BUFFER_ALLOCATOR_H
 #define GODOTJS_ARRAY_BUFFER_ALLOCATOR_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 
 namespace jsb
 {

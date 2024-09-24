@@ -3,10 +3,8 @@
 #include <iterator>
 
 #include "../jsb_project_preset.h"
-#include "../internal/jsb_settings.h"
-#include "../internal/jsb_string_names.h"
+#include "../internal/jsb_internal.h"
 
-#include "jsb_gdjs_script_instance.h"
 #include "jsb_gdjs_script.h"
 #include "editor/editor_settings.h"
 

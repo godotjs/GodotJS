@@ -1,6 +1,7 @@
 #ifndef GODOTJS_SOURCE_MAP_H
 #define GODOTJS_SOURCE_MAP_H
 #include "jsb_internal_pch.h"
+#include "jsb_macros.h"
 
 namespace jsb::internal
 {

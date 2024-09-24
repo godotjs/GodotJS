@@ -1,6 +1,5 @@
 #ifndef GODOTJS_CLASS_UTIL_H
 #define GODOTJS_CLASS_UTIL_H
-#include "jsb_internal_pch.h"
 
 namespace jsb::internal
 {

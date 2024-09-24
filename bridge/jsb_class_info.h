@@ -1,13 +1,13 @@
 #ifndef GODOTJS_CLASS_INFO_H
 #define GODOTJS_CLASS_INFO_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 #include "jsb_module.h"
 
 namespace jsb
 {
     typedef void (*ConstructorFunc)(const v8::FunctionCallbackInfo<v8::Value>&);
-    typedef void (*FinalizerFunc)(class Environment*, void*, bool /* p_persistent */);
+    typedef void (*FinalizerFunc)(Environment*, void*, bool /* p_persistent */);
 
     namespace NativeClassType
     {

@@ -1,7 +1,7 @@
 #ifndef GODOTJS_TRANSPILER_H
 #define GODOTJS_TRANSPILER_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 #include "jsb_environment.h"
 
 #include "jsb_object_handle.h"

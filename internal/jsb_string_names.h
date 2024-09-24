@@ -1,6 +1,7 @@
 #ifndef GODOTJS_STRING_NAMES_H
 #define GODOTJS_STRING_NAMES_H
 #include "jsb_internal_pch.h"
+#include "jsb_macros.h"
 
 #define jsb_string_name(name) ::jsb::internal::StringNames::get_singleton().sn_##name
 

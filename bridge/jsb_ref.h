@@ -1,7 +1,7 @@
 #ifndef GODOTJS_FUNCTION_H
 #define GODOTJS_FUNCTION_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 
 namespace jsb
 {

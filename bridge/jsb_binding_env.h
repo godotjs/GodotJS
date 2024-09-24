@@ -1,14 +1,15 @@
 ﻿#ifndef GODOTJS_BINDING_ENV_H
 #define GODOTJS_BINDING_ENV_H
-#include "jsb_pch.h"
-#include "../internal/jsb_function_pointer.h"
+#include "jsb_bridge_pch.h"
 
 namespace jsb
 {
+    class Environment;
+
     //TODO rename it
 	struct FBindingEnv
 	{
-		class Environment* env;
+		Environment* env;
 		StringName type_name;
 
 		v8::Isolate* isolate;
@@ -16,7 +17,7 @@ namespace jsb
 
 		internal::CFunctionPointers& function_pointers;
 
-	    class Environment* operator->() const { return env; }
+	    Environment* operator->() const { return env; }
 	};
 
 	typedef NativeClassID (*ClassRegisterFunc)(const FBindingEnv& p_env);

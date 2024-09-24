@@ -1,10 +1,12 @@
 #ifndef GODOTJS_DEBUGGER_H
 #define GODOTJS_DEBUGGER_H
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 
 #if JSB_WITH_DEBUGGER
 namespace jsb
 {
+    class Environment;
+
     class JavaScriptDebugger
     {
     public:
@@ -21,7 +23,6 @@ namespace jsb
 
         class JavaScriptDebuggerImpl* impl;
 
-        friend class Realm;
         friend class Environment;
     };
 }

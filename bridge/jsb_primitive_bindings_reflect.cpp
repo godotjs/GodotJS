@@ -812,7 +812,7 @@ namespace jsb
         }
     };
 
-    void register_primitive_bindings_reflect(class Environment* p_env)
+    void register_primitive_bindings_reflect(Environment* p_env)
     {
 #pragma push_macro("DEF")
 #   undef   DEF

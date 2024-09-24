@@ -1,9 +1,8 @@
 #ifndef GODOTJS_MODULE_RESOLVER_H
 #define GODOTJS_MODULE_RESOLVER_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 #include "jsb_module.h"
-#include "../internal/jsb_source_reader.h"
 
 namespace jsb
 {
@@ -18,11 +17,11 @@ namespace jsb
 
         // load source into the module
         // `exports' will be set into `p_module.exports` if loaded successfully
-        virtual bool load(class Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module) = 0;
+        virtual bool load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module) = 0;
 
     protected:
         // `p_filename_abs` the absolute file path accessible for debugger
-        bool load_from_source(class Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const Vector<uint8_t>& p_source);
+        bool load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const Vector<uint8_t>& p_source);
 
     };
 
@@ -33,7 +32,7 @@ namespace jsb
         virtual ~DefaultModuleResolver() override = default;
 
         virtual bool get_source_info(const String& p_module_id, String& r_asset_path) override;
-        virtual bool load(class Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module) override;
+        virtual bool load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module) override;
 
         DefaultModuleResolver& add_search_path(const String& p_path);
 

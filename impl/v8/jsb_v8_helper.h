@@ -1,7 +1,7 @@
 ﻿#ifndef GODOTJS_V8_HELPER_H
 #define GODOTJS_V8_HELPER_H
 
-#include "jsb_v8_headers.h"
+#include "jsb_v8_pch.h"
 
 #include "../../internal/jsb_logger.h"
 #include "../../internal/jsb_macros.h"
@@ -85,8 +85,8 @@ namespace jsb::impl
 
         jsb_force_inline static v8::Local<v8::Value> new_integer(v8::Isolate* isolate, const int64_t p_val)
         {
-            const int32_t downscale = (int32_t) p_val;
-            if ((int64_t) downscale == p_val)
+            if (const int32_t downscale = (int32_t) p_val;
+                (int64_t) downscale == p_val)
             {
                 return v8::Int32::New(isolate, downscale);
             }

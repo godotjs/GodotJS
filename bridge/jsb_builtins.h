@@ -1,6 +1,6 @@
 #ifndef GODOTJS_BUILTINS_H
 #define GODOTJS_BUILTINS_H
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 
 namespace jsb
 {

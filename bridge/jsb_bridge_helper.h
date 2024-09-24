@@ -1,6 +1,6 @@
 #ifndef GODOTJS_BRIDGE_HELPER_H
 #define GODOTJS_BRIDGE_HELPER_H
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 
 namespace jsb
 {

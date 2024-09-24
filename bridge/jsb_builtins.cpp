@@ -257,7 +257,6 @@ namespace jsb
         default: break;
         }
 
-        Environment* environment = Environment::wrap(isolate);
         const v8::Local<v8::Function> func = info[0].As<v8::Function>();
         internal::TimerHandle handle;
 
@@ -268,11 +267,13 @@ namespace jsb
             {
                 action.store(index - extra_arg_index, v8::Global<v8::Value>(isolate, info[index]));
             }
-            environment->get_timer_manager().set_timer(handle, std::move(action), rate, loop);
+            Environment::wrap(isolate)->get_timer_manager().set_timer(handle,
+                std::move(action), rate, loop);
         }
         else
         {
-            environment->get_timer_manager().set_timer(handle, JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0), rate, loop);
+            Environment::wrap(isolate)->get_timer_manager().set_timer(handle,
+                JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0), rate, loop);
         }
         info.GetReturnValue().Set((int32_t) handle);
     }
@@ -287,8 +288,7 @@ namespace jsb
         }
 
         const int32_t handle = info[0].As<v8::Int32>()->Value();
-        Environment* environment = Environment::wrap(isolate);
-        environment->get_timer_manager().clear_timer((internal::TimerHandle) handle);
+        Environment::wrap(isolate)->get_timer_manager().clear_timer((internal::TimerHandle) handle);
     }
 
 }

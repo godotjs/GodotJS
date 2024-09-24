@@ -1,7 +1,7 @@
 #ifndef GODOTJS_ENVIRONMENT_H
 #define GODOTJS_ENVIRONMENT_H
 
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 #include "jsb_module.h"
 #include "jsb_debugger.h"
 #include "jsb_class_info.h"
@@ -15,11 +15,7 @@
 #include "jsb_string_name_cache.h"
 #include "jsb_array_buffer_allocator.h"
 
-#include "../internal/jsb_sarray.h"
-#include "../internal/jsb_variant_info.h"
-#include "../internal/jsb_timer_manager.h"
-#include "../internal/jsb_source_map_cache.h"
-#include "../internal/jsb_variant_allocator.h"
+#include "../internal/jsb_internal.h"
 
 // get v8 string value from string name cache with the given name
 #define jsb_name(env, name) (env)->get_string_value(jsb_string_name(name))

@@ -1,7 +1,7 @@
 #ifndef GODOTJS_REFLECT_BINDING_UTIL_H
 #define GODOTJS_REFLECT_BINDING_UTIL_H
 #include "jsb_object_handle.h"
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 #include "jsb_environment.h"
 #include "jsb_static_binding_util.h"
 #include "../internal/jsb_variant_info.h"

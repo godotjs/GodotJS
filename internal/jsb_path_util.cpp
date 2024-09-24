@@ -5,8 +5,9 @@
 
 #include "jsb_internal_pch.h"
 #include "jsb_settings.h"
-#include "core/io/dir_access.h"
-#include "../jsb.config.h"
+#include "jsb_format.h"
+#include "jsb_logger.h"
+#include "jsb_macros.h"
 
 // for windows api (like 'DeleteFileW')
 #if WINDOWS_ENABLED

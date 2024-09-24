@@ -1,8 +1,6 @@
 #ifndef GODOTJS_INTERNAL_MODULE_LOADER_H
 #define GODOTJS_INTERNAL_MODULE_LOADER_H
 
-#include "jsb_pch.h"
-#include "jsb_module.h"
 #include "jsb_module_loader.h"
 
 namespace jsb
@@ -14,7 +12,7 @@ namespace jsb
         InternalModuleLoader(const String& p_filename) : file_name_(p_filename) {}
         virtual ~InternalModuleLoader() override = default;
 
-        virtual bool load(class Environment* p_env, JavaScriptModule& p_module) override;
+        virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
 
     private:
         String file_name_;

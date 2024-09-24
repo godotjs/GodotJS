@@ -1,8 +1,6 @@
 #ifndef GODOTJS_GODOT_MODULE_LOADER_H
 #define GODOTJS_GODOT_MODULE_LOADER_H
 
-#include "jsb_pch.h"
-#include "jsb_module.h"
 #include "jsb_module_loader.h"
 
 namespace jsb
@@ -13,7 +11,7 @@ namespace jsb
     public:
         virtual ~GodotModuleLoader() override = default;
 
-        virtual bool load(class Environment* p_env, JavaScriptModule& p_module) override;
+        virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
     };
 
 }

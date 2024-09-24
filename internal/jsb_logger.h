@@ -1,13 +1,11 @@
 #ifndef GODOTJS_LOGGER_H
 #define GODOTJS_LOGGER_H
 
-#include "core/os/os.h"
-#include "core/variant/variant.h"
-
-#include "../jsb.config.h"
+#include "jsb_internal_pch.h"
 
 #include "jsb_log_severity.h"
 #include "jsb_console_output.h"
+#include "jsb_format.h"
 
 namespace jsb::internal
 {

@@ -1,6 +1,6 @@
 #ifndef GODOTJS_STRING_NAME_CACHE_H
 #define GODOTJS_STRING_NAME_CACHE_H
-#include "jsb_pch.h"
+#include "jsb_bridge_pch.h"
 #include "jsb_ref.h"
 #include "jsb_bridge_helper.h"
 
