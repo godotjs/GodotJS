@@ -30,7 +30,7 @@ interface ScopeWriter extends CodeWriter {
 const MockLines = [
     "type byte = number",
     "type int32 = number",
-    "type int64 = number",
+    "type int64 = number /* || bigint */",
     "type float32 = number",
     "type float64 = number",
     "type StringName = string",

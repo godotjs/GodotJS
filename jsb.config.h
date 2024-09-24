@@ -56,6 +56,10 @@
 // utf16 conversion may have less overhead, but uses more memory?
 #define JSB_UTF16_CONV_PREFERRED 1
 
+// use bigint if a value can not represented as Integer(Number)
+#define JSB_WITH_BIGINT 1
+#define JSB_MAX_SAFE_INTEGER (((int64_t)1 << 53) - 1) // 9007199254740991
+
 // [EXPERIMENTAL] use optimized wrapper function calls if possible
 #define JSB_FAST_REFLECTION 1
 

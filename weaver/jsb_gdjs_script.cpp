@@ -123,7 +123,7 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
         instances_.insert(owner);
     }
     instance->object_id_ = get_environment()->bind_godot_object(get_script_class().native_class_id, owner, p_this);
-    if (!instance->object_id_.is_valid())
+    if (!instance->object_id_)
     {
         instance->script_ = Ref<GodotJSScript>();
         instance->owner_->set_script_instance(nullptr);
@@ -144,6 +144,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 {
     //TODO multi-thread scripting not supported for now
     jsb_check(loaded_);
+    JSB_LOG(Verbose, "create instance %s(%d)", get_script_class().native_class_name, gdjs_class_id_);
     jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), get_script_class().native_class_name));
 
     /* STEP 1, CREATE */
@@ -159,7 +160,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
         instances_.insert(instance->owner_);
     }
     instance->object_id_ = get_environment()->crossbind(p_this, gdjs_class_id_);
-    if (!instance->object_id_.is_valid())
+    if (!instance->object_id_)
     {
         instance->script_ = Ref<GodotJSScript>();
         instance->owner_->set_script_instance(nullptr);
@@ -442,7 +443,7 @@ void GodotJSScript::load_module()
     }
     jsb_check(module);
     gdjs_class_id_ = module->default_class_id;
-    valid_ = gdjs_class_id_.is_valid();
+    valid_ = !!gdjs_class_id_;
     if (valid_)
     {
         JSB_LOG(VeryVerbose, "GodotJSScript module loaded %s", path);

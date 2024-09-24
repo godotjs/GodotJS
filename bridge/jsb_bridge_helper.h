@@ -13,20 +13,6 @@ namespace jsb
     {
         static String stringify(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val);
 
-        // convert int64 to int32 anyway
-        jsb_force_inline static v8::Local<v8::Integer> to_int32(v8::Isolate* isolate, int64_t p_val)
-        {
-            return v8::Int32::New(isolate, (int32_t) p_val);
-        }
-
-        static int32_t to_int32(const v8::Local<v8::Context>& context, v8::MaybeLocal<v8::Value> obj, const int32_t p_default_value)
-        {
-            int32_t value = 0;
-            v8::Local<v8::Value> local;
-            if (obj.ToLocal(&local) && local->Int32Value(context).To(&value)) return value;
-            return p_default_value;
-        }
-
         // return enum typed p_val as int32
         template<typename TEnum>
         static TEnum to_enum(const v8::Local<v8::Context>& context, v8::MaybeLocal<v8::Value> p_val, const TEnum p_default_value)
@@ -68,9 +54,8 @@ namespace jsb
             v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
             for (const KeyValue<StringName, int64_t>& kv : enum_values)
             {
-                jsb_verify_int64(kv.value, "%s %s", kv.key, uitos(kv.value));
-                v8::Local<v8::String> name = impl::Helper::new_string(isolate, kv.key);
-                v8::Local<v8::Integer> value = BridgeHelper::to_int32(isolate, kv.value);
+                const v8::Local<v8::String> name = impl::Helper::new_string(isolate, kv.key);
+                const v8::Local<v8::Value> value = impl::Helper::new_integer(isolate, kv.value);
                 enumeration->Set(context, name, value).Check();
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
                 enumeration->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), name, v8::DontEnum).Check();
@@ -89,9 +74,8 @@ namespace jsb
                 jsb_not_implemented(enum_name_str.contains("."), "hierarchically nested definition is currently not supported");
                 const auto& const_it = p_constants.find(enum_name);
                 jsb_check(const_it);
-                jsb_verify_int64(const_it->value, "%s %s", enum_name, const_it->value);
-                v8::Local<v8::String> name = impl::Helper::new_string(isolate, enum_name_str);
-                v8::Local<v8::Integer> value = to_int32(isolate, const_it->value);
+                const v8::Local<v8::String> name = impl::Helper::new_string(isolate, enum_name_str);
+                const v8::Local<v8::Value> value = impl::Helper::new_integer(isolate, const_it->value);
                 enumeration->Set(name, value);
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
                 enumeration->Set(value->ToString(context).ToLocalChecked(), name, v8::DontEnum);

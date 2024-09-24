@@ -65,6 +65,7 @@ namespace jsb
 
         // update the latest script class info
         p_class_info.native_class_name = environment->get_native_class(p_class_info.native_class_id).name;
+        jsb_check(internal::VariantUtil::is_valid_name(p_class_info.native_class_name));
         p_class_info.js_class.Reset(isolate, default_obj);
         p_class_info.js_class_name = environment->get_string_name(default_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>());
         p_class_info.methods.clear();
@@ -154,9 +155,9 @@ namespace jsb
 
                     // instantiate a fake Signal property
                     const StringNameID string_id = environment->get_string_name_cache().get_string_id(signal);
-                    v8::Local<v8::Function> signal_func = v8::Function::New(p_context, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_id)).ToLocalChecked();
+                    v8::Local<v8::Function> signal_func = v8::Function::New(p_context, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, *string_id)).ToLocalChecked();
                     prototype->SetAccessorProperty(element.As<v8::Name>(), signal_func);
-                    JSB_LOG(VeryVerbose, "... signal %s (%d)", signal, (uint32_t) string_id);
+                    JSB_LOG(VeryVerbose, "... signal %s (%d)", signal, string_id);
                 }
             }
         }
@@ -240,8 +241,9 @@ namespace jsb
         }
 
         // unsafe
-        const NativeClassID native_class_id = (NativeClassID) class_id_val->Uint32Value(p_context).ToChecked();
+        const NativeClassID native_class_id = (NativeClassID) class_id_val.As<v8::Uint32>()->Value();
         jsb_address_guard(environment->native_classes_, native_classes_address_guard);
+        jsb_check(internal::VariantUtil::is_valid_name(environment->get_native_class(native_class_id).name));
 
         //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
         ScriptClassInfo* existed_class_info = environment->find_script_class(p_module.default_class_id);
@@ -254,7 +256,7 @@ namespace jsb
         }
 
         // trick: save godot class id for convenience of getting it in JS class constructor
-        default_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, p_module.default_class_id)).Check();
+        default_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.default_class_id)).Check();
 
         jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);

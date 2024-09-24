@@ -17,9 +17,12 @@ namespace jsb::internal
 	    jsb_force_inline TimerHandle& operator=(const TimerHandle& p_other) { id = p_other.id; return *this; }
 
 	    jsb_force_inline TimerHandle(TimerHandle&& p_other) noexcept: id(p_other.id) {}
-	    jsb_force_inline TimerHandle& operator=(TimerHandle&& p_other) noexcept { id = p_other.id; return *this; }
+	    jsb_force_inline TimerHandle& operator=(TimerHandle&& p_other) noexcept { id = p_other.id; p_other.id = {}; return *this; }
 
-		jsb_force_inline explicit operator uint32_t() const { return (uint32_t) id; }
+		jsb_force_inline explicit operator int32_t() const { return (int32_t) *id; }
+		jsb_force_inline explicit operator Index32() const { return id; }
+
+		jsb_force_inline explicit TimerHandle(const int32_t p_index): id((uint32_t) p_index) {}
 
 	private:
 		Index32 id;
@@ -284,7 +287,7 @@ namespace jsb::internal
 		    {
 		        if (!_used_timers.is_valid_index(index))
 		        {
-		            JSB_LOG(Error, "timer active (invalid) %d", (uint32_t) index);
+		            JSB_LOG(Error, "timer active (invalid) %d", index);
 		            continue;
 		        }
 
@@ -323,7 +326,7 @@ namespace jsb::internal
 				return true;
 			}
 
-			JSB_LOG(Error, "invalid timer index %d", (uint32_t) p_index);
+			JSB_LOG(Error, "invalid timer index %d", p_index);
 			return false;
 		}
 

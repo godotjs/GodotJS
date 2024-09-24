@@ -127,7 +127,7 @@ namespace jsb
 		{
 			if (p_input->IsNumber())
 			{
-				r_value = (float) p_input->NumberValue(context).ToChecked();
+				r_value = (float) p_input.As<v8::Number>()->Value();
 				return true;
 			}
 			return false;
@@ -136,7 +136,7 @@ namespace jsb
 		static bool set(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const float& p_input, v8::Local<v8::Value>& r_value)
 		{
 			r_value = v8::Number::New(isolate, (float) p_input);
-			return false;
+			return true;
 		}
 	};
 
@@ -147,7 +147,7 @@ namespace jsb
 		{
 			if (p_input->IsNumber())
 			{
-				r_value = (double) p_input->NumberValue(context).ToChecked();
+				r_value = (double) p_input.As<v8::Number>()->Value();
 				return true;
 			}
 			return false;
@@ -156,7 +156,7 @@ namespace jsb
 		static bool set(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const double& p_input, v8::Local<v8::Value>& r_value)
 		{
 			r_value = v8::Number::New(isolate, (double) p_input);
-			return false;
+			return true;
 		}
 	};
 
@@ -165,19 +165,13 @@ namespace jsb
 	{
 		static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, int64_t& r_value)
 		{
-			if (p_input->IsNumber())
-			{
-				r_value = (int64_t) p_input->Int32Value(context).ToChecked();
-				return true;
-			}
-			return false;
+		    return impl::Helper::to_int64(p_input, r_value);
 		}
 
 		static bool set(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const int64_t& p_input, v8::Local<v8::Value>& r_value)
 		{
-			jsb_verify_int64(p_input, "");
-			r_value = v8::Int32::New(isolate, (int32_t) p_input);
-			return false;
+			r_value = impl::Helper::new_integer(isolate, p_input);
+			return true;
 		}
 	};
 
@@ -188,7 +182,7 @@ namespace jsb
 		{
 			if (p_input->IsNumber())
 			{
-				r_value = (int32_t) p_input->Int32Value(context).ToChecked();
+				r_value = (int32_t) p_input.As<v8::Int32>()->Value();
 				return true;
 			}
 			return false;
@@ -196,9 +190,8 @@ namespace jsb
 
 		static bool set(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const int32_t& p_input, v8::Local<v8::Value>& r_value)
 		{
-			jsb_verify_int64(p_input, "");
-			r_value = v8::Int32::New(isolate, (int32_t) p_input);
-			return false;
+			r_value = impl::Helper::new_integer(isolate, p_input);
+			return true;
 		}
 	};
 }

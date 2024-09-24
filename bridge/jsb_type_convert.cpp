@@ -90,14 +90,17 @@ namespace jsb
         case Variant::FLOAT:
             if (p_jval->IsNumber())
             {
-                r_cvar = p_jval->NumberValue(context).ToChecked();
+                r_cvar = p_jval.As<v8::Number>()->Value();
                 return true;
             }
             return false;
         case Variant::INT:
             // strict?
-            if (p_jval->IsInt32()) { r_cvar = p_jval->Int32Value(context).ToChecked(); return true; }
-            if (p_jval->IsNumber()) { r_cvar = (int64_t) p_jval->NumberValue(context).ToChecked(); return true; }
+            if (int64_t val; impl::Helper::to_int64(p_jval, val))
+            {
+                r_cvar = val;
+                return true;
+            }
             return false;
         case Variant::OBJECT:
             {
@@ -105,7 +108,7 @@ namespace jsb
                 {
                     return false;
                 }
-                v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+                const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
                 if (self->InternalFieldCount() != IF_ObjectFieldCount)
                 {
                     return false;
@@ -224,24 +227,21 @@ namespace jsb
             }
         case Variant::INT:
             {
-                const int64_t raw_val = p_cvar;
-                jsb_verify_int64(raw_val, "");
-                r_jval = BridgeHelper::to_int32(isolate, raw_val);
+                r_jval = impl::Helper::new_integer(isolate, p_cvar);
                 return true;
             }
         case Variant::OBJECT:
             {
-                //TODO is it OK in this way to transfer local handle to rval?
-                v8::Local<v8::Object> jobj;
                 Object* gd_obj = (Object*) p_cvar;
                 if (unlikely(!gd_obj))
                 {
                     r_jval = v8::Null(isolate);
                     return true;
                 }
-                if (gd_obj_to_js(isolate, context, gd_obj, jobj))
+                if (v8::Local<v8::Object> obj;
+                    gd_obj_to_js(isolate, context, gd_obj, obj))
                 {
-                    r_jval = jobj;
+                    r_jval = obj;
                     return true;
                 }
                 return false;
@@ -372,35 +372,23 @@ namespace jsb
         }
         if (p_jval->IsBoolean())
         {
-            r_cvar = p_jval->BooleanValue(isolate);
+            r_cvar = p_jval.As<v8::Boolean>()->Value();
             return true;
         }
         if (p_jval->IsInt32())
         {
-            int32_t val;
-            if (p_jval->Int32Value(context).To(&val))
-            {
-                r_cvar = (int64_t) val;
-                return true;
-            }
+            r_cvar = p_jval.As<v8::Int32>()->Value();
+            return true;
         }
         if (p_jval->IsUint32())
         {
-            uint32_t val;
-            if (p_jval->Uint32Value(context).To(&val))
-            {
-                r_cvar = (int64_t) val;
-                return true;
-            }
+            r_cvar = p_jval.As<v8::Uint32>()->Value();
+            return true;
         }
         if (p_jval->IsNumber())
         {
-            double val;
-            if (p_jval->NumberValue(context).To(&val))
-            {
-                r_cvar = (double) val;
-                return true;
-            }
+            r_cvar = p_jval.As<v8::Number>()->Value();
+            return true;
         }
         if (p_jval->IsString())
         {
@@ -443,7 +431,13 @@ namespace jsb
             default: return false;
             }
         }
-
+#if JSB_WITH_BIGINT
+        if (p_jval->IsBigInt())
+        {
+            r_cvar = p_jval.As<v8::BigInt>()->Int64Value();
+            return true;
+        }
+#endif
         JSB_LOG(Error, "js_to_gd_var: unhandled type");
         return false;
     }
@@ -454,7 +448,15 @@ namespace jsb
         {
         case Variant::BOOL: { return p_val->IsBoolean(); }
         case Variant::FLOAT: // return p_val->IsNumber();
-        case Variant::INT: { return p_val->IsNumber(); } //TODO find a better way to check integer type?
+        case Variant::INT:
+            {
+                //TODO find a better way to check integer type?
+                return p_val->IsNumber()
+#if JSB_WITH_BIGINT
+                    || p_val->IsBigInt()
+#endif
+                ;
+            }
         case Variant::STRING:
         case Variant::STRING_NAME: { return p_val->IsString(); }
         case Variant::NODE_PATH:
@@ -522,7 +524,7 @@ namespace jsb
                 {
                     return false;
                 }
-                v8::Local<v8::Object> self = p_val.As<v8::Object>();
+                const v8::Local<v8::Object> self = p_val.As<v8::Object>();
                 if (self->InternalFieldCount() != IF_VariantFieldCount)
                 {
                     return false;

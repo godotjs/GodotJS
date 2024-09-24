@@ -12,7 +12,7 @@ namespace jsb
         jsb_check(p_class_info);
 
         const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotObject, p_class_info->name);
-        JSB_LOG(VeryVerbose, "expose godot type %s(%d)", p_class_info->name, (uint32_t) class_id);
+        JSB_LOG(VeryVerbose, "expose godot type %s(%d)", p_class_info->name, class_id);
 
         // construct type template
         {
@@ -106,7 +106,7 @@ namespace jsb
                 const StringName& name_str = pair.key;
                 v8::Local<v8::String> propkey_name = impl::Helper::new_string(isolate, name_str);
                 const StringNameID string_id = p_env->get_string_name_cache().get_string_id(name_str);
-                v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, (uint32_t) string_id));
+                v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, *string_id));
                 object_template->SetAccessorProperty(propkey_name, propval_func);
             }
 
@@ -125,15 +125,13 @@ namespace jsb
                 if (enum_consts.has(pair.key)) continue;
                 const String& const_name_str = (String) pair.key;
                 jsb_not_implemented(const_name_str.contains("."), "hierarchically nested definition is currently not supported");
-                jsb_verify_int64(pair.value, "%s.%s %s", p_class_info->name, pair.key, uitos(pair.value));
-
                 template_for_static->Set(
                     impl::Helper::new_string(isolate, const_name_str),
-                    BridgeHelper::to_int32(isolate, pair.value));
+                    impl::Helper::new_integer(isolate, pair.value));
             }
 
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
-            function_template->Set(jsb_symbol(p_env, ClassId), v8::Uint32::NewFromUnsigned(isolate, class_id));
+            function_template->Set(jsb_symbol(p_env, ClassId), v8::Uint32::NewFromUnsigned(isolate, *class_id));
 
             // build the prototype chain (inherit)
             if (const NativeClassID super_class_id = p_env->_expose_godot_class(p_class_info->inherits_ptr))
@@ -141,7 +139,8 @@ namespace jsb
                 v8::Local<v8::FunctionTemplate> base_template = p_env->get_native_class(super_class_id).template_.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
                 function_template->Inherit(base_template);
-                JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, (uint32_t) class_id, p_class_info->inherits_ptr->name, (uint32_t) super_class_id);
+                JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id,
+                    p_class_info->inherits_ptr->name, super_class_id);
             }
 
             {
@@ -149,7 +148,7 @@ namespace jsb
                 jsb_check(function_template == class_info->template_);
 
                 class_info->set_function(isolate, function_template->GetFunction(context).ToLocalChecked());
-                JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, (uint32_t) class_id);
+                JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, class_id);
             }
         } // end type template
 

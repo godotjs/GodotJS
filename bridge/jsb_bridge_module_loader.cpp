@@ -38,20 +38,6 @@ namespace jsb
 {
     namespace
     {
-        v8::Local<v8::Value> build_int64(v8::Isolate* isolate, const String& field_name,  int64_t field_value)
-        {
-            const int32_t scaled_value = (int32_t) field_value;
-            if (field_value != (int64_t) scaled_value)
-            {
-                JSB_LOG(Warning, "integer overflowed %s (%s) [reversible? %c]", field_name, itos(field_value), (int64_t)(double) field_value == field_value ? 'T' : 'F');
-                return v8::Number::New(isolate, (double) field_value);
-            }
-            else
-            {
-                return v8::Int32::New(isolate, scaled_value);
-            }
-        }
-
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], const v8::Local<v8::Value>& field_value)
         {
@@ -103,7 +89,7 @@ namespace jsb
         template<int N>
         void set_field(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& obj, const char (&field_name)[N], int64_t field_value)
         {
-            set_field(isolate, context, obj, field_name, build_int64(isolate, field_name, field_value));
+            set_field(isolate, context, obj, field_name, impl::Helper::new_integer(isolate, field_value));
         }
 
         void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const PropertyInfo& property_info, const v8::Local<v8::Object>& object)
@@ -219,7 +205,7 @@ namespace jsb
                 const int argument_count = method_bind->get_argument_count();
                 const int default_argument_count = (int) default_arguments.size();
                 jsb_check(method_bind->get_default_argument_count() == default_argument_count);
-                v8::Local<v8::Array> args_obj = v8::Array::New(isolate, default_argument_count);
+                const v8::Local<v8::Array> args_obj = v8::Array::New(isolate, default_argument_count);
                 for (int index = 0; index < default_argument_count; ++index)
                 {
                     const Variant& value = default_arguments[index];
@@ -778,7 +764,7 @@ namespace jsb
                 {
                     values_obj->Set(context,
                         impl::Helper::new_string(isolate, kv.key),
-                        build_int64(isolate, kv.key, kv.value)).Check();
+                        impl::Helper::new_integer(isolate, kv.value)).Check();
                 }
                 array->Set(context, array_index++, enum_obj).Check();
             }
@@ -1052,7 +1038,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            if (info.Length() != 4 || !info[kTarget]->IsObject() || !info[kField]->IsInt32())
+            if (info.Length() != 4 || !info[kTarget]->IsObject() || !info[kField]->IsNumber())
             {
                 jsb_throw(isolate, "bad param");
                 return;
@@ -1060,7 +1046,7 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
             const v8::Local<v8::Object> target = info[kTarget].As<v8::Object>();
             const v8::Local<v8::Value> property = info[kProperty].As<v8::Object>();
-            const ScriptClassDocField::Type doc_item = (ScriptClassDocField::Type) info[kField]->Int32Value(context).ToChecked();
+            const ScriptClassDocField::Type doc_item = (ScriptClassDocField::Type) info[kField].As<v8::Int32>()->Value();
             const v8::Local<v8::String> message = info[kMessage]->IsString() ? info[kMessage].As<v8::String>() : v8::String::Empty(isolate);
             v8::Local<v8::Object> doc;
 

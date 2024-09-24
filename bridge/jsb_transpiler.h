@@ -11,7 +11,7 @@
     {\
         v8::Isolate* isolate = env->get_isolate();\
         NativeClassInfo& class_info = env->get_native_class(class_id);\
-        v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor, v8::Uint32::NewFromUnsigned(isolate, class_id));\
+        v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor, v8::Uint32::NewFromUnsigned(isolate, *class_id));\
         template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
         template_->SetClassName(env->get_string_value(class_info.name));\
         class_info.finalizer = &finalizer;\
@@ -24,7 +24,7 @@
     jsb_force_inline static v8::Local<v8::FunctionTemplate> create(Environment* env, internal::Index32 class_id)\
     {\
         v8::Isolate* isolate = env->get_isolate();\
-        v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor<TArgs...>, v8::Uint32::NewFromUnsigned(isolate, class_id));\
+        v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor<TArgs...>, v8::Uint32::NewFromUnsigned(isolate, *class_id));\
         template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
         NativeClassInfo& class_info = env->get_native_class(class_id);\
         class_info.finalizer = &finalizer;\
@@ -513,7 +513,7 @@ namespace jsb
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            const internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
+            const internal::Index32 class_id(info.Data().As<v8::Uint32>()->Value());
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
             Environment* environment = Environment::wrap(isolate);
@@ -546,18 +546,18 @@ namespace jsb
                 // (case-2) constructing CDO from C++ (nothing more to do, it's a pure javascript)
                 if (info[0] == jsb_symbol(environment, CDO))
                 {
-                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", native_class.name, class_id.value());
+                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", native_class.name, class_id);
                     return;
                 }
 
                 // (case-3) constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
                 if (info[0] == jsb_symbol(environment, CrossBind))
                 {
-                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", native_class.name, class_id.value());
+                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", native_class.name, class_id);
                     return;
                 }
 
-                jsb_checkf(false, "unexpected identifer received. %s(%d)", native_class.name, class_id.value());
+                jsb_checkf(false, "unexpected identifer received. %s(%d)", native_class.name, class_id);
                 return;
             }
 
@@ -569,13 +569,13 @@ namespace jsb
                 const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
                 auto script_class_info = environment->_get_script_class(script_class_id);
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
-                    script_class_info->js_class_name, script_class_info->module_id, native_class.name, class_id.value());
+                    script_class_info->js_class_name, script_class_info->module_id, native_class.name, class_id);
                 const v8::Local<v8::Object> self = info.This();
                 script_class_info->_newbind(self);
                 return;
             }
 
-            jsb_checkf(false, "unexpected new.target. %s(%d)", native_class.name, class_id.value());
+            jsb_checkf(false, "unexpected new.target. %s(%d)", native_class.name, class_id);
         }
 
         static void finalizer(Environment* runtime, void* pointer, bool p_persistent)

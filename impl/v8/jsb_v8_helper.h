@@ -73,6 +73,33 @@ namespace jsb::impl
             return v8::String::NewFromOneByte(isolate, (const uint8_t*) str8.ptr(), v8::NewStringType::kNormal, str8.length()).ToLocalChecked();
         }
 
+        jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
+        {
+            if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }
+            if (p_val->IsNumber()) { r_val = (int64_t) p_val.As<v8::Number>()->Value(); return true; }
+#if JSB_WITH_BIGINT
+            if (p_val->IsBigInt()) { r_val = p_val.As<v8::BigInt>()->Int64Value(); return true; }
+#endif
+            return false;
+        }
+
+        jsb_force_inline static v8::Local<v8::Value> new_integer(v8::Isolate* isolate, const int64_t p_val)
+        {
+            const int32_t downscale = (int32_t) p_val;
+            if ((int64_t) downscale == p_val)
+            {
+                return v8::Int32::New(isolate, downscale);
+            }
+#if JSB_WITH_BIGINT
+            if (p_val > JSB_MAX_SAFE_INTEGER)
+            {
+                JSB_LOG(VeryVerbose, "represented as bigint %d", p_val);
+                return v8::BigInt::New(isolate, p_val);
+            }
+#endif
+            return v8::Number::New(isolate, (double) p_val);
+        }
+
         static v8::MaybeLocal<v8::Value> compile_run(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
         {
             v8::Isolate* isolate = context->GetIsolate();

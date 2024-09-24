@@ -415,9 +415,9 @@ namespace jsb
         {
             handle.ref_count_ = 1;
         }
-        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%s id:%s",
-            (String) native_classes_.get_value(p_class_id).name, (uint32_t) p_class_id,
-            uitos((uintptr_t) p_pointer), uitos((uint64_t) object_id));
+        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%s id:%d",
+            (String) native_classes_.get_value(p_class_id).name, p_class_id,
+            uitos((uintptr_t) p_pointer), object_id);
         return object_id;
     }
 
@@ -536,17 +536,17 @@ namespace jsb
         {
             const NativeClassInfo& class_info = native_classes_.get_value(class_id);
 
-            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%s id:%s",
-                (String) class_info.name, (uint32_t) class_id,
-                uitos((uintptr_t) p_pointer), uitos(object_id));
+            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%s id:%d",
+                (String) class_info.name, class_id,
+                uitos((uintptr_t) p_pointer), object_id);
             //NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
             class_info.finalizer(this, p_pointer, is_persistent);
         }
         else
         {
-            JSB_LOG(VeryVerbose, "(skip) free_object class:%s(%d) addr:%s id:%s",
-                (String) native_classes_.get_value(class_id).name, (uint32_t) class_id,
-                uitos((uintptr_t) p_pointer), uitos(object_id));
+            JSB_LOG(VeryVerbose, "(skip) free_object class:%s(%d) addr:%s id:%d",
+                (String) native_classes_.get_value(class_id).name, class_id,
+                uitos((uintptr_t) p_pointer), object_id);
         }
     }
 
@@ -793,7 +793,8 @@ namespace jsb
             return {};
         }
         const NativeObjectID object_id = this->bind_godot_object(class_info->native_class_id, p_this, instance.As<v8::Object>());
-        JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %s", class_info->js_class_name,  class_info->native_class_name, (uint32_t) class_info->native_class_id, uitos((uintptr_t) p_this));
+        JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %s", class_info->js_class_name,
+            class_info->native_class_name, class_info->native_class_id, uitos((uintptr_t) p_this));
         return object_id;
     }
 
@@ -879,7 +880,7 @@ namespace jsb
         DeferredClassRegister* class_register = class_register_map_.getptr(p_type_name);
         if (jsb_unlikely(!class_register)) return nullptr;
 
-        if (!class_register->id.is_valid())
+        if (!class_register->id)
         {
             class_register->id = class_register->register_func(FBindingEnv {
                 this,
@@ -888,8 +889,8 @@ namespace jsb
                 this->context_.Get(this->isolate_),
                 this->function_pointers_
             });
-            jsb_check(class_register->id.is_valid());
-            JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, (uint32_t) class_register->id);
+            jsb_check(class_register->id);
+            JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, class_register->id);
         }
 
         if (r_class_id) *r_class_id = class_register->id;
@@ -905,7 +906,7 @@ namespace jsb
         NativeClassID class_id;
         if (const NativeClassInfo* cached_info = this->find_godot_class(p_class_info->name, class_id))
         {
-            JSB_LOG(VeryVerbose, "return cached native class %s (%d) (for %s)", cached_info->name, (uint32_t) class_id, p_class_info->name);
+            JSB_LOG(VeryVerbose, "return cached native class %s (%d) (for %s)", cached_info->name, class_id, p_class_info->name);
             jsb_check(cached_info->name == p_class_info->name);
             jsb_check(!cached_info->template_.IsEmpty());
             return class_id;
@@ -987,16 +988,7 @@ namespace jsb
         {
             const int constant_index = CoreConstants::get_global_constant_index(type_name);
             const int64_t constant_value = CoreConstants::get_global_constant_value(constant_index);
-            const int32_t scaled_value = (int32_t) constant_value;
-            if ((int64_t) scaled_value != constant_value)
-            {
-                JSB_LOG(Warning, "integer overflowed %s (%s) [reversible? %d]", type_name, itos(constant_value), (int64_t)(double) constant_value == constant_value);
-                info.GetReturnValue().Set(v8::Number::New(isolate, (double) constant_value));
-            }
-            else
-            {
-                info.GetReturnValue().Set(v8::Int32::New(isolate, scaled_value));
-            }
+            info.GetReturnValue().Set(impl::Helper::new_integer(isolate, constant_value));
             return;
         }
 
@@ -1299,7 +1291,7 @@ namespace jsb
     void Environment::call_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id)
     {
         this->check_internal_state();
-        jsb_check(p_object_id.is_valid());
+        jsb_check(p_object_id);
         jsb_checkf(ClassDB::is_parent_class(this->get_script_class(p_script_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
 
         v8::Isolate* isolate = get_isolate();
@@ -1384,7 +1376,7 @@ namespace jsb
         v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
 
-        if (p_object_id.is_valid())
+        if (p_object_id)
         {
             // if object_id is nonzero but can't be found in `objects_` registry, it usually means that this invocation originally triggered by JS GC.
             // the JS Object is disposed before the Godot Object, but Godot will post notifications (like NOTIFICATION_PREDELETE) to script instances.

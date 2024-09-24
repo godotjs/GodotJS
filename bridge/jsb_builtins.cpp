@@ -228,6 +228,7 @@ namespace jsb
 
     void Builtins::_set_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
+        jsb_check(info.Data()->IsInt32());
         v8::Isolate* isolate = info.GetIsolate();
         const int argc = info.Length();
         if (argc < 1 || !info[0]->IsFunction())
@@ -237,16 +238,10 @@ namespace jsb
         }
 
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        int32_t type;
-        if (!info.Data()->Int32Value(context).To(&type))
-        {
-            isolate->ThrowError("bad call");
-            return;
-        }
         int32_t rate = 1;
         int extra_arg_index = 1;
         bool loop = false;
-        switch ((InternalTimerType::Type) type)
+        switch ((InternalTimerType::Type) info.Data().As<v8::Int32>()->Value())
         {
         // interval & timeout have 2 arguments (at least)
         case InternalTimerType::Interval: loop = true;
@@ -263,7 +258,7 @@ namespace jsb
         }
 
         Environment* environment = Environment::wrap(isolate);
-        v8::Local<v8::Function> func = info[0].As<v8::Function>();
+        const v8::Local<v8::Function> func = info[0].As<v8::Function>();
         internal::TimerHandle handle;
 
         if (argc > extra_arg_index)
@@ -274,33 +269,26 @@ namespace jsb
                 action.store(index - extra_arg_index, v8::Global<v8::Value>(isolate, info[index]));
             }
             environment->get_timer_manager().set_timer(handle, std::move(action), rate, loop);
-            info.GetReturnValue().Set((uint32_t) handle);
         }
         else
         {
             environment->get_timer_manager().set_timer(handle, JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0), rate, loop);
-            info.GetReturnValue().Set((uint32_t) handle);
         }
+        info.GetReturnValue().Set((int32_t) handle);
     }
 
     void Builtins::_clear_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        if (info.Length() < 1 || !info[0]->IsUint32())
+        if (!info[0]->IsInt32())
         {
             isolate->ThrowError("bad argument");
             return;
         }
 
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        uint32_t handle = 0;
-        if (!info[0]->Uint32Value(context).To(&handle))
-        {
-            isolate->ThrowError("bad timer");
-            return;
-        }
+        const int32_t handle = info[0].As<v8::Int32>()->Value();
         Environment* environment = Environment::wrap(isolate);
-        environment->get_timer_manager().clear_timer((internal::TimerHandle) (internal::Index32) handle);
+        environment->get_timer_manager().clear_timer((internal::TimerHandle) handle);
     }
 
 }

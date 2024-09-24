@@ -32,9 +32,6 @@ namespace jsb::internal
         {
         }
 
-        // shorthands
-        operator UnderlyingType() const { return packed_; }
-        UnderlyingType value() const { return packed_; }
         UnderlyingType operator *() const { return packed_; }
         String to_string() const { return uitos(packed_); }
 
@@ -44,8 +41,7 @@ namespace jsb::internal
         TIndex& operator=(TIndex&& other) = default;
         ~TIndex() = default;
 
-        bool is_valid() const { return packed_ != 0; }
-        operator bool() const { return packed_ != 0; }
+        explicit operator bool() const { return packed_ != 0; }
 
         int32_t get_index() const { return (int32_t) (packed_ >> kRevisionBits); }
         RevisionType get_revision() const { return (RevisionType) (packed_ & kRevisionMask); }

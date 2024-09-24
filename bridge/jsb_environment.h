@@ -335,7 +335,7 @@ namespace jsb
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
 
         // whether the pointer registered in the object binding map
-        jsb_force_inline bool check_object(void* p_pointer) const { return get_object_id(p_pointer).is_valid(); }
+        jsb_force_inline bool check_object(void* p_pointer) const { return !!get_object_id(p_pointer); }
         jsb_force_inline NativeObjectID get_object_id(void* p_pointer) const
         {
             const NativeObjectID* it = objects_index_.getptr(p_pointer);
@@ -486,7 +486,7 @@ namespace jsb
                 jsb_check(!godot_classes_index_.has(p_class_name));
                 godot_classes_index_.insert(p_class_name, class_id);
             }
-            JSB_LOG(VeryVerbose, "new class %s (%d)", p_class_name, (uint32_t) class_id);
+            JSB_LOG(VeryVerbose, "new class %s (%d)", p_class_name, class_id);
             return class_id;
         }
 

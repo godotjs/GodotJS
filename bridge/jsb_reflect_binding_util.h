@@ -172,21 +172,19 @@ namespace jsb
 
             GDTransitionNumber value[] = { 0 };
             getter_func(ReflectThis<true>::from(info), &value);
-            info.GetReturnValue().Set(v8::Int32::New(isolate, (int32_t) value[0]));
+            info.GetReturnValue().Set(impl::Helper::new_integer(isolate, value[0]));
         }
 
         static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            if (!info[0]->IsInt32())
+            // loose int32 check
+            if (!info[0]->IsNumber())
             {
-                jsb_throw(isolate, "bad param");
+                jsb_throw(info.GetIsolate(), "bad param");
                 return;
             }
             const Variant::PTRSetter setter_func = (const Variant::PTRSetter) info.Data().As<v8::External>()->Value();
-
-            const GDTransitionNumber value = (const GDTransitionNumber) info[0]->Int32Value(context).ToChecked();
+            const GDTransitionNumber value = (const GDTransitionNumber) info[0].As<v8::Int32>()->Value();
             setter_func(ReflectThis<true>::from(info), &value);
         }
 

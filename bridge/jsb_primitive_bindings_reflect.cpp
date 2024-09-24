@@ -196,7 +196,7 @@ namespace jsb
             v8::Local<v8::Object> self = info.This();
             Environment* env = Environment::wrap(isolate);
             const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(env).constructors[info.Data().As<v8::Int32>()->Value()];
-            jsb_check(constructor_info.class_id.is_valid());
+            jsb_check(constructor_info.class_id);
 
             const int argc = info.Length();
 
@@ -319,7 +319,7 @@ namespace jsb
             jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
             if (info.Length() != 2
-                || !info[0]->IsInt32()
+                || !info[0]->IsNumber() // loose int32 check
                 || !TypeConvert::can_convert_strict(isolate, context, info[1], element_type))
             {
                 jsb_throw(isolate, "bad params");
@@ -347,8 +347,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
-            if (info.Length() != 1
-                || !info[0]->IsInt32())
+            if (info.Length() != 1 || !info[0]->IsNumber()) // loose int32 check
             {
                 jsb_throw(isolate, "bad params");
                 return;
