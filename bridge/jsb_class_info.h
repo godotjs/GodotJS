@@ -59,6 +59,9 @@ namespace jsb
     typedef internal::SArray<NativeClassInfo, NativeClassID>::Pointer NativeClassInfoPtr;
     typedef internal::SArray<NativeClassInfo, NativeClassID>::ConstPointer NativeClassInfoConstPtr;
 
+    struct ClassRegister;
+    typedef NativeClassInfoPtr (*ClassRegisterFunc)(const ClassRegister& p_register, NativeClassID* r_class_id);
+
     namespace ScriptClassDocField
     {
         enum Type

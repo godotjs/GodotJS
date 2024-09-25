@@ -17,12 +17,11 @@ namespace jsb
         // construct type template
         {
 
-            v8::Local<v8::FunctionTemplate> function_template = ClassTemplate<Object>::create(p_env, class_id);
-            v8::Local<v8::ObjectTemplate> object_template = function_template->PrototypeTemplate();
+            impl::ClassBuilder class_builder = ClassTemplate<Object>::create(p_env, class_id);
 
             //NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
             const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);
-            v8::Local<v8::Template> template_for_static = is_singleton_class ? v8::Local<v8::Template>::Cast(object_template) : v8::Local<v8::Template>::Cast(function_template);
+            auto static_builder = is_singleton_class ? class_builder.Instance() : class_builder.Static();
 
 #if JSB_EXCLUDE_GETSET_METHODS
             HashSet<StringName> omitted_methods;
@@ -44,27 +43,17 @@ namespace jsb
                     property_info2.index = pair.value.index;
                     p_env->get_variant_info_collection().properties2.append(property_info2);
 
-                    v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
-                        ? v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_get2, v8::Int32::New(isolate, remap_index))
-                        : v8::Local<v8::FunctionTemplate>();
-                    v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
-                        ? v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_set2, v8::Int32::New(isolate, remap_index))
-                        : v8::Local<v8::FunctionTemplate>();
-                    object_template->SetAccessorProperty(impl::Helper::new_string(isolate, property_name), getter, setter);
-
+                    class_builder.Instance().Property(property_name,
+                        getset_info._getptr ? _godot_object_get2 : nullptr,
+                        getset_info._setptr ? _godot_object_set2 : nullptr, remap_index);
                     // we do not exclude get/set methods in this case, because the method may not be covered by all properties
                 }
                 else
                 {
                     // not using `property_collection_` in this case due to lower memory cost
-
-                    v8::Local<v8::FunctionTemplate> getter = getset_info._getptr
-                        ? v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_method, v8::External::New(isolate, getset_info._getptr))
-                        : v8::Local<v8::FunctionTemplate>();
-                    v8::Local<v8::FunctionTemplate> setter = getset_info._setptr
-                        ? v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_method, v8::External::New(isolate, getset_info._setptr))
-                        : v8::Local<v8::FunctionTemplate>();
-                    object_template->SetAccessorProperty(impl::Helper::new_string(isolate, property_name), getter, setter);
+                    class_builder.Instance().Property(property_name,
+                        getset_info._getptr ? _godot_object_method : nullptr, (void*) getset_info._getptr,
+                        getset_info._setptr ? _godot_object_method : nullptr, (void*) getset_info._setptr);
 
 #if JSB_EXCLUDE_GETSET_METHODS
                     if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
@@ -80,43 +69,47 @@ namespace jsb
                 if (omitted_methods.has(pair.key)) continue;
 #endif
                 const StringName& method_name = pair.key;
-                MethodBind* method_bind = pair.value;
-                v8::Local<v8::String> propkey_name = impl::Helper::new_string(isolate, method_name); // BridgeHelper::to_string_ascii(isolate, method_name);
-                v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_method, v8::External::New(isolate, method_bind));
+                const MethodBind* method_bind = pair.value;
 
                 if (method_bind->is_static())
                 {
-                    template_for_static->Set(propkey_name, propval_func);
+                    static_builder.Method(method_name, _godot_object_method, (void*) method_bind);
                 }
                 else
                 {
-                    object_template->Set(propkey_name, propval_func);
+                    class_builder.Instance().Method(method_name, _godot_object_method, (void*) method_bind);
                 }
             }
 
             if (p_class_info->name == jsb_string_name(Object))
             {
                 // class: special methods
-                object_template->Set(jsb_name(p_env, free), v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_free));
+                class_builder.Instance().Method(jsb_literal(free), _godot_object_free);
             }
 
             // class: signals
             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
             {
                 const StringName& name_str = pair.key;
-                v8::Local<v8::String> propkey_name = impl::Helper::new_string(isolate, name_str);
                 const StringNameID string_id = p_env->get_string_name_cache().get_string_id(name_str);
-                v8::Local<v8::FunctionTemplate> propval_func = v8::FunctionTemplate::New(isolate, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, *string_id));
-                object_template->SetAccessorProperty(propkey_name, propval_func);
+                class_builder.Instance().Property(pair.key, _godot_object_signal, *string_id);
             }
 
-            // class: enum (nested in class)
             HashSet<StringName> enum_consts;
+
+            // class: enum (nested in class)
             for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
             {
-                template_for_static->Set(
-                    impl::Helper::new_string(isolate, pair.key),
-                    BridgeHelper::to_template_enum(isolate, context, pair.value, p_class_info->constant_map, &enum_consts));
+                auto enumeration = static_builder.Enum(pair.key);
+                for (const StringName& enum_name : pair.value.constants)
+                {
+                    const String& enum_name_str = (String) enum_name;
+                    jsb_not_implemented(enum_name_str.contains("."), "hierarchically nested definition is currently not supported");
+                    const auto& const_it = p_class_info->constant_map.find(enum_name);
+                    jsb_check(const_it);
+                    enumeration.Value(enum_name_str, const_it->value);
+                    enum_consts.insert(enum_name);
+                }
             }
 
             // class: constants
@@ -125,13 +118,12 @@ namespace jsb
                 if (enum_consts.has(pair.key)) continue;
                 const String& const_name_str = (String) pair.key;
                 jsb_not_implemented(const_name_str.contains("."), "hierarchically nested definition is currently not supported");
-                template_for_static->Set(
-                    impl::Helper::new_string(isolate, const_name_str),
-                    impl::Helper::new_integer(isolate, pair.value));
+
+                static_builder.Value(pair.key, pair.value);
             }
 
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
-            function_template->Set(jsb_symbol(p_env, ClassId), v8::Uint32::NewFromUnsigned(isolate, *class_id));
+            class_builder.Static().Value(jsb_symbol(p_env, ClassId), *class_id);
 
             // build the prototype chain (inherit)
             if (NativeClassID super_class_id;
@@ -139,7 +131,7 @@ namespace jsb
             {
                 v8::Local<v8::FunctionTemplate> base_template = super_class_info->template_.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
-                function_template->Inherit(base_template);
+                class_builder.Inherit(base_template);
                 JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id,
                     p_class_info->inherits_ptr->name, super_class_id);
             }
@@ -147,9 +139,10 @@ namespace jsb
             // preparation for return
             {
                 NativeClassInfoPtr class_info = p_env->get_native_class_ptr(class_id);
-                jsb_check(function_template == class_info->template_);
+                jsb_check(*class_builder == class_info->template_);
 
-                class_info->set_function(isolate, function_template->GetFunction(context).ToLocalChecked());
+                class_builder.Build();
+                class_info->set_function(isolate, (*class_builder)->GetFunction(context).ToLocalChecked());
                 JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, class_id);
                 if (r_class_id) *r_class_id = class_id;
                 return class_info;

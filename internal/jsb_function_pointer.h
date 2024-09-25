@@ -28,6 +28,5 @@ namespace jsb::internal
         uint32_t cursor_;
         Vector<uint8_t> pointer_;
     };
-
 }
 #endif

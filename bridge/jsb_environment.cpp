@@ -8,6 +8,7 @@
 #include "jsb_builtins.h"
 #include "jsb_object_bindings.h"
 #include "jsb_type_convert.h"
+#include "jsb_class_register.h"
 
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_class_util.h"
@@ -902,12 +903,11 @@ namespace jsb
 
         // bind and cache the class immediately
         {
-             NativeClassInfoPtr class_info = class_register->register_func(FBindingEnv {
+            NativeClassInfoPtr class_info = class_register->register_func(ClassRegister {
                 this,
                 p_type_name,
                 this->isolate_,
                 this->context_.Get(this->isolate_),
-                this->function_pointers_
             }, &class_register->id);
             jsb_check(class_register->id);
             JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, class_register->id);

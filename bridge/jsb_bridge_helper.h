@@ -51,7 +51,7 @@ namespace jsb
 
         static v8::Local<v8::Object> to_global_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const HashMap<StringName, int64_t>& enum_values)
         {
-            v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
+            const v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
             for (const KeyValue<StringName, int64_t>& kv : enum_values)
             {
                 const v8::Local<v8::String> name = impl::Helper::new_string(isolate, kv.key);
@@ -59,27 +59,6 @@ namespace jsb
                 enumeration->Set(context, name, value).Check();
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
                 enumeration->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), name, v8::DontEnum).Check();
-            }
-            return enumeration;
-        }
-
-        static v8::Local<v8::ObjectTemplate> to_template_enum(v8::Isolate* isolate, const v8::Local<v8::Context>& context,
-            const ClassDB::ClassInfo::EnumInfo& p_info, const HashMap<StringName, int64_t>& p_constants,
-            HashSet<StringName>* o_names)
-        {
-            v8::Local<v8::ObjectTemplate> enumeration = v8::ObjectTemplate::New(isolate);
-            for (const StringName& enum_name : p_info.constants)
-            {
-                const String& enum_name_str = (String) enum_name;
-                jsb_not_implemented(enum_name_str.contains("."), "hierarchically nested definition is currently not supported");
-                const auto& const_it = p_constants.find(enum_name);
-                jsb_check(const_it);
-                const v8::Local<v8::String> name = impl::Helper::new_string(isolate, enum_name_str);
-                const v8::Local<v8::Value> value = impl::Helper::new_integer(isolate, const_it->value);
-                enumeration->Set(name, value);
-                // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-                enumeration->Set(value->ToString(context).ToLocalChecked(), name, v8::DontEnum);
-                if (o_names) o_names->insert(enum_name);
             }
             return enumeration;
         }

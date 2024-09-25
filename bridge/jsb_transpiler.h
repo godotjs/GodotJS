@@ -7,30 +7,28 @@
 #include "jsb_object_handle.h"
 
 #define JSB_CLASS_BOILERPLATE() \
-    jsb_force_inline static v8::Local<v8::FunctionTemplate> create(Environment* env, internal::Index32 class_id)\
+    jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)\
     {\
         v8::Isolate* isolate = env->get_isolate();\
         NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
-        v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor, v8::Uint32::NewFromUnsigned(isolate, *class_id));\
-        template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
-        template_->SetClassName(env->get_string_value(class_info->name));\
+        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor, *class_id);\
+        class_builder.SetClassName(env->get_string_value(class_info->name));\
         class_info->finalizer = &finalizer;\
-        class_info->template_.Reset(isolate, template_);\
-        return template_;\
+        class_info->template_.Reset(isolate, *class_builder);\
+        return class_builder;\
     }
 
 #define JSB_CLASS_BOILERPLATE_ARGS() \
     template<typename...TArgs>\
-    jsb_force_inline static v8::Local<v8::FunctionTemplate> create(Environment* env, internal::Index32 class_id)\
+    jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)\
     {\
         v8::Isolate* isolate = env->get_isolate();\
-        v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor<TArgs...>, v8::Uint32::NewFromUnsigned(isolate, *class_id));\
-        template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
+        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor<TArgs...>, *class_id);\
         NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
         class_info->finalizer = &finalizer;\
-        class_info->template_.Reset(isolate, template_);\
-        template_->SetClassName(env->get_string_value(class_info->name));\
-        return template_;\
+        class_info->template_.Reset(isolate, *class_builder);\
+        class_builder.SetClassName(env->get_string_value(class_info->name));\
+        return class_builder;\
     }
 
 #define JSB_CONTEXT_BOILERPLATE() \
@@ -617,38 +615,37 @@ namespace jsb
 
     namespace bind
     {
-        template<typename TSelf, typename TReturn, size_t N>
-        static void property(const FBindingEnv& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (*getter)(TSelf*), void (*setter)(TSelf*, TReturn), const char (&name)[N])
-        {
-            prototype->SetAccessorProperty(impl::Helper::new_string(p_env.isolate, name),
-                v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template getter<TSelf>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.function_pointers.add(getter))),
-                v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<void>::template setter<TSelf, TReturn>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.function_pointers.add(setter)))
-                    );
-        }
+        // template<typename TSelf, typename TReturn, size_t N>
+        // static void property(impl::ClassBuilder& builder, const ClassRegister& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (*getter)(TSelf*), void (*setter)(TSelf*, TReturn), const char (&name)[N])
+        // {
+        //     builder.Instance().Property(name,
+        //         &SpecializedReturn<TReturn>::template getter<TSelf>, p_env.add_free_function(getter),
+        //         &SpecializedReturn<void>::template setter<TSelf, TReturn>, p_env.add_free_function(setter));
+        // }
 
-        template<typename TSelf, typename TReturn, size_t N>
-        static void method(const FBindingEnv& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)(), const char (&name)[N])
-        {
-            prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.function_pointers.add(func))));
-        }
-
-        template<typename TSelf, typename TReturn, size_t N>
-        static void method(const FBindingEnv& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)() const, const char (&name)[N])
-        {
-            prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.function_pointers.add(func))));
-        }
-
-        template<typename TSelf, typename TReturn, typename... TArgs, size_t N>
-        static void method(const FBindingEnv& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)(TArgs...), const char (&name)[N])
-        {
-            prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf, TArgs...>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.function_pointers.add(func))));
-        }
-
-        template<typename TSelf, typename TReturn, typename... TArgs, size_t N>
-        static void method(const FBindingEnv& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)(TArgs...) const, const char (&name)[N])
-        {
-            prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf, TArgs...>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.function_pointers.add(func))));
-        }
+        // template<typename TSelf, typename TReturn, size_t N>
+        // static void method(const ClassRegister& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)(), const char (&name)[N])
+        // {
+        //     prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.add_free_function(func))));
+        // }
+        //
+        // template<typename TSelf, typename TReturn, size_t N>
+        // static void method(const ClassRegister& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)() const, const char (&name)[N])
+        // {
+        //     prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.add_free_function(func))));
+        // }
+        //
+        // template<typename TSelf, typename TReturn, typename... TArgs, size_t N>
+        // static void method(const ClassRegister& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)(TArgs...), const char (&name)[N])
+        // {
+        //     prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf, TArgs...>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.add_free_function(func))));
+        // }
+        //
+        // template<typename TSelf, typename TReturn, typename... TArgs, size_t N>
+        // static void method(const ClassRegister& p_env, const v8::Local<v8::ObjectTemplate>& prototype, TReturn (TSelf::*func)(TArgs...) const, const char (&name)[N])
+        // {
+        //     prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf, TArgs...>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.add_free_function(func))));
+        // }
     }
 
 }

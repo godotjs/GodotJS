@@ -4,6 +4,7 @@
 #include "jsb_macros.h"
 
 #define jsb_string_name(name) ::jsb::internal::StringNames::get_singleton().sn_##name
+#define jsb_literal(name) (sizeof(::jsb::internal::StringNames::sn_##name) == sizeof(StringName), #name)
 
 class GodotJSScriptLanguage;
 

@@ -7,7 +7,6 @@
 #include "jsb_class_info.h"
 #include "jsb_value_move.h"
 #include "jsb_statistics.h"
-#include "jsb_binding_env.h"
 #include "jsb_timer_action.h"
 #include "jsb_object_handle.h"
 #include "jsb_module_loader.h"
@@ -54,6 +53,7 @@ namespace jsb
     private:
         friend class Builtins;
         friend struct InstanceBindingCallbacks;
+        friend struct ClassRegister;
 
         //TODO remove this later
         friend struct ScriptClassInfo;
@@ -126,6 +126,8 @@ namespace jsb
         struct DeferredClassRegister
         {
             NativeClassID id = {};
+
+            // see VariantBind::reflect_bind
             ClassRegisterFunc register_func = nullptr;
         };
 
