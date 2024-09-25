@@ -39,7 +39,7 @@ namespace jsb
         TWeakRef(TWeakRef&& p_other) noexcept = default;
         TWeakRef& operator=(TWeakRef&& p_other) noexcept = default;
 
-        jsb_force_inline operator bool() const { return !object_.IsEmpty(); }
+        jsb_force_inline explicit operator bool() const { return !object_.IsEmpty(); }
 
         jsb_force_inline friend bool operator==(const TWeakRef& lhs, const TWeakRef& rhs)
         {
@@ -83,7 +83,7 @@ namespace jsb
         TStrongRef(TStrongRef&& p_other) noexcept = default;
         TStrongRef& operator=(TStrongRef&& p_other) noexcept = default;
 
-        jsb_force_inline operator bool() const { return !object_.IsEmpty(); }
+        jsb_force_inline explicit operator bool() const { return !object_.IsEmpty(); }
 
         void ref() { jsb_check(ref_count_ > 0); ++ref_count_; }
         bool unref()

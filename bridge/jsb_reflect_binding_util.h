@@ -210,15 +210,15 @@ namespace jsb
                 jsb_throw(isolate, "bad constructor call");
                 return;
             }
-            v8::Local<v8::Object> self = info.This();
+            const v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
+
             if (v8_argc == 0)
             {
                 static Variant zero = Vector2();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -233,7 +233,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -245,7 +245,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -266,7 +266,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Vector2(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -288,13 +288,12 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
             if (v8_argc == 0)
             {
                 static Variant zero = Vector2i();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -309,7 +308,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -321,7 +320,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -342,7 +341,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Vector2i(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -364,13 +363,12 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
             if (v8_argc == 0)
             {
                 static Variant zero = Vector3();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -385,7 +383,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector3(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -397,7 +395,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector3(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -424,7 +422,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Vector3(loc_0, loc_1, loc_2);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -446,13 +444,12 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
             if (v8_argc == 0)
             {
                 static Variant zero = Vector3i();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -467,7 +464,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector3i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -479,7 +476,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector3i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -506,7 +503,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Vector3i(loc_0, loc_1, loc_2);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -528,13 +525,12 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
             if (v8_argc == 0)
             {
                 static Variant zero = Vector4();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -549,7 +545,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector4(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -561,7 +557,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector4(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -594,7 +590,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Vector4(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -616,13 +612,12 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
             if (v8_argc == 0)
             {
                 static Variant zero = Vector4i();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -637,7 +632,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector4i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -649,7 +644,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Vector4i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -682,7 +677,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Vector4i(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -704,13 +699,12 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
             if (v8_argc == 0)
             {
                 static Variant zero = Rect2();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -725,7 +719,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Rect2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -737,7 +731,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Rect2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -758,7 +752,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Rect2(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 4)
@@ -790,7 +784,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Rect2(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -812,13 +806,12 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            const NativeClassID class_id = (const NativeClassID) info.Data().As<v8::Int32>()->Value();
             if (v8_argc == 0)
             {
                 static Variant zero = Rect2i();
                 Variant* instance = Environment::alloc_variant();
                 *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 1)
@@ -833,7 +826,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Rect2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
                 do
@@ -845,7 +838,7 @@ namespace jsb
                     }
                     Variant* instance = Environment::alloc_variant();
                     *instance = Rect2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                    Environment::wrap(isolate)->bind_valuetype(instance, self);
                     return;
                 } while (false);
             }
@@ -866,7 +859,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Rect2i(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             else if (v8_argc == 4)
@@ -898,7 +891,7 @@ namespace jsb
                 }
                 Variant* instance = Environment::alloc_variant();
                 *instance = Rect2i(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(class_id, instance, self);
+                Environment::wrap(isolate)->bind_valuetype(instance, self);
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");

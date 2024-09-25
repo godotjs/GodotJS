@@ -52,7 +52,7 @@ namespace jsb
 #endif
 
     //NOTE ensure the address of p_class_info being locked during this procedure
-    void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, ScriptClassInfo& p_class_info, const v8::Local<v8::Object>& default_obj)
+    void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, const ScriptClassInfoPtr& p_class_info, const v8::Local<v8::Object>& default_obj)
     {
         v8::Isolate* isolate = p_context->GetIsolate();
         Environment* environment = Environment::wrap(isolate);
@@ -61,19 +61,19 @@ namespace jsb
         const v8::Local<v8::Object> prototype = default_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
 
         // reset CDO of the legacy JS class
-        p_class_info.js_default_object.Reset();
+        p_class_info->js_default_object.Reset();
 
         // update the latest script class info
-        p_class_info.native_class_name = environment->get_native_class(p_class_info.native_class_id).name;
-        jsb_check(internal::VariantUtil::is_valid_name(p_class_info.native_class_name));
-        p_class_info.js_class.Reset(isolate, default_obj);
-        p_class_info.js_class_name = environment->get_string_name(default_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>());
-        p_class_info.methods.clear();
-        p_class_info.signals.clear();
-        p_class_info.properties.clear();
-        p_class_info.flags = ScriptClassFlags::None;
+        p_class_info->native_class_name = environment->get_native_class_ptr(p_class_info->native_class_id)->name;
+        jsb_check(internal::VariantUtil::is_valid_name(p_class_info->native_class_name));
+        p_class_info->js_class.Reset(isolate, default_obj);
+        p_class_info->js_class_name = environment->get_string_name(default_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>());
+        p_class_info->methods.clear();
+        p_class_info->signals.clear();
+        p_class_info->properties.clear();
+        p_class_info->flags = ScriptClassFlags::None;
 
-        JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", p_class_info.js_class_name, p_class_info.native_class_name);
+        JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", p_class_info->js_class_name, p_class_info->native_class_name);
 
 #ifdef TOOLS_ENABLED
         // class doc
@@ -86,7 +86,7 @@ namespace jsb
         {
             doc_map = v8::Map::New(isolate);
         }
-        _parse_script_doc(isolate, p_context, prototype->Get(p_context, jsb_symbol(environment, Doc)), p_class_info.doc);
+        _parse_script_doc(isolate, p_context, prototype->Get(p_context, jsb_symbol(environment, Doc)), p_class_info->doc);
 #endif
 
         // methods
@@ -114,7 +114,7 @@ namespace jsb
                             _parse_script_doc(isolate, p_context, val, method_info.doc);
                         }
 #endif // TOOLS_ENABLED
-                        p_class_info.methods.insert((StringName) name_s, method_info);
+                        p_class_info->methods.insert((StringName) name_s, method_info);
                         JSB_LOG(VeryVerbose, "... method %s", name_s);
                     }
                 }
@@ -126,7 +126,7 @@ namespace jsb
             const bool is_tool = default_obj->HasOwnProperty(p_context, jsb_symbol(environment, ClassToolScript)).FromMaybe(false);
             if (is_tool)
             {
-                p_class_info.flags = (ScriptClassFlags::Type) (p_class_info.flags | ScriptClassFlags::Tool);
+                p_class_info->flags = (ScriptClassFlags::Type) (p_class_info->flags | ScriptClassFlags::Tool);
             }
         }
 
@@ -134,7 +134,7 @@ namespace jsb
         {
             if (v8::Local<v8::Value> val; default_obj->Get(p_context, jsb_symbol(environment, ClassIcon)).ToLocal(&val))
             {
-                p_class_info.icon = impl::Helper::to_string(isolate, val);
+                p_class_info->icon = impl::Helper::to_string(isolate, val);
             }
         }
 
@@ -151,7 +151,7 @@ namespace jsb
                     v8::Local<v8::Value> element = collection->Get(p_context, index).ToLocalChecked();
                     jsb_check(element->IsString());
                     const StringName signal = impl::Helper::to_string(isolate, element);
-                    p_class_info.signals.insert(signal, {});
+                    p_class_info->signals.insert(signal, {});
 
                     // instantiate a fake Signal property
                     const StringNameID string_id = environment->get_string_name_cache().get_string_id(signal);
@@ -191,7 +191,7 @@ namespace jsb
                         _parse_script_doc(isolate, p_context, val, property_info.doc);
                     }
 #endif // TOOLS_ENABLED
-                    p_class_info.properties.insert(property_info.name, property_info);
+                    p_class_info->properties.insert(property_info.name, property_info);
                     JSB_LOG(VeryVerbose, "... property %s: %s", property_info.name, Variant::get_type_name(property_info.type));
                 }
             }
@@ -243,14 +243,14 @@ namespace jsb
         // unsafe
         const NativeClassID native_class_id = (NativeClassID) class_id_val.As<v8::Uint32>()->Value();
         jsb_address_guard(environment->native_classes_, native_classes_address_guard);
-        jsb_check(internal::VariantUtil::is_valid_name(environment->get_native_class(native_class_id).name));
+        jsb_check(internal::VariantUtil::is_valid_name(environment->get_native_class_ptr(native_class_id)->name));
 
         //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
-        ScriptClassInfo* existed_class_info = environment->find_script_class(p_module.default_class_id);
+        ScriptClassInfoPtr existed_class_info = environment->find_script_class(p_module.default_class_id);
         if (!existed_class_info)
         {
             ScriptClassID script_class_id;
-            existed_class_info = &environment->add_script_class(script_class_id);
+            existed_class_info = environment->add_script_class(script_class_id);
             p_module.default_class_id = script_class_id;
             existed_class_info->module_id = p_module.id;
         }
@@ -262,7 +262,7 @@ namespace jsb
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->native_class_id = native_class_id;
 
-        _parse_script_class_iterate(p_context, *existed_class_info, default_obj);
+        _parse_script_class_iterate(p_context, existed_class_info, default_obj);
     }
 
 }

@@ -20,7 +20,7 @@ namespace jsb
 	    Environment* operator->() const { return env; }
 	};
 
-	typedef NativeClassID (*ClassRegisterFunc)(const FBindingEnv& p_env);
+	typedef NativeClassInfoPtr (*ClassRegisterFunc)(const FBindingEnv& p_env, NativeClassID* r_class_id);
 
 }
 

@@ -57,7 +57,6 @@ namespace jsb::internal
 
     struct FConstructorInfo
     {
-        NativeClassID class_id;
         Vector<FConstructorVariantInfo> variants;
     };
 
@@ -66,10 +65,11 @@ namespace jsb::internal
         MethodBind* getter_func;
         MethodBind* setter_func;
 
-        // extra parameter at the first position for getter/setter
+        // extra parameter at the first position for getter/setter (getter2/setter2)
         int index;
     };
 
+    // necessary reflection info for JS func callback (transferred as index with info.Data)
     struct VariantInfoCollection
     {
         Vector<FConstructorInfo> constructors;

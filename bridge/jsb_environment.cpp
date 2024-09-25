@@ -323,7 +323,7 @@ namespace jsb
         while (pending_delete_.data_left())
         {
             Variant* variant = pending_delete_.read();
-            JSB_LOG(Verbose, "exec_sync_delete variant (%s:%s)", Variant::get_type_name(variant->get_type()), uitos((uintptr_t) variant));
+            JSB_LOG(Verbose, "exec_sync_delete variant (%s:%d)", Variant::get_type_name(variant->get_type()), (uintptr_t) variant);
             dealloc_variant(variant);
         }
     }
@@ -415,9 +415,9 @@ namespace jsb
         {
             handle.ref_count_ = 1;
         }
-        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%s id:%d",
+        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%d id:%d",
             (String) native_classes_.get_value(p_class_id).name, p_class_id,
-            uitos((uintptr_t) p_pointer), object_id);
+            (uintptr_t) p_pointer, object_id);
         return object_id;
     }
 
@@ -452,7 +452,7 @@ namespace jsb
         const HashMap<void*, internal::Index64>::Iterator it = objects_index_.find(p_pointer);
         if (it == objects_index_.end())
         {
-            JSB_LOG(VeryVerbose, "bad pointer %s", uitos((uintptr_t) p_pointer));
+            JSB_LOG(VeryVerbose, "bad pointer %d", (uintptr_t) p_pointer);
             return true;
         }
         jsb_address_guard(objects_, address_guard);
@@ -536,17 +536,17 @@ namespace jsb
         {
             const NativeClassInfo& class_info = native_classes_.get_value(class_id);
 
-            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%s id:%d",
+            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%d id:%d",
                 (String) class_info.name, class_id,
-                uitos((uintptr_t) p_pointer), object_id);
+                (uintptr_t) p_pointer, object_id);
             //NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
             class_info.finalizer(this, p_pointer, is_persistent);
         }
         else
         {
-            JSB_LOG(VeryVerbose, "(skip) free_object class:%s(%d) addr:%s id:%d",
+            JSB_LOG(VeryVerbose, "(skip) free_object class:%s(%d) addr:%d id:%d",
                 (String) native_classes_.get_value(class_id).name, class_id,
-                uitos((uintptr_t) p_pointer), object_id);
+                (uintptr_t) p_pointer, object_id);
         }
     }
 
@@ -771,12 +771,20 @@ namespace jsb
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
 
-        jsb_checkf(!this->get_object_id(p_this), "duplicated object binding is not allowed (%s)", uitos((uintptr_t) p_this));
-        auto class_info = this->_get_script_class(p_class_id);
-        const StringName class_name = class_info->js_class_name;
+        StringName class_name;
+        NativeClassID native_class_id;
+        v8::Local<v8::Object> constructor;
 
-        const v8::Local<v8::Object> constructor = class_info->js_class.Get(isolate);
-        jsb_check(!constructor->IsUndefined() && !constructor->IsNull());
+        jsb_checkf(!this->get_object_id(p_this), "duplicated object binding is not allowed (%d)", (uintptr_t) p_this);
+        {
+            const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
+            class_name = class_info->js_class_name;
+            native_class_id = class_info->native_class_id;
+            constructor = class_info->js_class.Get(isolate);
+            JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %d", class_info->js_class_name, class_info->native_class_name, class_info->native_class_id, (uintptr_t) p_this);
+            jsb_check(!constructor->IsNullOrUndefined());
+        }
+
         const impl::TryCatch try_catch_run(isolate);
         v8::Local<v8::Value> identifier = jsb_symbol(this, CrossBind);
         v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
@@ -786,15 +794,14 @@ namespace jsb
             JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_name, BridgeHelper::get_exception(try_catch_run));
             return {};
         }
+
         v8::Local<v8::Value> instance;
         if (!constructed_value.ToLocal(&instance) || !instance->IsObject())
         {
             JSB_LOG(Error, "bad instance '%s", class_name);
             return {};
         }
-        const NativeObjectID object_id = this->bind_godot_object(class_info->native_class_id, p_this, instance.As<v8::Object>());
-        JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %s", class_info->js_class_name,
-            class_info->native_class_name, class_info->native_class_id, uitos((uintptr_t) p_this));
+        const NativeObjectID object_id = this->bind_godot_object(native_class_id, p_this, instance.As<v8::Object>());
         return object_id;
     }
 
@@ -814,7 +821,7 @@ namespace jsb
             return;
         }
 
-        auto class_info = this->_get_script_class(p_class_id);
+        const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
         const StringName class_name = class_info->js_class_name;
         const v8::Local<v8::Object> constructor = class_info->js_class.Get(isolate);
         const v8::Local<v8::Value> prototype = constructor->Get(context, jsb_name(this, prototype)).ToLocalChecked();
@@ -875,171 +882,59 @@ namespace jsb
         return OK;
     }
 
-    const NativeClassInfo* Environment::_expose_class(const StringName& p_type_name, NativeClassID* r_class_id)
+    NativeClassInfoPtr Environment::expose_class(const StringName& p_type_name, NativeClassID* r_class_id)
     {
         DeferredClassRegister* class_register = class_register_map_.getptr(p_type_name);
-        if (jsb_unlikely(!class_register)) return nullptr;
-
-        if (!class_register->id)
+        if (jsb_unlikely(!class_register))
         {
-            class_register->id = class_register->register_func(FBindingEnv {
+            if (r_class_id) *r_class_id = {};
+            return nullptr;
+        }
+
+        // return cache
+        if (class_register->id)
+        {
+            if (r_class_id) *r_class_id = class_register->id;
+            NativeClassInfoPtr class_info = this->get_native_class_ptr(class_register->id);
+            jsb_check(class_info->name == p_type_name);
+            return class_info;
+        }
+
+        // bind and cache the class immediately
+        {
+             NativeClassInfoPtr class_info = class_register->register_func(FBindingEnv {
                 this,
                 p_type_name,
                 this->isolate_,
                 this->context_.Get(this->isolate_),
                 this->function_pointers_
-            });
+            }, &class_register->id);
             jsb_check(class_register->id);
             JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, class_register->id);
+            if (r_class_id) *r_class_id = class_register->id;
+            return class_info;
         }
-
-        if (r_class_id) *r_class_id = class_register->id;
-        const NativeClassInfo& class_info = this->get_native_class(class_register->id);
-        jsb_check(class_info.name == p_type_name);
-        return &class_info;
     }
 
-    NativeClassID Environment::_expose_godot_class(const ClassDB::ClassInfo* p_class_info)
+    NativeClassInfoPtr Environment::expose_godot_object_class(const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id)
     {
-        if (!p_class_info) return NativeClassID();
-
-        NativeClassID class_id;
-        if (const NativeClassInfo* cached_info = this->find_godot_class(p_class_info->name, class_id))
+        if (!p_class_info)
         {
-            JSB_LOG(VeryVerbose, "return cached native class %s (%d) (for %s)", cached_info->name, class_id, p_class_info->name);
-            jsb_check(cached_info->name == p_class_info->name);
-            jsb_check(!cached_info->template_.IsEmpty());
-            return class_id;
+            if (r_class_id) *r_class_id = {};
+            return nullptr;
         }
 
-        return ObjectReflectBindingUtil::reflect_bind(this, p_class_info);
-    }
-
-    // [JS] function load_type(type_name: string): Class;
-    void Environment::_load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info)
-    {
-        JSB_BENCHMARK_SCOPE(JSRealm, _load_godot_mod);
-
-        v8::Isolate* isolate = info.GetIsolate();
-        const v8::Local<v8::Value> arg0 = info[0];
-        if (!arg0->IsString())
+        if (const NativeClassID* it = godot_classes_index_.getptr(p_class_info->name))
         {
-            isolate->ThrowError("bad parameter");
-            return;
+            if (r_class_id) *r_class_id = *it;
+            NativeClassInfoPtr class_info = native_classes_.get_value_scoped(*it);
+            JSB_LOG(VeryVerbose, "return cached native class %s (%d) (for %s)", class_info->name, *it, p_class_info->name);
+            jsb_check(class_info->name == p_class_info->name);
+            jsb_check(!class_info->template_.IsEmpty());
+            return class_info;
         }
 
-        const StringName type_name(impl::Helper::to_string(isolate, arg0));
-        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        Environment* env = Environment::wrap(context);
-        jsb_check(env);
-
-        //NOTE do not break the order in `GDScriptLanguage::init()`
-
-        // (1) singletons have the top priority (in GDScriptLanguage::init, singletons will overwrite the globals slot even if a type/const has the same name)
-        //     check before getting to avoid error prints in `get_singleton_object`
-        if (Engine::get_singleton()->has_singleton(type_name))
-        if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(type_name))
-        {
-            v8::Local<v8::Object> rval;
-            JSB_LOG(VeryVerbose, "exposing singleton object %s", (String) type_name);
-            if (TypeConvert::gd_obj_to_js(isolate, context, gd_singleton, rval))
-            {
-                env->mark_as_persistent_object(gd_singleton);
-                jsb_check(!rval.IsEmpty());
-                info.GetReturnValue().Set(rval);
-                return;
-            }
-            isolate->ThrowError("failed to bind a singleton object");
-            return;
-        }
-
-        // (2) (global) utility functions.
-        if (Variant::has_utility_function(type_name))
-        {
-            //TODO check static bindings at first, and dynamic bindings as a fallback
-
-            // dynamic binding:
-            jsb_check(sizeof(Variant::ValidatedUtilityFunction) == sizeof(void*));
-            const int32_t utility_func_index = (int32_t) env->get_variant_info_collection().utility_funcs.size();
-            env->get_variant_info_collection().utility_funcs.append({});
-            internal::FUtilityMethodInfo& method_info = env->get_variant_info_collection().utility_funcs.write[utility_func_index];
-
-            const int argument_count = Variant::get_utility_function_argument_count(type_name);
-            method_info.argument_types.resize(argument_count);
-            for (int index = 0, num = argument_count; index < num; ++index)
-            {
-                method_info.argument_types.write[index] = Variant::get_utility_function_argument_type(type_name, index);
-            }
-            //NOTE currently, utility functions have no default argument.
-            // method_info.default_arguments = ...
-            method_info.return_type = Variant::get_utility_function_return_type(type_name);
-            method_info.is_vararg = Variant::is_utility_function_vararg(type_name);
-            method_info.set_debug_name(type_name);
-            method_info.utility_func = Variant::get_validated_utility_function(type_name);
-            jsb_check(method_info.utility_func);
-            JSB_LOG(VeryVerbose, "expose godot utility function %s (%d)", type_name, utility_func_index);
-
-            info.GetReturnValue().Set(v8::Function::New(context, ObjectReflectBindingUtil::_godot_utility_func, v8::Int32::New(isolate, utility_func_index)).ToLocalChecked());
-            return;
-        }
-
-        // (3) global_constants
-        if (CoreConstants::is_global_constant(type_name))
-        {
-            const int constant_index = CoreConstants::get_global_constant_index(type_name);
-            const int64_t constant_value = CoreConstants::get_global_constant_value(constant_index);
-            info.GetReturnValue().Set(impl::Helper::new_integer(isolate, constant_value));
-            return;
-        }
-
-        // (4) classes in ClassDB/PrimitiveTypes
-        {
-            if (const NativeClassInfo* class_info = env->_expose_class(type_name))
-            {
-                jsb_check(class_info->name == type_name);
-                jsb_check(!class_info->template_.IsEmpty());
-                info.GetReturnValue().Set(class_info->get_function(isolate));
-                return;
-            }
-
-            // dynamic binding: godot class types
-            if (const ClassDB::ClassInfo* it = ClassDB::classes.getptr(type_name))
-            {
-                if (const NativeClassID class_id = env->_expose_godot_class(it))
-                {
-                    const NativeClassInfo& godot_class = env->get_native_class(class_id);
-                    jsb_check(godot_class.name == type_name);
-                    jsb_check(!godot_class.template_.IsEmpty());
-                    info.GetReturnValue().Set(godot_class.get_function(isolate));
-                    return;
-                }
-            }
-        }
-
-        // (5) global_enums
-        if (CoreConstants::is_global_enum(type_name))
-        {
-            HashMap<StringName, int64_t> enum_values;
-            CoreConstants::get_enum_values(type_name, &enum_values);
-            info.GetReturnValue().Set(BridgeHelper::to_global_enum(isolate, context, enum_values));
-            return;
-        }
-
-        // (6) special case: `Variant` (`Variant` is not exposed as it-self in js, but we still need to access the nested enums in it)
-        // seealso: core/variant/binder_common.h
-        //          VARIANT_ENUM_CAST(Variant::Type);
-        //          VARIANT_ENUM_CAST(Variant::Operator);
-        // they are exposed as `Variant.Type` in global constants in godot
-        if (type_name == jsb_string_name(Variant))
-        {
-            v8::Local<v8::Object> obj = v8::Object::New(isolate);
-            obj->Set(context, impl::Helper::new_string(isolate, "Type"), BridgeHelper::to_global_enum(isolate, context, "Variant.Type")).Check();
-            obj->Set(context, impl::Helper::new_string(isolate, "Operator"), BridgeHelper::to_global_enum(isolate, context, "Variant.Operator")).Check();
-            info.GetReturnValue().Set(obj);
-            return;
-        }
-
-        isolate->ThrowError(impl::Helper::new_string(isolate, jsb_format("godot class not found '%s'", type_name)));
+        return ObjectReflectBindingUtil::reflect_bind(this, p_class_info, r_class_id);
     }
 
     JSValueMove Environment::eval_source(const char* p_source, int p_length, const String& p_filename, Error& r_err)
@@ -1292,7 +1187,7 @@ namespace jsb
     {
         this->check_internal_state();
         jsb_check(p_object_id);
-        jsb_checkf(ClassDB::is_parent_class(this->get_script_class(p_script_class_id).native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
+        jsb_checkf(ClassDB::is_parent_class(this->get_script_class(p_script_class_id)->native_class_name, jsb_string_name(Node)), "only Node has a prelude call");
 
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);

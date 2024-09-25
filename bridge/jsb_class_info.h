@@ -55,6 +55,10 @@ namespace jsb
         }
     };
 
+    // Safe pointer of NativeClassInfo
+    typedef internal::SArray<NativeClassInfo, NativeClassID>::Pointer NativeClassInfoPtr;
+    typedef internal::SArray<NativeClassInfo, NativeClassID>::ConstPointer NativeClassInfoConstPtr;
+
     namespace ScriptClassDocField
     {
         enum Type
@@ -183,6 +187,11 @@ namespace jsb
         static void _parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
 
     };
+
+    // Safe pointer of ScriptClassInfo
+    typedef internal::SArray<ScriptClassInfo, ScriptClassID>::Pointer ScriptClassInfoPtr;
+    typedef internal::SArray<ScriptClassInfo, ScriptClassID>::ConstPointer ScriptClassInfoConstPtr;
+
 }
 
 #endif

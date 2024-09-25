@@ -26,7 +26,7 @@ namespace jsb
                     const NativeClassInfo* class_info = environment->find_object_class(pointer);
                     if (jsb_unlikely(!class_info))
                     {
-                        return jsb_format("[dead_object @%s]", uitos((uint64_t) pointer));
+                        return jsb_format("[dead_object @%s]", (uint64_t) pointer);
                     }
                     jsb_check(class_info->type == NativeClassType::GodotObject);
                     const NativeObjectID object_id = environment->get_object_id(pointer);

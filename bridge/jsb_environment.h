@@ -145,7 +145,6 @@ namespace jsb
         jsb_force_inline v8::Local<v8::Context> get_context() const { return context_.Get(isolate_); }
         jsb_force_inline EnvironmentID id() const { return (EnvironmentID) this; }
 
-#pragma region context related in last version
         jsb_force_inline internal::VariantInfoCollection& get_variant_info_collection() { return variant_info_collection_; }
 
         void add_class_register(const Variant::Type p_type, const ClassRegisterFunc p_func)
@@ -232,23 +231,15 @@ namespace jsb
 
         bool _get_main_module(v8::Local<v8::Object>* r_main_module) const;
 
-        // JS function (type_name: string): type
-        // it's called from JS, load godot type with the `type_name` in the `godot` module (it can be type/singleton/constant/etc.)
-        static void _load_godot_mod(const v8::FunctionCallbackInfo<v8::Value>& info);
-
-        NativeClassID _expose_godot_class(const ClassDB::ClassInfo* p_class_info);
-        jsb_force_inline NativeClassID _expose_godot_class(const StringName& p_class_name)
-        {
-            return _expose_godot_class(ClassDB::classes.getptr(p_class_name));
-        }
-
         // return nullptr if no register for `p_type_name`
-        const NativeClassInfo* _expose_class(const StringName& p_type_name, NativeClassID* r_class_id = nullptr);
+        NativeClassInfoPtr expose_class(const StringName& p_type_name, NativeClassID* r_class_id = nullptr);
 
-        const NativeClassInfo* _expose_godot_primitive_class(const Variant::Type p_type, NativeClassID* r_class_id = nullptr)
+        NativeClassInfoPtr expose_godot_object_class(const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id = nullptr);
+
+        NativeClassInfoPtr expose_godot_primitive_class(const Variant::Type p_type, NativeClassID* r_class_id = nullptr)
         {
             jsb_check(internal::VariantUtil::is_valid_name(godot_primitive_map_[p_type]));
-            return _expose_class(godot_primitive_map_[p_type], r_class_id);
+            return expose_class(godot_primitive_map_[p_type], r_class_id);
         }
 
         // return false if something wrong with an exception thrown
@@ -265,8 +256,6 @@ namespace jsb
         EReloadResult::Type mark_as_reloading(const StringName& p_name);
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
-
-#pragma endregion
 
         void start_debugger();
 
@@ -291,8 +280,10 @@ namespace jsb
         // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
         NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, EBindingPolicy::Type p_policy);
 
+        // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type)
+        // May change in the future.
         template<typename TStruct>
-        void bind_valuetype(NativeClassID p_class_id, TStruct* p_pointer, const v8::Local<v8::Object>& p_object)
+        void bind_valuetype(TStruct* p_pointer, const v8::Local<v8::Object>& p_object)
         {
             p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
             p_object->SetPrivate(isolate_->GetCurrentContext(), valuetype_private_.Get(isolate_),
@@ -310,17 +301,17 @@ namespace jsb
                         if (const std::shared_ptr<Environment> env = _access(deleter_data);
                             env && env->pending_delete_.write(variant) == OK)
                         {
-                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%s) space:%d thread:%s",
-                                Variant::get_type_name(type), uitos((uintptr_t) variant),
+                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) space:%d thread:%s",
+                                Variant::get_type_name(type), (uintptr_t) variant,
                                 env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
                             return;
                         }
-                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%s)",
-                            Variant::get_type_name(type), uitos((uintptr_t) variant));
+                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%d)",
+                            Variant::get_type_name(type), (uintptr_t) variant);
                     }
                     else
                     {
-                        // JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%s)", Variant::get_type_name(type), uitos((uintptr_t) variant));
+                        // JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%d)", Variant::get_type_name(type), (uintptr_t) variant);
                         jsb_check(type != Variant::OBJECT);
                     }
                     Environment::dealloc_variant(variant);
@@ -344,9 +335,7 @@ namespace jsb
         {
             if (const NativeObjectID* entry = objects_index_.getptr(p_pointer))
             {
-                const ObjectHandle& handle = objects_.get_value(*entry);
-                jsb_check(get_object_class(p_pointer).type != NativeClassType::GodotPrimitive);
-                r_unwrap = handle.ref_.Get(isolate_);
+                r_unwrap = objects_.get_value(*entry).ref_.Get(isolate_);
                 return true;
             }
             return false;
@@ -366,19 +355,11 @@ namespace jsb
             return handle.ref_.Get(isolate_);
         }
 
-        jsb_force_inline const NativeClassInfo& get_object_class(void* p_pointer) const
-        {
-            const NativeClassInfo* class_info = find_object_class(p_pointer);
-            jsb_check(class_info);
-            return *class_info;
-        }
-
         jsb_force_inline const NativeClassInfo* find_object_class(void* p_pointer) const
         {
             if (const NativeObjectID* it = objects_index_.getptr(p_pointer))
             {
                 const ObjectHandle& handle = objects_.get_value(*it);
-                jsb_check(native_classes_.is_valid_index(handle.class_id));
                 return &native_classes_.get_value(handle.class_id);
             }
             return nullptr;
@@ -486,33 +467,20 @@ namespace jsb
             return class_id;
         }
 
-        // A variant of get_native_class() to find native class info of godot object class.
-        // Returns `nullptr` if not found
-        jsb_force_inline const NativeClassInfo* find_godot_class(const StringName& p_name, NativeClassID& r_class_id) const
-        {
-            if (const NativeClassID* it = godot_classes_index_.getptr(p_name))
-            {
-                r_class_id = *it;
-                return &native_classes_.get_value(r_class_id);
-            }
-            return nullptr;
-        }
+        // [unsafe]
+        // It's dangerous to hold the `NativeClassInfo` reference/pointer because the address is not ensured stable.
+        // All `get_` methods will crash if `p_class_id` is invalid
+        jsb_force_inline NativeClassInfoPtr get_native_class_ptr(const NativeClassID p_class_id) { return native_classes_.get_value_scoped(p_class_id); }
+        jsb_force_inline NativeClassInfoConstPtr get_native_class_ptr(const NativeClassID p_class_id) const { return native_classes_.get_value_scoped(p_class_id); }
 
-        /**
-         * [unsafe] it's dangerous to hold the `NativeClassInfo` reference/pointer because the address is not ensured stable.
-         */
-        jsb_force_inline NativeClassInfo& get_native_class(NativeClassID p_class_id) { return native_classes_.get_value(p_class_id); }
-        jsb_force_inline internal::SArray<NativeClassInfo, NativeClassID>::ScopedPointer _get_native_class(NativeClassID p_class_id) { return native_classes_.get_value_scoped(p_class_id); }
-        jsb_force_inline const NativeClassInfo& get_native_class(NativeClassID p_class_id) const { return native_classes_.get_value(p_class_id); }
-
-        jsb_force_inline ScriptClassInfo& add_script_class(ScriptClassID& r_class_id)
+        jsb_force_inline ScriptClassInfoPtr add_script_class(ScriptClassID& r_class_id)
         {
             r_class_id = script_classes_.add({});
-            return script_classes_.get_value(r_class_id);
+            return script_classes_.get_value_scoped(r_class_id);
         }
-        jsb_force_inline ScriptClassInfo& get_script_class(const ScriptClassID p_class_id) { return script_classes_.get_value(p_class_id); }
-        jsb_force_inline internal::SArray<ScriptClassInfo, ScriptClassID>::ScopedPointer _get_script_class(ScriptClassID p_class_id) { return script_classes_.get_value_scoped(p_class_id); }
-        jsb_force_inline ScriptClassInfo* find_script_class(ScriptClassID p_class_id) { return script_classes_.is_valid_index(p_class_id) ? &script_classes_.get_value(p_class_id) : nullptr; }
+        jsb_force_inline ScriptClassInfoPtr get_script_class(const ScriptClassID p_class_id) { return script_classes_.get_value_scoped(p_class_id); }
+        jsb_force_inline ScriptClassInfoConstPtr get_script_class(const ScriptClassID p_class_id) const { return script_classes_.get_value_scoped(p_class_id); }
+        jsb_force_inline ScriptClassInfoPtr find_script_class(const ScriptClassID p_class_id) { return script_classes_.is_valid_index(p_class_id) ? script_classes_.get_value_scoped(p_class_id) : nullptr; }
 
         void get_statistics(Statistics& r_stats) const;
 

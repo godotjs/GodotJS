@@ -299,15 +299,14 @@ namespace jsb
             {
                 jsb_checkf(Variant::can_convert(p_cvar.get_type(), p_type), "variant type can't convert to %s from %s", Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
                 Environment* env = Environment::wrap(isolate);
-                NativeClassID class_id;
-                if (const NativeClassInfo* class_info = env->_expose_godot_primitive_class(p_type, &class_id))
+                if (const NativeClassInfoPtr class_info = env->expose_godot_primitive_class(p_type))
                 {
                     jsb_check(class_info->type == NativeClassType::GodotPrimitive);
                     v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
                     r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
                     jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
 
-                    env->bind_valuetype(class_id, Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                    env->bind_valuetype(Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
                 }
                 return false;
@@ -338,10 +337,13 @@ namespace jsb
 
         // freshly bind existing gd object (not constructed in javascript)
         const StringName& class_name = p_godot_obj->get_class_name();
-        if (const NativeClassID class_id = environment->_expose_godot_class(class_name))
+        if (NativeClassID class_id;
+            NativeClassInfoPtr class_info = environment->expose_godot_object_class(ClassDB::classes.getptr(class_name), &class_id))
         {
-            v8::Local<v8::FunctionTemplate> jtemplate = environment->get_native_class(class_id).template_.Get(isolate);
-            r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+            const v8::Local<v8::FunctionTemplate> class_template = class_info->template_.Get(isolate);
+            // leave the scope immediately to avoid possible side effects during `NewInstance`
+            class_info = nullptr;
+            r_jval = class_template->InstanceTemplate()->NewInstance(context).ToLocalChecked();
             jsb_check(r_jval->InternalFieldCount() == IF_ObjectFieldCount);
 
             if (p_godot_obj->is_ref_counted())

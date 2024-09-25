@@ -61,7 +61,7 @@ public:
     void load_source_code_from_path();
 	void load_module_if_missing();
 
-    const jsb::ScriptClassInfo& get_script_class() const;
+    jsb::ScriptClassInfoPtr get_script_class() const;
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;
@@ -98,7 +98,7 @@ public:
     // we expect Godot calling this after loaded_?
     virtual bool is_valid() const override { jsb_check(loaded_); return valid_; }
     virtual bool is_tool() const override;
-    virtual bool is_abstract() const override { return valid_ && get_script_class().is_abstract(); }
+    virtual bool is_abstract() const override { return valid_ && get_script_class()->is_abstract(); }
 
     virtual ScriptLanguage* get_language() const override;
 

@@ -79,44 +79,74 @@ namespace jsb::internal
             AddressScope& operator=(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; return *this; }
         };
 
-        struct ScopedPointer
+        template<typename S>
+        struct TScopedPointer
         {
         private:
             SArray* container_;
-            T* ptr_;
+            S* ptr_;
 
         public:
-            ScopedPointer(SArray* p_container, const IndexType& p_index) : container_(p_container) { container_->lock_address(); ptr_ = &container_->get_value(p_index); }
-            ~ScopedPointer() { if (container_) container_->unlock_address(); }
+            TScopedPointer(nullptr_t) : container_(nullptr), ptr_(nullptr) { }
+            TScopedPointer(SArray* p_container, S* p_ptr) : container_(p_container), ptr_(p_ptr)
+            {
+                if (container_)
+                {
+                    container_->lock_address();
+                }
+            }
+            ~TScopedPointer() { if (container_) container_->unlock_address(); }
 
-            ScopedPointer(const ScopedPointer&) = delete;
-            ScopedPointer& operator=(const ScopedPointer&) = delete;
+            TScopedPointer(const TScopedPointer& p_other): container_(p_other.container_), ptr_(p_other.ptr_)
+            {
+                container_->lock_address();
+            }
+            TScopedPointer& operator=(const TScopedPointer& p_other)
+            {
+                if (this != &p_other)
+                {
+                    container_ = p_other.container_;
+                    ptr_ = p_other.ptr_;
+                    if (container_) container_->lock_address();
+                }
+                return *this;
+            }
 
-            T* operator->() { return ptr_; }
-            const T* operator->() const { return ptr_; }
+            TScopedPointer& operator=(nullptr_t)
+            {
+                if (container_) container_->unlock_address();
+                container_ = nullptr;
+                ptr_ = nullptr;
+                return *this;
+            }
 
-            ScopedPointer(ScopedPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; }
-            ScopedPointer& operator=(ScopedPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; return *this; }
+            S& operator*() const { return *ptr_; }
+            S* operator->() const { return ptr_; }
+
+            explicit operator bool() const { return ptr_; }
+
+            TScopedPointer(TScopedPointer&& p_other) noexcept
+            {
+                container_ = p_other.container_;
+                ptr_ = p_other.ptr_;
+                p_other.container_ = nullptr;
+                p_other.ptr_ = nullptr;
+            }
+            TScopedPointer& operator=(TScopedPointer&& p_other) noexcept
+            {
+                if (this != &p_other)
+                {
+                    container_ = p_other.container_;
+                    ptr_ = p_other.ptr_;
+                    p_other.container_ = nullptr;
+                    p_other.ptr_ = nullptr;
+                }
+                return *this;
+            }
         };
 
-        struct ScopedConstPointer
-        {
-        private:
-            SArray* container_;
-            const T* ptr_;
-
-        public:
-            ScopedConstPointer(SArray* p_container, const IndexType& p_index) : container_(p_container) { container_->lock_address(); ptr_ = &container_->get_value(p_index); }
-            ~ScopedConstPointer() { if (container_) container_->unlock_address(); }
-
-            ScopedConstPointer(const ScopedConstPointer&) = delete;
-            ScopedConstPointer& operator=(const ScopedConstPointer&) = delete;
-
-            const T* operator->() const { return ptr_; }
-
-            ScopedConstPointer(ScopedConstPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; }
-            ScopedConstPointer& operator=(ScopedConstPointer&& p_other) noexcept { container_ = p_other.container_; ptr_ = p_other.ptr_; p_other.container_ = nullptr; p_other.ptr_ = nullptr; return *this; }
-        };
+        typedef TScopedPointer<T> Pointer;
+        typedef TScopedPointer<T const> ConstPointer;
 
 		struct LowLevelAccess
 		{
@@ -441,8 +471,8 @@ namespace jsb::internal
 			return get_value(get_last_index());
 		}
 
-		ScopedPointer get_value_scoped(const IndexType& p_index) { return ScopedPointer(this, p_index); }
-		ScopedConstPointer get_value_scoped(const IndexType& p_index) const { return ScopedConstPointer(this, p_index); }
+		Pointer get_value_scoped(IndexType p_index) { return Pointer(this, &get_value(p_index)); }
+		ConstPointer get_value_scoped(IndexType p_index) const { return ConstPointer(const_cast<SArray*>(this), &get_value(p_index)); }
 
 		T& get_value(const IndexType& p_index)
 		{
@@ -793,8 +823,8 @@ namespace jsb::internal
 		}
 
     private:
-        void lock_address() { ++_address_locked; }
-        void unlock_address() { jsb_check(_address_locked > 0); --_address_locked; }
+        jsb_force_inline void lock_address() { ++_address_locked; }
+        jsb_force_inline void unlock_address() { jsb_check(_address_locked > 0); --_address_locked; }
 
 		bool is_consistent() const
 		{

@@ -4,7 +4,7 @@
 
 namespace jsb
 {
-    NativeClassID ObjectReflectBindingUtil::reflect_bind(Environment* p_env, const ClassDB::ClassInfo* p_class_info)
+    NativeClassInfoPtr ObjectReflectBindingUtil::reflect_bind(Environment* p_env, const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id)
     {
         v8::Isolate* isolate = p_env->get_isolate();
         const v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -134,25 +134,27 @@ namespace jsb
             function_template->Set(jsb_symbol(p_env, ClassId), v8::Uint32::NewFromUnsigned(isolate, *class_id));
 
             // build the prototype chain (inherit)
-            if (const NativeClassID super_class_id = p_env->_expose_godot_class(p_class_info->inherits_ptr))
+            if (NativeClassID super_class_id;
+                const NativeClassInfoPtr super_class_info = p_env->expose_godot_object_class(p_class_info->inherits_ptr, &super_class_id))
             {
-                v8::Local<v8::FunctionTemplate> base_template = p_env->get_native_class(super_class_id).template_.Get(isolate);
+                v8::Local<v8::FunctionTemplate> base_template = super_class_info->template_.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
                 function_template->Inherit(base_template);
                 JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id,
                     p_class_info->inherits_ptr->name, super_class_id);
             }
 
+            // preparation for return
             {
-                auto class_info = p_env->_get_native_class(class_id);
+                NativeClassInfoPtr class_info = p_env->get_native_class_ptr(class_id);
                 jsb_check(function_template == class_info->template_);
 
                 class_info->set_function(isolate, function_template->GetFunction(context).ToLocalChecked());
                 JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, class_id);
+                if (r_class_id) *r_class_id = class_id;
+                return class_info;
             }
-        } // end type template
-
-        return class_id;
+        } // end type template block scope
     }
 
     void ObjectReflectBindingUtil::_godot_object_signal(const v8::FunctionCallbackInfo<v8::Value>& info)

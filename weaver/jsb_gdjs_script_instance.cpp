@@ -4,7 +4,7 @@
 
 bool GodotJSScriptInstance::set(const StringName& p_name, const Variant& p_value)
 {
-    if (const auto& it = script_->get_script_class().properties.find(p_name); it)
+    if (const auto& it = script_->get_script_class()->properties.find(p_name); it)
     {
         return script_->get_environment()->set_script_property_value(object_id_, it->value, p_value);
     }
@@ -13,7 +13,7 @@ bool GodotJSScriptInstance::set(const StringName& p_name, const Variant& p_value
 
 bool GodotJSScriptInstance::get(const StringName& p_name, Variant& r_ret) const
 {
-    if (const auto& it = script_->get_script_class().properties.find(p_name); it)
+    if (const auto& it = script_->get_script_class()->properties.find(p_name); it)
     {
         return script_->get_environment()->get_script_property_value(object_id_, it->value, r_ret);
     }
@@ -27,8 +27,8 @@ void GodotJSScriptInstance::get_property_list(List<PropertyInfo>* p_properties) 
 
 Variant::Type GodotJSScriptInstance::get_property_type(const StringName& p_name, bool* r_is_valid) const
 {
-    const jsb::ScriptClassInfo& class_info = script_->get_script_class();
-    if (const HashMap<StringName, jsb::ScriptPropertyInfo>::ConstIterator it = class_info.properties.find(p_name))
+    const jsb::ScriptClassInfoPtr class_info = script_->get_script_class();
+    if (const HashMap<StringName, jsb::ScriptPropertyInfo>::ConstIterator it = class_info->properties.find(p_name))
     {
         if (r_is_valid) *r_is_valid = true;
         return it->value.type;

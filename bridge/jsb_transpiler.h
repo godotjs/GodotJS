@@ -10,12 +10,12 @@
     jsb_force_inline static v8::Local<v8::FunctionTemplate> create(Environment* env, internal::Index32 class_id)\
     {\
         v8::Isolate* isolate = env->get_isolate();\
-        NativeClassInfo& class_info = env->get_native_class(class_id);\
+        NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
         v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor, v8::Uint32::NewFromUnsigned(isolate, *class_id));\
         template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
-        template_->SetClassName(env->get_string_value(class_info.name));\
-        class_info.finalizer = &finalizer;\
-        class_info.template_.Reset(isolate, template_);\
+        template_->SetClassName(env->get_string_value(class_info->name));\
+        class_info->finalizer = &finalizer;\
+        class_info->template_.Reset(isolate, template_);\
         return template_;\
     }
 
@@ -26,17 +26,17 @@
         v8::Isolate* isolate = env->get_isolate();\
         v8::Local<v8::FunctionTemplate> template_ = v8::FunctionTemplate::New(isolate, &constructor<TArgs...>, v8::Uint32::NewFromUnsigned(isolate, *class_id));\
         template_->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);\
-        NativeClassInfo& class_info = env->get_native_class(class_id);\
-        class_info.finalizer = &finalizer;\
-        class_info.template_.Reset(isolate, template_);\
-        template_->SetClassName(env->get_string_value(class_info.name));\
+        NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
+        class_info->finalizer = &finalizer;\
+        class_info->template_.Reset(isolate, template_);\
+        template_->SetClassName(env->get_string_value(class_info->name));\
         return template_;\
     }
 
 #define JSB_CONTEXT_BOILERPLATE() \
     v8::Isolate* isolate = info.GetIsolate();\
     v8::Local<v8::Context> context = isolate->GetCurrentContext();\
-    Functor& func = *(Functor*) Realm::get_function_pointer(context, info.Data()->Uint32Value(context).ToChecked());\
+    Functor& func = *(Functor*) Environment::get_function_pointer(context, info.Data()->Uint32Value(context).ToChecked());\
     (void) 0
 
 namespace jsb
@@ -517,16 +517,16 @@ namespace jsb
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
             Environment* environment = Environment::wrap(isolate);
-            const NativeClassInfo& native_class = environment->get_native_class(class_id);
-            jsb_check(native_class.type == NativeClassType::GodotObject);
-            v8::Local<v8::Value> new_target = info.NewTarget();
-            v8::Local<v8::Function> constructor = native_class.get_function(isolate);
+            const NativeClassInfoPtr class_info = environment->get_native_class_ptr(class_id);
+            jsb_check(class_info->type == NativeClassType::GodotObject);
+            const v8::Local<v8::Value> new_target = info.NewTarget();
+            const v8::Local<v8::Function> constructor = class_info->get_function(isolate);
 
             // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
             if (constructor == new_target)
             {
                 const v8::Local<v8::Object> self = info.This();
-                Object* gd_object = ClassDB::instantiate(native_class.name);
+                Object* gd_object = ClassDB::instantiate(class_info->name);
 
                 // IS IT A TRUTH that ref_count==1 after creation_func??
                 jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
@@ -546,18 +546,18 @@ namespace jsb
                 // (case-2) constructing CDO from C++ (nothing more to do, it's a pure javascript)
                 if (info[0] == jsb_symbol(environment, CDO))
                 {
-                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", native_class.name, class_id);
+                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", class_info->name, class_id);
                     return;
                 }
 
                 // (case-3) constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
                 if (info[0] == jsb_symbol(environment, CrossBind))
                 {
-                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", native_class.name, class_id);
+                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", class_info->name, class_id);
                     return;
                 }
 
-                jsb_checkf(false, "unexpected identifer received. %s(%d)", native_class.name, class_id);
+                jsb_checkf(false, "unexpected identifer received. %s(%d)", class_info->name, class_id);
                 return;
             }
 
@@ -567,15 +567,15 @@ namespace jsb
             if (new_target.As<v8::Object>()->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
             {
                 const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
-                auto script_class_info = environment->_get_script_class(script_class_id);
+                const ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
-                    script_class_info->js_class_name, script_class_info->module_id, native_class.name, class_id);
+                    script_class_info->js_class_name, script_class_info->module_id, class_info->name, class_id);
                 const v8::Local<v8::Object> self = info.This();
                 script_class_info->_newbind(self);
                 return;
             }
 
-            jsb_checkf(false, "unexpected new.target. %s(%d)", native_class.name, class_id);
+            jsb_checkf(false, "unexpected new.target. %s(%d)", class_info->name, class_id);
         }
 
         static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
@@ -590,12 +590,12 @@ namespace jsb
                 {
                     if (!p_persistent)
                     {
-                        JSB_LOG(VeryVerbose, "delete gd ref_counted object %s", uitos((uintptr_t) self));
+                        JSB_LOG(VeryVerbose, "delete gd ref_counted object %d", (uintptr_t) self);
                         memdelete(self);
                     }
                     else
                     {
-                        JSB_LOG(VeryVerbose, "unlink persistent gd ref_counted object %s", uitos((uintptr_t) self));
+                        JSB_LOG(VeryVerbose, "unlink persistent gd ref_counted object %d", (uintptr_t) self);
                     }
                 }
             }
@@ -604,12 +604,12 @@ namespace jsb
                 //TODO only delete when the object's lifecycle is fully managed by javascript
                 if (!p_persistent)
                 {
-                    JSB_LOG(VeryVerbose, "delete gd object %s", uitos((uintptr_t) self));
+                    JSB_LOG(VeryVerbose, "delete gd object %d", (uintptr_t) self);
                     memdelete(self);
                 }
                 else
                 {
-                    JSB_LOG(VeryVerbose, "unlink persistent gd object %s", uitos((uintptr_t) self));
+                    JSB_LOG(VeryVerbose, "unlink persistent gd object %d", (uintptr_t) self);
                 }
             }
         }

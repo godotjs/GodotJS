@@ -196,7 +196,6 @@ namespace jsb
             v8::Local<v8::Object> self = info.This();
             Environment* env = Environment::wrap(isolate);
             const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(env).constructors[info.Data().As<v8::Int32>()->Value()];
-            jsb_check(constructor_info.class_id);
 
             const int argc = info.Length();
 
@@ -254,7 +253,7 @@ namespace jsb
                     args[index].~Variant();
                 }
 
-                env->bind_valuetype(constructor_info.class_id, instance, self);
+                env->bind_valuetype(instance, self);
                 return;
             }
 
@@ -579,7 +578,7 @@ namespace jsb
         //     return false;
         // }
 
-        static v8::Local<v8::FunctionTemplate> get_template(const FBindingEnv& p_env, const NativeClassID p_class_id)
+        static v8::Local<v8::FunctionTemplate> get_template(const FBindingEnv& p_env)
         {
             JSB_DEFINE_FAST_CONSTRUCTOR(Vector2);
             JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i);
@@ -595,7 +594,6 @@ namespace jsb
                 const int constructor_index = (int) GetVariantInfoCollection(p_env.env).constructors.size();
                 GetVariantInfoCollection(p_env.env).constructors.append({});
                 internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.env).constructors.write[constructor_index];
-                constructor_info.class_id = p_class_id;
                 const int count = Variant::get_constructor_count(TYPE);
                 constructor_info.variants.resize_zeroed(count);
                 for (int index = 0; index < count; ++index)
@@ -613,12 +611,12 @@ namespace jsb
             }
         }
 
-        static NativeClassID reflect_bind(const FBindingEnv& p_env)
+        static NativeClassInfoPtr reflect_bind(const FBindingEnv& p_env, NativeClassID* r_class_id = nullptr)
         {
             const StringName& class_name = p_env.type_name;
             const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotPrimitive, class_name);
 
-            v8::Local<v8::FunctionTemplate> function_template = get_template(p_env, class_id);
+            v8::Local<v8::FunctionTemplate> function_template = get_template(p_env);
             function_template->InstanceTemplate()->SetInternalFieldCount(IF_VariantFieldCount);
             function_template->SetClassName(p_env->get_string_value(class_name));
             v8::Local<v8::ObjectTemplate> prototype_template = function_template->PrototypeTemplate();
@@ -801,14 +799,15 @@ namespace jsb
             }
 
             {
-                NativeClassInfo& class_info = p_env.env->get_native_class(class_id);
-                class_info.finalizer = &finalizer;
-                class_info.template_.Reset(p_env.isolate, function_template);
-                class_info.set_function(p_env.isolate, function_template->GetFunction(p_env.context).ToLocalChecked());
-                jsb_check(class_info.template_ == function_template);
-                jsb_check(!class_info.template_.IsEmpty());
+                if (r_class_id) *r_class_id = class_id;
+                NativeClassInfoPtr class_info = p_env.env->get_native_class_ptr(class_id);
+                class_info->finalizer = &finalizer;
+                class_info->template_.Reset(p_env.isolate, function_template);
+                class_info->set_function(p_env.isolate, function_template->GetFunction(p_env.context).ToLocalChecked());
+                jsb_check(class_info->template_ == function_template);
+                jsb_check(!class_info->template_.IsEmpty());
+                return class_info;
             }
-            return class_id;
         }
     };
 
