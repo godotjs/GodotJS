@@ -302,8 +302,7 @@ namespace jsb
                 if (const NativeClassInfoPtr class_info = env->expose_godot_primitive_class(p_type))
                 {
                     jsb_check(class_info->type == NativeClassType::GodotPrimitive);
-                    v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
-                    r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+                    r_jval = class_info->clazz.NewInstance(context);
                     jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
 
                     env->bind_valuetype(Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
@@ -340,10 +339,9 @@ namespace jsb
         if (NativeClassID class_id;
             NativeClassInfoPtr class_info = environment->expose_godot_object_class(ClassDB::classes.getptr(class_name), &class_id))
         {
-            const v8::Local<v8::FunctionTemplate> class_template = class_info->template_.Get(isolate);
-            // leave the scope immediately to avoid possible side effects during `NewInstance`
-            class_info = nullptr;
-            r_jval = class_template->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+            // class_info ptr will be invalid after escape()
+            // to avoid possible side effects during `NewInstance`
+            r_jval = class_info.escape()->clazz.NewInstance(context);
             jsb_check(r_jval->InternalFieldCount() == IF_ObjectFieldCount);
 
             if (p_godot_obj->is_ref_counted())

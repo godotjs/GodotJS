@@ -175,7 +175,7 @@ namespace jsb::impl
         ClassBuilder(const ClassBuilder&) = delete;
         ClassBuilder& operator=(const ClassBuilder&) = delete;
 
-        ClassBuilder(ClassBuilder&&) = default;
+        ClassBuilder(ClassBuilder&&) noexcept = default;
         ClassBuilder& operator=(ClassBuilder&&) = default;
 
         ClassBuilder& SetClassName(const v8::Local<v8::String>& name)

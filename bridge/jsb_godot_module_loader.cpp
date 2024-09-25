@@ -89,8 +89,8 @@ namespace jsb
             if (const NativeClassInfoPtr class_info = env->expose_class(type_name))
             {
                 jsb_check(class_info->name == type_name);
-                jsb_check(!class_info->template_.IsEmpty());
-                info.GetReturnValue().Set(class_info->get_function(isolate));
+                jsb_check(!class_info->clazz.IsEmpty());
+                info.GetReturnValue().Set(class_info->clazz.NewTarget(isolate));
                 return;
             }
 
@@ -98,8 +98,8 @@ namespace jsb
             if (const NativeClassInfoPtr class_info = env->expose_godot_object_class(ClassDB::classes.getptr(type_name)))
             {
                 jsb_check(class_info->name == type_name);
-                jsb_check(!class_info->template_.IsEmpty());
-                info.GetReturnValue().Set(class_info->get_function(isolate));
+                jsb_check(!class_info->clazz.IsEmpty());
+                info.GetReturnValue().Set(class_info->clazz.NewTarget(isolate));
                 return;
             }
         }

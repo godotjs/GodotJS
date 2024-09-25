@@ -930,7 +930,7 @@ namespace jsb
             NativeClassInfoPtr class_info = native_classes_.get_value_scoped(*it);
             JSB_LOG(VeryVerbose, "return cached native class %s (%d) (for %s)", class_info->name, *it, p_class_info->name);
             jsb_check(class_info->name == p_class_info->name);
-            jsb_check(!class_info->template_.IsEmpty());
+            jsb_check(!class_info->clazz.IsEmpty());
             return class_info;
         }
 

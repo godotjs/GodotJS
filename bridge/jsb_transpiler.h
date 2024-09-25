@@ -14,7 +14,7 @@
         impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor, *class_id);\
         class_builder.SetClassName(env->get_string_value(class_info->name));\
         class_info->finalizer = &finalizer;\
-        class_info->template_.Reset(isolate, *class_builder);\
+        class_info->clazz = impl::Class(isolate, *class_builder);\
         return class_builder;\
     }
 
@@ -26,7 +26,7 @@
         impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor<TArgs...>, *class_id);\
         NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
         class_info->finalizer = &finalizer;\
-        class_info->template_.Reset(isolate, *class_builder);\
+        class_info->clazz = impl::Class(isolate, *class_builder);\
         class_builder.SetClassName(env->get_string_value(class_info->name));\
         return class_builder;\
     }
@@ -116,17 +116,13 @@ namespace jsb
         static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, const T& val)
         {
             Environment* environment = Environment::wrap(isolate);
-            Realm* realm = Realm::wrap(context);
-            NativeClassID class_id;
-            const NativeClassInfo* class_info = realm->_expose_godot_primitive_class(VariantCaster<T>::Type, &class_id);
-
-            v8::Local<v8::FunctionTemplate> jtemplate = class_info->template_.Get(isolate);
-            v8::Local<v8::Object> r_jval = jtemplate->InstanceTemplate()->NewInstance(context).ToLocalChecked();
-            jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            const NativeClassInfoPtr class_info = environment->expose_godot_primitive_class(VariantCaster<T>::Type);
+            const v8::Local<v8::Object> inst = class_info->clazz.NewInstance(context);
+            jsb_check(inst.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
 
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-            environment->bind_valuetype(class_id, environment->alloc_variant(val), r_jval.As<v8::Object>());
-            info.GetReturnValue().Set(r_jval);
+            environment->bind_valuetype(environment->alloc_variant(val), inst.As<v8::Object>());
+            info.GetReturnValue().Set(inst);
             return true;
         }
     };
@@ -518,10 +514,9 @@ namespace jsb
             const NativeClassInfoPtr class_info = environment->get_native_class_ptr(class_id);
             jsb_check(class_info->type == NativeClassType::GodotObject);
             const v8::Local<v8::Value> new_target = info.NewTarget();
-            const v8::Local<v8::Function> constructor = class_info->get_function(isolate);
 
             // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
-            if (constructor == new_target)
+            if (class_info->clazz.NewTarget(isolate) == new_target)
             {
                 const v8::Local<v8::Object> self = info.This();
                 Object* gd_object = ClassDB::instantiate(class_info->name);

@@ -3,6 +3,7 @@
 
 #include "jsb_bridge_pch.h"
 #include "jsb_module.h"
+#include "modules/GodotJS/impl/v8/jsb_v8_class.h"
 
 namespace jsb
 {
@@ -21,7 +22,6 @@ namespace jsb
 
     struct NativeClassInfo
     {
-
         // the func to release the exposed C++ (godot/variant/native) object
         // it's called when a JS value with this class type garbage collected by JS runtime
         FinalizerFunc finalizer;
@@ -33,26 +33,7 @@ namespace jsb
         // godot_object_constructor use this name to look up classdb
         StringName name;
 
-        // strong reference
-        // the counterpart of exposed C++ class.
-        //NOTE template_.GetFunction() returns the `constructor`,
-        //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
-        v8::Global<v8::FunctionTemplate> template_;
-
-        // template_ itself but instantiated
-        //TODO it is unnecessary, but we can't get expected result of `get_function() == new_target` for some unknown reasons
-        v8::Global<v8::Function> target_;
-
-        jsb_force_inline void set_function(v8::Isolate* isolate, const v8::Local<v8::Function>& func)
-        {
-            target_.Reset(isolate, func);
-        }
-
-        jsb_force_inline v8::Local<v8::Function> get_function(v8::Isolate* isolate) const
-        {
-            jsb_check(!target_.IsEmpty());
-            return target_.Get(isolate);
-        }
+        impl::Class clazz;
     };
 
     // Safe pointer of NativeClassInfo

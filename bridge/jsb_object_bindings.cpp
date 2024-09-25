@@ -129,7 +129,7 @@ namespace jsb
             if (NativeClassID super_class_id;
                 const NativeClassInfoPtr super_class_info = p_env->expose_godot_object_class(p_class_info->inherits_ptr, &super_class_id))
             {
-                v8::Local<v8::FunctionTemplate> base_template = super_class_info->template_.Get(isolate);
+                v8::Local<v8::FunctionTemplate> base_template = super_class_info->clazz.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
                 class_builder.Inherit(base_template);
                 JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id,
@@ -139,10 +139,10 @@ namespace jsb
             // preparation for return
             {
                 NativeClassInfoPtr class_info = p_env->get_native_class_ptr(class_id);
-                jsb_check(*class_builder == class_info->template_);
+                jsb_check(*class_builder == class_info->clazz.Get(isolate));
 
                 class_builder.Build();
-                class_info->set_function(isolate, (*class_builder)->GetFunction(context).ToLocalChecked());
+                class_info->clazz.Seal(context);
                 JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, class_id);
                 if (r_class_id) *r_class_id = class_id;
                 return class_info;
