@@ -198,7 +198,7 @@ namespace jsb::impl
         v8::Local<v8::FunctionTemplate>& Build()
         {
 #if JSB_DEBUG
-            JSB_LOG(Verbose, "close class builder %d", class_payload_);
+            JSB_LOG(VeryVerbose, "close class builder %d", class_payload_);
 #endif
             closed_ = true;
             return template_;
@@ -207,7 +207,6 @@ namespace jsb::impl
         //TODO temp
         v8::Local<v8::FunctionTemplate> operator*() const { return template_; }
 
-        // zero class_payload used in FAST_CONSTRUCTOR (which does not use any data payload in the callback)
         template<int InternalFieldCount>
         static ClassBuilder New(v8::Isolate* isolate, const v8::FunctionCallback constructor, const uint32_t class_payload)
         {
@@ -220,11 +219,12 @@ namespace jsb::impl
             builder.proto_ = builder.template_->PrototypeTemplate();
 #if JSB_DEBUG
             builder.class_payload_ = class_payload;
-            JSB_LOG(Verbose, "open class builder %d", builder.class_payload_);
+            JSB_LOG(VeryVerbose, "open class builder %d", builder.class_payload_);
 #endif
             return builder;
         }
 
+        // used in FAST_CONSTRUCTOR (which does not use any data payload in the constructor)
         template<int InternalFieldCount>
         static ClassBuilder New(v8::Isolate* isolate, const v8::FunctionCallback constructor)
         {
@@ -235,7 +235,7 @@ namespace jsb::impl
             builder.proto_ = builder.template_->PrototypeTemplate();
 #if JSB_DEBUG
             builder.class_payload_ = 0;
-            JSB_LOG(Verbose, "open class builder %d", builder.class_payload_);
+            JSB_LOG(VeryVerbose, "open class builder %d", builder.class_payload_);
 #endif
             return builder;
         }
