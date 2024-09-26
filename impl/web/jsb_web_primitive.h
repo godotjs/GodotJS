@@ -36,16 +36,7 @@ namespace v8
     class String : public Name
     {
     public:
-        template<int N>
-        static Local<String> NewFromUtf8Literal(Isolate* isolate, const char (&message)[N])
-        {
-            return NewFromUtf8(isolate, message, N - 1).ToLocalChecked();
-        }
-
         static Local<String> Empty(Isolate* isolate);
-
-        static MaybeLocal<String> NewFromOneByte(Isolate* isolate, const uint8_t* data, NewStringType type = NewStringType::kNormal, int length = -1);
-        static MaybeLocal<String> NewFromUtf8(Isolate* isolate, const char* data, NewStringType type = NewStringType::kNormal, int length = -1);
 
         int Length() const;
     };

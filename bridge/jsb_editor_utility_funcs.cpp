@@ -1,7 +1,7 @@
 #include "jsb_editor_utility_funcs.h"
 #include "jsb_type_convert.h"
 
-#if JSB_WITH_EDITOR_UTILITY_FUNCS
+#if JSB_WITH_EDITOR_UTILITY_FUNCS && !JSB_FORCE_COMPILE_WEB
 namespace jsb_private
 {
     //NOTE dummy functions only for compile-time check and never being really compiled
@@ -844,15 +844,8 @@ namespace jsb
         internal::PathUtil::delete_file(impl::Helper::to_string(isolate, info[0]));
     }
 
-}
-#endif // endif TOOLS_ENABLED
-
-namespace jsb
-{
-
     void EditorUtilityFuncs::expose(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Object> jsb_obj)
     {
-#if JSB_WITH_EDITOR_UTILITY_FUNCS
         v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
 
         jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "editor"), editor_obj).Check();
@@ -864,6 +857,14 @@ namespace jsb
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_primitive_types"), v8::Function::New(context, _get_primitive_types).ToLocalChecked()).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "delete_file"), v8::Function::New(context, _delete_file).ToLocalChecked()).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_DOCS_URL"), impl::Helper::new_string(isolate, VERSION_DOCS_URL)).Check();
-#endif
     }
 }
+#else
+namespace jsb
+{
+    void EditorUtilityFuncs::expose(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Object> jsb_obj)
+    {
+    }
+}
+#endif // endif JSB_WITH_EDITOR_UTILITY_FUNCS
+

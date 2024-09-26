@@ -34,6 +34,7 @@ JSAPI_EXTERN int jsapi_stack_push_pv(int engine_id, int pid);
 JSAPI_EXTERN int jsapi_stack_push_boolean(int engine_id, bool value);
 JSAPI_EXTERN int jsapi_stack_push_int(int engine_id, int32_t value);
 JSAPI_EXTERN int jsapi_stack_push_number(int engine_id, double value);
+JSAPI_EXTERN int jsapi_stack_push_string(int engine_id, const char* value);
 
 // stack-based calls
 

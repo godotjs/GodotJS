@@ -17,4 +17,8 @@
 #include "jsb_web_template.h"
 #include "jsb_web_promise.h"
 
+#include "jsb_web_helper.h"
+#include "jsb_web_class.h"
+#include "jsb_web_class_builder.h"
+
 #endif

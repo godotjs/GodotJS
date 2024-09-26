@@ -33,10 +33,9 @@ namespace v8
         kPromiseResolveAfterResolved = 3,
     };
 
-    typedef void (*GCCallback)(class Isolate* isolate, GCType type, GCCallbackFlags flags);
-
     class Isolate;
 
+    typedef void (*GCCallback)(Isolate* isolate, GCType type, GCCallbackFlags flags);
     typedef void(*JSAPI_GC_CALLBACK)(void*);
     typedef void(*JSAPI_FUNC_CALLBACK)(Isolate* isolate, void* func, int stack);
 

@@ -3,7 +3,6 @@
 
 #include "jsb_bridge_pch.h"
 #include "jsb_module.h"
-#include "modules/GodotJS/impl/v8/jsb_v8_class.h"
 
 namespace jsb
 {

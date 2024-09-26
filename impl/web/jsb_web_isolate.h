@@ -33,7 +33,7 @@ namespace v8
     class Isolate
     {
     public:
-		static struct StaticInitializer { StaticInitializer() { jsapi_init(); } } init;
+        static struct StaticInitializer { StaticInitializer() { jsapi_init(); } } init;
         int id_;
 
         void* isolate_data_;
@@ -53,8 +53,8 @@ namespace v8
 
         struct CreateParams
         {
-			ArrayBuffer::Allocator* array_buffer_allocator;
-		};
+            ArrayBuffer::Allocator* array_buffer_allocator;
+        };
 
         // Isolate::Scope nothing to do
         struct Scope { Scope(Isolate* isolate) {} };
