@@ -129,8 +129,9 @@ namespace jsb
             if (NativeClassID super_class_id;
                 const NativeClassInfoPtr super_class_info = p_env->expose_godot_object_class(p_class_info->inherits_ptr, &super_class_id))
             {
-                v8::Local<v8::FunctionTemplate> base_template = super_class_info->clazz.Get(isolate);
+                const v8::Local<v8::FunctionTemplate> base_template = super_class_info->clazz.Get(isolate);
                 jsb_check(!base_template.IsEmpty());
+                jsb_checkf(!super_class_info->clazz.NewTarget(isolate).IsEmpty(), "single inheritance chain should not introduce partially initialized clazz");
                 class_builder.Inherit(base_template);
                 JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id,
                     p_class_info->inherits_ptr->name, super_class_id);
@@ -276,11 +277,11 @@ namespace jsb
         {
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
-            Variant::Type type = method_bind->get_argument_type(index);
+            const Variant::Type type = method_bind->get_argument_type(index);
             if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
-                v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", index));
+                const v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", index));
                 while (index >= 0) { args[index--].~Variant(); }
                 isolate->ThrowError(error_message);
                 return;
