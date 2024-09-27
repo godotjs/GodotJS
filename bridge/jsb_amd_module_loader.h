@@ -21,6 +21,9 @@ namespace jsb
         virtual ~AMDModuleLoader() override { evaluator_.Reset(); }
 
         virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
+
+        //TODO temp
+        static void load_source(Environment* p_env, const char* p_source, int p_len, const char* p_name);
     };
 
 }

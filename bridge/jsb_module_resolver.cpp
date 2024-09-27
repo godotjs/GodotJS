@@ -13,16 +13,17 @@ namespace jsb
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         v8::Context::Scope context_scope(context);
         jsb_check(context == p_env->get_context());
+        jsb_check((int64_t)(int)p_source.size() == p_source.size());
 
         // failed to compile or run, immediately return since an exception should already be thrown
-        v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run((const char*) p_source.ptr(), p_source.size(), p_filename_abs);
-        if (func_maybe_local.IsEmpty())
+        const v8::MaybeLocal<v8::Value> func_maybe = p_env->_compile_run((const char*) p_source.ptr(), (int) p_source.size(), p_filename_abs);
+        if (func_maybe.IsEmpty())
         {
             return false;
         }
 
-        v8::Local<v8::Value> func_local;
-        if (!func_maybe_local.ToLocal(&func_local) || !func_local->IsFunction())
+        v8::Local<v8::Value> func;
+        if (!func_maybe.ToLocal(&func) || !func->IsFunction())
         {
             isolate->ThrowError("bad module elevator");
             return false;
@@ -34,7 +35,7 @@ namespace jsb
         // (see `GodotJSExportPlugin::export_compiled_script`)
         const String& filename = p_asset_path;
         const String dirname = internal::PathUtil::dirname(filename);
-        const v8::Local<v8::Function> elevator = func_local.As<v8::Function>();
+        const v8::Local<v8::Function> elevator = func.As<v8::Function>();
         const v8::Local<v8::Object> module_obj = p_module.module.Get(isolate);
 
         static constexpr int kIndexExports = 0;

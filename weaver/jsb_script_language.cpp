@@ -4,6 +4,7 @@
 
 #include "../jsb_project_preset.h"
 #include "../internal/jsb_internal.h"
+#include "../bridge/jsb_amd_module_loader.h"
 
 #include "jsb_script.h"
 #include "editor/editor_settings.h"
@@ -62,11 +63,11 @@ void GodotJSScriptLanguage::init()
         // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
         {
             size_t len;
-            Error err;
-            const char* str = GodotJSProjectPreset::get_source_rt("jsb.bundle.js", len);
+            static constexpr char kBundleSourceName[] = "jsb.bundle.js";
+            const char* str = GodotJSProjectPreset::get_source_rt(kBundleSourceName, len);
             jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
             jsb_check(len == (size_t)(int) len);
-            environment_->eval_source(str, (int) len, "jsb.bundle.js", err);
+            jsb::AMDModuleLoader::load_source(environment_.get(), str, (int) len, kBundleSourceName);
         }
     }
 }

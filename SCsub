@@ -102,6 +102,26 @@ if jsb_platform == "android":
     print("ndk_platform:", env["ndk_platform"])
     print("ANDROID_NDK_ROOT:", env["ANDROID_NDK_ROOT"])
 
+class PresetTransformer:
+    def transform(self, data: bytes):
+        return data
+        
+class PresetDefine:
+    def __init__(self, sourcename: str, targetname: str, transformer: PresetTransformer = None):
+        self.sourcename = sourcename
+        self.targetname = targetname
+        self.transformer = transformer
+
+    def read_source(self):
+        with open(self.sourcename, "rb") as input:
+            data = input.read()
+            return data if self.transformer is None else self.transformer.transform(data)
+    
+
+class AMDSourceTransformer(PresetTransformer):
+    def transform(self, data: bytes):
+        return b"(function(define){"+data+b"\n})"
+
 def check(condition, text):
     if not condition:
         print("Error: " + text)
@@ -137,33 +157,35 @@ def write_file(filename, ostream):
         print(f"generating {filename}")
         output.write(content)
 
-def generate_method_code(output, methodname, indent, filenames):
+def generate_method_code(output, methodname, indent, preset_defines: list[PresetDefine]):
     output.write(f"const char* GodotJSProjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
     output.write("{\n")
     output.write(indent+"static const char data[] = {\n")
     positions = {}
     cursor = 0
-    for sourcename in filenames:
-        targetname = filenames[sourcename]
+    for preset_define in preset_defines:
+        sourcename = preset_define.sourcename
+        targetname = preset_define.targetname
         if len(targetname) == 0:
             targetname = os.path.basename(sourcename)
         targetstart = cursor
         newline = 0
         mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(sourcename)))
-        with open(sourcename, "rb") as input:
-            bytes = input.read()
-            length = len(bytes)
-            output.write(indent+indent+f"// target: {targetname} length: {length} modified: {mtime}\n")
-            output.write(indent+indent)
-            cursor += length
-            positions[targetname] = (targetstart, cursor - targetstart)
-            for byte in bytes:
-                output.write(f"0x{byte:02x}, ")
-                newline += 1
-                if newline >= 64:
-                    newline = 0
-                    output.write("\n")
-                    output.write(indent+indent)
+
+        bytes = preset_define.read_source()
+        length = len(bytes)
+        output.write(indent+indent+f"// target: {targetname} length: {length} modified: {mtime}\n")
+        output.write(indent+indent)
+        cursor += length
+        positions[targetname] = (targetstart, cursor - targetstart)
+        for byte in bytes:
+            output.write(f"0x{byte:02x}, ")
+            newline += 1
+            if newline >= 64:
+                newline = 0
+                output.write("\n")
+                output.write(indent+indent)
+                
         if newline != 0:
             newline = 0
             output.write("\n")
@@ -186,7 +208,7 @@ def read_bundle_version():
                 return match.group(1)
     raise ValueError("no JSB_BUNDLE_VERSION defined in jsb.config.h")
 
-def generate_code(rt_filenames, ed_filenames):
+def generate_code(rt_preset_defines, ed_preset_defines):
     indent = "    "
     output = io.StringIO()
     
@@ -207,11 +229,11 @@ def generate_code(rt_filenames, ed_filenames):
         output.write(f"static_assert({read_bundle_version()} == JSB_BUNDLE_VERSION, \"obsolete preset data found, please regenerate project sources with scons\");\n")
 
         # bundled source for runtime
-        generate_method_code(output, "get_source_rt", indent, rt_filenames)
+        generate_method_code(output, "get_source_rt", indent, rt_preset_defines)
 
         # bundled source for editor
         output.write("#ifdef TOOLS_ENABLED\n")
-        generate_method_code(output, "get_source_ed", indent, ed_filenames)
+        generate_method_code(output, "get_source_ed", indent, ed_preset_defines)
         output.write("#endif\n")
     write_file(outfile, output)
 
@@ -345,21 +367,21 @@ if jsb_platform == "web":
         "impl/web/jsb_web.library.js",
     ])
 
-generate_code({
+generate_code([\
         # presets for runtime
-        "scripts/jsb.bundle/out/jsb.bundle.js": "",
-    }, {
+        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.js", "", AMDSourceTransformer()),
+    ], [\
         # presets for editor only
-        "scripts/jsb.bundle/typings/godot.minimal.d.ts": "",
-        "scripts/jsb.bundle/typings/godot.mix.d.ts": "",
+        PresetDefine("scripts/jsb.bundle/typings/godot.minimal.d.ts", ""),
+        PresetDefine("scripts/jsb.bundle/typings/godot.mix.d.ts", ""),
 
-        "scripts/jsb.bundle/out/jsb.bundle.d.ts": "",
-        "scripts/jsb.bundle/out/jsb.bundle.js.map": "",
+        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.d.ts", ""),
+        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.js.map", ""),
 
-        "scripts/presets/package.json.txt": "package.json",
-        "scripts/presets/tsconfig.json.txt": "tsconfig.json",
-        "scripts/presets/gdignore.txt": ".gdignore",
-    })
+        PresetDefine("scripts/presets/package.json.txt", "package.json"),
+        PresetDefine("scripts/presets/tsconfig.json.txt", "tsconfig.json"),
+        PresetDefine("scripts/presets/gdignore.txt", ".gdignore"),
+    ])
     
 # common parts
 env_jsb.add_source_files(module_obj, ["register_types.cpp", "jsb_project_preset.gen.cpp"])
