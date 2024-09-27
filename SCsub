@@ -326,8 +326,7 @@ if v8_support is not None:
     if env.msvc and env["vsproj"]:
         env.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
     env_jsb.Append(CPPPATH=["v8/include"])
-
-env_jsb.add_source_files(module_obj, "bridge/*.cpp")
+    env_jsb.add_source_files(module_obj, "impl/v8/*.cpp")
 
 # lws
 if lws_support is not None:
@@ -349,8 +348,6 @@ if lws_support is not None:
     # platform-specific defines
     if env.msvc and env["vsproj"]:
         env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
-
-    env_jsb.add_source_files(module_obj, "impl/v8/*.cpp")
 
 if is_defined("JSB_WITH_QUICKJS", 1):
     print("WARNING: quickjs support has not been implemented yet")
@@ -387,6 +384,7 @@ generate_code([\
 env_jsb.add_source_files(module_obj, ["register_types.cpp", "jsb_project_preset.gen.cpp"])
 env_jsb.add_source_files(module_obj, "internal/*.cpp")
 env_jsb.add_source_files(module_obj, "weaver/*.cpp")
+env_jsb.add_source_files(module_obj, "bridge/*.cpp")
 
 # editor functionalities
 if env.editor_build:
