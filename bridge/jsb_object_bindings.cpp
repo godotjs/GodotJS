@@ -129,21 +129,18 @@ namespace jsb
             if (NativeClassID super_class_id;
                 const NativeClassInfoPtr super_class_info = p_env->expose_godot_object_class(p_class_info->inherits_ptr, &super_class_id))
             {
-                const v8::Local<v8::FunctionTemplate> base_template = super_class_info->clazz.Get(isolate);
-                jsb_check(!base_template.IsEmpty());
-                jsb_checkf(!super_class_info->clazz.NewTarget(isolate).IsEmpty(), "single inheritance chain should not introduce partially initialized clazz");
-                class_builder.Inherit(base_template);
-                JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id,
-                    p_class_info->inherits_ptr->name, super_class_id);
+                // It's safe to expect that the base class is fully built,
+                // because single inheritance is used in Godot (which means a reflect_bind class will only be accessed until it's fully built).
+                class_builder.Inherit(super_class_info->clazz);
+                JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id, p_class_info->inherits_ptr->name, super_class_id);
             }
 
             // preparation for return
             {
                 NativeClassInfoPtr class_info = p_env->get_native_class_ptr(class_id);
-                jsb_check(*class_builder == class_info->clazz.Get(isolate));
 
-                class_builder.Build();
-                class_info->clazz.Seal(context);
+                class_info->clazz = class_builder.Build(context);
+                jsb_check(!class_info->clazz.IsEmpty());
                 JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, class_id);
                 if (r_class_id) *r_class_id = class_id;
                 return class_info;

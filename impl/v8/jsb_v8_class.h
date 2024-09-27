@@ -7,7 +7,9 @@ namespace jsb::impl
     class Class
     {
     private:
-        // strong reference
+        friend class ClassBuilder;
+
+        // strong reference.
         // the counterpart of exposed C++ class.
         //NOTE template_.GetFunction() returns the `constructor`,
         //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
@@ -27,21 +29,12 @@ namespace jsb::impl
         Class(const Class&) = delete;
         Class& operator=(const Class&) = delete;
 
-        Class(v8::Isolate* isolate, const v8::Local<v8::FunctionTemplate> template_)
-        {
-            handle_.Reset(isolate, template_);
-        }
-
         jsb_force_inline bool IsEmpty() const
         {
-            return handle_.IsEmpty();
+            return handle_.IsEmpty() || target_.IsEmpty();
         }
 
-        jsb_force_inline v8::Local<v8::FunctionTemplate> Get(v8::Isolate* isolate) const
-        {
-            return handle_.Get(isolate);
-        }
-
+        // Get the constructor function (`new.target`)
         jsb_force_inline v8::Local<v8::Function> NewTarget(v8::Isolate* isolate) const
         {
             return target_.Get(isolate);
@@ -52,11 +45,13 @@ namespace jsb::impl
             return handle_.Get(context->GetIsolate())->InstanceTemplate()->NewInstance(context).ToLocalChecked();
         }
 
-        jsb_force_inline void Seal(const v8::Local<v8::Context> context)
+    private:
+        Class(v8::Isolate* isolate, const v8::Local<v8::FunctionTemplate> template_, const v8::Local<v8::Function> func_)
         {
-            v8::Isolate* isolate = context->GetIsolate();
-            target_.Reset(isolate, handle_.Get(isolate)->GetFunction(context).ToLocalChecked());
+            handle_.Reset(isolate, template_);
+            target_.Reset(isolate, func_);
         }
+
     };
 }
 #endif

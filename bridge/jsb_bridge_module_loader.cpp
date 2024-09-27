@@ -2,7 +2,7 @@
 #include "jsb_type_convert.h"
 #include "jsb_editor_utility_funcs.h"
 
-#include "../internal/jsb_settings.h"
+//TODO it breaks the isolation of 'bridge'
 #include "../weaver/jsb_callable_custom.h"
 
 namespace jsb

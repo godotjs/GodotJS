@@ -26,24 +26,24 @@ namespace jsb::internal
         }
 
 #if GODOT_4_4_OR_NEWER
-    	jsb_force_inline static String to_snake_case_id(const String& p_name)
+        jsb_force_inline static String to_snake_case_id(const String& p_name)
         {
-        	return p_name.to_snake_case().validate_ascii_identifier();
+            return p_name.to_snake_case().validate_ascii_identifier();
         }
 
-    	jsb_force_inline static String to_pascal_case_id(const String& p_name)
+        jsb_force_inline static String to_pascal_case_id(const String& p_name)
         {
-        	return p_name.to_pascal_case().validate_ascii_identifier();
+            return p_name.to_pascal_case().validate_ascii_identifier();
         }
 #else
-    	jsb_force_inline static String to_snake_case_id(const String& p_name)
+        jsb_force_inline static String to_snake_case_id(const String& p_name)
         {
-        	return p_name.to_snake_case().validate_identifier();
+            return p_name.to_snake_case().validate_identifier();
         }
 
-    	jsb_force_inline static String to_pascal_case_id(const String& p_name)
+        jsb_force_inline static String to_pascal_case_id(const String& p_name)
         {
-        	return p_name.to_pascal_case().validate_identifier();
+            return p_name.to_pascal_case().validate_identifier();
         }
 #endif
 

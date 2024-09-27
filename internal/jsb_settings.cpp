@@ -30,15 +30,15 @@ namespace jsb::internal
 #ifdef TOOLS_ENABLED
             if (!EditorSettings::get_singleton())
             {
-            	if (Engine::get_singleton()->is_editor_hint() || Engine::get_singleton()->is_project_manager_hint() || Main::is_cmdline_tool())
-            	{
-            		EditorSettings::create();
-            		jsb_check(EditorSettings::get_singleton());
-            	}
-            	else
-            	{
-            		JSB_LOG(Verbose, "EditorSettings is not available when initialising %s", jsb_typename(jsb::internal::Settings));
-            	}
+                if (Engine::get_singleton()->is_editor_hint() || Engine::get_singleton()->is_project_manager_hint() || Main::is_cmdline_tool())
+                {
+                    EditorSettings::create();
+                    jsb_check(EditorSettings::get_singleton());
+                }
+                else
+                {
+                    JSB_LOG(Verbose, "EditorSettings is not available when initialising %s", jsb_typename(jsb::internal::Settings));
+                }
             }
             // check before read to avoid redundant warnings
             if (EditorSettings::get_singleton())

@@ -1,7 +1,4 @@
 ﻿#include "jsb_export_plugin.h"
-#include "../internal/jsb_internal_pch.h"
-#include "../internal/jsb_path_util.h"
-#include "../internal/jsb_settings.h"
 
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 

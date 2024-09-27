@@ -1,9 +1,6 @@
 #include "jsb_statistics_viewer.h"
 #include "jsb_editor_pch.h"
 
-#include "scene/gui/tree.h"
-#include "../weaver/jsb_gdjs_lang.h"
-
 GodotJSStatisticsViewer::GodotJSStatisticsViewer()
 {
     tree = memnew(Tree);

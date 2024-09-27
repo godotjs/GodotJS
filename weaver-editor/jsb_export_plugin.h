@@ -2,8 +2,11 @@
 #define GODOTJS_EXPORT_PLUGIN_H
 
 #include "jsb_editor_pch.h"
-#include "../weaver/jsb_gdjs_lang.h"
-#include "editor/export/editor_export_plugin.h"
+
+namespace jsb
+{
+    class Environment;
+}
 
 // improve the pipeline of using typescripts
 class GodotJSExportPlugin: public EditorExportPlugin

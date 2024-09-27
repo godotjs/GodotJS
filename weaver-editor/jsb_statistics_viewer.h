@@ -2,14 +2,18 @@
 #define GODOTJS_STATISTICS_VIEWER_H
 #include "scene/gui/box_container.h"
 
+class Tree;
+class TreeItem;
+class Timer;
+
 class GodotJSStatisticsViewer : public VBoxContainer
 {
     GDCLASS(GodotJSStatisticsViewer, VBoxContainer)
 
 private:
-    class Tree* tree;
-    class TreeItem* tree_root;
-    class Timer* timer;
+    Tree* tree;
+    TreeItem* tree_root;
+    Timer* timer;
 
 public:
     GodotJSStatisticsViewer();

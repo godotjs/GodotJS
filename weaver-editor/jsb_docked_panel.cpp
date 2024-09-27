@@ -1,5 +1,5 @@
 #include "jsb_docked_panel.h"
-
+#include "jsb_editor_pch.h"
 #include "jsb_repl.h"
 #include "jsb_statistics_viewer.h"
 #include "scene/gui/tab_container.h"

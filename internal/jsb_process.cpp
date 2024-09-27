@@ -34,7 +34,7 @@ namespace jsb::internal
         String proc_name;
         HANDLE rd_pipe = nullptr;
         Vector<char> rd_line;
-		Thread thread;
+        Thread thread;
         volatile bool is_closing = false;
         // int bytes_in_buffer = 0;
 
@@ -83,7 +83,7 @@ namespace jsb::internal
         {
             const String path = p_path.replace("/", "\\");
             String command = _quote_command_line_argument(path);
-	        HANDLE pipe[2] = { nullptr, nullptr };
+            HANDLE pipe[2] = { nullptr, nullptr };
             for (const String &E : p_arguments)
             {
                 command += " " + _quote_command_line_argument(E);
@@ -116,7 +116,7 @@ namespace jsb::internal
                 CloseHandle(pipe[0]); // Cleanup pipe handles.
                 CloseHandle(pipe[1]);
             }
-	        ERR_FAIL_COND_V_MSG(ret == 0, ERR_CANT_FORK, "Could not create child process: " + command);
+            ERR_FAIL_COND_V_MSG(ret == 0, ERR_CANT_FORK, "Could not create child process: " + command);
             CloseHandle(pipe[1]);
             rd_pipe = pipe[0];
             proc_name = p_name;

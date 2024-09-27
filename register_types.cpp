@@ -1,8 +1,7 @@
 #include "register_types.h"
 
-#include "internal/jsb_string_names.h"
-#include "weaver/jsb_gdjs_lang.h"
-#include "weaver/jsb_gdjs_script.h"
+#include "weaver/jsb_script_language.h"
+#include "weaver/jsb_script.h"
 #include "weaver/jsb_resource_loader.h"
 #include "weaver/jsb_resource_saver.h"
 
@@ -52,11 +51,11 @@ void jsb_uninitialize_module(ModuleInitializationLevel p_level)
 {
     if (p_level == MODULE_INITIALIZATION_LEVEL_CORE)
     {
-		ResourceLoader::remove_resource_format_loader(resource_loader_js);
-		resource_loader_js.unref();
+        ResourceLoader::remove_resource_format_loader(resource_loader_js);
+        resource_loader_js.unref();
 
-		ResourceSaver::remove_resource_format_saver(resource_saver_js);
-		resource_saver_js.unref();
+        ResourceSaver::remove_resource_format_saver(resource_saver_js);
+        resource_saver_js.unref();
 
         GodotJSScriptLanguage *script_language_js = GodotJSScriptLanguage::get_singleton();
         jsb_check(script_language_js);

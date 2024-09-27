@@ -38,7 +38,7 @@
 
 #define JSB_SUPPORT_RELOAD 1
 
-// translate the js source stacktrace with source map (currectly, the `.map` file must locate at the same filename & directory of the js source)
+// translate the js source stacktrace with source map (currently, the `.map` file must locate at the same filename & directory of the js source)
 #define JSB_WITH_SOURCEMAP 1
 
 // log with [source filename, line number, function name]

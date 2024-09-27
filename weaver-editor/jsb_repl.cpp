@@ -1,14 +1,6 @@
 ﻿#include "jsb_repl.h"
-
 #include "jsb_editor_pch.h"
 #include "jsb_editor_plugin.h"
-#include "editor/editor_node.h"
-#include "editor/editor_string_names.h"
-#include "scene/scene_string_names.h"
-#include "scene/gui/button.h"
-#include "scene/gui/item_list.h"
-#include "scene/gui/line_edit.h"
-#include "scene/gui/rich_text_label.h"
 
 GodotJSREPL::GodotJSREPL()
 {
@@ -16,7 +8,7 @@ GodotJSREPL::GodotJSREPL()
 
     input_submitting_ = false;
     VBoxContainer* vbox = memnew(VBoxContainer);
-	vbox->set_custom_minimum_size(Size2(0, 180) * EDSCALE);
+    vbox->set_custom_minimum_size(Size2(0, 180) * EDSCALE);
     vbox->set_v_size_flags(SIZE_EXPAND_FILL);
     vbox->set_h_size_flags(SIZE_EXPAND_FILL);
     add_child(vbox);

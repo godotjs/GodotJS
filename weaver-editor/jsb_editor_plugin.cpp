@@ -1,16 +1,9 @@
 #include "jsb_editor_plugin.h"
-
 #include "jsb_docked_panel.h"
-#include "../jsb_project_preset.h"
-#include "../internal/jsb_path_util.h"
-#include "../internal/jsb_settings.h"
-#include "../weaver/jsb_gdjs_lang.h"
 
-#include "core/config/project_settings.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_node.h"
 #include "scene/gui/popup_menu.h"
-#include "editor/editor_settings.h"
 #include "editor/gui/editor_toaster.h"
 
 #define JSB_TYPE_ROOT "typings"
@@ -31,10 +24,10 @@ void GodotJSEditorPlugin::_notification(int p_what)
     switch (p_what)
     {
     case NOTIFICATION_APPLICATION_FOCUS_IN:
-    	if (GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton())
-    	{
-    		lang->scan_external_changes();
-    	}
+        if (GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton())
+        {
+            lang->scan_external_changes();
+        }
         break;
     default: break;
     }

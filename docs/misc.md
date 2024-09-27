@@ -1,15 +1,30 @@
 
-## Why not GDExtension
+## Architecture
 
-This project is written as a module for greater flexibility. It's easier to change compiler options for different targets, and ensures compatibility with various minor versions of Godot. However, this is not set in stone, GDExtension will also be considered once the project has stabilized sufficiently.
+```mermaid
+flowchart LR
 
-## Android/iOS Export
+subgraph JS Environment
+    v8-->v8.impl
+    quickjs-->quickjs.impl
+    web{emscripten}-->web.impl
+end 
 
-Not supported yet. `v8` and `lws` are needed to be built by yourself to export Andoird/iOS targets.
+v8.impl-->bridge
+quickjs.impl-->bridge
+web.impl-->bridge
 
-## Web Export
+subgraph Godot Integration
+    bridge-->weaver
+    bridge-->weaver-editor
+end
 
-Not supported yet. It may be considered after `bridge-quickjs` is implemented (but not very soon).
+bridge{{bridge: JS Runtime Bridge}}
+internal(internal: Native/Godot Helper Functions)
+weaver(weaver: Godot Scripting Intgeration)
+weaver-editor(weaver-editor: Godot Editor Intgeration)
+
+```
 
 ---
 

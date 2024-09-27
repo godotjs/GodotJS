@@ -1,8 +1,6 @@
 ﻿#ifndef GODOTJS_REPL_H
 #define GODOTJS_REPL_H
-#include "../internal/jsb_console_output.h"
-#include "../weaver/jsb_gdjs_lang.h"
-#include "scene/gui/box_container.h"
+#include "jsb_editor_pch.h"
 
 class GodotJSREPL : public HBoxContainer, public jsb::internal::IConsoleOutput
 {
@@ -15,17 +13,17 @@ class GodotJSREPL : public HBoxContainer, public jsb::internal::IConsoleOutput
 
 private:
     bool input_submitting_;
-    class LineEdit* input_box_;
-    class RichTextLabel* output_box_;
+    LineEdit* input_box_;
+    RichTextLabel* output_box_;
 
-    class Button* clear_button_;
-    class Button* gc_button_;
-    class Button* dts_button_;
-    class Button* preset_button_;
-    class Label* preset_hint_label_;
-    class Button* start_tsc_button_;
+    Button* clear_button_;
+    Button* gc_button_;
+    Button* dts_button_;
+    Button* preset_button_;
+    Label* preset_hint_label_;
+    Button* start_tsc_button_;
 
-    class ItemList* candidate_list_;
+    ItemList* candidate_list_;
 
     Vector<OutputLine> lines_;
     Vector<String> history_;

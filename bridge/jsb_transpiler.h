@@ -11,10 +11,9 @@
     {\
         v8::Isolate* isolate = env->get_isolate();\
         NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
+        class_info->finalizer = &finalizer;\
         impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor, *class_id);\
         class_builder.SetClassName(env->get_string_value(class_info->name));\
-        class_info->finalizer = &finalizer;\
-        class_info->clazz = impl::Class(isolate, *class_builder);\
         return class_builder;\
     }
 
@@ -23,10 +22,9 @@
     jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)\
     {\
         v8::Isolate* isolate = env->get_isolate();\
-        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor<TArgs...>, *class_id);\
         NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
         class_info->finalizer = &finalizer;\
-        class_info->clazz = impl::Class(isolate, *class_builder);\
+        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor<TArgs...>, *class_id);\
         class_builder.SetClassName(env->get_string_value(class_info->name));\
         return class_builder;\
     }
@@ -550,7 +548,7 @@ namespace jsb
                     return;
                 }
 
-                jsb_checkf(false, "unexpected identifer received. %s(%d)", class_info->name, class_id);
+                jsb_checkf(false, "unexpected identifier received. %s(%d)", class_info->name, class_id);
                 return;
             }
 

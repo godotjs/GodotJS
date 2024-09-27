@@ -2,6 +2,7 @@
 #define GODOTJS_V8_CLASS_BUILDER_H
 
 #include "jsb_v8_pch.h"
+#include "jsb_v8_class.h"
 
 namespace jsb::impl
 {
@@ -21,14 +22,9 @@ namespace jsb::impl
     private:
         v8::Isolate* isolate_ = nullptr;
         v8::Local<v8::FunctionTemplate> template_;
-
-        // PrototypeTemplate()
-        v8::Local<v8::ObjectTemplate> proto_;
+        v8::Local<v8::ObjectTemplate> prototype_template_;
 
         bool closed_ = false;
-#if JSB_DEBUG
-        uint32_t class_payload_ = 0;
-#endif
 
     public:
         struct EnumDeclaration
@@ -38,7 +34,7 @@ namespace jsb::impl
                 jsb_check(!builder_.closed_);
                 enumeration_ = v8::ObjectTemplate::New(builder_.isolate_);
 
-                if (is_instance_method) builder_.proto_->Set(name, enumeration_);
+                if (is_instance_method) builder_.prototype_template_->Set(name, enumeration_);
                 else builder_.template_->Set(name, enumeration_);
             }
 
@@ -75,7 +71,7 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback);
 
-                if (is_instance_method) builder_.proto_->Set(key, value);
+                if (is_instance_method) builder_.prototype_template_->Set(key, value);
                 else builder_.template_->Set(key, value);
             }
 
@@ -86,7 +82,7 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback, impl_private::Data<T>::New(builder_.isolate_, data));
 
-                if (is_instance_method) builder_.proto_->Set(key, value);
+                if (is_instance_method) builder_.prototype_template_->Set(key, value);
                 else builder_.template_->Set(key, value);
             }
 
@@ -104,7 +100,7 @@ namespace jsb::impl
                     ? v8::FunctionTemplate::New(builder_.isolate_, setter_cb, payload)
                     : v8::Local<v8::FunctionTemplate>();;
 
-                if (is_instance_method) builder_.proto_->SetAccessorProperty(key, getter, setter);
+                if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter, setter);
                 else builder_.template_->SetAccessorProperty(key, getter, setter);
             }
 
@@ -120,7 +116,7 @@ namespace jsb::impl
                     ? v8::FunctionTemplate::New(builder_.isolate_, setter_cb, impl_private::Data<SetterDataT>::New(builder_.isolate_, setter_data))
                     : v8::Local<v8::FunctionTemplate>();
 
-                if (is_instance_method) builder_.proto_->SetAccessorProperty(key, getter, setter);
+                if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter, setter);
                 else builder_.template_->SetAccessorProperty(key, getter, setter);
             }
 
@@ -133,7 +129,7 @@ namespace jsb::impl
                     ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
                     : v8::Local<v8::FunctionTemplate>();
 
-                if (is_instance_method) builder_.proto_->SetAccessorProperty(key, getter);
+                if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter);
                 else builder_.template_->SetAccessorProperty(key, getter);
             }
 
@@ -142,7 +138,7 @@ namespace jsb::impl
                 jsb_check(!builder_.closed_);
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
 
-                if (is_instance_method) builder_.proto_->SetLazyDataProperty(key, getter);
+                if (is_instance_method) builder_.prototype_template_->SetLazyDataProperty(key, getter);
                 else builder_.template_->SetLazyDataProperty(key, getter);
             }
 
@@ -151,7 +147,7 @@ namespace jsb::impl
             {
                 jsb_check(!builder_.closed_);
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
-                if (is_instance_method) builder_.proto_->Set(key, value);
+                if (is_instance_method) builder_.prototype_template_->Set(key, value);
                 else builder_.template_->Set(key, value);
             }
 
@@ -163,7 +159,7 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
 
-                if (is_instance_method) builder_.proto_->Set(key, value);
+                if (is_instance_method) builder_.prototype_template_->Set(key, value);
                 else builder_.template_->Set(key, value);
             }
 
@@ -188,24 +184,19 @@ namespace jsb::impl
         MemberDeclaration Static() { return MemberDeclaration(*this, false); }
         MemberDeclaration Instance() { return MemberDeclaration(*this, true); }
 
-        void Inherit(const v8::Local<v8::FunctionTemplate> base)
+        void Inherit(const Class& base)
         {
             jsb_check(!closed_);
-            template_->Inherit(base);
+            jsb_check(!base.IsEmpty());
+            template_->Inherit(base.handle_.Get(isolate_));
         }
 
-        //TODO temp
-        v8::Local<v8::FunctionTemplate>& Build()
+        Class Build(const v8::Local<v8::Context> context)
         {
-#if JSB_DEBUG
-            JSB_LOG(VeryVerbose, "close class builder %d", class_payload_);
-#endif
+            jsb_checkf(!closed_, "class builder is already closed");
             closed_ = true;
-            return template_;
+            return Class(isolate_, template_, template_->GetFunction(context).ToLocalChecked());
         }
-
-        //TODO temp
-        v8::Local<v8::FunctionTemplate> operator*() const { return template_; }
 
         template<int InternalFieldCount>
         static ClassBuilder New(v8::Isolate* isolate, const v8::FunctionCallback constructor, const uint32_t class_payload)
@@ -216,11 +207,7 @@ namespace jsb::impl
             builder.isolate_ = isolate;
             builder.template_ = v8::FunctionTemplate::New(isolate, constructor, data);
             builder.template_->InstanceTemplate()->SetInternalFieldCount(InternalFieldCount);
-            builder.proto_ = builder.template_->PrototypeTemplate();
-#if JSB_DEBUG
-            builder.class_payload_ = class_payload;
-            JSB_LOG(VeryVerbose, "open class builder %d", builder.class_payload_);
-#endif
+            builder.prototype_template_ = builder.template_->PrototypeTemplate();
             return builder;
         }
 
@@ -232,11 +219,7 @@ namespace jsb::impl
             builder.isolate_ = isolate;
             builder.template_ = v8::FunctionTemplate::New(isolate, constructor);
             builder.template_->InstanceTemplate()->SetInternalFieldCount(InternalFieldCount);
-            builder.proto_ = builder.template_->PrototypeTemplate();
-#if JSB_DEBUG
-            builder.class_payload_ = 0;
-            JSB_LOG(VeryVerbose, "open class builder %d", builder.class_payload_);
-#endif
+            builder.prototype_template_ = builder.template_->PrototypeTemplate();
             return builder;
         }
 

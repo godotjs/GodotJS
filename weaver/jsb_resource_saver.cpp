@@ -1,6 +1,6 @@
 #include "jsb_resource_saver.h"
-#include "jsb_gdjs_script.h"
-#include "jsb_gdjs_lang.h"
+#include "jsb_script.h"
+#include "jsb_script_language.h"
 #include "core/error/error_list.h"
 
 // @seealso: gdscript.cpp ResourceFormatSaverGDScript::save

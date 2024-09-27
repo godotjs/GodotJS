@@ -2,8 +2,6 @@
 #define GODOTJS_EDITOR_PLUGINS_H
 
 #include "jsb_editor_pch.h"
-#include "scene/gui/dialogs.h"
-#include "../internal/jsb_process.h"
 
 namespace jsb
 {
@@ -34,7 +32,7 @@ namespace jsb
 
 class InstallGodotJSPresetConfirmationDialog : public ConfirmationDialog
 {
-	GDCLASS(InstallGodotJSPresetConfirmationDialog, ConfirmationDialog);
+    GDCLASS(InstallGodotJSPresetConfirmationDialog, ConfirmationDialog);
 
 public:
     Vector<jsb::InstallFileInfo> pending_installs_;
