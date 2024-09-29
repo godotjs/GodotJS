@@ -6,6 +6,8 @@
 
 // name to name
 DEF(prototype)
+DEF(__proto__)
+DEF(constructor)
 DEF(value)
 DEF(id)
 DEF(path)

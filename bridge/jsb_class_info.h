@@ -134,6 +134,11 @@ namespace jsb
         // js class name
         StringName js_class_name;
 
+        // SIDE NOTE:
+        //     js_class.prototype: prototype definition
+        //     js_class.prototype.__proto__: prototype of the base js_class (B.prototype.__proto__ === A.prototype, if B directly extends A)
+        //     js_class.constructor: the real function for constructing
+
         // for constructor/prototype access
         v8::Global<v8::Object> js_class;
 
@@ -147,6 +152,9 @@ namespace jsb
 
         // the native class id the current class inherits from.
         NativeClassID native_class_id;
+
+        // [EXPERIMENTAL] fastpath for getting script class id of base
+        ScriptClassID base_class_id;
 
         ScriptClassFlags::Type flags = ScriptClassFlags::None;
 

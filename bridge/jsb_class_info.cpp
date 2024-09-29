@@ -53,22 +53,22 @@ namespace jsb
 #endif
 
     //NOTE ensure the address of p_class_info being locked during this procedure
-    void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, const ScriptClassInfoPtr& p_class_info, const v8::Local<v8::Object>& default_obj)
+    void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, const ScriptClassInfoPtr& p_class_info, const v8::Local<v8::Object>& class_obj)
     {
         v8::Isolate* isolate = p_context->GetIsolate();
         Environment* environment = Environment::wrap(isolate);
 
         //TODO collect methods/signals/properties
-        const v8::Local<v8::Object> prototype = default_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
+        const v8::Local<v8::Object> prototype = class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
 
         // reset CDO of the legacy JS class
         p_class_info->js_default_object.Reset();
 
         // update the latest script class info
-        p_class_info->native_class_name = environment->get_native_class_ptr(p_class_info->native_class_id)->name;
+        p_class_info->native_class_name = environment->get_native_class(p_class_info->native_class_id)->name;
         jsb_check(internal::VariantUtil::is_valid_name(p_class_info->native_class_name));
-        p_class_info->js_class.Reset(isolate, default_obj);
-        p_class_info->js_class_name = environment->get_string_name(default_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>());
+        p_class_info->js_class.Reset(isolate, class_obj);
+        p_class_info->js_class_name = environment->get_string_name(class_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>());
         p_class_info->methods.clear();
         p_class_info->signals.clear();
         p_class_info->properties.clear();
@@ -92,7 +92,9 @@ namespace jsb
 
         // methods
         {
-            v8::Local<v8::Array> property_names = prototype->GetPropertyNames(p_context, v8::KeyCollectionMode::kOwnOnly, v8::PropertyFilter::ALL_PROPERTIES, v8::IndexFilter::kSkipIndices, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
+            // const v8::Local<v8::Array> property_names = prototype->GetPropertyNames(p_context, v8::KeyCollectionMode::kOwnOnly, v8::PropertyFilter::ALL_PROPERTIES, v8::IndexFilter::kSkipIndices, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
+            const v8::Local<v8::Array> property_names = prototype->GetOwnPropertyNames(p_context, v8::PropertyFilter::ALL_PROPERTIES, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
+
             const uint32_t len = property_names->Length();
             for (uint32_t index = 0; index < len; ++index)
             {
@@ -124,7 +126,7 @@ namespace jsb
 
         // tool (@tool_)
         {
-            const bool is_tool = default_obj->HasOwnProperty(p_context, jsb_symbol(environment, ClassToolScript)).FromMaybe(false);
+            const bool is_tool = class_obj->HasOwnProperty(p_context, jsb_symbol(environment, ClassToolScript)).FromMaybe(false);
             if (is_tool)
             {
                 p_class_info->flags = (ScriptClassFlags::Type) (p_class_info->flags | ScriptClassFlags::Tool);
@@ -133,7 +135,7 @@ namespace jsb
 
         // icon (@icon)
         {
-            if (v8::Local<v8::Value> val; default_obj->Get(p_context, jsb_symbol(environment, ClassIcon)).ToLocal(&val))
+            if (v8::Local<v8::Value> val; class_obj->Get(p_context, jsb_symbol(environment, ClassIcon)).ToLocal(&val))
             {
                 p_class_info->icon = impl::Helper::to_string(isolate, val);
             }
@@ -171,7 +173,7 @@ namespace jsb
             if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
             // if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
             {
-                v8::Local<v8::Array> collection = val_test.As<v8::Array>();
+                const v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
                 for (uint32_t index = 0; index < len; ++index)
                 {
@@ -219,23 +221,23 @@ namespace jsb
             return;
         }
         v8::Isolate* isolate = p_context->GetIsolate();
-        v8::Local<v8::Value> exports_val = p_module.exports.Get(isolate);
-        if (!exports_val->IsObject())
+        const v8::Local<v8::Value> exports = p_module.exports.Get(isolate);
+        if (!exports->IsObject())
         {
             return;
         }
         Environment* environment = Environment::wrap(isolate);
-        v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
         v8::Local<v8::Value> default_val;
-        if (!exports->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val)
+        if (!exports.As<v8::Object>()->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val)
             || !default_val->IsObject())
         {
             return;
         }
 
-        const v8::Local<v8::Object> default_obj = default_val.As<v8::Object>();
+        // the JS class object itself
+        const v8::Local<v8::Object> class_obj = default_val.As<v8::Object>();
         v8::Local<v8::Value> class_id_val;
-        if (!default_obj->Get(p_context, jsb_symbol(environment, ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
+        if (!class_obj->Get(p_context, jsb_symbol(environment, ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
         {
             // ignore a javascript which does not inherit from a native class (directly and indirectly both)
             return;
@@ -244,26 +246,46 @@ namespace jsb
         // unsafe
         const NativeClassID native_class_id = (NativeClassID) class_id_val.As<v8::Uint32>()->Value();
         jsb_address_guard(environment->native_classes_, native_classes_address_guard);
-        jsb_check(internal::VariantUtil::is_valid_name(environment->get_native_class_ptr(native_class_id)->name));
+        jsb_check(internal::VariantUtil::is_valid_name(environment->get_native_class(native_class_id)->name));
 
         //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
-        ScriptClassInfoPtr existed_class_info = environment->find_script_class(p_module.default_class_id);
+        ScriptClassInfoPtr existed_class_info = environment->find_script_class(p_module.script_class_id);
         if (!existed_class_info)
         {
             ScriptClassID script_class_id;
             existed_class_info = environment->add_script_class(script_class_id);
-            p_module.default_class_id = script_class_id;
+            p_module.script_class_id = script_class_id;
             existed_class_info->module_id = p_module.id;
         }
 
+        //TODO why it works?? it should be class_obj.prototype.constructor[CrossBind:Symbol] = script_class_id, then `new.target[CrossBind:Symbol]` returns as expected
         // trick: save godot class id for convenience of getting it in JS class constructor
-        default_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.default_class_id)).Check();
+        class_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
+
+        // const v8::Local<v8::Object> dt_self_obj =
+        //     class_obj
+        //     ->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
+        //     ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
+        // const v8::Local<v8::Value> dt_self_tag = dt_self_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
+        // jsb_check(dt_self_tag->IsUint32() && dt_self_tag.As<v8::Uint32>()->Value() == *p_module.script_class_id);
+        // JSB_LOG(Log, "dump self class id %d from %s", dt_self_tag.As<v8::Uint32>()->Value(), p_module.path);
+
+        //TODO EXPERIMENTAL
+        const v8::Local<v8::Object> dt_base_obj =
+            class_obj
+            ->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
+            ->Get(p_context, jsb_name(environment, __proto__)).ToLocalChecked().As<v8::Object>() // the base class prototype
+            ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
+        const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
+        existed_class_info->base_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);
+        JSB_LOG(Log, "[EXPERIMENTAL] %s inherits script: %d native: %d",
+            p_module.path, existed_class_info->base_class_id, *native_class_id);
 
         jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->native_class_id = native_class_id;
 
-        _parse_script_class_iterate(p_context, existed_class_info, default_obj);
+        _parse_script_class_iterate(p_context, existed_class_info, class_obj);
     }
 
 }
