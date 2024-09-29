@@ -45,6 +45,7 @@ namespace v8
         ~Isolate();
 
         void GetHeapStatistics(HeapStatistics* heap_statistics);
+        int GetCurrentStack() const;
 
         enum GarbageCollectionType
         {

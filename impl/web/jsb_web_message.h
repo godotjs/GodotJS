@@ -3,15 +3,15 @@
 
 namespace v8
 {
-    class Message
-    {
-    public:
-        Local<String> Get() const;
-    };
-
-    class StackTrace
-    {
-
-    };
+    // class Message
+    // {
+    // public:
+    //     Local<String> Get() const;
+    // };
+    //
+    // class StackTrace
+    // {
+    //
+    // };
 }
 #endif

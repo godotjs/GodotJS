@@ -10,11 +10,11 @@ namespace v8
     public:
         Isolate* isolate_;
         HandleScope* last_;
-        int depth_;
+        int stack_;
         bool is_native_;
 
         HandleScope(Isolate* isolate);
-        HandleScope(Isolate* isolate, int depth);
+        HandleScope(Isolate* isolate, int stack);
         ~HandleScope();
     };
 }

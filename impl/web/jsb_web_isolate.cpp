@@ -42,43 +42,21 @@ namespace v8
         //TODO
     }
 
+    int Isolate::GetCurrentStack() const
+    {
+        return top_->stack_;
+    }
+
+
     Local<Context> Isolate::GetCurrentContext()
     {
         CRASH_COND(top_ == nullptr);
-        return Local<Context>(this, top_->depth_, 0);
+        return Local<Context>(this, top_->stack_, 0);
     }
 
     Local<Value> Isolate::ThrowError(Local<String> message)
     {
         //TODO
-    }
-
-    HandleScope::HandleScope(Isolate* isolate)
-    {
-        isolate_ = isolate;
-        is_native_ = true;
-        depth_ = ::jsapi_stack_enter(isolate_->id_);
-        last_ = isolate->top_;
-        isolate->top_ = this;
-    }
-
-    HandleScope::HandleScope(Isolate* isolate, int depth)
-    {
-        isolate_ = isolate;
-        is_native_ = false;
-        last_ = isolate->top_;
-        isolate->top_ = this;
-        depth_ = depth;
-    }
-
-    HandleScope::~HandleScope()
-    {
-        CRASH_COND_MSG(isolate_->top_ != this, "invalid op");
-        isolate_->top_ = last_;
-        if (is_native_)
-        {
-            ::jsapi_stack_exit(isolate_->id_);
-        }
     }
 
 }

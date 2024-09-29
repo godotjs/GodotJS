@@ -1,24 +1,25 @@
 #ifndef GODOTJS_WEB_CATCH_H
 #define GODOTJS_WEB_CATCH_H
-#include "jsb_web_local_handle.h"
-#include "jsb_web_primitive.h"
-#include "jsb_web_message.h"
+
+#include "core/string/ustring.h"
 
 namespace v8
 {
     class Isolate;
+}
 
+namespace jsb::impl
+{
     class TryCatch
     {
     public:
-        Isolate* isolate_;
+        v8::Isolate* isolate_;
 
-        TryCatch(Isolate* isolate) : isolate_(isolate) {}
+        TryCatch(v8::Isolate* isolate) : isolate_(isolate) {}
         ~TryCatch();
-
-        bool HasCaught() const;
-        Local<Message> Message() const;
-        MaybeLocal<Value> StackTrace(Local<Context> context) const;
+        v8::Isolate* get_isolate() const { return isolate_; }
+        bool has_caught() const;
+        void get_message(String* r_message, String* r_stacktrace = nullptr) const;
     };
 }
 #endif

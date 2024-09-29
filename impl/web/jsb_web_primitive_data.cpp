@@ -48,6 +48,11 @@ namespace v8
         return jsapi_sv_is_string(isolate_->id_, stack_, index_);
     }
 
+    bool Data::IsBigInt() const
+    {
+        return jsapi_sv_is_bigint(isolate_->id_, stack_, index_);
+    }
+
     bool Data::IsBoolean() const
     {
         return jsapi_sv_is_boolean(isolate_->id_, stack_, index_);

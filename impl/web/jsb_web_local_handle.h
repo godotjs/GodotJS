@@ -15,8 +15,8 @@ namespace v8
         Data data_;
 
         Local() {}
-        Local(Isolate* isolate, int depth, int offset)
-            : data_(isolate, depth, offset) {}
+        Local(Isolate* isolate, int stack, int offset)
+            : data_(isolate, stack, offset) {}
 
         template<typename S>
         Local(Local<S> other) : data_(other.data())
@@ -54,6 +54,8 @@ namespace v8
         Data data_;
 
         MaybeLocal() {}
+        MaybeLocal(Isolate* isolate, int stack, int offset)
+            : data_(isolate, stack, offset) {}
 
         template<typename S>
         MaybeLocal(Local<S> other) : data_(other.data_) {}

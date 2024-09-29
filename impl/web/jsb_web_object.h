@@ -15,7 +15,8 @@ namespace v8
     {
     public:
         Isolate* GetIsolate() { return isolate_; }
-        Local<Context> GetCreationContextChecked();
+
+        // Local<Context> GetCreationContextChecked();
 
         int InternalFieldCount() const;
         void SetAlignedPointerInInternalField(int slot, void* value);

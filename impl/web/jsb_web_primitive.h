@@ -47,6 +47,8 @@ namespace v8
     {
     public:
         static Local<Number> New(Isolate* isolate, double value);
+
+        double Value() const;
     };
 
     class Integer : public Number
@@ -62,6 +64,14 @@ namespace v8
         static Local<Int32> New(Isolate* isolate, uint32_t value);
         int64_t Value() const;
 
+    };
+
+    class BigInt : public Data
+    {
+    public:
+        static Local<BigInt> New(Isolate* isolate, int64_t value);
+
+        int64_t Int64Value() const;
     };
 
     class Uint32 : public Integer
