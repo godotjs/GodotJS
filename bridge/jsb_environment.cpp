@@ -602,7 +602,7 @@ namespace jsb
         {
             JavaScriptModule* module = kv.value;
             // skip script modules which are managed by the godot editor
-            if (module->default_class_id) continue;
+            if (module->script_class_id) continue;
             if (module->mark_as_reloading())
             {
                 requested_modules.append(module->id);
@@ -774,21 +774,21 @@ namespace jsb
 
         StringName class_name;
         NativeClassID native_class_id;
-        v8::Local<v8::Object> constructor;
+        v8::Local<v8::Object> class_obj;
 
         jsb_checkf(!this->get_object_id(p_this), "duplicated object binding is not allowed (%d)", (uintptr_t) p_this);
         {
             const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
             class_name = class_info->js_class_name;
             native_class_id = class_info->native_class_id;
-            constructor = class_info->js_class.Get(isolate);
+            class_obj = class_info->js_class.Get(isolate);
             JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %d", class_info->js_class_name, class_info->native_class_name, class_info->native_class_id, (uintptr_t) p_this);
-            jsb_check(!constructor->IsNullOrUndefined());
+            jsb_check(!class_obj->IsNullOrUndefined());
         }
 
         const impl::TryCatch try_catch_run(isolate);
         v8::Local<v8::Value> identifier = jsb_symbol(this, CrossBind);
-        v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
+        v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
         jsb_check(!constructed_value.IsEmpty() && !constructed_value.ToLocalChecked()->IsUndefined());
         if (try_catch_run.has_caught())
         {
@@ -824,8 +824,8 @@ namespace jsb
 
         const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
         const StringName class_name = class_info->js_class_name;
-        const v8::Local<v8::Object> constructor = class_info->js_class.Get(isolate);
-        const v8::Local<v8::Value> prototype = constructor->Get(context, jsb_name(this, prototype)).ToLocalChecked();
+        const v8::Local<v8::Object> class_obj = class_info->js_class.Get(isolate);
+        const v8::Local<v8::Value> prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
 
         const impl::TryCatch try_catch(isolate);
         jsb_check(instance->IsObject());
@@ -896,7 +896,7 @@ namespace jsb
         if (class_register->id)
         {
             if (r_class_id) *r_class_id = class_register->id;
-            NativeClassInfoPtr class_info = this->get_native_class_ptr(class_register->id);
+            NativeClassInfoPtr class_info = this->get_native_class(class_register->id);
             jsb_check(class_info->name == p_type_name);
             return class_info;
         }
@@ -1086,9 +1086,9 @@ namespace jsb
             if (p_script_class_info.js_default_object.IsEmpty())
             {
                 v8::Local<v8::Value> identifier = jsb_symbol(this, CDO);
-                const v8::Local<v8::Object> constructor = p_script_class_info.js_class.Get(isolate);
+                const v8::Local<v8::Object> class_obj = p_script_class_info.js_class.Get(isolate);
                 const impl::TryCatch try_catch_run(isolate);
-                const v8::MaybeLocal<v8::Value> constructed_value = constructor->CallAsConstructor(context, 1, &identifier);
+                const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
                 if (try_catch_run.has_caught())
                 {
                     JSB_LOG(Error, "something wrong when constructing '%s'\n%s",

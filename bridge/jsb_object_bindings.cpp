@@ -137,7 +137,7 @@ namespace jsb
 
             // preparation for return
             {
-                NativeClassInfoPtr class_info = p_env->get_native_class_ptr(class_id);
+                NativeClassInfoPtr class_info = p_env->get_native_class(class_id);
 
                 class_info->clazz = class_builder.Build(context);
                 jsb_check(!class_info->clazz.IsEmpty());

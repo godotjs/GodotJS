@@ -69,13 +69,9 @@ Ref<Script> GodotJSScript::get_base_script() const
 {
     GODOTJS_LOAD_SCRIPT_MODULE()
     //jsb_notice(loaded_, "script not loaded");
-    //TODO should return the base script in order to traverse methods/properties from inheritance hierarchy
 
-    //if (base_)
-    //{
-    //    return Ref(base_);
-    //}
-    return {};
+    // return the base script in order to traverse methods/properties from inheritance hierarchy
+    return base;
 }
 
 StringName GodotJSScript::get_global_name() const
@@ -421,6 +417,7 @@ void GodotJSScript::load_module()
 
     env_id_ = env->id();
     loaded_ = true;
+    base = nullptr;
     source_changed_cache = true;
     jsb::JavaScriptModule* module;
     if (const Error err = env->load(path, &module); err != OK)
@@ -441,7 +438,7 @@ void GodotJSScript::load_module()
         return;
     }
     jsb_check(module);
-    script_class_id_ = module->default_class_id;
+    script_class_id_ = module->script_class_id;
     valid_ = !!script_class_id_;
     if (valid_)
     {
@@ -455,7 +452,7 @@ void GodotJSScript::load_module()
                 Object* obj = E->get();
                 jsb_check(obj->get_script() == Ref(this));
                 jsb_check(env->check_object(obj));
-                jsb_check(ClassDB::is_parent_class(env->get_script_class(module->default_class_id)->native_class_name, obj->get_class_name()));
+                jsb_check(ClassDB::is_parent_class(env->get_script_class(module->script_class_id)->native_class_name, obj->get_class_name()));
                 env->rebind(obj, script_class_id_);
                 E = N;
             }

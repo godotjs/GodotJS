@@ -18,6 +18,7 @@ private:
     bool valid_ = false;
     bool loaded_ = false;
     bool source_changed_cache = false;
+    Ref<GodotJSScript> base;
 
     HashSet<PlaceHolderScriptInstance*> placeholders;
 

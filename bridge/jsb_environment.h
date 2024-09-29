@@ -472,8 +472,8 @@ namespace jsb
         // [unsafe]
         // It's dangerous to hold the `NativeClassInfo` reference/pointer because the address is not ensured stable.
         // All `get_` methods will crash if `p_class_id` is invalid
-        jsb_force_inline NativeClassInfoPtr get_native_class_ptr(const NativeClassID p_class_id) { return native_classes_.get_value_scoped(p_class_id); }
-        jsb_force_inline NativeClassInfoConstPtr get_native_class_ptr(const NativeClassID p_class_id) const { return native_classes_.get_value_scoped(p_class_id); }
+        jsb_force_inline NativeClassInfoPtr get_native_class(const NativeClassID p_class_id) { return native_classes_.get_value_scoped(p_class_id); }
+        jsb_force_inline NativeClassInfoConstPtr get_native_class(const NativeClassID p_class_id) const { return native_classes_.get_value_scoped(p_class_id); }
 
         jsb_force_inline ScriptClassInfoPtr add_script_class(ScriptClassID& r_class_id)
         {

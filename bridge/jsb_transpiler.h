@@ -10,7 +10,7 @@
     jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)\
     {\
         v8::Isolate* isolate = env->get_isolate();\
-        NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
+        NativeClassInfoPtr class_info = env->get_native_class(class_id);\
         class_info->finalizer = &finalizer;\
         impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor, *class_id);\
         class_builder.SetClassName(env->get_string_value(class_info->name));\
@@ -22,7 +22,7 @@
     jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)\
     {\
         v8::Isolate* isolate = env->get_isolate();\
-        NativeClassInfoPtr class_info = env->get_native_class_ptr(class_id);\
+        NativeClassInfoPtr class_info = env->get_native_class(class_id);\
         class_info->finalizer = &finalizer;\
         impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor<TArgs...>, *class_id);\
         class_builder.SetClassName(env->get_string_value(class_info->name));\
@@ -509,7 +509,7 @@ namespace jsb
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
             Environment* environment = Environment::wrap(isolate);
-            const NativeClassInfoPtr class_info = environment->get_native_class_ptr(class_id);
+            const NativeClassInfoPtr class_info = environment->get_native_class(class_id);
             jsb_check(class_info->type == NativeClassType::GodotObject);
             const v8::Local<v8::Value> new_target = info.NewTarget();
 

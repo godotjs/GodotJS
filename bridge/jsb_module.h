@@ -28,8 +28,8 @@ namespace jsb
         v8::Global<v8::Object> module;
         v8::Global<v8::Value> exports;
 
-        //
-        ScriptClassID default_class_id;
+        // the default class exported in this JS module
+        ScriptClassID script_class_id;
 
 #if JSB_SUPPORT_RELOAD
         bool reload_requested = false;
