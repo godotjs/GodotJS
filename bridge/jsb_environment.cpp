@@ -456,38 +456,38 @@ namespace jsb
             JSB_LOG(VeryVerbose, "bad pointer %d", (uintptr_t) p_pointer);
             return true;
         }
-        jsb_address_guard(objects_, address_guard);
-        const internal::Index64 object_id = it->value;
-        ObjectHandle& object_handle = objects_.get_value(object_id);
+        // jsb_address_guard(objects_, address_guard);
+        // ObjectHandle& object_handle = objects_.get_value(it->value);
+        const ObjectHandlePtr object_handle = objects_.get_value_scoped(it->value);
 
         // must not be a valuetype object
-        jsb_check(native_classes_.get_value(object_handle.class_id).type != NativeClassType::GodotPrimitive);
+        jsb_check(native_classes_.get_value(object_handle->class_id).type != NativeClassType::GodotPrimitive);
 
         // adding references
         if (p_is_inc)
         {
-            if (object_handle.ref_count_ == 0)
+            if (object_handle->ref_count_ == 0)
             {
                 // becomes a strong reference
-                jsb_check(!object_handle.ref_.IsEmpty());
-                object_handle.ref_.ClearWeak();
+                jsb_check(!object_handle->ref_.IsEmpty());
+                object_handle->ref_.ClearWeak();
             }
-            ++object_handle.ref_count_;
+            ++object_handle->ref_count_;
             return false;
         }
 
         // removing references
-        jsb_checkf(!object_handle.ref_.IsEmpty(), "removing references on dead values");
-        if (object_handle.ref_count_ == 0)
+        jsb_checkf(!object_handle->ref_.IsEmpty(), "removing references on dead values");
+        if (object_handle->ref_count_ == 0)
         {
             return true;
         }
-        // jsb_checkf(object_handle.ref_count_ > 0, "unexpected behaviour");
+        // jsb_checkf(object_handle->ref_count_ > 0, "unexpected behaviour");
 
-        --object_handle.ref_count_;
-        if (object_handle.ref_count_ == 0)
+        --object_handle->ref_count_;
+        if (object_handle->ref_count_ == 0)
         {
-            object_handle.ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
+            object_handle->ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
             return true;
         }
         return false;
@@ -511,10 +511,11 @@ namespace jsb
 
         {
             {
-                jsb_address_guard(objects_, address_guard);
-                ObjectHandle& object_handle = objects_.get_value(object_id);
-                jsb_check(object_handle.pointer == p_pointer);
-                class_id = object_handle.class_id;
+                // jsb_address_guard(objects_, address_guard);
+                // ObjectHandle& object_handle = objects_.get_value(object_id);
+                const ObjectHandlePtr object_handle = objects_.get_value_scoped(object_id);
+                jsb_check(object_handle->pointer == p_pointer);
+                class_id = object_handle->class_id;
                 is_persistent = persistent_objects_.has(p_pointer);
 
                 // remove index at first to make `free_object` safely reentrant
@@ -523,9 +524,9 @@ namespace jsb
                 if (!p_free)
                 {
                     //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
-                    clear_internal_field(isolate_, object_handle.ref_);
+                    clear_internal_field(isolate_, object_handle->ref_);
                 }
-                object_handle.ref_.Reset();
+                object_handle->ref_.Reset();
             }
 
             //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
@@ -984,17 +985,15 @@ namespace jsb
 
     ObjectCacheID Environment::retain_function(NativeObjectID p_object_id, const StringName& p_method)
     {
-        ObjectHandle* handle;
         this->check_internal_state();
-        jsb_address_guard(this->objects_, address_guard);
-        if (this->objects_.try_get_value_pointer(p_object_id, handle))
+        if (const ObjectHandlePtr handle = this->objects_.try_get_value_scoped(p_object_id))
         {
             v8::Isolate* isolate = this->isolate_;
             v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Context> context = context_.Get(isolate);
-            v8::Local<v8::Object> obj = handle->ref_.Get(isolate);
-            v8::Local<v8::Value> find;
-            if (obj->Get(context, this->get_string_value(p_method)).ToLocal(&find) && find->IsFunction())
+            const v8::Local<v8::Object> obj = handle->ref_.Get(isolate);
+            if (v8::Local<v8::Value> find;
+                obj->Get(context, this->get_string_value(p_method)).ToLocal(&find) && find->IsFunction())
             {
                 return get_cached_function(find.As<v8::Function>());
             }

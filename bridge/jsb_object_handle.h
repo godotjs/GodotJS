@@ -40,6 +40,9 @@ namespace jsb
 
         uint32_t ref_count_;
     };
+
+    typedef internal::SArray<ObjectHandle, NativeObjectID>::Pointer ObjectHandlePtr;
+    typedef internal::SArray<ObjectHandle, NativeObjectID>::ConstPointer ObjectHandleConstPtr;
 }
 
 #endif

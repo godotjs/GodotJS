@@ -245,7 +245,6 @@ namespace jsb
 
         // unsafe
         const NativeClassID native_class_id = (NativeClassID) class_id_val.As<v8::Uint32>()->Value();
-        jsb_address_guard(environment->native_classes_, native_classes_address_guard);
         jsb_check(internal::VariantUtil::is_valid_name(environment->get_native_class(native_class_id)->name));
 
         //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
@@ -281,7 +280,6 @@ namespace jsb
         JSB_LOG(Log, "[EXPERIMENTAL] %s inherits script: %d native: %d",
             p_module.path, existed_class_info->base_class_id, *native_class_id);
 
-        jsb_address_guard(environment->script_classes_, godotjs_classes_address_guard);
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->native_class_id = native_class_id;
 

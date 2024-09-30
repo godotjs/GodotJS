@@ -8,11 +8,8 @@
 #include "jsb_sindex.h"
 
 #ifdef DEBUG_ENABLED
-// ensure list items not reallocated when a scope is alive
-#   define jsb_address_guard(list, scope_name) const auto scope_name = (list).address_scope()
 #   define JSB_SARRAY_DEBUG 1
 #else
-#   define jsb_address_guard(list, scope_name) (void) 0
 #   define JSB_SARRAY_DEBUG 0
 #endif
 
@@ -87,6 +84,7 @@ namespace jsb::internal
             S* ptr_;
 
         public:
+            TScopedPointer() : container_(nullptr), ptr_(nullptr) { }
             TScopedPointer(nullptr_t) : container_(nullptr), ptr_(nullptr) { }
             TScopedPointer(SArray* p_container, S* p_ptr) : container_(p_container), ptr_(p_ptr)
             {
@@ -409,6 +407,7 @@ namespace jsb::internal
             return IndexType(new_index, new_slot.revision);
         }
 
+        // [DEPRECATED] use try_get_value_scoped instead
         bool try_get_value_pointer(const IndexType& p_index, T*& out_item)
         {
             if (is_valid_index(p_index))
@@ -421,6 +420,7 @@ namespace jsb::internal
             return false;
         }
 
+        // [DEPRECATED] use try_get_value_scoped instead
         bool try_get_value_pointer(const IndexType& p_index, const T*& out_item) const
         {
             if (is_valid_index(p_index))
@@ -485,6 +485,8 @@ namespace jsb::internal
 
         Pointer get_value_scoped(IndexType p_index) { return Pointer(this, &get_value(p_index)); }
         ConstPointer get_value_scoped(IndexType p_index) const { return ConstPointer(const_cast<SArray*>(this), &get_value(p_index)); }
+        Pointer try_get_value_scoped(IndexType p_index) { return is_valid_index(p_index) ? Pointer(this, &get_value(p_index)) : Pointer(); }
+        ConstPointer try_get_value_scoped(IndexType p_index) const { return is_valid_index(p_index) ? ConstPointer(const_cast<SArray*>(this), &get_value(p_index)) : ConstPointer(); }
 
         T& get_value(const IndexType& p_index)
         {
