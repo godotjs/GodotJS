@@ -489,6 +489,8 @@ namespace jsb
         static std::shared_ptr<Environment> _access(void* p_runtime);
 
     private:
+        void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
+
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,
             const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
 

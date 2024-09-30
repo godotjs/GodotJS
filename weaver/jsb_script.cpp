@@ -139,7 +139,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 {
     //TODO multi-thread scripting not supported for now
     jsb_check(loaded_);
-    JSB_LOG(Verbose, "create instance %s(%d)", get_script_class()->native_class_name, script_class_id_);
+    JSB_LOG(Verbose, "create instance %d of %s(%d)", (uintptr_t) p_this, get_script_class()->native_class_name, script_class_id_);
     jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), get_script_class()->native_class_name));
 
     /* STEP 1, CREATE */
@@ -264,12 +264,24 @@ bool GodotJSScript::has_method(const StringName& p_method) const
 {
     GODOTJS_LOAD_SCRIPT_MODULE();
     jsb_check(loaded_);
-    if (get_script_class()->methods.has(p_method)) return true;
+
+    const GodotJSScript* current = this;
+    while (current)
+    {
+        //TODO temp fix
+        if (!current->loaded_) const_cast<GodotJSScript*>(current)->load_module();
+        if (current->is_valid() && current->get_script_class()->methods.has(p_method)) return true;
+        current = current->base.ptr();
+    }
 
     // ensure `_ready` called even if it's not actually defined in scripts
     if (p_method == SceneStringNames::get_singleton()->_ready)
     {
-        return true;
+        // only a `Node` class has `_ready` call
+        if (ClassDB::is_parent_class(get_instance_base_type(), jsb_string_name(Node)))
+        {
+            return true;
+        }
     }
     return false;
 }
@@ -300,6 +312,8 @@ void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
     jsb_check(loaded_);
     if (!valid_) return;
 
+    //TODO include items from base class
+
     for (const auto& it : get_script_class()->signals)
     {
         //TODO details?
@@ -313,6 +327,7 @@ void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 {
     GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
+
     for (const auto& it : get_script_class()->methods)
     {
         //TODO details?
@@ -320,12 +335,20 @@ void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
         item.name = it.key;
         p_list->push_back(item);
     }
+
+    if (base.is_valid())
+    {
+        base->get_script_method_list(p_list);
+    }
 }
 
 void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 {
     GODOTJS_LOAD_SCRIPT_MODULE()
     jsb_check(loaded_);
+
+    //TODO include items from base class
+
 #ifdef TOOLS_ENABLED
     p_list->push_back(get_class_category());
 #endif
@@ -513,7 +536,7 @@ Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const
         {
             call_prelude(p_object_id);
 
-            if (!get_script_class()->methods.has(p_method))
+            if (!has_method(p_method))
             {
                 JSB_LOG(Verbose, "call_prelude for scripts that _ready function not defined (%s)", get_path());
                 return {};

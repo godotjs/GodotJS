@@ -416,7 +416,7 @@ namespace jsb
         {
             handle.ref_count_ = 1;
         }
-        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%d id:%d",
+        JSB_LOG(Verbose, "bind object class:%s(%d) addr:%d id:%d",
             (String) native_classes_.get_value(p_class_id).name, p_class_id,
             (uintptr_t) p_pointer, object_id);
         return object_id;
@@ -768,16 +768,25 @@ namespace jsb
 
     NativeObjectID Environment::crossbind(Object* p_this, ScriptClassID p_class_id)
     {
+        this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
 
+        if (const NativeObjectID object_id = this->get_object_id(p_this))
+        {
+            JSB_LOG(Verbose, "crossbinding on a binded object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
+
+            //TODO may not work in this way
+            _rebind(isolate, context, p_this, p_class_id);
+            return object_id;
+        }
+
         StringName class_name;
         NativeClassID native_class_id;
         v8::Local<v8::Object> class_obj;
 
-        jsb_checkf(!this->get_object_id(p_this), "duplicated object binding is not allowed (%d)", (uintptr_t) p_this);
         {
             const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
             class_name = class_info->js_class_name;
@@ -816,6 +825,12 @@ namespace jsb
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
 
+        _rebind(isolate, context, p_this, p_class_id);
+    }
+
+    void Environment::_rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object *p_this, ScriptClassID p_class_id)
+    {
+        //TODO a dirty but approaching solution for hot-reloading
         v8::Local<v8::Object> instance;
         if (!this->get_object(p_this, instance))
         {

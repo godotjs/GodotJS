@@ -93,7 +93,8 @@ namespace jsb
         // methods
         {
             // const v8::Local<v8::Array> property_names = prototype->GetPropertyNames(p_context, v8::KeyCollectionMode::kOwnOnly, v8::PropertyFilter::ALL_PROPERTIES, v8::IndexFilter::kSkipIndices, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
-            const v8::Local<v8::Array> property_names = prototype->GetOwnPropertyNames(p_context, v8::PropertyFilter::ALL_PROPERTIES, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
+            constexpr v8::PropertyFilter property_filter = v8::PropertyFilter::SKIP_SYMBOLS;
+            const v8::Local<v8::Array> property_names = prototype->GetOwnPropertyNames(p_context, property_filter, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
 
             const uint32_t len = property_names->Length();
             for (uint32_t index = 0; index < len; ++index)
