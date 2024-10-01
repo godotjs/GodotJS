@@ -59,7 +59,11 @@ namespace jsb::internal
                 Variant::VECTOR2,   // PACKED_VECTOR2_ARRAY
                 Variant::VECTOR3,   // PACKED_VECTOR3_ARRAY
                 Variant::COLOR,     // PACKED_COLOR_ARRAY
+#if GODOT_4_3_OR_NEWER
+                Variant::VECTOR4,   // PACKED_VECTOR4_ARRAY
+#endif
             };
+            static_assert(Variant::VARIANT_MAX - Variant::PACKED_BYTE_ARRAY == std::size(mappings));
             jsb_check(p_type - Variant::PACKED_BYTE_ARRAY >= 0 && p_type - Variant::PACKED_BYTE_ARRAY < ::std::size(mappings));
             return mappings[p_type - Variant::PACKED_BYTE_ARRAY];
         }
