@@ -516,10 +516,9 @@ namespace jsb
                 const ObjectHandlePtr object_handle = objects_.get_value_scoped(object_id);
                 jsb_check(object_handle->pointer == p_pointer);
                 class_id = object_handle->class_id;
-                is_persistent = persistent_objects_.has(p_pointer);
 
                 // remove index at first to make `free_object` safely reentrant
-                if (is_persistent) persistent_objects_.erase(p_pointer);
+                is_persistent = persistent_objects_.erase(p_pointer);
                 objects_index_.erase(p_pointer);
                 if (!p_free)
                 {
