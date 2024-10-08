@@ -71,12 +71,15 @@ def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, 
             return (support, details)
     return None
 
-v8_support = get_library_support(v8_prebuilt_libs)
+prefer_quickjs = False
+v8_support = get_library_support(v8_prebuilt_libs) if not prefer_quickjs else None
 lws_support = get_library_support(lws_prebuilt_libs)
 
 jsb_defines = [
+    CompileDefines("JSB_WITH_QUICKJS", 1 if prefer_quickjs else 0),
     CompileDefines("JSB_WITH_V8", 1 if v8_support is not None else 0),
     CompileDefines("JSB_WITH_WEB", 1 if jsb_platform == "web" else 0),
+
     CompileDefines("JSB_WITH_EDITOR_UTILITY_FUNCS", 1 if jsb_platform != "web" and env.editor_build else 0, [
         "enables 'jsb.editor'", 
     ]),
@@ -84,7 +87,6 @@ jsb_defines = [
         "enable to debug with Chrome devtools with the following link by default:",
         "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1",
     ]),
-    CompileDefines("JSB_WITH_QUICKJS", 0),
     CompileDefines("JSB_WITH_LWS", 1 if lws_support is not None else 0, [
         "NOTE: currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`", 
         "`devtools` do not response the upgrading request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`", 
@@ -92,9 +94,15 @@ jsb_defines = [
     ]),
 ]
 
+def is_defined(name, value = 1):
+    for t in jsb_defines:
+        if t.name == name:
+            return t.value == value
+    return False
+
 print("compiling:", module_name)
-print("javascript engine:", "none" if v8_support is None else v8_support[0].name)
-print("websocket lib:", "none" if lws_support is None else lws_support[0].name)
+print("javascript engine:", "v8" if is_defined("JSB_WITH_V8") else "web" if is_defined("JSB_WITH_WEB") else "quickjs" if is_defined("JSB_WITH_QUICKJS") else "none")
+print("websocket lib:", "lws" if is_defined("JSB_WITH_LWS") else "none")
 print("platform:", jsb_platform)
 print("arch:", jsb_arch)
 
@@ -126,12 +134,6 @@ def check(condition, text):
     if not condition:
         print("Error: " + text)
         Exit(2)
-
-def is_defined(name, value):
-    for t in jsb_defines:
-        if t.name == name:
-            return t.value == value
-    return False
 
 def set_defined(name, value):
     for t in jsb_defines:
@@ -329,7 +331,7 @@ if v8_support is not None:
     env_jsb.add_source_files(module_obj, "impl/v8/*.cpp")
 
 # lws
-if lws_support is not None:
+if is_defined("JSB_WITH_LWS"):
     lws_missing_msg = "The prebuilt lws lib is missing? Please build it at first."
     lws_basename = lws_support[1].platform_base()
     lws_lib_path = f"lws/{lws_basename}/{lws_support[1].libname}"
@@ -349,7 +351,7 @@ if lws_support is not None:
     if env.msvc and env["vsproj"]:
         env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
 
-if is_defined("JSB_WITH_QUICKJS", 1):
+if is_defined("JSB_WITH_QUICKJS"):
     print("WARNING: quickjs support has not been implemented yet")
 
     # quickjs is directly built from source
