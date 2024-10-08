@@ -330,7 +330,7 @@ namespace jsb
     {
         jsb_check(p_godot_obj);
         Environment* environment = Environment::wrap(isolate);
-        if (environment->get_object(p_godot_obj, r_jval))
+        if (environment->try_get_object(p_godot_obj, r_jval))
         {
             return true;
         }

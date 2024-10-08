@@ -357,7 +357,7 @@ namespace jsb
 
         // whether the `p_pointer` registered in the object binding map
         // return true, and the corresponding JS value if `p_pointer` is valid
-        jsb_force_inline bool get_object(void* p_pointer, v8::Local<v8::Object>& r_unwrap) const
+        jsb_force_inline bool try_get_object(void* p_pointer, v8::Local<v8::Object>& r_unwrap) const
         {
             if (const NativeObjectID* entry = objects_index_.getptr(p_pointer))
             {
@@ -367,13 +367,7 @@ namespace jsb
             return false;
         }
 
-        jsb_force_inline v8::Local<v8::Object> get_object(void* p_pointer) const
-        {
-            const NativeObjectID* entry = objects_index_.getptr(p_pointer);
-            jsb_check(entry);
-            return get_object(*entry);
-        }
-
+        // Get JS object, will crash if object_id is invalid
         jsb_force_inline v8::Local<v8::Object> get_object(const NativeObjectID& p_object_id) const
         {
             const ObjectHandle& handle = objects_.get_value(p_object_id);

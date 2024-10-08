@@ -830,7 +830,7 @@ namespace jsb
     {
         //TODO a dirty but approaching solution for hot-reloading
         v8::Local<v8::Object> instance;
-        if (!this->get_object(p_this, instance))
+        if (!this->try_get_object(p_this, instance))
         {
             JSB_LOG(Fatal, "bad instance");
             return;
@@ -1206,7 +1206,7 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
-        v8::Local<v8::Object> self = this->get_object(p_object_id);
+        const v8::Local<v8::Object> self = this->get_object(p_object_id);
 
         Variant unpacked;
         if (!TypeConvert::js_to_gd_var(isolate, context, self, Variant::OBJECT, unpacked) || unpacked.is_null())
@@ -1295,7 +1295,7 @@ namespace jsb
             }
             const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
             jsb_check(js_func);
-            v8::Local<v8::Object> self = this->get_object(p_object_id);
+            const v8::Local<v8::Object> self = this->get_object(p_object_id);
             return _call(isolate, context, js_func.object_.Get(isolate), self, p_args, p_argcount, r_error);
         }
 
