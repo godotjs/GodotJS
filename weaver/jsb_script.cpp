@@ -10,9 +10,6 @@
 #include "editor/editor_help.h"
 #endif
 
-#define GODOTJS_LOAD_SCRIPT_MODULE() { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module(); }
-#define GODOTJS_LOAD_SCRIPT_WARN() { if (jsb_unlikely(!loaded_)) JSB_LOG(Warning, "script not loaded (%s)", get_path()); }
-
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
     {
@@ -42,7 +39,7 @@ GodotJSScript::~GodotJSScript()
 // GDScript::can_instantiate()
 bool GodotJSScript::can_instantiate() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
 #ifdef TOOLS_ENABLED
     return valid_ && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -54,7 +51,7 @@ bool GodotJSScript::is_tool() const
 {
     if (valid_)
     {
-        GODOTJS_LOAD_SCRIPT_MODULE()
+        ensure_module_loaded();
         return get_script_class()->is_tool();
     }
     return false;
@@ -67,7 +64,7 @@ void GodotJSScript::set_source_code(const String& p_code)
 
 Ref<Script> GodotJSScript::get_base_script() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     //jsb_notice(loaded_, "script not loaded");
 
     // return the base script in order to traverse methods/properties from inheritance hierarchy
@@ -76,7 +73,7 @@ Ref<Script> GodotJSScript::get_base_script() const
 
 StringName GodotJSScript::get_global_name() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     return valid_ ? get_script_class()->js_class_name : StringName();
 }
 
@@ -94,7 +91,7 @@ bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
 // this method is called in `EditorStandardSyntaxHighlighter::_update_cache()` without checking `script->is_valid()`
 StringName GodotJSScript::get_instance_base_type() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     return valid_ ? get_script_class()->native_class_name : StringName();
 }
 
@@ -210,7 +207,7 @@ Error GodotJSScript::reload(bool p_keep_state)
 #ifdef TOOLS_ENABLED
 Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    ensure_module_loaded();
     if (!loaded_ || !script_class_id_) return {};
 
     const jsb::ScriptClassInfoPtr class_info = get_script_class();
@@ -248,7 +245,7 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 
 String GodotJSScript::get_class_icon_path() const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    ensure_module_loaded();
     jsb_check(loaded_);
     return script_class_id_ ? get_script_class()->icon : String();
 }
@@ -262,14 +259,14 @@ PropertyInfo GodotJSScript::get_class_category() const
 
 bool GodotJSScript::has_method(const StringName& p_method) const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE();
+    ensure_module_loaded();
     jsb_check(loaded_);
 
     const GodotJSScript* current = this;
     while (current)
     {
         //TODO temp fix
-        if (!current->loaded_) const_cast<GodotJSScript*>(current)->load_module();
+        if (!current->loaded_) const_cast<GodotJSScript*>(current)->load_module_immediately();
         if (current->is_valid() && current->get_script_class()->methods.has(p_method)) return true;
         current = current->base.ptr();
     }
@@ -308,7 +305,7 @@ bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 
 void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     jsb_check(loaded_);
     if (!valid_) return;
 
@@ -325,7 +322,7 @@ void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 
 void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     jsb_check(loaded_);
 
     for (const auto& it : get_script_class()->methods)
@@ -344,7 +341,7 @@ void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
 
 void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     jsb_check(loaded_);
 
     //TODO include items from base class
@@ -364,7 +361,7 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 
 bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     if (HashMap<StringName, Variant>::ConstIterator it = member_default_values_cache.find(p_property))
     {
         r_value = it->value;
@@ -375,14 +372,14 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
 
 const Variant GodotJSScript::get_rpc_config() const
 {
-    GODOTJS_LOAD_SCRIPT_WARN()
     //TODO
+    jsb_not_implemented(true, "rpc implementation");
     return {};
 }
 
 bool GodotJSScript::has_static_method(const StringName& p_method) const
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     jsb_check(loaded_);
     //TODO
     return false;
@@ -426,10 +423,10 @@ void GodotJSScript::load_module_if_missing()
 
     JSB_LOG(Verbose, "force to load missing script %s", get_path());
     loaded_ = false;
-    load_module();
+    load_module_immediately();
 }
 
-void GodotJSScript::load_module()
+void GodotJSScript::load_module_immediately()
 {
     if (loaded_ && env_id_) return;
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
@@ -523,7 +520,7 @@ jsb::ScriptClassInfoPtr GodotJSScript::get_script_class() const
 
 Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     jsb_check(loaded_);
     jsb::ObjectCacheID func_id;
     if (const HashMap<StringName, jsb::ObjectCacheID>::Iterator& it = cached_methods_.find(p_method))
@@ -605,7 +602,7 @@ void GodotJSScript::_placeholder_erased(PlaceHolderScriptInstance* p_placeholder
 
 void GodotJSScript::update_exports()
 {
-    GODOTJS_LOAD_SCRIPT_MODULE()
+    ensure_module_loaded();
     jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
     if (!valid_) return;

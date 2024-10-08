@@ -774,6 +774,7 @@ namespace jsb
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
 
+        // In Editor, the script can be attached to an Object after it created in JS (e.g. 'enter_tree' as a child node of a script attached parent node)
         if (const NativeObjectID object_id = this->get_object_id(p_this))
         {
             JSB_LOG(Verbose, "crossbinding on a binded object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);

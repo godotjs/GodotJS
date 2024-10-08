@@ -47,7 +47,8 @@ private:
 
     void call_prelude(jsb::NativeObjectID p_object_id);
 
-    void load_module();
+    void load_module_immediately();
+    jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately(); }
 
     void _update_exports(PlaceHolderScriptInstance *p_instance_to_update, bool p_base_exports_changed = false);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
