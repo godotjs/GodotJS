@@ -212,7 +212,6 @@ namespace jsb
             {
                 symbols_[index].Reset(isolate_, v8::Symbol::New(isolate_));
             }
-            valuetype_private_.Reset(isolate_, v8::Private::New(isolate_));
         }
 
         native_classes_.reserve((int) ClassDB::classes.size() + JSB_INITIAL_CLASS_EXTRA_SLOTS);
@@ -306,7 +305,6 @@ namespace jsb
         jsb_check(objects_.size() == 0);
         jsb_check(objects_index_.size() == 0);
 
-        valuetype_private_.Reset();
         string_name_cache_.clear();
 
         // cleanup all class templates (must do after objects cleaned up)

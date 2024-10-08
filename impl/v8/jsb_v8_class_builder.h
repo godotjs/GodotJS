@@ -211,18 +211,6 @@ namespace jsb::impl
             return builder;
         }
 
-        // used in FAST_CONSTRUCTOR (which does not use any data payload in the constructor)
-        template<int InternalFieldCount>
-        static ClassBuilder New(v8::Isolate* isolate, const v8::FunctionCallback constructor)
-        {
-            ClassBuilder builder;
-            builder.isolate_ = isolate;
-            builder.template_ = v8::FunctionTemplate::New(isolate, constructor);
-            builder.template_->InstanceTemplate()->SetInternalFieldCount(InternalFieldCount);
-            builder.prototype_template_ = builder.template_->PrototypeTemplate();
-            return builder;
-        }
-
         ~ClassBuilder() = default;
 
     private:

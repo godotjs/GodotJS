@@ -58,6 +58,7 @@ namespace jsb::internal
     struct FConstructorInfo
     {
         Vector<FConstructorVariantInfo> variants;
+        NativeClassID class_id;
     };
 
     struct FPropertyInfo2

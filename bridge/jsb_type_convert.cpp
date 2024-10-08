@@ -299,13 +299,14 @@ namespace jsb
             {
                 jsb_checkf(Variant::can_convert(p_cvar.get_type(), p_type), "variant type can't convert to %s from %s", Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
                 Environment* env = Environment::wrap(isolate);
-                if (const NativeClassInfoPtr class_info = env->expose_godot_primitive_class(p_type))
+                NativeClassID class_id;
+                if (const NativeClassInfoPtr class_info = env->expose_godot_primitive_class(p_type, &class_id))
                 {
-                    jsb_check(class_info->type == NativeClassType::GodotPrimitive);
+                    jsb_check(class_id && class_info->type == NativeClassType::GodotPrimitive);
                     r_jval = class_info->clazz.NewInstance(context);
                     jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
 
-                    env->bind_valuetype(Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                    env->bind_valuetype(class_id, Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
                 }
                 return false;

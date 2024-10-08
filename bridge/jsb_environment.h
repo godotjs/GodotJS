@@ -67,7 +67,6 @@ namespace jsb
         v8::Isolate* isolate_;
         v8::Global<v8::Context> context_;
 
-        v8::Global<v8::Private> valuetype_private_;
         ArrayBufferAllocator allocator_;
 
         //TODO postpone the call of Global.Reset if calling from other threads
@@ -244,6 +243,11 @@ namespace jsb
             return expose_class(godot_primitive_map_[p_type], r_class_id);
         }
 
+        NativeClassID get_godot_primitive_class_id(const Variant::Type p_type) const
+        {
+            return class_register_map_.get(godot_primitive_map_[p_type]).id;
+        }
+
         // return false if something wrong with an exception thrown
         // caller should handle the exception if it's not called from js
         JavaScriptModule* _load_module(const String& p_parent_id, const String& p_module_id);
@@ -282,15 +286,34 @@ namespace jsb
         // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
         NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, EBindingPolicy::Type p_policy);
 
+        // overrides for impl-specific optimization
+        void bind_valuetype(const NativeClassID p_class_id, Variant* p_pointer, const v8::Local<v8::Object>& p_object)
+        {
+#if JSB_WITH_V8
+            bind_valuetype_v8(p_pointer, p_object);
+#else
+            bind_pointer(p_class_id, (void*) p_pointer, p_object, EBindingPolicy::Managed);
+#endif
+        }
+
+        void bind_valuetype(const Variant::Type p_type, Variant* p_pointer, const v8::Local<v8::Object>& p_object)
+        {
+#if JSB_WITH_V8
+            bind_valuetype_v8(p_pointer, p_object);
+#else
+            bind_pointer(get_godot_primitive_class_id(p_type), (void*) p_pointer, p_object, EBindingPolicy::Managed);
+#endif
+        }
+
         // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type)
         // May change in the future.
-        template<typename TStruct>
-        void bind_valuetype(TStruct* p_pointer, const v8::Local<v8::Object>& p_object)
+#if JSB_WITH_V8
+        void bind_valuetype_v8(Variant* p_pointer, const v8::Local<v8::Object>& p_object)
         {
             p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
-            p_object->SetPrivate(isolate_->GetCurrentContext(), valuetype_private_.Get(isolate_),
+            p_object->Set(isolate_->GetCurrentContext(), 0,
                 // in this way, the scavenger could gc it efficiently
-                v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(TStruct), [](void* data, size_t length, void* deleter_data)
+                v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(Variant), [](void* data, size_t length, void* deleter_data)
                 {
                     Variant* variant = (Variant*) data;
                     // `Callable/Array/Dictionary` may contain reference-based objects.
@@ -320,6 +343,7 @@ namespace jsb
                 }, this))
             ).Check();
         }
+#endif
 
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
 

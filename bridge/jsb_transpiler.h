@@ -43,7 +43,6 @@ namespace jsb
 
     template<> struct VariantCaster<Vector2>
     {
-        constexpr static Variant::Type Type = Variant::VECTOR2;
         static Vector2* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
             Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -53,7 +52,6 @@ namespace jsb
 
     template<> struct VariantCaster<Vector3>
     {
-        constexpr static Variant::Type Type = Variant::VECTOR3;
         static Vector3* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
             Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -63,7 +61,6 @@ namespace jsb
 
     template<> struct VariantCaster<Vector4>
     {
-        constexpr static Variant::Type Type = Variant::VECTOR4;
         static Vector4* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
             Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -73,7 +70,6 @@ namespace jsb
 
     template<> struct VariantCaster<Signal>
     {
-        constexpr static Variant::Type Type = Variant::SIGNAL;
         static Signal* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
             Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -83,7 +79,6 @@ namespace jsb
 
     template<> struct VariantCaster<Callable>
     {
-        constexpr static Variant::Type Type = Variant::SIGNAL;
         static Callable* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
             Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -93,7 +88,6 @@ namespace jsb
 
     template<> struct VariantCaster<Basis>
     {
-        constexpr static Variant::Type Type = Variant::BASIS;
         static Basis* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
         {
             Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -114,12 +108,13 @@ namespace jsb
         static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, const T& val)
         {
             Environment* environment = Environment::wrap(isolate);
-            const NativeClassInfoPtr class_info = environment->expose_godot_primitive_class(VariantCaster<T>::Type);
+            NativeClassID class_id;
+            const NativeClassInfoPtr class_info = environment->expose_godot_primitive_class(GetTypeInfo<T>::VARIANT_TYPE, &class_id);
             const v8::Local<v8::Object> inst = class_info->clazz.NewInstance(context);
-            jsb_check(inst.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            jsb_check(class_id && inst.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
 
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
-            environment->bind_valuetype(environment->alloc_variant(val), inst.As<v8::Object>());
+            environment->bind_valuetype(class_id, environment->alloc_variant(val), inst.As<v8::Object>());
             info.GetReturnValue().Set(inst);
             return true;
         }

@@ -197,8 +197,28 @@ namespace jsb
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info);
     };
 
+    template<typename TStruct>
+    struct ReflectConstructorCallValueBinder
+    {
+        jsb_force_inline static void bind_valuetype(v8::Isolate* isolate, const v8::Local<v8::Object>& p_object, const TStruct& p_value)
+        {
+            static_assert(GetTypeInfo<TStruct>::VARIANT_TYPE != Variant::VARIANT_MAX);
+            Variant* pointer = Environment::alloc_variant();
+            *pointer = p_value;
+            Environment::wrap(isolate)->bind_valuetype(GetTypeInfo<TStruct>::VARIANT_TYPE, pointer, p_object);
+        }
+
+        jsb_force_inline static void bind_valuetype(v8::Isolate* isolate, const v8::Local<v8::Object>& p_object, const TStruct& p_value, const NativeClassID p_class_id)
+        {
+            static_assert(GetTypeInfo<TStruct>::VARIANT_TYPE != Variant::VARIANT_MAX);
+            Variant* pointer = Environment::alloc_variant();
+            *pointer = p_value;
+            Environment::wrap(isolate)->bind_valuetype(p_class_id, pointer, p_object);
+        }
+    };
+
     template<>
-    struct ReflectConstructorCall<Vector2>
+    struct ReflectConstructorCall<Vector2> : ReflectConstructorCallValueBinder<Vector2>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR2; }
 
@@ -212,13 +232,13 @@ namespace jsb
             }
             const v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
+            //TODO ClassID temporarily not used for possibly better performance in constructor (by avoiding info.Data())
+            // const NativeClassID class_id = (NativeClassID) info.Data().As<v8::Uint32>()->Value();
 
             if (v8_argc == 0)
             {
-                static Variant zero = Vector2();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Vector2 zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -231,9 +251,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
                 do
@@ -243,9 +261,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Vector2(loc_0));
                     return;
                 } while (false);
             }
@@ -264,9 +280,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Vector2(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Vector2(loc_0, loc_1));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -274,7 +288,7 @@ namespace jsb
     };
 
     template<>
-    struct ReflectConstructorCall<Vector2i>
+    struct ReflectConstructorCall<Vector2i> : ReflectConstructorCallValueBinder<Vector2i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR2I; }
 
@@ -290,10 +304,8 @@ namespace jsb
             const int v8_argc = info.Length();
             if (v8_argc == 0)
             {
-                static Variant zero = Vector2i();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Vector2i zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -306,9 +318,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Vector2i(loc_0));
                     return;
                 } while (false);
                 do
@@ -318,9 +328,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
             }
@@ -339,9 +347,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Vector2i(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Vector2i(loc_0, loc_1));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -349,7 +355,7 @@ namespace jsb
     };
 
     template<>
-    struct ReflectConstructorCall<Vector3>
+    struct ReflectConstructorCall<Vector3> : ReflectConstructorCallValueBinder<Vector3>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR3; }
 
@@ -365,10 +371,8 @@ namespace jsb
             const int v8_argc = info.Length();
             if (v8_argc == 0)
             {
-                static Variant zero = Vector3();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Vector3 zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -381,9 +385,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector3(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
                 do
@@ -393,9 +395,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector3(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Vector3(loc_0));
                     return;
                 } while (false);
             }
@@ -420,9 +420,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Vector3(loc_0, loc_1, loc_2);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Vector3(loc_0, loc_1, loc_2));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -430,7 +428,7 @@ namespace jsb
     };
 
     template<>
-    struct ReflectConstructorCall<Vector3i>
+    struct ReflectConstructorCall<Vector3i> : ReflectConstructorCallValueBinder<Vector3i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR3I; }
 
@@ -446,10 +444,8 @@ namespace jsb
             const int v8_argc = info.Length();
             if (v8_argc == 0)
             {
-                static Variant zero = Vector3i();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Vector3i zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -462,9 +458,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector3i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Vector3i(loc_0));
                     return;
                 } while (false);
                 do
@@ -474,9 +468,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector3i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
             }
@@ -501,9 +493,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Vector3i(loc_0, loc_1, loc_2);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Vector3i(loc_0, loc_1, loc_2));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -511,7 +501,7 @@ namespace jsb
     };
 
     template<>
-    struct ReflectConstructorCall<Vector4>
+    struct ReflectConstructorCall<Vector4> : ReflectConstructorCallValueBinder<Vector4>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR4; }
 
@@ -527,10 +517,8 @@ namespace jsb
             const int v8_argc = info.Length();
             if (v8_argc == 0)
             {
-                static Variant zero = Vector4();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Vector4 zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -543,9 +531,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector4(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
                 do
@@ -555,9 +541,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector4(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Vector4(loc_0));
                     return;
                 } while (false);
             }
@@ -588,9 +572,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Vector4(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Vector4(loc_0, loc_1, loc_2, loc_3));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -598,7 +580,7 @@ namespace jsb
     };
 
     template<>
-    struct ReflectConstructorCall<Vector4i>
+    struct ReflectConstructorCall<Vector4i> : ReflectConstructorCallValueBinder<Vector4i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR4I; }
 
@@ -614,10 +596,8 @@ namespace jsb
             const int v8_argc = info.Length();
             if (v8_argc == 0)
             {
-                static Variant zero = Vector4i();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Vector4i zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -630,9 +610,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector4i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Vector4i(loc_0));
                     return;
                 } while (false);
                 do
@@ -642,9 +620,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Vector4i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
             }
@@ -675,9 +651,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Vector4i(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Vector4i(loc_0, loc_1, loc_2, loc_3));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -685,7 +659,7 @@ namespace jsb
     };
 
     template<>
-    struct ReflectConstructorCall<Rect2>
+    struct ReflectConstructorCall<Rect2> : ReflectConstructorCallValueBinder<Rect2>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::RECT2; }
 
@@ -701,10 +675,8 @@ namespace jsb
             const int v8_argc = info.Length();
             if (v8_argc == 0)
             {
-                static Variant zero = Rect2();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Rect2 zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -717,9 +689,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Rect2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
                 do
@@ -729,9 +699,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Rect2(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Rect2(loc_0));
                     return;
                 } while (false);
             }
@@ -750,9 +718,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Rect2(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Rect2(loc_0, loc_1));
                 return;
             }
             else if (v8_argc == 4)
@@ -782,9 +748,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Rect2(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Rect2(loc_0, loc_1, loc_2, loc_3));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");
@@ -792,7 +756,7 @@ namespace jsb
     };
 
     template<>
-    struct ReflectConstructorCall<Rect2i>
+    struct ReflectConstructorCall<Rect2i> : ReflectConstructorCallValueBinder<Rect2i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::RECT2I; }
 
@@ -808,10 +772,8 @@ namespace jsb
             const int v8_argc = info.Length();
             if (v8_argc == 0)
             {
-                static Variant zero = Rect2i();
-                Variant* instance = Environment::alloc_variant();
-                *instance = zero;
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                static const Rect2i zero;
+                bind_valuetype(isolate, self, zero);
                 return;
             }
             else if (v8_argc == 1)
@@ -824,9 +786,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Rect2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, Rect2i(loc_0));
                     return;
                 } while (false);
                 do
@@ -836,9 +796,7 @@ namespace jsb
                     {
                         break;
                     }
-                    Variant* instance = Environment::alloc_variant();
-                    *instance = Rect2i(loc_0);
-                    Environment::wrap(isolate)->bind_valuetype(instance, self);
+                    bind_valuetype(isolate, self, loc_0);
                     return;
                 } while (false);
             }
@@ -857,9 +815,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Rect2i(loc_0, loc_1);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Rect2i(loc_0, loc_1));
                 return;
             }
             else if (v8_argc == 4)
@@ -889,9 +845,7 @@ namespace jsb
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
-                Variant* instance = Environment::alloc_variant();
-                *instance = Rect2i(loc_0, loc_1, loc_2, loc_3);
-                Environment::wrap(isolate)->bind_valuetype(instance, self);
+                bind_valuetype(isolate, self, Rect2i(loc_0, loc_1, loc_2, loc_3));
                 return;
             }
             jsb_throw(isolate, "no suitable constructor");

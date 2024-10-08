@@ -27,14 +27,14 @@
         );\
         continue;\
     } (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType) \
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID) \
     if constexpr (ReflectConstructorCall<ForType>::is_supported(TYPE))\
     {\
-        return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, &ReflectConstructorCall<ForType>::constructor);\
+        return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, &ReflectConstructorCall<ForType>::constructor, *(ClassID));\
     } (void) 0
 #else
 #define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType) (void) 0
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID) (void) 0
 #endif
 
 #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
@@ -196,7 +196,7 @@ namespace jsb
             }
             v8::Local<v8::Object> self = info.This();
             Environment* env = Environment::wrap(isolate);
-            const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(env).constructors[info.Data().As<v8::Int32>()->Value()];
+            const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(env).constructors[info.Data().As<v8::Uint32>()->Value()];
 
             const int argc = info.Length();
 
@@ -254,7 +254,7 @@ namespace jsb
                     args[index].~Variant();
                 }
 
-                env->bind_valuetype(instance, self);
+                env->bind_valuetype(constructor_info.class_id, instance, self);
                 return;
             }
 
@@ -579,16 +579,16 @@ namespace jsb
         //     return false;
         // }
 
-        static impl::ClassBuilder get_class_builder(const ClassRegister& p_env)
+        static impl::ClassBuilder get_class_builder(const ClassRegister& p_env, const NativeClassID p_class_id)
         {
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3i);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4i);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2i);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3i, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4i, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2i, p_class_id);
 
             // fallback
             {
@@ -597,6 +597,7 @@ namespace jsb
                 internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.env).constructors.write[constructor_index];
                 const int count = Variant::get_constructor_count(TYPE);
                 constructor_info.variants.resize_zeroed(count);
+                constructor_info.class_id = p_class_id; // needed only if not using V8
                 for (int index = 0; index < count; ++index)
                 {
                     internal::FConstructorVariantInfo& variant_info = constructor_info.variants.write[index];
@@ -617,7 +618,7 @@ namespace jsb
         {
             const StringName& class_name = p_env.type_name;
             const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotPrimitive, class_name);
-            impl::ClassBuilder class_builder = get_class_builder(p_env);
+            impl::ClassBuilder class_builder = get_class_builder(p_env, class_id);
 
             class_builder.SetClassName(p_env->get_string_value(class_name));
 
