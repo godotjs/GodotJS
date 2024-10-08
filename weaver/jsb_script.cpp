@@ -437,7 +437,7 @@ void GodotJSScript::load_module_immediately()
 
     env_id_ = env->id();
     loaded_ = true;
-    base = nullptr;
+    base.unref();
     source_changed_cache = true;
     jsb::JavaScriptModule* module;
     if (const Error err = env->load(path, &module); err != OK)

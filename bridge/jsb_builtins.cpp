@@ -24,7 +24,6 @@ namespace jsb
         if constexpr (ActiveSeverity < internal::ELogSeverity::JSB_MIN_LOG_LEVEL) return;
 
         v8::Isolate* isolate = info.GetIsolate();
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
         StringBuilder sb;
 
         int index;
