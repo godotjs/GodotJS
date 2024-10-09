@@ -189,7 +189,7 @@ namespace jsb::internal
 
         const LowLevelAccess& get_low_level_access() { return LowLevelAccess(*this); }
 
-        SArray() { reserve(8); }
+        SArray() { reserve(TAllocator::kInitialElementNum); }
         SArray(int p_init_capacity) { reserve(p_init_capacity); }
         SArray(SArray&& other) noexcept { *this = std::move(other); }
         SArray(const SArray& other) { *this = other; }

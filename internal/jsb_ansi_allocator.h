@@ -8,6 +8,8 @@ namespace jsb::internal
 {
     struct AnsiAllocator
     {
+        enum { kInitialElementNum = 8 };
+
         struct AnyType
         {
         };
