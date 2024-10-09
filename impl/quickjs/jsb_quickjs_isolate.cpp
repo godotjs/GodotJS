@@ -26,10 +26,13 @@ namespace v8
         return isolate;
     }
 
-    Isolate::Isolate()
+    Isolate::Isolate() : handle_scope_(nullptr)
     {
-        JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
+        const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
         runtime_ = JS_NewRuntime2(&mf, this);
+
+        // JSClassDef class_def;
+        // class_def.finalizer;
     }
 
     Isolate::~Isolate()

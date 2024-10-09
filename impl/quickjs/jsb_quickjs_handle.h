@@ -2,25 +2,24 @@
 #define GODOTJS_QUICKJS_HANDLE_H
 
 #include "jsb_quickjs_pch.h"
+#include "jsb_quickjs_data.h"
 
 namespace v8
 {
-    class HandleBase
+    template <typename T>
+    class Global;
+
+    template <typename T>
+    class Local
     {
-
-    };
-
-    template<typename T> class Global;
-
-    template<typename T>
-    class Local : public HandleBase
-    {
-        template<typename U>
+        template <typename U>
         friend class Global<U>;
 
+    public:
+        Data data;
     };
 
-    template<typename T>
+    template <typename T>
     class Global
     {
     public:
