@@ -71,6 +71,17 @@ def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, 
             return (support, details)
     return None
 
+def read_macro_value(name: str, def_val = None):
+    with open("jsb.config.h", "rt", encoding="utf-8") as input:
+        regex = rf"^#define\s+{name}\s+(\d+)$"
+        for line in input:
+            matches = re.finditer(regex, line)
+            for _, match in enumerate(matches, start=1):
+                return match.group(1)
+    if def_val is not None:
+        return def_val
+    raise ValueError(f"no {name} defined in jsb.config.h")
+
 prefer_quickjs = False
 v8_support = get_library_support(v8_prebuilt_libs) if not prefer_quickjs else None
 lws_support = get_library_support(lws_prebuilt_libs)
@@ -201,15 +212,6 @@ def generate_method_code(output, methodname, indent, preset_defines: list[Preset
     output.write(indent+"return nullptr;\n")
     output.write("}\n")
 
-def read_bundle_version():
-    with open("jsb.config.h", "rt", encoding="utf-8") as input:
-        regex = r"^#define\s+JSB_BUNDLE_VERSION\s+(\d+)$"
-        for line in input:
-            matches = re.finditer(regex, line)
-            for _, match in enumerate(matches, start=1):
-                return match.group(1)
-    raise ValueError("no JSB_BUNDLE_VERSION defined in jsb.config.h")
-
 def generate_code(rt_preset_defines, ed_preset_defines):
     indent = "    "
     output = io.StringIO()
@@ -228,7 +230,8 @@ def generate_code(rt_preset_defines, ed_preset_defines):
         output.write("#include \"jsb.config.h\"\n")
         
         # js.bundle version checker
-        output.write(f"static_assert({read_bundle_version()} == JSB_BUNDLE_VERSION, \"obsolete preset data found, please regenerate project sources with scons\");\n")
+        JSB_BUNDLE_VERSION = read_macro_value("JSB_BUNDLE_VERSION")
+        output.write(f"static_assert({JSB_BUNDLE_VERSION} == JSB_BUNDLE_VERSION, \"obsolete preset data found, please regenerate project sources with scons\");\n")
 
         # bundled source for runtime
         generate_method_code(output, "get_source_rt", indent, rt_preset_defines)
