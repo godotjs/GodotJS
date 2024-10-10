@@ -82,7 +82,11 @@
 #define jsb_stackalloc(type, size) (type*) alloca(sizeof(type) * (size))
 
 // help to trace the location of the throwing error in C++ code.
-#define jsb_throw(isolate, literal) { ERR_PRINT((literal)); (isolate)->ThrowError((literal)); } (void) 0
+#if JSB_DEBUG
+#   define jsb_throw(isolate, literal) impl::Helper::throw_error((isolate), "[" __FILE__ ":" JSB_STRINGIFY(__LINE__) "] " literal)
+#else
+#   define jsb_throw(isolate, literal) impl::Helper::throw_error((isolate), (literal))
+#endif
 
 #define jsb_underlying_value(enum_type, enum_value) (__underlying_type(enum_type) (enum_value))
 

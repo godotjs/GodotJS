@@ -1,11 +1,13 @@
-﻿#ifndef GODOTJS_WEB_TEMPLATE_H
-#define GODOTJS_WEB_TEMPLATE_H
-
-#include "jsb_web_primitive.h"
-#include "jsb_web_callback.h"
+#ifndef GODOTJS_QUICKJS_TEMPLATE_H
+#define GODOTJS_QUICKJS_TEMPLATE_H
+#include "jsb_quickjs_data.h"
+#include "jsb_quickjs_handle.h"
 
 namespace v8
 {
+    class Name;
+    class FunctionTemplate;
+
     class Template : public Data
     {
     public:

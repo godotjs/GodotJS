@@ -45,7 +45,7 @@ namespace jsb
                     Variant obj_var;
                     if (!TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::OBJECT, obj_var) || obj_var.is_null())
                     {
-                        isolate->ThrowError("bad object");
+                        jsb_throw(isolate, "bad object");
                         return;
                     }
 
@@ -54,13 +54,13 @@ namespace jsb
                 }
                 break;
             default:
-                isolate->ThrowError("bad parameter");
+                jsb_throw(isolate, "bad parameter");
                 return;
             }
 
             if (!info[func_arg_index]->IsFunction())
             {
-                isolate->ThrowError("bad function");
+                jsb_throw(isolate, "bad function");
                 return;
             }
             EnvironmentID env_id = env->id();
@@ -70,7 +70,7 @@ namespace jsb
             v8::Local<v8::Value> rval;
             if (!TypeConvert::gd_var_to_js(isolate, context, callable, rval))
             {
-                isolate->ThrowError("bad callable");
+                jsb_throw(isolate, "bad callable");
                 return;
             }
             info.GetReturnValue().Set(rval);

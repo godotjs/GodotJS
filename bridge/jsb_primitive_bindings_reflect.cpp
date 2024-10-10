@@ -231,9 +231,9 @@ namespace jsb
                     if (!TypeConvert::js_to_gd_var(isolate, context, info[argument_index], argument_type, args[argument_index]))
                     {
                         // revert all constructors
-                        v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", argument_index));
+                        const String error_message = jsb_errorf("bad argument: %d", argument_index);
                         while (argument_index >= 0) { args[argument_index--].~Variant(); }
-                        isolate->ThrowError(error_message);
+                        impl::Helper::throw_error(isolate, error_message);
                         return;
                     }
 
@@ -484,9 +484,9 @@ namespace jsb
                 }
 
                 // revert all constructors
-                v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", index));
+                const String error_message = jsb_errorf("bad argument: %d", index);
                 while (index >= 0) { args[index--].~Variant(); }
-                isolate->ThrowError(error_message);
+                impl::Helper::throw_error(isolate, error_message);
                 return;
             }
 

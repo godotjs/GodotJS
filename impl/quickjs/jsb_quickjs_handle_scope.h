@@ -8,14 +8,19 @@ namespace v8
 
     class HandleScope
     {
-    public:
+    private:
         Isolate* isolate_;
         HandleScope* last_;
         uint16_t stack_;
 
+    public:
         HandleScope(Isolate* isolate);
-        HandleScope(Isolate* isolate, uint16_t stack);
         ~HandleScope();
+
+        HandleScope(HandleScope&& other) = delete;
+        HandleScope& operator=(HandleScope&& other) = delete;
+        HandleScope(const HandleScope&) = delete;
+        HandleScope& operator=(const HandleScope&) = delete;
     };
 }
 #endif

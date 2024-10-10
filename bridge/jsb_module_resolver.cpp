@@ -25,7 +25,7 @@ namespace jsb
         v8::Local<v8::Value> func;
         if (!func_maybe.ToLocal(&func) || !func->IsFunction())
         {
-            isolate->ThrowError("bad module elevator");
+            jsb_throw(isolate, "bad module elevator");
             return false;
         }
 
@@ -190,7 +190,7 @@ namespace jsb
         const internal::FileAccessSourceReader reader(p_asset_path);
         if (reader.is_null() || reader.get_length() == 0)
         {
-            p_env->get_isolate()->ThrowError("failed to read module source");
+            jsb_throw(p_env->get_isolate(), "failed to read module source");
             return false;
         }
         const String filename_abs = reader.get_path_absolute();

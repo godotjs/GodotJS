@@ -16,7 +16,7 @@ namespace jsb
         const v8::Local<v8::Value> arg0 = info[0];
         if (!arg0->IsString())
         {
-            isolate->ThrowError("bad parameter");
+            jsb_throw(isolate, "bad parameter");
             return;
         }
 
@@ -41,7 +41,7 @@ namespace jsb
                 info.GetReturnValue().Set(rval);
                 return;
             }
-            isolate->ThrowError("failed to bind a singleton object");
+            jsb_throw(isolate, "failed to bind a singleton object");
             return;
         }
 
@@ -127,7 +127,7 @@ namespace jsb
             return;
         }
 
-        isolate->ThrowError(impl::Helper::new_string(isolate, jsb_format("godot class not found '%s'", type_name)));
+        impl::Helper::throw_error(isolate, jsb_format("godot class not found '%s'", type_name));
     }
 
     bool GodotModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)

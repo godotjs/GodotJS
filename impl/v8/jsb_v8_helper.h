@@ -135,6 +135,17 @@ namespace jsb::impl
             JSB_LOG(VeryVerbose, "script compiled %s", p_filename);
             return maybe_value;
         }
+
+        template<int N>
+        jsb_force_inline static void throw_error(v8::Isolate* isolate, const char (&message)[N])
+        {
+            isolate->ThrowError(message);
+        }
+
+        jsb_force_inline static void throw_error(v8::Isolate* isolate, const String& message)
+        {
+            isolate->ThrowError(new_string(isolate, message));
+        }
     };
 }
 

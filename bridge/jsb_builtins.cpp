@@ -11,7 +11,7 @@ namespace jsb
     static void _generate_stacktrace(v8::Isolate* isolate, String& r_stacktrace, internal::SourcePosition& r_source_position)
     {
         const impl::TryCatch try_catch(isolate);
-        isolate->ThrowError("");
+        jsb_throw(isolate, "");
         if (try_catch.has_caught())
         {
             r_stacktrace = BridgeHelper::get_stacktrace(try_catch, r_source_position);
@@ -56,7 +56,7 @@ namespace jsb
 
         if constexpr (ActiveSeverity == internal::ELogSeverity::Assert)
         {
-            isolate->ThrowError(impl::Helper::new_string(isolate, sb.as_string()));
+            impl::Helper::throw_error(isolate, sb.as_string());
             return;
         }
 
@@ -157,19 +157,19 @@ namespace jsb
 
         if (info.Length() != 3 || !info[0]->IsString() || !info[1]->IsArray() || !info[2]->IsFunction())
         {
-            isolate->ThrowError("bad param");
+            jsb_throw(isolate, "bad param");
             return;
         }
         Environment* env = Environment::wrap(context);
         const StringName module_id_str = env->get_string_name(info[0].As<v8::String>());
         if (!internal::VariantUtil::is_valid_name(module_id_str))
         {
-            isolate->ThrowError("bad module_id");
+            jsb_throw(isolate, "bad module_id");
             return;
         }
         if (env->module_cache_.find(module_id_str))
         {
-            isolate->ThrowError("conflicted module_id");
+            jsb_throw(isolate, "conflicted module_id");
             return;
         }
         const v8::Local<v8::Array> deps_val = info[1].As<v8::Array>();
@@ -179,14 +179,14 @@ namespace jsb
             v8::Local<v8::Value> item;
             if (!deps_val->Get(context, index).ToLocal(&item) || !item->IsString())
             {
-                isolate->ThrowError("bad param");
+                jsb_throw(isolate, "bad param");
                 return;
             }
 
             const String item_str = impl::Helper::to_string(isolate, item);;
             if (item_str.is_empty())
             {
-                isolate->ThrowError("bad param");
+                jsb_throw(isolate, "bad param");
                 return;
             }
             deps.push_back(item_str);
@@ -204,14 +204,14 @@ namespace jsb
 
         if (info.Length() != 1)
         {
-            isolate->ThrowError("bad argument");
+            jsb_throw(isolate, "bad argument");
             return;
         }
 
         v8::Local<v8::Value> arg0 = info[0];
         if (!arg0->IsString())
         {
-            isolate->ThrowError("bad argument");
+            jsb_throw(isolate, "bad argument");
             return;
         }
 
@@ -232,7 +232,7 @@ namespace jsb
         const int argc = info.Length();
         if (argc < 1 || !info[0]->IsFunction())
         {
-            isolate->ThrowError("bad argument");
+            jsb_throw(isolate, "bad argument");
             return;
         }
 
@@ -247,7 +247,7 @@ namespace jsb
         case InternalTimerType::Timeout:  // NOLINT(clang-diagnostic-implicit-fallthrough)
             if (!info[1]->IsUndefined() && !info[1]->Int32Value(context).To(&rate))
             {
-                isolate->ThrowError("bad time");
+                jsb_throw(isolate, "bad time");
                 return;
             }
             extra_arg_index = 2;
@@ -282,7 +282,7 @@ namespace jsb
         v8::Isolate* isolate = info.GetIsolate();
         if (!info[0]->IsInt32())
         {
-            isolate->ThrowError("bad argument");
+            jsb_throw(isolate, "bad argument");
             return;
         }
 

@@ -664,7 +664,7 @@ namespace jsb
             const String combined_id = internal::PathUtil::combine(internal::PathUtil::dirname(p_parent_id), p_module_id);
             if (internal::PathUtil::extract(combined_id, normalized_id) != OK || normalized_id.is_empty())
             {
-                isolate->ThrowError("bad path");
+                jsb_throw(isolate, "bad path");
                 return nullptr;
             }
         }
@@ -759,7 +759,7 @@ namespace jsb
             }
         }
 
-        isolate->ThrowError(impl::Helper::new_string(isolate, jsb_format("unknown module: %s", normalized_id)));
+        impl::Helper::throw_error(isolate, jsb_format("unknown module: %s", normalized_id));
         return nullptr;
     }
 

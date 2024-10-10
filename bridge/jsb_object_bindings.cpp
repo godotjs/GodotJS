@@ -216,9 +216,9 @@ namespace jsb
                 : !TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
             {
                 // revert all constructors
-                v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", index));
+                const String error_message = jsb_errorf("bad argument: %d", index);
                 while (index >= 0) { args[index--].~Variant(); }
-                isolate->ThrowError(error_message);
+                impl::Helper::throw_error(isolate, error_message);
                 return;
             }
         }
@@ -278,9 +278,9 @@ namespace jsb
             if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
-                const v8::Local<v8::String> error_message = impl::Helper::new_string(isolate, jsb_errorf("bad argument: %d", index));
+                const String error_message = jsb_errorf("bad argument: %d", index);
                 while (index >= 0) { args[index--].~Variant(); }
-                isolate->ThrowError(error_message);
+                impl::Helper::throw_error(isolate, error_message);
                 return;
             }
         }
@@ -297,7 +297,7 @@ namespace jsb
 
         if (error.error != Callable::CallError::CALL_OK)
         {
-            isolate->ThrowError("failed to call");
+            jsb_throw(isolate, "failed to call");
             return;
         }
         v8::Local<v8::Value> jrval;
@@ -308,7 +308,7 @@ namespace jsb
             info.GetReturnValue().Set(jrval);
             return;
         }
-        isolate->ThrowError("failed to translate godot variant to v8 value");
+        jsb_throw(isolate, "failed to translate godot variant to v8 value");
     }
 
     void ObjectReflectBindingUtil::_godot_object_get2(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -342,7 +342,7 @@ namespace jsb
 
         if (error.error != Callable::CallError::CALL_OK)
         {
-            isolate->ThrowError("failed to call");
+            jsb_throw(isolate, "failed to call");
             return;
         }
         v8::Local<v8::Value> jrval;
@@ -353,7 +353,7 @@ namespace jsb
             info.GetReturnValue().Set(jrval);
             return;
         }
-        isolate->ThrowError("failed to translate godot variant to v8 value");
+        jsb_throw(isolate, "failed to translate godot variant to v8 value");
     }
 
     void ObjectReflectBindingUtil::_godot_object_set2(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -394,7 +394,7 @@ namespace jsb
 
         if (error.error != Callable::CallError::CALL_OK)
         {
-            isolate->ThrowError("failed to call");
+            jsb_throw(isolate, "failed to call");
             return;
         }
     }

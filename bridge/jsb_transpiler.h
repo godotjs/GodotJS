@@ -221,7 +221,7 @@ namespace jsb
             TReturn result = (p_self->*func)();
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -236,7 +236,7 @@ namespace jsb
             TReturn result = (p_self->*func)(p0);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -252,7 +252,7 @@ namespace jsb
             TReturn result = (p_self->*func)(p0, p1);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -269,7 +269,7 @@ namespace jsb
             TReturn result = (p_self->*func)(p0, p1, p2);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -287,7 +287,7 @@ namespace jsb
             TReturn result = (p_self->*func)(p0, p1, p2, p3);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -306,7 +306,7 @@ namespace jsb
             TReturn result = (p_self->*func)(p0, p1, p2, p3, p4);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -326,7 +326,7 @@ namespace jsb
             TReturn result = (p_self->*func)(p0, p1, p2, p3, p4, p5);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -347,7 +347,7 @@ namespace jsb
             TReturn result = (p_self->*func)(p0, p1, p2, p3, p4, p5, p6);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -359,7 +359,7 @@ namespace jsb
             TReturn result = (*func)();
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -372,7 +372,7 @@ namespace jsb
             TReturn result = (*func)(p0);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
 
@@ -386,7 +386,7 @@ namespace jsb
             TReturn result = (*func)(p_self);
             if (!PrimitiveAccess<TReturn>::return_(isolate, context, info, result))
             {
-                isolate->ThrowError("failed to translate return value");
+                jsb_throw(isolate, "failed to translate return value");
             }
         }
     };
@@ -471,7 +471,7 @@ namespace jsb
             internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
             if (info.Length() != 3)
             {
-                isolate->ThrowError("bad args");
+                jsb_throw(isolate, "bad args");
                 return;
             }
             P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);

@@ -838,7 +838,7 @@ namespace jsb
 
         if (info.Length() != 1 || !info[0]->IsString())
         {
-            isolate->ThrowError("bad path");
+            jsb_throw(isolate, "bad path");
             return;
         }
         internal::PathUtil::delete_file(impl::Helper::to_string(isolate, info[0]));
