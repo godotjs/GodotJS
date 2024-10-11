@@ -1,6 +1,7 @@
 #ifndef GODOTJS_QUICKJS_OBJECT_H
 #define GODOTJS_QUICKJS_OBJECT_H
 #include "jsb_quickjs_pch.h"
+#include "jsb_quickjs_typedef.h"
 #include "jsb_quickjs_handle.h"
 #include "jsb_quickjs_primitive.h"
 #include "jsb_quickjs_maybe.h"

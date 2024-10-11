@@ -21,12 +21,12 @@ namespace jsb::impl
         const JSValue err_stack = JS_GetProperty(ctx, ex, JS_ATOM_stack);
 
         {
-            const String fileName = QuickJS::IsNullish(err_filename) ? String("native") : QuickJS::GetString(ctx, err_filename);
-            const String lineNumber = QuickJS::IsNullish(err_line) ? String("") : QuickJS::GetString(ctx, err_line);
+            const String filename = QuickJS::IsNullish(err_filename) ? String("native") : QuickJS::GetString(ctx, err_filename);
+            const String line = QuickJS::IsNullish(err_line) ? String("") : QuickJS::GetString(ctx, err_line);
             const String message = QuickJS::GetString(ctx, err_message);
             const String stack = QuickJS::GetString(ctx, err_stack);
 
-            JSB_LOG(Error, "[%s:%s] %s\nJavascript stack:\n%s", fileName, lineNumber, message, stack);
+            JSB_LOG(Error, "[%s:%s] %s\nJavascript stack:\n%s", filename, line, message, stack);
             if (r_message) *r_message = message;
             if (r_stacktrace) *r_stacktrace = stack;
         }

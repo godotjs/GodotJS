@@ -3,6 +3,7 @@
 #include "jsb_quickjs_pch.h"
 #include "jsb_quickjs_class.h"
 #include "jsb_quickjs_primitive.h"
+#include "jsb_quickjs_template.h"
 #include "jsb_quickjs_function_interop.h"
 
 namespace jsb::impl
@@ -22,8 +23,8 @@ namespace jsb::impl
     {
     private:
         v8::Isolate* isolate_ = nullptr;
-        v8::Local<v8::Function> template_;
-        v8::Local<v8::Object> prototype_template_;
+        v8::Local<v8::FunctionTemplate> template_;
+        v8::Local<v8::ObjectTemplate> prototype_template_;
 
         bool closed_ = false;
 
@@ -206,8 +207,8 @@ namespace jsb::impl
             const int magic = isolate->add_constructor_data(constructor, class_payload);
 
             builder.isolate_ = isolate;
-            builder.prototype_template_ = v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
-            builder.template_ = v8::Local<v8::Function>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx, _constructor<InternalFieldCount>, str8.ptr(), /*length*/ 0, JS_CFUNC_constructor_magic, (int) magic))));
+            builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
+            builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx, _constructor<InternalFieldCount>, str8.ptr(), /*length*/ 0, JS_CFUNC_constructor_magic, (int) magic))));
 
             return builder;
         }

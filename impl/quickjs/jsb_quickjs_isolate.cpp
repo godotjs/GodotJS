@@ -161,7 +161,8 @@ namespace v8
             if (!isolate->promise_reject_) return;
 
             HandleScope handle_scope(isolate);
-            PromiseRejectMessage message(kPromiseRejectWithNoHandler,
+            const PromiseRejectMessage message(isolate,
+                kPromiseRejectWithNoHandler,
                 isolate->push_copy(promise),
                 isolate->push_copy(reason)
             );

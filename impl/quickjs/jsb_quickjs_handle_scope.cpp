@@ -16,7 +16,7 @@ namespace v8
         jsb_check(isolate_->handle_scope_ == this);
         for (uint16_t i = stack_; i < isolate_->stack_pos_; i++)
         {
-            JS_FreeValueRT(isolate_->runtime_, isolate_->stack_[i]);
+            JS_FreeValueRT(isolate_->rt(), isolate_->stack_[i]);
         }
         isolate_->handle_scope_ = last_;
         isolate_->stack_pos_ = stack_;

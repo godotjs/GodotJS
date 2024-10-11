@@ -14,8 +14,8 @@ namespace v8
     class PromiseRejectMessage
     {
     public:
-        PromiseRejectMessage(PromiseRejectEvent event, uint16_t promise_pos, uint16_t reason_pos)
-        : event_(event), promise_pos_(promise_pos), reason_pos_(reason_pos)
+        PromiseRejectMessage(Isolate* isolate, PromiseRejectEvent event, uint16_t promise_pos, uint16_t reason_pos)
+        : isolate_(isolate), event_(event), promise_pos_(promise_pos), reason_pos_(reason_pos)
         {}
 
         PromiseRejectEvent GetEvent() const { return event_; }
@@ -24,8 +24,8 @@ namespace v8
         Local<Value> GetValue() const;
 
     private:
-        PromiseRejectEvent event_;
         Isolate* isolate_;
+        PromiseRejectEvent event_;
         uint16_t promise_pos_;
         uint16_t reason_pos_;
     };
