@@ -6274,7 +6274,7 @@ void JS_DumpMemoryUsage(FILE *fp, const JSMemoryUsage *s, JSRuntime *rt)
 #ifdef CONFIG_BIGNUM
             "BigNum "
 #endif
-            CONFIG_VERSION " version, %d-bit, malloc limit: %"PRId64"\n\n",
+            QUICKJS_CONFIG_VERSION " version, %d-bit, malloc limit: %"PRId64"\n\n",
             (int)sizeof(void *) * 8, (int64_t)(ssize_t)s->malloc_limit);
 #if 1
     if (rt) {
@@ -12059,6 +12059,18 @@ int JS_IsArray(JSContext *ctx, JSValueConst val)
             return js_proxy_isArray(ctx, val);
         else
             return p->class_id == JS_CLASS_ARRAY;
+    } else {
+        return FALSE;
+    }
+}
+
+/* return -1 if exception (proxy case) or TRUE/FALSE */
+int JS_IsMap(JSContext *ctx, JSValueConst val)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
+        p = JS_VALUE_GET_OBJ(val);
+        return p->class_id == JS_CLASS_MAP;
     } else {
         return FALSE;
     }

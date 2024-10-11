@@ -27,14 +27,14 @@
         );\
         continue;\
     } (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID) \
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID, ClassName) \
     if constexpr (ReflectConstructorCall<ForType>::is_supported(TYPE))\
     {\
-        return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, &ReflectConstructorCall<ForType>::constructor, *(ClassID));\
+        return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, (ClassName), &ReflectConstructorCall<ForType>::constructor, *(ClassID));\
     } (void) 0
 #else
 #define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID) (void) 0
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID, ClassName) (void) 0
 #endif
 
 #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
@@ -579,16 +579,16 @@ namespace jsb
         //     return false;
         // }
 
-        static impl::ClassBuilder get_class_builder(const ClassRegister& p_env, const NativeClassID p_class_id)
+        static impl::ClassBuilder get_class_builder(const ClassRegister& p_env, const NativeClassID p_class_id, const StringName& p_class_name)
         {
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2, p_class_id);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i, p_class_id);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3, p_class_id);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3i, p_class_id);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4, p_class_id);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4i, p_class_id);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2, p_class_id);
-            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2i, p_class_id);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2, p_class_id, p_class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector2i, p_class_id, p_class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3, p_class_id, p_class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector3i, p_class_id, p_class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4, p_class_id, p_class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Vector4i, p_class_id, p_class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2, p_class_id, p_class_name);
+            JSB_DEFINE_FAST_CONSTRUCTOR(Rect2i, p_class_id, p_class_name);
 
             // fallback
             {
@@ -609,7 +609,7 @@ namespace jsb
                         variant_info.argument_types.write[arg_index] = Variant::get_constructor_argument_type(TYPE, index, arg_index);
                     }
                 }
-                return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, &constructor, constructor_index);
+                return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, p_class_name, &constructor, constructor_index);
             }
         }
 
@@ -618,9 +618,7 @@ namespace jsb
         {
             const StringName& class_name = p_env.type_name;
             const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotPrimitive, class_name);
-            impl::ClassBuilder class_builder = get_class_builder(p_env, class_id);
-
-            class_builder.SetClassName(p_env->get_string_value(class_name));
+            impl::ClassBuilder class_builder = get_class_builder(p_env, class_id, class_name);
 
             // properties (getset)
             {

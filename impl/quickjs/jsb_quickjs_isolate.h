@@ -5,6 +5,7 @@
 #include "jsb_quickjs_typedef.h"
 #include "jsb_quickjs_handle_scope.h"
 #include "jsb_quickjs_array_buffer.h"
+#include "jsb_quickjs_promise_reject.h"
 
 namespace jsb::impl
 {
@@ -20,17 +21,23 @@ namespace jsb::impl
         WeakCallbackInfo weak;
 
         uint8_t internal_field_count = 0;
-        void* internal_fields[2];
+        void* internal_fields[2] = { nullptr, nullptr };
     };
 
     typedef internal::SArray<InternalData>::Pointer InternalDataPtr;
     typedef internal::SArray<InternalData>::ConstPointer InternalDataConstPtr;
 
+    struct ConstructorData
+    {
+        v8::FunctionCallback callback;
+        uint32_t data;
+    };
+
     enum { kMaxStackSize = 128 };
 
     namespace StackPos
     {
-        // reserved positions, never released until isolate disposed
+        // reserved absolute stack positions, never released until isolate disposed
         enum
         {
             Undefined,
@@ -38,6 +45,9 @@ namespace jsb::impl
             True,
             False,
             EmptyString,
+            SymbolClass,
+            MapClass,
+            Exception,
 
             Num,
         };
@@ -53,12 +63,14 @@ namespace jsb::impl
     };
 
     class Helper;
+    class Broker;
 }
 
 namespace v8
 {
-    template<typename T> class Global<T>;
-    template<typename T> class Local<T>;
+    template<typename T> class Global;
+    template<typename T> class Local;
+    template<typename T> class FunctionCallbackInfo;
     class HeapStatistics;
     class Context;
     class Value;
@@ -66,10 +78,12 @@ namespace v8
     class Isolate
     {
         friend class jsb::impl::Helper;
+        friend class jsb::impl::Broker;
         friend class Context;
 
-        template<typename T> friend class Global<T>;
-        template<typename T> friend class Local<T>;
+        template<typename T> friend class Global;
+        template<typename T> friend class Local;
+        template<typename T> friend class FunctionCallbackInfo;
 
         friend class HandleScope;
 
@@ -95,12 +109,7 @@ namespace v8
         void AddGCPrologueCallback(GCCallback callback) {}
         void AddGCEpilogueCallback(GCCallback callback) {}
         void GetHeapStatistics(HeapStatistics* statistics);
-
-        const JSValue& operator[](const uint16_t index) const
-        {
-            jsb_check(index < stack_pos_);
-            return stack_[index];
-        }
+        void SetPromiseRejectCallback(PromiseRejectCallback callback) { promise_reject_ = callback; }
 
         jsb_force_inline JSRuntime* rt() const { return rt_; }
         jsb_force_inline JSContext* ctx() const { return ctx_; }
@@ -121,7 +130,29 @@ namespace v8
             return internal_data_.get_value_scoped(index);
         }
 
+        jsb::internal::Index64 add_internal_data(const uint8_t internal_field_count)
+        {
+            return internal_data_.add(jsb::impl::InternalData {  { nullptr, nullptr }, internal_field_count, { nullptr, nullptr }});
+        }
+
         static JSClassID get_class_id() { static jsb::impl::ClassID id; return (JSClassID) id; }
+
+        const JSValue& operator[](const uint16_t index) const
+        {
+            jsb_check(index < stack_pos_);
+            return stack_[index];
+        }
+
+        void stack_copy(const uint16_t to, const uint16_t from)
+        {
+            jsb_check(to != from && to < stack_pos_ && from < stack_pos_);
+            JS_DupValueRT(rt_, stack_[from]);
+            JS_FreeValueRT(rt_, stack_[to]);
+            stack_[to] = stack_[from];
+        }
+
+        uint16_t push_symbol();
+        uint16_t push_map();
 
         // no copy on value
         uint16_t push_steal(const JSValue value)
@@ -138,6 +169,11 @@ namespace v8
             return emplace_(value);
         }
 
+        bool try_catch();
+
+        int add_constructor_data(FunctionCallback callback, uint32_t data) { return (int) *constructor_data_.add({ callback, data }); }
+        jsb::impl::ConstructorData get_constructor_data(const int index) const { return constructor_data_.get_value((jsb::internal::Index32)(uint32_t) index); }
+
     private:
         Isolate();
         ~Isolate();
@@ -145,12 +181,16 @@ namespace v8
         uint16_t emplace_(JSValue value);
 
         static void _finalizer(JSRuntime* rt, JSValue val);
+        static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
 
         JSRuntime* rt_;
         JSContext* ctx_;
         HandleScope* handle_scope_;
 
+        PromiseRejectCallback promise_reject_;
+
         jsb::internal::SArray<jsb::impl::InternalData> internal_data_;
+        jsb::internal::SArray<jsb::impl::ConstructorData, jsb::internal::Index32> constructor_data_;
 
         uint16_t stack_pos_;
         JSValue stack_[jsb::impl::kMaxStackSize];

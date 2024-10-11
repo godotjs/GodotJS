@@ -174,13 +174,6 @@ namespace jsb::impl
         ClassBuilder(ClassBuilder&&) noexcept = default;
         ClassBuilder& operator=(ClassBuilder&&) = default;
 
-        ClassBuilder& SetClassName(const v8::Local<v8::String>& name)
-        {
-            jsb_check(!closed_);
-            template_->SetClassName(name);
-            return *this;
-        }
-
         MemberDeclaration Static() { return MemberDeclaration(*this, false); }
         MemberDeclaration Instance() { return MemberDeclaration(*this, true); }
 
@@ -199,13 +192,14 @@ namespace jsb::impl
         }
 
         template<int InternalFieldCount>
-        static ClassBuilder New(v8::Isolate* isolate, const v8::FunctionCallback constructor, const uint32_t class_payload)
+        static ClassBuilder New(v8::Isolate* isolate, const StringName& name, const v8::FunctionCallback constructor, const uint32_t class_payload)
         {
             const v8::Local<v8::Value> data = class_payload != 0 ? v8::Uint32::NewFromUnsigned(isolate, class_payload).As<v8::Value>() : v8::Local<v8::Value>();
 
             ClassBuilder builder;
             builder.isolate_ = isolate;
             builder.template_ = v8::FunctionTemplate::New(isolate, constructor, data);
+            // builder.template_->SetClassName(Helper::new_string(isolate, name));
             builder.template_->InstanceTemplate()->SetInternalFieldCount(InternalFieldCount);
             builder.prototype_template_ = builder.template_->PrototypeTemplate();
             return builder;

@@ -39,13 +39,15 @@ namespace jsb::impl
 
         static String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
         {
+            String ret;
             if (!p_val.IsEmpty())
             {
                 size_t len;
                 const char* str = JS_ToCStringLen(isolate->ctx(), &len, (JSValue) p_val);
-                return String::utf8(str, (int) len);
+                ret = String::utf8(str, (int) len);
+                JS_FreeCString(isolate->ctx(), str);
             }
-            return String();
+            return ret;
         }
 
         static String to_string_without_side_effect(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)

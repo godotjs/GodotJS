@@ -1,6 +1,14 @@
 #include "jsb_quickjs_function.h"
+
+#include "jsb_quickjs_context.h"
+
 namespace v8
 {
+    namespace
+    {
+        enum { kFuncPayloadCallback, kFuncPayloadData, kFuncPayloadNum, };
+    }
+
     MaybeLocal<Value> Function::Call(Local<Context> context, Local<Value> recv, int argc, Local<Value> argv[])
     {
         const JSValue func = (JSValue) *this;
@@ -16,6 +24,53 @@ namespace v8
             return MaybeLocal<Value>();
         }
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(rval)));
+    }
+
+    JSValue Function::_function_call(JSContext* ctx, JSValue this_val, int argc, JSValue* argv, int magic, JSValue* func_data)
+    {
+        Isolate* isolate = (Isolate*) JS_GetContextOpaque(ctx);
+
+        HandleScope func_scope(isolate);
+        FunctionCallbackInfo<Value> info(isolate, argc, false);
+
+        // init function stack base
+        static_assert(jsb::impl::FunctionStackBase::ReturnValue == 0);
+        isolate->push_copy(JS_UNDEFINED);
+
+        static_assert(jsb::impl::FunctionStackBase::This == 1);
+        isolate->push_copy(this_val);
+
+        static_assert(jsb::impl::FunctionStackBase::Data == 2);
+        isolate->push_copy(func_data[kFuncPayloadData]);
+
+        static_assert(jsb::impl::FunctionStackBase::NewTarget == 3);
+        isolate->push_copy(JS_UNDEFINED);
+
+        static_assert(jsb::impl::FunctionStackBase::Num == 4);
+
+        // push arguments
+        for (int i = 0; i < argc; ++i)
+        {
+            isolate->push_copy(argv[i]);
+        }
+
+        const FunctionCallback callback = (FunctionCallback) JS_VALUE_GET_PTR(func_data[kFuncPayloadCallback]);
+
+        callback(info);
+        return JS_DupValueRT(isolate->rt(), (JSValue) info.GetReturnValue());
+    }
+
+    MaybeLocal<Function> Function::New(Local<Context> context, FunctionCallback callback, Local<Value> data)
+    {
+        Isolate* isolate = context->isolate_;
+
+        JSValue payload[kFuncPayloadNum];
+        payload[kFuncPayloadCallback] = JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, callback);
+        payload[kFuncPayloadData] = JS_DupValueRT(isolate->rt(), (JSValue) data);
+
+        const JSValue val = JS_NewCFunctionData(isolate->ctx(), _function_call, 0, 0, kFuncPayloadNum, payload);
+        const uint16_t stack_pos = isolate->push_steal(val);
+        return MaybeLocal<Function>(Data(isolate, stack_pos));
     }
 
 }

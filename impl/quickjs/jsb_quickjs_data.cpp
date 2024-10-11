@@ -4,6 +4,22 @@
 
 namespace v8
 {
+    int Data::GetIdentityHash() const
+    {
+        const JSValue val = isolate_->operator[](stack_pos_);
+        jsb_check(JS_VALUE_GET_TAG(val) < 0);
+
+        const uintptr_t ptr = (uintptr_t) JS_VALUE_GET_PTR(val);
+        if constexpr (sizeof(int) == sizeof(uintptr_t))
+        {
+            return (int) ((ptr >> 32) ^ (ptr & 0xffffffff));
+        }
+        else
+        {
+            return (int) ptr;
+        }
+    }
+
     Data::operator JSValue() const
     {
         return isolate_->operator[](stack_pos_);
@@ -39,6 +55,14 @@ namespace v8
         return JS_IsArray(isolate_->ctx(), val);
     }
 
+    bool Data::IsMap() const
+    {
+        const JSValue val = isolate_->operator[](stack_pos_);
+
+        //NOTE quickjs source modified
+        return JS_IsMap(isolate_->ctx(), val);
+    }
+
     bool Data::IsString() const
     {
         const JSValue val = isolate_->operator[](stack_pos_);
@@ -63,6 +87,12 @@ namespace v8
     {
         const JSValue val = isolate_->operator[](stack_pos_);
         return JS_IsNumber(val);
+    }
+
+    bool Data::IsExternal() const
+    {
+        const JSValue val = isolate_->operator[](stack_pos_);
+        return JS_VALUE_GET_TAG(val) == jsb::impl::JS_TAG_EXTERNAL;
     }
 
     bool Data::IsBigInt() const

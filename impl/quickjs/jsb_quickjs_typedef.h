@@ -1,11 +1,25 @@
 #ifndef GODOTJS_QUICKJS_TYPEDEF_H
 #define GODOTJS_QUICKJS_TYPEDEF_H
-#include <cstdint>
 
-#define V8_VERSION_STRING "quickjs"
+#include "jsb_quickjs_pch.h"
+#define V8_VERSION_STRING "quickjs-" QUICKJS_CONFIG_VERSION
 
 namespace jsb::impl
 {
+    // Offset positions based on the current scope
+    namespace FunctionStackBase
+    {
+        enum
+        {
+            ReturnValue,
+            This,
+            Data,
+            NewTarget,
+
+            Num,
+        };
+    }
+
     enum
     {
         __JS_ATOM_NULL = JS_ATOM_NULL,
@@ -13,6 +27,12 @@ namespace jsb::impl
 #       include "../../quickjs/quickjs-atom.h"
 #undef DEF
         JS_ATOM_END,
+    };
+
+    //TODO do not know whether it works properly or not
+    enum
+    {
+        JS_TAG_EXTERNAL = JS_TAG_FLOAT64 + 1,
     };
 }
 
@@ -46,11 +66,38 @@ namespace v8
         kPromiseResolveAfterResolved = 3,
     };
 
+    /**
+     * PropertyAttribute.
+     */
+    enum PropertyAttribute
+    {
+        /** None. **/
+        None = 0,
+        /** ReadOnly, i.e., not writable. **/
+        ReadOnly = 1 << 0,
+        /** DontEnum, i.e., not enumerable. **/
+        DontEnum = 1 << 1,
+        /** DontDelete, i.e., not configurable. **/
+        DontDelete = 1 << 2
+    };
+
     class Isolate;
 
-    typedef void (*GCCallback)(Isolate* isolate, GCType type, GCCallbackFlags flags);
-    typedef void(*JSAPI_GC_CALLBACK)(void*);
-    typedef void(*JSAPI_FUNC_CALLBACK)(Isolate* isolate, void* func, int stack);
+    template<typename T>
+    class FunctionCallbackInfo;
+
+    template<typename T>
+    class PropertyCallbackInfo;
+
+    template<typename T>
+    class Local;
+
+    class Value;
+    class Name;
+
+    using FunctionCallback = void (*)(const FunctionCallbackInfo<Value>& info);
+    using GCCallback = void (*)(Isolate* isolate, GCType type, GCCallbackFlags flags);
+    using AccessorNameGetterCallback = void (*)(Local<Name> property, const PropertyCallbackInfo<Value>& info);
 
     class Platform
     {

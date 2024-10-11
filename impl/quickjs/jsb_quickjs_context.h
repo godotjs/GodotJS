@@ -17,6 +17,8 @@ namespace v8
             Scope(Local<Context> context) {}
         };
 
+        Isolate* GetIsolate() const { return isolate_; }
+
         void* GetAlignedPointerFromEmbedderData(int index) const;
         void SetAlignedPointerInEmbedderData(int index, void* data);
 

@@ -6,6 +6,13 @@ namespace v8
 {
     namespace details
     {
+        // crash val is an exception
+        jsb_force_inline JSValue verified(const JSValue val)
+        {
+            jsb_check(JS_VALUE_GET_TAG(val) != JS_TAG_EXCEPTION);
+            return val;
+        }
+
         void* js_malloc(JSMallocState* s, size_t size)
         {
             return memalloc(size);
@@ -33,15 +40,24 @@ namespace v8
         const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
         rt_ = JS_NewRuntime2(&mf, this);
         ctx_ = JS_NewContext(rt_);
+        const JSValue global = JS_GetGlobalObject(ctx_);
 
         JS_SetRuntimeOpaque(rt_, this);
         JS_SetContextOpaque(ctx_, this);
+        JS_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
+
+        //TODO dead loop checker
+        // JS_SetInterruptHandler
 
         jsb_ensure(emplace_(JS_UNDEFINED) == jsb::impl::StackPos::Undefined);
         jsb_ensure(emplace_(JS_NULL) == jsb::impl::StackPos::Null);
         jsb_ensure(emplace_(JS_TRUE) == jsb::impl::StackPos::True);
         jsb_ensure(emplace_(JS_FALSE) == jsb::impl::StackPos::False);
-        jsb_ensure(emplace_(JS_NewStringLen(ctx_, "", 0)) == jsb::impl::StackPos::EmptyString);
+        jsb_ensure(emplace_(details::verified(JS_NewStringLen(ctx_, "", 0))) == jsb::impl::StackPos::EmptyString);
+        jsb_ensure(emplace_(details::verified(JS_GetProperty(ctx_, global, jsb::impl::JS_ATOM_Symbol))) == jsb::impl::StackPos::SymbolClass);
+        jsb_ensure(emplace_(details::verified(JS_GetProperty(ctx_, global, jsb::impl::JS_ATOM_Map))) == jsb::impl::StackPos::MapClass);
+        jsb_ensure(emplace_(JS_NULL) == jsb::impl::StackPos::Exception);
+        jsb_check(stack_pos_ == jsb::impl::StackPos::Num);
 
         JSClassDef class_def;
         class_def.class_name = "UniversalBridgeClass";
@@ -51,6 +67,7 @@ namespace v8
         class_def.call = nullptr;
 
         JS_NewClass(rt_, get_class_id(), &class_def);
+        JS_FreeValue(ctx_, global);
     }
 
     Isolate::~Isolate()
@@ -85,6 +102,18 @@ namespace v8
         embedder_data_ = data;
     }
 
+    uint16_t Isolate::push_map()
+    {
+        const JSValue map = details::verified(JS_CallConstructor(ctx_, stack_[jsb::impl::StackPos::MapClass], 0, nullptr));
+        return push_steal(map);
+    }
+
+    uint16_t Isolate::push_symbol()
+    {
+        const JSValue sym = details::verified(JS_CallConstructor(ctx_, stack_[jsb::impl::StackPos::SymbolClass], 0, nullptr));
+        return push_steal(sym);
+    }
+
     uint16_t Isolate::emplace_(JSValue value)
     {
         jsb_check(stack_pos_ < jsb::impl::kMaxStackSize);
@@ -104,6 +133,8 @@ namespace v8
             const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback;
             const WeakCallbackInfo<void> info(isolate, data->weak.parameter);
             callback(info);
+
+            isolate->internal_data_.remove_at_checked(index);
         }
     }
 
@@ -120,6 +151,31 @@ namespace v8
     Local<Context> Isolate::GetCurrentContext()
     {
         return Local<Context>(Data(this, 0));
+    }
+
+    void Isolate::_promise_rejection_tracker(JSContext* ctx, JSValue promise, JSValue reason, int is_handled, void* user_data)
+    {
+        if (is_handled != 1)
+        {
+            Isolate* isolate = (Isolate*) user_data;
+            if (!isolate->promise_reject_) return;
+
+            HandleScope handle_scope(isolate);
+            PromiseRejectMessage message(kPromiseRejectWithNoHandler,
+                isolate->push_copy(promise),
+                isolate->push_copy(reason)
+            );
+            isolate->promise_reject_(message);
+        }
+    }
+
+    bool Isolate::try_catch()
+    {
+        const JSValue ex = JS_GetException(ctx_);
+        const JSValue last = stack_[jsb::impl::StackPos::Exception];
+        jsb_check(JS_IsNull(last));
+        stack_[jsb::impl::StackPos::Exception] = ex;
+        return !JS_IsNull(ex);
     }
 
 }

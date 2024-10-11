@@ -12,8 +12,7 @@
         v8::Isolate* isolate = env->get_isolate();\
         NativeClassInfoPtr class_info = env->get_native_class(class_id);\
         class_info->finalizer = &finalizer;\
-        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor, *class_id);\
-        class_builder.SetClassName(env->get_string_value(class_info->name));\
+        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor, *class_id);\
         return class_builder;\
     }
 
@@ -24,15 +23,14 @@
         v8::Isolate* isolate = env->get_isolate();\
         NativeClassInfoPtr class_info = env->get_native_class(class_id);\
         class_info->finalizer = &finalizer;\
-        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, &constructor<TArgs...>, *class_id);\
-        class_builder.SetClassName(env->get_string_value(class_info->name));\
+        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor<TArgs...>, *class_id);\
         return class_builder;\
     }
 
 #define JSB_CONTEXT_BOILERPLATE() \
     v8::Isolate* isolate = info.GetIsolate();\
     v8::Local<v8::Context> context = isolate->GetCurrentContext();\
-    Functor& func = *(Functor*) Environment::get_function_pointer(context, info.Data()->Uint32Value(context).ToChecked());\
+    Functor& func = *(Functor*) Environment::get_function_pointer(context, info.Data().As<v8::Uint32>()->Value());\
     (void) 0
 
 namespace jsb
@@ -40,60 +38,6 @@ namespace jsb
     template<typename> struct PrimitiveAccess {};
 
     template<typename> struct VariantCaster {};
-
-    template<> struct VariantCaster<Vector2>
-    {
-        static Vector2* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            return VariantInternal::get_vector2(variant);
-        }
-    };
-
-    template<> struct VariantCaster<Vector3>
-    {
-        static Vector3* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            return VariantInternal::get_vector3(variant);
-        }
-    };
-
-    template<> struct VariantCaster<Vector4>
-    {
-        static Vector4* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            return VariantInternal::get_vector4(variant);
-        }
-    };
-
-    template<> struct VariantCaster<Signal>
-    {
-        static Signal* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            return VariantInternal::get_signal(variant);
-        }
-    };
-
-    template<> struct VariantCaster<Callable>
-    {
-        static Callable* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            return VariantInternal::get_callable(variant);
-        }
-    };
-
-    template<> struct VariantCaster<Basis>
-    {
-        static Basis* from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            Variant* variant = (Variant*) p_val.As<v8::Object>()->GetAlignedPointerFromInternalField(IF_Pointer);
-            return VariantInternal::get_basis(variant);
-        }
-    };
 
     template<typename T>
     struct PrimitiveAccessBoilerplate
@@ -116,93 +60,6 @@ namespace jsb
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
             environment->bind_valuetype(class_id, environment->alloc_variant(val), inst.As<v8::Object>());
             info.GetReturnValue().Set(inst);
-            return true;
-        }
-    };
-
-    template<> struct PrimitiveAccess<Vector2> : PrimitiveAccessBoilerplate<Vector2> {};
-    template<> struct PrimitiveAccess<Vector3> : PrimitiveAccessBoilerplate<Vector3> {};
-    template<> struct PrimitiveAccess<Vector4> : PrimitiveAccessBoilerplate<Vector4> {};
-    template<> struct PrimitiveAccess<Signal> : PrimitiveAccessBoilerplate<Signal> {};
-    template<> struct PrimitiveAccess<Callable> : PrimitiveAccessBoilerplate<Callable> {};
-    template<> struct PrimitiveAccess<Basis> : PrimitiveAccessBoilerplate<Basis> {};
-
-    // template<> struct PrimitiveAccess<const Vector2> : PrimitiveAccessBoilerplate<Vector2> {};
-    // template<> struct PrimitiveAccess<const Vector3> : PrimitiveAccessBoilerplate<Vector3> {};
-    // template<> struct PrimitiveAccess<const Vector4> : PrimitiveAccessBoilerplate<Vector4> {};
-
-    template<> struct PrimitiveAccess<const Vector2&> : PrimitiveAccessBoilerplate<Vector2> {};
-    template<> struct PrimitiveAccess<const Vector3&> : PrimitiveAccessBoilerplate<Vector3> {};
-    template<> struct PrimitiveAccess<const Vector4&> : PrimitiveAccessBoilerplate<Vector4> {};
-    template<> struct PrimitiveAccess<const Signal&> : PrimitiveAccessBoilerplate<Signal> {};
-    template<> struct PrimitiveAccess<const Callable&> : PrimitiveAccessBoilerplate<Callable> {};
-
-    template<> struct PrimitiveAccess<real_t>
-    {
-        static real_t from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            return (real_t) p_val->NumberValue(context).ToChecked();
-        }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, real_t val)
-        {
-            info.GetReturnValue().Set(val);
-            return true;
-        }
-    };
-    // template<> struct PrimitiveAccess<const real_t> : PrimitiveAccess<real_t> {};
-    template<> struct PrimitiveAccess<const real_t&> : PrimitiveAccess<real_t> {};
-
-    template<> struct PrimitiveAccess<int32_t>
-    {
-        static int32_t from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            return p_val->Int32Value(context).FromMaybe(0);
-        }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, int32_t val)
-        {
-            info.GetReturnValue().Set(val);
-            return true;
-        }
-    };
-    template<> struct PrimitiveAccess<uint32_t>
-    {
-        static uint32_t from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            return p_val->Uint32Value(context).ToChecked();
-        }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, uint32_t val)
-        {
-            info.GetReturnValue().Set(val);
-            return true;
-        }
-    };
-    template<> struct PrimitiveAccess<const int32_t> : PrimitiveAccess<int32_t> {};
-    template<> struct PrimitiveAccess<Vector2::Axis> : PrimitiveAccess<int32_t> {};
-    template<> struct PrimitiveAccess<Vector3::Axis> : PrimitiveAccess<int32_t> {};
-    template<> struct PrimitiveAccess<Vector4::Axis> : PrimitiveAccess<int32_t> {};
-
-    template<> struct PrimitiveAccess<Error>
-    {
-        static Error from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            return (Error) p_val->Int32Value(context).ToChecked();
-        }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, Error val)
-        {
-            info.GetReturnValue().Set((int32_t) val);
-            return true;
-        }
-    };
-
-    template<> struct PrimitiveAccess<bool>
-    {
-        static bool from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
-        {
-            return p_val->BooleanValue(context->GetIsolate());
-        }
-        static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, bool val)
-        {
-            info.GetReturnValue().Set(val);
             return true;
         }
     };
@@ -453,7 +310,7 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
+            internal::Index32 class_id(info.Data().As<v8::Uint32>()->Value());
 
             TSelf* ptr = memnew(TSelf);
             Environment* runtime = Environment::wrap(isolate);
@@ -468,7 +325,7 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(v8::Local<v8::Uint32>::Cast(info.Data())->Value());
+            internal::Index32 class_id(info.Data().As<v8::Uint32>()->Value());
             if (info.Length() != 3)
             {
                 jsb_throw(isolate, "bad args");
@@ -552,7 +409,7 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             if (new_target.As<v8::Object>()->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
             {
-                const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym->Uint32Value(context).ToChecked();
+                const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym.As<v8::Uint32>()->Value();
                 const ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
                     script_class_info->js_class_name, script_class_info->module_id, class_info->name, class_id);

@@ -22,16 +22,21 @@ namespace v8
             return isolate_ == other.isolate_ && (stack_pos_ == other.stack_pos_ || strict_eq(other));
         }
 
+        // should only be called on Name & Object
+        int GetIdentityHash() const;
+
         bool IsNullOrUndefined() const;
         bool IsUndefined() const;
         bool IsObject() const;
         bool IsFunction() const;
         bool IsPromise() const;
         bool IsArray() const;
+        bool IsMap() const;
         bool IsString() const;
         bool IsInt32() const;
         bool IsNumber() const;
         bool IsBigInt() const;
+        bool IsExternal() const;
 
     private:
         bool strict_eq(const Data& other) const;

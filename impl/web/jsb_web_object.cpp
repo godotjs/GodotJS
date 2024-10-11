@@ -9,7 +9,6 @@ namespace v8
         return Local<Object>(isolate, isolate->GetCurrentStack(), jsapi_stack_push_object(isolate->id_));
     }
 
-
     int Object::InternalFieldCount() const
     {
         return jsapi_sv_internal_num(isolate_->id_, stack_, index_);

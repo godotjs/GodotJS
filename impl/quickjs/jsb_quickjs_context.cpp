@@ -23,7 +23,7 @@ namespace v8
 
     Local<Object> Context::Global() const
     {
-        //TODO
+        return Local<Object>(Data(isolate_, isolate_->push_steal(JS_GetGlobalObject(isolate_->ctx()))));
     }
 
 }

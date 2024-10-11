@@ -1,6 +1,6 @@
 #pragma once
 
-#define CONFIG_VERSION "2024-01-13"
+#define QUICKJS_CONFIG_VERSION "2024-01-13"
 
 #ifdef _MSC_VER
 #include <windows.h>
