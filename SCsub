@@ -354,12 +354,26 @@ if is_defined("JSB_WITH_LWS"):
     if env.msvc and env["vsproj"]:
         env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
 
+quickjs_obj = []
 if is_defined("JSB_WITH_QUICKJS"):
     print("WARNING: quickjs support has not been implemented yet")
 
+    env_quickjs = env_modules.Clone()
     # quickjs is directly built from source
-    env_jsb.add_source_files(module_obj, "quickjs/*.c")
+    # quickjs_src = ["quickjs/cutils.c", "quickjs/libbf.c", "quickjs/libregexp.c", "quickjs/libunicode.c", "quickjs/quickjs.c"]
+    env_quickjs.add_source_files(quickjs_obj, "quickjs/*.c")
+
+    if env.msvc:
+        # float control causes C2099 in VS2022 (Windows 11 SDK)
+        # https://developercommunity.visualstudio.com/t/NAN-is-no-longer-compile-time-constant-i/10688907
+        if "/fp:strict" in env_quickjs["CCFLAGS"]:
+            # try to avoid complains from cl about D9025 overriding '/fp:strict' with '/fp:precise'
+            env_quickjs["CCFLAGS"].remove("/fp:strict")
+        env_quickjs.Append(CCFLAGS=["/fp:precise"])
+
+    env.modules_sources += quickjs_obj
     env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
+
 
 if jsb_platform == "web":
     print("WARNING: web support has not been implemented yet")
@@ -398,3 +412,4 @@ if env.editor_build:
 
 generate_jsb_gen_header()
 env.modules_sources += module_obj
+env.Depends(module_obj, quickjs_obj)
