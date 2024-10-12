@@ -17,14 +17,19 @@ namespace jsb::impl
     {
         const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(value, v8::Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
-        jsb_check(!data->weak.callback);
+        jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
         data->weak.parameter = (void*) parameter;
         data->weak.callback = (void*) callback;
     }
 
-    JSValue Broker::get_stack_value(v8::Isolate* isolate, uint16_t index)
+    JSValue Broker::stack_val(v8::Isolate* isolate, uint16_t index)
     {
-        return isolate->operator[](index);
+        return isolate->stack_val(index);
+    }
+
+    JSValue Broker::stack_dup(v8::Isolate* isolate, uint16_t index)
+    {
+        return isolate->stack_dup(index);
     }
 
     uint16_t Broker::push_copy(v8::Isolate* isolate, JSValue value)
@@ -32,9 +37,19 @@ namespace jsb::impl
         return isolate->push_copy(value);
     }
 
-    bool Broker::is_valid_internal_data(v8::Isolate* isolate, jsb::internal::Index64 value)
+    void Broker::add_phantom(v8::Isolate* isolate, void* token)
     {
-        return isolate->internal_data_.is_valid_index(value);
+        return isolate->add_phantom(token);
+    }
+
+    void Broker::remove_phantom(v8::Isolate* isolate, void* token)
+    {
+        return isolate->remove_phantom(token);
+    }
+
+    bool Broker::is_phantom_alive(v8::Isolate* isolate, void* token)
+    {
+        return isolate->is_phantom_alive(token);
     }
 
 }

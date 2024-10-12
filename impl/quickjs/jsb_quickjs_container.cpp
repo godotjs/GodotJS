@@ -13,7 +13,7 @@ namespace v8
     uint32_t Array::Length() const
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue val = isolate_->operator[](stack_pos_);
+        const JSValue val = isolate_->stack_val(stack_pos_);
         const JSValue len = JS_GetProperty(ctx, val, jsb::impl::JS_ATOM_length);
         if (JS_IsException(len))
         {

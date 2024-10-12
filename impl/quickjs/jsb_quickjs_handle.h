@@ -93,12 +93,6 @@ namespace v8
             return !IsEmpty();
         }
 
-        // template <class S>
-        // Local<S> FromMaybe(Local<S> default_value) const
-        // {
-        //     return IsEmpty() ? default_value : Local<S>(data_);
-        // }
-
     private:
         Data data_;
     };
@@ -127,6 +121,8 @@ namespace v8
     template <typename T>
     class Global
     {
+        enum WeakType { kStrong, kWeak, kWeakCallback, };
+
     public:
         Global() = default;
         Global(Isolate* isolate, Local<T> value) { Reset(isolate, value); }
@@ -136,26 +132,33 @@ namespace v8
         void Reset()
         {
             if (!isolate_) return;
+
             // release if strong referenced
-            if (!weak_)
+            if (weak_type_ == WeakType::kStrong)
             {
                 jsb_check(is_alive());
                 JS_FreeValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
             }
 
+            jsb::impl::Broker::remove_phantom(isolate_, shadow_);
             isolate_ = nullptr;
-            id_ = {};
-            weak_ = false;
+            shadow_ = nullptr;
+            value_ = JS_UNDEFINED;
+            weak_type_ = WeakType::kStrong;
         }
 
         void Reset(Isolate* isolate, Local<T> value)
         {
             Reset();
-            isolate_ = isolate;
 
-            value_ = jsb::impl::Broker::get_stack_value(isolate_, value.data_.stack_pos_);
-            weak_ = false;
-            JS_DupValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
+            isolate_ = isolate;
+            if (!value.IsEmpty())
+            {
+                value_ = jsb::impl::Broker::stack_dup(isolate_, value.data_.stack_pos_);
+                shadow_ = JS_VALUE_GET_TAG(value_) < 0 ? JS_VALUE_GET_PTR(value_) : nullptr;
+                jsb::impl::Broker::add_phantom(isolate_, shadow_);
+                weak_type_ = WeakType::kStrong;
+            }
         }
 
         void Reset(Isolate* isolate, Global value)
@@ -165,28 +168,35 @@ namespace v8
 
         void ClearWeak()
         {
-            jsb_check(isolate_ && weak_ && is_alive());
-            weak_ = false;
+            jsb_check(isolate_ && weak_type_ != WeakType::kStrong && is_alive());
+
+            if (weak_type_ == WeakType::kWeakCallback)
+            {
+                // clear callback
+                jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
+            }
+            weak_type_ = WeakType::kStrong;
             JS_DupValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
         }
 
+        // ClearWeak() before SetWeak() if SetWeak(parameter) called priorly
         void SetWeak()
         {
-            jsb_check(isolate_ && !weak_ && is_alive());
-            weak_ = true;
+            jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
+            weak_type_ = WeakType::kWeak;
             JS_FreeValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
         }
 
         template<typename S>
         void SetWeak(S* parameter, typename WeakCallbackInfo<S>::Callback callback, v8::WeakCallbackType type)
         {
-            jsb_check(isolate_ && !weak_ && is_alive());
+            jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
             jsb::impl::Broker::SetWeak(isolate_, value_, parameter, (void*) callback);
-            weak_ = true;
+            weak_type_ = WeakType::kWeakCallback;
             JS_FreeValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
         }
 
-        bool IsEmpty() const { return !isolate_ || !id_; }
+        bool IsEmpty() const { return !isolate_; }
 
         Local<T> Get(Isolate* isolate) const
         {
@@ -203,7 +213,7 @@ namespace v8
         template <typename S>
         bool operator==(const Global<S>& other) const
         {
-            return id_ == other.id_ || jsb::impl::QuickJS::Equals(value_, other.value_);
+            return shadow_ == other.shadow_ || jsb::impl::QuickJS::Equals(value_, other.value_);
         }
 
         template <typename S>
@@ -213,17 +223,17 @@ namespace v8
         }
 
     private:
-        bool is_alive() const { return id_ && jsb::impl::Broker::is_valid_internal_data(isolate_, id_); }
+        bool is_alive() const { return !shadow_ || jsb::impl::Broker::is_phantom_alive(isolate_, shadow_); }
 
         Isolate* isolate_ = nullptr;
 
-        // internal data id (check liveness)
-        jsb::internal::Index64 id_;
+        // JSObject pointer shadow
+        void* shadow_ = nullptr;
 
         // a shadow copy of object without reference control
         JSValue value_;
 
-        bool weak_ = false;
+        WeakType weak_type_ = WeakType::kStrong;
     };
 }
 

@@ -66,7 +66,7 @@ namespace v8
 
         JSValue payload[kFuncPayloadNum];
         payload[kFuncPayloadCallback] = JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void*) callback);
-        payload[kFuncPayloadData] = JS_DupValueRT(isolate->rt(), (JSValue) data);
+        payload[kFuncPayloadData] = isolate->stack_dup(data->stack_pos_);
 
         const JSValue val = JS_NewCFunctionData(isolate->ctx(), _function_call, 0, 0, kFuncPayloadNum, payload);
         const uint16_t stack_pos = isolate->push_steal(val);

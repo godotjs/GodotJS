@@ -12,7 +12,7 @@ namespace jsb::impl
     void TryCatch::get_message(String* r_message, String* r_stacktrace) const
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue ex = isolate_->operator[](StackPos::Exception);
+        const JSValue ex = isolate_->stack_val(StackPos::Exception);
         jsb_check(!JS_IsNull(ex));
 
         const JSValue err_filename = JS_GetProperty(ctx, ex, JS_ATOM_fileName);

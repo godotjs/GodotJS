@@ -62,6 +62,12 @@ namespace jsb::impl
         JSClassID id_;
     };
 
+    struct Phantom
+    {
+        int watcher_ = 0;
+        bool alive_ = false;
+    };
+
     class Helper;
     class Broker;
 }
@@ -137,15 +143,24 @@ namespace v8
 
         static JSClassID get_class_id() { static jsb::impl::ClassID id; return (JSClassID) id; }
 
-        const JSValue& operator[](const uint16_t index) const
+        const JSValue& stack_val(const uint16_t index) const
         {
             jsb_check(index < stack_pos_);
+            jsb_check(index < jsb::impl::StackPos::Num || handle_scope_);
             return stack_[index];
+        }
+
+        [[nodiscard]] JSValue stack_dup(const uint16_t index) const
+        {
+            jsb_check(index < stack_pos_);
+            jsb_check(index < jsb::impl::StackPos::Num || handle_scope_);
+            return JS_DupValueRT(rt_, stack_[index]);
         }
 
         void stack_copy(const uint16_t to, const uint16_t from)
         {
             jsb_check(to != from && to < stack_pos_ && from < stack_pos_);
+            jsb_check(handle_scope_ || (to < jsb::impl::StackPos::Num && from < jsb::impl::StackPos::Num));
             JS_DupValueRT(rt_, stack_[from]);
             JS_FreeValueRT(rt_, stack_[to]);
             stack_[to] = stack_[from];
@@ -176,6 +191,45 @@ namespace v8
 
         ~Isolate();
 
+        // phantom is a pointer to JSObject (internal type of quickjs).
+        // the caller must ensure that the JSObject is alive when calling add_phantom
+        void add_phantom(void* token)
+        {
+            if (!token) return;
+            if (jsb::impl::Phantom* p = phantom_.getptr(token))
+            {
+                ++p->watcher_;
+                return;
+            }
+
+            phantom_.insert(token, { 1, true });
+        }
+
+        void remove_phantom(void* token)
+        {
+            if (!token) return;
+            const auto it = phantom_.find(token);
+            jsb_check(it);
+            if (--it->value.watcher_ == 0)
+            {
+                phantom_.remove(it);
+            }
+        }
+
+        bool is_phantom_alive(void* token) const
+        {
+            const jsb::impl::Phantom& p = phantom_.get(token);
+            return p.alive_;
+        }
+
+        void _invalidate_phantom(void* token)
+        {
+            if (jsb::impl::Phantom* p = phantom_.getptr(token))
+            {
+                p->alive_ = false;
+            }
+        }
+
     private:
         Isolate();
 
@@ -192,6 +246,7 @@ namespace v8
 
         jsb::internal::SArray<jsb::impl::InternalData> internal_data_;
         jsb::internal::SArray<jsb::impl::ConstructorData, jsb::internal::Index32> constructor_data_;
+        HashMap<void*, jsb::impl::Phantom> phantom_;
 
         uint16_t stack_pos_;
         JSValue stack_[jsb::impl::kMaxStackSize];

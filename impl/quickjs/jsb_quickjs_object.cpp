@@ -6,7 +6,7 @@ namespace v8
 {
     int Object::InternalFieldCount() const
     {
-        const JSValue val = isolate_->operator[](stack_pos_);
+        const JSValue val = isolate_->stack_val(stack_pos_);
         const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_field_count;
@@ -14,7 +14,7 @@ namespace v8
 
     void Object::SetAlignedPointerInInternalField(int slot, void* value)
     {
-        const JSValue val = isolate_->operator[](stack_pos_);
+        const JSValue val = isolate_->stack_val(stack_pos_);
         const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         data->internal_fields[slot] = value;
@@ -22,7 +22,7 @@ namespace v8
 
     void* Object::GetAlignedPointerFromInternalField(int slot) const
     {
-        const JSValue val = isolate_->operator[](stack_pos_);
+        const JSValue val = isolate_->stack_val(stack_pos_);
         const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_fields[slot];
@@ -30,7 +30,7 @@ namespace v8
 
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
-        const JSValue self = isolate_->operator[](stack_pos_);
+        const JSValue self = isolate_->stack_val(stack_pos_);
         jsb_check(JS_IsArray(isolate_->ctx(), self));
         const int res = JS_SetPropertyUint32(isolate_->ctx(), self, index, JS_DupValue(isolate_->ctx(), (JSValue) value));
         if (res == -1)
@@ -42,7 +42,7 @@ namespace v8
 
     MaybeLocal<Value> Object::Get(Local<Context> context, uint32_t index) const
     {
-        const JSValue self = isolate_->operator[](stack_pos_);
+        const JSValue self = isolate_->stack_val(stack_pos_);
         jsb_check(JS_IsArray(isolate_->ctx(), self));
         const JSValue val = JS_GetPropertyUint32(isolate_->ctx(), self, index);
         if (JS_IsException(val))
@@ -54,7 +54,7 @@ namespace v8
 
     Maybe<bool> Object::Set(Local<Context> context, Local<Value> key, Local<Value> value)
     {
-        const JSValue self = isolate_->operator[](stack_pos_);
+        const JSValue self = isolate_->stack_val(stack_pos_);
         JSContext* ctx = isolate_->ctx();
         const JSAtom index = JS_ValueToAtom(ctx, (JSValue) key);
         const int res = JS_SetProperty(ctx, self, index, JS_DupValue(ctx, (JSValue) value));
@@ -68,7 +68,7 @@ namespace v8
 
     MaybeLocal<Value> Object::Get(Local<Context> context, Local<Value> key) const
     {
-        const JSValue self = isolate_->operator[](stack_pos_);
+        const JSValue self = isolate_->stack_val(stack_pos_);
         JSContext* ctx = isolate_->ctx();
         const JSAtom index = JS_ValueToAtom(ctx, (JSValue) key);
         const JSValue val = JS_GetProperty(ctx, self, index);
@@ -177,7 +177,7 @@ namespace v8
             const Local<Name> prop_v(Data(isolate, isolate->push_copy(func_data[0])));
 
             getter(prop_v, info);
-            rvo = JS_DupValue(isolate->ctx(), isolate->operator[](rvo_pos));
+            rvo = JS_DupValue(isolate->ctx(), isolate->stack_val(rvo_pos));
             jsb_check(!JS_IsException(rvo));
         }
 

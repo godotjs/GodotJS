@@ -20,7 +20,14 @@ namespace v8
 
         void js_free(JSMallocState* s, void* ptr)
         {
-            memfree(ptr);
+            // avoid error prints on nullptr
+            if (ptr)
+            {
+                memfree(ptr);
+
+                // it's dangerous, but, just haven't found a better solution
+                ((Isolate*) s->opaque)->_invalidate_phantom(ptr);
+            }
         }
 
         void* js_realloc(JSMallocState* s, void* ptr, size_t size)
@@ -35,7 +42,7 @@ namespace v8
         return isolate;
     }
 
-    Isolate::Isolate() : handle_scope_(nullptr), stack_pos_(1)
+    Isolate::Isolate() : handle_scope_(nullptr), stack_pos_(0)
     {
         const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
         rt_ = JS_NewRuntime2(&mf, this);
@@ -104,14 +111,18 @@ namespace v8
 
     uint16_t Isolate::push_map()
     {
-        const JSValue map = details::verified(JS_CallConstructor(ctx_, stack_[jsb::impl::StackPos::MapClass], 0, nullptr));
-        return push_steal(map);
+        const JSValue ctor = JS_GetProperty(ctx_, stack_[jsb::impl::StackPos::MapClass], jsb::impl::JS_ATOM_constructor);
+        const JSValue map = details::verified(JS_CallConstructor(ctx_, details::verified(ctor), 0, nullptr));
+        JS_FreeValue(ctx_, ctor);
+        return push_steal(details::verified(map));
     }
 
     uint16_t Isolate::push_symbol()
     {
-        const JSValue sym = details::verified(JS_CallConstructor(ctx_, stack_[jsb::impl::StackPos::SymbolClass], 0, nullptr));
-        return push_steal(sym);
+        const JSValue ctor = JS_GetProperty(ctx_, stack_[jsb::impl::StackPos::SymbolClass], jsb::impl::JS_ATOM_constructor);
+        const JSValue sym = details::verified(JS_CallConstructor(ctx_, details::verified(ctor), 0, nullptr));
+        JS_FreeValue(ctx_, ctor);
+        return push_steal(details::verified(sym));
     }
 
     uint16_t Isolate::emplace_(JSValue value)

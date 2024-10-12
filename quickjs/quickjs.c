@@ -37,12 +37,21 @@
 #pragma warning(disable: 4334)
 #endif
 
+#ifdef _MSC_VER
+// stupid msvc breaking changes (/fp:precise is required to make them work)
+#   define JS_COMPAT_INFINITY (1.0 / 0.0)
+#   define JS_COMPAT_NAN (0.0 / 0.0)
+#else
+#   define JS_COMPAT_INFINITY INFINITY
+#   define JS_COMPAT_NAN NAN
+#endif
+
 // iris-qjs
 #ifdef _MSC_VER
-  #include <windows.h>
-  #include <intrin.h>
+#   include <windows.h>
+#   include <intrin.h>
 #else
-  #include <sys/time.h>
+#   include <sys/time.h>
 #endif
 #include <time.h>
 #include <fenv.h>
@@ -40925,9 +40934,9 @@ static const JSCFunctionListEntry js_number_funcs[] = {
     JS_CFUNC_DEF("isSafeInteger", 1, js_number_isSafeInteger ),
     JS_PROP_DOUBLE_DEF("MAX_VALUE", 1.7976931348623157e+308, 0 ),
     JS_PROP_DOUBLE_DEF("MIN_VALUE", 5e-324, 0 ),
-    JS_PROP_DOUBLE_DEF("NaN", NAN, 0 ),
-    JS_PROP_DOUBLE_DEF("NEGATIVE_INFINITY", -INFINITY, 0 ),
-    JS_PROP_DOUBLE_DEF("POSITIVE_INFINITY", INFINITY, 0 ),
+    JS_PROP_DOUBLE_DEF("NaN", JS_COMPAT_NAN, 0 ),
+    JS_PROP_DOUBLE_DEF("NEGATIVE_INFINITY", -JS_COMPAT_INFINITY, 0 ),
+    JS_PROP_DOUBLE_DEF("POSITIVE_INFINITY", JS_COMPAT_INFINITY, 0 ),
     JS_PROP_DOUBLE_DEF("EPSILON", 2.220446049250313e-16, 0 ), /* ES6 */
     JS_PROP_DOUBLE_DEF("MAX_SAFE_INTEGER", 9007199254740991.0, 0 ), /* ES6 */
     JS_PROP_DOUBLE_DEF("MIN_SAFE_INTEGER", -9007199254740991.0, 0 ), /* ES6 */
@@ -49337,8 +49346,8 @@ static const JSCFunctionListEntry js_global_funcs[] = {
     JS_CFUNC_MAGIC_DEF("encodeURIComponent", 1, js_global_encodeURI, 1 ),
     JS_CFUNC_DEF("escape", 1, js_global_escape ),
     JS_CFUNC_DEF("unescape", 1, js_global_unescape ),
-    JS_PROP_DOUBLE_DEF("Infinity", 1.0 / 0.0, 0 ),
-    JS_PROP_DOUBLE_DEF("NaN", NAN, 0 ),
+    JS_PROP_DOUBLE_DEF("Infinity", JS_COMPAT_INFINITY, 0 ),
+    JS_PROP_DOUBLE_DEF("NaN", JS_COMPAT_NAN, 0 ),
     JS_PROP_UNDEFINED_DEF("undefined", 0 ),
 };
 

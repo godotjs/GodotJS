@@ -27,7 +27,8 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
-#include "qjs-compat.h"
+#include "quickjs-compat.h"
+#include "cutils-compat.h"
 
 /* set if CPU is big endian */
 #undef WORDS_BIGENDIAN

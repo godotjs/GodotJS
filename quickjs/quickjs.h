@@ -27,7 +27,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "qjs-compat.h"
+
+#include "quickjs-compat.h"
 
 #ifdef __cplusplus
 extern "C" {

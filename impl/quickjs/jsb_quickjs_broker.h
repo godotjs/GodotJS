@@ -9,6 +9,7 @@ namespace v8
 
 namespace jsb::impl
 {
+    // a helper class to break header cyclic dependencies
     class Broker
     {
     public:
@@ -17,9 +18,17 @@ namespace jsb::impl
         static JSRuntime* GetRuntime(v8::Isolate* isolate);
         static JSContext* GetContext(v8::Isolate* isolate);
 
-        static JSValue get_stack_value(v8::Isolate* isolate, uint16_t index);
+        static void add_phantom(v8::Isolate* isolate, void* token);
+        static void remove_phantom(v8::Isolate* isolate, void* token);
+        static bool is_phantom_alive(v8::Isolate* isolate, void* token);
+
+        // peek JSValue on stack (without duplicating)
+        static JSValue stack_val(v8::Isolate* isolate, uint16_t index);
+
+        // copy JSValue on stack (with duplicating)
+        static JSValue stack_dup(v8::Isolate* isolate, uint16_t index);
+
         static uint16_t push_copy(v8::Isolate* isolate, JSValueConst value);
-        static bool is_valid_internal_data(v8::Isolate* isolate, jsb::internal::Index64 value);
     };
 }
 #endif

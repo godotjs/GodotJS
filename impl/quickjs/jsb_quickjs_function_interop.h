@@ -14,7 +14,7 @@ namespace v8
 
         explicit operator JSValue() const
         {
-            return data_.isolate_->operator[](data_.stack_pos_);
+            return data_.isolate_->stack_val(data_.stack_pos_);
         }
 
         template <typename S>
