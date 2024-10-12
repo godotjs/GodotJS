@@ -196,6 +196,8 @@ namespace v8
         void add_phantom(void* token)
         {
             if (!token) return;
+
+            JSB_LOG(Verbose, "add phantom %s", (uintptr_t) token);
             if (jsb::impl::Phantom* p = phantom_.getptr(token))
             {
                 ++p->watcher_;
@@ -208,9 +210,10 @@ namespace v8
         void remove_phantom(void* token)
         {
             if (!token) return;
+
             const auto it = phantom_.find(token);
-            jsb_check(it);
-            if (--it->value.watcher_ == 0)
+            JSB_LOG(Verbose, "remove phantom %s", (uintptr_t) token);
+            if (jsb_ensure(it) && --it->value.watcher_ == 0)
             {
                 phantom_.remove(it);
             }

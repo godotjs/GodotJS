@@ -123,11 +123,49 @@ namespace v8
     {
         enum WeakType { kStrong, kWeak, kWeakCallback, };
 
+        void _clear()
+        {
+            isolate_ = nullptr;
+            shadow_ = nullptr;
+            value_ = JS_UNDEFINED;
+            weak_type_ = WeakType::kStrong;
+        }
+
     public:
         Global() = default;
         Global(Isolate* isolate, Local<T> value) { Reset(isolate, value); }
 
+        Global(const Global&) = delete;
+        Global& operator=(const Global&) = delete;
+
         ~Global() { Reset(); }
+
+        Global(Global&& other) noexcept
+        {
+            isolate_ = other.isolate_;
+            weak_type_ = other.weak_type_;
+            shadow_ = other.shadow_;
+            value_ = other.value_;
+            other._clear();
+        }
+
+        template <typename S>
+        Global& operator=(Global<S>&& other)
+        {
+            if (this != &other)
+            {
+                Reset();
+                if (!other.IsEmpty())
+                {
+                    isolate_ = other.isolate_;
+                    weak_type_ = other.weak_type_;
+                    shadow_ = other.shadow_;
+                    value_ = other.value_;
+                    other._clear();
+                }
+            }
+            return *this;
+        }
 
         void Reset()
         {
@@ -161,7 +199,7 @@ namespace v8
             }
         }
 
-        void Reset(Isolate* isolate, Global value)
+        void Reset(Isolate* isolate, const Global& value)
         {
             Reset(isolate, value.Get(isolate));
         }
