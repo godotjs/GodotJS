@@ -33,7 +33,7 @@ namespace jsb::impl
         uint32_t data;
     };
 
-    enum { kMaxStackSize = 128 };
+    enum { kMaxStackSize = 512 };
 
     namespace StackPos
     {
@@ -197,7 +197,7 @@ namespace v8
         {
             if (!token) return;
 
-            JSB_LOG(Verbose, "add phantom %s", (uintptr_t) token);
+            // JSB_LOG(Verbose, "add phantom %s", (uintptr_t) token);
             if (jsb::impl::Phantom* p = phantom_.getptr(token))
             {
                 ++p->watcher_;
@@ -212,7 +212,7 @@ namespace v8
             if (!token) return;
 
             const auto it = phantom_.find(token);
-            JSB_LOG(Verbose, "remove phantom %s", (uintptr_t) token);
+            // JSB_LOG(Verbose, "remove phantom %s", (uintptr_t) token);
             if (jsb_ensure(it) && --it->value.watcher_ == 0)
             {
                 phantom_.remove(it);
