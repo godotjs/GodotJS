@@ -90,7 +90,7 @@ namespace jsb
             {
                 jsb_check(class_info->name == type_name);
                 jsb_check(!class_info->clazz.IsEmpty());
-                info.GetReturnValue().Set(class_info->clazz.NewTarget(isolate));
+                info.GetReturnValue().Set(class_info->clazz.Get(isolate));
                 return;
             }
 
@@ -99,7 +99,7 @@ namespace jsb
             {
                 jsb_check(class_info->name == type_name);
                 jsb_check(!class_info->clazz.IsEmpty());
-                info.GetReturnValue().Set(class_info->clazz.NewTarget(isolate));
+                info.GetReturnValue().Set(class_info->clazz.Get(isolate));
                 return;
             }
         }

@@ -9,6 +9,7 @@ namespace v8
         last_ = isolate_->handle_scope_;
         stack_ = isolate_->stack_pos_;
         isolate_->handle_scope_ = this;
+        JSB_LOG(Verbose, "enter stack frame %d", stack_);
     }
 
     HandleScope::~HandleScope()
@@ -20,6 +21,7 @@ namespace v8
         }
         isolate_->handle_scope_ = last_;
         isolate_->stack_pos_ = stack_;
+        JSB_LOG(Verbose, "leave stack frame %d", stack_);
     }
 
 }

@@ -40,6 +40,11 @@ namespace jsb::impl
             return target_.Get(isolate);
         }
 
+        jsb_force_inline v8::Local<v8::Function> Get(v8::Isolate* isolate) const
+        {
+            return target_.Get(isolate);
+        }
+
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
         {
             return handle_.Get(context->GetIsolate())->InstanceTemplate()->NewInstance(context).ToLocalChecked();

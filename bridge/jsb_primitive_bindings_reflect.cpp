@@ -194,7 +194,8 @@ namespace jsb
                 jsb_throw(isolate, "bad constructor call");
                 return;
             }
-            v8::Local<v8::Object> self = info.This();
+            const v8::Local<v8::Object> self = info.This();
+            jsb_quickjs_check(self->IsObject());
             Environment* env = Environment::wrap(isolate);
             const internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(env).constructors[info.Data().As<v8::Uint32>()->Value()];
 

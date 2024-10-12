@@ -33,7 +33,7 @@ namespace jsb::impl
         uint32_t data;
     };
 
-    enum { kMaxStackSize = 512 };
+    enum { kMaxStackSize = 1024 * 2 };
 
     namespace StackPos
     {

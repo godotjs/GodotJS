@@ -2,6 +2,7 @@
 #define GODOTJS_QUICKJS_CLASS_BUILDER_H
 #include "jsb_quickjs_pch.h"
 #include "jsb_quickjs_class.h"
+#include "jsb_quickjs_handle_scope.h"
 #include "jsb_quickjs_primitive.h"
 #include "jsb_quickjs_template.h"
 #include "jsb_quickjs_function_interop.h"
@@ -31,10 +32,10 @@ namespace jsb::impl
     public:
         struct EnumDeclaration
         {
-            EnumDeclaration(ClassBuilder& builder, bool is_instance_method, const v8::Local<v8::Name> name) : builder_(builder)
+            EnumDeclaration(ClassBuilder& builder, bool is_instance_method, const v8::Local<v8::Name> name)
+            : builder_(builder), enumeration_(v8::Object::New(builder_.isolate_))
             {
                 jsb_check(!builder_.closed_);
-                enumeration_ = v8::Object::New(builder_.isolate_);
 
                 if (is_instance_method) builder_.prototype_template_->Set(builder_.GetContext(), name, enumeration_);
                 else builder_.template_->Set(builder_.GetContext(), name, enumeration_);
@@ -43,6 +44,7 @@ namespace jsb::impl
             EnumDeclaration& Value(const String& name, int64_t data)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> value = impl_private::Data<int64_t>::New(builder_.isolate_, data);
 
@@ -72,6 +74,8 @@ namespace jsb::impl
             void Method(const char (&name)[N], const v8::FunctionCallback callback)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback);
 
@@ -83,6 +87,7 @@ namespace jsb::impl
             void Method(const String& name, const v8::FunctionCallback callback, T data)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback, impl_private::Data<T>::New(builder_.isolate_, data));
 
@@ -95,6 +100,8 @@ namespace jsb::impl
             void Property(const String& name, const v8::FunctionCallback getter_cb, const v8::FunctionCallback setter_cb, T data)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> payload = impl_private::Data<T>::New(builder_.isolate_, data);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
@@ -112,6 +119,8 @@ namespace jsb::impl
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data, const v8::FunctionCallback setter_cb, SetterDataT setter_data)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
                     ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
@@ -128,6 +137,8 @@ namespace jsb::impl
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
                     ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
@@ -140,6 +151,8 @@ namespace jsb::impl
             void LazyProperty(const String& name, const v8::AccessorNameGetterCallback getter)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
 
                 if (is_instance_method) builder_.prototype_template_->SetLazyDataProperty(builder_.GetContext(), key, getter);
@@ -150,6 +163,8 @@ namespace jsb::impl
             void Value(const v8::Local<v8::Name> key, T val)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
                 if (is_instance_method) builder_.prototype_template_->Set(builder_.GetContext(), key, value);
                 else builder_.template_->Set(builder_.GetContext(), key, value);
@@ -160,6 +175,8 @@ namespace jsb::impl
             void Value(const String& name, T val)
             {
                 jsb_check(!builder_.closed_);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
 
@@ -203,6 +220,8 @@ namespace jsb::impl
         template<uint8_t InternalFieldCount>
         static ClassBuilder New(v8::Isolate* isolate, const StringName& name, const v8::FunctionCallback constructor, const uint32_t class_payload)
         {
+            //NOTE do not use HandleScope here, because prototype/constructor Local handles are temporarily saved in member fields of builder.
+
             JSContext* ctx = isolate->ctx();
             ClassBuilder builder;
             const String str = name;
@@ -237,7 +256,8 @@ namespace jsb::impl
 
             const JSValue proto = JS_GetProperty(ctx, new_target, JS_ATOM_prototype);
             jsb_check(!JS_IsException(proto) && JS_IsObject(proto));
-            const JSValue this_val = JS_NewObjectProtoClass(ctx, proto, isolate->get_class_id());
+            const JSValue this_val = JS_NewObjectProtoClass(ctx, proto, v8::Isolate::get_class_id());
+            jsb_check(JS_IsObject(this_val));
             JS_FreeValue(ctx, proto);
 
             const jsb::internal::Index64 internal_data = isolate->add_internal_data(InternalFieldCount);

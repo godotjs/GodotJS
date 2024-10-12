@@ -41,7 +41,10 @@ namespace v8
 
         T* operator->() const { return (T*) &const_cast<Local*>(this)->data_; }
 
-        explicit operator JSValue() const { return (JSValue) data_; }
+        explicit operator JSValue() const
+        {
+            return data_.isolate_ ? jsb::impl::Broker::stack_val(data_.isolate_, data_.stack_pos_) : JS_UNDEFINED;
+        }
 
         template <typename S>
         Local<S> As() const { return Local<S>(data_); }

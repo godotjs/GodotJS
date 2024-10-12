@@ -12,6 +12,7 @@ namespace jsb::impl
 
         // strong reference.
         // the counterpart of exposed C++ class.
+        // in quickjs, it's the prototype object.
         //NOTE template_.GetFunction() returns the `constructor`,
         //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
         v8::Global<v8::Object> handle_;
@@ -39,6 +40,13 @@ namespace jsb::impl
         jsb_force_inline v8::Local<v8::Function> NewTarget(v8::Isolate* isolate) const
         {
             return target_.Get(isolate);
+        }
+
+        jsb_force_inline v8::Local<v8::Object> Get(v8::Isolate* isolate) const
+        {
+            const JSValue constructor = JS_GetProperty(isolate->ctx(), (JSValue) handle_, JS_ATOM_constructor);
+            jsb_check(!JS_IsException(constructor));
+            return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(constructor)));
         }
 
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
