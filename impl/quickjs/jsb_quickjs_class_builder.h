@@ -185,7 +185,10 @@ namespace jsb::impl
         {
             jsb_check(!closed_);
             jsb_check(!base.IsEmpty());
-            JS_SetPrototype(isolate_->ctx(), (JSValue) prototype_template_, (JSValue) base.handle_);
+            const JSValue parent = (JSValue) base.handle_;
+            jsb_check(!JS_IsException(parent));
+            const int res = JS_SetPrototype(isolate_->ctx(), (JSValue) prototype_template_, parent);
+            jsb_check(res == 1);
         }
 
         Class Build(const v8::Local<v8::Context> context)
