@@ -101,7 +101,16 @@ namespace jsb::impl
 
         static v8::MaybeLocal<v8::Value> compile_run(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
         {
-            //TODO
+            v8::Isolate* isolate = context->GetIsolate();
+            JSContext* ctx = isolate->ctx();
+            const CharString filename = p_filename.utf8();
+            constexpr int flags = JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT;
+            const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.ptr(), flags);
+            if (JS_IsException(rval))
+            {
+                return v8::MaybeLocal<v8::Value>();
+            }
+            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
         }
     };
 }

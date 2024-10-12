@@ -19,6 +19,7 @@ namespace v8
         MaybeLocal<String> ToDetailString(Local<Context> context) const;
         Maybe<double> NumberValue(Local<Context> context) const;
         Maybe<int32_t> Int32Value(Local<Context> context) const;
+        bool BooleanValue(Isolate* isolate) const;
 
         MaybeLocal<String> ToString(Local<Context> context) const;
     };

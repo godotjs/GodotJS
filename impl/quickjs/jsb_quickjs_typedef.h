@@ -23,9 +23,11 @@ namespace jsb::impl
     enum
     {
         __JS_ATOM_NULL = JS_ATOM_NULL,
-#define DEF(name, str) JS_ATOM_ ## name,
-#       include "../../quickjs/quickjs-atom.h"
-#undef DEF
+#pragma push_macro("DEF")
+#   undef DEF
+#   define DEF(name, str) JS_ATOM_ ## name,
+#   include "../../quickjs/quickjs-atom.h"
+#pragma pop_macro("DEF")
         JS_ATOM_END,
     };
 

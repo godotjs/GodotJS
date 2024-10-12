@@ -22,6 +22,11 @@ namespace jsb::impl
         data->weak.callback = (void*) callback;
     }
 
+    JSValue Broker::get_stack_value(v8::Isolate* isolate, uint16_t index)
+    {
+        return isolate->operator[](index);
+    }
+
     uint16_t Broker::push_copy(v8::Isolate* isolate, JSValue value)
     {
         return isolate->push_copy(value);

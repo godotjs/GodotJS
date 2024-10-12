@@ -1,6 +1,6 @@
 /*
  * Unicode utilities
- * 
+ *
  * Copyright (c) 2017-2018 Fabrice Bellard
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,8 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef LIBUNICODE_H
-#define LIBUNICODE_H
+#ifndef QUICKJS_LIBUNICODE_H
+#define QUICKJS_LIBUNICODE_H
 
 #include <inttypes.h>
 

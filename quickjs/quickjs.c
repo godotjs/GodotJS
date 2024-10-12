@@ -12064,6 +12064,7 @@ int JS_IsArray(JSContext *ctx, JSValueConst val)
     }
 }
 
+//NOTE jsb:modified [begin]
 /* return -1 if exception (proxy case) or TRUE/FALSE */
 int JS_IsMap(JSContext *ctx, JSValueConst val)
 {
@@ -12075,6 +12076,17 @@ int JS_IsMap(JSContext *ctx, JSValueConst val)
         return FALSE;
     }
 }
+int JS_IsArrayBuffer(JSContext *ctx, JSValueConst val)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
+        p = JS_VALUE_GET_OBJ(val);
+        return p->class_id == JS_CLASS_ARRAY_BUFFER || p->class_id == JS_CLASS_SHARED_ARRAY_BUFFER;
+    } else {
+        return FALSE;
+    }
+}
+//NOTE jsb:modified [end]
 
 static double js_pow(double a, double b)
 {

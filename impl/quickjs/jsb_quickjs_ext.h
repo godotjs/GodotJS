@@ -25,6 +25,15 @@ namespace jsb::impl
             JS_FreeCString(ctx, str);
             return rval;
         }
+
+        static bool Equals(JSValueConst a, JSValueConst b)
+        {
+            if (a.tag != b.tag) return false;
+
+            //TODO unsafe eq check
+            if (a.u.ptr != b.u.ptr) return false;
+            return true;
+        }
     };
 }
 #endif

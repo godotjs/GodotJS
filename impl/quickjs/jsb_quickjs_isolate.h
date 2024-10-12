@@ -174,9 +174,10 @@ namespace v8
         int add_constructor_data(FunctionCallback callback, uint32_t data) { return (int) *constructor_data_.add({ callback, data }); }
         jsb::impl::ConstructorData get_constructor_data(const int index) const { return constructor_data_.get_value((jsb::internal::Index32)(uint32_t) index); }
 
+        ~Isolate();
+
     private:
         Isolate();
-        ~Isolate();
 
         uint16_t emplace_(JSValue value);
 

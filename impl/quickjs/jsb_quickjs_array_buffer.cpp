@@ -1,4 +1,6 @@
 #include "jsb_quickjs_array_buffer.h"
+#include "jsb_quickjs_isolate.h"
+
 namespace v8
 {
     void* ArrayBuffer::Data() const

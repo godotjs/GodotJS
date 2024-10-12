@@ -1,6 +1,6 @@
 #include "jsb_quickjs_primitive.h"
 #include "jsb_quickjs_maybe.h"
-#include "thirdparty/doctest/doctest.h"
+#include "jsb_quickjs_isolate.h"
 
 namespace v8
 {
@@ -25,6 +25,14 @@ namespace v8
         const JSValue val = (JSValue) *this;
         if (JS_VALUE_GET_TAG(val) == JS_TAG_INT) return Maybe<int32_t>(JS_VALUE_GET_INT(val));
         return Maybe<int32_t>();
+    }
+
+    bool Value::BooleanValue(Isolate* isolate) const
+    {
+        const JSValue val = (JSValue) *this;
+        const int res = JS_ToBool(isolate_->ctx(), val);
+        jsb_ensure(res >= 0);
+        return !!res;
     }
 
     Maybe<double> Value::NumberValue(Local<Context> context) const

@@ -27,26 +27,28 @@ namespace v8
         MaybeLocal<Value> Get(Local<Context> context, uint32_t index) const;
 
         Maybe<bool> DefineOwnProperty(
-              Local<Context> context, Local<Name> key, Local<Value> value,
-              PropertyAttribute attributes = None);
+            Local<Context> context, Local<Name> key, Local<Value> value,
+            PropertyAttribute attributes = None);
 
         MaybeLocal<Value> GetOwnPropertyDescriptor(Local<Context> context, Local<Name> key) const;
         Maybe<bool> HasOwnProperty(Local<Context> context, Local<Name> key) const;
 
-        MaybeLocal<Array> GetPropertyNames(
-            Local<Context> context, KeyCollectionMode mode,
-            PropertyFilter property_filter, IndexFilter index_filter,
-            KeyConversionMode key_conversion = KeyConversionMode::kKeepNumbers) const;
+        MaybeLocal<Array> GetOwnPropertyNames(
+            Local<Context> context, PropertyFilter filter,
+            KeyConversionMode key_conversion = KeyConversionMode::kKeepNumbers);
 
         Maybe<bool> SetPrototype(Local<Context> context, Local<Value> prototype);
         MaybeLocal<Value> CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[]);
         void SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter = Local<FunctionTemplate>(), Local<FunctionTemplate> setter = Local<FunctionTemplate>());
 
         Maybe<bool> SetLazyDataProperty(
-              Local<Context> context, Local<Name> name,
-              AccessorNameGetterCallback getter);
+            Local<Context> context, Local<Name> name,
+            AccessorNameGetterCallback getter);
 
         static Local<Object> New(Isolate* isolate);
+
+    private:
+        static JSValue _lazy(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
     };
 
     class Promise : public Object

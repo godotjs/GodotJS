@@ -99,5 +99,20 @@ namespace v8
         bool is_constructor_;
     };
 
+    template <typename T>
+    class PropertyCallbackInfo
+    {
+    public:
+        PropertyCallbackInfo(Isolate* isolate, uint16_t stack_pos) : isolate_(isolate), stack_pos_(stack_pos) {}
+        Isolate* GetIsolate() const { return isolate_; }
+        ReturnValue<T> GetReturnValue() const
+        {
+            return ReturnValue<T>(v8::Data(isolate_, stack_pos_));
+        }
+
+    private:
+        Isolate* isolate_;
+        uint16_t stack_pos_;
+    };
 }
 #endif

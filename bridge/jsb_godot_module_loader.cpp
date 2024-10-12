@@ -179,7 +179,9 @@ namespace jsb
             // empty means error thrown in Call()
             return false;
         }
+#if JSB_WITH_V8
         jsb_check(proxy->IsProxy());
+#endif
 
         // it's a proxy object which will load godot type on-demand until it's actually accessed in a script
         p_module.exports.Reset(isolate, proxy.As<v8::Object>());

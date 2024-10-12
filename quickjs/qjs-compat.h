@@ -1,10 +1,16 @@
-#pragma once
+#ifndef QUICKJS_COMPAT_H_
+#define QUICKJS_COMPAT_H_
 
+// CONFIG_VERSION may conflict with the definition in godot
 #define QUICKJS_CONFIG_VERSION "2024-01-13"
 
 #ifdef _MSC_VER
 #include <windows.h>
 #include <intrin.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef size_t ssize_t;
 
@@ -52,7 +58,15 @@ struct packed_u16 {
 };
 #pragma pack(pop)
 
+#ifdef __cplusplus
+}
+#endif
+
 #else
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct __attribute__((packed)) packed_u64 {
     uint64_t v;
@@ -65,6 +79,10 @@ struct __attribute__((packed)) packed_u32 {
 struct __attribute__((packed)) packed_u16 {
     uint16_t v;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
@@ -84,3 +102,5 @@ struct __attribute__((packed)) packed_u16 {
 #   define __js_printf_like(a, b)
 #endif
 
+
+#endif

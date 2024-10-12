@@ -4,6 +4,7 @@
 #include "jsb_quickjs_pch.h"
 #include "jsb_quickjs_data.h"
 #include "jsb_quickjs_broker.h"
+#include "jsb_quickjs_ext.h"
 
 namespace v8
 {
@@ -11,12 +12,21 @@ namespace v8
     class Global;
 
     template <typename T>
+    class MaybeLocal;
+
+    template <typename T>
     class Local
     {
         // static_assert(sizeof(T) == sizeof(Data));
 
-        template <typename U>
+        template <typename S>
         friend class Global;
+
+        template <typename S>
+        friend class Local;
+
+        template <typename S>
+        friend class MaybeLocal;
 
         friend class Isolate;
         friend class Context;
@@ -57,12 +67,18 @@ namespace v8
     template<typename T>
     class MaybeLocal
     {
+        template <typename S>
+        friend class MaybeLocal;
+
     public:
         MaybeLocal() = default;
         MaybeLocal(const Data data): data_(data) {}
 
         template<typename S>
         MaybeLocal(MaybeLocal<S> other) : data_(other.data_) {}
+
+        template<typename S>
+        MaybeLocal(Local<S> other) : data_(other.data_) {}
 
         bool IsEmpty() const { return !data_.isolate_; }
         Local<T> ToLocalChecked() const
@@ -76,6 +92,12 @@ namespace v8
             *out = Local<T>(data_);
             return !IsEmpty();
         }
+
+        // template <class S>
+        // Local<S> FromMaybe(Local<S> default_value) const
+        // {
+        //     return IsEmpty() ? default_value : Local<S>(data_);
+        // }
 
     private:
         Data data_;
@@ -131,9 +153,14 @@ namespace v8
             Reset();
             isolate_ = isolate;
 
-            value_ = isolate_[value.data_.stack_pos_];
+            value_ = jsb::impl::Broker::get_stack_value(isolate_, value.data_.stack_pos_);
             weak_ = false;
             JS_DupValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
+        }
+
+        void Reset(Isolate* isolate, Global value)
+        {
+            Reset(isolate, value.Get(isolate));
         }
 
         void ClearWeak()
@@ -171,6 +198,18 @@ namespace v8
         {
             jsb_check(isolate_ && is_alive());
             return value_;
+        }
+
+        template <typename S>
+        bool operator==(const Global<S>& other) const
+        {
+            return id_ == other.id_ || jsb::impl::QuickJS::Equals(value_, other.value_);
+        }
+
+        template <typename S>
+        bool operator!=(const Global<S>& other) const
+        {
+            return !operator==(other);
         }
 
     private:

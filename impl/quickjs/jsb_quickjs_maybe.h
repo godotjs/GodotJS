@@ -28,6 +28,11 @@ namespace v8
             return false;
         }
 
+        T FromMaybe(const T& default_value) const
+        {
+            return has_value_ ? value_ : default_value;
+        }
+
     private:
         bool has_value_ = false;
         T value_;

@@ -208,7 +208,7 @@ namespace jsb::impl
 
             builder.isolate_ = isolate;
             builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
-            builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx, _constructor<InternalFieldCount>, str8.ptr(), /*length*/ 0, JS_CFUNC_constructor_magic, (int) magic))));
+            builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx, (JSCFunction*) &_constructor<InternalFieldCount>, str8.ptr(), /*length*/ 0, JS_CFUNC_constructor_magic, magic))));
 
             return builder;
         }

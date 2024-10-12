@@ -17,6 +17,7 @@ namespace jsb::impl
         static JSRuntime* GetRuntime(v8::Isolate* isolate);
         static JSContext* GetContext(v8::Isolate* isolate);
 
+        static JSValue get_stack_value(v8::Isolate* isolate, uint16_t index);
         static uint16_t push_copy(v8::Isolate* isolate, JSValueConst value);
         static bool is_valid_internal_data(v8::Isolate* isolate, jsb::internal::Index64 value);
     };

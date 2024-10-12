@@ -22,8 +22,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef CUTILS_H
-#define CUTILS_H
+#ifndef QUICKJS_CUTILS_H
+#define QUICKJS_CUTILS_H
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -44,7 +44,7 @@
 #   define unlikely(x)     (x)
 #   define force_inline    inline
 #   define no_inline __declspec(noinline)
-#   define __maybe_unused 
+#   define __maybe_unused
 #endif
 
 #define xglue(x, y) x ## y

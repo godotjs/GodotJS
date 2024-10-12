@@ -1,6 +1,6 @@
 #include "jsb_quickjs_data.h"
-
 #include "jsb_quickjs_isolate.h"
+#include "jsb_quickjs_ext.h"
 
 namespace v8
 {
@@ -79,7 +79,15 @@ namespace v8
     {
         const JSValue val = isolate_->operator[](stack_pos_);
 
-        //TODO safe?
+        //TODO we can not determine whether it's int32 or uint32
+        return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
+    }
+
+    bool Data::IsUint32() const
+    {
+        const JSValue val = isolate_->operator[](stack_pos_);
+
+        //TODO we can not determine whether it's int32 or uint32
         return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
     }
 
@@ -95,21 +103,29 @@ namespace v8
         return JS_VALUE_GET_TAG(val) == jsb::impl::JS_TAG_EXTERNAL;
     }
 
+    bool Data::IsBoolean() const
+    {
+        const JSValue val = isolate_->operator[](stack_pos_);
+        return JS_IsBool(val);
+    }
+
     bool Data::IsBigInt() const
     {
         const JSValue val = isolate_->operator[](stack_pos_);
         return JS_IsBigInt(isolate_->ctx(), val);
     }
 
+    bool Data::IsArrayBuffer() const
+    {
+        const JSValue val = isolate_->operator[](stack_pos_);
+        return JS_IsArrayBuffer(isolate_->ctx(), val);
+    }
+
     bool Data::strict_eq(const Data& other) const
     {
         const JSValue val1 = isolate_->operator[](stack_pos_);
         const JSValue val2 = isolate_->operator[](other.stack_pos_);
-        if (val1.tag != val2.tag) return false;
-
-        //TODO unsafe eq check
-        if (val1.u.ptr != val2.u.ptr) return false;
-        return true;
+        return jsb::impl::QuickJS::Equals(val1, val2);
     }
 
 }

@@ -27,6 +27,7 @@ namespace v8
 
         bool IsNullOrUndefined() const;
         bool IsUndefined() const;
+        bool IsBoolean() const;
         bool IsObject() const;
         bool IsFunction() const;
         bool IsPromise() const;
@@ -34,9 +35,11 @@ namespace v8
         bool IsMap() const;
         bool IsString() const;
         bool IsInt32() const;
+        bool IsUint32() const;
         bool IsNumber() const;
         bool IsBigInt() const;
         bool IsExternal() const;
+        bool IsArrayBuffer() const;
 
     private:
         bool strict_eq(const Data& other) const;

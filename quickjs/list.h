@@ -1,6 +1,6 @@
 /*
  * Linux klist like system
- * 
+ *
  * Copyright (c) 2016-2017 Fabrice Bellard
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,8 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef LIST_H
-#define LIST_H
+#ifndef QUICKJS_LIST_H
+#define QUICKJS_LIST_H
 
 #ifndef NULL
 #include <stddef.h>
@@ -45,7 +45,7 @@ static inline void init_list_head(struct list_head *head)
 }
 
 /* insert 'el' between 'prev' and 'next' */
-static inline void __list_add(struct list_head *el, 
+static inline void __list_add(struct list_head *el,
                               struct list_head *prev, struct list_head *next)
 {
     prev->next = el;
