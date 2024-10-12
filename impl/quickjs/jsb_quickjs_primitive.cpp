@@ -141,6 +141,12 @@ namespace v8
         return rval;
     }
 
+    bool Boolean::Value() const 
+    {
+        const JSValue val = (JSValue) *this;
+        return !!JS_VALUE_GET_BOOL(val);
+    }
+
     Local<Boolean> Boolean::New(Isolate* isolate, bool value)
     {
         return Local<Boolean>(Data(isolate, value ? jsb::impl::StackPos::True : jsb::impl::StackPos::False));

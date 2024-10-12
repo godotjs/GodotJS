@@ -181,7 +181,7 @@ namespace v8
         void SetWeak(S* parameter, typename WeakCallbackInfo<S>::Callback callback, v8::WeakCallbackType type)
         {
             jsb_check(isolate_ && !weak_ && is_alive());
-            jsb::impl::Broker::SetWeak(isolate_, value_, parameter, callback);
+            jsb::impl::Broker::SetWeak(isolate_, value_, parameter, (void*) callback);
             weak_ = true;
             JS_FreeValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
         }

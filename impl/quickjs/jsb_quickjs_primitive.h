@@ -52,6 +52,8 @@ namespace v8
     class Boolean : public Primitive
     {
     public:
+        bool Value() const;
+        
         static Local<Boolean> New(Isolate* isolate, bool value);
     };
 

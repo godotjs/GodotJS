@@ -7,7 +7,8 @@ namespace v8
     class HeapStatistics
     {
     public:
-        HeapStatistics();
+        HeapStatistics() = default;
+        
         size_t total_heap_size() { return total_heap_size_; }
         size_t total_heap_size_executable() { return total_heap_size_executable_; }
         size_t total_physical_size() { return total_physical_size_; }

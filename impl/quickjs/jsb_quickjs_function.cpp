@@ -65,7 +65,7 @@ namespace v8
         Isolate* isolate = context->isolate_;
 
         JSValue payload[kFuncPayloadNum];
-        payload[kFuncPayloadCallback] = JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, callback);
+        payload[kFuncPayloadCallback] = JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void*) callback);
         payload[kFuncPayloadData] = JS_DupValueRT(isolate->rt(), (JSValue) data);
 
         const JSValue val = JS_NewCFunctionData(isolate->ctx(), _function_call, 0, 0, kFuncPayloadNum, payload);
@@ -73,4 +73,8 @@ namespace v8
         return MaybeLocal<Function>(Data(isolate, stack_pos));
     }
 
+    Local<Context> Function::GetCreationContextChecked() const
+    {
+        return Local<Context>(Data(isolate_, 0));
+    }
 }

@@ -2,6 +2,7 @@
 #define GODOTJS_QUICKJS_FUNCTION_INTEROP_H
 #include "jsb_quickjs_object.h"
 #include "jsb_quickjs_isolate.h"
+#include "modules/GodotJS/impl/quickjs/jsb_quickjs_typedef.h"
 
 namespace v8
 {
@@ -73,7 +74,7 @@ namespace v8
 
         Local<Value> NewTarget() const
         {
-            //TODO how?
+            return Local<Object>(v8::Data(isolate_, stack_pos_ + jsb::impl::FunctionStackBase::NewTarget));
         }
 
         Isolate* GetIsolate() const { return isolate_; }
