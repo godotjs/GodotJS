@@ -207,7 +207,7 @@ namespace v8
         {
             if (!token) return;
 
-            // JSB_LOG(Verbose, "add phantom %s", (uintptr_t) token);
+            // JSB_QUICKJS_LOG(VeryVerbose, "add phantom %s", (uintptr_t) token);
             if (jsb::impl::Phantom* p = phantom_.getptr(token))
             {
                 ++p->watcher_;
@@ -222,7 +222,7 @@ namespace v8
             if (!token) return;
 
             const auto it = phantom_.find(token);
-            // JSB_LOG(Verbose, "remove phantom %s", (uintptr_t) token);
+            // JSB_QUICKJS_LOG(VeryVerbose, "remove phantom %s", (uintptr_t) token);
             if (jsb_ensure(it) && --it->value.watcher_ == 0)
             {
                 phantom_.remove(it);

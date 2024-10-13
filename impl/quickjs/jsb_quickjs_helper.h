@@ -92,7 +92,7 @@ namespace jsb::impl
 #if JSB_WITH_BIGINT
             if (p_val > JSB_MAX_SAFE_INTEGER)
             {
-                JSB_LOG(VeryVerbose, "represented as bigint %d", p_val);
+                JSB_QUICKJS_LOG(VeryVerbose, "represented as bigint %d", p_val);
                 return v8::BigInt::New(isolate, p_val);
             }
 #endif

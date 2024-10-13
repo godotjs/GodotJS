@@ -190,7 +190,7 @@ namespace v8
                     ::String message;
                     ::String stacktrace;
                     try_catch.get_message(&message, &stacktrace);
-                    JSB_LOG(Error, "uncaught exception in pending job: %s\n%s", message, stacktrace);
+                    JSB_QUICKJS_LOG(Error, "uncaught exception in pending job: %s\n%s", message, stacktrace);
                 }
             }
         }

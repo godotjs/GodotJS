@@ -26,7 +26,7 @@ namespace jsb::impl
             const String message = QuickJS::GetString(ctx, err_message);
             const String stack = QuickJS::GetString(ctx, err_stack);
 
-            JSB_LOG(Error, "[%s:%s] %s\nJavascript stack:\n%s", filename, line, message, stack);
+            JSB_QUICKJS_LOG(Error, "[%s:%s] %s\nJavascript stack:\n%s", filename, line, message, stack);
             if (r_message) *r_message = message;
             if (r_stacktrace) *r_stacktrace = stack;
         }

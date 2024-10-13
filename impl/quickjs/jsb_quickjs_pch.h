@@ -7,4 +7,6 @@
 #include <memory>
 #include <cstdint>
 
+#define JSB_QUICKJS_LOG(Severity, Format, ...) JSB_LOG_IMPL(quickjs, Severity, Format, ##__VA_ARGS__)
+
 #endif
