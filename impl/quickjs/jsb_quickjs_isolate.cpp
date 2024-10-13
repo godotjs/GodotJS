@@ -156,7 +156,31 @@ namespace v8
 
     void Isolate::PerformMicrotaskCheckpoint()
     {
-        //TODO
+        JSContext* ctx;
+        HandleScope handle_scope(this);
+
+        while (true)
+        {
+            const int err = JS_ExecutePendingJob(rt_, &ctx);
+            if (err >= 0)
+            {
+                if (JS_IsJobPending(rt_) == 0)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                jsb::impl::TryCatch try_catch(this);
+                if (try_catch.has_caught())
+                {
+                    ::String message;
+                    ::String stacktrace;
+                    try_catch.get_message(&message, &stacktrace);
+                    JSB_LOG(Error, "uncaught exception in pending job: %s\n%s", message, stacktrace);
+                }
+            }
+        }
     }
 
     Local<Context> Isolate::GetCurrentContext()
