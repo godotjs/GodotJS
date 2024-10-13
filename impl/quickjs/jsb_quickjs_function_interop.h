@@ -64,12 +64,12 @@ namespace v8
 
         Local<Object> This() const
         {
-            return Local<Object>(v8::Data(isolate_, stack_pos_ + jsb::impl::FunctionStackBase::ReturnValue));
+            return Local<Object>(v8::Data(isolate_, stack_pos_ + jsb::impl::FunctionStackBase::This));
         }
 
         Local<Value> Data() const
         {
-            return Local<Object>(v8::Data(isolate_, stack_pos_ + jsb::impl::FunctionStackBase::ReturnValue));
+            return Local<Object>(v8::Data(isolate_, stack_pos_ + jsb::impl::FunctionStackBase::Data));
         }
 
         Local<Value> NewTarget() const
