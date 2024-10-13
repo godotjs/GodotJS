@@ -16,6 +16,7 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] Debug with Chrome devtools when using V8
 * [x] REPL in Editor
 * [x] Hot-reloading
+* [x] QuickJS as alternative runtime (experimental, testing)
 * [ ] Asynchronous module loading (`import` function)
 * [ ] Sandboxed scripting (not multi-threading)
 * [ ] Worker threads
