@@ -15,7 +15,7 @@ namespace jsb::impl
 
     void Broker::SetWeak(v8::Isolate* isolate, JSValue value, void* parameter, void* callback)
     {
-        const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(value, v8::Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(value, v8::Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
         jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
         data->weak.parameter = (void*) parameter;

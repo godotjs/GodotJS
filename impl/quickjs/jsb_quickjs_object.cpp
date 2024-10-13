@@ -7,7 +7,8 @@ namespace v8
     int Object::InternalFieldCount() const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        if (!index) return 0;
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_field_count;
     }
@@ -15,7 +16,7 @@ namespace v8
     void Object::SetAlignedPointerInInternalField(int slot, void* value)
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         data->internal_fields[slot] = value;
     }
@@ -23,7 +24,7 @@ namespace v8
     void* Object::GetAlignedPointerFromInternalField(int slot) const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_fields[slot];
     }

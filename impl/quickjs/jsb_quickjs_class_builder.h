@@ -220,17 +220,20 @@ namespace jsb::impl
         template<uint8_t InternalFieldCount>
         static ClassBuilder New(v8::Isolate* isolate, const StringName& name, const v8::FunctionCallback constructor, const uint32_t class_payload)
         {
-            //NOTE do not use HandleScope here, because prototype/constructor Local handles are temporarily saved in member fields of builder.
+            //NOTE do not use HandleScope here, because prototype/constructor Local handles are temporarily saved
+            //     in member fields of builder.
 
             JSContext* ctx = isolate->ctx();
             ClassBuilder builder;
             const String str = name;
             const CharString str8 = str.utf8();
-            const int magic = isolate->add_constructor_data(constructor, class_payload);
 
             builder.isolate_ = isolate;
             builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
-            builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx, (JSCFunction*) &_constructor<InternalFieldCount>, str8.ptr(), /*length*/ 0, JS_CFUNC_constructor_magic, magic))));
+            builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx,
+                (JSCFunction*) &_constructor<InternalFieldCount>, str8.ptr(), /*length*/ 0,
+                JS_CFUNC_constructor_magic,
+                isolate->add_constructor_data(constructor, class_payload)))));
 
             return builder;
         }
@@ -245,6 +248,7 @@ namespace jsb::impl
             return isolate_->GetCurrentContext();
         }
 
+        //NOTE JS_CFUNC_constructor_magic DO NOT support func_data
         template<uint8_t InternalFieldCount>
         static JSValue _constructor(JSContext* ctx, JSValueConst new_target, int argc, JSValueConst* argv, int magic, JSValue* func_data)
         {
@@ -252,29 +256,32 @@ namespace jsb::impl
             v8::HandleScope handle_scope(isolate);
             const jsb::impl::ConstructorData constructor_data = isolate->get_constructor_data(magic);
 
-            v8::FunctionCallbackInfo<v8::Value> info(isolate, argc, true);
-
             const JSValue proto = JS_GetProperty(ctx, new_target, JS_ATOM_prototype);
+            // const JSValue proto = JS_DupValue(ctx, constructor_data.proto);
             jsb_check(!JS_IsException(proto) && JS_IsObject(proto));
             const JSValue this_val = JS_NewObjectProtoClass(ctx, proto, v8::Isolate::get_class_id());
             jsb_check(JS_IsObject(this_val));
             JS_FreeValue(ctx, proto);
 
-            const jsb::internal::Index64 internal_data = isolate->add_internal_data(InternalFieldCount);
+            const jsb::impl::InternalDataID internal_data = isolate->add_internal_data(InternalFieldCount);
             JS_SetOpaque(this_val, (void*) *internal_data);
+
+            v8::FunctionCallbackInfo<v8::Value> info(isolate, argc, true);
 
             // init function stack base
             static_assert(jsb::impl::FunctionStackBase::ReturnValue == 0);
-            isolate->push_copy(JS_UNDEFINED);
+            const uint16_t stack_check1 = isolate->push_copy(JS_UNDEFINED);
 
             static_assert(jsb::impl::FunctionStackBase::This == 1);
-            isolate->push_copy(this_val);
+            const uint16_t stack_this = isolate->push_copy(this_val);
 
             static_assert(jsb::impl::FunctionStackBase::Data == 2);
             isolate->push_steal(JS_NewUint32(ctx, constructor_data.data));
 
             static_assert(jsb::impl::FunctionStackBase::NewTarget == 3);
-            isolate->push_copy(new_target);
+            const uint16_t stack_check2 = isolate->push_copy(new_target);
+
+            jsb_check(stack_check2 - stack_check1 == FunctionStackBase::Num - 1);
 
             constructor_data.callback(info);
 

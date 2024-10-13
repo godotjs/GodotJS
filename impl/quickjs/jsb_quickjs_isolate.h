@@ -24,8 +24,11 @@ namespace jsb::impl
         void* internal_fields[2] = { nullptr, nullptr };
     };
 
-    typedef internal::SArray<InternalData>::Pointer InternalDataPtr;
-    typedef internal::SArray<InternalData>::ConstPointer InternalDataConstPtr;
+    static_assert(sizeof(uintptr_t) == sizeof(internal::Index64), "quickjs.impl does not support 32-bit arch");
+    typedef internal::Index64 InternalDataID;
+
+    typedef internal::SArray<InternalData, InternalDataID>::Pointer InternalDataPtr;
+    typedef internal::SArray<InternalData, InternalDataID>::ConstPointer InternalDataConstPtr;
 
     struct ConstructorData
     {
@@ -126,17 +129,17 @@ namespace v8
             JS_FreeValue(ctx_, error);
         }
 
-        jsb::impl::InternalDataConstPtr get_internal_data(const jsb::internal::Index64 index) const
+        jsb::impl::InternalDataConstPtr get_internal_data(const jsb::impl::InternalDataID index) const
         {
             return internal_data_.get_value_scoped(index);
         }
 
-        jsb::impl::InternalDataPtr get_internal_data(const jsb::internal::Index64 index)
+        jsb::impl::InternalDataPtr get_internal_data(const jsb::impl::InternalDataID index)
         {
             return internal_data_.get_value_scoped(index);
         }
 
-        jsb::internal::Index64 add_internal_data(const uint8_t internal_field_count)
+        jsb::impl::InternalDataID add_internal_data(const uint8_t internal_field_count)
         {
             return internal_data_.add(jsb::impl::InternalData {  { nullptr, nullptr }, internal_field_count, { nullptr, nullptr }});
         }
@@ -186,8 +189,15 @@ namespace v8
 
         bool try_catch();
 
-        int add_constructor_data(FunctionCallback callback, uint32_t data) { return (int) *constructor_data_.add({ callback, data }); }
-        jsb::impl::ConstructorData get_constructor_data(const int index) const { return constructor_data_.get_value((jsb::internal::Index32)(uint32_t) index); }
+        // they won't be deleted until the Isolate disposed
+        int add_constructor_data(FunctionCallback callback, uint32_t data)
+        {
+            return (int) *constructor_data_.add({ callback, data });
+        }
+        jsb::impl::ConstructorData get_constructor_data(const int index) const
+        {
+            return constructor_data_.get_value((jsb::internal::Index32)(uint32_t) index);
+        }
 
         ~Isolate();
 
@@ -247,7 +257,7 @@ namespace v8
 
         PromiseRejectCallback promise_reject_;
 
-        jsb::internal::SArray<jsb::impl::InternalData> internal_data_;
+        jsb::internal::SArray<jsb::impl::InternalData, jsb::impl::InternalDataID> internal_data_;
         jsb::internal::SArray<jsb::impl::ConstructorData, jsb::internal::Index32> constructor_data_;
         HashMap<void*, jsb::impl::Phantom> phantom_;
 

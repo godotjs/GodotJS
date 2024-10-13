@@ -403,8 +403,8 @@ namespace jsb
         handle.class_id = p_class_id;
         handle.pointer = p_pointer;
 
-        // must not be a valuetype object
-        jsb_check(native_classes_.get_value(p_class_id).type != NativeClassType::GodotPrimitive);
+        // must not be a valuetype object (v8 only)
+        jsb_v8_check(native_classes_.get_value(p_class_id).type != NativeClassType::GodotPrimitive);
         handle.ref_.Reset(isolate_, p_object);
         if (p_policy == EBindingPolicy::Managed)
         {

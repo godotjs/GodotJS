@@ -46,6 +46,15 @@
 #   define jsb_quickjs_checkf(Condition, Format, ...) (void) 0
 #endif
 
+// only check if compiling with v8 impl
+#if JSB_WITH_V8
+#   define jsb_v8_check(Condition) jsb_check(Condition)
+#   define jsb_v8_checkf(Condition, Format, ...) jsb_checkf(Condition, Format, ...)
+#else
+#   define jsb_v8_check(Condition) (void) 0
+#   define jsb_v8_checkf(Condition, Format, ...) (void) 0
+#endif
+
 // jsb_ensure() is always evaluated, but only trap the execution if JSB_DEBUG
 #if JSB_DEBUG
 #   define jsb_ensure(Condition) (jsb_likely(Condition) || ([] { GENERATE_TRAP(); } (), false))

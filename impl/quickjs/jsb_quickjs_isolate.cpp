@@ -1,6 +1,9 @@
 ﻿#include "jsb_quickjs_isolate.h"
+
+#include "jsb_quickjs_catch.h"
 #include "jsb_quickjs_handle.h"
 #include "jsb_quickjs_context.h"
+#include "jsb_quickjs_statistics.h"
 
 namespace v8
 {
@@ -94,6 +97,14 @@ namespace v8
             JS_FreeValue(ctx_, stack_[i]);
         }
 
+        // while (constructor_data_.size() > 0)
+        // {
+        //     const jsb::internal::Index32 first = constructor_data_.get_first_index();
+        //     const jsb::impl::ConstructorData data = constructor_data_.get_value(first);
+        //     JS_FreeValueRT(rt_, data.proto);
+        //     constructor_data_.remove_at_checked(first);
+        // }
+
         // dispose
         JS_FreeContext(ctx_);
         ctx_ = nullptr;
@@ -137,21 +148,23 @@ namespace v8
     void Isolate::_finalizer(JSRuntime* rt, JSValue val)
     {
         Isolate* isolate = (Isolate*) JS_GetRuntimeOpaque(rt);
-        const jsb::internal::Index64 index = (jsb::internal::Index64)(uintptr_t) JS_GetOpaque(val, get_class_id());
-        const jsb::impl::InternalDataPtr data =  isolate->get_internal_data(index);
-        if (data->weak.callback)
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, get_class_id());
         {
-            const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback;
-            const WeakCallbackInfo<void> info(isolate, data->weak.parameter);
-            callback(info);
-
-            isolate->internal_data_.remove_at_checked(index);
+            if (const jsb::impl::InternalDataPtr data =  isolate->get_internal_data(index); data->weak.callback)
+            {
+                const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback;
+                const WeakCallbackInfo<void> info(isolate, data->weak.parameter);
+                callback(info);
+            }
         }
+        isolate->internal_data_.remove_at(index);
     }
 
     void Isolate::GetHeapStatistics(HeapStatistics* statistics)
     {
-        //TODO
+        memset(statistics, 0, sizeof(HeapStatistics));
+
+        //TODO fill out available heap info
     }
 
     void Isolate::PerformMicrotaskCheckpoint()
