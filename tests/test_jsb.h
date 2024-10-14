@@ -3,11 +3,11 @@
 
 #include "tests/test_macros.h"
 #include "jsb_test_helpers.h"
-#include "../impl/quickjs/jsb_quickjs.h"
 
 namespace jsb::tests
 {
-    struct StubFunctions
+#if JSB_WITH_QUICKJS
+    struct QuickJS
     {
         static JSValue magic_call(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic)
         {
@@ -16,13 +16,13 @@ namespace jsb::tests
         }
     };
 
-    TEST_CASE("[jsb] quickjs")
+    TEST_CASE("[jsb] quickjs.minimal")
     {
         JSRuntime* rt = JS_NewRuntime();
         JSContext* ctx = JS_NewContext(rt);
         {
             const JSValue this_obj = JS_NewObject(ctx);
-            const JSValue func = JS_NewCFunctionMagic(ctx, StubFunctions::magic_call, "magic_call", 0, JS_CFUNC_generic_magic, 1);
+            const JSValue func = JS_NewCFunctionMagic(ctx, QuickJS::magic_call, "magic_call", 0, JS_CFUNC_generic_magic, 1);
             const JSAtom prop = JS_NewAtom(ctx, "prop");
 
             CHECK(JS_IsFunction(ctx, func));
@@ -40,8 +40,9 @@ namespace jsb::tests
         JS_FreeContext(ctx);
         JS_FreeRuntime(rt);
     }
+#endif
 
-    TEST_CASE("[jsb] quickjs.impl")
+    TEST_CASE("[jsb] Node new/free")
     {
         GodotJSScriptLanguageIniter initer;
 
