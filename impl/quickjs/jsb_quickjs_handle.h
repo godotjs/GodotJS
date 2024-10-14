@@ -126,6 +126,7 @@ namespace v8
     {
         enum WeakType { kStrong, kWeak, kWeakCallback, };
 
+        // clear all fields silently after moved
         void _clear()
         {
             isolate_ = nullptr;
@@ -182,6 +183,7 @@ namespace v8
             }
 
             jsb::impl::Broker::remove_phantom(isolate_, shadow_);
+            jsb::impl::Broker::_remove_reference(isolate_);
             isolate_ = nullptr;
             shadow_ = nullptr;
             value_ = JS_UNDEFINED;
@@ -192,7 +194,11 @@ namespace v8
         {
             Reset();
 
+            jsb_check(isolate);
             isolate_ = isolate;
+
+            // ensure the runtime alive
+            jsb::impl::Broker::_add_reference(isolate_);
             if (!value.IsEmpty())
             {
                 value_ = jsb::impl::Broker::stack_dup(isolate_, value.data_.stack_pos_);

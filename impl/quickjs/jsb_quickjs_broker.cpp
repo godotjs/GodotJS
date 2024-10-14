@@ -52,4 +52,14 @@ namespace jsb::impl
         return isolate->is_phantom_alive(token);
     }
 
+    void Broker::_add_reference(v8::Isolate* isolate)
+    {
+        isolate->_add_reference();;
+    }
+
+    void Broker::_remove_reference(v8::Isolate* isolate)
+    {
+        isolate->_remove_reference();;
+    }
+
 }

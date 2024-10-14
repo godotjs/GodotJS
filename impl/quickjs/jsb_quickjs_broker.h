@@ -29,6 +29,9 @@ namespace jsb::impl
         static JSValue stack_dup(v8::Isolate* isolate, uint16_t index);
 
         static uint16_t push_copy(v8::Isolate* isolate, JSValueConst value);
+
+        static void _add_reference(v8::Isolate* isolate);
+        static void _remove_reference(v8::Isolate* isolate);
     };
 }
 #endif

@@ -243,14 +243,20 @@ namespace v8
             }
         }
 
+        void _add_reference();
+        void _remove_reference();
+
     private:
         Isolate();
 
+        void _release();
         uint16_t emplace_(JSValue value);
 
         static void _finalizer(JSRuntime* rt, JSValue val);
         static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
 
+        uint32_t ref_count_;
+        bool diposed_;
         JSRuntime* rt_;
         JSContext* ctx_;
         HandleScope* handle_scope_;

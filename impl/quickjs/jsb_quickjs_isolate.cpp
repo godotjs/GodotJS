@@ -45,7 +45,7 @@ namespace v8
         return isolate;
     }
 
-    Isolate::Isolate() : handle_scope_(nullptr), stack_pos_(0)
+    Isolate::Isolate() : ref_count_(1), diposed_(false), handle_scope_(nullptr), stack_pos_(0)
     {
         const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
         rt_ = JS_NewRuntime2(&mf, this);
@@ -85,9 +85,27 @@ namespace v8
         jsb_check(!rt_);
     }
 
-    void Isolate::Dispose()
+    void Isolate::_add_reference()
     {
-        jsb_check(rt_);
+        jsb_check(ref_count_ > 0);
+        ++ref_count_;
+        JSB_QUICKJS_LOG(VeryVerbose, "_add_reference %s", ref_count_);
+    }
+
+    void Isolate::_remove_reference()
+    {
+        jsb_check(ref_count_ > 0);
+        if (--ref_count_ == 0)
+        {
+            _release();
+        }
+        JSB_QUICKJS_LOG(VeryVerbose, "_remove_reference %s", ref_count_);
+    }
+
+
+    void Isolate::_release()
+    {
+        JSB_QUICKJS_LOG(VeryVerbose, "release quickjs runtime");
 
         // cleanup
         jsb_check(!handle_scope_);
@@ -112,6 +130,13 @@ namespace v8
         rt_ = nullptr;
 
         memdelete(this);
+    }
+
+    void Isolate::Dispose()
+    {
+        jsb_check(!diposed_);
+        diposed_ = true;
+        _remove_reference();
     }
 
     void Isolate::SetData(int index, void* data)
