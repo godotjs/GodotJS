@@ -12,6 +12,10 @@
 #include "weaver-editor/jsb_export_plugin.h"
 #endif
 
+#ifdef TESTS_ENABLED
+#include "tests/test_quickjs.h"
+#endif
+
 Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
 Ref<ResourceFormatSaverGodotJSScript> resource_saver_js;
 
@@ -63,3 +67,13 @@ void jsb_uninitialize_module(ModuleInitializationLevel p_level)
         memdelete(script_language_js);
     }
 }
+
+#ifdef TESTS_ENABLED
+void test_quickjs_basic()
+{
+    jsb::tests::test_quickjs_basic();
+}
+
+REGISTER_TEST_COMMAND("jsb-quickjs-basic", &test_quickjs_basic);
+
+#endif

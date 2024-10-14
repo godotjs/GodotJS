@@ -15,8 +15,8 @@ namespace jsb::impl
     public:
         static void SetWeak(v8::Isolate* isolate, JSValue value, void* parameter, void* callback);
 
-        static JSRuntime* GetRuntime(v8::Isolate* isolate);
-        static JSContext* GetContext(v8::Isolate* isolate);
+        static JSValue _dup(v8::Isolate* isolate, JSValueConst value);
+        static void _free(v8::Isolate* isolate, JSValueConst value);
 
         static void add_phantom(v8::Isolate* isolate, void* token);
         static void remove_phantom(v8::Isolate* isolate, void* token);

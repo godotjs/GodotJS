@@ -118,21 +118,21 @@ namespace jsb
             v8::Local<v8::Object> console_obj = v8::Object::New(isolate);
 
             self->Set(context, impl::Helper::new_string_ascii(isolate, "console"), console_obj).Check();
-            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "log"), v8::Function::New(context, _print<internal::ELogSeverity::Log>).ToLocalChecked()).Check();
-            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "info"), v8::Function::New(context, _print<internal::ELogSeverity::Info>).ToLocalChecked()).Check();
-            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "debug"), v8::Function::New(context, _print<internal::ELogSeverity::Debug>).ToLocalChecked()).Check();
-            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "warn"), v8::Function::New(context, _print<internal::ELogSeverity::Warning>).ToLocalChecked()).Check();
-            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "error"), v8::Function::New(context, _print<internal::ELogSeverity::Error>).ToLocalChecked()).Check();
-            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "assert"), v8::Function::New(context, _print<internal::ELogSeverity::Assert>).ToLocalChecked()).Check();
-            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "trace"), v8::Function::New(context, _print<internal::ELogSeverity::Trace>).ToLocalChecked()).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "log"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Log>, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "info"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Info>, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "debug"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Debug>, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "warn"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Warning>, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "error"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Error>, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "assert"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Assert>, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "trace"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Trace>, {})).Check();
         }
 
         // the root 'require' function
         {
             Environment* env = Environment::wrap(context);
-            v8::Local<v8::Function> require_func = v8::Function::New(context, _require).ToLocalChecked();
+            v8::Local<v8::Function> require_func = JSB_NEW_FUNCTION(context, _require, {});
             self->Set(context, impl::Helper::new_string_ascii(isolate, "require"), require_func).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "define"), v8::Function::New(context, _define).ToLocalChecked()).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "define"), JSB_NEW_FUNCTION(context, _define, {})).Check();
             require_func->Set(context, impl::Helper::new_string_ascii(isolate, "cache"), env->get_module_cache().unwrap(isolate)).Check();
             require_func->Set(context, impl::Helper::new_string_ascii(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
         }
@@ -143,10 +143,10 @@ namespace jsb
 
         // essential timer support
         {
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setInterval"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Interval)).ToLocalChecked()).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setTimeout"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout)).ToLocalChecked()).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setImmediate"), v8::Function::New(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate)).ToLocalChecked()).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "clearInterval"), v8::Function::New(context, _clear_timer).ToLocalChecked()).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "setInterval"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Interval))).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "setTimeout"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout))).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "setImmediate"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate))).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "clearInterval"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
         }
     }
 

@@ -12,6 +12,26 @@ namespace jsb::impl
     class QuickJS
     {
     public:
+        struct Atom
+        {
+        private:
+            JSContext* ctx_;
+            JSAtom atom_;
+
+        public:
+            Atom(JSContext* ctx, JSValueConst value)
+                : ctx_(ctx), atom_(JS_ValueToAtom(ctx, value))
+            {
+            }
+
+            ~Atom()
+            {
+                JS_FreeAtom(ctx_, atom_);
+            }
+
+            operator JSAtom() const { return atom_; }
+        };
+
         static bool IsNullish(JSValueConst value)
         {
             return JS_IsNull(value) || JS_IsUndefined(value);
@@ -33,6 +53,13 @@ namespace jsb::impl
             //TODO unsafe eq check
             if (a.u.ptr != b.u.ptr) return false;
             return true;
+        }
+
+        static int _RefCount(JSValueConst value)
+        {
+            if (!JS_VALUE_HAS_REF_COUNT(value)) return 0;
+            const JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(value);
+            return p ? p->ref_count : 0;
         }
     };
 }

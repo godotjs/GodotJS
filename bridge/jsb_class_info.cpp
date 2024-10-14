@@ -159,7 +159,7 @@ namespace jsb
 
                     // instantiate a fake Signal property
                     const StringNameID string_id = environment->get_string_name_cache().get_string_id(signal);
-                    v8::Local<v8::Function> signal_func = v8::Function::New(p_context, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, *string_id)).ToLocalChecked();
+                    v8::Local<v8::Function> signal_func = JSB_NEW_FUNCTION(p_context, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, *string_id));
                     prototype->SetAccessorProperty(element.As<v8::Name>(), signal_func);
                     JSB_LOG(VeryVerbose, "... signal %s (%d)", signal, string_id);
                 }

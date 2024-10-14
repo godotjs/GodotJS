@@ -37,7 +37,7 @@ namespace jsb::impl
         JS_FreeValue(ctx, err_stack);
 
         // reset current exception
-        isolate_->stack_copy(StackPos::Exception, StackPos::Null);
+        isolate_->set_stack_copy(StackPos::Exception, StackPos::Null);
     }
 
 

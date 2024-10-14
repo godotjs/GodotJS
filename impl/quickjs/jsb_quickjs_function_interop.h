@@ -22,10 +22,10 @@ namespace v8
         {
             if (value.IsEmpty())
             {
-                data_.isolate_->stack_copy(data_.stack_pos_, jsb::impl::StackPos::Undefined);
+                data_.isolate_->set_stack_copy(data_.stack_pos_, jsb::impl::StackPos::Undefined);
                 return;
             }
-            data_.isolate_->stack_copy(data_.stack_pos_, value->stack_pos_);
+            data_.isolate_->set_stack_copy(data_.stack_pos_, value->stack_pos_);
         }
 
         template <typename S>
@@ -33,7 +33,7 @@ namespace v8
         {
             if (value.IsEmpty())
             {
-                data_.isolate_->stack_copy(data_.stack_pos_, jsb::impl::StackPos::Undefined);
+                data_.isolate_->set_stack_copy(data_.stack_pos_, jsb::impl::StackPos::Undefined);
                 return;
             }
             Set(value.Get(data_.isolate_));
@@ -41,7 +41,7 @@ namespace v8
 
         void Set(int32_t value) const
         {
-            data_.isolate_->push_steal(JS_NewInt32(data_.isolate_->ctx(), value));
+            data_.isolate_->set_stack_steal(data_.stack_pos_, JS_NewInt32(data_.isolate_->ctx(), value));
         }
 
     private:

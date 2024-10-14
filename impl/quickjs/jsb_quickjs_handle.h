@@ -179,11 +179,12 @@ namespace v8
             if (weak_type_ == WeakType::kStrong)
             {
                 jsb_check(is_alive());
-                JS_FreeValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
+                jsb::impl::Broker::_free(isolate_, value_);
             }
 
             jsb::impl::Broker::remove_phantom(isolate_, shadow_);
             jsb::impl::Broker::_remove_reference(isolate_);
+
             isolate_ = nullptr;
             shadow_ = nullptr;
             value_ = JS_UNDEFINED;
@@ -199,6 +200,7 @@ namespace v8
 
             // ensure the runtime alive
             jsb::impl::Broker::_add_reference(isolate_);
+
             if (!value.IsEmpty())
             {
                 value_ = jsb::impl::Broker::stack_dup(isolate_, value.data_.stack_pos_);
@@ -223,24 +225,26 @@ namespace v8
                 jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
             }
             weak_type_ = WeakType::kStrong;
-            JS_DupValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
+            jsb::impl::Broker::_dup(isolate_, value_);
         }
 
         // ClearWeak() before SetWeak() if SetWeak(parameter) called priorly
         void SetWeak()
         {
             jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
+
             weak_type_ = WeakType::kWeak;
-            JS_FreeValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
+            jsb::impl::Broker::_free(isolate_, value_);
         }
 
         template<typename S>
         void SetWeak(S* parameter, typename WeakCallbackInfo<S>::Callback callback, v8::WeakCallbackType type)
         {
             jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
+
             jsb::impl::Broker::SetWeak(isolate_, value_, parameter, (void*) callback);
             weak_type_ = WeakType::kWeakCallback;
-            JS_FreeValueRT(jsb::impl::Broker::GetRuntime(isolate_), value_);
+            jsb::impl::Broker::_free(isolate_, value_);
         }
 
         bool IsEmpty() const { return !isolate_; }
@@ -277,8 +281,9 @@ namespace v8
         // JSObject pointer shadow
         void* shadow_ = nullptr;
 
-        // a shadow copy of object without reference control
-        JSValue value_;
+        // a shadow copy of object without reference control.
+        // only valid if is_alive() returns true.
+        JSValue value_ = JS_UNDEFINED;
 
         WeakType weak_type_ = WeakType::kStrong;
     };

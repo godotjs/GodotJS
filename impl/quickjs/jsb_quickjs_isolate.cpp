@@ -16,6 +16,12 @@ namespace v8
             return val;
         }
 
+        jsb_force_inline int verified(const int val)
+        {
+            jsb_check(val != -1);
+            return val;
+        }
+
         void* js_malloc(JSMallocState* s, size_t size)
         {
             return memalloc(size);
@@ -76,7 +82,7 @@ namespace v8
         class_def.gc_mark = nullptr;
         class_def.call = nullptr;
 
-        JS_NewClass(rt_, get_class_id(), &class_def);
+        details::verified(JS_NewClass(rt_, get_class_id(), &class_def));
         JS_FreeValue(ctx_, global);
     }
 
@@ -109,21 +115,14 @@ namespace v8
 
         // cleanup
         jsb_check(!handle_scope_);
+        jsb_check(phantom_.is_empty());
         jsb_check(stack_pos_ == jsb::impl::StackPos::Num);
         for (int i = 0; i < jsb::impl::StackPos::Num; ++i)
         {
             JS_FreeValue(ctx_, stack_[i]);
         }
 
-        // while (constructor_data_.size() > 0)
-        // {
-        //     const jsb::internal::Index32 first = constructor_data_.get_first_index();
-        //     const jsb::impl::ConstructorData data = constructor_data_.get_value(first);
-        //     JS_FreeValueRT(rt_, data.proto);
-        //     constructor_data_.remove_at_checked(first);
-        // }
-
-        // dispose
+        // dispose the runtime
         JS_FreeContext(ctx_);
         ctx_ = nullptr;
         JS_FreeRuntime(rt_);
@@ -159,15 +158,6 @@ namespace v8
         const JSValue sym = details::verified(JS_CallConstructor(ctx_, details::verified(ctor), 0, nullptr));
         JS_FreeValue(ctx_, ctor);
         return push_steal(details::verified(sym));
-    }
-
-    uint16_t Isolate::emplace_(JSValue value)
-    {
-        jsb_check(stack_pos_ < jsb::impl::kMaxStackSize);
-
-        const uint16_t pos = stack_pos_++;
-        stack_[pos] = value;
-        return pos;
     }
 
     void Isolate::_finalizer(JSRuntime* rt, JSValue val)
@@ -250,6 +240,16 @@ namespace v8
         jsb_check(JS_IsNull(last));
         stack_[jsb::impl::StackPos::Exception] = ex;
         return !JS_IsNull(ex);
+    }
+
+    void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type)
+    {
+        JS_RunGC(rt_);
+    }
+
+    void Isolate::LowMemoryNotification()
+    {
+        JS_RunGC(rt_);
     }
 
 }

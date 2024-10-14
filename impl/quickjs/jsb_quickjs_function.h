@@ -3,10 +3,23 @@
 #include "jsb_quickjs_object.h"
 #include "jsb_quickjs_function_interop.h"
 
+namespace jsb::impl
+{
+    namespace FuncPayload
+    {
+        enum { kCallback, kData, kNum, };
+    }
+
+    class Helper;
+}
+
 namespace v8
 {
     class Function : public Object
     {
+        friend class jsb::impl::Helper;
+        friend class FunctionTemplate;
+
     public:
         MaybeLocal<Value> Call(
             Local<Context> context,

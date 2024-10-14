@@ -13,6 +13,11 @@ namespace jsb::impl
     public:
         Helper() = delete;
 
+        static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
+        {
+            return v8::Function::New(context, callback, data).ToLocalChecked();
+        }
+
         // with side effects (may trigger value evaluation).
         // any decoding error will be ignored.
         jsb_force_inline static String to_string_opt(v8::Isolate* isolate, const v8::MaybeLocal<v8::Value>& p_val)

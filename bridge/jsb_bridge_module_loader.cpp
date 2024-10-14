@@ -414,8 +414,8 @@ namespace jsb
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_MAJOR"), v8::Int32::New(isolate, VERSION_MAJOR)).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_MINOR"), v8::Int32::New(isolate, VERSION_MINOR)).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_PATCH"), v8::Int32::New(isolate, VERSION_PATCH)).Check();
-            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "callable"), v8::Function::New(context, _new_callable).ToLocalChecked()).Check();
-            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "to_array_buffer"), v8::Function::New(context, _to_array_buffer).ToLocalChecked()).Check();
+            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "callable"), JSB_NEW_FUNCTION(context, _new_callable, {})).Check();
+            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "to_array_buffer"), JSB_NEW_FUNCTION(context, _to_array_buffer, {})).Check();
 
             // jsb.internal
             {
@@ -423,17 +423,17 @@ namespace jsb
 
                 jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "internal"), internal_obj).Check();
 
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "find_module"), v8::Function::New(context, _find_module).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_module"), v8::Function::New(context, _add_module).ToLocalChecked()).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "find_module"), JSB_NEW_FUNCTION(context, _find_module, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_module"), JSB_NEW_FUNCTION(context, _add_module, {})).Check();
 
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_signal"), v8::Function::New(context, _add_script_signal).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_property"), v8::Function::New(context, _add_script_property).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_ready"), v8::Function::New(context, _add_script_ready).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_tool"), v8::Function::New(context, _add_script_tool).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_icon"), v8::Function::New(context, _add_script_icon).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "set_script_doc"), v8::Function::New(context, _set_script_doc).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "notify_microtasks_run"), v8::Function::New(context, _notify_microtasks_run).ToLocalChecked()).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_type_name"), v8::Function::New(context, _get_type_name).ToLocalChecked()).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_signal"), JSB_NEW_FUNCTION(context, _add_script_signal, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_property"), JSB_NEW_FUNCTION(context, _add_script_property, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_ready"), JSB_NEW_FUNCTION(context, _add_script_ready, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_tool"), JSB_NEW_FUNCTION(context, _add_script_tool, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_icon"), JSB_NEW_FUNCTION(context, _add_script_icon, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "set_script_doc"), JSB_NEW_FUNCTION(context, _set_script_doc, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "notify_microtasks_run"), JSB_NEW_FUNCTION(context, _notify_microtasks_run, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_type_name"), JSB_NEW_FUNCTION(context, _get_type_name, {})).Check();
             }
 
             // internal 'jsb.editor'

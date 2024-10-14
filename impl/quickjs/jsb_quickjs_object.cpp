@@ -57,9 +57,10 @@ namespace v8
     {
         const JSValue self = isolate_->stack_val(stack_pos_);
         JSContext* ctx = isolate_->ctx();
-        const JSAtom index = JS_ValueToAtom(ctx, (JSValue) key);
+
+        const jsb::impl::QuickJS::Atom index(ctx, (JSValue) key);
         const int res = JS_SetProperty(ctx, self, index, JS_DupValue(ctx, (JSValue) value));
-        JS_FreeAtom(ctx, index);
+
         if (res == -1)
         {
             return Maybe<bool>();
@@ -71,9 +72,10 @@ namespace v8
     {
         const JSValue self = isolate_->stack_val(stack_pos_);
         JSContext* ctx = isolate_->ctx();
-        const JSAtom index = JS_ValueToAtom(ctx, (JSValue) key);
+
+        const jsb::impl::QuickJS::Atom index(ctx, (JSValue) key);
         const JSValue val = JS_GetProperty(ctx, self, index);
-        JS_FreeAtom(ctx, index);
+
         if (JS_IsException(val))
         {
             return MaybeLocal<Value>();
@@ -85,9 +87,9 @@ namespace v8
     {
         //TODO unsure
         JSContext* ctx = isolate_->ctx();
-        const JSAtom prop = JS_ValueToAtom(ctx, (JSValue) key);
+        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
         const int res = JS_GetOwnProperty(ctx, nullptr, (JSValue) *this, prop);
-        JS_FreeAtom(ctx, prop);
+
         if (res == -1)
         {
             return Maybe<bool>();
@@ -138,11 +140,12 @@ namespace v8
     MaybeLocal<Value> Object::GetOwnPropertyDescriptor(Local<Context> context, Local<Name> key) const
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue self = (JSValue) *this;
-        const JSAtom prop = JS_ValueToAtom(ctx, (JSValue) key);
         JSPropertyDescriptor desc;
+
+        const JSValue self = (JSValue) *this;
+        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
         const int res = JS_GetOwnProperty(ctx, &desc, self, prop);
-        JS_FreeAtom(ctx, prop);
+
         if (res == -1)
         {
             return MaybeLocal<Value>();
@@ -178,16 +181,20 @@ namespace v8
             const Local<Name> prop_v(Data(isolate, isolate->push_copy(func_data[0])));
 
             getter(prop_v, info);
+
+            // we need a duplicated value for returning
+            // dup value here because the stack value will become invalid after leaving the handle scope
             rvo = JS_DupValue(isolate->ctx(), isolate->stack_val(rvo_pos));
             jsb_check(!JS_IsException(rvo));
         }
 
         // overwrite the current lazy getter with rvo
         {
-            const JSAtom prop = JS_ValueToAtom(ctx, func_data[0]);
+            const jsb::impl::QuickJS::Atom prop(ctx, func_data[0]);
             constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_VALUE;
-            JS_DefineProperty(ctx, this_val, prop, JS_DupValue(ctx, rvo), JS_UNDEFINED, JS_UNDEFINED, flags);
-            JS_FreeAtom(ctx, prop);
+
+            //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+            JS_DefineProperty(ctx, this_val, prop, rvo, JS_UNDEFINED, JS_UNDEFINED, flags);
         }
 
         return rvo;
@@ -197,13 +204,15 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
         const JSValue this_obj = (JSValue) *this;
-        const JSAtom prop = JS_ValueToAtom(ctx, (JSValue) name);
         constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_GET;
         JSValue lazy_data[] = { JS_DupValue(ctx, (JSValue) name), JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void *) getter) };
-        const JSValue lazy = JS_NewCFunctionData(ctx, _lazy, 0, 0, ::std::size(lazy_data), lazy_data);
+        const JSValue lazy = JS_NewCFunctionData(ctx, _lazy, /* length */ 0, /* magic */ 0, ::std::size(lazy_data), lazy_data);
 
+        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) name);
         const int res = JS_DefineProperty(ctx, this_obj, prop, JS_UNDEFINED, lazy, JS_UNDEFINED, flags);
-        JS_FreeAtom(ctx, prop);
+
+        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+        JS_FreeValue(ctx, lazy);
 
         if (res != -1) return Maybe<bool>(!!res);
         return Maybe<bool>();
@@ -213,15 +222,15 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
         const JSValue this_obj = (JSValue) *this;
-        const JSAtom prop = JS_ValueToAtom(ctx, (JSValue) key);
         const JSValue val = (JSValue) value;
         int flags = JS_PROP_HAS_VALUE;
         if ((attributes & DontEnum) == 0) flags |= JS_PROP_HAS_ENUMERABLE;
         if ((attributes & ReadOnly) == 0) flags |= JS_PROP_HAS_WRITABLE;
         if ((attributes & DontDelete) == 0) flags |= JS_PROP_HAS_CONFIGURABLE;
 
+        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
+        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         const int res = JS_DefineProperty(ctx, this_obj, prop, val, JS_UNDEFINED, JS_UNDEFINED, flags);
-        JS_FreeAtom(ctx, prop);
 
         if (res != -1) return Maybe<bool>(!!res);
         return Maybe<bool>();
@@ -231,18 +240,20 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
         const JSValue this_obj = (JSValue) *this;
-        const JSAtom prop = JS_ValueToAtom(ctx, (JSValue) name);
         int flags = JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_CONFIGURABLE; //TODO consider remove 'configurable' flags
         if (!getter.IsEmpty()) flags |= JS_PROP_HAS_GET;
         if (!setter.IsEmpty()) flags |= JS_PROP_HAS_SET | JS_PROP_HAS_WRITABLE;
 
-        const int res = JS_DefineProperty(ctx, this_obj, prop, JS_UNDEFINED, JS_DupValue(ctx, (JSValue) getter), JS_DupValue(ctx, (JSValue) setter), flags);
-        JS_FreeAtom(ctx, prop);
+        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) name);
+        const int res = JS_DefineProperty(ctx, this_obj, prop,
+            JS_UNDEFINED,
+            (JSValue) getter, //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+            (JSValue) setter,
+            flags);
 
         jsb_check(res >= 0);
     }
 
-    // key_conversion is not available in quickjs.impl
     MaybeLocal<Array> Object::GetOwnPropertyNames(Local<Context> context, PropertyFilter filter, KeyConversionMode key_conversion)
     {
         JSContext* ctx = isolate_->ctx();
@@ -252,6 +263,9 @@ namespace v8
         int flags = JS_GPN_ENUM_ONLY;
         if ((filter & SKIP_STRINGS) == 0) flags |= JS_GPN_STRING_MASK;
         if ((filter & SKIP_SYMBOLS) == 0) flags |= JS_GPN_SYMBOL_MASK;
+
+        // key_conversion is not available in quickjs.impl
+        jsb_check(key_conversion == v8::KeyConversionMode::kNoNumbers);
 
         if (JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) *this, flags) < 0)
         {

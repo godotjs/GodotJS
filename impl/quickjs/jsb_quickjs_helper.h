@@ -3,12 +3,52 @@
 #include "jsb_quickjs_pch.h"
 #include "jsb_quickjs_isolate.h"
 #include "jsb_quickjs_primitive.h"
+#include "jsb_quickjs_function.h"
 
 namespace jsb::impl
 {
     class Helper
     {
     public:
+        static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
+        {
+            // const v8::Local<v8::Function> func = v8::Function::New(context, callback, data).ToLocalChecked();
+            v8::Isolate* isolate = context->isolate_;
+            JSValue payload[] = {
+                /* kFuncPayloadCallback */ JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void*) callback),
+                /* kFuncPayloadData*/ isolate->stack_dup(data->stack_pos_),
+            };
+
+            static_assert(sizeof(callback) == sizeof(void*));
+            static_assert(jsb::impl::FuncPayload::kNum == ::std::size(payload));
+            const JSValue func_obj = JS_NewCFunctionData(isolate->ctx(),
+                v8::Function::_function_call,
+                /* length */ 0,
+                /* magic */ 0,
+                ::std::size(payload), payload);
+#if JSB_DEBUG
+            JSContext* ctx = context->GetIsolate()->ctx();
+            jsb_check(JS_IsFunction(ctx, func_obj));
+            jsb_ensure(JS_DefinePropertyValue(ctx, func_obj, JS_ATOM_name, JS_NewString(ctx, name), JS_PROP_CONFIGURABLE) == 1);
+#endif
+            const v8::Local<v8::Function> func = v8::Local<v8::Function>(v8::Data(isolate, isolate->push_steal(func_obj)));
+            return func;
+        }
+
+        static v8::Local<v8::FunctionTemplate> NewFunctionTemplate(v8::Isolate* isolate, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
+        {
+            return NewFunction(isolate->GetCurrentContext(), name, callback, data).As<v8::Function>();
+        }
+
+        static v8::Local<v8::FunctionTemplate> NewFunctionTemplate(v8::Isolate* isolate, const ::String& name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
+        {
+#if JSB_DEBUG
+            const CharString str8 = name.utf8();
+            return NewFunction(isolate->GetCurrentContext(), str8.ptr(), callback, data).As<v8::Function>();
+#else
+            return NewFunction(isolate->GetCurrentContext(), "", callback, data).As<v8::Function>();
+#endif
+        }
 
         template<size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])

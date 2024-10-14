@@ -3,7 +3,7 @@ import os
 import io
 import time
 import re
-from typing import TypedDict
+from typing import TypedDict, Callable
 
 Import("env")
 Import("env_modules")
@@ -20,6 +20,18 @@ class LibraryDetails:
     
 class LibraryDescriptor:
     def __init__(self, name: str, details: list[LibraryDetails]):
+        self.name = name
+        self.details = details
+
+# third-party source
+class ThirdPartyDetails:
+    def __init__(self, path: str, sources: list[str], validator: Callable[[], bool] = None):
+        self.path = path
+        self.sources = sources
+        self.validator = validator if validator is not None else lambda: True
+
+class ThirdPartyDescriptor:
+    def __init__(self, name: str, details: list[ThirdPartyDetails]):
         self.name = name
         self.details = details
 
@@ -53,6 +65,12 @@ lws_prebuilt_libs = LibraryDescriptor("lws", \
     LibraryDetails("linux",   "x86_64", "libwebsockets.a", "_"), 
     LibraryDetails("macos",   "arm64",  "libwebsockets.a", "_"), 
 ])
+quickjs_src_descs = ThirdPartyDescriptor("quickjs", \
+[
+    # can't compile with VS2022
+    ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"], lambda: env["MSVC_VERSION"] != "14.3"), 
+    ThirdPartyDetails("quickjs", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]), 
+])
 
 class CompileDefines:
     def __init__(self, name, value, help = None):
@@ -71,6 +89,12 @@ def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, 
             return (support, details)
     return None
 
+def get_thirdparty_support(support: ThirdPartyDescriptor) -> tuple[ThirdPartyDescriptor, ThirdPartyDetails]:
+    for details in support.details:
+        if os.path.exists(details.path) and details.validator():
+            return (support, details)
+    return None
+
 def read_macro_value(name: str, def_val = None):
     with open("jsb.config.h", "rt", encoding="utf-8") as input:
         regex = rf"^#define\s+{name}\s+(\d+)$"
@@ -83,11 +107,12 @@ def read_macro_value(name: str, def_val = None):
     raise ValueError(f"no {name} defined in jsb.config.h")
 
 prefer_quickjs = False
-v8_support = get_library_support(v8_prebuilt_libs) if not prefer_quickjs else None
+quickjs_support = get_thirdparty_support(quickjs_src_descs) if prefer_quickjs else None
+v8_support = get_library_support(v8_prebuilt_libs) if quickjs_support is None else None
 lws_support = get_library_support(lws_prebuilt_libs)
 
 jsb_defines = [
-    CompileDefines("JSB_WITH_QUICKJS", 1 if prefer_quickjs else 0),
+    CompileDefines("JSB_WITH_QUICKJS", 1 if quickjs_support is not None else 0),
     CompileDefines("JSB_WITH_V8", 1 if v8_support is not None else 0),
     CompileDefines("JSB_WITH_WEB", 1 if jsb_platform == "web" else 0),
 
@@ -355,13 +380,18 @@ if is_defined("JSB_WITH_LWS"):
         env.Append(CPPPATH=[f"#modules/{module_name}/lws/{lws_basename}/include"])
 
 quickjs_obj = []
-if is_defined("JSB_WITH_QUICKJS"):
-    print("WARNING: quickjs support has not been implemented yet")
+if quickjs_support is not None:
+    print("WARNING: quickjs support is still under development, it may crash frequently")
+
+    quickjs_dir = quickjs_support[1].path
+    print(f"quickjs support enabled: {quickjs_dir}")
 
     env_quickjs = env_modules.Clone()
     # quickjs is directly built from source
-    # quickjs_src = ["quickjs/cutils.c", "quickjs/libbf.c", "quickjs/libregexp.c", "quickjs/libunicode.c", "quickjs/quickjs.c"]
-    env_quickjs.add_source_files(quickjs_obj, "quickjs/*.c")
+    env_quickjs.add_source_files(quickjs_obj, [f"{quickjs_dir}/{filename}" for filename in quickjs_support[1].sources])
+
+    if env.dev_build:
+        env_quickjs.Append(CFLAGS=["-DDUMP_LEAKS=1"])
 
     if env.msvc:
         # float control causes C2099 in VS2022 (Windows 11 SDK)
@@ -373,7 +403,6 @@ if is_defined("JSB_WITH_QUICKJS"):
 
     env.modules_sources += quickjs_obj
     env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
-
 
 if jsb_platform == "web":
     print("WARNING: web support has not been implemented yet")

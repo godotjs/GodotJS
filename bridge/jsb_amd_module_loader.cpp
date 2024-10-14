@@ -90,7 +90,7 @@ namespace jsb
             return;
         }
 
-        v8::Local<v8::Value> argv[] = { v8::Function::New(context, Builtins::_define).ToLocalChecked() };
+        v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, Builtins::_define, {}) };
         const v8::MaybeLocal<v8::Value> result = func.As<v8::Function>()->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
         if (try_catch.has_caught())
         {

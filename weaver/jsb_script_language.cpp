@@ -40,35 +40,34 @@ GodotJSScriptLanguage::~GodotJSScriptLanguage()
 
 void GodotJSScriptLanguage::init()
 {
-    if (!once_inited_)
-    {
-        JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, init);
-        once_inited_ = true;
-        JSB_LOG(VeryVerbose, "jsb lang init");
-        environment_ = std::make_shared<jsb::Environment>();
+    if (once_inited_) return;
 
-        jsb::DefaultModuleResolver& resolver = environment_->add_module_resolver<jsb::DefaultModuleResolver>()
-            .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
-            .add_search_path("res://") // use the root directory as custom lib path by default
+    JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, init);
+    once_inited_ = true;
+    JSB_LOG(VeryVerbose, "jsb lang init");
+    environment_ = std::make_shared<jsb::Environment>();
+
+    jsb::DefaultModuleResolver& resolver = environment_->add_module_resolver<jsb::DefaultModuleResolver>()
+        .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
+        .add_search_path("res://") // use the root directory as custom lib path by default
 #ifdef TOOLS_ENABLED
-            .add_search_path("res://node_modules") // so far, it's only for editor scripting
+        .add_search_path("res://node_modules") // so far, it's only for editor scripting
 #endif
-        ;
+    ;
 
-        for (const String& path : jsb::internal::Settings::get_additional_search_paths())
-        {
-            resolver.add_search_path(path);
-        }
+    for (const String& path : jsb::internal::Settings::get_additional_search_paths())
+    {
+        resolver.add_search_path(path);
+    }
 
-        // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
-        {
-            size_t len;
-            static constexpr char kBundleSourceName[] = "jsb.bundle.js";
-            const char* str = GodotJSProjectPreset::get_source_rt(kBundleSourceName, len);
-            jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
-            jsb_check(len == (size_t)(int) len);
-            jsb::AMDModuleLoader::load_source(environment_.get(), str, (int) len, kBundleSourceName);
-        }
+    // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
+    {
+        size_t len;
+        static constexpr char kBundleSourceName[] = "jsb.bundle.js";
+        const char* str = GodotJSProjectPreset::get_source_rt(kBundleSourceName, len);
+        jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
+        jsb_check(len == (size_t)(int) len);
+        jsb::AMDModuleLoader::load_source(environment_.get(), str, (int) len, kBundleSourceName);
     }
 }
 

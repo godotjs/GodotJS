@@ -7,6 +7,8 @@
 #include "jsb_quickjs_template.h"
 #include "jsb_quickjs_function_interop.h"
 
+#define JSB_NEW_FUNCTION_TEMPLATE(isolate, name, callback, data) jsb::impl::Helper::NewFunctionTemplate(isolate, name, callback, data)
+
 namespace jsb::impl
 {
     namespace impl_private
@@ -49,10 +51,14 @@ namespace jsb::impl
                 const v8::Local<v8::Value> value = impl_private::Data<int64_t>::New(builder_.isolate_, data);
 
                 enumeration_->Set(builder_.GetContext(), key, value);
+
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-                const JSAtom value_atom = JS_ValueToAtom(builder_.ctx(), (JSValue) value);
-                JS_DefinePropertyValue(builder_.ctx(), (JSValue) enumeration_, value_atom, (JSValue) key, JS_PROP_CONFIGURABLE | JS_PROP_WRITABLE | JS_PROP_HAS_VALUE);
-                JS_FreeAtom(builder_.ctx(), value_atom);
+                const jsb::impl::QuickJS::Atom value_atom(builder_.ctx(), (JSValue) value);
+
+                // JS_DefinePropertyValue consumes the reference of val
+                JS_DefinePropertyValue(builder_.ctx(), (JSValue) enumeration_, value_atom,
+                    JS_DupValue(builder_.ctx(), (JSValue) key), JS_PROP_CONFIGURABLE | JS_PROP_WRITABLE | JS_PROP_HAS_VALUE);
+
                 return *this;
             }
 
@@ -77,7 +83,7 @@ namespace jsb::impl
                 v8::HandleScope handle_scope(builder_.isolate_);
 
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
-                const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback);
+                const v8::Local<v8::FunctionTemplate> value = JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, callback, {});
 
                 if (is_instance_method) builder_.prototype_template_->Set(builder_.GetContext(), key, value);
                 else builder_.template_->Set(builder_.GetContext(), key, value);
@@ -89,7 +95,7 @@ namespace jsb::impl
                 jsb_check(!builder_.closed_);
                 v8::HandleScope handle_scope(builder_.isolate_);
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
-                const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback, impl_private::Data<T>::New(builder_.isolate_, data));
+                const v8::Local<v8::FunctionTemplate> value = JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, callback, impl_private::Data<T>::New(builder_.isolate_, data));
 
                 if (is_instance_method) builder_.prototype_template_->Set(builder_.GetContext(), key, value);
                 else builder_.template_->Set(builder_.GetContext(), key, value);
@@ -105,10 +111,10 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> payload = impl_private::Data<T>::New(builder_.isolate_, data);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, payload)
+                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, getter_cb, payload)
                     : v8::Local<v8::FunctionTemplate>();
                 const v8::Local<v8::FunctionTemplate> setter = setter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, setter_cb, payload)
+                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, setter_cb, payload)
                     : v8::Local<v8::FunctionTemplate>();;
 
                 if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter, setter);
@@ -123,10 +129,10 @@ namespace jsb::impl
 
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
+                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
                     : v8::Local<v8::FunctionTemplate>();
                 const v8::Local<v8::FunctionTemplate> setter = setter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, setter_cb, impl_private::Data<SetterDataT>::New(builder_.isolate_, setter_data))
+                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, setter_cb, impl_private::Data<SetterDataT>::New(builder_.isolate_, setter_data))
                     : v8::Local<v8::FunctionTemplate>();
 
                 if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter, setter);
@@ -141,7 +147,7 @@ namespace jsb::impl
 
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
+                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
                     : v8::Local<v8::FunctionTemplate>();
 
                 if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter);
@@ -231,9 +237,10 @@ namespace jsb::impl
             builder.isolate_ = isolate;
             builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
             builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx,
-                (JSCFunction*) &_constructor<InternalFieldCount>, str8.ptr(), /*length*/ 0,
+                (JSCFunction*) &_constructor<InternalFieldCount>, str8.ptr(),
+                /* length */ 0,
                 JS_CFUNC_constructor_magic,
-                isolate->add_constructor_data(constructor, class_payload)))));
+                /* magic */ isolate->add_constructor_data(constructor, class_payload)))));
 
             return builder;
         }
@@ -257,7 +264,6 @@ namespace jsb::impl
             const jsb::impl::ConstructorData constructor_data = isolate->get_constructor_data(magic);
 
             const JSValue proto = JS_GetProperty(ctx, new_target, JS_ATOM_prototype);
-            // const JSValue proto = JS_DupValue(ctx, constructor_data.proto);
             jsb_check(!JS_IsException(proto) && JS_IsObject(proto));
             const JSValue this_val = JS_NewObjectProtoClass(ctx, proto, v8::Isolate::get_class_id());
             jsb_check(JS_IsObject(this_val));

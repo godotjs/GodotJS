@@ -71,7 +71,7 @@ namespace jsb
             jsb_check(method_info.utility_func);
             JSB_LOG(VeryVerbose, "expose godot utility function %s (%d)", type_name, utility_func_index);
 
-            info.GetReturnValue().Set(v8::Function::New(context, ObjectReflectBindingUtil::_godot_utility_func, v8::Int32::New(isolate, utility_func_index)).ToLocalChecked());
+            info.GetReturnValue().Set(JSB_NEW_FUNCTION(context, ObjectReflectBindingUtil::_godot_utility_func, v8::Int32::New(isolate, utility_func_index)));
             return;
         }
 
@@ -170,7 +170,7 @@ namespace jsb
         jsb_check(func_local->IsFunction());
 
         // load_type_impl: function(name)
-        v8::Local<v8::Value> argv[] = { v8::Function::New(context, _load_godot_object_class).ToLocalChecked() };
+        v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
         const v8::Local<v8::Function> loader = func_local.As<v8::Function>();
         const v8::MaybeLocal<v8::Value> result = loader->Call(context, v8::Undefined(isolate), std::size(argv), argv);
         v8::Local<v8::Value> proxy;

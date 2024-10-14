@@ -849,13 +849,13 @@ namespace jsb
         v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
 
         jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "editor"), editor_obj).Check();
-        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_class_doc"), v8::Function::New(context, _get_class_doc).ToLocalChecked()).Check();
-        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_classes"), v8::Function::New(context, _get_classes).ToLocalChecked()).Check();
-        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_global_constants"), v8::Function::New(context, _get_global_constants).ToLocalChecked()).Check();
-        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_singletons"), v8::Function::New(context, _get_singletons).ToLocalChecked()).Check();
-        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_utility_functions"), v8::Function::New(context, _get_utility_functions).ToLocalChecked()).Check();
-        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_primitive_types"), v8::Function::New(context, _get_primitive_types).ToLocalChecked()).Check();
-        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "delete_file"), v8::Function::New(context, _delete_file).ToLocalChecked()).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_class_doc"), JSB_NEW_FUNCTION(context, _get_class_doc, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_classes"), JSB_NEW_FUNCTION(context, _get_classes, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_global_constants"), JSB_NEW_FUNCTION(context, _get_global_constants, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_singletons"), JSB_NEW_FUNCTION(context, _get_singletons, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_utility_functions"), JSB_NEW_FUNCTION(context, _get_utility_functions, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_primitive_types"), JSB_NEW_FUNCTION(context, _get_primitive_types, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "delete_file"), JSB_NEW_FUNCTION(context, _delete_file, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_DOCS_URL"), impl::Helper::new_string(isolate, VERSION_DOCS_URL)).Check();
     }
 }

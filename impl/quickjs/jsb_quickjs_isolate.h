@@ -110,9 +110,9 @@ namespace v8
         void* GetData(int index) const { jsb_check(index == 0); return embedder_data_; }
         void SetData(int index, void* data);
         void PerformMicrotaskCheckpoint();
-        void LowMemoryNotification() {}
+        void LowMemoryNotification();
         void SetBatterySaverMode(bool) {}
-        void RequestGarbageCollectionForTesting(GarbageCollectionType type) {}
+        void RequestGarbageCollectionForTesting(GarbageCollectionType type);
         Local<Context> GetCurrentContext();
 
         void AddGCPrologueCallback(GCCallback callback) {}
@@ -146,26 +146,38 @@ namespace v8
 
         static JSClassID get_class_id() { static jsb::impl::ClassID id; return (JSClassID) id; }
 
-        const JSValue& stack_val(const uint16_t index) const
+        // get stack value
+        [[nodiscard]] const JSValue& stack_val(const uint16_t index) const
         {
             jsb_check(index < stack_pos_);
             jsb_check(index < jsb::impl::StackPos::Num || handle_scope_);
             return stack_[index];
         }
 
+        // get stack value (duplicated)
         [[nodiscard]] JSValue stack_dup(const uint16_t index) const
         {
             jsb_check(index < stack_pos_);
             jsb_check(index < jsb::impl::StackPos::Num || handle_scope_);
-            return JS_DupValueRT(rt_, stack_[index]);
+            return JS_DupValue(ctx_, stack_[index]);
         }
 
-        void stack_copy(const uint16_t to, const uint16_t from)
+        // write value to the stack pos 'to' without duplicating
+        void set_stack_steal(const uint16_t to, const JSValueConst value)
+        {
+            jsb_check(to < stack_pos_);
+            jsb_check(to < jsb::impl::StackPos::Num || handle_scope_);
+            JS_FreeValue(ctx_, stack_[to]);
+            stack_[to] = value;
+        }
+
+        // write value to the stack pos 'to' with duplicating
+        void set_stack_copy(const uint16_t to, const uint16_t from)
         {
             jsb_check(to != from && to < stack_pos_ && from < stack_pos_);
             jsb_check(handle_scope_ || (to < jsb::impl::StackPos::Num && from < jsb::impl::StackPos::Num));
-            JS_DupValueRT(rt_, stack_[from]);
-            JS_FreeValueRT(rt_, stack_[to]);
+            JS_DupValue(ctx_, stack_[from]);
+            JS_FreeValue(ctx_, stack_[to]);
             stack_[to] = stack_[from];
         }
 
@@ -183,7 +195,7 @@ namespace v8
         uint16_t push_copy(const JSValue value)
         {
             jsb_check(handle_scope_);
-            JS_DupValueRT(rt_, value);
+            JS_DupValue(ctx_, value);
             return emplace_(value);
         }
 
@@ -250,7 +262,16 @@ namespace v8
         Isolate();
 
         void _release();
-        uint16_t emplace_(JSValue value);
+
+        // push value to the top of stack (without ref-counting)
+        uint16_t emplace_(JSValue value)
+        {
+            jsb_check(stack_pos_ < jsb::impl::kMaxStackSize);
+
+            const uint16_t pos = stack_pos_++;
+            stack_[pos] = value;
+            return pos;
+        }
 
         static void _finalizer(JSRuntime* rt, JSValue val);
         static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);

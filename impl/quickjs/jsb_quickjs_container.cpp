@@ -30,13 +30,13 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
 
-        const JSAtom key_atom = JS_ValueToAtom(ctx, (JSValue) key);
+        const jsb::impl::QuickJS::Atom key_atom(ctx, (JSValue) key);
         if (key_atom == JS_ATOM_NULL)
         {
             return MaybeLocal<Map>();
         }
-        JS_FreeAtom(ctx, key_atom);
         JS_SetProperty(ctx, (JSValue) *this, key_atom, JS_DupValue(ctx, (JSValue) value));
+
         return MaybeLocal<Map>(Data(isolate_, stack_pos_));
     }
 

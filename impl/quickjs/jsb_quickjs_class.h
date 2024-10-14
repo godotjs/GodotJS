@@ -24,6 +24,7 @@ namespace jsb::impl
 
     public:
         Class() = default;
+        ~Class() = default;
 
         Class(Class&&) noexcept = default;
         Class& operator=(Class&&) = default;

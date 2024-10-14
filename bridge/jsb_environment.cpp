@@ -414,7 +414,7 @@ namespace jsb
         {
             handle.ref_count_ = 1;
         }
-        JSB_LOG(Verbose, "bind object class:%s(%d) addr:%d id:%d",
+        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%d id:%d",
             (String) native_classes_.get_value(p_class_id).name, p_class_id,
             (uintptr_t) p_pointer, object_id);
         return object_id;
@@ -857,7 +857,7 @@ namespace jsb
     {
         const v8::Local<v8::Context> context = context_.Get(isolate_);
         const v8::Local<v8::String> module_id = impl::Helper::new_string(isolate_, p_module_id);
-        const v8::Local<v8::Function> require = v8::Function::New(context, Builtins::_require, /* magic: module_id */ module_id).ToLocalChecked();
+        const v8::Local<v8::Function> require = JSB_NEW_FUNCTION(context, Builtins::_require, /* magic: module_id */ module_id);
         if (v8::Local<v8::Object> main_module; _get_main_module(&main_module))
         {
             require->Set(context, jsb_name(this, main), main_module).Check();

@@ -3,16 +3,6 @@
 
 namespace jsb::impl
 {
-    JSContext* Broker::GetContext(v8::Isolate* isolate)
-    {
-        return isolate->ctx();
-    }
-
-    JSRuntime* Broker::GetRuntime(v8::Isolate* isolate)
-    {
-        return isolate->rt();
-    }
-
     void Broker::SetWeak(v8::Isolate* isolate, JSValue value, void* parameter, void* callback)
     {
         const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(value, v8::Isolate::get_class_id());
@@ -60,6 +50,16 @@ namespace jsb::impl
     void Broker::_remove_reference(v8::Isolate* isolate)
     {
         isolate->_remove_reference();;
+    }
+
+    JSValue Broker::_dup(v8::Isolate* isolate, JSValueConst value)
+    {
+        return JS_DupValue(isolate->ctx(), value);
+    }
+
+    void Broker::_free(v8::Isolate* isolate, JSValueConst value)
+    {
+        JS_FreeValue(isolate->ctx(), value);
     }
 
 }

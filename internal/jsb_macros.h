@@ -113,6 +113,8 @@
 // generate an error string with source position info
 #define jsb_errorf(Format, ...) jsb_format("[%s:%d %s] " Format, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
+#define JSB_NEW_FUNCTION(context, callback, data) jsb::impl::Helper::NewFunction(context, #callback, callback, data)
+
 #if GODOT_4_3_OR_NEWER
 #    define ConstStringRefCompat const String&
 #    define ConstStringNameRefCompat const StringName&
