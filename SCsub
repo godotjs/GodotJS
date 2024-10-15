@@ -353,8 +353,14 @@ if v8_support is not None:
 
     # headers
     # env_jsb is enough for compiler, but IDE lookup paths from `env`
-    if env.msvc and env["vsproj"]:
-        env.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
+    # if env.msvc and env["vsproj"]:
+    #    env.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
+
+    # godot tests can't find v8 headers
+    env.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
+    env_modules.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
+    env_jsb.Append(CPPPATH=[f"#modules/{module_name}/v8/include"])
+
     env_jsb.Append(CPPPATH=["v8/include"])
     env_jsb.add_source_files(module_obj, "impl/v8/*.cpp")
 
