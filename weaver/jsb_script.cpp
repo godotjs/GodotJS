@@ -482,9 +482,9 @@ void GodotJSScript::load_module_immediately()
         {
             //TODO do not rely on ResourceLoader
             const jsb::ScriptClassInfoPtr script_class_info = env->get_script_class(module->script_class_id);
-            if (script_class_info->base_class_id)
+            if (script_class_info->base_script_class_id)
             {
-                const jsb::ScriptClassInfoPtr base_script_class_info = env->get_script_class(script_class_info->base_class_id);
+                const jsb::ScriptClassInfoPtr base_script_class_info = env->get_script_class(script_class_info->base_script_class_id);
                 const jsb::JavaScriptModule* base_module = env->get_module_cache().find(base_script_class_info->module_id);
                 const Ref<Resource> base_res = ResourceLoader::load(jsb::internal::PathUtil::convert_javascript_path(base_module->path));
                 jsb_check(base_res->get_class() == jsb_typename(GodotJSScript));

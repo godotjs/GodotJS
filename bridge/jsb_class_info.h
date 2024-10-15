@@ -154,7 +154,7 @@ namespace jsb
         NativeClassID native_class_id;
 
         // [EXPERIMENTAL] fastpath for getting script class id of base
-        ScriptClassID base_class_id;
+        ScriptClassID base_script_class_id;
 
         ScriptClassFlags::Type flags = ScriptClassFlags::None;
 

@@ -268,25 +268,19 @@ namespace jsb
             ->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
 #endif
 
-        // const v8::Local<v8::Object> dt_self_obj =
-        //     class_obj
-        //     ->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
-        //     ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
-        // const v8::Local<v8::Value> dt_self_tag = dt_self_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
-        // jsb_check(dt_self_tag->IsUint32() && dt_self_tag.As<v8::Uint32>()->Value() == *p_module.script_class_id);
-        // JSB_LOG(Log, "dump self class id %d from %s", dt_self_tag.As<v8::Uint32>()->Value(), p_module.path);
-
         //TODO EXPERIMENTAL
         const v8::Local<v8::Object> dt_base_obj =
             class_obj
             ->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
             ->Get(p_context, jsb_name(environment, __proto__)).ToLocalChecked().As<v8::Object>() // the base class prototype
             ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
+        jsb_check(class_obj != dt_base_obj);
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
-        existed_class_info->base_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);
-        JSB_LOG(Log, "[EXPERIMENTAL] %s inherits script: %d native: %d",
-            p_module.path, existed_class_info->base_class_id, *native_class_id);
+        existed_class_info->base_script_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);
+        JSB_LOG(Log, "[EXPERIMENTAL] %s script: %d inherits super: %d native: %d",
+            p_module.path, p_module.script_class_id, existed_class_info->base_script_class_id, *native_class_id);
 
+        jsb_check(existed_class_info->base_script_class_id != p_module.script_class_id);
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->native_class_id = native_class_id;
 
