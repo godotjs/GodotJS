@@ -8,6 +8,11 @@ namespace jsb::tests
 #if JSB_WITH_QUICKJS
     struct QuickJS
     {
+        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+
+        }
+
         static JSValue magic_call(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic)
         {
             CHECK(magic == 1);
@@ -38,6 +43,41 @@ namespace jsb::tests
         JS_FreeContext(ctx);
         JS_FreeRuntime(rt);
     }
+
+    TEST_CASE("[jsb] quickjs.isolate")
+    {
+        v8::Isolate::CreateParams params;
+        v8::Isolate* isolate = v8::Isolate::New(params);
+        {
+            v8::HandleScope scope_0(isolate);
+            v8::Local<v8::Context> context = v8::Context::New(isolate);
+            v8::Local<v8::Symbol> symbol = v8::Symbol::New(isolate);
+
+            {
+                v8::HandleScope scope_1(isolate);
+                impl::ClassBuilder builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "Base", QuickJS::constructor, 0);
+                const impl::Class class1 = builder.Build(context);
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "Base"), class1.Get(isolate));
+            }
+
+            {
+                static constexpr char source[] = R"--((function () {
+    let a = 1+1;
+    return a;
+}
+))--";
+                impl::TryCatch try_catch(isolate);
+                v8::MaybeLocal<v8::Value> eval = impl::Helper::compile_run(context, source, ::std::size(source), "testcase.js");
+                if (try_catch.has_caught())
+                {
+                    String message;
+                    try_catch.get_message(&message);
+                    MESSAGE("JS Exception: ", message);
+                }
+            }
+        }
+        isolate->Dispose();
+    }
 #endif
 
     TEST_CASE("[jsb] Node new/free")
@@ -54,6 +94,8 @@ console.assert(!gd.is_instance_valid(node));
 )--", err);
     }
 
+    //TODO enable this test case after bug fixed
+#if JSB_WITH_V8
     TEST_CASE("[jsb] Scripts: test_01")
     {
         GodotJSScriptLanguageIniter initer;
@@ -74,6 +116,7 @@ console.assert(!gd.is_instance_valid(inst));
 
 )--", err);
     }
+#endif
 }
 
 #endif

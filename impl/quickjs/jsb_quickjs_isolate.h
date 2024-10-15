@@ -271,6 +271,7 @@ namespace v8
         uint16_t emplace_(JSValue value)
         {
             jsb_check(stack_pos_ < jsb::impl::kMaxStackSize);
+            jsb_check(!JS_IsException(value));
 
             const uint16_t pos = stack_pos_++;
             stack_[pos] = value;
