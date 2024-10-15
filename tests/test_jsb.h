@@ -1,7 +1,6 @@
 #ifndef GODOTJS_TESTS_JSB_H
 #define GODOTJS_TESTS_JSB_H
 
-#include "tests/test_macros.h"
 #include "jsb_test_helpers.h"
 
 namespace jsb::tests
@@ -30,7 +29,6 @@ namespace jsb::tests
             CHECK(impl::QuickJS::_RefCount(func) == 1);
             constexpr int flags = JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_GET;
             CHECK(JS_DefineProperty(ctx, this_obj, prop, JS_UNDEFINED, func, JS_UNDEFINED, flags) == 1);
-            MESSAGE("[after] func.rc = ", impl::QuickJS::_RefCount(func));
             CHECK(impl::QuickJS::_RefCount(func) == 2);
 
             JS_FreeValue(ctx, func);
@@ -53,6 +51,27 @@ let node = new gd.Node();
 console.assert(gd.is_instance_valid(node));
 node.free();
 console.assert(!gd.is_instance_valid(node));
+)--", err);
+    }
+
+    TEST_CASE("[jsb] Scripts: test_01")
+    {
+        GodotJSScriptLanguageIniter initer;
+
+        Error err;
+        GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
+let gd = require("godot");
+let mod = require("test_01");
+console.assert(typeof mod === "object");
+console.assert(mod.call_me() == 123);
+console.log(typeof mod.default === "function");
+console.log(mod.default);
+let inst = new mod.default();
+console.assert(gd.is_instance_valid(inst));
+console.assert(inst instanceof gd.Node);
+inst.free();
+console.assert(!gd.is_instance_valid(inst));
+
 )--", err);
     }
 }

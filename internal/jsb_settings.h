@@ -26,6 +26,8 @@ namespace jsb::internal
 
         static String get_indentation();
 
+        static String get_project_data_dir_name();
+
         static PackedStringArray get_additional_search_paths();
 
 #ifdef TOOLS_ENABLED
