@@ -51,7 +51,7 @@ namespace v8
         return isolate;
     }
 
-    Isolate::Isolate() : ref_count_(1), diposed_(false), handle_scope_(nullptr), stack_pos_(0)
+    Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr), stack_pos_(0)
     {
         const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
         rt_ = JS_NewRuntime2(&mf, this);
@@ -133,8 +133,8 @@ namespace v8
 
     void Isolate::Dispose()
     {
-        jsb_check(!diposed_);
-        diposed_ = true;
+        jsb_check(!disposed_);
+        disposed_ = true;
         _remove_reference();
     }
 

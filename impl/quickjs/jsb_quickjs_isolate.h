@@ -36,7 +36,7 @@ namespace jsb::impl
         uint32_t data;
     };
 
-    enum { kMaxStackSize = 1024 * 2 };
+    enum { kMaxStackSize = 1024 };
 
     namespace StackPos
     {
@@ -204,11 +204,15 @@ namespace v8
         // they won't be deleted until the Isolate disposed
         int add_constructor_data(FunctionCallback callback, uint32_t data)
         {
-            return (int) *constructor_data_.add({ callback, data });
+            const int index = constructor_data_.size();
+            constructor_data_.append({ callback, data });
+            return index;
+            // return (int) *constructor_data_.add({ callback, data });
         }
         jsb::impl::ConstructorData get_constructor_data(const int index) const
         {
-            return constructor_data_.get_value((jsb::internal::Index32)(uint32_t) index);
+            return constructor_data_[index];
+            // return constructor_data_.get_value((jsb::internal::Index32)(uint32_t) index);
         }
 
         ~Isolate();
@@ -277,7 +281,7 @@ namespace v8
         static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
 
         uint32_t ref_count_;
-        bool diposed_;
+        bool disposed_;
         JSRuntime* rt_;
         JSContext* ctx_;
         HandleScope* handle_scope_;
@@ -285,7 +289,7 @@ namespace v8
         PromiseRejectCallback promise_reject_;
 
         jsb::internal::SArray<jsb::impl::InternalData, jsb::impl::InternalDataID> internal_data_;
-        jsb::internal::SArray<jsb::impl::ConstructorData, jsb::internal::Index32> constructor_data_;
+        Vector<jsb::impl::ConstructorData> constructor_data_;
         HashMap<void*, jsb::impl::Phantom> phantom_;
 
         uint16_t stack_pos_;
