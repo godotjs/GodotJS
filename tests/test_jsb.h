@@ -2,6 +2,7 @@
 #define GODOTJS_TESTS_JSB_H
 
 #include "jsb_test_helpers.h"
+#include "../bridge/jsb_builtins.h"
 
 namespace jsb::tests
 {
@@ -27,6 +28,30 @@ namespace jsb::tests
                 try_catch.get_message(&message);
                 MESSAGE("JS Exception: ", message);
             }
+        }
+
+        // info[0] - set
+        // info[1] - super get
+        static void check_class(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            CHECK(info.Length() == 2);
+            CHECK(info[0]->IsObject());
+            CHECK(info[1]->IsObject());
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            v8::Local<v8::Object> s1 = info[0].As<v8::Object>();
+            v8::Local<v8::Object> s2 = info[1].As<v8::Object>();
+            v8::Local<v8::Symbol> prop = v8::Symbol::New(isolate);
+
+            s1->Set(context, prop, v8::Uint32::NewFromUnsigned(isolate, 123)).Check();
+            v8::Local<v8::Object> c2 = s2
+                ->Get(context, impl::Helper::new_string(isolate, "prototype")).ToLocalChecked().As<v8::Object>()
+                ->Get(context, impl::Helper::new_string(isolate, "__proto__")).ToLocalChecked().As<v8::Object>() // the base class prototype
+                ->Get(context, impl::Helper::new_string(isolate, "constructor")).ToLocalChecked().As<v8::Object>();
+            CHECK(c2 == s1);
+            v8::Local<v8::Value> v2 = c2->Get(context, prop).ToLocalChecked();
+            CHECK(v2->IsNumber());
+            CHECK(v2.As<v8::Uint32>()->Value() == 123);
         }
     };
 
@@ -61,19 +86,29 @@ namespace jsb::tests
         {
             v8::HandleScope scope_0(isolate);
             v8::Local<v8::Context> context = v8::Context::New(isolate);
-            v8::Local<v8::Symbol> symbol = v8::Symbol::New(isolate);
 
             {
                 v8::HandleScope scope_1(isolate);
-                impl::ClassBuilder builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "Base", Bindings::constructor, 0);
-                const impl::Class class1 = builder.Build(context);
-                context->Global()->Set(context, impl::Helper::new_string(isolate, "Base"), class1.Get(isolate));
+                impl::ClassBuilder builder1 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B1", Bindings::constructor, 0);
+                impl::ClassBuilder builder2 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B2", Bindings::constructor, 0);
+                const impl::Class class1 = builder1.Build(context);
+                builder2.Inherit(class1);
+                const impl::Class class2 = builder2.Build(context);
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "B1"), class1.Get(isolate)).Check();
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "B2"), class1.Get(isolate)).Check();
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "check_class"), v8::Function::New(context, Bindings::check_class).ToLocalChecked()).Check();
+                Builtins::register_(context, context->Global());
             }
 
             {
                 static constexpr char source[] = R"--((function() {
-    let a = 1+1;
-    return a;
+class S1 extends B1 {}
+class S2 extends B2 {}
+class S3 extends S2 {}
+let s2 = new S2();
+console.assert(s2 instanceof B1);
+check_class(S2, S3);
+return 1+1;
 }))--";
                 impl::TryCatch try_catch(isolate);
                 v8::MaybeLocal<v8::Value> eval = impl::Helper::compile_run(context, source, ::std::size(source) - 1, "testcase.js");

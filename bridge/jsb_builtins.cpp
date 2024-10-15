@@ -127,14 +127,18 @@ namespace jsb
             console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "trace"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Trace>, {})).Check();
         }
 
-        // the root 'require' function
+        // the root 'require' function (only used by eval_source)
+        if (Environment* env = Environment::wrap(context))
         {
-            Environment* env = Environment::wrap(context);
             v8::Local<v8::Function> require_func = JSB_NEW_FUNCTION(context, _require, {});
             self->Set(context, impl::Helper::new_string_ascii(isolate, "require"), require_func).Check();
             self->Set(context, impl::Helper::new_string_ascii(isolate, "define"), JSB_NEW_FUNCTION(context, _define, {})).Check();
             require_func->Set(context, impl::Helper::new_string_ascii(isolate, "cache"), env->get_module_cache().unwrap(isolate)).Check();
             require_func->Set(context, impl::Helper::new_string_ascii(isolate, "moduleId"), v8::String::Empty(isolate)).Check();
+        }
+        else
+        {
+            JSB_LOG(Warning, "registering builtins without an Environment instance");
         }
 
         //TODO the root 'import' function (async module loading?)
