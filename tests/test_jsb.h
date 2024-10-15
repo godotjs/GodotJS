@@ -6,7 +6,7 @@
 namespace jsb::tests
 {
 #if JSB_WITH_QUICKJS
-    struct QuickJS
+    struct Bindings
     {
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
@@ -18,6 +18,16 @@ namespace jsb::tests
             CHECK(magic == 1);
             return JS_UNDEFINED;
         }
+
+        static void print_exception(const impl::TryCatch& try_catch)
+        {
+            if (try_catch.has_caught())
+            {
+                String message;
+                try_catch.get_message(&message);
+                MESSAGE("JS Exception: ", message);
+            }
+        }
     };
 
     TEST_CASE("[jsb] quickjs.minimal")
@@ -26,7 +36,7 @@ namespace jsb::tests
         JSContext* ctx = JS_NewContext(rt);
         {
             const JSValue this_obj = JS_NewObject(ctx);
-            const JSValue func = JS_NewCFunctionMagic(ctx, QuickJS::magic_call, "magic_call", 0, JS_CFUNC_generic_magic, 1);
+            const JSValue func = JS_NewCFunctionMagic(ctx, Bindings::magic_call, "magic_call", 0, JS_CFUNC_generic_magic, 1);
             const JSAtom prop = JS_NewAtom(ctx, "prop");
 
             CHECK(JS_IsFunction(ctx, func));
@@ -55,25 +65,27 @@ namespace jsb::tests
 
             {
                 v8::HandleScope scope_1(isolate);
-                impl::ClassBuilder builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "Base", QuickJS::constructor, 0);
+                impl::ClassBuilder builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "Base", Bindings::constructor, 0);
                 const impl::Class class1 = builder.Build(context);
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "Base"), class1.Get(isolate));
             }
 
             {
-                static constexpr char source[] = R"--((function () {
+                static constexpr char source[] = R"--((function() {
     let a = 1+1;
     return a;
-}
-))--";
+}))--";
                 impl::TryCatch try_catch(isolate);
-                v8::MaybeLocal<v8::Value> eval = impl::Helper::compile_run(context, source, ::std::size(source), "testcase.js");
-                if (try_catch.has_caught())
-                {
-                    String message;
-                    try_catch.get_message(&message);
-                    MESSAGE("JS Exception: ", message);
-                }
+                v8::MaybeLocal<v8::Value> eval = impl::Helper::compile_run(context, source, ::std::size(source) - 1, "testcase.js");
+                Bindings::print_exception(try_catch);
+                CHECK(!eval.IsEmpty());
+                CHECK(eval.ToLocalChecked()->IsFunction());
+                v8::Local<v8::Function> func = eval.ToLocalChecked().As<v8::Function>();
+                v8::MaybeLocal<v8::Value> rval = func->Call(context, v8::Undefined(isolate), 0, nullptr);
+                CHECK(!rval.IsEmpty());
+                CHECK(rval.ToLocalChecked()->IsNumber());
+                const int32_t rval_v = rval.ToLocalChecked().As<v8::Int32>()->Value();
+                CHECK(rval_v == 2);
             }
         }
         isolate->Dispose();

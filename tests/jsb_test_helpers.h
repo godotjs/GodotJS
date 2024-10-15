@@ -47,11 +47,13 @@ namespace jsb::tests
     private:
         void install_npm()
         {
+            CHECK(FileAccess::exists("./package.json"));
+            CHECK(FileAccess::exists("./tsconfig.json"));
             List<String> args;
             args.push_back("install");
             const String exe_path = OS::get_singleton()->get_name() != "Windows" ? "npm" : "npm.cmd";
-            const int pid = OS::get_singleton()->create_process(exe_path, args);
-            CHECK(pid != -1);
+            const Error err = OS::get_singleton()->create_process(exe_path, args);
+            CHECK(err == OK);
         }
 
         void compile_scripts()
@@ -62,8 +64,8 @@ namespace jsb::tests
             args.push_back("./node_modules/typescript/bin/tsc");
 
             const String exe_path = OS::get_singleton()->get_name() != "Windows" ? "node" : "node.exe";
-            const int pid = OS::get_singleton()->create_process(exe_path, args);
-            CHECK(pid != -1);
+            const Error err = OS::get_singleton()->create_process(exe_path, args);
+            CHECK(err == OK);
             CHECK(FileAccess::exists("./.godot/GodotJS/test_01.js"));
         }
     };
