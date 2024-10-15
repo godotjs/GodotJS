@@ -77,10 +77,11 @@ namespace jsb::impl
             return p_val.ToLocal(&local) ? to_string(isolate, local) : String();
         }
 
+        // should return an empty string if `p_val` is null or undefined.
         static String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
         {
             String ret;
-            if (!p_val.IsEmpty())
+            if (!p_val.IsEmpty() && !p_val->IsNullOrUndefined())
             {
                 size_t len;
                 const char* str = JS_ToCStringLen(isolate->ctx(), &len, (JSValue) p_val);

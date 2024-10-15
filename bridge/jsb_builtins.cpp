@@ -208,7 +208,7 @@ namespace jsb
             return;
         }
 
-        v8::Local<v8::Value> arg0 = info[0];
+        const v8::Local<v8::Value> arg0 = info[0];
         if (!arg0->IsString())
         {
             jsb_throw(isolate, "bad argument");
@@ -219,6 +219,11 @@ namespace jsb
         const String parent_id = impl::Helper::to_string(isolate, info.Data());
         const String module_id = impl::Helper::to_string(isolate, arg0);
         Environment* env = Environment::wrap(context);
+
+        // the impl should return an empty string for null or undefined value
+        jsb_check(!info.Data()->IsNullOrUndefined() || parent_id.is_empty());
+        jsb_check(!arg0->IsNullOrUndefined() || module_id.is_empty());
+
         if (const JavaScriptModule* module = env->_load_module(parent_id, module_id))
         {
             info.GetReturnValue().Set(module->exports);

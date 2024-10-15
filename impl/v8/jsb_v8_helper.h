@@ -26,9 +26,10 @@ namespace jsb::impl
             return p_val.ToLocal(&local) ? to_string(isolate, local) : String();
         }
 
+        // should return an empty string if `p_val` is null or undefined.
         static String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
         {
-            if (!p_val.IsEmpty())
+            if (!p_val.IsEmpty() && !p_val->IsNullOrUndefined())
             {
 #if JSB_UTF16_CONV_PREFERRED
                 if (const v8::String::Value str16(isolate, p_val); str16.length())
@@ -48,7 +49,7 @@ namespace jsb::impl
         static String to_string_without_side_effect(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
         {
             v8::Local<v8::Value> local;
-            if (!p_val.IsEmpty() && p_val->ToDetailString(isolate->GetCurrentContext()).ToLocal(&local))
+            if (!p_val.IsEmpty() && !p_val->IsNullOrUndefined() && p_val->ToDetailString(isolate->GetCurrentContext()).ToLocal(&local))
             {
                 return to_string_opt(isolate, local);
             }

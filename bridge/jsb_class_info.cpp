@@ -260,7 +260,13 @@ namespace jsb
 
         //TODO why it works?? it should be class_obj.prototype.constructor[CrossBind:Symbol] = script_class_id, then `new.target[CrossBind:Symbol]` returns as expected
         // trick: save godot class id for convenience of getting it in JS class constructor
+#ifndef JSB_XXX_CASE1
         class_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
+#else
+        class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
+            ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>()
+            ->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
+#endif
 
         // const v8::Local<v8::Object> dt_self_obj =
         //     class_obj
