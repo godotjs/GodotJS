@@ -217,9 +217,9 @@ namespace v8
 
         if (res != -1)
         {
-            isolate_->mark_as_error_thrown();
             return Maybe<bool>(!!res);
         }
+        isolate_->mark_as_error_thrown();
         return Maybe<bool>();
     }
 
@@ -239,9 +239,9 @@ namespace v8
 
         if (res != -1)
         {
-            isolate_->mark_as_error_thrown();
             return Maybe<bool>(!!res);
         }
+        isolate_->mark_as_error_thrown();
         return Maybe<bool>();
     }
 
