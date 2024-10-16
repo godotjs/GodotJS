@@ -106,7 +106,7 @@ def read_macro_value(name: str, def_val = None):
         return def_val
     raise ValueError(f"no {name} defined in jsb.config.h")
 
-prefer_quickjs = False
+prefer_quickjs = env["use_quickjs"]
 quickjs_support = get_thirdparty_support(quickjs_src_descs) if prefer_quickjs else None
 v8_support = get_library_support(v8_prebuilt_libs) if quickjs_support is None else None
 lws_support = get_library_support(lws_prebuilt_libs)
