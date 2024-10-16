@@ -99,6 +99,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 * [QuickJS](./docs/quickjs.md)
 * [Dependencies](./docs/deps.md)
 * [Compiler Options](./docs/compiler_options.md)
+* [Unit Testing](./docs/unit_testing.md)
 * [Misc](./docs/misc.md)
 
 ## Auxiliary Repositories
