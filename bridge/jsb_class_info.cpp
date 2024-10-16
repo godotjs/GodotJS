@@ -258,7 +258,7 @@ namespace jsb
             existed_class_info->module_id = p_module.id;
         }
 
-        //TODO why it works?? it should be class_obj.prototype.constructor[CrossBind:Symbol] = script_class_id, then `new.target[CrossBind:Symbol]` returns as expected
+        //TODO why it works?? our intention is letting class_obj.prototype.constructor[CrossBind:Symbol] = script_class_id, then `new.target[CrossBind:Symbol]` returns as expected
         // trick: save godot class id for convenience of getting it in JS class constructor
 #ifndef JSB_XXX_CASE1
         class_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
@@ -275,6 +275,8 @@ namespace jsb
             ->Get(p_context, jsb_name(environment, __proto__)).ToLocalChecked().As<v8::Object>() // the base class prototype
             ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
         jsb_check(class_obj != dt_base_obj);
+        jsb_check(environment->get_native_class(native_class_id)->clazz.Get(isolate) == dt_base_obj);
+
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
         existed_class_info->base_script_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);
         JSB_LOG(Log, "[EXPERIMENTAL] %s script: %d inherits super: %d native: %d",

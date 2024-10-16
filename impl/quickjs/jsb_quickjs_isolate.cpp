@@ -146,18 +146,16 @@ namespace v8
 
     uint16_t Isolate::push_map()
     {
-        const JSValue ctor = JS_GetProperty(ctx_, stack_[jsb::impl::StackPos::MapClass], jsb::impl::JS_ATOM_constructor);
-        const JSValue map = details::verified(JS_CallConstructor(ctx_, details::verified(ctor), 0, nullptr));
-        JS_FreeValue(ctx_, ctor);
-        return push_steal(details::verified(map));
+        const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::MapClass]), JS_UNDEFINED, 0, nullptr);
+        jsb_check(JS_IsMap(ctx_, val));
+        return push_steal(details::verified(val));
     }
 
     uint16_t Isolate::push_symbol()
     {
-        const JSValue ctor = JS_GetProperty(ctx_, stack_[jsb::impl::StackPos::SymbolClass], jsb::impl::JS_ATOM_constructor);
-        const JSValue sym = details::verified(JS_CallConstructor(ctx_, details::verified(ctor), 0, nullptr));
-        JS_FreeValue(ctx_, ctor);
-        return push_steal(details::verified(sym));
+        const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::SymbolClass]), JS_UNDEFINED, 0, nullptr);
+        jsb_check(JS_VALUE_GET_TAG(val) == JS_TAG_SYMBOL);
+        return push_steal(details::verified(val));
     }
 
     void Isolate::_finalizer(JSRuntime* rt, JSValue val)

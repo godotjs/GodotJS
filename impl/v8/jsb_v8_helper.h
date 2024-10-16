@@ -13,6 +13,11 @@ namespace jsb::impl
     public:
         Helper() = delete;
 
+        static String Dump(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
+        {
+            return String();
+        }
+
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
         {
             return v8::Function::New(context, callback, data).ToLocalChecked();

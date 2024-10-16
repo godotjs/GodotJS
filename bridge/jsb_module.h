@@ -60,9 +60,9 @@ namespace jsb
         v8::Global<v8::Object> cache_object_;
 
     public:
-        void init(v8::Isolate* isolate)
+        void init(v8::Isolate* isolate, const v8::Local<v8::Object>& cache_obj)
         {
-            cache_object_.Reset(isolate, v8::Object::New(isolate));
+            cache_object_.Reset(isolate, cache_obj);
         }
 
         void deinit()
@@ -98,12 +98,6 @@ namespace jsb
         }
 
         JavaScriptModule& insert(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& p_name, bool p_main_candidate, bool p_init_loaded);
-
-        jsb_force_inline v8::Local<v8::Object> unwrap(v8::Isolate* isolate) const
-        {
-            return cache_object_.Get(isolate);
-        }
-
     };
 
 }

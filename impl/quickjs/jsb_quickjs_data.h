@@ -34,6 +34,7 @@ namespace v8
         bool IsArray() const;
         bool IsMap() const;
         bool IsString() const;
+        bool IsSymbol() const;
         bool IsInt32() const;
         bool IsUint32() const;
         bool IsNumber() const;

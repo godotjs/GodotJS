@@ -181,6 +181,7 @@ namespace v8
             stack_[to] = stack_[from];
         }
 
+        // due to the missing QuickJS API for NewSymbol/NewMap
         uint16_t push_symbol();
         uint16_t push_map();
 

@@ -10,6 +10,20 @@ namespace jsb::impl
     class Helper
     {
     public:
+        static String Dump(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
+        {
+            if (value.IsEmpty()) return "(empty)";
+            const JSValue val = (JSValue) value;
+            if (JS_VALUE_HAS_REF_COUNT(val)) return jsb_format("%d:0x%s", JS_VALUE_GET_TAG(val), (uintptr_t) val.u.ptr);
+            if (JS_TAG_FLOAT64 == JS_VALUE_GET_TAG(val)) return jsb_format("%f", JS_VALUE_GET_FLOAT64(val));
+            if (JS_TAG_INT == JS_VALUE_GET_TAG(val)) return jsb_format("%d", JS_VALUE_GET_INT(val));
+            if (JS_TAG_BOOL == JS_VALUE_GET_TAG(val)) return JS_VALUE_GET_INT(val) ? "true" : "false";
+            if (JS_TAG_NULL == JS_VALUE_GET_TAG(val)) return "null";
+            if (JS_TAG_UNDEFINED == JS_VALUE_GET_TAG(val)) return "undefined";
+            if (JS_TAG_EXCEPTION == JS_VALUE_GET_TAG(val)) return "(exception)";
+            return jsb_format("tag: %d", JS_VALUE_GET_TAG(val));;
+        }
+
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
         {
             // const v8::Local<v8::Function> func = v8::Function::New(context, callback, data).ToLocalChecked();

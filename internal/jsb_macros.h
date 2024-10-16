@@ -9,6 +9,8 @@
 
 #define JSB_STRINGIFY_2(a) #a
 #define JSB_STRINGIFY(a) JSB_STRINGIFY_2(a)
+#define JSB_CONCAT_IMPL(a, b) a##b
+#define JSB_CONCAT(a, b) JSB_CONCAT_IMPL(a, b)
 
 #define JSB_OPERATOR_NAME(op_code) #op_code
 

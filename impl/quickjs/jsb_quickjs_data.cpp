@@ -63,6 +63,12 @@ namespace v8
         return JS_IsMap(isolate_->ctx(), val);
     }
 
+    bool Data::IsSymbol() const
+    {
+        const JSValue val = isolate_->stack_val(stack_pos_);
+        return JS_IsSymbol(val);
+    }
+
     bool Data::IsString() const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);

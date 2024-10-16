@@ -43,6 +43,7 @@ namespace jsb::tests
             v8::Local<v8::Object> s2 = info[1].As<v8::Object>();
             v8::Local<v8::Symbol> prop = v8::Symbol::New(isolate);
 
+            CHECK(s1 != s2);
             s1->Set(context, prop, v8::Uint32::NewFromUnsigned(isolate, 123)).Check();
             v8::Local<v8::Object> c2 = s2
                 ->Get(context, impl::Helper::new_string(isolate, "prototype")).ToLocalChecked().As<v8::Object>()
@@ -87,20 +88,62 @@ namespace jsb::tests
             v8::HandleScope scope_0(isolate);
             v8::Local<v8::Context> context = v8::Context::New(isolate);
 
+            // test Map::New()
+            {
+                v8::HandleScope scope_1(isolate);
+                v8::Local<v8::Map> map = v8::Map::New(isolate);
+                CHECK(map->IsMap());
+            }
+
+            // test Symbol::New()
+            {
+                v8::HandleScope scope_1(isolate);
+                v8::Local<v8::Object> host = v8::Object::New(isolate);
+                v8::Global<v8::Symbol> items[10] = {};
+                for (int i = 0; i < 10; i++)
+                {
+                    v8::Local<v8::Symbol> symbol = v8::Symbol::New(isolate);
+                    items[i].Reset(isolate, symbol);
+                    CHECK(items[i].Get(isolate) == symbol);
+                    CHECK(!items[i].Get(isolate).IsEmpty());
+                    CHECK(items[i].Get(isolate)->IsSymbol());
+                    host->Set(context, symbol, v8::Int32::New(isolate, i));
+                }
+                for (int i = 0; i < 10; i++)
+                {
+                    v8::Local<v8::Value> value = host->Get(context, items[i].Get(isolate)).ToLocalChecked();
+                    CHECK(value->IsInt32());
+                    CHECK(value.As<v8::Int32>()->Value() == i);
+                    for (int j = 0; j < 10; j++)
+                    {
+                        if (i == j) CHECK(items[i] == items[j]);
+                        else CHECK(items[i] != items[j]);
+                    }
+                }
+            }
+
+            // test class builder
+            impl::Class class1;
+            impl::Class class2;
             {
                 v8::HandleScope scope_1(isolate);
                 impl::ClassBuilder builder1 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B1", Bindings::constructor, 0);
-                impl::ClassBuilder builder2 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B2", Bindings::constructor, 0);
-                const impl::Class class1 = builder1.Build(context);
-                builder2.Inherit(class1);
-                const impl::Class class2 = builder2.Build(context);
+                class1 = builder1.Build(context);
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "B1"), class1.Get(isolate)).Check();
-                context->Global()->Set(context, impl::Helper::new_string(isolate, "B2"), class1.Get(isolate)).Check();
-                context->Global()->Set(context, impl::Helper::new_string(isolate, "check_class"), v8::Function::New(context, Bindings::check_class).ToLocalChecked()).Check();
                 Builtins::register_(context, context->Global());
             }
-
             {
+                v8::HandleScope scope_1(isolate);
+                impl::ClassBuilder builder2 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B2", Bindings::constructor, 0);
+                builder2.Inherit(class1);
+                class2 = builder2.Build(context);
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "B2"), class2.Get(isolate)).Check();
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "check_class"), v8::Function::New(context, Bindings::check_class).ToLocalChecked()).Check();
+            }
+
+            // test script class inheriting
+            {
+                v8::HandleScope scope_1(isolate);
                 static constexpr char source[] = R"--((function() {
 class S1 extends B1 {}
 class S2 extends B2 {}
@@ -127,6 +170,19 @@ return 1+1;
     }
 #endif
 
+    TEST_CASE("[jsb] StringNameCache")
+    {
+        GodotJSScriptLanguageIniter initer;
+        std::shared_ptr<Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
+        {
+            JSB_TESTS_EXECUTION_SCOPE(env.get());
+
+            StringNameCache& cache = env->get_string_name_cache();
+            cache.get_string_value(env->get_isolate(), "blablabla...");
+        }
+        env.reset();
+    }
+
     TEST_CASE("[jsb] Node new/free")
     {
         GodotJSScriptLanguageIniter initer;
@@ -141,8 +197,6 @@ console.assert(!gd.is_instance_valid(node));
 )--", err);
     }
 
-    //TODO enable this test case after bug fixed
-#if JSB_WITH_V8
     TEST_CASE("[jsb] Scripts: test_01")
     {
         GodotJSScriptLanguageIniter initer;
@@ -153,17 +207,15 @@ let gd = require("godot");
 let mod = require("test_01");
 console.assert(typeof mod === "object");
 console.assert(mod.call_me() == 123);
-console.log(typeof mod.default === "function");
+console.assert(typeof mod.default === "function");
 console.log(mod.default);
 let inst = new mod.default();
 console.assert(gd.is_instance_valid(inst));
 console.assert(inst instanceof gd.Node);
 inst.free();
 console.assert(!gd.is_instance_valid(inst));
-
 )--", err);
     }
-#endif
 }
 
 #endif
