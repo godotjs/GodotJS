@@ -1,5 +1,6 @@
 ﻿#ifndef GODOTJS_QUICKJS_HELPER_H
 #define GODOTJS_QUICKJS_HELPER_H
+#include "jsb_quickjs_catch.h"
 #include "jsb_quickjs_pch.h"
 #include "jsb_quickjs_isolate.h"
 #include "jsb_quickjs_primitive.h"
@@ -118,13 +119,12 @@ namespace jsb::impl
         template<int N>
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const char (&message)[N])
         {
-            JS_ThrowInternalError(isolate->ctx(), "%s", message);
+            isolate->throw_error(message);
         }
 
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const String& message)
         {
-            const CharString str8 = message.utf8();
-            JS_ThrowInternalError(isolate->ctx(), "%s", str8.ptr());
+            isolate->throw_error(message);
         }
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
@@ -156,6 +156,7 @@ namespace jsb::impl
 
         static v8::MaybeLocal<v8::Value> compile_run(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
         {
+            jsb_checkf(p_source[p_source_len] == '\0', "JS_Eval needs a zero-terminated string as input to evaluate");
             v8::Isolate* isolate = context->GetIsolate();
             JSContext* ctx = isolate->ctx();
             const CharString filename = p_filename.utf8();
@@ -163,6 +164,7 @@ namespace jsb::impl
             const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.ptr(), flags);
             if (JS_IsException(rval))
             {
+                isolate->mark_as_error_thrown();
                 return v8::MaybeLocal<v8::Value>();
             }
             return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));

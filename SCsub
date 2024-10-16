@@ -151,16 +151,16 @@ class PresetTransformer:
         return data
         
 class PresetDefine:
-    def __init__(self, sourcename: str, targetname: str, transformer: PresetTransformer = None):
+    def __init__(self, sourcename: str, targetname: str, zero_terminated: bool = False, transformer: PresetTransformer = None):
         self.sourcename = sourcename
         self.targetname = targetname
         self.transformer = transformer
+        self.zero_terminated = zero_terminated
 
     def read_source(self):
         with open(self.sourcename, "rb") as input:
             data = input.read()
             return data if self.transformer is None else self.transformer.transform(data)
-    
 
 class AMDSourceTransformer(PresetTransformer):
     def transform(self, data: bytes):
@@ -215,7 +215,7 @@ def generate_method_code(output, methodname, indent, preset_defines: list[Preset
         output.write(indent+indent+f"// target: {targetname} length: {length} modified: {mtime}\n")
         output.write(indent+indent)
         cursor += length
-        positions[targetname] = (targetstart, cursor - targetstart)
+        positions[targetname] = (targetstart, cursor - targetstart)            
         for byte in bytes:
             output.write(f"0x{byte:02x}, ")
             newline += 1
@@ -223,6 +223,9 @@ def generate_method_code(output, methodname, indent, preset_defines: list[Preset
                 newline = 0
                 output.write("\n")
                 output.write(indent+indent)
+        if preset_define.zero_terminated:
+            cursor += 1
+            output.write(f"0x00, ")
                 
         if newline != 0:
             newline = 0
@@ -418,9 +421,10 @@ if jsb_platform == "web":
         "impl/web/jsb_web.library.js",
     ])
 
+zero_terminated = quickjs_support is not None
 generate_code([\
         # presets for runtime
-        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.js", "", AMDSourceTransformer()),
+        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.js", "", zero_terminated, AMDSourceTransformer()),
     ], [\
         # presets for editor only
         PresetDefine("scripts/jsb.bundle/typings/godot.minimal.d.ts", ""),

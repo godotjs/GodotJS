@@ -61,6 +61,7 @@ namespace jsb::tests
             CHECK(ProjectSettings::get_singleton()->setup(p_base_path, String(), true) == OK);
             CHECK(OS::get_singleton()->set_cwd(p_base_path) == OK);
             CHECK(FileAccess::exists("project.godot"));
+            MESSAGE("init GodotJSScriptLanguage on thread ", Thread::get_caller_id());
 
             install_npm();
             compile_scripts();

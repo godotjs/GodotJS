@@ -288,8 +288,19 @@ namespace jsb::impl
             const uint16_t stack_check2 = isolate->push_copy(new_target);
 
             jsb_check(stack_check2 - stack_check1 == FunctionStackBase::Num - 1);
+            static_assert(jsb::impl::FunctionStackBase::Num == 4);
+
+            // push arguments
+            for (int i = 0; i < argc; ++i)
+            {
+                isolate->push_copy(argv[i]);
+            }
 
             constructor_data.callback(info);
+            if (isolate->is_error_thrown())
+            {
+                return JS_EXCEPTION;
+            }
 
             return this_val;
         }

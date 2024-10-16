@@ -5,7 +5,7 @@
 
 namespace jsb
 {
-    bool IModuleResolver::load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const Vector<uint8_t>& p_source)
+    bool IModuleResolver::load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const char* p_source, size_t p_len)
     {
         v8::Isolate* isolate = p_env->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -13,10 +13,10 @@ namespace jsb
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         v8::Context::Scope context_scope(context);
         jsb_check(context == p_env->get_context());
-        jsb_check((int64_t)(int)p_source.size() == p_source.size());
+        jsb_check((size_t)(int)p_len == p_len);
 
         // failed to compile or run, immediately return since an exception should already be thrown
-        const v8::MaybeLocal<v8::Value> func_maybe = p_env->_compile_run((const char*) p_source.ptr(), (int) p_source.size(), p_filename_abs);
+        const v8::MaybeLocal<v8::Value> func_maybe = p_env->_compile_run(p_source, (int) p_len, p_filename_abs);
         if (func_maybe.IsEmpty())
         {
             return false;
@@ -71,22 +71,25 @@ namespace jsb
         return true;
     }
 
-    Vector<uint8_t> DefaultModuleResolver::read_all_bytes(const internal::ISourceReader& p_reader)
+    size_t DefaultModuleResolver::read_all_bytes(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes)
     {
         //TODO (consider) add `global, globalThis` to shadow the real global object
-        constexpr static char header[] = "(function(exports,require,module,__filename,__dirname){";
-        constexpr static char footer[] = "\n})";
+        static constexpr char header[] = "(function(exports,require,module,__filename,__dirname){";
+        static constexpr char footer[] = "\n})";
 
         jsb_check(!p_reader.is_null());
-        Vector<uint8_t> data;
         const size_t file_len = p_reader.get_length();
         jsb_check(file_len);
-        data.resize((int) (file_len + ::std::size(header) + ::std::size(footer) - 2));
+        o_bytes.resize((int) (
+            file_len +
+            ::std::size(header) + ::std::size(footer) - 2
+            + 1 // zero_terminated anyway
+        ));
 
-        memcpy(data.ptrw(), header, ::std::size(header) - 1);
-        p_reader.get_buffer(data.ptrw() + ::std::size(header) - 1, file_len);
-        memcpy(data.ptrw() + file_len + ::std::size(header) - 1, footer, ::std::size(footer) - 1);
-        return data;
+        memcpy(o_bytes.ptrw(), header, ::std::size(header) - 1);
+        p_reader.get_buffer(o_bytes.ptrw() + ::std::size(header) - 1, file_len);
+        memcpy(o_bytes.ptrw() + file_len + ::std::size(header) - 1, footer, ::std::size(footer)); // include the ending zero
+        return o_bytes.size() - 1;
     }
 
     bool DefaultModuleResolver::check_file_path(const String& p_module_id, String& o_path)
@@ -194,12 +197,13 @@ namespace jsb
             return false;
         }
         const String filename_abs = reader.get_path_absolute();
-        const Vector<uint8_t> source = read_all_bytes(reader);
+        Vector<uint8_t> source;
+        const size_t len = read_all_bytes(reader, source);
 #if JSB_SUPPORT_RELOAD
         p_module.time_modified = reader.get_time_modified();
         p_module.hash = reader.get_hash();
 #endif
-        return load_from_source(p_env, p_module, p_asset_path, filename_abs, source);
+        return load_from_source(p_env, p_module, p_asset_path, filename_abs, (const char*) source.ptr(), len);
     }
 
 }

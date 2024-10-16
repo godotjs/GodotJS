@@ -275,7 +275,6 @@ namespace jsb
             ->Get(p_context, jsb_name(environment, __proto__)).ToLocalChecked().As<v8::Object>() // the base class prototype
             ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
         jsb_check(class_obj != dt_base_obj);
-        jsb_check(environment->get_native_class(native_class_id)->clazz.Get(isolate) == dt_base_obj);
 
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
         existed_class_info->base_script_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);

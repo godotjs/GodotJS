@@ -132,7 +132,8 @@ namespace jsb
 
     bool GodotModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
     {
-        static const CharString on_demand_loader_source = ""
+        //TODO cache the func_obj
+        static constexpr char on_demand_loader_source[] = ""
             "(function (type_loader_func) {"
             "    return new Proxy({}, {"
             "        set: function (target, prop_name, value) {"
@@ -160,7 +161,7 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         v8::Context::Scope context_scope(context);
-        const v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run(on_demand_loader_source, on_demand_loader_source.length(), "on_demand_loader_source");
+        const v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run(on_demand_loader_source, std::size(on_demand_loader_source) - 1, "on_demand_loader_source");
         v8::Local<v8::Value> func_local;
         if (!func_maybe_local.ToLocal(&func_local))
         {

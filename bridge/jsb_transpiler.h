@@ -386,15 +386,17 @@ namespace jsb
 
             if (info.Length())
             {
+                const v8::Local<v8::Value> identifier = info[0];
+
                 // (case-2) constructing CDO from C++ (nothing more to do, it's a pure javascript)
-                if (info[0] == jsb_symbol(environment, CDO))
+                if (identifier == jsb_symbol(environment, CDO))
                 {
                     JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", class_info->name, class_id);
                     return;
                 }
 
                 // (case-3) constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
-                if (info[0] == jsb_symbol(environment, CrossBind))
+                if (identifier == jsb_symbol(environment, CrossBind))
                 {
                     JSB_LOG(Verbose, "cross binding from C++. %s(%d)", class_info->name, class_id);
                     return;

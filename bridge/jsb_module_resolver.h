@@ -21,7 +21,7 @@ namespace jsb
 
     protected:
         // `p_filename_abs` the absolute file path accessible for debugger
-        bool load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const Vector<uint8_t>& p_source);
+        bool load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const char* p_source, size_t p_len);
 
     };
 
@@ -40,7 +40,7 @@ namespace jsb
         bool check_file_path(const String& p_module_id, String& o_path);
 
         // read the source buffer (transformed into commonjs)
-        static Vector<uint8_t> read_all_bytes(const internal::ISourceReader& p_reader);
+        static size_t read_all_bytes(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes);
 
         Vector<String> search_paths_;
     };

@@ -53,6 +53,10 @@ namespace v8
         const FunctionCallback callback = (FunctionCallback) JS_VALUE_GET_PTR(func_data[jsb::impl::FuncPayload::kCallback]);
 
         callback(info);
+        if (isolate->is_error_thrown())
+        {
+            return JS_EXCEPTION;
+        }
         return JS_DupValue(isolate->ctx(), (JSValue) info.GetReturnValue());
     }
 

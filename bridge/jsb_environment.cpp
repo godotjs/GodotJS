@@ -805,14 +805,14 @@ namespace jsb
 
         const impl::TryCatch try_catch_run(isolate);
         v8::Local<v8::Value> identifier = jsb_symbol(this, CrossBind);
-        v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
-        jsb_check(!constructed_value.IsEmpty() && !constructed_value.ToLocalChecked()->IsUndefined());
+        const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
         if (try_catch_run.has_caught())
         {
             JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_name, BridgeHelper::get_exception(try_catch_run));
             return {};
         }
 
+        jsb_check(!constructed_value.IsEmpty());
         v8::Local<v8::Value> instance;
         if (!constructed_value.ToLocal(&instance) || !instance->IsObject())
         {
@@ -973,7 +973,7 @@ namespace jsb
         if (try_catch_run.has_caught())
         {
             r_err = ERR_COMPILATION_FAILED;
-            JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch_run));
+            JSB_LOG(Error, "failed to eval_source: %s", BridgeHelper::get_exception(try_catch_run));
             return JSValueMove();
         }
 

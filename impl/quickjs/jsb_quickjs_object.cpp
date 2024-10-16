@@ -36,6 +36,7 @@ namespace v8
         const int res = JS_SetPropertyUint32(isolate_->ctx(), self, index, JS_DupValue(isolate_->ctx(), (JSValue) value));
         if (res == -1)
         {
+            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
         return Maybe<bool>(true);
@@ -48,6 +49,7 @@ namespace v8
         const JSValue val = JS_GetPropertyUint32(isolate_->ctx(), self, index);
         if (JS_IsException(val))
         {
+            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
@@ -60,9 +62,9 @@ namespace v8
 
         const jsb::impl::QuickJS::Atom index(ctx, (JSValue) key);
         const int res = JS_SetProperty(ctx, self, index, JS_DupValue(ctx, (JSValue) value));
-
         if (res == -1)
         {
+            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
         return Maybe<bool>(true);
@@ -75,9 +77,9 @@ namespace v8
 
         const jsb::impl::QuickJS::Atom index(ctx, (JSValue) key);
         const JSValue val = JS_GetProperty(ctx, self, index);
-
         if (JS_IsException(val))
         {
+            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
@@ -92,6 +94,7 @@ namespace v8
 
         if (res == -1)
         {
+            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
         return Maybe<bool>(res);
@@ -103,6 +106,7 @@ namespace v8
         const int res = JS_SetPrototype(ctx, (JSValue) *this, (JSValue) prototype);
         if (res == -1)
         {
+            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
         return Maybe<bool>(res);
@@ -112,22 +116,17 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
         const JSValue self = (JSValue) *this;
-        const JSValue constructor = JS_GetProperty(ctx, self, jsb::impl::JS_ATOM_constructor);
-        if (JS_IsException(constructor))
-        {
-            return MaybeLocal<Value>();
-        }
         JSValue* argvv = jsb_stackalloc(JSValue, argc);
         for (int i = 0; i < argc; ++i)
         {
             argvv[i] = (JSValue) argv[i];
         }
-        const JSValue instance = JS_CallConstructor(ctx, constructor, argc, argvv);
+        const JSValue instance = JS_CallConstructor(ctx, self, argc, argvv);
         if (JS_IsException(instance))
         {
+            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
-        JS_FreeValue(ctx, constructor);
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(instance)));
     }
 
@@ -148,6 +147,7 @@ namespace v8
 
         if (res == -1)
         {
+            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptor
@@ -194,7 +194,8 @@ namespace v8
             constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_VALUE;
 
             //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-            JS_DefineProperty(ctx, this_val, prop, rvo, JS_UNDEFINED, JS_UNDEFINED, flags);
+            const int res = JS_DefineProperty(ctx, this_val, prop, rvo, JS_UNDEFINED, JS_UNDEFINED, flags);
+            jsb_check(res >= 0);
         }
 
         return rvo;
@@ -214,7 +215,11 @@ namespace v8
         //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         JS_FreeValue(ctx, lazy);
 
-        if (res != -1) return Maybe<bool>(!!res);
+        if (res != -1)
+        {
+            isolate_->mark_as_error_thrown();
+            return Maybe<bool>(!!res);
+        }
         return Maybe<bool>();
     }
 
@@ -232,7 +237,11 @@ namespace v8
         //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         const int res = JS_DefineProperty(ctx, this_obj, prop, val, JS_UNDEFINED, JS_UNDEFINED, flags);
 
-        if (res != -1) return Maybe<bool>(!!res);
+        if (res != -1)
+        {
+            isolate_->mark_as_error_thrown();
+            return Maybe<bool>(!!res);
+        }
         return Maybe<bool>();
     }
 
@@ -269,6 +278,7 @@ namespace v8
 
         if (JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) *this, flags) < 0)
         {
+            isolate_->mark_as_error_thrown();
             return MaybeLocal<Array>();
         }
 

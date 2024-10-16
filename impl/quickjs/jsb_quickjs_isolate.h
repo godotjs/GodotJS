@@ -36,7 +36,7 @@ namespace jsb::impl
         uint32_t data;
     };
 
-    enum { kMaxStackSize = 1024 };
+    enum { kMaxStackSize = 512 };
 
     namespace StackPos
     {
@@ -263,6 +263,25 @@ namespace v8
         void _add_reference();
         void _remove_reference();
 
+        template<int N>
+        jsb_force_inline void throw_error(const char (&message)[N])
+        {
+            jsb_checkf(!error_thrown_, "overwriting another error");
+            error_thrown_ = true;
+            JS_ThrowInternalError(ctx_, "%s", message);
+        }
+
+        jsb_force_inline void throw_error(const ::String& message)
+        {
+            jsb_checkf(!error_thrown_, "overwriting another error");
+            error_thrown_ = true;
+            const CharString str8 = message.utf8();
+            JS_ThrowInternalError(ctx_, "%s", str8.ptr());
+        }
+
+        jsb_force_inline void mark_as_error_thrown() { jsb_checkf(!error_thrown_, "overwriting another error"); error_thrown_ = true; }
+        jsb_force_inline bool is_error_thrown() const { return error_thrown_; }
+
     private:
         Isolate();
 
@@ -294,6 +313,7 @@ namespace v8
         Vector<jsb::impl::ConstructorData> constructor_data_;
         HashMap<void*, jsb::impl::Phantom> phantom_;
 
+        bool error_thrown_ = false;
         uint16_t stack_pos_;
         JSValue stack_[jsb::impl::kMaxStackSize];
 

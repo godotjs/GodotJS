@@ -56,6 +56,9 @@ namespace v8
         const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
         rt_ = JS_NewRuntime2(&mf, this);
         ctx_ = JS_NewContext(rt_);
+        static_assert(sizeof(stack_) == sizeof(JSValue) * jsb::impl::kMaxStackSize);
+        // should be fine to leave it uninitialized
+        // memset(stack_, 0, sizeof(stack_));
         const JSValue global = JS_GetGlobalObject(ctx_);
 
         JS_SetRuntimeOpaque(rt_, this);
@@ -234,9 +237,19 @@ namespace v8
     bool Isolate::try_catch()
     {
         const JSValue ex = JS_GetException(ctx_);
+        if (JS_IsNull(ex))
+        {
+            jsb_checkf(JS_IsNull(stack_[jsb::impl::StackPos::Exception]), "exception read but not handled (get_message)");
+            return false;
+        }
+        if (!error_thrown_)
+        {
+            JSB_LOG(Warning, "unexpected exception thrown in quickjs");
+        }
         const JSValue last = stack_[jsb::impl::StackPos::Exception];
         jsb_check(JS_IsNull(last));
         stack_[jsb::impl::StackPos::Exception] = ex;
+        error_thrown_ = false;
         return !JS_IsNull(ex);
     }
 

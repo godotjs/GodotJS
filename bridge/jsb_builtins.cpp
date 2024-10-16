@@ -217,7 +217,9 @@ namespace jsb
         if (const JavaScriptModule* module = env->_load_module(parent_id, module_id))
         {
             info.GetReturnValue().Set(module->exports);
+            return;
         }
+        JSB_LOG(Error, "can not load module '%s' (with parent '%s')", module_id, parent_id);
     }
 
     void Builtins::_set_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
