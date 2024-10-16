@@ -61,6 +61,7 @@ namespace jsb
         //TODO collect methods/signals/properties
         const v8::Local<v8::Object> prototype = class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
 
+        jsb_check(prototype->IsObject());
         // reset CDO of the legacy JS class
         p_class_info->js_default_object.Reset();
 

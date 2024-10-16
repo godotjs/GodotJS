@@ -269,7 +269,7 @@ namespace v8
         JSPropertyEnum *tab;
         uint32_t len;
 
-        int flags = JS_GPN_ENUM_ONLY;
+        int flags = 0;
         if ((filter & SKIP_STRINGS) == 0) flags |= JS_GPN_STRING_MASK;
         if ((filter & SKIP_SYMBOLS) == 0) flags |= JS_GPN_SYMBOL_MASK;
 
