@@ -130,9 +130,11 @@ namespace jsb
         impl::Helper::throw_error(isolate, jsb_format("godot class not found '%s'", type_name));
     }
 
-    bool GodotModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
+    v8::Local<v8::Function> GodotModuleLoader::_get_loader_function(Environment* p_env)
     {
-        //TODO cache the func_obj
+        if (!loader_.IsEmpty()) return loader_.Get(p_env->get_isolate());
+
+        // load_type_impl: function(name)
         static constexpr char on_demand_loader_source[] = ""
             "(function (type_loader_func) {"
             "    return new Proxy({}, {"
@@ -156,23 +158,33 @@ namespace jsb
             "    });"
             "})"
             "";
+        const v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run(on_demand_loader_source, std::size(on_demand_loader_source) - 1, "on_demand_loader_source");
+        if (v8::Local<v8::Value> func_local; func_maybe_local.ToLocal(&func_local))
+        {
+            jsb_check(func_local->IsFunction());
+            const v8::Local<v8::Function> loader = func_local.As<v8::Function>();
+            loader_.Reset(p_env->get_isolate(), loader);
+            return loader;
+        }
+
+        // empty means error thrown in _compile_run()
+        return {};
+    }
+
+    bool GodotModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
+    {
         v8::Isolate* isolate = p_env->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
         v8::Context::Scope context_scope(context);
-        const v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run(on_demand_loader_source, std::size(on_demand_loader_source) - 1, "on_demand_loader_source");
-        v8::Local<v8::Value> func_local;
-        if (!func_maybe_local.ToLocal(&func_local))
+
+        const v8::Local<v8::Function> loader = _get_loader_function(p_env);
+        if (loader.IsEmpty())
         {
-            // empty means error thrown in _compile_run()
             return false;
         }
-        jsb_check(func_local->IsFunction());
-
-        // load_type_impl: function(name)
         v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
-        const v8::Local<v8::Function> loader = func_local.As<v8::Function>();
         const v8::MaybeLocal<v8::Value> result = loader->Call(context, v8::Undefined(isolate), std::size(argv), argv);
         v8::Local<v8::Value> proxy;
         if (!result.ToLocal(&proxy))
