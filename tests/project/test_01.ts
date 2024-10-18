@@ -1,4 +1,4 @@
-import { Node } from "godot"
+import { Node, Variant } from "godot"
 import { tool, export_, help } from "jsb.core"
 
 export function call_me() {
