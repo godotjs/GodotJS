@@ -3,9 +3,6 @@
 
 #include "jsb_v8_pch.h"
 
-#include "../../internal/jsb_logger.h"
-#include "../../internal/jsb_macros.h"
-
 namespace jsb::impl
 {
     class Helper
@@ -143,7 +140,7 @@ namespace jsb::impl
                 return {};
             }
 
-            JSB_LOG(VeryVerbose, "script compiled %s", p_filename);
+            // JSB_LOG(VeryVerbose, "script compiled %s", p_filename);
             return maybe_value;
         }
 

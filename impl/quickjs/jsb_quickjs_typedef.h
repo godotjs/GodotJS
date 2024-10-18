@@ -101,23 +101,6 @@ namespace v8
     using GCCallback = void (*)(Isolate* isolate, GCType type, GCCallbackFlags flags);
     using AccessorNameGetterCallback = void (*)(Local<Name> property, const PropertyCallbackInfo<Value>& info);
 
-    class Platform
-    {
-    };
-
-    namespace platform
-    {
-        inline std::unique_ptr<Platform> NewDefaultPlatform() { return std::make_unique<Platform>(); }
-    }
-
-    class V8
-    {
-    public:
-        static void InitializePlatform(Platform* platform) {}
-        static void Initialize() {}
-        static void SetFlagsFromString(const char* str, size_t len) {}
-    };
-
 }
 
 #endif

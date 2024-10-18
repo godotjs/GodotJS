@@ -20,5 +20,6 @@
 #include "jsb_quickjs_catch.h"
 #include "jsb_quickjs_class.h"
 #include "jsb_quickjs_class_builder.h"
+#include "jsb_quickjs_global_init.h"
 
 #endif

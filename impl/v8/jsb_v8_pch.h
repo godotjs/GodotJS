@@ -7,4 +7,7 @@
 #include <v8-inspector.h>
 #include <v8-version-string.h>
 
+#include "../../internal/jsb_logger.h"
+#include "../../internal/jsb_macros.h"
+
 #endif

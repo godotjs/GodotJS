@@ -28,21 +28,6 @@
 
 namespace jsb
 {
-    struct GlobalInitialize
-    {
-        std::unique_ptr<v8::Platform> platform = v8::platform::NewDefaultPlatform();
-
-        GlobalInitialize()
-        {
-#if JSB_EXPOSE_GC_FOR_TESTING
-            constexpr char args[] = "--expose-gc";
-            v8::V8::SetFlagsFromString(args, std::size(args) - 1);
-#endif
-            v8::V8::InitializePlatform(platform.get());
-            v8::V8::Initialize();
-        }
-    };
-
     struct EnvironmentStore
     {
         // return a Environment shared pointer with a unknown pointer if it's a valid Environment instance.
@@ -190,7 +175,7 @@ namespace jsb
     Environment::Environment() : pending_delete_(nearest_shift(JSB_VARIANT_DELETION_QUEUE_SIZE - 1))
     {
         JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
-        static GlobalInitialize global_initialize;
+        impl::GlobalInitialize::init();
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
         // create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();

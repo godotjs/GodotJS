@@ -3,6 +3,7 @@
 #include "jsb_quickjs_catch.h"
 #include "jsb_quickjs_pch.h"
 #include "jsb_quickjs_isolate.h"
+#include "jsb_quickjs_context.h"
 #include "jsb_quickjs_primitive.h"
 #include "jsb_quickjs_function.h"
 
