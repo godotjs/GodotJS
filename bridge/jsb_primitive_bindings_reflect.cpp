@@ -791,7 +791,7 @@ namespace jsb
 
                 NativeClassInfoPtr class_info = p_env.env->get_native_class(class_id);
                 class_info->finalizer = &finalizer;
-                class_info->clazz = class_builder.Build(p_env.context);
+                class_info->clazz = class_builder.Build();
                 jsb_check(!class_info->clazz.IsEmpty());
                 return class_info;
             }

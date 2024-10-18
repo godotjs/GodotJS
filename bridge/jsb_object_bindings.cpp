@@ -7,8 +7,8 @@ namespace jsb
     NativeClassInfoPtr ObjectReflectBindingUtil::reflect_bind(Environment* p_env, const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id)
     {
         v8::Isolate* isolate = p_env->get_isolate();
-        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        jsb_check(p_env->get_context() == context);
+        v8::HandleScope handle_scope(isolate);
+
         jsb_check(p_class_info);
 
         const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotObject, p_class_info->name);
@@ -139,9 +139,10 @@ namespace jsb
             {
                 NativeClassInfoPtr class_info = p_env->get_native_class(class_id);
 
-                class_info->clazz = class_builder.Build(context);
+                class_info->clazz = class_builder.Build();
                 jsb_check(!class_info->clazz.IsEmpty());
-                JSB_LOG(VeryVerbose, "class info ready %s (%d)", p_class_info->name, class_id);
+                jsb_check(class_info->name == p_class_info->name);
+                JSB_LOG(VeryVerbose, "build class info %s (%d) addr: %s", class_info->name, class_id, class_info.ptr());
                 if (r_class_id) *r_class_id = class_id;
                 return class_info;
             }

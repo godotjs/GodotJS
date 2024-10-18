@@ -56,7 +56,8 @@ namespace jsb
 
         if constexpr (ActiveSeverity == internal::ELogSeverity::Assert)
         {
-            impl::Helper::throw_error(isolate, sb.as_string());
+            const String str = sb.as_string();
+            impl::Helper::throw_error(isolate, str);
             return;
         }
 
@@ -70,21 +71,29 @@ namespace jsb
 
         if constexpr (ActiveSeverity == internal::ELogSeverity::Warning)
         {
-            const String& text = sb.as_string();
+            const String text = sb.as_string();
+            const CharString func_str = source_position.function.utf8();
+            const CharString filename_str = source_position.filename.utf8();
+            const CharString text_str = text.utf8();
+
             internal::IConsoleOutput::internal_write(ActiveSeverity, text);
             _err_print_error(
-                source_position.function.utf8().get_data(), source_position.filename.utf8().get_data(), source_position.line,
-                text.utf8().get_data(),
+                func_str.get_data(), filename_str.get_data(), source_position.line,
+                text_str.get_data(),
                 false, ERR_HANDLER_WARNING);
             return;
         }
         if constexpr (ActiveSeverity == internal::ELogSeverity::Error)
         {
-            const String& text = sb.as_string();
+            const String text = sb.as_string();
+            const CharString func_str = source_position.function.utf8();
+            const CharString filename_str = source_position.filename.utf8();
+            const CharString text_str = text.utf8();
+
             internal::IConsoleOutput::internal_write(ActiveSeverity, text);
             _err_print_error(
-                source_position.function.utf8().get_data(), source_position.filename.utf8().get_data(), source_position.line,
-                text.utf8().get_data(),
+                func_str.get_data(), filename_str.get_data(), source_position.line,
+                text_str.get_data(),
                 true, ERR_HANDLER_ERROR);
             return;
         }
@@ -95,7 +104,7 @@ namespace jsb
                 sb.append("\n");
                 sb.append(stacktrace);
             }
-            const String& text = sb.as_string();
+            const String text = sb.as_string();
             internal::IConsoleOutput::internal_write(ActiveSeverity, text);
             print_line(text);
             return;
@@ -103,7 +112,7 @@ namespace jsb
 
         // trivial prints
         {
-            const String& text = sb.as_string();
+            const String text = sb.as_string();
             internal::IConsoleOutput::internal_write(ActiveSeverity, text);
             print_line(text);
         }

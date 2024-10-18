@@ -20,18 +20,21 @@ namespace jsb::impl
     class ClassBuilder
     {
     private:
+        enum class State { Uninitialized, Building, Inherited, Built };
+
         v8::Isolate* isolate_ = nullptr;
         v8::Local<v8::FunctionTemplate> template_;
         v8::Local<v8::ObjectTemplate> prototype_template_;
 
-        bool closed_ = false;
+        State state_ = State::Uninitialized;
 
     public:
         struct EnumDeclaration
         {
             EnumDeclaration(ClassBuilder& builder, bool is_instance_method, const v8::Local<v8::Name> name) : builder_(builder)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                // DO NOT use HandleScope here, because enumeration_ temporarily saved as a member field of EnumDecl
                 enumeration_ = v8::ObjectTemplate::New(builder_.isolate_);
 
                 if (is_instance_method) builder_.prototype_template_->Set(name, enumeration_);
@@ -40,7 +43,8 @@ namespace jsb::impl
 
             EnumDeclaration& Value(const String& name, int64_t data)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> value = impl_private::Data<int64_t>::New(builder_.isolate_, data);
 
@@ -67,7 +71,9 @@ namespace jsb::impl
             template<size_t N>
             void Method(const char (&name)[N], const v8::FunctionCallback callback)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback);
 
@@ -78,7 +84,9 @@ namespace jsb::impl
             template<typename T>
             void Method(const String& name, const v8::FunctionCallback callback, T data)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback, impl_private::Data<T>::New(builder_.isolate_, data));
 
@@ -90,7 +98,9 @@ namespace jsb::impl
             template<typename T>
             void Property(const String& name, const v8::FunctionCallback getter_cb, const v8::FunctionCallback setter_cb, T data)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> payload = impl_private::Data<T>::New(builder_.isolate_, data);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
@@ -107,7 +117,9 @@ namespace jsb::impl
             template<typename GetterDataT, typename SetterDataT>
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data, const v8::FunctionCallback setter_cb, SetterDataT setter_data)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
                     ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
@@ -123,7 +135,9 @@ namespace jsb::impl
             template<typename GetterDataT>
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
                     ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
@@ -135,7 +149,9 @@ namespace jsb::impl
 
             void LazyProperty(const String& name, const v8::AccessorNameGetterCallback getter)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
 
                 if (is_instance_method) builder_.prototype_template_->SetLazyDataProperty(key, getter);
@@ -145,7 +161,9 @@ namespace jsb::impl
             template<typename T>
             void Value(const v8::Local<v8::Name> key, T val)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
                 if (is_instance_method) builder_.prototype_template_->Set(key, value);
                 else builder_.template_->Set(key, value);
@@ -155,7 +173,9 @@ namespace jsb::impl
             template<typename T>
             void Value(const String& name, T val)
             {
-                jsb_check(!builder_.closed_);
+                jsb_check(builder_.state_ == State::Building);
+                v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
 
@@ -179,16 +199,17 @@ namespace jsb::impl
 
         void Inherit(const Class& base)
         {
-            jsb_check(!closed_);
+            jsb_check(state_ == State::Building);
             jsb_check(!base.IsEmpty());
-            template_->Inherit(base.handle_.Get(isolate_));
+            state_ = State::Inherited;
+            template_->Inherit(base.template_.Get(isolate_));
         }
 
-        Class Build(const v8::Local<v8::Context> context)
+        Class Build()
         {
-            jsb_checkf(!closed_, "class builder is already closed");
-            closed_ = true;
-            return Class(isolate_, template_, template_->GetFunction(context).ToLocalChecked());
+            jsb_check(state_ != State::Built);
+            state_ = State::Built;
+            return Class(isolate_, template_);
         }
 
         template<int InternalFieldCount>
@@ -198,8 +219,9 @@ namespace jsb::impl
 
             ClassBuilder builder;
             builder.isolate_ = isolate;
+            builder.state_ = State::Building;
             builder.template_ = v8::FunctionTemplate::New(isolate, constructor, data);
-            // builder.template_->SetClassName(Helper::new_string(isolate, name));
+            builder.template_->SetClassName(Helper::new_string(isolate, name));
             builder.template_->InstanceTemplate()->SetInternalFieldCount(InternalFieldCount);
             builder.prototype_template_ = builder.template_->PrototypeTemplate();
             return builder;

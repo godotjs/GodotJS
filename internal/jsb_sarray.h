@@ -121,6 +121,7 @@ namespace jsb::internal
 
             S& operator*() const { return *ptr_; }
             S* operator->() const { return ptr_; }
+            uintptr_t ptr() const { return (uintptr_t) ptr_; }
             S* escape()
             {
                 S* ptr = ptr_;

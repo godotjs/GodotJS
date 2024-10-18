@@ -6,6 +6,7 @@
 #include "jsb_quickjs_primitive.h"
 #include "jsb_quickjs_template.h"
 #include "jsb_quickjs_function_interop.h"
+#include "jsb_quickjs_helper.h"
 
 #define JSB_NEW_FUNCTION_TEMPLATE(isolate, name, callback, data) jsb::impl::Helper::NewFunctionTemplate(isolate, name, callback, data)
 
@@ -94,6 +95,7 @@ namespace jsb::impl
             {
                 jsb_check(!builder_.closed_);
                 v8::HandleScope handle_scope(builder_.isolate_);
+
                 const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = JSB_NEW_FUNCTION_TEMPLATE(builder_.isolate_, name, callback, impl_private::Data<T>::New(builder_.isolate_, data));
 
@@ -214,7 +216,7 @@ namespace jsb::impl
             jsb_check(res == 1);
         }
 
-        Class Build(const v8::Local<v8::Context> context)
+        Class Build()
         {
             jsb_checkf(!closed_, "class builder is already closed");
             closed_ = true;

@@ -12,8 +12,7 @@
         v8::Isolate* isolate = env->get_isolate();\
         NativeClassInfoPtr class_info = env->get_native_class(class_id);\
         class_info->finalizer = &finalizer;\
-        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor, *class_id);\
-        return class_builder;\
+        return impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor, *class_id);\
     }
 
 #define JSB_CLASS_BOILERPLATE_ARGS() \
@@ -23,8 +22,7 @@
         v8::Isolate* isolate = env->get_isolate();\
         NativeClassInfoPtr class_info = env->get_native_class(class_id);\
         class_info->finalizer = &finalizer;\
-        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor<TArgs...>, *class_id);\
-        return class_builder;\
+        return impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor<TArgs...>, *class_id);\
     }
 
 #define JSB_CONTEXT_BOILERPLATE() \
@@ -363,19 +361,7 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
             const NativeClassInfoPtr class_info = environment->get_native_class(class_id);
             jsb_check(class_info->type == NativeClassType::GodotObject);
-            const v8::Local<v8::Value> new_target = info.NewTarget();
 
-            // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
-            if (class_info->clazz.NewTarget(isolate) == new_target)
-            {
-                const v8::Local<v8::Object> self = info.This();
-                Object* gd_object = ClassDB::instantiate(class_info->name);
-
-                // IS IT A TRUTH that ref_count==1 after creation_func??
-                jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
-                environment->bind_godot_object(class_id, gd_object, self);
-                return;
-            }
             // We need to handle different cases of cross-binding here.
             // 1. new SubClass() which defined in scripts
             // 2. new CDO() from C++
@@ -406,10 +392,26 @@ namespace jsb
                 return;
             }
 
+            jsb_check(info.NewTarget()->IsObject());
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const v8::Local<v8::Object> new_target = info.NewTarget().As<v8::Object>();
+
+            // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
+            if (new_target->HasOwnProperty(context, jsb_symbol(environment, ClassId)).ToChecked())
+            // if (class_info->clazz.NewTarget(isolate) == new_target)
+            {
+                const v8::Local<v8::Object> self = info.This();
+                Object* gd_object = ClassDB::instantiate(class_info->name);
+
+                // IS IT A TRUTH that ref_count==1 after creation_func??
+                jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
+                environment->bind_godot_object(class_id, gd_object, self);
+                return;
+            }
+
             // (case-1) new from scripts
             v8::Local<v8::Value> cross_bind_sym;
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            if (new_target.As<v8::Object>()->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
+            if (new_target->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
             {
                 const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym.As<v8::Uint32>()->Value();
                 const ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
@@ -420,7 +422,10 @@ namespace jsb
                 return;
             }
 
-            jsb_checkf(false, "unexpected new.target. %s(%d)", class_info->name, class_id);
+            impl::Helper::throw_error(isolate, jsb_format(
+                "unexpected 'new.target', you may be instantiating a script class which is not exported as default. class: %s [native: %s (%d)]",
+                impl::Helper::to_string_opt(isolate, new_target->Get(context, jsb_name(environment, name))),
+                class_info->name, class_id));
         }
 
         static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
