@@ -14,9 +14,9 @@ namespace jsb
         virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
 
     private:
-        v8::Local<v8::Function> _get_loader_function(Environment* p_env);
+        v8::Local<v8::Object> _get_loader_proxy(Environment* p_env);
 
-        v8::Global<v8::Function> loader_;
+        v8::Global<v8::Object> loader_;
 
     };
 

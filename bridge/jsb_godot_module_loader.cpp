@@ -130,7 +130,7 @@ namespace jsb
         impl::Helper::throw_error(isolate, jsb_format("godot class not found '%s'", type_name));
     }
 
-    v8::Local<v8::Function> GodotModuleLoader::_get_loader_function(Environment* p_env)
+    v8::Local<v8::Object> GodotModuleLoader::_get_loader_proxy(Environment* p_env)
     {
         if (!loader_.IsEmpty()) return loader_.Get(p_env->get_isolate());
 
@@ -143,15 +143,15 @@ namespace jsb
             "                throw new Error(`only string key is allowed`);"
             "            }"
             "            if (typeof target[prop_name] !== 'undefined') {"
-            "                target[prop_name] = value;"
-            "                return;"
+            "                console.warn('overwriting existing value', prop_name);"
             "            }"
-            "            throw new Error(prop_name + ' is inaccessible');"
+            "            target[prop_name] = value;"
             "        },"
             "        get: function (target, prop_name) {"
             "            let o = target[prop_name];"
             "            if (typeof o === 'undefined' && typeof prop_name === 'string') {"
             "                o = target[prop_name] = type_loader_func(prop_name);"
+            "                if (typeof o['name'] !== 'undefined') console.log('debug', prop_name, o.name, o.prototype.__proto__.name, 'fucked??');"
             "            }"
             "            return o;"
             "        }"
@@ -163,8 +163,21 @@ namespace jsb
         {
             jsb_check(func_local->IsFunction());
             const v8::Local<v8::Function> loader = func_local.As<v8::Function>();
-            loader_.Reset(p_env->get_isolate(), loader);
-            return loader;
+
+            v8::Isolate* isolate = p_env->get_isolate();
+            const v8::Local<v8::Context> context = p_env->get_context();
+            v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
+            const v8::MaybeLocal<v8::Value> result = loader->Call(context, v8::Undefined(isolate), std::size(argv), argv);
+
+            if (v8::Local<v8::Value> proxy; result.ToLocal(&proxy))
+            {
+#if JSB_WITH_V8
+                jsb_check(proxy->IsProxy());
+#endif
+                loader_.Reset(p_env->get_isolate(), proxy.As<v8::Object>());
+                return proxy.As<v8::Object>();
+            }
+            // empty means error thrown in Call()
         }
 
         // empty means error thrown in _compile_run()
@@ -176,28 +189,17 @@ namespace jsb
         v8::Isolate* isolate = p_env->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        v8::Local<v8::Context> context = p_env->get_context();
         v8::Context::Scope context_scope(context);
 
-        const v8::Local<v8::Function> loader = _get_loader_function(p_env);
+        const v8::Local<v8::Object> loader = _get_loader_proxy(p_env);
         if (loader.IsEmpty())
         {
             return false;
         }
-        v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
-        const v8::MaybeLocal<v8::Value> result = loader->Call(context, v8::Undefined(isolate), std::size(argv), argv);
-        v8::Local<v8::Value> proxy;
-        if (!result.ToLocal(&proxy))
-        {
-            // empty means error thrown in Call()
-            return false;
-        }
-#if JSB_WITH_V8
-        jsb_check(proxy->IsProxy());
-#endif
 
         // it's a proxy object which will load godot type on-demand until it's actually accessed in a script
-        p_module.exports.Reset(isolate, proxy.As<v8::Object>());
+        p_module.exports.Reset(isolate, loader);
         return true;
     }
 
