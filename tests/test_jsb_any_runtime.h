@@ -4,11 +4,32 @@
 #include "jsb_test_helpers.h"
 #include "../bridge/jsb_builtins.h"
 
+#define JSB_TESTS_OPTION_ENABLED(OptionName) kOption_##OptionName
+#define JSB_TESTS_OPTION_DEFINE(OptionName, IsEnabled) enum { kOption_##OptionName = IsEnabled };
+
 // universal test cases for any runtime
 namespace jsb::tests
 {
     struct Bindings
     {
+        static void message(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            StringBuilder sb;
+            int index = 0;
+
+            for (const int n = info.Length(); index < n; ++index)
+            {
+                if (String str = BridgeHelper::stringify(isolate, info[index]); str.length() > 0)
+                {
+                    sb.append(" ");
+                    sb.append(str);
+                }
+            }
+
+            MESSAGE("[JS]", sb.as_string());
+        }
+
         // info[0] - set
         // info[1] - super get
         static void check_class(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -35,7 +56,7 @@ namespace jsb::tests
         }
     };
 
-    TEST_CASE("[jsb] isolate.essential")
+    TEST_CASE("[jsb] raw isolate essential tests")
     {
         impl::GlobalInitialize::init();
         ArrayBufferAllocator allocator;
@@ -46,7 +67,7 @@ namespace jsb::tests
         v8::Global<v8::Context> context_v;
         {
             {
-                v8::Isolate::Scope isolate_scope(isolate);
+                // v8::Isolate::Scope isolate_scope(isolate);
                 v8::HandleScope scope_0(isolate);
                 v8::Local<v8::Context> context = v8::Context::New(isolate);
 
@@ -56,7 +77,7 @@ namespace jsb::tests
 
             // test Map::New()
             {
-                v8::Isolate::Scope isolate_scope(isolate);
+                // v8::Isolate::Scope isolate_scope(isolate);
                 v8::HandleScope scope_1(isolate);
                 v8::Local<v8::Context> context = context_v.Get(isolate);
                 const v8::Context::Scope context_scope(context);
@@ -67,7 +88,7 @@ namespace jsb::tests
 
             // test Symbol::New()
             {
-                v8::Isolate::Scope isolate_scope(isolate);
+                // v8::Isolate::Scope isolate_scope(isolate);
                 v8::HandleScope scope_1(isolate);
                 v8::Local<v8::Context> context = context_v.Get(isolate);
                 const v8::Context::Scope context_scope(context);
@@ -108,7 +129,7 @@ namespace jsb::tests
                 builder1.Static().Value(impl::Helper::new_string(isolate, "Native1"), (uint32_t) 1);
                 builder1.Static().Method("Function", StubBindings::function);
                 builder1.Instance().Method("Method", StubBindings::method);
-                class1 = builder1.Build(context);
+                class1 = builder1.Build();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "B1"), class1.Get(isolate)).Check();
                 Builtins::register_(context, context->Global());
             // }
@@ -119,7 +140,7 @@ namespace jsb::tests
 
                 impl::ClassBuilder builder2 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B2", StubBindings::constructor, 0);
                 builder2.Inherit(class1);
-                class2 = builder2.Build(context);
+                class2 = builder2.Build();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "B2"), class2.Get(isolate)).Check();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "check_class"), v8::Function::New(context, Bindings::check_class).ToLocalChecked()).Check();
             }
@@ -187,67 +208,135 @@ return 1+1;
         GodotJSScriptLanguageIniter initer;
 
         {
-            JSB_TESTS_EXECUTION_SCOPE(GodotJSScriptLanguage::get_singleton()->get_environment().get());
+            std::shared_ptr<jsb::Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
+            JSB_TESTS_EXECUTION_SCOPE(env.get());
+            v8::Isolate* isolate = env->get_isolate();
+            const v8::Local<v8::Context> context = env->get_context();
 
-            const NativeClassInfoPtr node_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Node"));
-            const NativeClassInfoPtr object_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Object"));
-            v8::Isolate* isolate = GodotJSScriptLanguage::get_singleton()->get_environment()->get_isolate();
-            const v8::Local<v8::Context> context = GodotJSScriptLanguage::get_singleton()->get_environment()->get_context();
-            const v8::Local<v8::Object> global_obj = context->Global();
-            global_obj->Set(context, impl::Helper::new_string(isolate, "GDNode"), node_class->clazz.Get(isolate));
-            global_obj->Set(context, impl::Helper::new_string(isolate, "GDObject"), object_class->clazz.Get(isolate));
-        }
-        static constexpr char source[] = R"--(
-(function () {
-console.assert(GDObject.prototype.constructor === GDObject, "self check");
-console.assert(GDNode.prototype instanceof GDObject, "base check by instanceof");
-console.assert(GDNode.prototype.__proto__ === GDObject.prototype, "base check");
-})
+            // test class builder
+            {
+                v8::HandleScope scope_1(isolate);
+                // const v8::Context::Scope context_scope(context);
+
+                Builtins::register_(context, context->Global());
+
+                auto exposed = env->expose_godot_object_class(ClassDB::classes.getptr("Object"));
+
+                impl::ClassBuilder builder1 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B1", StubBindings::constructor, 0);
+                builder1.Static().Value(impl::Helper::new_string(isolate, "Native1"), (uint32_t) 1);
+                builder1.Static().Method("Function1", StubBindings::function);
+                builder1.Instance().Method("Method1", StubBindings::method);
+
+                builder1.Inherit(exposed->clazz);
+                impl::Class class1 = builder1.Build();
+
+                impl::ClassBuilder builder2 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B2", StubBindings::constructor, 0);
+                builder2.Static().Value(impl::Helper::new_string(isolate, "Native2"), (uint32_t) 1);
+                builder2.Static().Method("Function2", StubBindings::function);
+                builder2.Instance().Method("Method2", StubBindings::method);
+                builder2.Inherit(class1);
+                impl::Class class2 = builder2.Build();
+
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "B1"), class1.Get(isolate)).Check();
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "B2"), class2.Get(isolate)).Check();
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "check_class"), v8::Function::New(context, Bindings::check_class).ToLocalChecked()).Check();
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "message"), v8::Function::New(context, Bindings::message).ToLocalChecked()).Check();
+
+                CHECK(class1.Get(isolate) == class1.Get(isolate));
+                CHECK(class2.Get(isolate) == class2.Get(isolate));
+            }
+
+            // test script class inheriting
+            {
+                v8::HandleScope scope_1(isolate);
+                // const v8::Context::Scope context_scope(context);
+
+                static constexpr char source[] = R"--((function() {
+message("!!!!");
+message(require("godot").Object.name);
+message(require("godot").Node.name);
+message(require("godot").Node.prototype.__proto__.constructor.name);
+message(B1.prototype instanceof require("godot").Object);
+message(B1.prototype.constructor.name);
+message(B2.prototype.constructor.name);
+message(B1.prototype.__proto__.constructor.name);
+message(B2.prototype.__proto__.constructor.name);
+console.assert(B1.name == "B1");
+
+class S1 extends B1 {}
+class S2 extends B2 {}
+class S3 extends S2 {}
+let s2 = new S2();
+console.assert(s2 instanceof B1);
+
+//
+console.assert(typeof Object.getOwnPropertyDescriptor(S1, "Native1") === "undefined");
+console.assert(typeof Object.getOwnPropertyDescriptor(B1, "Native1") === "object");
+
+// check FunctionTemplate inheriting
+console.assert(s2 instanceof B2);
+console.assert(s2 instanceof B1);
+console.assert(B2.prototype.constructor === B2);
+console.assert(B2.prototype instanceof B1);
+console.assert(B2.prototype.__proto__ === B1.prototype);
+check_class(S2, S3);
+return 1+1;
+})()
 )--";
-        {
-            v8::Isolate* isolate = GodotJSScriptLanguage::get_singleton()->get_environment()->get_isolate();
-
-            v8::Global<v8::Function> eval;
-            {
-                JSB_TESTS_EXECUTION_SCOPE(GodotJSScriptLanguage::get_singleton()->get_environment().get());
-                const v8::Local<v8::Context> context = GodotJSScriptLanguage::get_singleton()->get_environment()->get_context();
-
-                impl::TryCatch try_catch(isolate);
-                v8::MaybeLocal<v8::Value> rval = impl::Helper::compile_run(context, source, ::std::size(source) - 1, "testcase.js");
-                Utils::print_exception(try_catch);
-                CHECK(!rval.IsEmpty());
-                CHECK(rval.ToLocalChecked()->IsFunction());
-                eval.Reset(isolate, rval.ToLocalChecked().As<v8::Function>());
-            }
-            {
-                JSB_TESTS_EXECUTION_SCOPE(GodotJSScriptLanguage::get_singleton()->get_environment().get());
-                const v8::Local<v8::Context> context = GodotJSScriptLanguage::get_singleton()->get_environment()->get_context();
-
-                impl::TryCatch try_catch(isolate);
-                v8::MaybeLocal<v8::Value> rval = eval.Get(isolate)->Call(context, v8::Undefined(isolate), 0, nullptr);
-                Utils::print_exception(try_catch);
-                CHECK(!eval.IsEmpty());
-                CHECK(!rval.IsEmpty());
-                CHECK(rval.ToLocalChecked()->IsUndefined());
+                Error err;
+                env->eval_source(source, std::size(source) - 1, "testcase.js", err);
+                CHECK(err == OK);
             }
         }
-        // {
-        //     Error err;
-        //     GodotJSScriptLanguage::get_singleton()->eval_source(source, err);
-        //     CHECK(err == OK);
-        // }
     }
 
     TEST_CASE("[jsb] Node new/free/instanceof")
     {
         GodotJSScriptLanguageIniter initer;
 
+        {
+            JSB_TESTS_EXECUTION_SCOPE(GodotJSScriptLanguage::get_singleton()->get_environment().get());
+            v8::Isolate* isolate = GodotJSScriptLanguage::get_singleton()->get_environment()->get_isolate();
+            const v8::Local<v8::Context> context = GodotJSScriptLanguage::get_singleton()->get_environment()->get_context();
+            const v8::Local<v8::Object> global_obj = context->Global();
+
+            {
+                GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Node"));
+                GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Object"));
+                GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("CanvasItem"));
+            }
+            const NativeClassInfoPtr node_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Node"));
+            const NativeClassInfoPtr object_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Object"));
+            const NativeClassInfoPtr canvas_item_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("CanvasItem"));
+            global_obj->Set(context, impl::Helper::new_string(isolate, "GDNode"), node_class->clazz.Get(isolate));
+            global_obj->Set(context, impl::Helper::new_string(isolate, "GDObject"), object_class->clazz.Get(isolate));
+            global_obj->Set(context, impl::Helper::new_string(isolate, "GDCanvasItem"), canvas_item_class->clazz.Get(isolate));
+        }
         Error err;
         GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
 let gd = require("godot");
+console.assert(GDObject.prototype.constructor === GDObject, "self check");
+console.assert(GDNode.prototype instanceof GDObject, "base check by instanceof");
+console.assert(GDNode.prototype.__proto__ === GDObject.prototype, "base check");
+console.assert(GDObject === gd.Object);
+console.assert(GDNode === gd.Node);
+console.assert(GDCanvasItem === gd.CanvasItem);
+console.assert(GDNode.prototype instanceof gd.Object);
+console.assert(GDCanvasItem.prototype instanceof gd.Node);
+console.assert(GDCanvasItem.prototype instanceof gd.Object);
+console.assert(gd.Button.prototype instanceof gd.BaseButton);
+console.assert(gd.Button.prototype instanceof gd.Control);
+console.assert(gd.Button.prototype instanceof gd.CanvasItem);
+console.assert(gd.Button.prototype instanceof gd.Node);
+console.assert(gd.Button.prototype instanceof gd.Object);
+console.assert(gd.Object.name == "Object");
+console.assert(gd.Node.name == "Node");
+console.assert(gd.Node === require("godot").Node);
 let node = new gd.Node();
 console.assert(gd.is_instance_valid(node));
 console.assert(node instanceof gd.Node);
+console.assert(gd.Node.prototype.__proto__.name === gd.Object.name, `${gd.Node.prototype.__proto__.name}, ${gd.Node.name}, ${gd.Object.name}`);
+console.assert(gd.Node.prototype instanceof gd.Object);
 console.assert(node instanceof gd.Object);
 node.free();
 console.assert(!gd.is_instance_valid(node));
