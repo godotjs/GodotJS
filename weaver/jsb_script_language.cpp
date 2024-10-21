@@ -50,9 +50,7 @@ void GodotJSScriptLanguage::init()
     jsb::DefaultModuleResolver& resolver = environment_->add_module_resolver<jsb::DefaultModuleResolver>()
         .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
         .add_search_path("res://") // use the root directory as custom lib path by default
-#ifdef TOOLS_ENABLED
         .add_search_path("res://node_modules") // so far, it's only for editor scripting
-#endif
     ;
 
     for (const String& path : jsb::internal::Settings::get_additional_search_paths())
