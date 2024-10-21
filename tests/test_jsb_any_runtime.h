@@ -237,6 +237,7 @@ return 1+1;
                 builder2.Inherit(class1);
                 impl::Class class2 = builder2.Build();
 
+                context->Global()->Set(context, impl::Helper::new_string(isolate, "GDObject"), exposed->clazz.Get(isolate)).Check();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "B1"), class1.Get(isolate)).Check();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "B2"), class2.Get(isolate)).Check();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "check_class"), v8::Function::New(context, Bindings::check_class).ToLocalChecked()).Check();
@@ -252,15 +253,15 @@ return 1+1;
                 // const v8::Context::Scope context_scope(context);
 
                 static constexpr char source[] = R"--((function() {
-message("!!!!");
-message(require("godot").Object.name);
-message(require("godot").Node.name);
-message(require("godot").Node.prototype.__proto__.constructor.name);
-message(B1.prototype instanceof require("godot").Object);
-message(B1.prototype.constructor.name);
-message(B2.prototype.constructor.name);
-message(B1.prototype.__proto__.constructor.name);
-message(B2.prototype.__proto__.constructor.name);
+console.assert(GDObject.name == "Object");
+console.assert(B1.prototype.constructor.name == "B1");
+console.assert(B2.prototype.constructor.name == "B2");
+console.assert(B1.prototype.__proto__.constructor.name == "Object");
+console.assert(B2.prototype.__proto__.constructor.name == "B1");
+console.assert(require("godot").Node.prototype.__proto__.constructor.name == "Object");
+console.assert(require("godot").Node.prototype instanceof require("godot").Object);
+console.assert(B1.prototype instanceof require("godot").Object);
+console.assert(B1.prototype instanceof GDObject);
 console.assert(B1.name == "B1");
 
 class S1 extends B1 {}
@@ -335,8 +336,8 @@ console.assert(gd.Node === require("godot").Node);
 let node = new gd.Node();
 console.assert(gd.is_instance_valid(node));
 console.assert(node instanceof gd.Node);
-console.assert(gd.Node.prototype.__proto__.name === gd.Object.name, `${gd.Node.prototype.__proto__.name}, ${gd.Node.name}, ${gd.Object.name}`);
 console.assert(gd.Node.prototype instanceof gd.Object);
+console.assert(gd.Node.prototype.__proto__.constructor.name == gd.Object.name, `${gd.Node.prototype.__proto__.constructor.name}, ${gd.Node.name}, ${gd.Object.name}`);
 console.assert(node instanceof gd.Object);
 node.free();
 console.assert(!gd.is_instance_valid(node));

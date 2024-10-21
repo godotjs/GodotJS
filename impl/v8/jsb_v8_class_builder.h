@@ -31,160 +31,176 @@ namespace jsb::impl
     public:
         struct EnumDeclaration
         {
-            EnumDeclaration(ClassBuilder& builder, bool is_instance_method, const v8::Local<v8::Name> name) : builder_(builder)
-            {
-                jsb_check(builder_.state_ == State::Building);
-                // DO NOT use HandleScope here, because enumeration_ temporarily saved as a member field of EnumDecl
-                enumeration_ = v8::ObjectTemplate::New(builder_.isolate_);
+            EnumDeclaration(const EnumDeclaration&) = delete;
+            EnumDeclaration& operator=(const EnumDeclaration&) = delete;
 
-                if (is_instance_method) builder_.prototype_template_->Set(name, enumeration_);
-                else builder_.template_->Set(name, enumeration_);
+            EnumDeclaration(EnumDeclaration&&) noexcept = default;
+            EnumDeclaration& operator=(EnumDeclaration&&) noexcept = default;
+
+            EnumDeclaration(ClassBuilder* builder, bool is_instance_method, const v8::Local<v8::Name> name) : builder_(builder)
+            {
+                jsb_check(builder_->state_ == State::Building);
+                // DO NOT use HandleScope here, because enumeration_ temporarily saved as a member field of EnumDecl
+                enumeration_ = v8::Object::New(builder_->isolate_);
+
+                //NOTE a workaround to define nested enum in a class
+                const v8::Local<v8::FunctionTemplate> getter = v8::FunctionTemplate::New(builder_->isolate_, _getter, enumeration_);
+
+                if (is_instance_method) builder_->prototype_template_->SetAccessorProperty(name, getter);
+                else builder_->template_->SetAccessorProperty(name, getter);
             }
 
             EnumDeclaration& Value(const String& name, int64_t data)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
-                const v8::Local<v8::Value> value = impl_private::Data<int64_t>::New(builder_.isolate_, data);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
+                const v8::Local<v8::Value> value = impl_private::Data<int64_t>::New(builder_->isolate_, data);
+                const v8::Local<v8::Context> context = builder_->isolate_->GetCurrentContext();
 
-                enumeration_->Set(key, value);
+                enumeration_->DefineOwnProperty(context, key, value);
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-                enumeration_->Set(value->ToString(builder_.isolate_->GetCurrentContext()).ToLocalChecked(), key, v8::DontEnum);
+                enumeration_->DefineOwnProperty(context, value->ToString(context).ToLocalChecked(), key, v8::DontEnum);
                 return *this;
             }
 
         private:
-            ClassBuilder& builder_;
-            v8::Local<v8::ObjectTemplate> enumeration_;
+            static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
+            {
+                info.GetReturnValue().Set(info.Data());
+            }
+
+        private:
+            ClassBuilder* builder_;
+            v8::Local<v8::Object> enumeration_;
         };
 
         struct MemberDeclaration
         {
-            MemberDeclaration(ClassBuilder& builder, bool is_instance_method) : builder_(builder), is_instance_method(is_instance_method) {}
+            MemberDeclaration(ClassBuilder* builder, bool is_instance_method) : builder_(builder), is_instance_method(is_instance_method) {}
 
             EnumDeclaration Enum(const String& name)
             {
-                return EnumDeclaration(builder_, is_instance_method, Helper::new_string(builder_.isolate_, name));
+                return EnumDeclaration(builder_, is_instance_method, Helper::new_string(builder_->isolate_, name));
             }
 
             template<size_t N>
             void Method(const char (&name)[N], const v8::FunctionCallback callback)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
-                const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback);
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
+                const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_->isolate_, callback);
 
-                if (is_instance_method) builder_.prototype_template_->Set(key, value);
-                else builder_.template_->Set(key, value);
+                if (is_instance_method) builder_->prototype_template_->Set(key, value);
+                else builder_->template_->Set(key, value);
             }
 
             template<typename T>
             void Method(const String& name, const v8::FunctionCallback callback, T data)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
-                const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_.isolate_, callback, impl_private::Data<T>::New(builder_.isolate_, data));
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
+                const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_->isolate_, callback, impl_private::Data<T>::New(builder_->isolate_, data));
 
-                if (is_instance_method) builder_.prototype_template_->Set(key, value);
-                else builder_.template_->Set(key, value);
+                if (is_instance_method) builder_->prototype_template_->Set(key, value);
+                else builder_->template_->Set(key, value);
             }
 
             // getter/setter with common data payload
             template<typename T>
             void Property(const String& name, const v8::FunctionCallback getter_cb, const v8::FunctionCallback setter_cb, T data)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
-                const v8::Local<v8::Value> payload = impl_private::Data<T>::New(builder_.isolate_, data);
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
+                const v8::Local<v8::Value> payload = impl_private::Data<T>::New(builder_->isolate_, data);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, payload)
+                    ? v8::FunctionTemplate::New(builder_->isolate_, getter_cb, payload)
                     : v8::Local<v8::FunctionTemplate>();
                 const v8::Local<v8::FunctionTemplate> setter = setter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, setter_cb, payload)
+                    ? v8::FunctionTemplate::New(builder_->isolate_, setter_cb, payload)
                     : v8::Local<v8::FunctionTemplate>();;
 
-                if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter, setter);
-                else builder_.template_->SetAccessorProperty(key, getter, setter);
+                if (is_instance_method) builder_->prototype_template_->SetAccessorProperty(key, getter, setter);
+                else builder_->template_->SetAccessorProperty(key, getter, setter);
             }
 
             template<typename GetterDataT, typename SetterDataT>
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data, const v8::FunctionCallback setter_cb, SetterDataT setter_data)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
+                    ? v8::FunctionTemplate::New(builder_->isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_->isolate_, getter_data))
                     : v8::Local<v8::FunctionTemplate>();
                 const v8::Local<v8::FunctionTemplate> setter = setter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, setter_cb, impl_private::Data<SetterDataT>::New(builder_.isolate_, setter_data))
+                    ? v8::FunctionTemplate::New(builder_->isolate_, setter_cb, impl_private::Data<SetterDataT>::New(builder_->isolate_, setter_data))
                     : v8::Local<v8::FunctionTemplate>();
 
-                if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter, setter);
-                else builder_.template_->SetAccessorProperty(key, getter, setter);
+                if (is_instance_method) builder_->prototype_template_->SetAccessorProperty(key, getter, setter);
+                else builder_->template_->SetAccessorProperty(key, getter, setter);
             }
 
             template<typename GetterDataT>
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
                 const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? v8::FunctionTemplate::New(builder_.isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_.isolate_, getter_data))
+                    ? v8::FunctionTemplate::New(builder_->isolate_, getter_cb, impl_private::Data<GetterDataT>::New(builder_->isolate_, getter_data))
                     : v8::Local<v8::FunctionTemplate>();
 
-                if (is_instance_method) builder_.prototype_template_->SetAccessorProperty(key, getter);
-                else builder_.template_->SetAccessorProperty(key, getter);
+                if (is_instance_method) builder_->prototype_template_->SetAccessorProperty(key, getter);
+                else builder_->template_->SetAccessorProperty(key, getter);
             }
 
             void LazyProperty(const String& name, const v8::AccessorNameGetterCallback getter)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
 
-                if (is_instance_method) builder_.prototype_template_->SetLazyDataProperty(key, getter);
-                else builder_.template_->SetLazyDataProperty(key, getter);
+                if (is_instance_method) builder_->prototype_template_->SetLazyDataProperty(key, getter);
+                else builder_->template_->SetLazyDataProperty(key, getter);
             }
 
             template<typename T>
             void Value(const v8::Local<v8::Name> key, T val)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
-                if (is_instance_method) builder_.prototype_template_->Set(key, value);
-                else builder_.template_->Set(key, value);
+                const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_->isolate_, val);
+                if (is_instance_method) builder_->prototype_template_->Set(key, value);
+                else builder_->template_->Set(key, value);
             }
 
             // generic set
             template<typename T>
             void Value(const String& name, T val)
             {
-                jsb_check(builder_.state_ == State::Building);
-                v8::HandleScope handle_scope(builder_.isolate_);
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
 
-                const v8::Local<v8::Name> key = Helper::new_string(builder_.isolate_, name);
-                const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_.isolate_, val);
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
+                const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_->isolate_, val);
 
-                if (is_instance_method) builder_.prototype_template_->Set(key, value);
-                else builder_.template_->Set(key, value);
+                if (is_instance_method) builder_->prototype_template_->Set(key, value);
+                else builder_->template_->Set(key, value);
             }
 
         private:
-            ClassBuilder& builder_;
+            ClassBuilder* builder_;
             bool is_instance_method;
         };
 
@@ -194,8 +210,8 @@ namespace jsb::impl
         ClassBuilder(ClassBuilder&&) noexcept = default;
         ClassBuilder& operator=(ClassBuilder&&) = default;
 
-        MemberDeclaration Static() { return MemberDeclaration(*this, false); }
-        MemberDeclaration Instance() { return MemberDeclaration(*this, true); }
+        MemberDeclaration Static() { return MemberDeclaration(this, false); }
+        MemberDeclaration Instance() { return MemberDeclaration(this, true); }
 
         void Inherit(const Class& base)
         {

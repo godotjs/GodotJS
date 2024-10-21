@@ -151,7 +151,6 @@ namespace jsb
             "            let o = target[prop_name];"
             "            if (typeof o === 'undefined' && typeof prop_name === 'string') {"
             "                o = target[prop_name] = type_loader_func(prop_name);"
-            "                if (typeof o['name'] !== 'undefined') console.log('debug', prop_name, o.name, o.prototype.__proto__.name, 'fucked??');"
             "            }"
             "            return o;"
             "        }"

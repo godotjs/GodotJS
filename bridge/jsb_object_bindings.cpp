@@ -81,46 +81,47 @@ namespace jsb
                 }
             }
 
-            if (p_class_info->name == jsb_string_name(Object))
-            {
-                // class: special methods
-                class_builder.Instance().Method(jsb_literal(free), _godot_object_free);
-            }
+             if (p_class_info->name == jsb_string_name(Object))
+             {
+                 // class: special methods
+                 class_builder.Instance().Method(jsb_literal(free), _godot_object_free);
+             }
 
-            // class: signals
-            for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
-            {
-                const StringName& name_str = pair.key;
-                const StringNameID string_id = p_env->get_string_name_cache().get_string_id(name_str);
-                class_builder.Instance().Property(pair.key, _godot_object_signal, *string_id);
-            }
+             // class: signals
+             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
+             {
+                 const StringName& name_str = pair.key;
+                 const StringNameID string_id = p_env->get_string_name_cache().get_string_id(name_str);
+                 class_builder.Instance().Property(pair.key, _godot_object_signal, *string_id);
+             }
 
-            HashSet<StringName> enum_consts;
+             HashSet<StringName> enum_consts;
 
-            // class: enum (nested in class)
-            for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
-            {
-                auto enumeration = static_builder.Enum(pair.key);
-                for (const StringName& enum_name : pair.value.constants)
-                {
-                    const String& enum_name_str = (String) enum_name;
-                    jsb_not_implemented(enum_name_str.contains("."), "hierarchically nested definition is currently not supported");
-                    const auto& const_it = p_class_info->constant_map.find(enum_name);
-                    jsb_check(const_it);
-                    enumeration.Value(enum_name_str, const_it->value);
-                    enum_consts.insert(enum_name);
-                }
-            }
+             // class: enum (nested in class)
+             for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
+             {
+                 v8::HandleScope handle_scope_for_enum(isolate);
+                 impl::ClassBuilder::EnumDeclaration enumeration = static_builder.Enum(pair.key);
+                 for (const StringName& enum_name : pair.value.constants)
+                 {
+                     const String& enum_name_str = (String) enum_name;
+                     jsb_not_implemented(enum_name_str.contains("."), "hierarchically nested definition is currently not supported");
+                     const auto& const_it = p_class_info->constant_map.find(enum_name);
+                     jsb_check(const_it);
+                     enumeration.Value(enum_name_str, const_it->value);
+                     enum_consts.insert(enum_name);
+                 }
+             }
 
-            // class: constants
-            for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
-            {
-                if (enum_consts.has(pair.key)) continue;
-                const String& const_name_str = (String) pair.key;
-                jsb_not_implemented(const_name_str.contains("."), "hierarchically nested definition is currently not supported");
+             // class: constants
+             for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
+             {
+                 if (enum_consts.has(pair.key)) continue;
+                 const String& const_name_str = (String) pair.key;
+                 jsb_not_implemented(const_name_str.contains("."), "hierarchically nested definition is currently not supported");
 
-                static_builder.Value(pair.key, pair.value);
-            }
+                 static_builder.Value(pair.key, pair.value);
+             }
 
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
             class_builder.Static().Value(jsb_symbol(p_env, ClassId), *class_id);
