@@ -9,9 +9,9 @@ namespace jsb
         Environment* environment = Environment::wrap(isolate);
         module.Get(isolate)->Set(context, jsb_name(environment, loaded), v8::Boolean::New(isolate, true)).Check();
 
-        if (!path.is_empty())
+        if (!source_info.source_filepath.is_empty())
         {
-            environment->get_source_map_cache().invalidate(path);
+            environment->get_source_map_cache().invalidate(source_info.source_filepath);
         }
     }
 
@@ -22,12 +22,12 @@ namespace jsb
 
         //TODO reload all related modules (search the module graph) ?
         //TODO inconsistent implementation, since the original time modified is read in module resolvers (SourceReader)
-        const uint64_t latest_time = FileAccess::get_modified_time(path);
+        const uint64_t latest_time = FileAccess::get_modified_time(source_info.source_filepath);
         if (latest_time && latest_time != time_modified)
         {
             time_modified = latest_time;
 
-            const String latest_hash = FileAccess::get_md5(path);
+            const String latest_hash = FileAccess::get_md5(source_info.source_filepath);
             if (!latest_hash.is_empty() && latest_hash != hash)
             {
                 hash = latest_hash;

@@ -486,7 +486,7 @@ void GodotJSScript::load_module_immediately()
             {
                 const jsb::ScriptClassInfoPtr base_script_class_info = env->get_script_class(script_class_info->base_script_class_id);
                 const jsb::JavaScriptModule* base_module = env->get_module_cache().find(base_script_class_info->module_id);
-                const Ref<Resource> base_res = ResourceLoader::load(jsb::internal::PathUtil::convert_javascript_path(base_module->path));
+                const Ref<Resource> base_res = ResourceLoader::load(jsb::internal::PathUtil::convert_javascript_path(base_module->source_info.source_filepath));
                 jsb_check(base_res->get_class() == jsb_typename(GodotJSScript));
                 base = base_res;
             }

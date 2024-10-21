@@ -27,6 +27,8 @@ protected:
 
 private:
     bool export_compiled_script(const String& p_path);
+    bool export_module_files(const jsb::JavaScriptModule& p_module);
+    bool export_raw_file(const String& p_path);
 
     HashSet<String> ignored_paths_;
     HashSet<String> exported_paths_;

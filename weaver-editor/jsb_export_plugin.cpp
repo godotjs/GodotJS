@@ -27,6 +27,50 @@ PackedStringArray GodotJSExportPlugin::_get_export_features(const Ref<EditorExpo
 void GodotJSExportPlugin::_export_begin(const HashSet<String>& p_features, bool p_debug, const String& p_path, int p_flags)
 {
     JSB_EXPORTER_LOG(Verbose, "export_begin path: %s", p_path);
+    exported_paths_.clear();
+}
+
+bool GodotJSExportPlugin::export_raw_file(const String& p_path)
+{
+    if (exported_paths_.has(p_path))
+    {
+        return true;
+    }
+    Error err;
+    const Vector<uint8_t> content = FileAccess::get_file_as_bytes(p_path, &err);
+    if (err != OK)
+    {
+        return false;
+    }
+    exported_paths_.insert(p_path);
+    add_file(p_path, content, false);
+    JSB_EXPORTER_LOG(Verbose, "include raw: %s", p_path);
+    return true;
+}
+
+bool GodotJSExportPlugin::export_module_files(const jsb::JavaScriptModule& p_module)
+{
+    if (!export_raw_file(p_module.source_info.source_filepath))
+    {
+        JSB_EXPORTER_LOG(Error, "can't read JS source from %s, please ensure that 'tsc' has being executed properly.", p_module.source_info.source_filepath);
+        return false;
+    }
+
+    if (jsb::internal::Settings::is_packaging_with_source_map())
+    {
+        const String source_map_path = p_module.source_info.source_filepath + ".map";
+        if (!export_raw_file(source_map_path))
+        {
+            JSB_EXPORTER_LOG(Verbose, "can't read the sourcemap from %s, please ensure that 'tsc' has being executed properly.", source_map_path);
+        }
+    }
+
+    if (!p_module.source_info.package_filepath.is_empty() && !export_raw_file(p_module.source_info.package_filepath))
+    {
+        JSB_EXPORTER_LOG(Error, "can't read the package.json from %s", p_module.source_info.package_filepath);
+        return false;
+    }
+    return true;
 }
 
 bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
@@ -41,29 +85,6 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
         return false;
     }
 
-    Error err;
-    const Vector<uint8_t> compiled_script_data = FileAccess::get_file_as_bytes(p_path, &err);
-    if (err != OK)
-    {
-        JSB_EXPORTER_LOG(Error, "can't read the javascript file from %s, please ensure that 'tsc' has being executed properly.", p_path);
-        return false;
-    }
-
-    add_file(p_path, compiled_script_data, false);
-    if (jsb::internal::Settings::is_packaging_with_source_map())
-    {
-        const String source_map_path = p_path + ".map";
-        const Vector<uint8_t> source_map_data = FileAccess::get_file_as_bytes(source_map_path, &err);
-        if (err == OK)
-        {
-            add_file(source_map_path, source_map_data, false);
-        }
-        else
-        {
-            JSB_EXPORTER_LOG(Verbose, "can't read the sourcemap file from %s, please ensure that 'tsc' has being executed properly.", source_map_path);
-        }
-    }
-
     // export dependent files.
     // force module loading. ensure the module hierarchy available.
     if (jsb::JavaScriptModule* module; env_->load(p_path, &module) == OK)
@@ -74,6 +95,7 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
         v8::Local<v8::Context> context = env_->get_context();
         v8::Context::Scope context_scope(context);
 
+        export_module_files(*module);
         jsb::Environment* environment = jsb::Environment::wrap(isolate);
         const v8::Local<v8::Object> module_obj = module->module.Get(isolate);
         if (v8::Local<v8::Value> temp; module_obj->Get(context, jsb_name(environment, children)).ToLocal(&temp) && temp->IsArray())
@@ -96,6 +118,10 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
                 }
             }
         }
+    }
+    else
+    {
+        JSB_EXPORTER_LOG(Warning, "failed to include module: %s", p_path);
     }
     return true;
 }

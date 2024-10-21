@@ -218,7 +218,9 @@ namespace jsb
     void ScriptClassInfo::_parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module)
     {
         // only classes in files of godot package system could be used as godot js script
-        if (!p_module.path.begins_with("res://") || p_module.exports.IsEmpty())
+        if (p_module.exports.IsEmpty()
+            || !p_module.source_info.source_filepath.begins_with("res://")
+            || p_module.source_info.source_filepath.begins_with("res://node_modules"))
         {
             return;
         }
@@ -280,7 +282,7 @@ namespace jsb
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
         existed_class_info->base_script_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);
         JSB_LOG(Log, "[EXPERIMENTAL] %s script: %d inherits super: %d native: %d",
-            p_module.path, p_module.script_class_id, existed_class_info->base_script_class_id, *native_class_id);
+            p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_class_id, *native_class_id);
 
         jsb_check(existed_class_info->base_script_class_id != p_module.script_class_id);
         jsb_check(existed_class_info->module_id == p_module.id);

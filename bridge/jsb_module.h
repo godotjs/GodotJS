@@ -18,12 +18,21 @@ namespace jsb
         };
     }
 
+    struct ModuleSourceInfo
+    {
+        // source file path (also used as the moduleid in module_cache)
+        String source_filepath;
+
+        // [optional] filepath of package.json which the source file is indirectly resolved from
+        String package_filepath;
+    };
+
     struct JavaScriptModule
     {
         StringName id;
 
         // asset path
-        String path;
+        ModuleSourceInfo source_info;
 
         v8::Global<v8::Object> module;
         v8::Global<v8::Value> exports;
@@ -39,7 +48,7 @@ namespace jsb
         jsb_force_inline bool is_loaded() const { return !reload_requested; }
 
         // can't reload modules if it's time_modified is unknown or non-file modules
-        bool is_reloadable() const { return time_modified != 0 && !path.is_empty(); }
+        bool is_reloadable() const { return time_modified != 0 && !source_info.source_filepath.is_empty(); }
 #else
         jsb_force_inline constexpr bool is_loaded() const { return true; }
         jsb_force_inline constexpr bool is_reloadable() const { return false; }

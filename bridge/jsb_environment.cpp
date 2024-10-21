@@ -612,7 +612,7 @@ namespace jsb
     {
         if (JavaScriptModule* module = module_cache_.find(p_name))
         {
-            jsb_check(!module->path.is_empty());
+            jsb_check(!module->source_info.source_filepath.is_empty());
             if (!module->is_loaded() || module->mark_as_reloading())
             {
                 return EReloadResult::Requested;
@@ -668,10 +668,10 @@ namespace jsb
         }
 
         // init source module
-        String asset_path;
-        if (IModuleResolver* resolver = this->find_module_resolver(normalized_id, asset_path))
+        ModuleSourceInfo source_info;
+        if (IModuleResolver* resolver = this->find_module_resolver(normalized_id, source_info))
         {
-            const StringName& module_id = asset_path;
+            const StringName& module_id = source_info.source_filepath;
 
             // check again with the resolved module_id
             existing_module = module_cache_.find(module_id);
@@ -684,13 +684,13 @@ namespace jsb
             if (existing_module)
             {
                 jsb_check(existing_module->id == module_id);
-                jsb_check(existing_module->path == asset_path);
+                jsb_check(existing_module->source_info.source_filepath == source_info.source_filepath);
 
                 JSB_LOG(VeryVerbose, "reload module %s", module_id);
 #if JSB_SUPPORT_RELOAD
                 existing_module->reload_requested = false;
 #endif
-                if (!resolver->load(this, asset_path, *existing_module))
+                if (!resolver->load(this, source_info.source_filepath, *existing_module))
                 {
                     return nullptr;
                 }
@@ -707,12 +707,12 @@ namespace jsb
                 // init the new module obj
                 module_obj->Set(context, jsb_name(this, children), v8::Array::New(isolate)).Check();
                 module_obj->Set(context, jsb_name(this, exports), exports_obj).Check();
-                module.path = asset_path;
+                module.source_info = source_info;
                 module.exports.Reset(isolate, exports_obj);
 
                 //NOTE the resolver should throw error if failed
                 //NOTE module.filename should be set in `resolve.load`
-                if (!resolver->load(this, asset_path, module))
+                if (!resolver->load(this, source_info.source_filepath, module))
                 {
                     return nullptr;
                 }

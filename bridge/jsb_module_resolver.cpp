@@ -92,27 +92,30 @@ namespace jsb
         return o_bytes.size() - 1;
     }
 
-    bool DefaultModuleResolver::check_file_path(const String& p_module_id, String& o_path)
+    bool DefaultModuleResolver::check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info)
     {
         static const String js_ext = "." JSB_JAVASCRIPT_EXT;
 
         // direct module
         {
             const String extended = internal::PathUtil::extends_with(p_module_id, js_ext);
+
             //NOTE !!! we use FileAccess::exists instead of access->file_exists because access->file_exists does not consider files from packages
             if(FileAccess::exists(extended))
             {
-                o_path = extended;
+                o_source_info.source_filepath = extended;
+                o_source_info.package_filepath = String();
+                JSB_LOG(Verbose, "checked file path %s", extended);
                 return true;
             }
         }
 
         // parse package.json
         {
-            const String package_json = internal::PathUtil::combine(p_module_id, "package.json");
-            if(FileAccess::exists(package_json))
+            const String package_filepath = internal::PathUtil::combine(p_module_id, "package.json");
+            if(FileAccess::exists(package_filepath))
             {
-                Ref<FileAccess> file = FileAccess::open(package_json, FileAccess::READ);
+                const Ref<FileAccess> file = FileAccess::open(package_filepath, FileAccess::READ);
                 jsb_check(file.is_valid());
 
                 Ref<JSON> json;
@@ -138,7 +141,8 @@ namespace jsb
 
                     if(FileAccess::exists(main_path))
                     {
-                        o_path = main_path;
+                        o_source_info.source_filepath = main_path;
+                        o_source_info.package_filepath = package_filepath;
                         return true;
                     }
                 } while (false);
@@ -150,30 +154,32 @@ namespace jsb
 
 
     // early and simple validation: check source file existence
-    bool DefaultModuleResolver::get_source_info(const String &p_module_id, String& r_asset_path)
+    bool DefaultModuleResolver::get_source_info(const String &p_module_id, ModuleSourceInfo& r_source_info)
     {
         JSB_LOG(VeryVerbose, "resolving path %s", p_module_id);
 
         // directly inspect it at first if it's an explicit path
         if (internal::PathUtil::is_absolute_path(p_module_id))
         {
-            if(check_file_path(p_module_id, r_asset_path))
+            if(check_file_path(p_module_id, r_source_info))
             {
                 return true;
             }
-            r_asset_path.clear();
+            r_source_info = {};
+            JSB_LOG(Warning, "failed to check out module (absolute) %s", p_module_id);
             return false;
         }
 
         for (const String& search_path : search_paths_)
         {
             const String filename = internal::PathUtil::combine(search_path, p_module_id);
-            if (check_file_path(filename, r_asset_path))
+            if (check_file_path(filename, r_source_info))
             {
                 return true;
             }
+            JSB_LOG(Verbose, "failed to check out module (%s) %s", search_path, p_module_id);
         }
-        r_asset_path.clear();
+        r_source_info = {};
         return false;
     }
 

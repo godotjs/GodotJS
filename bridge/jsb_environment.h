@@ -445,11 +445,11 @@ namespace jsb
             return *loader;
         }
 
-        class IModuleResolver* find_module_resolver(const String& p_module_id, String& r_asset_path) const
+        class IModuleResolver* find_module_resolver(const String& p_module_id, ModuleSourceInfo& r_source_info) const
         {
             for (IModuleResolver* resolver : module_resolvers_)
             {
-                if (resolver->get_source_info(p_module_id, r_asset_path))
+                if (resolver->get_source_info(p_module_id, r_source_info))
                 {
                     return resolver;
                 }

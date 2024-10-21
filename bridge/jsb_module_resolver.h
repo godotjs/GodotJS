@@ -13,7 +13,7 @@ namespace jsb
 
         // check if the given module_id is valid to resolve
         // `r_asset_path` will be set if there is an available source file in `FileAccess` which matches the given `module_id`
-        virtual bool get_source_info(const String& p_module_id, String& r_asset_path) = 0;
+        virtual bool get_source_info(const String& p_module_id, ModuleSourceInfo& r_source_info) = 0;
 
         // load source into the module
         // `exports' will be set into `p_module.exports` if loaded successfully
@@ -31,13 +31,13 @@ namespace jsb
     public:
         virtual ~DefaultModuleResolver() override = default;
 
-        virtual bool get_source_info(const String& p_module_id, String& r_asset_path) override;
+        virtual bool get_source_info(const String& p_module_id, ModuleSourceInfo& r_source_info) override;
         virtual bool load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module) override;
 
         DefaultModuleResolver& add_search_path(const String& p_path);
 
     protected:
-        bool check_file_path(const String& p_module_id, String& o_path);
+        bool check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info);
 
         // read the source buffer (transformed into commonjs)
         static size_t read_all_bytes(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes);
