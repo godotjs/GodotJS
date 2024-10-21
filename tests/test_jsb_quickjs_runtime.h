@@ -8,7 +8,7 @@
 // all quickjs.impl specific test cases
 namespace jsb::tests
 {
-    struct Bindings
+    struct QuickJSBindings
     {
         static JSValue magic_call(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic)
         {
@@ -23,7 +23,7 @@ namespace jsb::tests
         JSContext* ctx = JS_NewContext(rt);
         {
             const JSValue this_obj = JS_NewObject(ctx);
-            const JSValue func = JS_NewCFunctionMagic(ctx, Bindings::magic_call, "magic_call", 0, JS_CFUNC_generic_magic, 1);
+            const JSValue func = JS_NewCFunctionMagic(ctx, QuickJSBindings::magic_call, "magic_call", 0, JS_CFUNC_generic_magic, 1);
             const JSAtom prop = JS_NewAtom(ctx, "prop");
 
             CHECK(JS_IsFunction(ctx, func));
