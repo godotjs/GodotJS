@@ -120,7 +120,7 @@ namespace jsb::impl
             }
             else
             {
-#if WINDOWS_ENABLED
+#ifdef WINDOWS_ENABLED
                 const CharString filename = p_filename.replace("/", "\\").utf8();
 #else
                 const CharString filename = p_filename.utf8();

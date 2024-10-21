@@ -10,7 +10,7 @@
 #include "jsb_macros.h"
 
 // for windows api (like 'DeleteFileW')
-#if WINDOWS_ENABLED
+#ifdef WINDOWS_ENABLED
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
 #else
@@ -24,7 +24,7 @@ namespace jsb::internal
         const Ref<FileAccess> file_access = FileAccess::open(p_path, FileAccess::READ);
         const String simplified = (file_access.is_valid() ? file_access->get_path_absolute() : p_path).simplify_path();
 
-#if WINDOWS_ENABLED
+#ifdef WINDOWS_ENABLED
         return simplified.replace("/", "\\");
 #else
         return simplified;
@@ -69,7 +69,7 @@ namespace jsb::internal
 
     bool PathUtil::is_absolute_path(const String& p_path)
     {
-#if !WINDOWS_ENABLED
+#ifndef WINDOWS_ENABLED
         if (p_path.begins_with("/")) return true;
 #endif
         return p_path.contains(":/");
@@ -109,7 +109,7 @@ namespace jsb::internal
 
     void PathUtil::delete_file(const String& p_path)
     {
-#if WINDOWS_ENABLED
+#ifdef WINDOWS_ENABLED
         const Char16String str16 = p_path.utf16();
         if (!DeleteFileW((LPCWSTR) str16.get_data()))
         {
