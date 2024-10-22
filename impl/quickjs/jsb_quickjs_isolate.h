@@ -157,9 +157,7 @@ namespace v8
         // get stack value (duplicated)
         [[nodiscard]] JSValue stack_dup(const uint16_t index) const
         {
-            jsb_check(index < stack_pos_);
-            jsb_check(index < jsb::impl::StackPos::Num || handle_scope_);
-            return JS_DupValue(ctx_, stack_[index]);
+            return JS_DupValue(ctx_, stack_val(index));
         }
 
         // write value to the stack pos 'to' without duplicating
@@ -171,7 +169,7 @@ namespace v8
             stack_[to] = value;
         }
 
-        // write value to the stack pos 'to' with duplicating
+        // duplicate a value 'from' to the stack pos 'to'
         void set_stack_copy(const uint16_t to, const uint16_t from)
         {
             jsb_check(to != from && to < stack_pos_ && from < stack_pos_);
