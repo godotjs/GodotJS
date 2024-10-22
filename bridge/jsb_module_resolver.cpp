@@ -29,7 +29,6 @@ namespace jsb
             return false;
         }
 
-        Environment* environment = Environment::wrap(isolate);
         // use resource path here (begins with `res://`)
         // to make path identification easier during exporting
         // (see `GodotJSExportPlugin::export_compiled_script`)
@@ -50,8 +49,8 @@ namespace jsb
         };
 
         // init module properties (filename, path)
-        module_obj->Set(context, jsb_name(environment, filename), argv[kIndexFileName]).Check();
-        module_obj->Set(context, jsb_name(environment, path), argv[kIndexPath]).Check();
+        module_obj->Set(context, jsb_name(p_env, filename), argv[kIndexFileName]).Check();
+        module_obj->Set(context, jsb_name(p_env, path), argv[kIndexPath]).Check();
 
         //TODO set `require.cache`
         // ...
@@ -64,7 +63,7 @@ namespace jsb
         }
 
         // update `exports`, because its value may be covered during the execution process of the elevator script.
-        const v8::Local<v8::Value> updated_exports = module_obj->Get(context, jsb_name(environment, exports)).ToLocalChecked();
+        const v8::Local<v8::Value> updated_exports = module_obj->Get(context, jsb_name(p_env, exports)).ToLocalChecked();
         jsb_notice(updated_exports != argv[kIndexExports], "`exports` is overwritten in module: %s", filename);
 
         p_module.exports.Reset(isolate, updated_exports);
