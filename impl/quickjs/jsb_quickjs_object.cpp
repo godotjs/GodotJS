@@ -182,9 +182,9 @@ namespace v8
 
             getter(prop_v, info);
 
-            // we need a duplicated value for returning
-            // dup value here because the stack value will become invalid after leaving the handle scope
-            rvo = JS_DupValue(isolate->ctx(), isolate->stack_val(rvo_pos));
+            // We need a duplicated value for returning.
+            // Duplicate the value here because the stack value will become invalid after leaving the handle scope.
+            rvo = isolate->stack_dup(rvo_pos);
             jsb_check(!JS_IsException(rvo));
         }
 
