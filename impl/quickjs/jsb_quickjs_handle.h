@@ -291,62 +291,6 @@ namespace v8
         WeakType weak_type_ = WeakType::kStrong;
     };
 
-    template <>
-    class Global<Context>
-    {
-        // clear all fields silently after moved
-        void _clear()
-        {
-            isolate_ = nullptr;
-        }
-
-    public:
-        Global() = default;
-        Global(Isolate* isolate, Local<Context> value) { Reset(isolate, value); }
-
-        Global(const Global&) = delete;
-        Global& operator=(const Global&) = delete;
-
-        ~Global() { Reset(); }
-
-        Global(Global&& other) noexcept
-        {
-            isolate_ = other.isolate_;
-            other._clear();
-        }
-
-        void Reset()
-        {
-            if (!isolate_) return;
-            isolate_ = nullptr;
-        }
-
-        void Reset(Isolate* isolate, Local<Context> value)
-        {
-            Reset();
-
-            jsb_check(isolate);
-            isolate_ = isolate;
-        }
-
-        void Reset(Isolate* isolate, const Global& value)
-        {
-            Reset(isolate, value.Get(isolate));
-        }
-
-        // Return true if no value held by this handle
-        bool IsEmpty() const { return !isolate_; }
-
-        Local<Context> Get(Isolate* isolate) const
-        {
-            jsb_check(isolate_ == isolate && isolate_);
-            return Local<Context>(Data(isolate_, 0));
-        }
-
-    private:
-        Isolate* isolate_ = nullptr;
-
-    };
 }
 
 #endif

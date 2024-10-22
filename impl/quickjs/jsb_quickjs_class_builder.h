@@ -282,6 +282,7 @@ namespace jsb::impl
 
             static_assert(jsb::impl::FunctionStackBase::This == 1);
             const uint16_t stack_this = isolate->push_copy(this_val);
+            jsb_unused(stack_this);
 
             static_assert(jsb::impl::FunctionStackBase::Data == 2);
             isolate->push_steal(JS_NewUint32(ctx, constructor_data.data));

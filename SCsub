@@ -68,7 +68,7 @@ lws_prebuilt_libs = LibraryDescriptor("lws", \
 quickjs_src_descs = ThirdPartyDescriptor("quickjs", \
 [
     # can't compile with VS2022
-    ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"], lambda: env["MSVC_VERSION"] != "14.3"), 
+    # ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"], lambda: "MSVC_VERSION" not in env or env["MSVC_VERSION"] != "14.3"), 
     ThirdPartyDetails("quickjs", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]), 
 ])
 
