@@ -8,6 +8,45 @@
 
 namespace jsb::tests
 {
+    struct StubBindings
+    {
+        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+        }
+
+        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+        }
+
+        static void function(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+        }
+    };
+
+    struct Utils
+    {
+        static void write_stub_file(const String& p_path)
+        {
+            if (FileAccess::exists(p_path)) return;
+            {
+                const Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE);
+                CHECK(f.is_valid());
+                f->store_8(0xd);
+                f->store_8(0xa);
+            }
+        }
+
+        static void print_exception(const impl::TryCatch& try_catch)
+        {
+            if (try_catch.has_caught())
+            {
+                String message;
+                try_catch.get_message(&message);
+                MESSAGE("JS Exception: ", message);
+            }
+        }
+    };
+
     struct CurrentWorkingDirectory
     {
     private:
@@ -73,6 +112,7 @@ namespace jsb::tests
 
             install_npm();
             compile_scripts();
+            ignore_directories();
             GodotJSScriptLanguage::get_singleton()->init();
         }
 
@@ -105,35 +145,15 @@ namespace jsb::tests
             CHECK(err == OK);
             CHECK(FileAccess::exists("./.godot/GodotJS/test_01.js"));
         }
-    };
 
-    struct StubBindings
-    {
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        void ignore_directories()
         {
-        }
-
-        static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-        }
-
-        static void function(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
+            CHECK(FileAccess::exists("./jslibs/.gdignore"));
+            Utils::write_stub_file("./node_modules/.gdignore");
+            Utils::write_stub_file("./.godot/.gdignore");
         }
     };
 
-    struct Utils
-    {
-        static void print_exception(const impl::TryCatch& try_catch)
-        {
-            if (try_catch.has_caught())
-            {
-                String message;
-                try_catch.get_message(&message);
-                MESSAGE("JS Exception: ", message);
-            }
-        }
-    };
 }
 #endif
 
