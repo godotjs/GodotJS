@@ -247,7 +247,8 @@ namespace v8
             jsb::impl::Broker::_free(isolate_, value_);
         }
 
-        bool IsEmpty() const { return !isolate_; }
+        // Return true if no value held by this handle, or dead for a weak handle.
+        bool IsEmpty() const { return !isolate_ && is_alive(); }
 
         Local<T> Get(Isolate* isolate) const
         {
@@ -274,6 +275,8 @@ namespace v8
         }
 
     private:
+        // A primitive JSValue is always alive (shadow_ == nullptr).
+        // Otherwise, check if the QuickJS internal JSObject* has not been deleted from the phantom list.
         bool is_alive() const { return !shadow_ || jsb::impl::Broker::is_phantom_alive(isolate_, shadow_); }
 
         Isolate* isolate_ = nullptr;
@@ -286,6 +289,63 @@ namespace v8
         JSValue value_ = JS_UNDEFINED;
 
         WeakType weak_type_ = WeakType::kStrong;
+    };
+
+    template <>
+    class Global<Context>
+    {
+        // clear all fields silently after moved
+        void _clear()
+        {
+            isolate_ = nullptr;
+        }
+
+    public:
+        Global() = default;
+        Global(Isolate* isolate, Local<Context> value) { Reset(isolate, value); }
+
+        Global(const Global&) = delete;
+        Global& operator=(const Global&) = delete;
+
+        ~Global() { Reset(); }
+
+        Global(Global&& other) noexcept
+        {
+            isolate_ = other.isolate_;
+            other._clear();
+        }
+
+        void Reset()
+        {
+            if (!isolate_) return;
+            isolate_ = nullptr;
+        }
+
+        void Reset(Isolate* isolate, Local<Context> value)
+        {
+            Reset();
+
+            jsb_check(isolate);
+            isolate_ = isolate;
+        }
+
+        void Reset(Isolate* isolate, const Global& value)
+        {
+            Reset(isolate, value.Get(isolate));
+        }
+
+        // Return true if no value held by this handle
+        bool IsEmpty() const { return !isolate_; }
+
+        Local<Context> Get(Isolate* isolate) const
+        {
+            jsb_check(isolate_ == isolate && isolate_);
+            return Local<Context>(Data(isolate_, 0));
+        }
+
+    private:
+        Isolate* isolate_ = nullptr;
+
     };
 }
 
