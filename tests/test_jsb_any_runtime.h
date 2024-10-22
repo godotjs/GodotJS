@@ -197,8 +197,14 @@ return 1+1;
         {
             JSB_TESTS_EXECUTION_SCOPE(env.get());
 
+            static constexpr char literal_str[] = "blablabla...";
             StringNameCache& cache = env->get_string_name_cache();
-            cache.get_string_value(env->get_isolate(), "blablabla...");
+            cache.get_string_value(env->get_isolate(), literal_str);
+            {
+                v8::HandleScope scope_1(env->get_isolate());
+                const StringName str_name = cache.get_string_name(env->get_isolate(), impl::Helper::new_string(env->get_isolate(), literal_str));
+                CHECK(str_name == literal_str);
+            }
         }
         env.reset();
     }
@@ -267,16 +273,16 @@ console.assert(B1.name == "B1");
 class S1 extends B1 {}
 class S2 extends B2 {}
 class S3 extends S2 {}
+
 let s2 = new S2();
 console.assert(s2 instanceof B1);
+console.assert(s2 instanceof B2);
 
 //
 console.assert(typeof Object.getOwnPropertyDescriptor(S1, "Native1") === "undefined");
 console.assert(typeof Object.getOwnPropertyDescriptor(B1, "Native1") === "object");
 
 // check FunctionTemplate inheriting
-console.assert(s2 instanceof B2);
-console.assert(s2 instanceof B1);
 console.assert(B2.prototype.constructor === B2);
 console.assert(B2.prototype instanceof B1);
 console.assert(B2.prototype.__proto__ === B1.prototype);
@@ -363,6 +369,33 @@ inst.free();
 console.assert(!gd.is_instance_valid(inst));
 )--", err);
         CHECK(err == OK);
+    }
+
+    TEST_CASE("[jsb] load stub module")
+    {
+        GodotJSScriptLanguageIniter initer;
+
+        std::shared_ptr<jsb::Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
+        CHECK(env->load("__DOES_NOT_EXIST__") != OK);
+        {
+            JSB_TESTS_EXECUTION_SCOPE(GodotJSScriptLanguage::get_singleton()->get_environment().get());
+            JavaScriptModule& module = env->get_module_cache().insert(env->get_isolate(), env->get_context(), "test_load_module", true, true);
+            JavaScriptModule* res;
+            CHECK(env->load("test_load_module", &res) == OK);
+            CHECK(res == &module);
+        }
+    }
+
+    TEST_CASE("[jsb] load module")
+    {
+        GodotJSScriptLanguageIniter initer;
+
+        std::shared_ptr<jsb::Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
+        // CHECK(env->load("jsb.core") == OK);
+        {
+            JSB_TESTS_EXECUTION_SCOPE(GodotJSScriptLanguage::get_singleton()->get_environment().get());
+            CHECK(env->load("jslibs/empty") == OK);
+        }
     }
 }
 
