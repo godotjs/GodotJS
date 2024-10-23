@@ -53,7 +53,6 @@ namespace jsb
 
         StringName get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value)
         {
-            const StringName name = impl::Helper::to_string(isolate, p_value);
             if (const auto& it = value_index_.find(TWeakRef(isolate, p_value)); it != value_index_.end())
             {
                 const StringNameID id = it->second;
@@ -61,6 +60,7 @@ namespace jsb
             }
             else
             {
+                const StringName name = impl::Helper::to_string(isolate, p_value);
                 const StringNameID id = get_string_id(name);
                 Slot& slot = values_[id];
 #if JSB_DEBUG
