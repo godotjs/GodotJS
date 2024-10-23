@@ -175,11 +175,23 @@ namespace v8
         {
             if (!isolate_) return;
 
-            // release if strong referenced
-            if (weak_type_ == WeakType::kStrong)
+            switch (weak_type_)
             {
-                jsb_check(is_alive());
-                jsb::impl::Broker::_free(isolate_, value_);
+            case WeakType::kStrong:
+                {
+                    // release if strong referenced
+                    jsb_check(is_alive());
+                    jsb::impl::Broker::_free(isolate_, value_);
+                    break;
+                }
+            case WeakType::kWeakCallback:
+                {
+                    // clear callback
+                    jsb_check(is_alive());
+                    jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
+                    break;
+                }
+            default: break;
             }
 
             jsb::impl::Broker::remove_phantom(isolate_, shadow_);
