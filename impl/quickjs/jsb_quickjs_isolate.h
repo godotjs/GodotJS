@@ -11,8 +11,8 @@ namespace jsb::impl
 {
     struct WeakCallbackInfo
     {
-        void* parameter;
-        void* callback; // WeakCallbackInfo::Callback
+        void* parameter = nullptr;
+        void* callback = nullptr;  // WeakCallbackInfo::Callback
     };
 
     struct InternalData
@@ -32,8 +32,8 @@ namespace jsb::impl
 
     struct ConstructorData
     {
-        v8::FunctionCallback callback;
-        uint32_t data;
+        v8::FunctionCallback callback = nullptr;
+        uint32_t data = 0;
     };
 
     enum { kMaxStackSize = 512 };
@@ -203,7 +203,7 @@ namespace v8
         // they won't be deleted until the Isolate disposed
         int add_constructor_data(FunctionCallback callback, uint32_t data)
         {
-            const int index = constructor_data_.size();
+            const int index = (int) constructor_data_.size();
             constructor_data_.append({ callback, data });
             return index;
             // return (int) *constructor_data_.add({ callback, data });

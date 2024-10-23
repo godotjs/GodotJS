@@ -3,6 +3,7 @@
 
 #include "jsb_test_helpers.h"
 #include "../bridge/jsb_builtins.h"
+#include "modules/GodotJS/bridge/jsb_type_convert.h"
 
 #define JSB_TESTS_OPTION_ENABLED(OptionName) kOption_##OptionName
 #define JSB_TESTS_OPTION_DEFINE(OptionName, IsEnabled) enum { kOption_##OptionName = IsEnabled };
@@ -102,7 +103,7 @@ namespace jsb::tests
                     CHECK(items[i].Get(isolate) == symbol);
                     CHECK(!items[i].Get(isolate).IsEmpty());
                     CHECK(items[i].Get(isolate)->IsSymbol());
-                    host->Set(context, symbol, v8::Int32::New(isolate, i));
+                    host->Set(context, symbol, v8::Int32::New(isolate, i)).Check();
                 }
                 for (int i = 0; i < 10; i++)
                 {
@@ -315,9 +316,9 @@ return 1+1;
             const NativeClassInfoPtr node_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Node"));
             const NativeClassInfoPtr object_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("Object"));
             const NativeClassInfoPtr canvas_item_class = GodotJSScriptLanguage::get_singleton()->get_environment()->expose_godot_object_class(ClassDB::classes.getptr("CanvasItem"));
-            global_obj->Set(context, impl::Helper::new_string(isolate, "GDNode"), node_class->clazz.Get(isolate));
-            global_obj->Set(context, impl::Helper::new_string(isolate, "GDObject"), object_class->clazz.Get(isolate));
-            global_obj->Set(context, impl::Helper::new_string(isolate, "GDCanvasItem"), canvas_item_class->clazz.Get(isolate));
+            global_obj->Set(context, impl::Helper::new_string(isolate, "GDNode"), node_class->clazz.Get(isolate)).Check();
+            global_obj->Set(context, impl::Helper::new_string(isolate, "GDObject"), object_class->clazz.Get(isolate)).Check();
+            global_obj->Set(context, impl::Helper::new_string(isolate, "GDCanvasItem"), canvas_item_class->clazz.Get(isolate)).Check();
         }
         Error err;
         GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
@@ -397,6 +398,34 @@ console.assert(!gd.is_instance_valid(inst));
             CHECK(env->load("jslibs/empty") == OK);
         }
     }
+
+    TEST_CASE("[jsb] RefCounted objects")
+    {
+        GodotJSScriptLanguageIniter initer;
+
+        const std::shared_ptr<Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
+        Ref<FileAccess> file = FileAccess::open("./.godot/junk.txt", FileAccess::WRITE);
+        CHECK(file->get_reference_count() == 1);
+        {
+            JSB_TESTS_EXECUTION_SCOPE(env.get());
+
+            v8::Isolate* isolate = env->get_isolate();
+            v8::Local<v8::Context> context = env->get_context();
+            v8::Local<v8::Value> rval;
+            CHECK(TypeConvert::gd_var_to_js(isolate, context, file, rval));
+            env->get_context()->Global()->Set(context, impl::Helper::new_string(isolate, "file"), rval).Check();
+            CHECK(file->get_reference_count() == 2);
+        }
+        {
+            Error err;
+            GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
+file.store_string("hello");
+)--", err);
+            CHECK(err == OK);
+            file.unref();
+        }
+    }
+
 }
 
 #endif

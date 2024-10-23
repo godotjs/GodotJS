@@ -125,6 +125,9 @@ namespace v8
             JS_FreeValue(ctx_, stack_[i]);
         }
 
+        // make it behave like v8, not to trigger gc callback after the isolate disposed
+        internal_data_.clear();
+
         // dispose the runtime
         JS_FreeContext(ctx_);
         ctx_ = nullptr;
@@ -166,14 +169,17 @@ namespace v8
         Isolate* isolate = (Isolate*) JS_GetRuntimeOpaque(rt);
         const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, get_class_id());
         {
-            if (const jsb::impl::InternalDataPtr data =  isolate->get_internal_data(index); data->weak.callback)
+            if (const jsb::impl::InternalDataPtr data =  isolate->internal_data_.try_get_value_scoped(index); data)
             {
-                const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback;
-                const WeakCallbackInfo<void> info(isolate, data->weak.parameter);
-                callback(info);
+                if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
+                {
+                    const WeakCallbackInfo<void> info(isolate, data->weak.parameter);
+                    callback(info);
+                }
+                isolate->internal_data_.remove_at(index);
+                JSB_QUICKJS_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) val.u.ptr, index);
             }
         }
-        isolate->internal_data_.remove_at(index);
     }
 
     void Isolate::GetHeapStatistics(HeapStatistics* statistics)

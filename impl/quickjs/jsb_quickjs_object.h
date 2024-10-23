@@ -17,7 +17,7 @@ namespace v8
         Isolate* GetIsolate() const { return isolate_; }
 
         int InternalFieldCount() const;
-        void SetAlignedPointerInInternalField(int slot, void* value);
+        void SetAlignedPointerInInternalField(int slot, void* data);
         void* GetAlignedPointerFromInternalField(int slot) const;
 
         Maybe<bool> Set(Local<Context> context, Local<Value> key, Local<Value> value);
