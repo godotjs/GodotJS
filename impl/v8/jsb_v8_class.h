@@ -35,6 +35,7 @@ namespace jsb::impl
             return template_.Get(isolate)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked();
         }
 
+        //NOTE NewInstance should not trigger the underlying native constructor of this class
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
         {
             return template_.Get(context->GetIsolate())->InstanceTemplate()->NewInstance(context).ToLocalChecked();
