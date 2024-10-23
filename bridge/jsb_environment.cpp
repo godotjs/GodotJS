@@ -105,7 +105,10 @@ namespace jsb
             if (std::shared_ptr<Environment> environment = EnvironmentStore::get_shared().access(p_token))
             {
                 jsb_check(p_instance == p_binding);
-                environment->unbind_pointer(p_binding);
+
+                // no need to do additional finalization because `free_callback` is triggered by godot when an Object is being deleted
+                constexpr bool kMakeFinalization = false;
+                environment->free_object(p_binding, kMakeFinalization);
             }
         }
 
@@ -426,31 +429,19 @@ namespace jsb
         JSB_LOG(Error, "failed to mark as persistent due to invalid pointer");
     }
 
-    void Environment::unbind_pointer(void* p_pointer)
-    {
-        //TODO thread-safety issues on objects_* access
-        jsb_check(Thread::get_caller_id() == thread_id_);
-        if (objects_index_.has(p_pointer))
-        {
-            free_object(p_pointer, false);
-        }
-    }
-
     bool Environment::reference_object(void* p_pointer, bool p_is_inc)
     {
         //TODO temp code
         //TODO thread-safety issues on objects_* access
         jsb_check(Thread::get_caller_id() == thread_id_);
 
-        const HashMap<void*, internal::Index64>::Iterator it = objects_index_.find(p_pointer);
-        if (it == objects_index_.end())
+        const internal::Index64* object_id = objects_index_.getptr(p_pointer);
+        if (!object_id)
         {
             JSB_LOG(VeryVerbose, "bad pointer %d", (uintptr_t) p_pointer);
             return true;
         }
-        // jsb_address_guard(objects_, address_guard);
-        // ObjectHandle& object_handle = objects_.get_value(it->value);
-        ObjectHandlePtr object_handle = objects_.get_value_scoped(it->value);
+        ObjectHandlePtr object_handle = objects_.get_value_scoped(*object_id);
 
         // must not be a valuetype object
         jsb_check(native_classes_.get_value(object_handle->class_id).type != NativeClassType::GodotPrimitive);
@@ -474,7 +465,6 @@ namespace jsb
         {
             return true;
         }
-        // jsb_checkf(object_handle->ref_count_ > 0, "unexpected behaviour");
 
         --object_handle->ref_count_;
         if (object_handle->ref_count_ == 0)
@@ -489,50 +479,57 @@ namespace jsb
     jsb_force_inline static void clear_internal_field(v8::Isolate* isolate, const v8::Global<v8::Object>& p_obj)
     {
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Object> obj = p_obj.Get(isolate);
+        const v8::Local<v8::Object> obj = p_obj.Get(isolate);
         obj->SetAlignedPointerInInternalField(IF_Pointer, nullptr);
     }
 
-    void Environment::free_object(void* p_pointer, bool p_free)
+    void Environment::free_object(void* p_pointer, bool p_finalize)
     {
         jsb_check(Thread::get_caller_id() == thread_id_);
-        jsb_check(objects_index_.has(p_pointer));
-        const internal::Index64 object_id = objects_index_.get(p_pointer);
-        jsb_checkf(object_id, "bad pointer");
+
+        const internal::Index64* object_id = objects_index_.getptr(p_pointer);
+
+        // avoid crash in the situation that `InstanceBindingCallbacks::free_callback` is called before JS object gc callback is called,
+        // which makes the pointer already erased in `object_gc_callback`
+        if (jsb_unlikely(!object_id))
+        {
+            return;
+        }
+
         NativeClassID class_id;
         bool is_persistent;
 
         {
-            {
-                // jsb_address_guard(objects_, address_guard);
-                // ObjectHandle& object_handle = objects_.get_value(object_id);
-                const ObjectHandlePtr object_handle = objects_.get_value_scoped(object_id);
-                jsb_check(object_handle->pointer == p_pointer);
-                class_id = object_handle->class_id;
+            ObjectHandle& object_handle = objects_.get_value(*object_id);
+            jsb_check(object_handle.pointer == p_pointer);
+            class_id = object_handle.class_id;
 
-                // remove index at first to make `free_object` safely reentrant
-                is_persistent = persistent_objects_.erase(p_pointer);
-                objects_index_.erase(p_pointer);
-                if (!p_free)
-                {
-                    //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
-                    clear_internal_field(isolate_, object_handle->ref_);
-                }
-                object_handle->ref_.Reset();
+            // remove index at first to make `free_object` safely reentrant
+            is_persistent = persistent_objects_.erase(p_pointer);
+            objects_index_.erase(p_pointer);
+            if (!p_finalize)
+            {
+                //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
+                clear_internal_field(isolate_, object_handle.ref_);
             }
+
+            v8::Global<v8::Object> obj_ref = std::move(object_handle.ref_);
 
             //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
             // At this stage, the JS Object is being garbage collected, we'd better to break the link between JS Object & C++ Object before `finalizer` to avoid accessing the JS Object unexpectedly.
-            objects_.remove_at_checked(object_id);
+            objects_.remove_at_checked(*object_id);
+
+            obj_ref.Reset();
         }
 
-        if (p_free)
+        if (p_finalize)
         {
             const NativeClassInfo& class_info = native_classes_.get_value(class_id);
 
             JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%d id:%d",
                 (String) class_info.name, class_id,
                 (uintptr_t) p_pointer, object_id);
+
             //NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
             class_info.finalizer(this, p_pointer, is_persistent);
         }

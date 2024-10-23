@@ -517,9 +517,6 @@ namespace jsb
 
         void exec_sync_delete();
 
-        // [low level binding] unbind a raw pointer from javascript object lifecycle
-        void unbind_pointer(void* p_pointer);
-
         // callback from v8 gc (not 100% guaranteed called)
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
@@ -527,7 +524,7 @@ namespace jsb
             environment->free_object(info.GetParameter(), true);
         }
 
-        void free_object(void* p_pointer, bool p_free);
+        void free_object(void* p_pointer, bool p_finalize);
     };
 }
 
