@@ -4,8 +4,6 @@
 #include "jsb_format.h"
 #include "jsb_logger.h"
 
-#include "modules/regex/regex.h"
-
 namespace jsb::internal
 {
 #if JSB_WITH_SOURCEMAP

@@ -3,7 +3,7 @@
 
 #include "jsb_test_helpers.h"
 #include "../bridge/jsb_builtins.h"
-#include "modules/GodotJS/bridge/jsb_type_convert.h"
+#include "../bridge/jsb_type_convert.h"
 
 #define JSB_TESTS_OPTION_ENABLED(OptionName) kOption_##OptionName
 #define JSB_TESTS_OPTION_DEFINE(OptionName, IsEnabled) enum { kOption_##OptionName = IsEnabled };

@@ -2,7 +2,7 @@
 #define GODOTJS_QUICKJS_FUNCTION_INTEROP_H
 #include "jsb_quickjs_object.h"
 #include "jsb_quickjs_isolate.h"
-#include "modules/GodotJS/impl/quickjs/jsb_quickjs_typedef.h"
+#include "jsb_quickjs_typedef.h"
 
 namespace v8
 {
