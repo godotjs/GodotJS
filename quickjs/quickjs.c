@@ -12085,6 +12085,16 @@ int JS_IsMap(JSContext *ctx, JSValueConst val)
         return FALSE;
     }
 }
+int JS_IsPromise(JSContext *ctx, JSValueConst val)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
+        p = JS_VALUE_GET_OBJ(val);
+        return p->class_id == JS_CLASS_PROMISE;
+    } else {
+        return FALSE;
+    }
+}
 int JS_IsArrayBuffer(JSContext *ctx, JSValueConst val)
 {
     JSObject *p;

@@ -748,6 +748,7 @@ int JS_IsArray(JSContext *ctx, JSValueConst val);
 
 //NOTE jsb:modified [begin]
 int JS_IsMap(JSContext *ctx, JSValueConst val);
+int JS_IsPromise(JSContext *ctx, JSValueConst val);
 int JS_IsArrayBuffer(JSContext *ctx, JSValueConst val);
 //NOTE jsb:modified [end]
 

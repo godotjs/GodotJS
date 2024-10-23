@@ -45,8 +45,8 @@ namespace v8
 
     bool Data::IsPromise() const
     {
-        //TODO not supported
-        return false;
+        const JSValue val = isolate_->stack_val(stack_pos_);
+        return JS_IsPromise(isolate_->ctx(), val);
     }
 
     bool Data::IsArray() const
