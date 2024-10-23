@@ -169,15 +169,16 @@ namespace v8
         Isolate* isolate = (Isolate*) JS_GetRuntimeOpaque(rt);
         const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, get_class_id());
         {
-            if (const jsb::impl::InternalDataPtr data =  isolate->internal_data_.try_get_value_scoped(index); data)
+            jsb::impl::InternalData* data;
+            if (isolate->internal_data_.try_get_value_pointer(index, data))
             {
                 if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
                 {
                     const WeakCallbackInfo<void> info(isolate, data->weak.parameter);
                     callback(info);
                 }
-                isolate->internal_data_.remove_at(index);
                 JSB_QUICKJS_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) val.u.ptr, index);
+                isolate->internal_data_.remove_at(index);
             }
         }
     }
