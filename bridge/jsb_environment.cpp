@@ -450,7 +450,7 @@ namespace jsb
         }
         // jsb_address_guard(objects_, address_guard);
         // ObjectHandle& object_handle = objects_.get_value(it->value);
-        const ObjectHandlePtr object_handle = objects_.get_value_scoped(it->value);
+        ObjectHandlePtr object_handle = objects_.get_value_scoped(it->value);
 
         // must not be a valuetype object
         jsb_check(native_classes_.get_value(object_handle->class_id).type != NativeClassType::GodotPrimitive);
@@ -479,7 +479,8 @@ namespace jsb
         --object_handle->ref_count_;
         if (object_handle->ref_count_ == 0)
         {
-            object_handle->ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
+            // with quickjs.impl, we must leave the ObjectHandle scope because SetWeak() may trigger the object finalization immediately.
+            object_handle.escape()->ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
             return true;
         }
         return false;
@@ -936,7 +937,7 @@ namespace jsb
         {
             if (r_class_id) *r_class_id = *it;
             NativeClassInfoPtr class_info = native_classes_.get_value_scoped(*it);
-            JSB_LOG(VeryVerbose, "return cached native class %s (%d) addr: %s", class_info->name, *it, class_info.ptr());
+            JSB_LOG(VeryVerbose, "return cached native class %s (%d) addr:%s", class_info->name, *it, class_info.ptr());
             jsb_check(class_info->name == p_class_info->name);
             jsb_check(!class_info->clazz.IsEmpty());
             return class_info;
