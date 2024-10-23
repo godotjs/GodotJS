@@ -38,8 +38,8 @@ namespace v8
     Maybe<double> Value::NumberValue(Local<Context> context) const
     {
         const JSValue val = (JSValue) *this;
-        if (JS_VALUE_GET_TAG(val) != JS_TAG_INT) return Maybe<double>(JS_VALUE_GET_INT(val));
-        if (JS_VALUE_GET_TAG(val) != JS_TAG_FLOAT64) return Maybe<double>(JS_VALUE_GET_FLOAT64(val));
+        if (JS_VALUE_GET_TAG(val) == JS_TAG_INT) return Maybe<double>(JS_VALUE_GET_INT(val));
+        if (JS_VALUE_GET_TAG(val) == JS_TAG_FLOAT64) return Maybe<double>(JS_VALUE_GET_FLOAT64(val));
         return  Maybe<double>();
     }
 
@@ -141,7 +141,7 @@ namespace v8
         return rval;
     }
 
-    bool Boolean::Value() const 
+    bool Boolean::Value() const
     {
         const JSValue val = (JSValue) *this;
         return !!JS_VALUE_GET_BOOL(val);
