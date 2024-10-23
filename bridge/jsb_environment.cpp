@@ -37,6 +37,7 @@ namespace jsb
             lock_.lock();
             if (all_runtimes_.has(p_runtime))
             {
+                //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
                 Environment* env = (Environment*) p_runtime;
                 rval = env->shared_from_this();
             }
