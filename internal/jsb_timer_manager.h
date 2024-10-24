@@ -295,7 +295,7 @@ namespace jsb::internal
 
                 // the `timer` pointer may become invalid during the .action() call (due to internal reallocation in SArray)
                 // get the pointer again for further use
-                if (_used_timers.try_get_value_pointer(index, timer); timer->loop)
+                if (_used_timers.try_get_value_pointer(index, timer) && timer->loop)
                 {
                     // update the next tick time
                     timer->expires = timer->rate + _elapsed;
