@@ -172,13 +172,13 @@ namespace jsb::internal
         void set_timer(TimerHandle& inout_handle, TFunction&& p_fn, uint64_t p_rate,
                        bool p_is_loop = false, uint64_t p_first_delay = 0)
         {
+            jsb_check(!!p_fn);
             check_internal_state();
             _used_timers.remove_at(inout_handle.id);
 
             const uint64_t delay = p_first_delay > 0 ? p_first_delay : p_rate;
             const Index32 index = _used_timers.add(TimerData());
             TimerData& timer = _used_timers.get_value(index);
-            jsb_check(!!timer.action);
             timer.rate = p_rate;
             timer.expires = delay + _elapsed;
             timer.action = std::forward<TFunction>(p_fn);
