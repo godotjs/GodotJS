@@ -21,6 +21,7 @@ namespace jsb::internal
 
         jsb_force_inline explicit operator int32_t() const { return (int32_t) *id; }
         jsb_force_inline explicit operator Index32() const { return id; }
+        jsb_force_inline explicit operator bool() const { return id != Index32::none(); }
 
         jsb_force_inline explicit TimerHandle(const int32_t p_index): id((uint32_t) p_index) {}
 
@@ -31,6 +32,7 @@ namespace jsb::internal
         friend class TTimerManager;
     };
 
+    //NOTE Do not use std::function as TFunction, because SArray does not support `move`.
     template<typename TFunction>
     class TTimerManager
     {
@@ -135,7 +137,7 @@ namespace jsb::internal
 
         static void check_internal_state()
         {
-            jsb_check(Thread::is_main_thread());
+            // jsb_check(Thread::is_main_thread());
         }
 
     public:
@@ -176,7 +178,7 @@ namespace jsb::internal
             const uint64_t delay = p_first_delay > 0 ? p_first_delay : p_rate;
             const Index32 index = _used_timers.add(TimerData());
             TimerData& timer = _used_timers.get_value(index);
-            jsb_check(!timer.action);
+            jsb_check(!!timer.action);
             timer.rate = p_rate;
             timer.expires = delay + _elapsed;
             timer.action = std::forward<TFunction>(p_fn);
@@ -197,9 +199,11 @@ namespace jsb::internal
             return _used_timers.is_valid_index(p_handle.id);
         }
 
+        jsb_force_inline int size() const { return _used_timers.size(); }
+
         bool clear_timer(TimerHandle& p_handle)
         {
-            if (clear_timer(p_handle.id))
+            if (_clear_timer(p_handle.id))
             {
                 p_handle.id = Index32::none();
                 return true;
@@ -209,11 +213,7 @@ namespace jsb::internal
 
         bool clear_timer(const TimerHandle& p_handle)
         {
-            if (clear_timer(p_handle.id))
-            {
-                return true;
-            }
-            return false;
+            return _clear_timer(p_handle.id);
         }
 
         void clear_all()
@@ -285,32 +285,25 @@ namespace jsb::internal
             if (_activated_timers.empty()) return false;
             for (const Index32& index : _activated_timers)
             {
-                if (!_used_timers.is_valid_index(index))
+                TimerData* timer;
+                if (!_used_timers.try_get_value_pointer(index, timer))
                 {
-                    JSB_LOG(Error, "timer active (invalid) %d", index);
+                    JSB_LOG(Warning, "timer active (invalid) %d", index);
                     continue;
                 }
+                timer->action(ctx);
 
-                TimerData& timer = _used_timers.get_value(index);
-                // Diagnostics.Logger.Default.Debug("timer active {0}", timer);
-                timer.action(ctx);
-
-                // the reference `timer` may becomes invalid during the .action() call
-                // check the index again before continuing use the reference
-                if (!_used_timers.is_valid_index(index))
-                {
-                    continue;
-                }
-
-                if (timer.loop)
+                // the `timer` pointer may become invalid during the .action() call (due to internal reallocation in SArray)
+                // get the pointer again for further use
+                if (_used_timers.try_get_value_pointer(index, timer); timer->loop)
                 {
                     // update the next tick time
-                    timer.expires = timer.rate + _elapsed;
-                    rearrange_timer(timer.id, timer.rate);
+                    timer->expires = timer->rate + _elapsed;
+                    rearrange_timer(timer->id, timer->rate);
                 }
                 else
                 {
-                    clear_timer(index);
+                    _clear_timer(index);
                 }
             }
             _activated_timers.clear();
@@ -318,16 +311,10 @@ namespace jsb::internal
         }
 
     private:
-        bool clear_timer(const Index32& p_index)
+        bool _clear_timer(const Index32& p_index)
         {
             check_internal_state();
-            if (_used_timers.remove_at(p_index))
-            {
-                return true;
-            }
-
-            JSB_LOG(Error, "invalid timer index %d", p_index);
-            return false;
+            return _used_timers.remove_at(p_index);
         }
 
         void rearrange_timer(const Index32& p_timer_id, uint64_t p_delay)

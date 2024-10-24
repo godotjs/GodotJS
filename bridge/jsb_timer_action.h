@@ -52,7 +52,7 @@ namespace jsb
             return *this;
         }
 
-        jsb_force_inline bool operator!() const { return function_.IsEmpty(); }
+        jsb_force_inline explicit operator bool() const { return !function_.IsEmpty(); }
 
         jsb_force_inline void store(int index, v8::Global<v8::Value>&& value)
         {
