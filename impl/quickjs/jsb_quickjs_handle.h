@@ -260,7 +260,7 @@ namespace v8
         }
 
         // Return true if no value held by this handle, or dead for a weak handle.
-        bool IsEmpty() const { return !isolate_ && is_alive(); }
+        bool IsEmpty() const { return !isolate_ || !is_alive(); }
 
         Local<T> Get(Isolate* isolate) const
         {
