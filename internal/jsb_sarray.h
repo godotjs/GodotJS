@@ -7,6 +7,8 @@
 #include "jsb_ansi_allocator.h"
 #include "jsb_sindex.h"
 
+#include <cstddef>
+
 #ifdef DEBUG_ENABLED
 #   define JSB_SARRAY_DEBUG 1
 #else
@@ -85,7 +87,7 @@ namespace jsb::internal
 
         public:
             TScopedPointer() : container_(nullptr), ptr_(nullptr) { }
-            TScopedPointer(nullptr_t) : container_(nullptr), ptr_(nullptr) { }
+            TScopedPointer(std::nullptr_t) : container_(nullptr), ptr_(nullptr) { }
             TScopedPointer(SArray* p_container, S* p_ptr) : container_(p_container), ptr_(p_ptr)
             {
                 if (container_)
@@ -111,7 +113,7 @@ namespace jsb::internal
                 return *this;
             }
 
-            TScopedPointer& operator=(nullptr_t)
+            TScopedPointer& operator=(std::nullptr_t)
             {
                 if (container_) container_->unlock_address();
                 container_ = nullptr;

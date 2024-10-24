@@ -62,8 +62,8 @@
 #   define jsb_ensure(Condition) (jsb_likely(Condition) || ([] { GENERATE_TRAP(); } (), false))
 #   define jsb_ensuref(Condition, Format, ...) (jsb_likely(Condition) || ([=] { JSB_LOG(Error, Format, ##__VA_ARGS__); GENERATE_TRAP(); } (), false))
 #else
-#   define jsb_ensure(Condition) (void) (Condition)
-#   define jsb_ensuref(Condition, Format, ...) (void) (Condition)
+#   define jsb_ensure(Condition) (!!(Condition))
+#   define jsb_ensuref(Condition, Format, ...) (!!(Condition))
 #endif
 
 #if JSB_DEBUG
