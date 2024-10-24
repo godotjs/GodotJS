@@ -289,61 +289,30 @@ namespace jsb
         // overrides for impl-specific optimization
         void bind_valuetype(const NativeClassID p_class_id, Variant* p_pointer, const v8::Local<v8::Object>& p_object)
         {
-#if JSB_WITH_V8
-            bind_valuetype_v8(p_pointer, p_object);
-#else
-            bind_pointer(p_class_id, (void*) p_pointer, p_object, EBindingPolicy::Managed);
-#endif
+            bind_valuetype_impl(p_pointer, p_object);
         }
 
         void bind_valuetype(const Variant::Type p_type, Variant* p_pointer, const v8::Local<v8::Object>& p_object)
         {
-#if JSB_WITH_V8
-            bind_valuetype_v8(p_pointer, p_object);
-#else
-            bind_pointer(get_godot_primitive_class_id(p_type), (void*) p_pointer, p_object, EBindingPolicy::Managed);
-#endif
+            bind_valuetype_impl(p_pointer, p_object);
         }
 
         // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type)
         // May change in the future.
-#if JSB_WITH_V8
-        void bind_valuetype_v8(Variant* p_pointer, const v8::Local<v8::Object>& p_object)
+        void bind_valuetype_impl(Variant* p_pointer, const v8::Local<v8::Object>& p_object)
         {
             p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
+#if JSB_WITH_QUICKJS
+            impl::Helper::SetDeleter(p_object, _valuetype_deleter, this);
+#elif JSB_WITH_V8
             p_object->Set(isolate_->GetCurrentContext(), 0,
                 // in this way, the scavenger could gc it efficiently
-                v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(Variant), [](void* data, size_t length, void* deleter_data)
-                {
-                    Variant* variant = (Variant*) data;
-                    // `Callable/Array/Dictionary` may contain reference-based objects.
-                    // executing the destructor of a reference-based object may cause crash (not thread-safe),
-                    // release them in main thread for simplicity.
-                    if (const Variant::Type type = variant->get_type();
-                        type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
-                    {
-                        // use ringbuffer here, because we reckon there is only one scavenger thread involved (or one active thread at most)
-                        if (const std::shared_ptr<Environment> env = _access(deleter_data);
-                            env && env->pending_delete_.write(variant) == OK)
-                        {
-                            JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) space:%d thread:%s",
-                                Variant::get_type_name(type), (uintptr_t) variant,
-                                env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
-                            return;
-                        }
-                        JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%d)",
-                            Variant::get_type_name(type), (uintptr_t) variant);
-                    }
-                    else
-                    {
-                        // JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%d)", Variant::get_type_name(type), (uintptr_t) variant);
-                        jsb_check(type != Variant::OBJECT);
-                    }
-                    Environment::dealloc_variant(variant);
-                }, this))
+                v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(Variant), _valuetype_deleter, this))
             ).Check();
-        }
+#else
+#   error "not implemented"
 #endif
+        }
 
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
 
@@ -522,6 +491,45 @@ namespace jsb
         {
             Environment* environment = wrap(info.GetIsolate());
             environment->free_object(info.GetParameter(), true);
+        }
+
+        // only for quickjs.impl
+        static void _valuetype_deleter(const v8::WeakCallbackInfo<void>& info)
+        {
+            _valuetype_deleter(info.GetInternalField(IF_Pointer), sizeof(Variant), info.GetParameter());
+        }
+
+        static void _valuetype_deleter(void* data, size_t length, void* deleter_data)
+        {
+            Variant* variant = (Variant*) data;
+
+            // valuetype deleter is run in a background thread only in v8.impl
+#if JSB_WITH_V8
+            // `Callable/Array/Dictionary` may contain reference-based objects.
+            // executing the destructor of a reference-based object may cause crash (not thread-safe),
+            // release them in main thread for simplicity.
+            if (const Variant::Type type = variant->get_type();
+                type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
+            {
+                // use ringbuffer here, because we reckon there is only one scavenger thread involved (or one active thread at most)
+                if (const std::shared_ptr<Environment> env = _access(deleter_data);
+                    env && env->pending_delete_.write(variant) == OK)
+                {
+                    JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) space:%d thread:%s",
+                        Variant::get_type_name(type), (uintptr_t) variant,
+                        env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
+                    return;
+                }
+                JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%d)",
+                    Variant::get_type_name(type), (uintptr_t) variant);
+            }
+            else
+            {
+                // JSB_LOG(VeryVerbose, "deleting valuetype variant (%s:%d)", Variant::get_type_name(type), (uintptr_t) variant);
+                jsb_check(type != Variant::OBJECT);
+            }
+#endif
+            Environment::dealloc_variant(variant);
         }
 
         void free_object(void* p_pointer, bool p_finalize);

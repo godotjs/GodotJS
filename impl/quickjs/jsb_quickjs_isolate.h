@@ -17,7 +17,9 @@ namespace jsb::impl
 
     struct InternalData
     {
-        // support only one callback
+        // Support only one callback at a time.
+        // In current version, weak callback and valuetype deleter share the same WeakCallbackInfo.
+        // Therefore, can not define a Global with SetWeak on a valuetype object.
         WeakCallbackInfo weak;
 
         uint8_t internal_field_count = 0;

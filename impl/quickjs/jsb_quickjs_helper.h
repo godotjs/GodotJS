@@ -12,6 +12,12 @@ namespace jsb::impl
     class Helper
     {
     public:
+        // deleter for valuetype optimization (no ObjectHandle needed)
+        static void SetDeleter(const v8::Local<v8::Value> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
+        {
+            Broker::SetWeak(value.data_.isolate_, (JSValue) value, deleter_data, (void*) callback);
+        }
+
         static String Dump(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
         {
             if (value.IsEmpty()) return "(empty)";

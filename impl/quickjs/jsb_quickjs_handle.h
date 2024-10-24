@@ -6,6 +6,11 @@
 #include "jsb_quickjs_broker.h"
 #include "jsb_quickjs_ext.h"
 
+namespace jsb::impl
+{
+    class Helper;
+}
+
 namespace v8
 {
     template <typename T>
@@ -30,6 +35,7 @@ namespace v8
 
         friend class Isolate;
         friend class Context;
+        friend class jsb::impl::Helper;
 
     public:
         Local() = default;
@@ -112,13 +118,15 @@ namespace v8
     public:
         using Callback = void (*)(const WeakCallbackInfo& data);
 
-        WeakCallbackInfo(Isolate* isolate, T* parameter): isolate_(isolate), parameter_(parameter) {}
+        WeakCallbackInfo(Isolate* isolate, T* parameter, void** internal_fields): isolate_(isolate), parameter_(parameter), internal_fields_(internal_fields) {}
         Isolate* GetIsolate() const { return isolate_; }
         T* GetParameter() const { return parameter_; }
+        void* GetInternalField(int index) const { jsb_check(index == 0 || index == 1); return internal_fields_[index]; }
 
     private:
         Isolate* isolate_;
         T* parameter_;
+        void** internal_fields_;
     };
 
     template <typename T>

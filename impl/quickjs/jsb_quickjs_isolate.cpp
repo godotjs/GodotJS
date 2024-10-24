@@ -174,7 +174,7 @@ namespace v8
             {
                 if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
                 {
-                    const WeakCallbackInfo<void> info(isolate, data->weak.parameter);
+                    const WeakCallbackInfo<void> info(isolate, data->weak.parameter, data->internal_fields);
                     callback(info);
                 }
                 JSB_QUICKJS_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) val.u.ptr, index);
