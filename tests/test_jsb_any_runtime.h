@@ -57,6 +57,62 @@ namespace jsb::tests
         }
     };
 
+    struct TimerContext
+    {
+        int counter = 0;
+    };
+
+    struct TimerFunction
+    {
+        void operator()(TimerContext* ctx)
+        {
+            ++ctx->counter;
+        }
+
+        explicit operator bool() const { return true; }
+    };
+
+    TEST_CASE("[jsb] timer manager - simple")
+    {
+        internal::TTimerManager<TimerFunction> tm;
+
+        TimerContext ctx;
+        internal::TimerHandle t100 = tm.add_timer(TimerFunction(), 100, true);
+        internal::TimerHandle t2100 = tm.add_timer(TimerFunction(), 2100, true);
+        for (int i = 0; i < 10; ++i)
+        {
+            if (tm.tick(100))
+            {
+                tm.invoke_timers(&ctx);
+            }
+            CHECK(ctx.counter == i + 1);
+        }
+        // a timer will be triggered only once in a single tick, even for a long duration
+        if (tm.tick(1000))
+        {
+            tm.invoke_timers(&ctx);
+        }
+        CHECK(ctx.counter == 11);
+        CHECK(tm.size() == 2);
+        CHECK(t100);
+        CHECK(t2100);
+        CHECK(tm.clear_timer(t100));
+        CHECK(tm.size() == 1);
+        CHECK(!t100);
+        CHECK(t2100);
+        if (tm.tick(100))
+        {
+            tm.invoke_timers(&ctx);
+        }
+        CHECK(ctx.counter == 12);
+        CHECK(tm.clear_timer(t2100));
+        CHECK(tm.size() == 0);
+        CHECK(!t100);
+        CHECK(!t2100);
+        CHECK(!tm.tick(1000));
+        CHECK(ctx.counter == 12);
+    }
+
     TEST_CASE("[jsb] raw isolate essential tests")
     {
         impl::GlobalInitialize::init();
