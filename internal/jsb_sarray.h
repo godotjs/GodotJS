@@ -11,8 +11,10 @@
 
 #ifdef DEBUG_ENABLED
 #   define JSB_SARRAY_DEBUG 1
+#   define JSB_SARRAY_CONSISTENCY_CHECK 0
 #else
 #   define JSB_SARRAY_DEBUG 0
+#   define JSB_SARRAY_CONSISTENCY_CHECK 0
 #endif
 
 namespace jsb::internal
@@ -41,8 +43,6 @@ namespace jsb::internal
             void set_value(T&& p_value) { has_value_ = true; value = std::move(p_value); }
             void set_value(const T& p_value) { has_value_ = true; value = p_value; }
 #else
-            void reset_value() { }
-            bool has_value() const { return true; }
             void set_value(T&& p_value) { value = std::move(p_value); }
             void set_value(const T& p_value) { value = p_value; }
 #endif
@@ -169,7 +169,11 @@ namespace jsb::internal
                 {
                     return false;
                 }
+#if JSB_SARRAY_DEBUG
                 return container.get_data()[p_slot_index].has_value();
+#else
+                return true;
+#endif
             }
 
             T& get_slot_value(int p_slot_index)
@@ -205,7 +209,9 @@ namespace jsb::internal
                 {
                     Slot& slot = get_data()[_first_index];
                     const int next = slot.next;
+#if JSB_SARRAY_DEBUG
                     jsb_check(slot.has_value());
+#endif
                     if constexpr (!std::is_trivially_destructible_v<T>)
                     {
                         slot.value.ElementTypeTypedef::~ElementTypeTypedef();
@@ -240,11 +246,18 @@ namespace jsb::internal
                 const int index = _first_index;
                 Slot& slot = slots_base[index];
 
-                destruct_element(slot);
+                // invalidate the revision before destructor to avoid getting from the same position during destructing
+                IndexType::increase_revision(slot.revision);
+
+#if JSB_SARRAY_DEBUG
+                jsb_check(slot.has_value());
+#endif
+                destruct_value(slot.value);
                 _first_index = slot.next;
                 slot.next = _free_index;
+#if JSB_SARRAY_DEBUG
                 slot.reset_value();
-                IndexType::increase_revision(slot.revision);
+#endif
                 _free_index = index;
             }
             jsb_check(_first_index == -1);
@@ -341,7 +354,9 @@ namespace jsb::internal
             {
                 return false;
             }
+#if JSB_SARRAY_DEBUG
             jsb_check(get_data()[index].has_value());
+#endif
             return true;
         }
 
@@ -353,9 +368,11 @@ namespace jsb::internal
             Slot& slot = get_data()[new_index];
 
             IndexType::increase_revision(slot.revision);
+
             // recreate `value` before assignment
             construct_element(slot);
             slot.set_value(std::forward<TArg>(value));
+
             _free_index = slot.next;
             slot.next = INDEX_NONE;
             slot.previous = _last_index;
@@ -386,6 +403,7 @@ namespace jsb::internal
             Slot& new_slot = get_data()[new_index];
 
             IndexType::increase_revision(new_slot.revision);
+
             // recreate `value` before assignment
             construct_element(new_slot);
             new_slot.set_value(std::forward<T>(p_item));
@@ -464,6 +482,13 @@ namespace jsb::internal
             const T item = std::move(slot.value);
             remove_at({_last_index, slot.revision});
             return item;
+        }
+
+        void remove_last()
+        {
+            jsb_check(_last_index != INDEX_NONE);
+            const Slot& slot = get_data()[_last_index];
+            remove_at({_last_index, slot.revision});
         }
 
         T& get_first_value()
@@ -585,16 +610,28 @@ namespace jsb::internal
             {
                 return false;
             }
+
+            // invalidate the revision before destructor to avoid getting from the same position during destructing
+            IndexType::increase_revision(slot.revision);
+
+#if JSB_SARRAY_DEBUG
+            jsb_check(slot.has_value());
+#endif
+            destruct_value(slot.value);
+
+            // read them after destruct_value, because, slot links may be changed during the destructor
             const int next = slot.next;
             const int previous = slot.previous;
 
-            destruct_element(slot);
             slot.next = _free_index;
+#if JSB_SARRAY_DEBUG
             slot.reset_value();
-            IndexType::increase_revision(slot.revision);
+#endif
+
             _free_index = p_index.get_index();
             --_used_size;
             ++_version;
+
             if (next != INDEX_NONE)
             {
                 get_data()[next].previous = previous;
@@ -649,7 +686,9 @@ namespace jsb::internal
             for (int i = current_size; i < new_capacity; ++i)
             {
                 Slot& slot = slots_base[i];
+#if JSB_SARRAY_DEBUG
                 jsb_check(!slot.has_value());
+#endif
                 slot.next = _free_index;
                 slot.revision = kInitialRevision;
                 _free_index = i;
@@ -843,6 +882,7 @@ namespace jsb::internal
         jsb_force_inline void lock_address() { ++_address_locked; }
         jsb_force_inline void unlock_address() { jsb_check(_address_locked > 0); --_address_locked; }
 
+#if JSB_SARRAY_CONSISTENCY_CHECK
         bool is_consistent() const
         {
             int index = _free_index;
@@ -886,26 +926,30 @@ namespace jsb::internal
             }
             return _first_index == INDEX_NONE && _last_index == INDEX_NONE;
         }
+#else
+        constexpr bool is_consistent() const { return true; }
+#endif
 
         static void construct_element(Slot& p_slot)
         {
+#if JSB_SARRAY_DEBUG
             jsb_check(!p_slot.has_value());
+#endif
             if constexpr (!std::is_trivially_constructible_v<T>)
             {
                 memnew_placement(&p_slot.value, T);
             }
         }
 
-        static void destruct_element(Slot& p_slot)
+        static void destruct_value(T& p_value)
         {
-            jsb_check(p_slot.has_value());
             if constexpr (!std::is_trivially_destructible_v<T>)
             {
-                p_slot.value.ElementTypeTypedef::~ElementTypeTypedef();
+                p_value.ElementTypeTypedef::~ElementTypeTypedef();
             }
             else
             {
-                memset((void *)&p_slot.value, 0, sizeof(T));
+                memset((void *)&p_value, 0, sizeof(T));
             }
         }
     };
