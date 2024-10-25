@@ -139,6 +139,14 @@ namespace jsb
         Environment();
         ~Environment();
 
+        // In general use cases, the lifetime of Environment is explicitly managed by ScriptLanguage,
+        // and it must be disposed with the ScriptLanguage finished.
+        //
+        // At the same time, as a shared_ptr, the underlying `Isolate` in Environment will be eventually disposed/deleted until there
+        // is no critical references exist (such as Global handles) to avoid crashes.
+        // Should avoid any script execution during this phase (after disposed before destructed).
+        void dispose();
+
         jsb_force_inline static Environment* wrap(v8::Isolate* p_isolate) { return (Environment*) p_isolate->GetData(kIsolateEmbedderData); }
         jsb_force_inline static Environment* wrap(const v8::Local<v8::Context>& p_context) { return (Environment*) p_context->GetAlignedPointerFromEmbedderData(kContextEmbedderData); }
 

@@ -73,6 +73,7 @@ void GodotJSScriptLanguage::finish()
 {
     jsb_check(once_inited_);
     once_inited_ = false;
+    environment_->dispose();
     environment_.reset();
     JSB_LOG(VeryVerbose, "jsb lang finish");
 }

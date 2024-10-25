@@ -247,38 +247,7 @@ namespace jsb
 
     Environment::~Environment()
     {
-        // destroy context
-        {
-            v8::Isolate* isolate = this->isolate_;
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::HandleScope handle_scope(isolate);
-            v8::Local<v8::Context> context = context_.Get(get_isolate());
-
-            function_bank_.clear();
-            function_refs_.clear();
-
-            this->on_context_destroyed(context);
-            context->SetAlignedPointerInEmbedderData(kContextEmbedderData, nullptr);
-
-            module_cache_.deinit();
-            context_.Reset();
-        }
-
-        while (!script_classes_.is_empty())
-        {
-            const ScriptClassID id = script_classes_.get_first_index();
-            script_classes_.remove_at_checked(id);
-        }
-
-        for (int index = 0; index < Symbols::kNum; ++index)
-        {
-            symbols_[index].Reset();
-        }
-
-#if JSB_WITH_DEBUGGER
-        debugger_.drop();
-#endif
-        EnvironmentStore::get_shared().remove(this);
+        JSB_LOG(Verbose, "destructing Environment");
         timer_manager_.clear_all();
 
         for (IModuleResolver* resolver : module_resolvers_)
@@ -293,7 +262,8 @@ namespace jsb
             pair.value = nullptr;
         }
 
-        // cleanup weak callbacks not invoked by v8
+        // Cleanup weak callbacks not invoked by v8.
+        // It's not 100% safe for all kinds of objects, because we don't know whether the target object has already been deleted or not.
         jsb_check((uint32_t) objects_.size() == objects_index_.size());
         JSB_LOG(VeryVerbose, "cleanup %d objects", objects_.size());
         while (!objects_index_.is_empty())
@@ -312,6 +282,45 @@ namespace jsb
         isolate_ = nullptr;
 
         exec_sync_delete();
+    }
+
+    void Environment::dispose()
+    {
+        JSB_LOG(Verbose, "disposing Environment");
+        // destroy context
+        {
+            v8::Isolate* isolate = this->isolate_;
+            v8::Isolate::Scope isolate_scope(isolate);
+            v8::HandleScope handle_scope(isolate);
+            v8::Local<v8::Context> context = context_.Get(get_isolate());
+
+            function_refs_.clear();
+            while (!function_bank_.is_empty()) function_bank_.remove_last();
+            // function_bank_.clear();
+
+            this->on_context_destroyed(context);
+            context->SetAlignedPointerInEmbedderData(kContextEmbedderData, nullptr);
+
+            module_cache_.deinit();
+            context_.Reset();
+        }
+
+        while (!script_classes_.is_empty())
+        {
+            const ScriptClassID id = script_classes_.get_first_index();
+            script_classes_.remove_at_checked(id);
+        }
+
+        for (int index = 0; index < Symbols::kNum; ++index)
+        {
+            symbols_[index].Reset();
+        }
+        exec_sync_delete();
+
+#if JSB_WITH_DEBUGGER
+        debugger_.drop();
+#endif
+        EnvironmentStore::get_shared().remove(this);
 
     }
 
@@ -1017,8 +1026,15 @@ namespace jsb
             {
                 v8::Isolate* isolate = get_isolate();
                 v8::HandleScope handle_scope(isolate);
-                const size_t r = function_refs_.erase(TWeakRef(isolate, strong_ref.object_));
-                jsb_check(r != 0);
+                if (jsb_likely(!strong_ref.object_.IsEmpty()))
+                {
+                    const size_t r = function_refs_.erase(TWeakRef(isolate, strong_ref.object_));
+                    jsb_check(r != 0);
+                }
+                else
+                {
+                    JSB_LOG(Verbose, "(not an error if Environment is disposing) try to release a function which has already been disposed %s", p_func_id);
+                }
                 function_bank_.remove_at_checked(p_func_id);
             }
             return true;
