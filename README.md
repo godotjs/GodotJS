@@ -23,6 +23,8 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 
 ## Get Started
 
+### Option 1: v8
+
 **STEP 1:** Download or clone the repo into the `modules` directory of your Godot engine source:
 ```sh
 cd YourGodotEngineSource/modules
@@ -73,6 +75,17 @@ The currently used version of `v8` is `12.4.254.20`.
 A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/releases).  
 **Because the GodotJS-Build workflow is currently run manually, it may not be built from the latest commit of `GodotJS`.**
 
+### Option 2: QuickJS
+> [!NOTE] 
+> QuickJS support may not be stable enough to use.
+
+To enable `QuickJS`, please run scons with the parameter `use_quickjs=yes`.
+
+```sh
+# An example on Windows:
+scons vsproj=yes dev_build=yes p=windows use_quickjs=yes 
+```
+
 ## Examples 
 
 For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.  
@@ -108,12 +121,21 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 * [GodotJS-Dependencies](https://github.com/ialex32x/GodotJS-Dependencies): Github workflows for building dependencies of GodotJS (v8, lws)
 
 ## Supported Platforms
-- [x] Windows: x86_64
-- [ ] Windows: arm64, UWP
-- [x] MacOS: arm64
-- [x] MacOS: x86_64 (not tested)
-- [x] Linux: x86_64
-- [ ] Linux: arm64
-- [x] Android: arm32, arm64, x86_64 (`ndk_platform=android-24`)
-- [x] iOS: arm64, x86_64 (not tested)
-- [ ] WebAssembly
+
+|                | v8.impl        | quickjs.impl   | quickjs.impl (quickjs-ng) | web.impl   |
+| -------------- | -------------- | -------------- | ------------------------- | ---------- |
+| Windows:x86_64 | ✅              | ✅              | 🟡 (incomplete)                | ❌        |
+| Windows:arm64  | 🟡 (incomplete)     | 🟡 (incomplete)     | 🟡 (incomplete)                | ❌        |
+| MacOS:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
+| MacOS:arm64    | ✅              | ✅              | 🟡 (incomplete)                | ❌        |
+| Linux:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
+| Linux:arm64    | 🟡 (incomplete)     | 🟡 (incomplete)     | 🟡 (incomplete)                | ❌        |
+| Android:x86_64 | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
+| Android:arm64  | ✅              | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
+| iOS:x86_64     | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
+| iOS:arm64      | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
+| Web            | ❌            | 🟡 (incomplete)     | 🟡 (incomplete)                | 🟡 (incomplete) |
+
+
+> Android: tested on ndk_platform=android-24  
+> Currently, except for the web, 32-bit platforms are not considered to support. 

@@ -2,7 +2,7 @@
 # QuickJS 
 
 > [!NOTE] 
-> QuickJS support is not stable enough to use.
+> QuickJS support may not be stable enough to use.
 
 To enable `QuickJS`, please run scons with the parameter `use_quickjs=yes`.
 
