@@ -91,6 +91,7 @@ namespace v8
         friend class jsb::impl::Helper;
         friend class jsb::impl::Broker;
         friend class Context;
+        friend struct IsolateInternalFunctions;
 
         template<typename T> friend class Global;
         template<typename T> friend class Local;
@@ -220,7 +221,7 @@ namespace v8
 
         // phantom is a pointer to JSObject (internal type of quickjs).
         // the caller must ensure that the JSObject is alive when calling add_phantom
-        void add_phantom(void* token)
+        jsb_force_inline void add_phantom(void* token)
         {
             if (!token) return;
 
@@ -234,7 +235,7 @@ namespace v8
             phantom_.insert(token, { 1, true });
         }
 
-        void remove_phantom(void* token)
+        jsb_force_inline void remove_phantom(void* token)
         {
             if (!token) return;
 
@@ -246,22 +247,29 @@ namespace v8
             }
         }
 
-        bool is_phantom_alive(void* token) const
+        //NOTE it'll crash if `token` does not exist in phantom map
+        jsb_force_inline bool is_phantom_alive(void* token) const
         {
             const jsb::impl::Phantom& p = phantom_.get(token);
             return p.alive_;
         }
 
-        void _invalidate_phantom(void* token)
+        void _add_reference()
         {
-            if (jsb::impl::Phantom* p = phantom_.getptr(token))
-            {
-                p->alive_ = false;
-            }
+            jsb_check(ref_count_ > 0);
+            ++ref_count_;
+            JSB_QUICKJS_LOG(VeryVerbose, "_add_reference %s", ref_count_);
         }
 
-        void _add_reference();
-        void _remove_reference();
+        void _remove_reference()
+        {
+            jsb_check(ref_count_ > 0);
+            if (--ref_count_ == 0)
+            {
+                _release();
+            }
+            JSB_QUICKJS_LOG(VeryVerbose, "_remove_reference %s", ref_count_);
+        }
 
         template<int N>
         jsb_force_inline void throw_error(const char (&message)[N])
@@ -286,6 +294,18 @@ namespace v8
         Isolate();
 
         void _release();
+
+        // [internal]
+        bool _has_phantom(void* token) const { return phantom_.has(token); }
+
+        // [internal]
+        jsb_force_inline void _invalidate_phantom(void* token)
+        {
+            if (jsb::impl::Phantom* p = phantom_.getptr(token))
+            {
+                p->alive_ = false;
+            }
+        }
 
         // push value to the top of stack (without ref-counting)
         uint16_t emplace_(JSValue value)

@@ -7,27 +7,27 @@
 
 namespace v8
 {
-    namespace details
+    struct IsolateInternalFunctions
     {
         // crash val is an exception
-        jsb_force_inline JSValue verified(const JSValue val)
+        jsb_force_inline static JSValue verified(const JSValue val)
         {
             jsb_check(JS_VALUE_GET_TAG(val) != JS_TAG_EXCEPTION);
             return val;
         }
 
-        jsb_force_inline int verified(const int val)
+        jsb_force_inline static int verified(const int val)
         {
             jsb_check(val != -1);
             return val;
         }
 
-        void* js_malloc(JSMallocState* s, size_t size)
+        static void* js_malloc(JSMallocState* s, size_t size)
         {
             return memalloc(size);
         }
 
-        void js_free(JSMallocState* s, void* ptr)
+        static void js_free(JSMallocState* s, void* ptr)
         {
             // avoid error prints on nullptr
             if (ptr)
@@ -39,11 +39,16 @@ namespace v8
             }
         }
 
-        void* js_realloc(JSMallocState* s, void* ptr, size_t size)
+        static void* js_realloc(JSMallocState* s, void* ptr, size_t size)
         {
+            //TODO JSObject would never be reallocated, true?
+            //     (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
+            // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
             return memrealloc(ptr, size);
         }
-    }
+    };
+
+    using details = IsolateInternalFunctions;
 
     Isolate *Isolate::New(const CreateParams &params)
     {
@@ -57,8 +62,10 @@ namespace v8
         rt_ = JS_NewRuntime2(&mf, this);
         ctx_ = JS_NewContext(rt_);
         static_assert(sizeof(stack_) == sizeof(JSValue) * jsb::impl::kMaxStackSize);
+
         // should be fine to leave it uninitialized
         // memset(stack_, 0, sizeof(stack_));
+
         const JSValue global = JS_GetGlobalObject(ctx_);
 
         JS_SetRuntimeOpaque(rt_, this);
@@ -93,24 +100,6 @@ namespace v8
     {
         jsb_check(!rt_);
     }
-
-    void Isolate::_add_reference()
-    {
-        jsb_check(ref_count_ > 0);
-        ++ref_count_;
-        JSB_QUICKJS_LOG(VeryVerbose, "_add_reference %s", ref_count_);
-    }
-
-    void Isolate::_remove_reference()
-    {
-        jsb_check(ref_count_ > 0);
-        if (--ref_count_ == 0)
-        {
-            _release();
-        }
-        JSB_QUICKJS_LOG(VeryVerbose, "_remove_reference %s", ref_count_);
-    }
-
 
     void Isolate::_release()
     {

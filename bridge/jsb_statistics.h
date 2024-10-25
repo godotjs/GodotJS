@@ -17,8 +17,13 @@ namespace jsb
 
         int cached_string_names;
         uint32_t persistent_objects;
+
+        // allocated num of Variants in pool (only valid in debug mode)
         uint32_t allocated_variants;
 
+        //TODO use Dictionary for impl-specific fields?
+
+        // impl-specific fields
         size_t used_global_handles_size;
         size_t total_global_handles_size;
         size_t used_heap_size;
