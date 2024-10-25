@@ -1,6 +1,6 @@
 
 # GodotJS 
-This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot.  
+This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS as an alternative runtime.
 
 [![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
 [![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
@@ -23,7 +23,14 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 
 ## Get Started
 
+Before initiating, make sure to select the JavaScript runtime you prefer between `v8` and `QuickJS`:
+
+* `v8` is proven to be one of the most powerful and high-performance JavaScript runtimes
+* `QuickJS` is a remarkable and lightweight option
+
 ### Option 1: v8
+
+`v8` is used as the default JavaScript runtime. Follow the instructions below to set it up:
 
 **STEP 1:** Download or clone the repo into the `modules` directory of your Godot engine source:
 ```sh
