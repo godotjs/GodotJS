@@ -117,6 +117,9 @@
 
 #define JSB_NEW_FUNCTION(context, callback, data) jsb::impl::Helper::NewFunction(context, #callback, callback, data)
 
+// helper macros to create a handle scope with a unique name
+#define JSB_HANDLE_SCOPE(isolate) v8::HandleScope JSB_CONCAT(unique_, __COUNTER__)(isolate)
+
 #if GODOT_4_3_OR_NEWER
 #    define ConstStringRefCompat const String&
 #    define ConstStringNameRefCompat const StringName&

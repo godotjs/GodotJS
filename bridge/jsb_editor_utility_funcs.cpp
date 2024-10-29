@@ -310,6 +310,7 @@ namespace jsb
 #endif
             // class: properties
             {
+                JSB_HANDLE_SCOPE(isolate);
                 // intentionally new array without a length from `class_info.property_setget.size()`,
                 // because ignoring items causes holes in the "properties" array which would be `undefined`
                 v8::Local<v8::Array> properties_obj = v8::Array::New(isolate);
@@ -319,6 +320,7 @@ namespace jsb
                 {
                     if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
 
+                    JSB_HANDLE_SCOPE(isolate);
                     const StringName& property_name = pair.key;
                     const ClassDB::PropertySetGet& getset_info = pair.value;
                     const PropertyInfo& property_info = class_info.property_map.get(property_name);
@@ -344,6 +346,7 @@ namespace jsb
 
             // class: methods
             {
+                JSB_HANDLE_SCOPE(isolate);
 #if JSB_EXCLUDE_GETSET_METHODS
                 constexpr int len = 0;
 #else
@@ -357,6 +360,7 @@ namespace jsb
 #if JSB_EXCLUDE_GETSET_METHODS
                     if (omitted_methods.has(pair.key)) continue;
 #endif
+                    JSB_HANDLE_SCOPE(isolate);
                     MethodBind const * const method_bind = pair.value;
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                     build_method_info(isolate, context, method_bind, method_info_obj);
@@ -366,11 +370,13 @@ namespace jsb
 
             // class: vmethods (DO NOT USE)
             {
+                JSB_HANDLE_SCOPE(isolate);
                 v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, (int) class_info.virtual_methods_map.size());
                 set_field(isolate, context, class_info_obj, "virtual_methods", methods_obj);
                 int index = 0;
                 for (const KeyValue<StringName, MethodInfo>& pair : class_info.virtual_methods_map)
                 {
+                    JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                     //TODO whether a virtual method has return value or not?
                     build_method_info(isolate, context, pair.value, pair.value.return_val.type != Variant::NIL, method_info_obj);
@@ -380,11 +386,13 @@ namespace jsb
 
             // class: enums
             {
+                JSB_HANDLE_SCOPE(isolate);
                 v8::Local<v8::Array> enums_obj = v8::Array::New(isolate, (int) class_info.enum_map.size());
                 set_field(isolate, context, class_info_obj, "enums", enums_obj);
                 int index = 0;
                 for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : class_info.enum_map)
                 {
+                    JSB_HANDLE_SCOPE(isolate);
                     const ClassDB::ClassInfo::EnumInfo& enum_info = pair.value;
                     v8::Local<v8::Object> enum_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, enum_info_obj, "name", pair.key);
@@ -395,11 +403,14 @@ namespace jsb
 
             // class: constants (int only)
             {
+                JSB_HANDLE_SCOPE(isolate);
+
                 v8::Local<v8::Array> constants_obj = v8::Array::New(isolate, (int) class_info.constant_map.size());
                 set_field(isolate, context, class_info_obj, "constants", constants_obj);
                 int index = 0;
                 for (const KeyValue<StringName, int64_t>& pair : class_info.constant_map)
                 {
+                    JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> constant_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, constant_info_obj, "name", pair.key);
                     set_field(isolate, context, constant_info_obj, "value", pair.value);
@@ -409,11 +420,14 @@ namespace jsb
 
             // class: signals
             {
+                JSB_HANDLE_SCOPE(isolate);
+
                 v8::Local<v8::Array> signals_obj = v8::Array::New(isolate, (int) class_info.signal_map.size());
                 set_field(isolate, context, class_info_obj, "signals", signals_obj);
                 int index = 0;
                 for (const KeyValue<StringName, MethodInfo>& pair : class_info.signal_map)
                 {
+                    JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> signal_info_obj = v8::Object::New(isolate);
                     set_field(isolate, context, signal_info_obj, "name", pair.key);
                     build_signal_info(isolate, context, pair.value, signal_info_obj);
@@ -437,6 +451,8 @@ namespace jsb
         template<typename TReturn, typename TLeft, typename TRight>
         OverloadedBinaryOperator& Define()
         {
+            JSB_HANDLE_SCOPE(context->GetIsolate());
+
             v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
 
             set_field(context->GetIsolate(), context, obj, "name", op_name);
@@ -454,6 +470,8 @@ namespace jsb
         template<typename TypeName>
         static void Define(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
         {
+            JSB_HANDLE_SCOPE(context->GetIsolate());
+
             v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
 
             set_field(context->GetIsolate(), context, obj, "name", op_name);
@@ -470,6 +488,8 @@ namespace jsb
         template<typename TLeft, typename TRight>
         static void Define(const v8::Local<v8::Context>& context, const v8::Local<v8::Array>& operators, const String& op_name)
         {
+            JSB_HANDLE_SCOPE(context->GetIsolate());
+
             v8::Local<v8::Object> obj = v8::Object::New(context->GetIsolate());
 
             set_field(context->GetIsolate(), context, obj, "name", op_name);
@@ -506,11 +526,14 @@ namespace jsb
 
         // constructors
         {
+            JSB_HANDLE_SCOPE(isolate);
+
             const int constructor_count = Variant::get_constructor_count(TYPE);
             v8::Local<v8::Array> constructors_obj = v8::Array::New(isolate, constructor_count);
             set_field(isolate, context, class_info_obj, "constructors", constructors_obj);
             for (int constructor_index = 0; constructor_index < constructor_count; ++constructor_index)
             {
+                JSB_HANDLE_SCOPE(isolate);
                 const int argc = Variant::get_constructor_argument_count(TYPE, constructor_index);
                 FConstructorInfo constructor_info;
                 for (int argument_index = 0; argument_index < argc; ++argument_index)
@@ -527,6 +550,8 @@ namespace jsb
 
         // properties (getset)
         {
+            JSB_HANDLE_SCOPE(isolate);
+
             List<StringName> members;
             Variant::get_member_list(TYPE, &members);
             v8::Local<v8::Array> members_obj = v8::Array::New(isolate, members.size());
@@ -534,6 +559,7 @@ namespace jsb
             int index = 0;
             for (const StringName& property_name : members)
             {
+                JSB_HANDLE_SCOPE(isolate);
                 // in order to reuse `build_property_info`, wrap it as a `PropertySetGet`
                 FPrimitiveGetSetInfo property_info;
                 property_info.name = property_name;
@@ -546,6 +572,8 @@ namespace jsb
 
         // methods
         {
+            JSB_HANDLE_SCOPE(isolate);
+
             List<StringName> methods;
             Variant::get_builtin_method_list(TYPE, &methods);
             v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, (int) methods.size());
@@ -553,6 +581,7 @@ namespace jsb
             int index = 0;
             for (const StringName& name : methods)
             {
+                JSB_HANDLE_SCOPE(isolate);
                 MethodInfo method_info;
                 method_info.name = name;
                 method_info.flags = 0;
@@ -578,6 +607,8 @@ namespace jsb
 
         // operators
         {
+            JSB_HANDLE_SCOPE(isolate);
+
             v8::Local<v8::Array> operators_obj = v8::Array::New(isolate);
             set_field(isolate, context, class_info_obj, "operators", operators_obj);
             OperatorRegister<T>::generate(context, operators_obj);
@@ -585,6 +616,8 @@ namespace jsb
 
         // enums
         {
+            JSB_HANDLE_SCOPE(isolate);
+
             List<StringName> enums;
             Variant::get_enums_for_type(TYPE, &enums);
             v8::Local<v8::Array> enums_obj = v8::Array::New(isolate, (int) enums.size());
@@ -592,6 +625,7 @@ namespace jsb
             int index = 0;
             for (const StringName& enum_name : enums)
             {
+                JSB_HANDLE_SCOPE(isolate);
                 List<StringName> enumerations;
                 Variant::get_enumerations_for_enum(TYPE, enum_name, &enumerations);
                 ClassDB::ClassInfo::EnumInfo enum_info;
@@ -608,6 +642,8 @@ namespace jsb
 
         // constants
         {
+            JSB_HANDLE_SCOPE(isolate);
+
             List<StringName> constants;
             Variant::get_constants_for_type(TYPE, &constants);
             v8::Local<v8::Array> constants_obj = v8::Array::New(isolate, (int) constants.size());
@@ -615,6 +651,7 @@ namespace jsb
             int index = 0;
             for (const StringName& constant : constants)
             {
+                JSB_HANDLE_SCOPE(isolate);
                 v8::Local<v8::Object> constant_info_obj = v8::Object::New(isolate);
                 const Variant constant_value = Variant::get_constant_value(TYPE, constant);
 
@@ -630,6 +667,7 @@ namespace jsb
                 constants_obj->Set(context, index++, constant_info_obj).Check();
             }
         }
+
         return class_info_obj;
     }
 
@@ -649,47 +687,66 @@ namespace jsb
             set_field(isolate, context, class_doc_obj, JSB_GET_FIELD_NAME_PRESET(class_doc, brief_description));
 
             // doc:constants
-            v8::Local<v8::Object> constants_obj = v8::Object::New(isolate);
-            set_field(isolate, context, class_doc_obj, "constants", constants_obj);
-            for (const DocData::ConstantDoc& constant_doc : class_doc.constants)
             {
-                v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
-                constants_obj->Set(context, impl::Helper::new_string(isolate, constant_doc.name), constant_obj).Check();
+                JSB_HANDLE_SCOPE(isolate);
 
-                set_field(isolate, context, constant_obj, "description", constant_doc.description);
+                v8::Local<v8::Object> constants_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "constants", constants_obj);
+                for (const DocData::ConstantDoc& constant_doc : class_doc.constants)
+                {
+                    JSB_HANDLE_SCOPE(isolate);
+                    v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
+                    constants_obj->Set(context, impl::Helper::new_string(isolate, constant_doc.name), constant_obj).Check();
+
+                    set_field(isolate, context, constant_obj, "description", constant_doc.description);
+                }
             }
 
             // doc:methods
-            v8::Local<v8::Object> methods_obj = v8::Object::New(isolate);
-            set_field(isolate, context, class_doc_obj, "methods", methods_obj);
-            for (const DocData::MethodDoc& method_doc : class_doc.methods)
             {
-                v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
-                methods_obj->Set(context, impl::Helper::new_string(isolate, method_doc.name), method_obj).Check();
+                JSB_HANDLE_SCOPE(isolate);
 
-                set_field(isolate, context, method_obj, "description", method_doc.description);
+                v8::Local<v8::Object> methods_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "methods", methods_obj);
+                for (const DocData::MethodDoc& method_doc : class_doc.methods)
+                {
+                    JSB_HANDLE_SCOPE(isolate);
+                    v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
+                    methods_obj->Set(context, impl::Helper::new_string(isolate, method_doc.name), method_obj).Check();
+
+                    set_field(isolate, context, method_obj, "description", method_doc.description);
+                }
             }
 
             // doc:properties
-            v8::Local<v8::Object> properties_obj = v8::Object::New(isolate);
-            set_field(isolate, context, class_doc_obj, "properties", properties_obj);
-            for (const DocData::PropertyDoc& property_doc : class_doc.properties)
             {
-                v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
-                properties_obj->Set(context, impl::Helper::new_string(isolate, property_doc.name), property_obj).Check();
+                JSB_HANDLE_SCOPE(isolate);
+                v8::Local<v8::Object> properties_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "properties", properties_obj);
+                for (const DocData::PropertyDoc& property_doc : class_doc.properties)
+                {
+                    JSB_HANDLE_SCOPE(isolate);
+                    v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
+                    properties_obj->Set(context, impl::Helper::new_string(isolate, property_doc.name), property_obj).Check();
 
-                set_field(isolate, context, property_obj, "description", property_doc.description);
+                    set_field(isolate, context, property_obj, "description", property_doc.description);
+                }
             }
 
             // doc:signals
-            v8::Local<v8::Object> signals_obj = v8::Object::New(isolate);
-            set_field(isolate, context, class_doc_obj, "signals", signals_obj);
-            for (const DocData::MethodDoc& signal_doc : class_doc.signals)
             {
-                v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
-                signals_obj->Set(context, impl::Helper::new_string(isolate, signal_doc.name), signal_obj).Check();
+                JSB_HANDLE_SCOPE(isolate);
 
-                set_field(isolate, context, signal_obj, "description", signal_doc.description);
+                v8::Local<v8::Object> signals_obj = v8::Object::New(isolate);
+                set_field(isolate, context, class_doc_obj, "signals", signals_obj);
+                for (const DocData::MethodDoc& signal_doc : class_doc.signals)
+                {
+                    JSB_HANDLE_SCOPE(isolate);
+                    v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
+                    signals_obj->Set(context, impl::Helper::new_string(isolate, signal_doc.name), signal_obj).Check();
+
+                    set_field(isolate, context, signal_obj, "description", signal_doc.description);
+                }
             }
 
             info.GetReturnValue().Set(class_doc_obj);
@@ -721,6 +778,8 @@ namespace jsb
                 JSB_LOG(Verbose, "ignoring %s", *it);
                 continue;
             }
+
+            JSB_HANDLE_SCOPE(isolate);
             array->Set(context, index++, build_class_info(isolate, context, *it)).Check();
         }
         info.GetReturnValue().Set(array);
@@ -744,6 +803,7 @@ namespace jsb
                 continue;
             }
 
+            JSB_HANDLE_SCOPE(isolate);
             enum_packs.insert(enum_name);
             v8::Local<v8::Object> enum_obj = v8::Object::New(isolate);
             v8::Local<v8::Object> values_obj = v8::Object::New(isolate);
@@ -753,6 +813,7 @@ namespace jsb
             CoreConstants::get_enum_values(enum_name, &map);
             for (const KeyValue<StringName, int64_t>& kv : map)
             {
+                JSB_HANDLE_SCOPE(isolate);
                 values_obj->Set(context,
                     impl::Helper::new_string(isolate, kv.key),
                     impl::Helper::new_integer(isolate, kv.value)).Check();
@@ -773,7 +834,7 @@ namespace jsb
 
 #pragma push_macro("DEF")
 #   undef   DEF
-#   define  DEF(TypeName) array->Set(context, index++, generate_primitive_type<TypeName>(isolate, context)).Check();
+#   define  DEF(TypeName) { JSB_HANDLE_SCOPE(isolate); array->Set(context, index++, generate_primitive_type<TypeName>(isolate, context)).Check(); }
 #   include "jsb_primitive_types.def.h"
 #pragma pop_macro("DEF")
 
@@ -792,6 +853,7 @@ namespace jsb
         int index = 0;
         for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it, ++index)
         {
+            JSB_HANDLE_SCOPE(isolate);
             const MethodInfo method_info = Variant::get_utility_function_info(*it);
             const bool has_return_value = Variant::has_utility_function_return_value(*it);
             v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
@@ -813,6 +875,7 @@ namespace jsb
         int index = 0;
         for (auto it = singletons.begin(); it != singletons.end(); ++it, ++index)
         {
+            JSB_HANDLE_SCOPE(isolate);
             Engine::Singleton singleton = *it;
             v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
             const StringName& class_name = singleton.ptr->get_class_name();
