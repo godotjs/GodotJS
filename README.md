@@ -136,7 +136,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | MacOS:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | MacOS:arm64    | ✅              | ✅              | 🟡 (incomplete)                | ❌        |
 | Linux:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| Linux:arm64    | 🟡 (incomplete)     | 🟡 (incomplete)     | 🟡 (incomplete)                | ❌        |
+| Linux:arm64    | 🟡 (incomplete) | ✅              | 🟡 (incomplete)                | ❌        |
 | Android:x86_64 | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | Android:arm64  | ✅              | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | iOS:x86_64     | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
