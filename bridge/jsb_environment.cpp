@@ -415,7 +415,7 @@ namespace jsb
         handle.ref_.Reset(isolate_, p_object);
         if (p_policy == EBindingPolicy::Managed)
         {
-            handle.ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
+            handle.ref_.SetWeak(p_pointer, &object_gc_callback<true>, v8::WeakCallbackType::kInternalFields);
         }
         else
         {
@@ -479,8 +479,9 @@ namespace jsb
         --object_handle->ref_count_;
         if (object_handle->ref_count_ == 0)
         {
-            // with quickjs.impl, we must leave the ObjectHandle scope because SetWeak() may trigger the object finalization immediately.
-            object_handle.escape()->ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
+            // In quickjs.impl, we must leave the ObjectHandle scope because SetWeak() may trigger the object finalization immediately.
+            // Usually, unreference() called from godot RefCounted Object which will be deleted if we return `true` here.
+            object_handle.escape()->ref_.SetWeak(p_pointer, &object_gc_callback<false>, v8::WeakCallbackType::kInternalFields);
             return true;
         }
         return false;

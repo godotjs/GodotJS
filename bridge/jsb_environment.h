@@ -495,10 +495,11 @@ namespace jsb
         void exec_sync_delete();
 
         // callback from v8 gc (not 100% guaranteed called)
+        template<bool kShouldFree>
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
             Environment* environment = wrap(info.GetIsolate());
-            environment->free_object(info.GetParameter(), true);
+            environment->free_object(info.GetParameter(), kShouldFree);
         }
 
         // only for quickjs.impl
