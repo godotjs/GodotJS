@@ -78,6 +78,7 @@ public:
 
     static void generate_godot_dts();
     static void install_ts_project(const Vector<jsb::InstallFileInfo>& p_files);
+    static const char* get_preset_source(const String& p_filename, size_t& r_len);
 
     static void ensure_tsc_installed();
 

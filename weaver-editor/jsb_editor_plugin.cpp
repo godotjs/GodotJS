@@ -19,6 +19,16 @@ void GodotJSEditorPlugin::_bind_methods()
 
 }
 
+const char* GodotJSEditorPlugin::get_preset_source(const String& p_filename, size_t& r_len)
+{
+    if (const char* res = GodotJSProjectPreset::get_source_rt(p_filename, r_len)) return res;
+#ifdef TOOLS_ENABLED
+    return GodotJSProjectPreset::get_source_ed(p_filename, r_len);
+#else
+    return nullptr;
+#endif
+}
+
 void GodotJSEditorPlugin::_notification(int p_what)
 {
     switch (p_what)
@@ -96,7 +106,7 @@ Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
 {
     Error err;
     size_t size;
-    const char* data = GodotJSProjectPreset::get_source(p_file.source_name, size);
+    const char* data = get_preset_source(p_file.source_name, size);
     ERR_FAIL_COND_V_MSG(size == 0 || data == nullptr, ERR_FILE_NOT_FOUND, "bad data");
     err = DirAccess::make_dir_recursive_absolute(p_file.target_dir);
     ERR_FAIL_COND_V_MSG(err != OK, err, "failed to make dir");
@@ -164,7 +174,7 @@ bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file, bool p
     // if ((p_file.hint & jsb::CH_D_TS) != 0) return true;
 
     size_t size;
-    const char* data = GodotJSProjectPreset::get_source(p_file.source_name, size);
+    const char* data = get_preset_source(p_file.source_name, size);
     if (size == 0 || data == nullptr) return false;
     const String target_name = jsb::internal::PathUtil::combine(p_file.target_dir, p_file.source_name);
     Error err;
