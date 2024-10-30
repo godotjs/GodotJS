@@ -27,6 +27,9 @@
 // print benchmark
 #define JSB_BENCHMARK 1
 
+// [EXPERIMENTAL] enable auto-complete feature in the input field of REPL
+#define JSB_REPL_AUTO_COMPLETE 1
+
 // Check if the type of `p_pointer` is really NativeClassType::GodotObject.
 #define JSB_VERIFY_GODOT_OBJECT 1
 

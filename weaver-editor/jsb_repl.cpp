@@ -207,7 +207,12 @@ void GodotJSREPL::_input_changed(const String &p_text)
 
     candidate_list_->clear();
     //TODO we haven't implemented the js function invocation from outside of Realm, just temporarily call as source code eval
-    const PackedStringArray results = eval_source(jsb_format("require('jsb.editor.main').auto_complete('%s')", encode_string(p_text))).to_variant();
+    const PackedStringArray results =
+#if JSB_REPL_AUTO_COMPLETE
+        eval_source(jsb_format("require('jsb.editor.main').auto_complete('%s')", encode_string(p_text))).to_variant();
+#else
+        {};
+#endif
     if (results.size() == 0)
     {
         candidate_list_->hide();
