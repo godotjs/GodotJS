@@ -345,17 +345,6 @@ namespace jsb
             r_jval = class_info.escape()->clazz.NewInstance(context);
             jsb_check(r_jval->InternalFieldCount() == IF_ObjectFieldCount);
 
-            if (p_godot_obj->is_ref_counted())
-            {
-                //NOTE in the case this godot object created by a godot method which returns a Ref<T>,
-                //     it's `refcount_init` will be zero after the object pointer assigned to a Variant.
-                //     we need to resurrect the object from this special state, or it will be a dangling pointer.
-                if (((RefCounted*) p_godot_obj)->init_ref())
-                {
-                    // great, it's resurrected.
-                }
-            }
-
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
             environment->bind_godot_object(class_id, p_godot_obj, r_jval.As<v8::Object>());
             return true;

@@ -103,7 +103,6 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     /* STEP 1, CREATE */
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
     Object* owner = ClassDB::instantiate(get_script_class()->native_class_name);
-    jsb_check(!owner->is_ref_counted() || !((RefCounted*) owner)->is_referenced());
 
     instance->owner_ = owner;
     instance->script_ = Ref(this); // must set before 'set_script_instance'

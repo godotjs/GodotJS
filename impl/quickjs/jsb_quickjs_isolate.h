@@ -318,6 +318,29 @@ namespace v8
             return pos;
         }
 
+        void swap_free_queue()
+        {
+            jsb_check(!swapping_free_queue_);
+            Vector<JSValue>& queue = using_front_free_queue_ ? front_free_queue_ : back_free_queue_;
+            if (queue.is_empty()) return;
+
+            swapping_free_queue_ = true;
+            using_front_free_queue_ = !using_front_free_queue_;
+            for (const JSValue& value : queue)
+            {
+                JS_FreeValue(ctx_, value);
+            }
+            queue.clear();
+            swapping_free_queue_ = false;
+        }
+
+        // delayed
+        jsb_force_inline void free_value(JSValue value)
+        {
+            if (using_front_free_queue_) front_free_queue_.append(value);
+            else back_free_queue_.append(value);
+        }
+
         static void _finalizer(JSRuntime* rt, JSValue val);
         static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
 
@@ -332,6 +355,13 @@ namespace v8
         jsb::internal::SArray<jsb::impl::InternalData, jsb::impl::InternalDataID> internal_data_;
         Vector<jsb::impl::ConstructorData> constructor_data_;
         HashMap<void*, jsb::impl::Phantom> phantom_;
+
+        // a queue for postponing the JS_FreeValue
+        Vector<JSValue> front_free_queue_;
+        Vector<JSValue> back_free_queue_;
+        bool using_front_free_queue_ = true;
+        bool swapping_free_queue_ = false;
+
 
         bool error_thrown_ = false;
         uint16_t stack_pos_;

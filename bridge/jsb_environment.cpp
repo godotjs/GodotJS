@@ -390,6 +390,16 @@ namespace jsb
 
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {
+        // We need to increase the refcount because Godot Objects are bound as external pointer with a strong JS reference,
+        // and unreference() will always be called on gc callbacks.
+        if (p_pointer->is_ref_counted())
+        {
+            if (!((RefCounted*) p_pointer)->init_ref())
+            {
+                JSB_LOG(Error, "can not bind a dead object %d", (uintptr_t) p_pointer);
+                return {};
+            }
+        }
         const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, EBindingPolicy::External);
         p_pointer->set_instance_binding(this, p_pointer, gd_instance_binding_callbacks);
         return object_id;

@@ -457,31 +457,39 @@ console.assert(!gd.is_instance_valid(inst));
 
     TEST_CASE("[jsb] RefCounted objects")
     {
-        GodotJSScriptLanguageIniter initer;
-
-        const std::shared_ptr<Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
-        Ref<FileAccess> file = FileAccess::open("./.godot/junk.txt", FileAccess::WRITE);
-        CHECK(file->get_reference_count() == 1);
+        WeakRef* weak_ref = memnew(WeakRef);
         {
-            JSB_TESTS_EXECUTION_SCOPE(env.get());
+            GodotJSScriptLanguageIniter initer;
 
-            v8::Isolate* isolate = env->get_isolate();
-            v8::Local<v8::Context> context = env->get_context();
-            v8::Local<v8::Value> rval;
-            CHECK(TypeConvert::gd_var_to_js(isolate, context, file, rval));
-            env->get_context()->Global()->Set(context, impl::Helper::new_string(isolate, "file"), rval).Check();
-            CHECK(file->get_reference_count() == 2);
-        }
-        {
-            Error err;
-            GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
+            const std::shared_ptr<Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
+            Ref<FileAccess> file = FileAccess::open("./.godot/junk.txt", FileAccess::WRITE);
+            weak_ref->set_ref(file);
+            CHECK(file->get_reference_count() == 1);
+            {
+                JSB_TESTS_EXECUTION_SCOPE(env.get());
+
+                v8::Isolate* isolate = env->get_isolate();
+                v8::Local<v8::Context> context = env->get_context();
+                v8::Local<v8::Value> rval;
+                CHECK(TypeConvert::gd_var_to_js(isolate, context, file, rval));
+                env->get_context()->Global()->Set(context, impl::Helper::new_string(isolate, "file"), rval).Check();
+                CHECK(file->get_reference_count() == 2);
+                file.unref();
+                CHECK(!weak_ref->get_ref().is_null());
+            }
+            {
+                Error err;
+                GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
 file.store_string("hello");
+file = undefined;
 )--", err);
-            CHECK(err == OK);
-            file.unref();
+                CHECK(err == OK);
+            }
         }
+        // There is no strong reference anymore, therefore the FileAccess object should have been deleted by JS GC.
+        CHECK(weak_ref->get_ref().is_null());
+        memdelete(weak_ref);
     }
-
 }
 
 #endif

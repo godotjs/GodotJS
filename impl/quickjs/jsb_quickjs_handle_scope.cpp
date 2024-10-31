@@ -21,6 +21,10 @@ namespace v8
         }
         isolate_->handle_scope_ = last_;
         isolate_->stack_pos_ = stack_;
+        if (!isolate_->handle_scope_)
+        {
+            isolate_->swap_free_queue();
+        }
         JSB_QUICKJS_LOG(VeryVerbose, "leave stack frame %d", stack_);
     }
 

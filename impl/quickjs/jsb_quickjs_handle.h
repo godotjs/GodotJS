@@ -189,7 +189,7 @@ namespace v8
                 {
                     // release if strong referenced
                     jsb_check(is_alive());
-                    jsb::impl::Broker::_free(isolate_, value_);
+                    jsb::impl::Broker::_free_delayed(isolate_, value_);
                     break;
                 }
             case WeakType::kWeakCallback:
@@ -254,7 +254,7 @@ namespace v8
             jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
 
             weak_type_ = WeakType::kWeak;
-            jsb::impl::Broker::_free(isolate_, value_);
+            jsb::impl::Broker::_free_delayed(isolate_, value_);
         }
 
         template<typename S>
@@ -264,7 +264,7 @@ namespace v8
 
             jsb::impl::Broker::SetWeak(isolate_, value_, parameter, (void*) callback);
             weak_type_ = WeakType::kWeakCallback;
-            jsb::impl::Broker::_free(isolate_, value_);
+            jsb::impl::Broker::_free_delayed(isolate_, value_);
         }
 
         // Return true if no value held by this handle, or dead for a weak handle.

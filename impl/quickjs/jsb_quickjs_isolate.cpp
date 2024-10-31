@@ -114,6 +114,11 @@ namespace v8
             JS_FreeValue(ctx_, stack_[i]);
         }
 
+        swap_free_queue();
+        swap_free_queue();
+        jsb_check(front_free_queue_.is_empty());
+        jsb_check(back_free_queue_.is_empty());
+
         // make it behave like v8, not to trigger gc callback after the isolate disposed
         internal_data_.clear();
 

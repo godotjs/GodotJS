@@ -17,6 +17,7 @@ namespace jsb::impl
 
         static JSValue _dup(v8::Isolate* isolate, JSValueConst value);
         static void _free(v8::Isolate* isolate, JSValueConst value);
+        static void _free_delayed(v8::Isolate* isolate, JSValueConst value);
 
         static void add_phantom(v8::Isolate* isolate, void* token);
         static void remove_phantom(v8::Isolate* isolate, void* token);

@@ -414,11 +414,11 @@ namespace jsb
             if (new_target->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
             {
                 const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym.As<v8::Uint32>()->Value();
-                const ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
+                ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
                     script_class_info->js_class_name, script_class_info->module_id, class_info->name, class_id);
                 const v8::Local<v8::Object> self = info.This();
-                script_class_info->_newbind(self);
+                ScriptClassInfo::_newbind(script_class_info.escape()->module_id, self);
                 return;
             }
 
@@ -433,25 +433,15 @@ namespace jsb
             Object* self = (Object*) pointer;
             if (self->is_ref_counted())
             {
-                // if we do not `free_instance_binding`, an error will be report on `reference_object (deref)`.
-                // self->free_instance_binding(runtime);
-
                 if (((RefCounted*) self)->unreference())
                 {
-                    if (!p_persistent)
-                    {
-                        JSB_LOG(VeryVerbose, "delete gd ref_counted object %d", (uintptr_t) self);
-                        memdelete(self);
-                    }
-                    else
-                    {
-                        JSB_LOG(VeryVerbose, "unlink persistent gd ref_counted object %d", (uintptr_t) self);
-                    }
+                    jsb_checkf(!p_persistent, "a persistent RefCounted object should never be deleted from GodotJS");
+                    JSB_LOG(VeryVerbose, "delete gd ref_counted object %d", (uintptr_t) self);
+                    memdelete(self);
                 }
             }
             else
             {
-                //TODO only delete when the object's lifecycle is fully managed by javascript
                 if (!p_persistent)
                 {
                     JSB_LOG(VeryVerbose, "delete gd object %d", (uintptr_t) self);

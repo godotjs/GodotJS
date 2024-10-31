@@ -66,4 +66,9 @@ namespace jsb::impl
         JS_FreeValue(isolate->ctx(), value);
     }
 
+    void Broker::_free_delayed(v8::Isolate* isolate, JSValueConst value)
+    {
+        isolate->free_value(value);
+    }
+
 }
