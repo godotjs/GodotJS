@@ -105,6 +105,9 @@ namespace v8
     {
         JSB_QUICKJS_LOG(VeryVerbose, "release quickjs runtime");
 
+        // manually run GC before freeing the context/runtime to ensure all objects free-ed (valuetype objects)
+        JS_RunGC(rt_);
+
         // cleanup
         jsb_check(!handle_scope_);
         jsb_check(phantom_.is_empty());
@@ -119,14 +122,20 @@ namespace v8
         jsb_check(front_free_queue_.is_empty());
         jsb_check(back_free_queue_.is_empty());
 
+#if !JSB_STRICT_DISPOSE
         // make it behave like v8, not to trigger gc callback after the isolate disposed
         internal_data_.clear();
+#endif
 
         // dispose the runtime
         JS_FreeContext(ctx_);
         ctx_ = nullptr;
         JS_FreeRuntime(rt_);
         rt_ = nullptr;
+
+#if JSB_STRICT_DISPOSE
+        jsb_check(internal_data_.is_empty());
+#endif
 
         memdelete(this);
     }

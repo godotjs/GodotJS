@@ -337,6 +337,7 @@ namespace v8
         // delayed
         jsb_force_inline void free_value(JSValue value)
         {
+            jsb_check(!disposed_);
             if (using_front_free_queue_) front_free_queue_.append(value);
             else back_free_queue_.append(value);
         }

@@ -11,7 +11,11 @@ namespace jsb::internal
 #endif
 
 #if JSB_WITH_VARIANT_POOL
+#   if JSB_WITH_V8
         PagedAllocator<Variant, true> paged_allocator_;
+#   else
+        PagedAllocator<Variant, false> paged_allocator_;
+#   endif
 #endif
 
     public:
