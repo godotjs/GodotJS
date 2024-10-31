@@ -68,14 +68,24 @@ void GodotJSStatisticsViewer::on_timer()
     }
 }
 
+int GodotJSStatisticsViewer::to_percentage(size_t n, size_t d)
+{
+    return (int) ((double) n / (double) d) * 100;
+}
+
 void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, size_t p_usage, size_t p_total, bool p_humanized_size)
 {
-    if (p_humanized_size)
+    if (p_total == 0)
     {
-        add_row(p_index, p_name, jsb_format("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), (int) (((double) p_usage / (double) p_total) * 100)));
+        add_row(p_index, p_name, "undefined");
         return;
     }
-    add_row(p_index, p_name, jsb_format("%d / %d (%d %%)", (uint64_t) p_usage, (uint64_t) p_total, (int) (((double) p_usage / (double) p_total) * 100)));
+    if (p_humanized_size)
+    {
+        add_row(p_index, p_name, jsb_format("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), to_percentage(p_usage, p_total)));
+        return;
+    }
+    add_row(p_index, p_name, jsb_format("%d / %d (%d %%)", (uint64_t) p_usage, (uint64_t) p_total, to_percentage(p_usage, p_total)));
 }
 
 void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, const String& p_text)
