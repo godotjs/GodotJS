@@ -455,6 +455,21 @@ console.assert(!gd.is_instance_valid(inst));
         }
     }
 
+    TEST_CASE("[jsb] v8 types")
+    {
+        GodotJSScriptLanguageIniter initer;
+
+        std::shared_ptr<jsb::Environment> env = GodotJSScriptLanguage::get_singleton()->get_environment();
+        // CHECK(env->load("jsb.core") == OK);
+        {
+            JSB_TESTS_EXECUTION_SCOPE(GodotJSScriptLanguage::get_singleton()->get_environment().get());
+            v8::Isolate* isolate = env->get_isolate();
+
+            const String str = "1234567890";
+            CHECK(impl::Helper::new_string(isolate, str)->Length() == str.length());
+        }
+    }
+
     TEST_CASE("[jsb] RefCounted objects")
     {
         WeakRef* weak_ref = memnew(WeakRef);

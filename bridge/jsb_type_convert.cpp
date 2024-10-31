@@ -249,7 +249,6 @@ namespace jsb
         case Variant::BOOL: r_jval = v8::Boolean::New(isolate, p_cvar); return true;
         case Variant::STRING:
             {
-                //TODO optimize with cache?
                 const String str = p_cvar;
                 r_jval = impl::Helper::new_string(isolate, str);
                 return true;

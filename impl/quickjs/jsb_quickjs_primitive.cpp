@@ -67,7 +67,6 @@ namespace v8
 
     int String::Length() const
     {
-        //TODO does it work?
         const JSValue val = JS_GetProperty(isolate_->ctx(), (JSValue) *this, jsb::impl::JS_ATOM_length);
         jsb_check(JS_VALUE_GET_TAG(val) == JS_TAG_INT);
         return JS_VALUE_GET_INT(val);

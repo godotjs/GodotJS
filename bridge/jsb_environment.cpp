@@ -486,10 +486,6 @@ namespace jsb
         --object_handle->ref_count_;
         if (object_handle->ref_count_ == 0)
         {
-            //TODO In quickjs.impl, delay the final gc callback if calling from InstanceBindingCallbacks to avoid godot lock reentrant.
-            //TODO In that situation, ObjectHandle scope is safe without escape().
-
-            // In quickjs.impl, we must leave the ObjectHandle scope immediately because SetWeak() may trigger the object finalization immediately.
             object_handle.escape()->ref_.SetWeak(p_pointer, &object_gc_callback<true>, v8::WeakCallbackType::kInternalFields);
 
             //NOTE Always return false to avoid `delete` in godot unreference() call, object_gc_callback would eventually delete the RefCounted Object.
