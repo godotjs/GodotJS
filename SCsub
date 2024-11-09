@@ -3,35 +3,40 @@ import os
 import io
 import time
 import re
-from typing import TypedDict, Callable
+# from typing import TypedDict, Callable
 
 Import("env")
 Import("env_modules")
 
 class LibraryDetails:
-    def __init__(self, platform: str, arch: str, libname: str, delimiter: str):
+    # def __init__(self, platform: str, arch: str, libname: str, delimiter: str):
+    def __init__(self, platform, arch, libname, delimiter):
         self.platform = platform
         self.arch = arch
         self.libname = libname
         self.delimiter = delimiter
 
-    def platform_base(self) -> str:
+    # def platform_base(self) -> str:
+    def platform_base(self):
         return self.platform + self.delimiter + self.arch + self.delimiter + "release"
     
 class LibraryDescriptor:
-    def __init__(self, name: str, details: list[LibraryDetails]):
+    # def __init__(self, name: str, details: list[LibraryDetails]):
+    def __init__(self, name, details):
         self.name = name
         self.details = details
 
 # third-party source
 class ThirdPartyDetails:
-    def __init__(self, path: str, sources: list[str], validator: Callable[[], bool] = None):
+    # def __init__(self, path: str, sources: list[str], validator: Callable[[], bool] = None):
+    def __init__(self, path, sources, validator = None):
         self.path = path
         self.sources = sources
         self.validator = validator if validator is not None else lambda: True
 
 class ThirdPartyDescriptor:
-    def __init__(self, name: str, details: list[ThirdPartyDetails]):
+    # def __init__(self, name: str, details: list[ThirdPartyDetails]):
+    def __init__(self, name, details):
         self.name = name
         self.details = details
 
@@ -78,7 +83,8 @@ class CompileDefines:
         self.value = value
         self.help = help
 
-def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, LibraryDetails]:
+# def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, LibraryDetails]:
+def get_library_support(support):
     for details in support.details:
         if jsb_platform != details.platform or jsb_arch != details.arch:
             continue
@@ -89,13 +95,15 @@ def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, 
             return (support, details)
     return None
 
-def get_thirdparty_support(support: ThirdPartyDescriptor) -> tuple[ThirdPartyDescriptor, ThirdPartyDetails]:
+# def get_thirdparty_support(support: ThirdPartyDescriptor) -> tuple[ThirdPartyDescriptor, ThirdPartyDetails]:
+def get_thirdparty_support(support):
     for details in support.details:
         if os.path.exists(details.path) and details.validator():
             return (support, details)
     return None
 
-def read_macro_value(name: str, def_val = None):
+# def read_macro_value(name: str, def_val = None):
+def read_macro_value(name, def_val = None):
     with open("jsb.config.h", "rt", encoding="utf-8") as input:
         regex = rf"^#define\s+{name}\s+(\d+)$"
         for line in input:
@@ -147,11 +155,13 @@ if jsb_platform == "android":
     print("ANDROID_NDK_ROOT:", env["ANDROID_NDK_ROOT"])
 
 class PresetTransformer:
-    def transform(self, data: bytes):
+    # def transform(self, data: bytes):
+    def transform(self, data):
         return data
         
 class PresetDefine:
-    def __init__(self, sourcename: str, targetname: str, zero_terminated: bool = False, transformer: PresetTransformer = None):
+    # def __init__(self, sourcename: str, targetname: str, zero_terminated: bool = False, transformer: PresetTransformer = None):
+    def __init__(self, sourcename, targetname, zero_terminated = False, transformer = None):
         self.sourcename = sourcename
         self.targetname = targetname
         self.transformer = transformer
@@ -163,7 +173,8 @@ class PresetDefine:
             return data if self.transformer is None else self.transformer.transform(data)
 
 class AMDSourceTransformer(PresetTransformer):
-    def transform(self, data: bytes):
+    # def transform(self, data: bytes):
+    def transform(self, data):
         return b"(function(define){"+data+b"\n})"
 
 def check(condition, text):
@@ -195,7 +206,8 @@ def write_file(filename, ostream):
         print(f"generating {filename}")
         output.write(content)
 
-def generate_method_code(output, methodname, indent, preset_defines: list[PresetDefine]):
+# def generate_method_code(output, methodname, indent, preset_defines: list[PresetDefine]):
+def generate_method_code(output, methodname, indent, preset_defines):
     output.write(f"const char* GodotJSProjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
     output.write("{\n")
     output.write(indent+"static const char data[] = {\n")
