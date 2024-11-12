@@ -132,7 +132,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 |                | v8.impl        | quickjs.impl   | quickjs.impl (quickjs-ng) | web.impl   |
 | -------------- | -------------- | -------------- | ------------------------- | ---------- |
 | Windows:x86_64 | ✅              | ✅              | 🟡 (incomplete)                | ❌        |
-| Windows:arm64  | 🟡 (incomplete)     | 🟡 (incomplete)     | 🟡 (incomplete)                | ❌        |
+| Windows:arm64  | 🟡 (incomplete) | 🟡 (incomplete)     | 🟡 (incomplete)                | ❌        |
 | MacOS:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | MacOS:arm64    | ✅              | ✅              | 🟡 (incomplete)                | ❌        |
 | Linux:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
@@ -141,7 +141,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | Android:arm64  | ✅              | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | iOS:x86_64     | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | iOS:arm64      | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| Web            | ❌            | 🟡 (incomplete)     | 🟡 (incomplete)                | 🟡 (incomplete) |
+| Web            | ❌              | ✅ (not tested) | 🟡 (incomplete)                | 🟡 (incomplete) |
 
 
 > Android: tested on ndk_platform=android-24  
