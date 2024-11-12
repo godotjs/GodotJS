@@ -122,7 +122,7 @@ lws_support = get_library_support(lws_prebuilt_libs)
 jsb_defines = [
     CompileDefines("JSB_WITH_QUICKJS", 1 if quickjs_support is not None else 0),
     CompileDefines("JSB_WITH_V8", 1 if v8_support is not None else 0),
-    CompileDefines("JSB_WITH_WEB", 1 if jsb_platform == "web" else 0),
+    CompileDefines("JSB_WITH_WEB", 1 if jsb_platform == "web" and quickjs_support is None is not None else 0),
 
     CompileDefines("JSB_WITH_EDITOR_UTILITY_FUNCS", 1 if jsb_platform != "web" and env.editor_build else 0, [
         "enables 'jsb.editor'", 
@@ -426,7 +426,7 @@ if quickjs_support is not None:
     env.modules_sources += quickjs_obj
     env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
 
-if jsb_platform == "web":
+if is_defined("JSB_WITH_WEB"):
     print("WARNING: web support has not been implemented yet")
 
     env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
