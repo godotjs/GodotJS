@@ -72,13 +72,19 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // config files
     install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_REPLACE_VARS });
     install_files_.push_back({ "package.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
-    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT | jsb::CH_GDIGNORE });
+    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT | jsb::CH_GDIGNORE | jsb:: CH_NODE_MODULES });
     install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_GDIGNORE | jsb::CH_D_TS });
 
     // type declaration files
     install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
     install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
     install_files_.push_back({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
+
+    // write `.gdignore` in the `node_modules` folder anyway to avoid scanning in the situation that `node_modules` is generated externally before starting the Godot engine.
+    if (DirAccess::exists("res://node_modules") && !FileAccess::exists("res://node_modules/.gdignore"))
+    {
+        _ignore_node_modules();
+    }
 }
 
 GodotJSEditorPlugin::~GodotJSEditorPlugin()
@@ -254,6 +260,19 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
     load_editor_entry_module();
     ensure_tsc_installed();
     on_successfully_installed();
+}
+
+void GodotJSEditorPlugin::_ignore_node_modules()
+{
+    install_files(filter_files(install_files_, jsb::CH_NODE_MODULES));
+}
+
+void GodotJSEditorPlugin::ignore_node_modules()
+{
+    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
+    {
+        editor_plugin->_ignore_node_modules();
+    }
 }
 
 void GodotJSEditorPlugin::generate_godot_dts()
