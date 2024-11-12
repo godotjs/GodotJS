@@ -22,7 +22,7 @@ namespace jsb::impl
         {
             if (value.IsEmpty()) return "(empty)";
             const JSValue val = (JSValue) value;
-            if (JS_VALUE_HAS_REF_COUNT(val)) return jsb_format("%d:0x%s", JS_VALUE_GET_TAG(val), (uintptr_t) val.u.ptr);
+            if (JS_VALUE_HAS_REF_COUNT(val)) return jsb_format("%d:0x%s", JS_VALUE_GET_TAG(val), (uintptr_t) JS_VALUE_GET_PTR(val));
             if (JS_TAG_FLOAT64 == JS_VALUE_GET_TAG(val)) return jsb_format("%f", JS_VALUE_GET_FLOAT64(val));
             if (JS_TAG_INT == JS_VALUE_GET_TAG(val)) return jsb_format("%d", JS_VALUE_GET_INT(val));
             if (JS_TAG_BOOL == JS_VALUE_GET_TAG(val)) return JS_VALUE_GET_INT(val) ? "true" : "false";

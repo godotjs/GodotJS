@@ -180,7 +180,7 @@ namespace v8
                     const WeakCallbackInfo<void> info(isolate, data->weak.parameter, data->internal_fields);
                     callback(info);
                 }
-                JSB_QUICKJS_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) val.u.ptr, index);
+                JSB_QUICKJS_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) JS_VALUE_GET_PTR(val), index);
                 isolate->internal_data_.remove_at(index);
             }
         }

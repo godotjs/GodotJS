@@ -48,10 +48,10 @@ namespace jsb::impl
 
         static bool Equals(JSValueConst a, JSValueConst b)
         {
-            if (a.tag != b.tag) return false;
+            if (JS_VALUE_GET_TAG(a) != JS_VALUE_GET_TAG(b)) return false;
 
             //TODO unsafe eq check
-            if (a.u.ptr != b.u.ptr) return false;
+            if (JS_VALUE_GET_PTR(a) != JS_VALUE_GET_PTR(b)) return false;
             return true;
         }
 

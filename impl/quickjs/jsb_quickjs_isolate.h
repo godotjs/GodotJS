@@ -26,8 +26,13 @@ namespace jsb::impl
         void* internal_fields[2] = { nullptr, nullptr };
     };
 
-    static_assert(sizeof(uintptr_t) == sizeof(internal::Index64), "quickjs.impl does not support 32-bit arch");
+#if INTPTR_MAX >= INT64_MAX
     typedef internal::Index64 InternalDataID;
+#elif INTPTR_MAX >= INT32_MAX
+    typedef internal::Index32 InternalDataID;
+#else
+    #error "quickjs.impl does not support on the current arch"
+#endif
 
     typedef internal::SArray<InternalData, InternalDataID>::Pointer InternalDataPtr;
     typedef internal::SArray<InternalData, InternalDataID>::ConstPointer InternalDataConstPtr;

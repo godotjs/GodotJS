@@ -18,7 +18,7 @@ namespace v8
         const JSValue val = isolate_->stack_val(stack_pos_);
         const jsb::impl::InternalDataID internal_data_id = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
         const jsb::impl::InternalDataPtr internal_data = isolate_->get_internal_data(internal_data_id);
-        JSB_QUICKJS_LOG(VeryVerbose, "set internal data JSObject:%s id:%s data:%s (last:%s)", (uintptr_t) val.u.ptr, internal_data_id, (uintptr_t) data, (uintptr_t) internal_data->internal_fields[slot]);
+        JSB_QUICKJS_LOG(VeryVerbose, "set internal data JSObject:%s id:%s data:%s (last:%s)", (uintptr_t) JS_VALUE_GET_PTR(val), internal_data_id, (uintptr_t) data, (uintptr_t) internal_data->internal_fields[slot]);
         jsb_checkf(!data || !internal_data->internal_fields[slot], "overwriting the internal field is not allowed");
         internal_data->internal_fields[slot] = data;
     }

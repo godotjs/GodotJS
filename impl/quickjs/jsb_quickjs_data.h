@@ -12,8 +12,8 @@ namespace v8
         Data() = default;
         Data(Isolate* isolate, uint16_t stack_pos): isolate_(isolate), stack_pos_(stack_pos) {}
 
-        uint16_t stack_pos_ = 0;
         Isolate* isolate_ = nullptr;
+        uint16_t stack_pos_ = 0;
 
         explicit operator JSValue() const;
 

@@ -41,7 +41,7 @@ namespace jsb::impl
         {
             const JSValue constructor = JS_GetProperty(isolate->ctx(), (JSValue) prototype_, JS_ATOM_constructor);
             jsb_check(!JS_IsException(constructor));
-            // jsb_check(constructor_.u.ptr == constructor.u.ptr);
+            // jsb_check(JS_VALUE_GET_PTR(constructor_) == JS_VALUE_GET_PTR(constructor));
             return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(constructor)));
         }
 
@@ -71,7 +71,7 @@ namespace jsb::impl
             jsb_check(JS_IsObject(this_val));
             const jsb::impl::InternalDataID internal_data_id = isolate->add_internal_data(internal_field_count);
             JS_SetOpaque(this_val, (void*)(uintptr_t) *internal_data_id);
-            JSB_QUICKJS_LOG(VeryVerbose, "allocating internal data JSObject:%s id:%s", (uintptr_t) this_val.u.ptr, internal_data_id);
+            JSB_QUICKJS_LOG(VeryVerbose, "allocating internal data JSObject:%s id:%s", (uintptr_t) JS_VALUE_GET_PTR(this_val), internal_data_id);
             return this_val;
         }
 

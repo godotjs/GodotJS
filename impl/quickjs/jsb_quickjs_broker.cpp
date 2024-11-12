@@ -8,7 +8,7 @@ namespace jsb::impl
         const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(value, v8::Isolate::get_class_id());
         const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
         JSB_QUICKJS_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)",
-            (uintptr_t) value.u.ptr, index,
+            (uintptr_t) JS_VALUE_GET_PTR(value), index,
             (uintptr_t) parameter, (uintptr_t) callback,
             (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
         jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
