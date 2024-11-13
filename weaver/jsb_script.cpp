@@ -181,25 +181,23 @@ Error GodotJSScript::reload(bool p_keep_state)
         }
     }
 
-    if (p_keep_state)
+    if (!p_keep_state)
     {
-        // (common situation) preserve the object and change its prototype
-        const StringName& module_id = get_script_class()->module_id;
-        if (get_environment()->mark_as_reloading(module_id) == jsb::EReloadResult::Requested)
-        {
-            // discard all cached methods
-            release_cached_methods();
-
-            //TODO `Callable` objects bound with this script should be invalidated somehow?
-            // ...
-
-            loaded_ = false;
-        }
-        return OK;
+        //TODO discard the object and crossbind again, but for now we just reload it normally
     }
 
-    //TODO discard the object and crossbind again
-    JSB_LOG(Warning, "TODO: discard the object and crossbind again");
+    // (common situation) preserve the object and change its prototype
+    const StringName& module_id = get_script_class()->module_id;
+    if (get_environment()->mark_as_reloading(module_id) == jsb::EReloadResult::Requested)
+    {
+        // discard all cached methods
+        release_cached_methods();
+
+        //TODO `Callable` objects bound with this script should be invalidated somehow?
+        // ...
+
+        loaded_ = false;
+    }
     return OK;
 }
 
@@ -251,6 +249,7 @@ String GodotJSScript::get_class_icon_path() const
 
 PropertyInfo GodotJSScript::get_class_category() const
 {
+    ensure_module_loaded();
     jsb_check(loaded_);
     return super::get_class_category();
 }

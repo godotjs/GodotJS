@@ -98,7 +98,7 @@ public:
     virtual MethodInfo get_method_info(const StringName& p_method) const override;
 
     // we expect Godot calling this after loaded_?
-    virtual bool is_valid() const override { jsb_check(loaded_); return valid_; }
+    virtual bool is_valid() const override { ensure_module_loaded(); return valid_; }
     virtual bool is_tool() const override;
     virtual bool is_abstract() const override { return valid_ && get_script_class()->is_abstract(); }
 
