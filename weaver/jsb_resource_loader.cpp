@@ -36,9 +36,14 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
     jsb_check(p_path.ends_with(JSB_TYPESCRIPT_EXT) || p_path.ends_with(JSB_JAVASCRIPT_EXT));
 
     // in case `node_modules` is not ignored (which is not expected though), we do not want any GodotJSScript to be generated from it.
-    if (p_path.ends_with(JSB_DTS_EXT) || p_path.begins_with("res://node_modules"))
+    if (p_path.begins_with("res://node_modules"))
     {
-        if (r_error) *r_error = ERR_SCRIPT_FAILED;
+        if (r_error) *r_error = ERR_CANT_RESOLVE;
+        return {};
+    }
+    if (p_path.ends_with("." JSB_DTS_EXT))
+    {
+        if (r_error) *r_error = ERR_FILE_UNRECOGNIZED;
         return {};
     }
     JSB_LOG(VeryVerbose, "loading script resource %s on thread %s", p_path, uitos(Thread::get_caller_id()));
