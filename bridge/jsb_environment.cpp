@@ -351,11 +351,18 @@ namespace jsb
             }
         }
 
+        // quickjs delayed the free op after all HandleScope left, we need to swap the free op list manually explicitly.
+        // otherwise, object may leak until next evacuation of HandleScope.
+#if JSB_WITH_QUICKJS
+        isolate_->PerformMicrotaskCheckpoint();
+#else
         if (microtasks_run_)
         {
             microtasks_run_ = false;
             isolate_->PerformMicrotaskCheckpoint();
         }
+#endif
+
 #if JSB_WITH_DEBUGGER
         debugger_.update();
 #endif
