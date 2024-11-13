@@ -95,7 +95,6 @@ namespace jsb::internal
 
     String Settings::get_jsb_out_dir_name()
     {
-
         return get_project_data_dir_name().path_join(JSB_MODULE_NAME_STRING);
     }
 

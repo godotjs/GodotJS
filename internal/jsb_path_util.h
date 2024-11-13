@@ -43,13 +43,17 @@ namespace jsb::internal
          */
         static bool is_absolute_path(const String& p_path);
 
-        // convert typescript path into javascript path
+        /**
+         * convert typescript path into javascript path
+         */
         static String convert_typescript_path(const String& p_source_path);
 
-        // convert javascript path back into typescript path
+        /**
+         * convert javascript path back into typescript path
+         */
         static String convert_javascript_path(const String& p_source_path);
 
-        static void delete_file(const String& p_path);
+        static bool delete_file(const String& p_path);
     };
 
 }

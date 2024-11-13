@@ -12,6 +12,7 @@ enum
 {
     MENU_ID_INSTALL_TS_PROJECT,
     MENU_ID_GENERATE_GODOT_DTS,
+    MENU_ID_CLEANUP_INVALID_FILES,
 };
 
 void GodotJSEditorPlugin::_bind_methods()
@@ -49,6 +50,7 @@ void GodotJSEditorPlugin::_on_menu_pressed(int p_what)
     {
     case MENU_ID_INSTALL_TS_PROJECT: try_install_ts_project(); break;
     case MENU_ID_GENERATE_GODOT_DTS: generate_godot_dts(); break;
+    case MENU_ID_CLEANUP_INVALID_FILES: cleanup_invalid_files(); break;
     default: break;
     }
 }
@@ -60,6 +62,8 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_tool_submenu_item(TTR("GodotJS"), menu);
     menu->add_item(TTR("Install TS Project"), MENU_ID_INSTALL_TS_PROJECT);
     menu->add_item(TTR("Generate Godot d.ts"), MENU_ID_GENERATE_GODOT_DTS);
+    menu->add_separator();
+    menu->add_item(TTR("Cleanup invalid files"), MENU_ID_CLEANUP_INVALID_FILES);
     menu->connect("id_pressed", callable_mp(this, &GodotJSEditorPlugin::_on_menu_pressed));
 
     confirm_dialog_ = memnew(InstallGodotJSPresetConfirmationDialog);
@@ -70,15 +74,15 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_control_to_bottom_panel(memnew(GodotJSDockedPanel), TTR("GodotJS"));
 
     // config files
-    install_files_.push_back({ "tsconfig.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_REPLACE_VARS });
-    install_files_.push_back({ "package.json", "res://", jsb::CH_TYPESCRIPT | jsb::CH_CREATE_ONLY });
-    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::CH_TYPESCRIPT | jsb::CH_GDIGNORE | jsb:: CH_NODE_MODULES });
-    install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_GDIGNORE | jsb::CH_D_TS });
+    install_files_.push_back({ "tsconfig.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_REPLACE_VARS });
+    install_files_.push_back({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
+    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });
+    install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
 
     // type declaration files
-    install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
-    install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
-    install_files_.push_back({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::CH_TYPESCRIPT | jsb::CH_D_TS });
+    install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    install_files_.push_back({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
 
     // write `.gdignore` in the `node_modules` folder anyway to avoid scanning in the situation that `node_modules` is generated externally before starting the Godot engine.
     if (DirAccess::exists("res://node_modules") && !FileAccess::exists("res://node_modules/.gdignore"))
@@ -97,18 +101,18 @@ GodotJSEditorPlugin::~GodotJSEditorPlugin()
     JSB_LOG(VeryVerbose, "~GodotJSEditorPlugin");
 }
 
-void GodotJSEditorPlugin::delete_file(const String &p_file)
+bool GodotJSEditorPlugin::delete_file(const String &p_file)
 {
     Ref<FileAccess> fa = FileAccess::open(p_file, FileAccess::READ);
-    if (fa.is_null()) return;
+    if (fa.is_null()) return false;
     const String& path = fa->get_path_absolute();
     fa.unref();
 
     JSB_LOG(Verbose, "delete file %s", path);
-    jsb::internal::PathUtil::delete_file(path);
+    return jsb::internal::PathUtil::delete_file(path);
 }
 
-Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
+Error GodotJSEditorPlugin::write_file(const jsb::weaver::InstallFileInfo &p_file)
 {
     Error err;
     size_t size;
@@ -119,7 +123,7 @@ Error GodotJSEditorPlugin::write_file(const jsb::InstallFileInfo &p_file)
     const String target_name = jsb::internal::PathUtil::combine(p_file.target_dir, p_file.source_name);
     const Ref<FileAccess> outfile = FileAccess::open(target_name, FileAccess::WRITE, &err);
     ERR_FAIL_COND_V_MSG(err != OK, err, "failed to open output file");
-    if ((p_file.hint & jsb::CH_REPLACE_VARS) != 0)
+    if ((p_file.hint & jsb::weaver::CH_REPLACE_VARS) != 0)
     {
         String parsed;
         parsed.parse_utf8(data, (int) size);
@@ -155,7 +159,7 @@ void GodotJSEditorPlugin::remove_obsolete_files()
 void GodotJSEditorPlugin::try_install_ts_project()
 {
     remove_obsolete_files();
-    Vector<jsb::InstallFileInfo> modified;
+    Vector<jsb::weaver::InstallFileInfo> modified;
     if (verify_files(install_files_, true, &modified))
     {
         on_successfully_installed();
@@ -165,7 +169,7 @@ void GodotJSEditorPlugin::try_install_ts_project()
     jsb_check(!modified.is_empty());
     const String leading_symbol = "\n    - ";
     String modified_file_list;
-    for (const jsb::InstallFileInfo& item : modified)
+    for (const jsb::weaver::InstallFileInfo& item : modified)
     {
         modified_file_list += leading_symbol + item.target_dir.path_join(item.source_name);
     }
@@ -174,10 +178,10 @@ void GodotJSEditorPlugin::try_install_ts_project()
     confirm_dialog_->popup_centered();
 }
 
-bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file, bool p_verify_content)
+bool GodotJSEditorPlugin::verify_file(const jsb::weaver::InstallFileInfo& p_file, bool p_verify_content)
 {
     //TODO skip all d.ts files during the INSTALL phase (do it in the GENERATE phase)
-    // if ((p_file.hint & jsb::CH_D_TS) != 0) return true;
+    // if ((p_file.hint & jsb::weaver::CH_D_TS) != 0) return true;
 
     size_t size;
     const char* data = get_preset_source(p_file.source_name, size);
@@ -185,7 +189,7 @@ bool GodotJSEditorPlugin::verify_file(const jsb::InstallFileInfo& p_file, bool p
     const String target_name = jsb::internal::PathUtil::combine(p_file.target_dir, p_file.source_name);
     Error err;
     if (!FileAccess::exists(target_name)) return false;
-    if ((p_file.hint & jsb::CH_CREATE_ONLY) != 0) return true;
+    if ((p_file.hint & jsb::weaver::CH_CREATE_ONLY) != 0) return true;
     if (p_verify_content)
     {
         const Ref<FileAccess> access = FileAccess::open(target_name, FileAccess::READ, &err);
@@ -206,10 +210,10 @@ bool GodotJSEditorPlugin::verify_ts_project() const
     return verify_files(install_files_, false, nullptr);
 }
 
-bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<jsb::InstallFileInfo>* r_modified)
+bool GodotJSEditorPlugin::verify_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, bool p_verify_content, Vector<jsb::weaver::InstallFileInfo>* r_modified)
 {
     bool verified = true;
-    for (const jsb::InstallFileInfo& info: p_files)
+    for (const jsb::weaver::InstallFileInfo& info: p_files)
     {
         if (!verify_file(info, p_verify_content))
         {
@@ -223,10 +227,10 @@ bool GodotJSEditorPlugin::verify_files(const Vector<jsb::InstallFileInfo>& p_fil
     return verified;
 }
 
-Vector<jsb::InstallFileInfo> GodotJSEditorPlugin::filter_files(const Vector<jsb::InstallFileInfo>& p_files, int p_hint)
+Vector<jsb::weaver::InstallFileInfo> GodotJSEditorPlugin::filter_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, int p_hint)
 {
-    Vector<jsb::InstallFileInfo> results;
-    for (const jsb::InstallFileInfo& info: p_files)
+    Vector<jsb::weaver::InstallFileInfo> results;
+    for (const jsb::weaver::InstallFileInfo& info: p_files)
     {
         if ((info.hint & p_hint) != 0 && !verify_file(info, true))
         {
@@ -236,14 +240,14 @@ Vector<jsb::InstallFileInfo> GodotJSEditorPlugin::filter_files(const Vector<jsb:
     return results;
 }
 
-bool GodotJSEditorPlugin::install_files(const Vector<jsb::InstallFileInfo>& p_files)
+bool GodotJSEditorPlugin::install_files(const Vector<jsb::weaver::InstallFileInfo>& p_files)
 {
-    for (const jsb::InstallFileInfo& info: p_files)
+    for (const jsb::weaver::InstallFileInfo& info: p_files)
     {
         if (const Error err = write_file(info); err != OK)
         {
             JSB_LOG(Warning, "failed to write file '%s' to '%s': %s", info.source_name, info.target_dir, VariantUtilityFunctions::error_string(err));
-            if ((info.hint & jsb::CH_OPTIONAL) == 0)
+            if ((info.hint & jsb::weaver::CH_OPTIONAL) == 0)
             {
                 return false;
             }
@@ -253,7 +257,7 @@ bool GodotJSEditorPlugin::install_files(const Vector<jsb::InstallFileInfo>& p_fi
     return true;
 }
 
-void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>& p_files)
+void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::weaver::InstallFileInfo>& p_files)
 {
     if (!install_files(p_files)) return;
     generate_godot_dts();
@@ -264,7 +268,7 @@ void GodotJSEditorPlugin::install_ts_project(const Vector<jsb::InstallFileInfo>&
 
 void GodotJSEditorPlugin::_ignore_node_modules()
 {
-    install_files(filter_files(install_files_, jsb::CH_NODE_MODULES));
+    install_files(filter_files(install_files_, jsb::weaver::CH_NODE_MODULES));
 }
 
 void GodotJSEditorPlugin::ignore_node_modules()
@@ -275,11 +279,58 @@ void GodotJSEditorPlugin::ignore_node_modules()
     }
 }
 
+void GodotJSEditorPlugin::collect_invalid_files(Vector<String>& r_invalid_files)
+{
+    collect_invalid_files(jsb::internal::Settings::get_jsb_out_res_path(), r_invalid_files);
+}
+
+void GodotJSEditorPlugin::collect_invalid_files(const String& p_path, Vector<String>& r_invalid_files)
+{
+    const Ref<DirAccess> dir = DirAccess::open(p_path);
+    if (dir.is_null()) return;
+
+    dir->list_dir_begin();
+    String it = dir->_get_next();
+    while (it != "")
+    {
+        const String it_path = p_path.path_join(it);
+        if (dir->current_is_dir())
+        {
+            collect_invalid_files(it_path, r_invalid_files);
+        }
+        else
+        {
+            if (!it_path.ends_with("." JSB_JAVASCRIPT_EXT) || !FileAccess::exists(jsb::internal::PathUtil::convert_javascript_path(it_path)))
+            {
+                // invalid if it's not a source map file, or no corresponding .js file exist
+                if (!it_path.ends_with("." JSB_JAVASCRIPT_EXT ".map") || !FileAccess::exists(it_path.substr(0, it_path.length() - 4)))
+                {
+                    r_invalid_files.append(it_path);
+                }
+            }
+        }
+        it = dir->_get_next();
+    }
+}
+
+void GodotJSEditorPlugin::cleanup_invalid_files()
+{
+    int deleted_num = 0;
+    Vector<String> invalid_files;
+    collect_invalid_files(invalid_files);
+    for (const String& invalid_file: invalid_files)
+    {
+        deleted_num += delete_file(invalid_file);
+        deleted_num += delete_file(invalid_file + ".map");
+    }
+    JSB_LOG(Log, "%d files are deleted", deleted_num);
+}
+
 void GodotJSEditorPlugin::generate_godot_dts()
 {
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
     {
-        install_files(filter_files(editor_plugin->install_files_, jsb::CH_GDIGNORE | jsb::CH_D_TS));
+        install_files(filter_files(editor_plugin->install_files_, jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS));
     }
 
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();

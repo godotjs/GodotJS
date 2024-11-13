@@ -3,7 +3,7 @@
 
 #include "jsb_editor_pch.h"
 
-namespace jsb
+namespace jsb::weaver
 {
     enum ECategoryHint : uint16_t
     {
@@ -29,6 +29,7 @@ namespace jsb
         // ECategoryHint
         uint8_t hint;
     };
+
 }
 
 class InstallGodotJSPresetConfirmationDialog : public ConfirmationDialog
@@ -36,7 +37,7 @@ class InstallGodotJSPresetConfirmationDialog : public ConfirmationDialog
     GDCLASS(InstallGodotJSPresetConfirmationDialog, ConfirmationDialog);
 
 public:
-    Vector<jsb::InstallFileInfo> pending_installs_;
+    Vector<jsb::weaver::InstallFileInfo> pending_installs_;
 };
 
 // essential editor utilities for GodotJS, such as menu entries in the editor (Install Presets, Generate d.ts)
@@ -45,7 +46,7 @@ class GodotJSEditorPlugin : public EditorPlugin
     GDCLASS(GodotJSEditorPlugin, EditorPlugin)
 
 private:
-    Vector<jsb::InstallFileInfo> install_files_;
+    Vector<jsb::weaver::InstallFileInfo> install_files_;
     InstallGodotJSPresetConfirmationDialog* confirm_dialog_;
 
     std::shared_ptr<jsb::internal::Process> tsc_;
@@ -57,10 +58,10 @@ protected:
     void _on_menu_pressed(int p_what);
     void _on_confirm_overwrite();
 
-    static Error write_file(const jsb::InstallFileInfo& p_file);
-    static bool install_files(const Vector<jsb::InstallFileInfo>& p_files);
-    static Vector<jsb::InstallFileInfo> filter_files(const Vector<jsb::InstallFileInfo>& p_files, int p_hint);
-    static void delete_file(const String& p_file);
+    static Error write_file(const jsb::weaver::InstallFileInfo& p_file);
+    static bool install_files(const Vector<jsb::weaver::InstallFileInfo>& p_files);
+    static Vector<jsb::weaver::InstallFileInfo> filter_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, int p_hint);
+    static bool delete_file(const String& p_file);
 
 public:
     GodotJSEditorPlugin();
@@ -74,13 +75,16 @@ public:
     void try_install_ts_project();
     bool verify_ts_project() const;
     void _ignore_node_modules();
+    void cleanup_invalid_files();
 
     // not really a singleton, but always get from `EditorNode` which assumed unique
     static GodotJSEditorPlugin* get_singleton();
 
     static void generate_godot_dts();
     static void ignore_node_modules();
-    static void install_ts_project(const Vector<jsb::InstallFileInfo>& p_files);
+    static void collect_invalid_files(Vector<String>& r_invalid_files);
+    static void collect_invalid_files(const String& p_path, Vector<String>& r_invalid_files);
+    static void install_ts_project(const Vector<jsb::weaver::InstallFileInfo>& p_files);
     static const char* get_preset_source(const String& p_filename, size_t& r_len);
 
     static void ensure_tsc_installed();
@@ -89,8 +93,8 @@ public:
      * return true if everything is identical to the expected version.
      * otherwise return false with changed files in `r_modified`.
      */
-    static bool verify_files(const Vector<jsb::InstallFileInfo>& p_files, bool p_verify_content, Vector<jsb::InstallFileInfo>* r_modified);
-    static bool verify_file(const jsb::InstallFileInfo& p_file, bool p_verify_content);
+    static bool verify_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, bool p_verify_content, Vector<jsb::weaver::InstallFileInfo>* r_modified);
+    static bool verify_file(const jsb::weaver::InstallFileInfo& p_file, bool p_verify_content);
 
     static void on_successfully_installed();
 
