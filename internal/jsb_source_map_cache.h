@@ -18,7 +18,18 @@ namespace jsb::internal
 
     private:
 #if JSB_WITH_SOURCEMAP
+        struct MatchResult
+        {
+            String function;
+            String filename;
+            int line = 0;
+
+            // not available in quickjs.impl
+            int col = 0;
+        };
+
         SourceMap* find_source_map(const String& p_filename);
+        bool match(const String& p_line, MatchResult& r_result);
 
         Ref<RegEx> source_map_match1_;
         Ref<RegEx> source_map_match2_;
