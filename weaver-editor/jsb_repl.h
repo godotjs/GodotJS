@@ -26,6 +26,8 @@ private:
     ItemList* candidate_list_;
 
     Vector<OutputLine> lines_;
+
+    enum { kMaxHistoryCount = 10 };
     Vector<String> history_;
 
 private:
@@ -42,6 +44,7 @@ protected:
     void _install_preset_pressed();
     void _start_tsc_pressed();
     void _notification(int p_what);
+    void _show_candidates(const Vector<String>& p_items);
 
     void add_string(const String& p_str);
     void add_line(const String& p_line);

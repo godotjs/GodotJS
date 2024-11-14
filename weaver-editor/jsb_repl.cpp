@@ -199,26 +199,29 @@ String GodotJSREPL::encode_string(const String& p_text)
 void GodotJSREPL::_input_changed(const String &p_text)
 {
     // if (input_submitting_) return;
-    if (p_text.is_empty())
+
+    //TODO we haven't implemented the js function invocation from outside of Realm, just temporarily call as source code eval
+    const PackedStringArray results =
+#if JSB_REPL_AUTO_COMPLETE
+        !p_text.is_empty()
+            ? (PackedStringArray) eval_source(jsb_format("require('jsb.editor.main').auto_complete('%s')", encode_string(p_text))).to_variant()
+            : PackedStringArray();
+#else
+        {};
+#endif
+    _show_candidates(results);
+}
+
+void GodotJSREPL::_show_candidates(const Vector<String>& p_items)
+{
+    candidate_list_->clear();
+    if (p_items.is_empty())
     {
         candidate_list_->hide();
         return;
     }
 
-    candidate_list_->clear();
-    //TODO we haven't implemented the js function invocation from outside of Realm, just temporarily call as source code eval
-    const PackedStringArray results =
-#if JSB_REPL_AUTO_COMPLETE
-        eval_source(jsb_format("require('jsb.editor.main').auto_complete('%s')", encode_string(p_text))).to_variant();
-#else
-        {};
-#endif
-    if (results.size() == 0)
-    {
-        candidate_list_->hide();
-        return;
-    }
-    for (const String& item : results)
+    for (const String& item : p_items)
     {
         candidate_list_->add_item(item);
     }
@@ -240,7 +243,16 @@ void GodotJSREPL::_input_gui_input(const Ref<InputEvent> &p_event)
 {
     Ref<InputEventKey> k = p_event;
     if (!k.is_valid()) return;
-    if (!candidate_list_->is_visible()) return;
+    if (!candidate_list_->is_visible())
+    {
+        // fill out the candidate list with history if input is empty
+        if (input_box_->get_text().is_empty() &&
+            (k->is_action_pressed("ui_text_caret_up", true) || k->is_action_pressed("ui_text_caret_down", true)))
+        {
+            _show_candidates(history_);
+        }
+        return;
+    }
 
     const int item_count = candidate_list_->get_item_count();
     const int current = candidate_list_->get_current();
@@ -268,6 +280,8 @@ void GodotJSREPL::_input_gui_input(const Ref<InputEvent> &p_event)
 
 void GodotJSREPL::_input_submitted(const String &p_text)
 {
+    if (p_text.is_empty()) return;
+
     check_install();
     input_submitting_ = true;
     add_line(p_text);
@@ -313,8 +327,20 @@ void GodotJSREPL::write(jsb::internal::ELogSeverity::Type p_severity, const Stri
 
 void GodotJSREPL::add_history(const String &p_text)
 {
+    int size = history_.size();
+    if (size != 0)
+    {
+        const int index = history_.rfind(p_text);
+        if (index == size - 1)
+        {
+            return;
+        }
+        history_.remove_at(index);
+        --size;
+    }
+
     history_.append(p_text);
-    if (history_.size() > 10)
+    if (size >= kMaxHistoryCount)
     {
         history_.remove_at(0);
     }
