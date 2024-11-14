@@ -9,14 +9,6 @@
 
 #include <cstddef>
 
-#ifdef DEBUG_ENABLED
-#   define JSB_SARRAY_DEBUG 1
-#   define JSB_SARRAY_CONSISTENCY_CHECK 0
-#else
-#   define JSB_SARRAY_DEBUG 0
-#   define JSB_SARRAY_CONSISTENCY_CHECK 0
-#endif
-
 namespace jsb::internal
 {
     //NOTE some types (like std::function) are not supported because copy/move on resizing is not implemented for now.
@@ -43,6 +35,7 @@ namespace jsb::internal
             void set_value(T&& p_value) { has_value_ = true; value = std::move(p_value); }
             void set_value(const T& p_value) { has_value_ = true; value = p_value; }
 #else
+            void reset_value() {}
             void set_value(T&& p_value) { value = std::move(p_value); }
             void set_value(const T& p_value) { value = p_value; }
 #endif
@@ -255,9 +248,7 @@ namespace jsb::internal
                 destruct_value(slot.value);
                 _first_index = slot.next;
                 slot.next = _free_index;
-#if JSB_SARRAY_DEBUG
                 slot.reset_value();
-#endif
                 _free_index = index;
             }
             jsb_check(_first_index == -1);
@@ -624,9 +615,7 @@ namespace jsb::internal
             const int previous = slot.previous;
 
             slot.next = _free_index;
-#if JSB_SARRAY_DEBUG
             slot.reset_value();
-#endif
 
             _free_index = p_index.get_index();
             --_used_size;
@@ -656,6 +645,7 @@ namespace jsb::internal
         {
             const bool ret = remove_at(p_index);
             jsb_check(ret);
+            jsb_unused(ret);
         }
 
         void reserve(int p_size)

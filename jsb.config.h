@@ -75,6 +75,10 @@
 // not to generate method declaration if already defined as get/set property
 #define JSB_EXCLUDE_GETSET_METHODS 1
 
+// [low level] debug value add/remove issues in SArray
+#define JSB_SARRAY_DEBUG 0
+#define JSB_SARRAY_CONSISTENCY_CHECK 0
+
 #define JSB_INITIAL_OBJECT_SLOTS (1024 * 64)
 #define JSB_INITIAL_SCRIPT_SLOTS 1024
 #define JSB_INITIAL_CLASS_EXTRA_SLOTS 0
