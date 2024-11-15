@@ -512,20 +512,22 @@ namespace jsb
     {
         jsb_check(Thread::get_caller_id() == thread_id_);
 
-        const internal::Index64* object_id = objects_index_.getptr(p_pointer);
+        const internal::Index64* object_id_ptr = objects_index_.getptr(p_pointer);
 
         // avoid crash in the situation that `InstanceBindingCallbacks::free_callback` is called before JS object gc callback is called,
         // which makes the pointer already erased in `object_gc_callback`
-        if (jsb_unlikely(!object_id))
+        if (jsb_unlikely(!object_id_ptr))
         {
             return;
         }
 
+        // save the value of object_id_ptr before using, it'll be erased immediately from `objects_index_`
+        const internal::Index64 object_id = *object_id_ptr;
         NativeClassID class_id;
         bool is_persistent;
 
         {
-            ObjectHandle& object_handle = objects_.get_value(*object_id);
+            ObjectHandle& object_handle = objects_.get_value(object_id);
             jsb_check(object_handle.pointer == p_pointer);
             class_id = object_handle.class_id;
 
@@ -542,7 +544,7 @@ namespace jsb
 
             //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
             // At this stage, the JS Object is being garbage collected, we'd better to break the link between JS Object & C++ Object before `finalizer` to avoid accessing the JS Object unexpectedly.
-            objects_.remove_at_checked(*object_id);
+            objects_.remove_at_checked(object_id);
 
             obj_ref.Reset();
         }
