@@ -68,17 +68,17 @@ namespace jsb::impl
         {
 #if JSB_UTF16_CONV_PREFERRED
             const Char16String str16 = p_str.utf16();
-            return v8::String::NewFromTwoByte(isolate, (const uint16_t*) str16.ptr(), v8::NewStringType::kNormal, str16.length()).ToLocalChecked();
+            return v8::String::NewFromTwoByte(isolate, (const uint16_t*) str16.get_data(), v8::NewStringType::kNormal, str16.length()).ToLocalChecked();
 #else
             const CharString str8 = p_str.utf8();
-            return v8::String::NewFromUtf8(isolate, str8.ptr(), v8::NewStringType::kNormal, str8.length()).ToLocalChecked();
+            return v8::String::NewFromUtf8(isolate, str8.get_data(), v8::NewStringType::kNormal, str8.length()).ToLocalChecked();
 #endif
         }
 
         jsb_force_inline static v8::Local<v8::String> new_string_ascii(v8::Isolate* isolate, const String& p_str)
         {
             const CharString str8 = p_str.ascii();
-            return v8::String::NewFromOneByte(isolate, (const uint8_t*) str8.ptr(), v8::NewStringType::kNormal, str8.length()).ToLocalChecked();
+            return v8::String::NewFromOneByte(isolate, (const uint8_t*) str8.get_data(), v8::NewStringType::kNormal, str8.length()).ToLocalChecked();
         }
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)

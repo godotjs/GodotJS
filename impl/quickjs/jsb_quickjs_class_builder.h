@@ -237,11 +237,12 @@ namespace jsb::impl
             const String str = name;
             const CharString str8 = str.utf8();
 
+            jsb_checkf(str.length(), "empty string is not allowed for a class name");
             builder.internal_field_count_ = InternalFieldCount;
             builder.isolate_ = isolate;
             builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
             builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx,
-                (JSCFunction*) &Class::_constructor<InternalFieldCount>, str8.ptr(),
+                (JSCFunction*) &Class::_constructor<InternalFieldCount>, str8.get_data(),
                 /* length */ 0,
                 JS_CFUNC_constructor_magic,
                 /* magic */ isolate->add_constructor_data(constructor, class_payload)))));

@@ -66,7 +66,7 @@ namespace jsb::impl
         {
 #if JSB_DEBUG
             const CharString str8 = name.utf8();
-            return NewFunction(isolate->GetCurrentContext(), str8.ptr(), callback, data).As<v8::Function>();
+            return NewFunction(isolate->GetCurrentContext(), str8.get_data(), callback, data).As<v8::Function>();
 #else
             return NewFunction(isolate->GetCurrentContext(), "", callback, data).As<v8::Function>();
 #endif
@@ -82,7 +82,7 @@ namespace jsb::impl
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const String& p_str)
         {
             const CharString str8 = p_str.utf8();
-            const uint16_t stack_pos = isolate->push_steal(JS_NewStringLen(isolate->ctx(), str8.ptr(), str8.length()));
+            const uint16_t stack_pos = isolate->push_steal(JS_NewStringLen(isolate->ctx(), str8.get_data(), str8.length()));
             return v8::Local<v8::String>(v8::Data(isolate, stack_pos));
         }
 
@@ -168,7 +168,7 @@ namespace jsb::impl
             JSContext* ctx = isolate->ctx();
             const CharString filename = p_filename.utf8();
             constexpr int flags = JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT;
-            const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.ptr(), flags);
+            const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.get_data(), flags);
             if (JS_IsException(rval))
             {
                 isolate->mark_as_error_thrown();

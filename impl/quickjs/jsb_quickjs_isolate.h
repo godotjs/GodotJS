@@ -289,7 +289,7 @@ namespace v8
             jsb_checkf(!error_thrown_, "overwriting another error");
             error_thrown_ = true;
             const CharString str8 = message.utf8();
-            JS_ThrowInternalError(ctx_, "%s", str8.ptr());
+            JS_ThrowInternalError(ctx_, "%s", str8.get_data());
         }
 
         jsb_force_inline void mark_as_error_thrown() { jsb_checkf(!error_thrown_, "overwriting another error"); error_thrown_ = true; }

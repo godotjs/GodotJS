@@ -146,7 +146,7 @@ namespace jsb::internal
         {
             sources_.push_back(sources[i]);
         }
-        return parse_mappings(mappings.ptr(), mappings.length());
+        return parse_mappings(mappings.get_data(), mappings.length());
     }
 
     const String& SourceMap::get_source(int index) const
