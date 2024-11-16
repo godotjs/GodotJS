@@ -2,7 +2,14 @@
 Core:
     ✔ directly use typescripts in `godot editor`, hide compiled results (.js files) @done(24-07-08)
     ✔ global scope defined constants (such as PropertyHint) @done
+    ✔ split jsb.bundle into parts separately for editor and runtime @done(24-11-16 15:11)
+    ✔ quickjs.impl: support quickjs as JS runtime
+    ☐ web.impl: support the host browser JS runtime as JS runtime
+    ☐ lifetime control on cached string names (string_name_cache)
+    ☐ automatically guess the type via CDO if possible
     ☐ source-map: incorrect Ln:Col on bundle scripts
+    ☐ quickjs.impl: fix string/atom leaks?
+    ☐ make GArray/GDictionary iterator directly available in scripts
     ✔ embed jsb sources in C++ @done(24-08-15 23:16)
     ✔ exception is swallowed if thrown in GodotJS ScriptInstance::callp method @started(24-04-30 17:52) @done(24-07-05 21:42)
     ✔ SArray: return a simple wrapper with address guarded scope instead of a barebone reference? (`Env::get_object_class` etc.) @done(24-08-15)
@@ -37,11 +44,9 @@ Core:
 
 Scripting:
     ✔ unexpected reloading (only datetime changed) @done(24-07-16)
-    ☐ add `preload` support
     ✔ check if `call_prelude` is called even if `_ready` is not defined in script @done(24-07-10)
     ✔ scriptable EditorInspectorPlugin @done(24-07-12 21:45)
     ✔ scriptable EditorPlugin @done(24-07-16)
-    ☐ REPL: retrieve input history with `up/down` key
     ✔ default value of gd exported property (for PlaceholderScriptInstance, used in editor inspector) @started(24-05-11) @done(24-05-29)
     ✔ handle default argument values when calling Variant type methods @done(24-05-23)
     ✔ handle default argument values when calling Object type methods (such as `MethodBind.default_arguments` in `_godot_object_method`) @done(24-05-23)
@@ -65,13 +70,13 @@ Scripting:
     ✔ install TS project with presets @started(24-04-02 17:17) @done(24-04-03 11:55) @lasted(18h38m21s)
 
 REPL:
+    ☐ print object details in REPL output (as JSON?)
+    ☐ completely re-implement the bottom panel in typescript if possible
     ✔ auto-complete when input text changed @done(24-05-29)
     ✔ print all internal logs in REPL panel during REPL eval @done(24-06-03 19:18)
     ✔ print godot things in the way of godot itself @done(24-06-15 15:31)
-    ☐ print object details in REPL output (as JSON?)
-    ☐ completely re-implement the bottom panel in typescript if possible
+    ✔ REPL: retrieve input history with `up/down` key
     
 IDEA:
     ☐ nodejs integration (editor only?)
     ☐ libffi support
-    ☐ try: provide a quickjs-v8 minimal implementation to support quickjs without rewriting all bridging code
