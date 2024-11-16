@@ -59,14 +59,20 @@ void GodotJSScriptLanguage::init()
     }
 
     // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
-    {
-        size_t len;
-        static constexpr char kBundleSourceName[] = "jsb.bundle.js";
-        const char* str = GodotJSProjectPreset::get_source_rt(kBundleSourceName, len);
-        jsb_checkf(str, "the embedded 'jsb.bundle.js' not found, run 'scons' again to refresh all *.gen.cpp sources");
-        jsb_check(len == (size_t)(int) len);
-        jsb::AMDModuleLoader::load_source(environment_.get(), str, (int) len, kBundleSourceName);
-    }
+    _load_builtin_source("jsb.runtime.bundle.js", GodotJSProjectPreset::get_source_rt);
+#ifdef TOOLS_ENABLED
+    _load_builtin_source("jsb.editor.bundle.js", GodotJSProjectPreset::get_source_ed);
+#endif
+}
+
+void GodotJSScriptLanguage::_load_builtin_source(const char* p_filename, BuiltinSourceLoader p_loader)
+{
+    size_t len;
+    const String filename = p_filename;
+    const char* str = p_loader(filename, len);
+    jsb_checkf(str, "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", filename);
+    jsb_check(len == (size_t)(int) len);
+    jsb::AMDModuleLoader::load_source(environment_.get(), str, (int) len, filename);
 }
 
 void GodotJSScriptLanguage::finish()

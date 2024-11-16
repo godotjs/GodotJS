@@ -21,241 +21,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_1, jsb) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.signal = signal;
-    exports.export_multiline = export_multiline;
-    exports.export_range = export_range;
-    exports.export_range_i = export_range_i;
-    exports.export_file = export_file;
-    exports.export_dir = export_dir;
-    exports.export_global_file = export_global_file;
-    exports.export_global_dir = export_global_dir;
-    exports.export_exp_easing = export_exp_easing;
-    exports.export_ = export_;
-    exports.export_enum = export_enum;
-    exports.export_flags = export_flags;
-    exports.onready = onready;
-    exports.tool = tool;
-    exports.icon = icon;
-    exports.deprecated = deprecated;
-    exports.experimental = experimental;
-    exports.help = help;
-    exports.$wait = $wait;
-    exports.seconds = seconds;
-    exports.GLOBAL_GET = GLOBAL_GET;
-    exports.EDITOR_GET = EDITOR_GET;
-    jsb = __importStar(jsb);
-    /**
-     *
-     */
-    function signal() {
-        return function (target, key) {
-            jsb.internal.add_script_signal(target, key);
-        };
-    }
-    function export_multiline() {
-        return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_MULTILINE_TEXT });
-    }
-    function __export_range(type, min, max, step = 1, ...extra_hints) {
-        let hint_string = `${min},${max},${step}`;
-        if (typeof extra_hints !== "undefined") {
-            hint_string += "," + extra_hints.join(",");
-        }
-        return export_(type, { hint: godot_1.PropertyHint.PROPERTY_HINT_RANGE, hint_string: hint_string });
-    }
-    function export_range(min, max, step = 1, ...extra_hints) {
-        return __export_range(godot_1.Variant.Type.TYPE_FLOAT, min, max, step, ...extra_hints);
-    }
-    function export_range_i(min, max, step = 1, ...extra_hints) {
-        return __export_range(godot_1.Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
-    }
-    function export_file(filter) {
-        return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
-    }
-    function export_dir(filter) {
-        return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_DIR, hint_string: filter });
-    }
-    function export_global_file(filter) {
-        return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_GLOBAL_FILE, hint_string: filter });
-    }
-    function export_global_dir(filter) {
-        return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_GLOBAL_DIR, hint_string: filter });
-    }
-    function export_exp_easing(hint) {
-        return export_(godot_1.Variant.Type.TYPE_FLOAT, { hint: godot_1.PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
-    }
-    function export_(type, details) {
-        return function (target, key) {
-            let ebd = { name: key, type: type, hint: godot_1.PropertyHint.PROPERTY_HINT_NONE, hint_string: "", usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
-            if (typeof details === "object") {
-                if (typeof details.hint === "number")
-                    ebd.hint = details.hint;
-                if (typeof details.hint_string === "string")
-                    ebd.hint_string = details.hint_string;
-                if (typeof details.usage === "number")
-                    ebd.usage = details.usage;
-            }
-            jsb.internal.add_script_property(target, ebd);
-        };
-    }
-    /**
-     * NOTE only int value enums are allowed
-     */
-    function export_enum(enum_type) {
-        return function (target, key) {
-            let enum_vs = [];
-            for (let c in enum_type) {
-                const v = enum_type[c];
-                if (typeof v === "string") {
-                    enum_vs.push(v + ":" + c);
-                }
-            }
-            let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(","), usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
-            jsb.internal.add_script_property(target, ebd);
-        };
-    }
-    /**
-     * NOTE only int value enums are allowed
-     */
-    function export_flags(enum_type) {
-        return function (target, key) {
-            let enum_vs = [];
-            for (let c in enum_type) {
-                const v = enum_type[c];
-                if (typeof v === "string" && enum_type[v] != 0) {
-                    enum_vs.push(v + ":" + c);
-                }
-            }
-            let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(","), usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
-            jsb.internal.add_script_property(target, ebd);
-        };
-    }
-    /**
-     * auto initialized on ready (before _ready called)
-     * @param evaluator for now, only string is accepted
-     */
-    function onready(evaluator) {
-        return function (target, key) {
-            let ebd = { name: key, evaluator: evaluator };
-            jsb.internal.add_script_ready(target, ebd);
-        };
-    }
-    function tool() {
-        return function (target) {
-            jsb.internal.add_script_tool(target);
-        };
-    }
-    function icon(path) {
-        return function (target) {
-            jsb.internal.add_script_icon(target, path);
-        };
-    }
-    function deprecated(message) {
-        return function (target, propertyKey, descriptor) {
-            if (typeof propertyKey === "undefined") {
-                jsb.internal.set_script_doc(target, undefined, 0, message !== null && message !== void 0 ? message : "");
-                return;
-            }
-            if (typeof propertyKey !== "string" || propertyKey.length == 0)
-                throw new Error("only string key is allowed for doc");
-            jsb.internal.set_script_doc(target, propertyKey, 0, message !== null && message !== void 0 ? message : "");
-        };
-    }
-    function experimental(message) {
-        return function (target, propertyKey, descriptor) {
-            if (typeof propertyKey === "undefined") {
-                jsb.internal.set_script_doc(target, undefined, 1, message !== null && message !== void 0 ? message : "");
-                return;
-            }
-            if (typeof propertyKey !== "string" || propertyKey.length == 0)
-                throw new Error("only string key is allowed for doc");
-            jsb.internal.set_script_doc(target, propertyKey, 1, message !== null && message !== void 0 ? message : "");
-        };
-    }
-    function help(message) {
-        return function (target, propertyKey, descriptor) {
-            if (typeof propertyKey === "undefined") {
-                jsb.internal.set_script_doc(target, undefined, 2, message !== null && message !== void 0 ? message : "");
-                return;
-            }
-            if (typeof propertyKey !== "string" || propertyKey.length == 0)
-                throw new Error("only string key is allowed for doc");
-            jsb.internal.set_script_doc(target, propertyKey, 2, message !== null && message !== void 0 ? message : "");
-        };
-    }
-    function $wait(signal) {
-        return new Promise(resolve => {
-            let fn = null;
-            fn = jsb.callable(function () {
-                signal.disconnect(fn);
-                if (arguments.length == 0) {
-                    resolve(undefined);
-                    return;
-                }
-                if (arguments.length == 1) {
-                    resolve(arguments[0]);
-                    return;
-                }
-                // return as javascript array if more than one 
-                resolve(Array.from(arguments));
-                jsb.internal.notify_microtasks_run();
-            });
-            signal.connect(fn, 0);
-        });
-    }
-    /**
-     * Wait for seconds
-     * @param secs time to wait in seconds
-     * @returns Promise to await
-     */
-    function seconds(secs) {
-        return new Promise(function (resolve) {
-            setTimeout(function () {
-                resolve(undefined);
-            }, secs * 1000);
-        });
-    }
-    /** shorthand for getting project settings */
-    function GLOBAL_GET(entry_path) {
-        return godot_1.ProjectSettings.get_setting_with_override(entry_path);
-    }
-    /**
-     * shorthand for getting editor settings
-     * NOTE: calling before EditorSettings created will cause null reference exception.
-     */
-    function EDITOR_GET(entry_path) {
-        return godot_1.EditorInterface.get_editor_settings().get(entry_path);
-    }
-    (function (items) {
-        for (let item of items) {
-            item.class.prototype[Symbol.iterator] = item.func;
-        }
-    })([
-        {
-            class: godot_1.GDictionary,
-            func: function* () {
-                let self = this;
-                let keys = self.keys();
-                for (let i = 0; i < keys.size(); ++i) {
-                    const key = keys.get_indexed(i);
-                    yield { key: key, value: self.get_keyed(key) };
-                }
-            }
-        },
-        {
-            class: godot_1.GArray,
-            func: function* () {
-                let self = this;
-                for (let i = 0; i < self.size(); ++i) {
-                    yield self.get_indexed(i);
-                }
-            }
-        }
-    ]);
-});
-define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_2, jsb) {
+define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_1, jsb) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TypeDB = void 0;
@@ -266,7 +32,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     const MockLines = [
         "type byte = number",
         "type int32 = number",
-        "type int64 = number",
+        "type int64 = number /* || bigint */",
         "type float32 = number",
         "type float64 = number",
         "type StringName = string",
@@ -295,11 +61,11 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
         ["vargargs"]: "vargargs_",
     };
     const PrimitiveTypeNames = {
-        [godot_2.Variant.Type.TYPE_NIL]: "any",
-        [godot_2.Variant.Type.TYPE_BOOL]: "boolean",
-        [godot_2.Variant.Type.TYPE_INT]: "int64",
-        [godot_2.Variant.Type.TYPE_FLOAT]: "float64",
-        [godot_2.Variant.Type.TYPE_STRING]: "string",
+        [godot_1.Variant.Type.TYPE_NIL]: "any",
+        [godot_1.Variant.Type.TYPE_BOOL]: "boolean",
+        [godot_1.Variant.Type.TYPE_INT]: "int64",
+        [godot_1.Variant.Type.TYPE_FLOAT]: "float64",
+        [godot_1.Variant.Type.TYPE_STRING]: "string",
     };
     const RemapTypes = {
         ["bool"]: "boolean",
@@ -327,10 +93,10 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     ]);
     const PrimitiveTypesSet = (function () {
         let set = new Set();
-        for (let name in godot_2.Variant.Type) {
+        for (let name in godot_1.Variant.Type) {
             // use the original type name of Variant.Type, 
             // because this set is used with type name from the original godot class info (PropertyInfo)
-            let str = (0, godot_2.type_string)(godot_2.Variant.Type[name]);
+            let str = (0, godot_1.type_string)(godot_1.Variant.Type[name]);
             if (str.length != 0) {
                 set.add(str);
             }
@@ -358,16 +124,16 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     function get_primitive_type_name_as_input(type) {
         const primitive_name = get_primitive_type_name(type);
         switch (type) {
-            case godot_2.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot_2.Variant.Type.TYPE_COLOR)));
-            case godot_2.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot_2.Variant.Type.TYPE_VECTOR2)));
-            case godot_2.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot_2.Variant.Type.TYPE_VECTOR3)));
-            case godot_2.Variant.Type.TYPE_PACKED_STRING_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("string"));
-            case godot_2.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float32"));
-            case godot_2.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float64"));
-            case godot_2.Variant.Type.TYPE_PACKED_INT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int32"));
-            case godot_2.Variant.Type.TYPE_PACKED_INT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int64"));
-            case godot_2.Variant.Type.TYPE_PACKED_BYTE_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
-            case godot_2.Variant.Type.TYPE_NODE_PATH: return join_type_name(primitive_name, "string");
+            case godot_1.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot_1.Variant.Type.TYPE_COLOR)));
+            case godot_1.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot_1.Variant.Type.TYPE_VECTOR2)));
+            case godot_1.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot_1.Variant.Type.TYPE_VECTOR3)));
+            case godot_1.Variant.Type.TYPE_PACKED_STRING_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("string"));
+            case godot_1.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float32"));
+            case godot_1.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float64"));
+            case godot_1.Variant.Type.TYPE_PACKED_INT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int32"));
+            case godot_1.Variant.Type.TYPE_PACKED_INT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int64"));
+            case godot_1.Variant.Type.TYPE_PACKED_BYTE_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
+            case godot_1.Variant.Type.TYPE_NODE_PATH: return join_type_name(primitive_name, "string");
             default: return primitive_name;
         }
     }
@@ -652,7 +418,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             this._separator_line = true;
             const return_type_name = this.types.replace_type_inplace(get_primitive_type_name(operator_info.return_type), this.get_scoped_type_replacer());
             const left_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.left_type), this.get_scoped_type_replacer());
-            if (operator_info.right_type == godot_2.Variant.Type.TYPE_NIL) {
+            if (operator_info.right_type == godot_1.Variant.Type.TYPE_NIL) {
                 this.line(`static ${operator_info.name}(left: ${left_type_name}): ${return_type_name}`);
             }
             else {
@@ -760,7 +526,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     class FileSplitter {
         constructor(types, filePath) {
             this._types = types;
-            this._file = godot_2.FileAccess.open(filePath, godot_2.FileAccess.ModeFlags.WRITE);
+            this._file = godot_1.FileAccess.open(filePath, godot_1.FileAccess.ModeFlags.WRITE);
             this._toplevel = new ModuleWriter(new FileWriter(this._types, this._file), "godot");
             this._file.store_line("// AUTO-GENERATED");
             this._file.store_line('/// <reference no-default-lib="true"/>');
@@ -869,7 +635,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             }
         }
         make_typename(info, used_as_input) {
-            if (info.hint == godot_2.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
+            if (info.hint == godot_1.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
                 console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
                 return info.hint_string.split(",").map(class_name => this.make_classname(class_name, used_as_input)).join(" | ");
             }
@@ -890,21 +656,21 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             // plain types
             const type_name = get_primitive_type_name(value.type);
             switch (value.type) {
-                case godot_2.Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
-                case godot_2.Variant.Type.TYPE_FLOAT:
-                case godot_2.Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
-                case godot_2.Variant.Type.TYPE_STRING:
-                case godot_2.Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
-                case godot_2.Variant.Type.TYPE_NODE_PATH: return value.value == null ? "''" : `'${(0, godot_2.str)(value.value)}'`;
-                case godot_2.Variant.Type.TYPE_ARRAY: return value.value == null || value.value.is_empty() ? "[]" : `${(0, godot_2.str)(value.value)}`;
-                case godot_2.Variant.Type.TYPE_OBJECT: return value.value == null ? "undefined" : "<any> {}";
-                case godot_2.Variant.Type.TYPE_NIL: return "<any> {}";
-                case godot_2.Variant.Type.TYPE_CALLABLE:
-                case godot_2.Variant.Type.TYPE_RID: return `new ${type_name}()`;
+                case godot_1.Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
+                case godot_1.Variant.Type.TYPE_FLOAT:
+                case godot_1.Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
+                case godot_1.Variant.Type.TYPE_STRING:
+                case godot_1.Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
+                case godot_1.Variant.Type.TYPE_NODE_PATH: return value.value == null ? "''" : `'${(0, godot_1.str)(value.value)}'`;
+                case godot_1.Variant.Type.TYPE_ARRAY: return value.value == null || value.value.is_empty() ? "[]" : `${(0, godot_1.str)(value.value)}`;
+                case godot_1.Variant.Type.TYPE_OBJECT: return value.value == null ? "undefined" : "<any> {}";
+                case godot_1.Variant.Type.TYPE_NIL: return "<any> {}";
+                case godot_1.Variant.Type.TYPE_CALLABLE:
+                case godot_1.Variant.Type.TYPE_RID: return `new ${type_name}()`;
                 default: break;
             }
             // make them more readable?
-            if (value.type == godot_2.Variant.Type.TYPE_VECTOR2 || value.type == godot_2.Variant.Type.TYPE_VECTOR2I) {
+            if (value.type == godot_1.Variant.Type.TYPE_VECTOR2 || value.type == godot_1.Variant.Type.TYPE_VECTOR2I) {
                 if (value == null)
                     return `new ${type_name}()`;
                 if (value.value.x == value.value.y) {
@@ -915,7 +681,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                 }
                 return `new ${type_name}(${value.value.x}, ${value.value.y})`;
             }
-            if (value.type == godot_2.Variant.Type.TYPE_VECTOR3 || value.type == godot_2.Variant.Type.TYPE_VECTOR3I) {
+            if (value.type == godot_1.Variant.Type.TYPE_VECTOR3 || value.type == godot_1.Variant.Type.TYPE_VECTOR3I) {
                 if (value == null)
                     return `new ${type_name}()`;
                 if (value.value.x == value.value.y == value.value.z) {
@@ -926,32 +692,32 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                 }
                 return `new ${type_name}(${value.value.x}, ${value.value.y}, ${value.value.z})`;
             }
-            if (value.type == godot_2.Variant.Type.TYPE_COLOR) {
+            if (value.type == godot_1.Variant.Type.TYPE_COLOR) {
                 if (value == null)
                     return `new ${type_name}()`;
                 return `new ${type_name}(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
             }
-            if (value.type == godot_2.Variant.Type.TYPE_RECT2 || value.type == godot_2.Variant.Type.TYPE_RECT2I) {
+            if (value.type == godot_1.Variant.Type.TYPE_RECT2 || value.type == godot_1.Variant.Type.TYPE_RECT2I) {
                 if (value.value == null)
                     return `new ${type_name}()`;
                 return `new ${type_name}(${value.value.position.x}, ${value.value.position.y}, ${value.value.size.x}, ${value.value.size.y})`;
             }
             // it's tedious to repeat all types :(
-            if ((value.type >= godot_2.Variant.Type.TYPE_PACKED_BYTE_ARRAY && value.type <= godot_2.Variant.Type.TYPE_PACKED_COLOR_ARRAY)) {
+            if ((value.type >= godot_1.Variant.Type.TYPE_PACKED_BYTE_ARRAY && value.type <= godot_1.Variant.Type.TYPE_PACKED_COLOR_ARRAY)) {
                 if (value.value == null || value.value.is_empty()) {
                     return "[]";
                 }
             }
-            if (value.type == godot_2.Variant.Type.TYPE_DICTIONARY) {
+            if (value.type == godot_1.Variant.Type.TYPE_DICTIONARY) {
                 if (value.value == null || value.value.is_empty())
                     return `new ${type_name}()`;
             }
             //NOTE hope all default value for Transform2D/Transform3D is IDENTITY
-            if (value.type == godot_2.Variant.Type.TYPE_TRANSFORM2D || value.type == godot_2.Variant.Type.TYPE_TRANSFORM3D) {
+            if (value.type == godot_1.Variant.Type.TYPE_TRANSFORM2D || value.type == godot_1.Variant.Type.TYPE_TRANSFORM3D) {
                 return `new ${type_name}()`;
             }
             //TODO value sig for compound types
-            return `<any> {} /*compound.type from ${godot_2.Variant.Type[value.type]} (${value.value})*/`;
+            return `<any> {} /*compound.type from ${godot_1.Variant.Type[value.type]} (${value.value})*/`;
         }
         replace_type_inplace(name, type_replacer) {
             return typeof type_replacer === "function" ? type_replacer(name) : name;
@@ -966,7 +732,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
         make_args(method_info, type_replacer) {
             //TODO consider default arguments
             const varargs = "...vargargs: any[]";
-            const is_vararg = !!(method_info.hint_flags & godot_2.MethodFlags.METHOD_FLAG_VARARG);
+            const is_vararg = !!(method_info.hint_flags & godot_1.MethodFlags.METHOD_FLAG_VARARG);
             if (method_info.args_.length == 0) {
                 return is_vararg ? varargs : "";
             }
@@ -984,7 +750,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             return "void";
         }
         make_signal_type(method_info) {
-            const is_vararg = !!(method_info.hint_flags & godot_2.MethodFlags.METHOD_FLAG_VARARG);
+            const is_vararg = !!(method_info.hint_flags & godot_1.MethodFlags.METHOD_FLAG_VARARG);
             if (is_vararg || method_info.args_.length > 5) {
                 // too difficult to declare as strongly typed, just fallback to raw signal type
                 return "Signal";
@@ -1040,7 +806,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
         cleanup() {
             while (true) {
                 const path = this.make_path(this._split_index++);
-                if (!godot_2.FileAccess.file_exists(path)) {
+                if (!godot_1.FileAccess.file_exists(path)) {
                     break;
                 }
                 console.log("delete file", path);
@@ -1164,10 +930,10 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                 class_cg.line(`get_keyed(index: any): any`);
             }
             // special iterator methods injected in jsb.core
-            if (cls.type == godot_2.Variant.Type.TYPE_DICTIONARY) {
+            if (cls.type == godot_1.Variant.Type.TYPE_DICTIONARY) {
                 class_cg.line("[Symbol.iterator](): IteratorObject<{ key: any, value: any}>");
             }
-            else if (cls.type == godot_2.Variant.Type.TYPE_ARRAY) {
+            else if (cls.type == godot_1.Variant.Type.TYPE_ARRAY) {
                 class_cg.line("[Symbol.iterator](): IteratorObject<any>");
             }
             for (let method_info of cls.methods) {
@@ -1233,13 +999,13 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     }
     exports.default = TSDCodeGen;
 });
-define("jsb.editor.main", ["require", "exports", "godot"], function (require, exports, godot_3) {
+define("jsb.editor.main", ["require", "exports", "godot"], function (require, exports, godot_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.auto_complete = auto_complete;
     exports.run_npm_install = run_npm_install;
     function auto_complete(pattern) {
-        let results = new godot_3.PackedStringArray();
+        let results = new godot_2.PackedStringArray();
         if (typeof pattern !== "string") {
             return results;
         }
@@ -1268,8 +1034,8 @@ define("jsb.editor.main", ["require", "exports", "godot"], function (require, ex
         return results;
     }
     function run_npm_install() {
-        let exe_path = godot_3.OS.get_name() != "Windows" ? "npm" : "npm.cmd";
-        let pid = godot_3.OS.create_process(exe_path, ["install"], true);
+        let exe_path = godot_2.OS.get_name() != "Windows" ? "npm" : "npm.cmd";
+        let pid = godot_2.OS.create_process(exe_path, ["install"], true);
         if (pid == -1) {
             console.error("Failed to execute `npm install`, please ensure that node.js has been installed properly, and run it manually in the project root path.");
         }
@@ -1278,4 +1044,4 @@ define("jsb.editor.main", ["require", "exports", "godot"], function (require, ex
         }
     }
 });
-//# sourceMappingURL=jsb.bundle.js.map
+//# sourceMappingURL=jsb.editor.bundle.js.map

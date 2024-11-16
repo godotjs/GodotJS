@@ -6,11 +6,8 @@ __pycache__
 
 /v8
 
-/scripts/jsb.bundle/node_modules
-/scripts/jsb.bundle/.tsbuildinfo
-
-/scripts/jsb.static/node_modules
-/scripts/jsb.static/.tsbuildinfo
+/scripts/jsb.*/node_modules
+/scripts/jsb.*/.tsbuildinfo
 
 /impl/web/bridge/node_modules
 /impl/web/bridge/temp

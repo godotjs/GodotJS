@@ -143,6 +143,9 @@ public:
     virtual String get_global_class_name(const String& p_path, String* r_base_type = nullptr, String* r_icon_path = nullptr) const override;
 #pragma endregion
 
+private:
+    typedef const char* (*BuiltinSourceLoader)(const String& p_filename, size_t& r_len);
+    void _load_builtin_source(const char* p_filename, BuiltinSourceLoader p_loader);
 };
 
 #endif

@@ -437,14 +437,18 @@ if is_defined("JSB_WITH_WEB"):
 zero_terminated = quickjs_support is not None
 generate_code([\
         # presets for runtime
-        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.js", "", zero_terminated, AMDSourceTransformer()),
+        PresetDefine("scripts/out/jsb.runtime.bundle.js", "", zero_terminated, AMDSourceTransformer()),
     ], [\
         # presets for editor only
-        PresetDefine("scripts/jsb.bundle/typings/godot.minimal.d.ts", ""),
-        PresetDefine("scripts/jsb.bundle/typings/godot.mix.d.ts", ""),
+        PresetDefine("scripts/out/jsb.editor.bundle.js", "", zero_terminated, AMDSourceTransformer()),
+        
+        PresetDefine("scripts/typings/godot.minimal.d.ts", ""),
+        PresetDefine("scripts/typings/godot.mix.d.ts", ""),
 
-        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.d.ts", ""),
-        PresetDefine("scripts/jsb.bundle/out/jsb.bundle.js.map", ""),
+        PresetDefine("scripts/out/jsb.runtime.bundle.d.ts", ""),
+        PresetDefine("scripts/out/jsb.runtime.bundle.js.map", ""),
+        PresetDefine("scripts/out/jsb.editor.bundle.d.ts", ""),
+        PresetDefine("scripts/out/jsb.editor.bundle.js.map", ""),
 
         PresetDefine("scripts/presets/package.json.txt", "package.json"),
         PresetDefine("scripts/presets/tsconfig.json.txt", "tsconfig.json"),

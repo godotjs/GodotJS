@@ -65,7 +65,7 @@ namespace jsb
         return succeeded;
     }
 
-    void AMDModuleLoader::load_source(Environment* p_env, const char* p_source, int p_len, const char* p_name)
+    void AMDModuleLoader::load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name)
     {
         jsb_check(strstr(p_source, "(function(define){") == p_source);
 
