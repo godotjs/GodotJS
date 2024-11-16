@@ -425,7 +425,9 @@ namespace jsb
         p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
 
         handle.class_id = p_class_id;
+#if JSB_DEBUG
         handle.pointer = p_pointer;
+#endif
 
         // must not be a valuetype object (v8 only)
         jsb_v8_check(native_classes_.get_value(p_class_id).type != NativeClassType::GodotPrimitive);
@@ -528,7 +530,9 @@ namespace jsb
 
         {
             ObjectHandle& object_handle = objects_.get_value(object_id);
+#if JSB_DEBUG
             jsb_check(object_handle.pointer == p_pointer);
+#endif
             class_id = object_handle.class_id;
 
             // remove index at first to make `free_object` safely reentrant

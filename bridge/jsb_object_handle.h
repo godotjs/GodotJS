@@ -32,9 +32,12 @@ namespace jsb
 
         uint32_t ref_count_;
 
-        // primitive pointer to the native object.
-        // must be a real pointer which implies that different objects have different addresses.
+#if JSB_DEBUG
+        // The raw pointer to the native object.
+        // It must be a unique pointer which implies that different objects have different addresses.
+        //NOTE it's useless at runtime now. we hold it here to validate the object binding for debugging only.
         void* pointer;
+#endif
 
         // this reference is initially weak and hooked on v8 gc callback.
         // it becomes a strong reference after the `ref_count_` explicitly increased.
