@@ -407,6 +407,8 @@ class ClassWriter extends IndentWriter {
                 return "class Signal implements AnySignal";
             } else if (this._name == "Callable") {
                 return "class Callable implements AnyCallable";
+            } else if (this._name == "GArray") {
+                return "class GArray<T>";
             }
             return `class ${this._name}`
         }
@@ -501,10 +503,12 @@ class ClassWriter extends IndentWriter {
     }
 
     private get_scoped_type_replacer() {
-        if (this._name == "Signal" || this._name == "Callable") {
+        const replaceClasses = ["Signal", "Callable", "GArray"];
+        if (replaceClasses.includes(this._name)) {
             return function(type_name: string): string {
                 if (type_name == "Signal") return "AnySignal";
                 if (type_name == "Callable") return "AnyCallable";
+                if (type_name == "GArray") return "GArray<T>";
                 return type_name;
             }
         }
@@ -514,16 +518,51 @@ class ClassWriter extends IndentWriter {
     method_(method_info: jsb.editor.MethodBind, category: string) {
         DocCommentHelper.write(this, this._doc?.methods[method_info.name]?.description, this._separator_line);
         this._separator_line = true;
-        const args = this.types.make_args(method_info, this.get_scoped_type_replacer());
-        const rval = this.types.make_return(method_info, this.get_scoped_type_replacer());
+        let args = this.types.make_args(method_info, this.get_scoped_type_replacer());
+        let rval = this.types.make_return(method_info, this.get_scoped_type_replacer());
         const prefix = this.make_method_prefix(method_info);
+        let template = "";
 
         // some godot methods declared with special characters which can not be declared literally
         if (!this.types.is_valid_method_name(method_info.name)) {
             this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
             return;
         }
-        this.line(`${category}${prefix}${method_info.name}(${args}): ${rval}`);
+        if (this._name === "GArray") {
+            switch (method_info.name) {
+                case "push_back":
+                case "push_front":
+                case "append":
+                case "insert":
+                case "fill":
+                case "erase":
+                case "count":
+                case "has":
+                case "bsearch":
+                case "bsearch_custom":
+                    args = args.replace("value: any", "value: T");
+                    break;
+                case "find":
+                case "rfind":
+                    args = args.replace("what: any", "what: T");
+                    break;
+                case "front":
+                case "back":
+                case "pick_random":
+                case "pop_back":
+                case "pop_front":
+                case "pop_at":
+                    rval = "T";
+                    break;
+                case "map":
+                    template = "<U>";
+                    rval = `GArray<U>`;
+                    break;
+                default:
+                    break;
+            }
+        }
+        this.line(`${category}${prefix}${method_info.name}${template}(${args}): ${rval}`);
     }
 
     signal_(signal_info: jsb.editor.SignalInfo) {
@@ -1035,7 +1074,10 @@ export default class TSDCodeGen {
         }
 
         // 
-        if (typeof cls.element_type !== "undefined") {
+        if (cls.type == Variant.Type.TYPE_ARRAY) {
+            class_cg.line(`set_indexed(index: number, value: T)`)
+            class_cg.line(`get_indexed(index: number): T`)
+        } else if (typeof cls.element_type !== "undefined") {
             const element_type_name = get_primitive_type_name(cls.element_type);
             class_cg.line(`set_indexed(index: number, value: ${element_type_name})`)
             class_cg.line(`get_indexed(index: number): ${element_type_name}`)
@@ -1049,7 +1091,7 @@ export default class TSDCodeGen {
         if (cls.type == Variant.Type.TYPE_DICTIONARY) {
             class_cg.line("[Symbol.iterator](): IteratorObject<{ key: any, value: any}>");
         } else if (cls.type == Variant.Type.TYPE_ARRAY) {
-            class_cg.line("[Symbol.iterator](): IteratorObject<any>");
+            class_cg.line("[Symbol.iterator](): IteratorObject<T>");
         }
 
         for (let method_info of cls.methods) {
