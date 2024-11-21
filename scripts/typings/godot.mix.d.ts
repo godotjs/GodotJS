@@ -67,28 +67,28 @@ declare module "godot" {
         get_connections(): Array
     }
 
-    interface Callable0 extends AnyCallable {
-        call(): void;
+    interface Callable0<R = void> extends AnyCallable {
+        call(): R;
     }
 
-    interface Callable1<T1> extends AnyCallable {
-        call(v1: T1): void;
+    interface Callable1<T1, R = void> extends AnyCallable {
+        call(v1: T1): R;
     }
 
-    interface Callable2<T1, T2> extends AnyCallable {
-        call(v1: T1, v2, T2): void;
+    interface Callable2<T1, T2, R = void> extends AnyCallable {
+        call(v1: T1, v2, T2): R;
     }
 
-    interface Callable3<T1, T2, T3> extends AnyCallable {
-        call(v1: T1, v2: T2, v3: T3): void;
+    interface Callable3<T1, T2, T3, R = void> extends AnyCallable {
+        call(v1: T1, v2: T2, v3: T3): R;
     }
 
-    interface Callable4<T1, T2, T3, T4> extends AnyCallable {
-        call(v1: T1, v2: T2, v3: T3, v4: T4): void;
+    interface Callable4<T1, T2, T3, T4, R = void> extends AnyCallable {
+        call(v1: T1, v2: T2, v3: T3, v4: T4): R;
     }
 
-    interface Callable5<T1, T2, T3, T4, T5> extends AnyCallable {
-        call(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5): void;
+    interface Callable5<T1, T2, T3, T4, T5, R = void> extends AnyCallable {
+        call(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5): R;
     }
 
     interface Signal0 extends AnySignal {
