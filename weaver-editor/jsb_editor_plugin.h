@@ -19,6 +19,9 @@ namespace jsb::weaver
 
         CH_D_TS = 1 << 7,
         CH_OPTIONAL = 1 << 8,
+
+        // obsolete files which should be deleted
+        CH_OBSOLETE = 1 << 9,
     };
 
     struct InstallFileInfo
@@ -26,8 +29,7 @@ namespace jsb::weaver
         String source_name;
         String target_dir;
 
-        // ECategoryHint
-        uint8_t hint;
+        __underlying_type(ECategoryHint) hint;
     };
 
 }
@@ -62,7 +64,7 @@ protected:
     // Crash if the given info is invalid, ensure to update the preset list in C++ code after it changed in SCsub.
     void add_install_file(jsb::weaver::InstallFileInfo&& p_install_file);
 
-    static Error write_file(const jsb::weaver::InstallFileInfo& p_file);
+    static Error apply_file(const jsb::weaver::InstallFileInfo& p_file);
     static bool install_files(const Vector<jsb::weaver::InstallFileInfo>& p_files);
     static Vector<jsb::weaver::InstallFileInfo> filter_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, int p_hint);
     static bool delete_file(const String& p_file);
