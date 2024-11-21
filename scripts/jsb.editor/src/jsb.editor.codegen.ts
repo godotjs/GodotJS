@@ -502,17 +502,24 @@ class ClassWriter extends IndentWriter {
         this.method_(method_info, "");
     }
 
-    private get_scoped_type_replacer() {
+    //TODO gtPlaceholder (Optional) Generic type argument placeholder, return the generic typed version if in a generic type context.
+    private get_scoped_type_replacer(gtPlaceholder?: string) {
         const replaceClasses = ["Signal", "Callable", "GArray"];
         if (replaceClasses.includes(this._name)) {
+            // specialized type name in the declaration scope of this type itself
             return function(type_name: string): string {
                 if (type_name == "Signal") return "AnySignal";
                 if (type_name == "Callable") return "AnyCallable";
                 if (type_name == "GArray") return "GArray<T>";
                 return type_name;
             }
+        } else {
+            // type name in the declaration scope of other types
+            return function (type_name: string): string {
+                if (type_name == "GArray") return "GArray<any>";
+                return type_name;
+            }
         }
-        return undefined;
     }
 
     method_(method_info: jsb.editor.MethodBind, category: string) {
@@ -528,6 +535,7 @@ class ClassWriter extends IndentWriter {
             this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
             return;
         }
+        //TODO a better way to specialize
         if (this._name === "GArray") {
             switch (method_info.name) {
                 case "push_back":
@@ -552,11 +560,23 @@ class ClassWriter extends IndentWriter {
                 case "pop_back":
                 case "pop_front":
                 case "pop_at":
+                case "min":
+                case "max":
                     rval = "T";
+                    break;
+                case "sort_custom":
+                case "bsearch_custom":
+                    args = args.replace("func: AnyCallable", "func: Callable2<T, T, boolean>");
+                    break;
+                case "all":
+                case "any":
+                case "filter":
+                    args = args.replace("method: AnyCallable", "func: Callable1<T, boolean>");
                     break;
                 case "map":
                     template = "<U>";
                     rval = `GArray<U>`;
+                    args = args.replace("method: AnyCallable", "func: Callable1<T, U>");
                     break;
                 default:
                     break;

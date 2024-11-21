@@ -435,9 +435,11 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
         ordinary_method_(method_info) {
             this.method_(method_info, "");
         }
-        get_scoped_type_replacer() {
+        //TODO gtPlaceholder (Optional) Generic type argument placeholder, return the generic typed version if in a generic type context.
+        get_scoped_type_replacer(gtPlaceholder) {
             const replaceClasses = ["Signal", "Callable", "GArray"];
             if (replaceClasses.includes(this._name)) {
+                // specialized type name in the declaration scope of this type itself
                 return function (type_name) {
                     if (type_name == "Signal")
                         return "AnySignal";
@@ -448,7 +450,14 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                     return type_name;
                 };
             }
-            return undefined;
+            else {
+                // type name in the declaration scope of other types
+                return function (type_name) {
+                    if (type_name == "GArray")
+                        return "GArray<any>";
+                    return type_name;
+                };
+            }
         }
         method_(method_info, category) {
             var _a, _b;
@@ -463,6 +472,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                 this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
                 return;
             }
+            //TODO a better way to specialize
             if (this._name === "GArray") {
                 switch (method_info.name) {
                     case "push_back":
@@ -487,11 +497,23 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                     case "pop_back":
                     case "pop_front":
                     case "pop_at":
+                    case "min":
+                    case "max":
                         rval = "T";
+                        break;
+                    case "sort_custom":
+                    case "bsearch_custom":
+                        args = args.replace("func: AnyCallable", "func: Callable2<T, T, boolean>");
+                        break;
+                    case "all":
+                    case "any":
+                    case "filter":
+                        args = args.replace("method: AnyCallable", "func: Callable1<T, boolean>");
                         break;
                     case "map":
                         template = "<U>";
                         rval = `GArray<U>`;
+                        args = args.replace("method: AnyCallable", "func: Callable1<T, U>");
                         break;
                     default:
                         break;
