@@ -58,6 +58,10 @@ protected:
     void _on_menu_pressed(int p_what);
     void _on_confirm_overwrite();
 
+    // Add install file info.
+    // Crash if the given info is invalid, ensure to update the preset list in C++ code after it changed in SCsub.
+    void add_install_file(jsb::weaver::InstallFileInfo&& p_install_file);
+
     static Error write_file(const jsb::weaver::InstallFileInfo& p_file);
     static bool install_files(const Vector<jsb::weaver::InstallFileInfo>& p_files);
     static Vector<jsb::weaver::InstallFileInfo> filter_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, int p_hint);
@@ -85,6 +89,7 @@ public:
     static void collect_invalid_files(Vector<String>& r_invalid_files);
     static void collect_invalid_files(const String& p_path, Vector<String>& r_invalid_files);
     static void install_ts_project(const Vector<jsb::weaver::InstallFileInfo>& p_files);
+    static bool is_preset_source_valid(const String& p_filename);
     static const char* get_preset_source(const String& p_filename, size_t& r_len);
 
     static void ensure_tsc_installed();

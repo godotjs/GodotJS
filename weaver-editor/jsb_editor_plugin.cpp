@@ -20,6 +20,12 @@ void GodotJSEditorPlugin::_bind_methods()
 
 }
 
+bool GodotJSEditorPlugin::is_preset_source_valid(const String& p_filename)
+{
+    size_t size;
+    return get_preset_source(p_filename, size) && size > 0;
+}
+
 const char* GodotJSEditorPlugin::get_preset_source(const String& p_filename, size_t& r_len)
 {
     if (const char* res = GodotJSProjectPreset::get_source_rt(p_filename, r_len)) return res;
@@ -74,16 +80,16 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_control_to_bottom_panel(memnew(GodotJSDockedPanel), TTR("GodotJS"));
 
     // config files
-    install_files_.push_back({ "tsconfig.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_REPLACE_VARS });
-    install_files_.push_back({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
-    install_files_.push_back({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });
-    install_files_.push_back({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
+    add_install_file({ "tsconfig.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_REPLACE_VARS });
+    add_install_file({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
+    add_install_file({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });
+    add_install_file({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
 
     // type declaration files
-    install_files_.push_back({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
-    install_files_.push_back({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
-    install_files_.push_back({ "jsb.editor.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
-    install_files_.push_back({ "jsb.runtime.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "jsb.editor.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "jsb.runtime.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
 
     // write `.gdignore` in the `node_modules` folder anyway to avoid scanning in the situation that `node_modules` is generated externally before starting the Godot engine.
     if (DirAccess::exists("res://node_modules") && !FileAccess::exists("res://node_modules/.gdignore"))
@@ -100,6 +106,12 @@ GodotJSEditorPlugin::~GodotJSEditorPlugin()
         tsc_.reset();
     }
     JSB_LOG(VeryVerbose, "~GodotJSEditorPlugin");
+}
+
+void GodotJSEditorPlugin::add_install_file(jsb::weaver::InstallFileInfo&& p_install_file)
+{
+    jsb_check(is_preset_source_valid(p_install_file.source_name));
+    install_files_.push_back(std::move(p_install_file));
 }
 
 bool GodotJSEditorPlugin::delete_file(const String &p_file)
