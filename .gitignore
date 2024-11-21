@@ -7,6 +7,7 @@ __pycache__
 /v8
 
 /scripts/jsb.*/node_modules
+/scripts/jsb.*/typings
 /scripts/jsb.*/.tsbuildinfo
 
 /impl/web/bridge/node_modules
