@@ -96,15 +96,14 @@ namespace jsb
     private:
         static void* create_callback(void* p_token, void* p_instance)
         {
-            //TODO ??
-            JSB_LOG(Error, "unimplemented");
-            return nullptr;
+            return p_instance;
         }
 
         static void free_callback(void* p_token, void* p_instance, void* p_binding)
         {
             if (std::shared_ptr<Environment> environment = EnvironmentStore::get_shared().access(p_token))
             {
+                // p_binding must equal to the return value of `create_callback`
                 jsb_check(p_instance == p_binding);
 
                 // no need to do additional finalization because `free_callback` is triggered by godot when an Object is being deleted
@@ -408,7 +407,8 @@ namespace jsb
             }
         }
         const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, EBindingPolicy::External);
-        p_pointer->set_instance_binding(this, p_pointer, gd_instance_binding_callbacks);
+
+        p_pointer->get_instance_binding(this, gd_instance_binding_callbacks);
         return object_id;
     }
 
