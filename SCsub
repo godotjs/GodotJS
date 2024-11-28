@@ -466,6 +466,12 @@ if env.editor_build:
     env_jsb.add_source_files(module_obj, "weaver-editor/*.cpp")
     SConscript("weaver-editor/templates/SCsub")
 
+# natvis
+if env["vsproj"]:
+    print("Natvis: jsb.natvis")
+    env.Append(LINKFLAGS=[f"/NATVIS:modules\\{module_name}\\jsb.natvis"])
+    env.vs_srcs += [f"modules/{module_name}/jsb.natvis"]
+
 generate_jsb_gen_header()
 env.modules_sources += module_obj
 env.Depends(module_obj, quickjs_obj)

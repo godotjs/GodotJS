@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="jsb::internal::SArray&lt;*,*,jsb::internal::AnsiAllocator&gt;">
+        <DisplayString Condition="_used_size == 0">Empty</DisplayString>
+        <Expand>
+            <CustomListItems Condition="_used_size &gt; 0">
+                <Variable Name="tIndex" InitialValue="_first_index" />
+                <Size>_used_size</Size>
+                <Loop>
+                    <Break Condition="tIndex == -1" />
+                    <Item>((jsb::internal::SArray&lt;$T1,$T2,jsb::internal::AnsiAllocator&gt;::Slot*) allocator.data)[tIndex].value</Item>
+                    <Exec>tIndex = ((jsb::internal::SArray&lt;$T1,$T2,jsb::internal::AnsiAllocator&gt;::Slot*) allocator.data)[tIndex].next</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+</AutoVisualizer>
