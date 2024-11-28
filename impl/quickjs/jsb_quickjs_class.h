@@ -93,6 +93,7 @@ namespace jsb::impl
             // init function stack base
             static_assert(jsb::impl::FunctionStackBase::ReturnValue == 0);
             const uint16_t stack_check1 = isolate->push_copy(JS_UNDEFINED);
+            jsb_unused(stack_check1);
 
             static_assert(jsb::impl::FunctionStackBase::This == 1);
             const uint16_t stack_this = isolate->push_copy(this_val);
@@ -103,6 +104,7 @@ namespace jsb::impl
 
             static_assert(jsb::impl::FunctionStackBase::NewTarget == 3);
             const uint16_t stack_check2 = isolate->push_copy(new_target);
+            jsb_unused(stack_check2);
 
             jsb_check(stack_check2 - stack_check1 == FunctionStackBase::Num - 1);
             static_assert(jsb::impl::FunctionStackBase::Num == 4);

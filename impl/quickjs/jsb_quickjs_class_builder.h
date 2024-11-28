@@ -214,6 +214,7 @@ namespace jsb::impl
             const JSValue parent = (JSValue) base.prototype_;
             jsb_check(!JS_IsException(parent));
             const int res = JS_SetPrototype(isolate_->ctx(), (JSValue) prototype_template_, parent);
+            jsb_unused(res);
             jsb_check(res == 1);
         }
 

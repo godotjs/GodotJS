@@ -28,6 +28,7 @@ namespace jsb
             const size_t size = array_buffer->ByteLength();
             PackedByteArray packed;
             const Error err = packed.resize((int) size);
+            jsb_unused(err);
             jsb_check(err == OK);
             const void* data = array_buffer->Data();
             memcpy(packed.ptrw(), data, size);

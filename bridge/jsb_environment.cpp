@@ -1050,6 +1050,7 @@ namespace jsb
                 if (jsb_likely(!strong_ref.object_.IsEmpty()))
                 {
                     const size_t r = function_refs_.erase(TWeakRef(isolate, strong_ref.object_));
+                    jsb_unused(r);
                     jsb_check(r != 0);
                 }
                 else
