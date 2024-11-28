@@ -73,6 +73,7 @@ namespace jsb
         p_class_info->methods.clear();
         p_class_info->signals.clear();
         p_class_info->properties.clear();
+        p_class_info->rpc_config.clear();
         p_class_info->flags = ScriptClassFlags::None;
 
         JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", p_class_info->js_class_name, p_class_info->native_class_name);
@@ -84,12 +85,15 @@ namespace jsb
         {
             doc_map = val.As<v8::Map>();
         }
-        else
-        {
-            doc_map = v8::Map::New(isolate);
-        }
         _parse_script_doc(isolate, p_context, prototype->Get(p_context, jsb_symbol(environment, Doc)), p_class_info->doc);
 #endif
+
+        // class rpc config
+        v8::Local<v8::Map> rpc_config_map;
+        if (v8::Local<v8::Value> val; class_obj->Get(p_context, jsb_symbol(environment, ClassRPCConfig)).ToLocal(&val) && val->IsMap())
+        {
+            rpc_config_map = val.As<v8::Map>();
+        }
 
         // methods
         {
@@ -114,12 +118,40 @@ namespace jsb
                         //TODO property categories
                         ScriptMethodInfo method_info = {};
 #ifdef TOOLS_ENABLED
-                        if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
+                        if (v8::Local<v8::Value> val; !doc_map.IsEmpty() && doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
                         {
                             _parse_script_doc(isolate, p_context, val, method_info.doc);
                         }
 #endif // TOOLS_ENABLED
                         p_class_info->methods.insert((StringName) name_s, method_info);
+
+                        // check rpc config
+                        if (v8::Local<v8::Value> rpc_val;
+                            !rpc_config_map.IsEmpty() && rpc_config_map->Get(p_context, prop_name).ToLocal(&rpc_val) && rpc_val->IsObject())
+                        {
+                            v8::Local<v8::Object> rpc_obj = rpc_val.As<v8::Object>();
+                            Dictionary rpc_config;
+                            //TODO for `rpc_config[name]`, do a StringName have an identical hash of it's underlying String?
+
+                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, mode)).ToLocal(&config_val))
+                            {
+                                rpc_config[jsb_string_name(mode)] = config_val.As<v8::Int32>()->Value();
+                            }
+                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, sync)).ToLocal(&config_val))
+                            {
+                                rpc_config[jsb_string_name(sync)] = config_val.As<v8::Boolean>()->Value();
+                            }
+                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, transfer_mode)).ToLocal(&config_val))
+                            {
+                                rpc_config[jsb_string_name(transfer_mode)] = config_val.As<v8::Int32>()->Value();
+                            }
+                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, transfer_channel)).ToLocal(&config_val))
+                            {
+                                rpc_config[jsb_string_name(transfer_channel)] = config_val.As<v8::Int32>()->Value();
+                            }
+                            jsb_check(!p_class_info->rpc_config.has(name_s));
+                            p_class_info->rpc_config[name_s] = rpc_config;
+                        }
                         JSB_LOG(VeryVerbose, "... method %s", name_s);
                     }
                 }
@@ -191,7 +223,7 @@ namespace jsb
                     property_info.hint_string = impl::Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
                     property_info.usage = BridgeHelper::to_enum<PropertyUsageFlags>(context, obj->Get(context, jsb_name(environment, usage)), PROPERTY_USAGE_DEFAULT);
 #ifdef TOOLS_ENABLED
-                    if (v8::Local<v8::Value> val; doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
+                    if (v8::Local<v8::Value> val; !doc_map.IsEmpty() && doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
                     {
                         _parse_script_doc(isolate, p_context, val, property_info.doc);
                     }

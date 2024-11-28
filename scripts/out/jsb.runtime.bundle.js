@@ -36,6 +36,7 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
     exports.export_ = export_;
     exports.export_enum = export_enum;
     exports.export_flags = export_flags;
+    exports.rpc = rpc;
     exports.onready = onready;
     exports.tool = tool;
     exports.icon = icon;
@@ -130,6 +131,25 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
             }
             let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(","), usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
             jsb.internal.add_script_property(target, ebd);
+        };
+    }
+    function rpc(config) {
+        return function (target, propertyKey, descriptor) {
+            if (typeof propertyKey !== "string") {
+                throw new Error("only string is allowed as propertyKey for rpc config");
+                return;
+            }
+            if (typeof config !== "undefined") {
+                jsb.internal.add_script_rpc(target, propertyKey, {
+                    mode: config.mode,
+                    sync: typeof config.sync !== "undefined" ? (config.sync == "call_local") : undefined,
+                    transfer_mode: config.transfer_mode,
+                    transfer_channel: config.transfer_channel,
+                });
+            }
+            else {
+                jsb.internal.add_script_rpc(target, propertyKey, {});
+            }
         };
     }
     /**

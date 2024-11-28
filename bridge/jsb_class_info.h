@@ -167,6 +167,8 @@ namespace jsb
         HashMap<StringName, ScriptMethodInfo> signals;
         HashMap<StringName, ScriptPropertyInfo> properties;
 
+        Dictionary rpc_config;
+
         //TODO whether the internal class object alive or not
         jsb_force_inline bool is_valid() const { return true; }
 

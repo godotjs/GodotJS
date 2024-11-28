@@ -37,5 +37,11 @@ DEF(deprecated)
 DEF(experimental)
 DEF(help)
 
+// godot rpc config fields
+DEF(mode)
+DEF(sync)
+DEF(transfer_mode)
+DEF(transfer_channel)
+
 // keyword names
 DEF(default)

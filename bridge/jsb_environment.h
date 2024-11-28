@@ -38,6 +38,7 @@ namespace jsb
             ClassImplicitReadyFuncs, // array of all @onready annotations
             ClassToolScript,         // @tool annotated scripts
             ClassIcon,               // @icon
+            ClassRPCConfig,          // @rpc annotation for rpc functions
             Doc,
             MemberDocMap,
 

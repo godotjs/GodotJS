@@ -117,6 +117,43 @@ namespace jsb
             environment->notify_microtasks_run();
         }
 
+        // interface RPCConfig {
+        //     mode?: MultiplayerAPI.RPCMode,
+        //     sync?: boolean,
+        //     transfer_mode?: MultiplayerPeer.TransferMode,
+        //     transfer_channel?: number,
+        // }
+        // function add_script_rpc(target: any, propertyKey: string, config: RPCConfig): void;
+        void _add_script_rpc(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::HandleScope handle_scope(isolate);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            if (info.Length() != 3 || !info[0]->IsObject() || !info[1]->IsString() || !info[2]->IsObject())
+            {
+                jsb_throw(isolate, "bad param");
+                return;
+            }
+            Environment* environment = Environment::wrap(isolate);
+            const v8::Local<v8::Object> target = info[0].As<v8::Object>();
+            jsb_check(info[1].As<v8::String>()->Length() != 0);
+            v8::Local<v8::Map> rpc_config_map;
+            if (v8::Local<v8::Value> val; !target->Get(context, jsb_symbol(environment, ClassRPCConfig)).ToLocal(&val) || !val->IsMap())
+            {
+                rpc_config_map = v8::Map::New(isolate);
+                target->Set(context, jsb_symbol(environment, ClassRPCConfig), rpc_config_map).Check();
+            }
+            else
+            {
+                rpc_config_map = val.As<v8::Map>();
+            }
+
+            rpc_config_map->Set(context, info[1], info[2]);
+            JSB_LOG(VeryVerbose, "script %s (rpc) %s",
+                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
+                impl::Helper::to_string(isolate, info[1]));
+        }
+
         // function (target: any): void;
         void _add_script_icon(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
@@ -431,6 +468,7 @@ namespace jsb
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_ready"), JSB_NEW_FUNCTION(context, _add_script_ready, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_tool"), JSB_NEW_FUNCTION(context, _add_script_tool, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_icon"), JSB_NEW_FUNCTION(context, _add_script_icon, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_rpc"), JSB_NEW_FUNCTION(context, _add_script_rpc, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "set_script_doc"), JSB_NEW_FUNCTION(context, _set_script_doc, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "notify_microtasks_run"), JSB_NEW_FUNCTION(context, _notify_microtasks_run, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_type_name"), JSB_NEW_FUNCTION(context, _get_type_name, {})).Check();

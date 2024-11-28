@@ -370,9 +370,10 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
 
 const Variant GodotJSScript::get_rpc_config() const
 {
-    //TODO
-    jsb_not_implemented(true, "rpc implementation");
-    return {};
+    ensure_module_loaded();
+    jsb_check(loaded_);
+
+    return get_script_class()->rpc_config;
 }
 
 bool GodotJSScript::has_static_method(const StringName& p_method) const

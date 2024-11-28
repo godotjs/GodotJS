@@ -1,6 +1,6 @@
 
 declare module "godot-jsb" {
-    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable4, StringName } from "godot";
+    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable4, StringName, MultiplayerAPI, MultiplayerPeer } from "godot";
 
     const DEV_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
@@ -48,11 +48,19 @@ declare module "godot-jsb" {
     namespace internal {
         type OnReadyEvaluatorFunc = (self: any) => any;
 
+        interface RPCConfig {
+            mode?: MultiplayerAPI.RPCMode, 
+            sync?: boolean, 
+            transfer_mode?: MultiplayerPeer.TransferMode, 
+            transfer_channel?: number, 
+        }
+
         function add_script_signal(target: any, name: string): void;
         function add_script_property(target: any, details: ScriptPropertyInfo): void;
         function add_script_ready(target: any, details: { name: string, evaluator: string | OnReadyEvaluatorFunc }): void;
         function add_script_tool(target: any): void;
         function add_script_icon(target: any, path: string): void;
+        function add_script_rpc(target: any, propertyKey: string, config: RPCConfig): void;
 
         // 0: deprecated, 1: experimental, 2: help
         function set_script_doc(target: any, propertyKey?: string, field: 0 | 1 | 2, message: string): void;

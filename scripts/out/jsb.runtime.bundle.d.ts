@@ -1,5 +1,5 @@
 declare module "jsb.core" {
-    import { PropertyHint, PropertyUsageFlags, StringName, Variant } from "godot";
+    import { PropertyHint, PropertyUsageFlags, StringName, Variant, MultiplayerAPI, MultiplayerPeer } from "godot";
     import * as jsb from "godot-jsb";
     /**
      *
@@ -27,6 +27,13 @@ declare module "jsb.core" {
      * NOTE only int value enums are allowed
      */
     export function export_flags(enum_type: any): (target: any, key: string) => void;
+    export interface RPCConfig {
+        mode?: MultiplayerAPI.RPCMode;
+        sync?: "call_remote" | "call_local";
+        transfer_mode?: MultiplayerPeer.TransferMode;
+        transfer_channel?: number;
+    }
+    export function rpc(config?: RPCConfig): (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) => void;
     /**
      * auto initialized on ready (before _ready called)
      * @param evaluator for now, only string is accepted

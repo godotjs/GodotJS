@@ -25,6 +25,42 @@ declare module "godot" {
     // singleton
     namespace Engine { function get_time_scale(): number; }
 
+    namespace MultiplayerAPI {
+        enum RPCMode {
+            /** Used with [method Node.rpc_config] to disable a method or property for all RPC calls, making it unavailable. Default for all methods. */
+            RPC_MODE_DISABLED = 0,
+            
+            /** Used with [method Node.rpc_config] to set a method to be callable remotely by any peer. Analogous to the `@rpc("any_peer")` annotation. Calls are accepted from all remote peers, no matter if they are node's authority or not. */
+            RPC_MODE_ANY_PEER = 1,
+            
+            /** Used with [method Node.rpc_config] to set a method to be callable remotely only by the current multiplayer authority (which is the server by default). Analogous to the `@rpc("authority")` annotation. See [method Node.set_multiplayer_authority]. */
+            RPC_MODE_AUTHORITY = 2,
+        }
+    }
+    
+    namespace MultiplayerPeer {
+        enum ConnectionStatus {
+            /** The MultiplayerPeer is disconnected. */
+            CONNECTION_DISCONNECTED = 0,
+            
+            /** The MultiplayerPeer is currently connecting to a server. */
+            CONNECTION_CONNECTING = 1,
+            
+            /** This MultiplayerPeer is connected. */
+            CONNECTION_CONNECTED = 2,
+        }
+        enum TransferMode {
+            /** Packets are not acknowledged, no resend attempts are made for lost packets. Packets may arrive in any order. Potentially faster than [constant TRANSFER_MODE_UNRELIABLE_ORDERED]. Use for non-critical data, and always consider whether the order matters. */
+            TRANSFER_MODE_UNRELIABLE = 0,
+            
+            /** Packets are not acknowledged, no resend attempts are made for lost packets. Packets are received in the order they were sent in. Potentially faster than [constant TRANSFER_MODE_RELIABLE]. Use for non-critical data or data that would be outdated if received late due to resend attempt(s) anyway, for example movement and positional data. */
+            TRANSFER_MODE_UNRELIABLE_ORDERED = 1,
+            
+            /** Packets must be received and resend attempts should be made until the packets are acknowledged. Packets must be received in the order they were sent in. Most reliable transfer mode, but potentially the slowest due to the overhead. Use for critical data that must be transmitted and arrive in order, for example an ability being triggered or a chat message. Consider carefully if the information really is critical, and use sparingly. */
+            TRANSFER_MODE_RELIABLE = 2,
+        }
+    }
+    
     class PackedByteArray { }
 
     class PackedStringArray { append(value: string): boolean }

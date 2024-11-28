@@ -1,5 +1,5 @@
 
-import { GArray, GDictionary, EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant } from "godot";
+import { GArray, GDictionary, EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant, MultiplayerAPI, MultiplayerPeer } from "godot";
 import * as jsb from "godot-jsb";
 
 /**
@@ -94,6 +94,33 @@ export function export_flags(enum_type: any) {
         }
         let ebd = { name: key, type: Variant.Type.TYPE_INT, hint: PropertyHint.PROPERTY_HINT_FLAGS, hint_string: enum_vs.join(","), usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         jsb.internal.add_script_property(target, ebd);
+    }
+}
+
+export interface RPCConfig {
+    mode?: MultiplayerAPI.RPCMode,
+    sync?: "call_remote" | "call_local",
+    transfer_mode?: MultiplayerPeer.TransferMode,
+    transfer_channel?: number,
+}
+
+export function rpc(config?: RPCConfig) {
+    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+        if (typeof propertyKey !== "string") {
+            throw new Error("only string is allowed as propertyKey for rpc config");
+            return; 
+        }
+
+        if (typeof config !== "undefined") {
+            jsb.internal.add_script_rpc(target, propertyKey, {
+                mode: config.mode,
+                sync: typeof config.sync !== "undefined" ? (config.sync == "call_local") : undefined,
+                transfer_mode: config.transfer_mode,
+                transfer_channel: config.transfer_channel,
+            });
+        } else {
+            jsb.internal.add_script_rpc(target, propertyKey, {});
+        }
     }
 }
 
