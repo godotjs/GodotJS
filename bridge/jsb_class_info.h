@@ -175,7 +175,7 @@ namespace jsb
         jsb_force_inline bool is_tool() const { return flags & ScriptClassFlags::Tool; }
         jsb_force_inline bool is_abstract() const { return flags & ScriptClassFlags::Abstract; }
 
-        static void _newbind(const StringName& p_module_id, const v8::Local<v8::Object>& p_self);
+        static void instantiate(const StringName& p_module_id, const v8::Local<v8::Object>& p_self);
 
         static void _parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
 

@@ -418,7 +418,7 @@ namespace jsb
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
                     script_class_info->js_class_name, script_class_info->module_id, class_info->name, class_id);
                 const v8::Local<v8::Object> self = info.This();
-                ScriptClassInfo::_newbind(script_class_info.escape()->module_id, self);
+                ScriptClassInfo::instantiate(script_class_info.escape()->module_id, self);
                 return;
             }
 

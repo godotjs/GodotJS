@@ -235,7 +235,7 @@ namespace jsb
         }
     }
 
-    void ScriptClassInfo::_newbind(const StringName& p_module_id, const v8::Local<v8::Object>& p_self)
+    void ScriptClassInfo::instantiate(const StringName& p_module_id, const v8::Local<v8::Object>& p_self)
     {
         const String source_path = internal::PathUtil::convert_javascript_path(p_module_id);
         const Ref<GodotJSScript> script = ResourceLoader::load(source_path);
