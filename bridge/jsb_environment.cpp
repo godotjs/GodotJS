@@ -1022,12 +1022,14 @@ namespace jsb
     ObjectCacheID Environment::retain_function(NativeObjectID p_object_id, const StringName& p_method)
     {
         this->check_internal_state();
-        if (const ObjectHandlePtr handle = this->objects_.try_get_value_scoped(p_object_id))
+        if (ObjectHandlePtr handle = this->objects_.try_get_value_scoped(p_object_id))
         {
             v8::Isolate* isolate = this->isolate_;
             v8::HandleScope handle_scope(isolate);
-            v8::Local<v8::Context> context = context_.Get(isolate);
+            const v8::Local<v8::Context> context = context_.Get(isolate);
             const v8::Local<v8::Object> obj = handle->ref_.Get(isolate);
+            // release the handle, because HandleScope may immediately trigger gc when using quickjs.
+            handle = nullptr;
             if (v8::Local<v8::Value> find;
                 obj->Get(context, this->get_string_value(p_method)).ToLocal(&find) && find->IsFunction())
             {
