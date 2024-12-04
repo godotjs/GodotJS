@@ -69,7 +69,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     };
     const RemapTypes = {
         ["bool"]: "boolean",
-        ["Error"]: "Error",
+        ["Error"]: "GError",
     };
     const IgnoredTypes = new Set([
         "IPUnix",

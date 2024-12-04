@@ -71,7 +71,7 @@ const PrimitiveTypeNames: { [type: number]: string } = {
 
 const RemapTypes: { [name: string]: string } = {
     ["bool"]: "boolean",
-    ["Error"]: "Error",
+    ["Error"]: "GError",
 }
 const IgnoredTypes = new Set([
     "IPUnix",
