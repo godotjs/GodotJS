@@ -29,18 +29,29 @@ namespace jsb::internal
         HashSet<StringName> ignored_;
 
         // replace confusing names (such as Dictionary/Array)
-        HashMap<StringName, StringName> replacements_;
+        HashMap<StringName, StringName> replacements_;     // original => modified (Array => GArray)
+        HashMap<StringName, StringName> replacements_inv_; // modified => original (GArray => Array)
 
         StringNames();
+
+        void add_replacement(const StringName& name, const StringName& replacement);
 
     public:
         jsb_force_inline static StringNames& get_singleton() { return *singleton_; }
 
         jsb_force_inline bool is_ignored(const StringName& p_name) const { return ignored_.has(p_name); }
 
+        jsb_force_inline bool is_replaced_name(const StringName& p_name) const { return replacements_.has(p_name); }
+
         jsb_force_inline StringName get_replaced_name(const StringName& p_name) const
         {
             if (const StringName* ptr = replacements_.getptr(p_name)) return *ptr;
+            return p_name;
+        }
+
+        jsb_force_inline StringName get_original_name(const StringName& p_name) const
+        {
+            if (const StringName* ptr = replacements_inv_.getptr(p_name)) return *ptr;
             return p_name;
         }
 

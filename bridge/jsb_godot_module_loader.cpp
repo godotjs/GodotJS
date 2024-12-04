@@ -20,10 +20,17 @@ namespace jsb
             return;
         }
 
-        const StringName type_name(impl::Helper::to_string(isolate, arg0));
-        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        Environment* env = Environment::wrap(context);
+        Environment* env = Environment::wrap(isolate);
         jsb_check(env);
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const StringName p_type_name = impl::Helper::to_string(isolate, arg0);
+        if (internal::StringNames::get_singleton().is_replaced_name(p_type_name))
+        {
+            JSB_LOG(Warning,
+                "please use replaced name '%s' for '%s' in scripts (regenerate d.ts files)",
+                p_type_name, internal::StringNames::get_singleton().get_replaced_name(p_type_name));
+        }
+        const StringName type_name = internal::StringNames::get_singleton().get_original_name(p_type_name);
 
         //NOTE do not break the order in `GDScriptLanguage::init()`
 

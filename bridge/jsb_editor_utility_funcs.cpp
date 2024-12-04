@@ -808,7 +808,8 @@ namespace jsb
             v8::Local<v8::Object> enum_obj = v8::Object::New(isolate);
             v8::Local<v8::Object> values_obj = v8::Object::New(isolate);
             HashMap<StringName, int64_t> map;
-            set_field(isolate, context, enum_obj, "name", enum_name);
+            const StringName expose_name = internal::StringNames::get_singleton().get_replaced_name(enum_name);
+            set_field(isolate, context, enum_obj, "name", expose_name);
             set_field(isolate, context, enum_obj, "values", values_obj);
             CoreConstants::get_enum_values(enum_name, &map);
             for (const KeyValue<StringName, int64_t>& kv : map)
