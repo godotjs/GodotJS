@@ -114,6 +114,18 @@ namespace v8
         return Maybe<bool>(res);
     }
 
+    Local<Value> Object::GetPrototype()
+    {
+        JSContext* ctx = isolate_->ctx();
+        const JSValue prototype = JS_GetPrototype(ctx, (JSValue) *this);
+        if (JS_IsException(prototype))
+        {
+            isolate_->mark_as_error_thrown();
+            return Local<Value>();
+        }
+        return Local<Value>(Data(isolate_, isolate_->push_steal(prototype)));
+    }
+
     MaybeLocal<Value> Object::CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[])
     {
         JSContext* ctx = isolate_->ctx();

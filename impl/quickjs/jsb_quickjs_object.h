@@ -38,6 +38,7 @@ namespace v8
             KeyConversionMode key_conversion = KeyConversionMode::kKeepNumbers);
 
         Maybe<bool> SetPrototype(Local<Context> context, Local<Value> prototype);
+        Local<Value> GetPrototype();
         MaybeLocal<Value> CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[]);
         void SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter = Local<FunctionTemplate>(), Local<FunctionTemplate> setter = Local<FunctionTemplate>());
 
