@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="v8::Local&lt;*&gt;">
+        <DisplayString Condition="!data_.isolate_">Empty Handle</DisplayString>
+        <Expand>
+            <Item Name="Stack Position">data_.stack_pos_</Item>
+            <Item Name="Stack Value">(JSValue) data_.isolate_-&gt;stack_[data_.stack_pos_]</Item>
+        </Expand>
+    </Type>
+    <Type Name="v8::Local&lt;v8::Context&gt;">
+        <DisplayString Condition="!data_.isolate_">Empty Handle</DisplayString>
+        <DisplayString>Context Handle</DisplayString>
+    </Type>
+</AutoVisualizer>

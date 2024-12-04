@@ -332,6 +332,15 @@ version_info = get_godot_version_info()
 def check_godot_version_newer_than(major, minor, patch):
     return version_info["major"] > major or (version_info["major"] == major and (version_info["minor"] > minor or (version_info["minor"] == minor and version_info["patch"] >= patch)))
 
+# natvis_local_path: relative path the in current module, no leading forward slash required
+def add_natvis(natvis_local_path: str):
+    if env["vsproj"]:
+        natvis_filepath = f"modules/{module_name}/"+natvis_local_path
+        print(f"add natvis: {natvis_filepath}")
+        mspath = natvis_filepath.replace("/", "\\")
+        env.Append(LINKFLAGS=[f"/NATVIS:{mspath}"])
+        env.vs_srcs += [natvis_filepath]
+
 env_jsb = env_modules.Clone()
 module_obj = []
 
@@ -411,6 +420,7 @@ if quickjs_support is not None:
     env_quickjs = env_modules.Clone()
     # quickjs is directly built from source
     env_quickjs.add_source_files(quickjs_obj, [f"{quickjs_dir}/{filename}" for filename in quickjs_support[1].sources])
+    add_natvis("impl/quickjs/jsb.quickjs.natvis")
 
     if env.dev_build:
         env_quickjs.Append(CFLAGS=["-DDUMP_LEAKS=1"])
@@ -466,11 +476,8 @@ if env.editor_build:
     env_jsb.add_source_files(module_obj, "weaver-editor/*.cpp")
     SConscript("weaver-editor/templates/SCsub")
 
-# natvis
-if env["vsproj"]:
-    print("Natvis: jsb.natvis")
-    env.Append(LINKFLAGS=[f"/NATVIS:modules\\{module_name}\\jsb.natvis"])
-    env.vs_srcs += [f"modules/{module_name}/jsb.natvis"]
+# natvis for non-impl specific types
+add_natvis(f"jsb.natvis")
 
 generate_jsb_gen_header()
 env.modules_sources += module_obj
