@@ -9,7 +9,7 @@ namespace jsb
     {
         if (p_val->IsObject())
         {
-            const Environment* environment = Environment::wrap(isolate);
+            Environment* environment = Environment::wrap(isolate);
             const v8::Local<v8::Object> self = p_val.As<v8::Object>();
 
             switch (self->InternalFieldCount())
@@ -28,9 +28,31 @@ namespace jsb
                     {
                         return jsb_format("[dead_object @%s]", (uint64_t) pointer);
                     }
+                    const StringName class_name = class_info->name;
                     jsb_check(class_info->type == NativeClassType::GodotObject);
                     const NativeObjectID object_id = environment->get_object_id(pointer);
-                    return jsb_format("[%s #%d @%s]", class_info->name, object_id, uitos((uint64_t) pointer));
+
+                    // case for script classes
+                    do
+                    {
+                        v8::Local<v8::Value> cross_bind;
+                        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+                        const v8::Local<v8::Value> prototype_val = self->GetPrototype();
+                        if (prototype_val.IsEmpty() || !prototype_val->IsObject()) break;
+
+                        // read script class id from the javascript Class object (the constructor object)
+                        const v8::Local<v8::Object> prototype = prototype_val.As<v8::Object>();
+                        const v8::Local<v8::Object> dt_base_obj = prototype->Get(context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
+                        if (dt_base_obj->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind) && cross_bind->IsUint32())
+                        {
+                            const ScriptClassID script_class_id = (ScriptClassID) cross_bind.As<v8::Uint32>()->Value();
+                            const ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
+                            return jsb_format("[Script:%s #%d @%s]", script_class_info->js_class_name, object_id, uitos((uint64_t) pointer));
+                        }
+                    } while (false);
+
+                    // fallback to C++ classes
+                    return jsb_format("[%s #%d @%s]", class_name, object_id, uitos((uint64_t) pointer));
                 }
             default: break;
             }
