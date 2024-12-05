@@ -19,7 +19,7 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] QuickJS as an alternative runtime (experimental, testing)
 * [ ] Asynchronous module loading (`import` function)
 * [ ] Sandboxed scripting (not multi-threading)
-* [ ] Worker threads
+* [x] Worker threads
 
 ## Get Started
 
@@ -116,6 +116,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ### Advanced
 * [Build V8](./docs/build_v8.md)
+* [Worker](./docs/worker.md)
 * [QuickJS](./docs/quickjs.md)
 * [Dependencies](./docs/deps.md)
 * [Compiler Options](./docs/compiler_options.md)
