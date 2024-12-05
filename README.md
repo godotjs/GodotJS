@@ -83,8 +83,6 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 **Because the GodotJS-Build workflow is currently run manually, it may not be built from the latest commit of `GodotJS`.**
 
 ### Option 2: QuickJS
-> [!NOTE] 
-> QuickJS support may not be stable enough to use.
 
 To enable `QuickJS`, please run scons with the parameter `use_quickjs=yes`.
 
