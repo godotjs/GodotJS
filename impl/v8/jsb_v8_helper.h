@@ -154,6 +154,11 @@ namespace jsb::impl
         {
             isolate->ThrowError(new_string(isolate, message));
         }
+
+        jsb_force_inline static void free(const v8::Local<v8::Context>& context, uint8_t* data)
+        {
+            ::free(data);
+        }
     };
 }
 

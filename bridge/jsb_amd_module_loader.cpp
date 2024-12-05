@@ -65,7 +65,18 @@ namespace jsb
         return succeeded;
     }
 
-    void AMDModuleLoader::load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name)
+    Error AMDModuleLoader::load_source(Environment* p_env, const char* p_filename, SourceLoader p_loader)
+    {
+        size_t len;
+        const String filename = p_filename;
+        const char* str = p_loader(filename, len);
+        if (!str) return ERR_FILE_NOT_FOUND;
+        jsb_check(len == (size_t)(int) len);
+        _load_source(p_env, str, (int) len, filename);
+        return OK;
+    }
+
+    void AMDModuleLoader::_load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name)
     {
         jsb_check(strstr(p_source, "(function(define){") == p_source);
 

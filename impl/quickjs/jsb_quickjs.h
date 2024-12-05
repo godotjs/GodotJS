@@ -13,6 +13,7 @@
 #include "jsb_quickjs_function.h"
 #include "jsb_quickjs_function_interop.h"
 #include "jsb_quickjs_promise_reject.h"
+#include "jsb_quickjs_serializer.h"
 
 #include "jsb_quickjs_helper.h"
 #include "jsb_quickjs_statistics.h"

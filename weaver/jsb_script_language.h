@@ -18,6 +18,7 @@ private:
     SelfList<class GodotJSScript>::List script_list_;
 
     bool once_inited_ = false;
+    uint64_t last_ticks_ = 0;
     std::shared_ptr<jsb::Environment> environment_;
 
     Ref<RegEx> class_name_matcher_;
@@ -52,6 +53,9 @@ public:
     virtual void init() override;
     virtual void finish() override;
     virtual void frame() override;
+
+    virtual void thread_enter() override;
+    virtual void thread_exit() override;
 
     virtual bool is_control_flow_keyword(ConstStringRefCompat p_keyword) const override;
     virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) override;
@@ -91,13 +95,6 @@ public:
     {
     }
     virtual void add_global_constant(const StringName& p_variable, const Variant& p_value) override
-    {
-    }
-
-    virtual void thread_enter() override
-    {
-    }
-    virtual void thread_exit() override
     {
     }
 
@@ -143,9 +140,6 @@ public:
     virtual String get_global_class_name(const String& p_path, String* r_base_type = nullptr, String* r_icon_path = nullptr) const override;
 #pragma endregion
 
-private:
-    typedef const char* (*BuiltinSourceLoader)(const String& p_filename, size_t& r_len);
-    void _load_builtin_source(const char* p_filename, BuiltinSourceLoader p_loader);
 };
 
 #endif

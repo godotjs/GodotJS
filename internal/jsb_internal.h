@@ -4,6 +4,8 @@
 #include "jsb_macros.h"
 #include "jsb_sindex.h"
 #include "jsb_sarray.h"
+#include "jsb_buffer.h"
+#include "jsb_double_buffered.h"
 #include "jsb_format.h"
 #include "jsb_logger.h"
 #include "jsb_string_names.h"

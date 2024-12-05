@@ -3,6 +3,7 @@
 
 #include "jsb_bridge_pch.h"
 #include "jsb_module.h"
+#include "jsb_message.h"
 #include "jsb_debugger.h"
 #include "jsb_class_info.h"
 #include "jsb_value_move.h"
@@ -79,6 +80,8 @@ namespace jsb
         // Vector<Variant*> sync_delete_;
         RingBuffer<Variant*> pending_delete_;
 
+        internal::DoubleBuffered<Message> inbox_;
+
         // indirect lookup
         // only godot object classes are mapped
         HashMap<StringName, NativeClassID> godot_classes_index_;
@@ -106,7 +109,6 @@ namespace jsb
         HashMap<StringName, class IModuleLoader*> module_loaders_;
         Vector<IModuleResolver*> module_resolvers_;
 
-        uint64_t last_ticks_;
         internal::TTimerManager<JavaScriptTimerAction> timer_manager_;
         bool microtasks_run_ = false;
 
@@ -139,6 +141,9 @@ namespace jsb
     public:
         Environment();
         ~Environment();
+
+        // standard init
+        void init();
 
         // In general use cases, the lifetime of Environment is explicitly managed by ScriptLanguage,
         // and it must be disposed with the ScriptLanguage finished.
@@ -380,12 +385,6 @@ namespace jsb
             return true;
         }
 
-        jsb_force_inline NativeClassType::Type get_object_type(void* p_pointer) const
-        {
-            if (const NativeClassInfo* class_info = find_object_class(p_pointer)) return class_info->type;
-            return NativeClassType::None;
-        }
-
         // return true if can die
         bool reference_object(void* p_pointer, bool p_is_inc);
         void mark_as_persistent_object(void* p_pointer);
@@ -394,7 +393,9 @@ namespace jsb
         void gc();
         void set_battery_save_mode(bool p_enabled);
 
-        void update();
+        void update(uint64_t p_delta_msecs);
+
+        void post_message(const Message& p_message) { inbox_.add(p_message); }
 
         class IModuleLoader* find_module_loader(const StringName& p_module_id) const
         {
@@ -482,6 +483,7 @@ namespace jsb
         static std::shared_ptr<Environment> _access(void* p_runtime);
 
     private:
+        void _on_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
         void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
 
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,

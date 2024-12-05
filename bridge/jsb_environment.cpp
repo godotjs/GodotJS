@@ -9,6 +9,7 @@
 #include "jsb_object_bindings.h"
 #include "jsb_type_convert.h"
 #include "jsb_class_register.h"
+#include "jsb_worker.h"
 
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_class_util.h"
@@ -185,7 +186,6 @@ namespace jsb
 
         JSB_LOG(Verbose, "v8 version: %s", V8_VERSION_STRING);
         thread_id_ = Thread::get_caller_id();
-        last_ticks_ = 0;
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
@@ -235,6 +235,7 @@ namespace jsb
                 module_cache_.init(isolate_, cache_obj);
             }
 
+            Worker::register_(context, global);
             Builtins::register_(context, global);
             register_primitive_bindings(this);
             this->on_context_created(context);
@@ -281,6 +282,20 @@ namespace jsb
         isolate_ = nullptr;
 
         exec_sync_delete();
+    }
+
+    void Environment::init()
+    {
+        jsb::DefaultModuleResolver& resolver = this->add_module_resolver<jsb::DefaultModuleResolver>()
+            .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
+            .add_search_path("res://") // use the root directory as custom lib path by default
+            .add_search_path("res://node_modules") // so far, it's only for editor scripting
+        ;
+
+        for (const String& path : jsb::internal::Settings::get_additional_search_paths())
+        {
+            resolver.add_search_path(path);
+        }
     }
 
     void Environment::dispose()
@@ -333,13 +348,9 @@ namespace jsb
         }
     }
 
-    void Environment::update()
+    void Environment::update(uint64_t p_delta_msecs)
     {
-        const uint64_t base_ticks = Engine::get_singleton()->get_frame_ticks();
-        const uint64_t elapsed_milli = (base_ticks - last_ticks_) / 1000; // milliseconds
-
-        last_ticks_ = base_ticks;
-        if (timer_manager_.tick(elapsed_milli))
+        if (timer_manager_.tick(p_delta_msecs))
         {
             v8::Isolate::Scope isolate_scope(isolate_);
             v8::HandleScope handle_scope(isolate_);
@@ -347,6 +358,22 @@ namespace jsb
             if (timer_manager_.invoke_timers(isolate_))
             {
                 microtasks_run_ = true;
+            }
+        }
+
+        // handle messages from workers
+        {
+            Vector<Message>& messages = inbox_.swap();
+            if (!messages.is_empty())
+            {
+                v8::Isolate::Scope isolate_scope(isolate_);
+                v8::HandleScope handle_scope(isolate_);
+                const v8::Local<v8::Context> context = context_.Get(isolate_);
+                for (Message& message : messages)
+                {
+                    _on_message(context, message);
+                }
+                messages.clear();
             }
         }
 
@@ -368,6 +395,45 @@ namespace jsb
         if (pending_delete_.data_left())
         {
             exec_sync_delete();
+        }
+    }
+
+    void Environment::_on_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
+    {
+        if (!objects_.is_valid_index(p_message.id_))
+        {
+            JSB_LOG(Error, "invalid worker");
+            return;
+        }
+
+        ObjectHandle& handle = objects_.get_value(p_message.id_);
+        const v8::Local<v8::Object> obj = handle.ref_.Get(isolate_).As<v8::Object>();
+        v8::Local<v8::Value> onmessage;
+        if (!obj->Get(p_context, jsb_name(this, onmessage)).ToLocal(&onmessage) || !onmessage->IsFunction())
+        {
+            JSB_LOG(Error, "onmessage is not a function");
+            return;
+        }
+        v8::ValueDeserializer deserializer(isolate_, p_message.buffer_.ptr(), p_message.buffer_.size());
+        bool ok;
+        if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
+        {
+            JSB_LOG(Error, "failed to parse message header");
+            return;
+        }
+        v8::Local<v8::Value> value;
+        if (!deserializer.ReadValue(p_context).ToLocal(&value))
+        {
+            JSB_LOG(Error, "failed to parse message value");
+            return;
+        }
+        const impl::TryCatch try_catch(isolate_);
+        const v8::Local<v8::Function> call = onmessage.As<v8::Function>();
+        v8::MaybeLocal<v8::Value> rval = call->Call(p_context, v8::Undefined(isolate_), 1, &value);
+        jsb_unused(rval);
+        if (try_catch.has_caught())
+        {
+            JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
         }
     }
 

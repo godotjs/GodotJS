@@ -45,3 +45,9 @@ DEF(transfer_channel)
 
 // keyword names
 DEF(default)
+
+// worker
+DEF(Worker)
+DEF(onmessage)
+DEF(postMessage)
+DEF(close)

@@ -176,6 +176,11 @@ namespace jsb::impl
             }
             return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
         }
+
+        jsb_force_inline static void free(const v8::Local<v8::Context>& context, uint8_t* data)
+        {
+            js_free(context->GetIsolate()->ctx(), data);
+        }
     };
 }
 

@@ -22,8 +22,11 @@ namespace jsb
 
         virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
 
-        //TODO temp
-        static void load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name);
+        typedef const char* (*SourceLoader)(const String& p_filename, size_t& r_len);
+        static Error load_source(Environment* p_env, const char* p_filename, SourceLoader p_loader);
+
+    private:
+        static void _load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name);
     };
 
 }

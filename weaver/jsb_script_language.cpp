@@ -4,6 +4,7 @@
 
 #include "../jsb_project_preset.h"
 #include "../internal/jsb_internal.h"
+#include "../bridge/jsb_worker.h"
 #include "../bridge/jsb_amd_module_loader.h"
 
 #include "jsb_script.h"
@@ -46,33 +47,18 @@ void GodotJSScriptLanguage::init()
     once_inited_ = true;
     JSB_LOG(VeryVerbose, "jsb lang init");
     environment_ = std::make_shared<jsb::Environment>();
+    environment_->init();
 
-    jsb::DefaultModuleResolver& resolver = environment_->add_module_resolver<jsb::DefaultModuleResolver>()
-        .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
-        .add_search_path("res://") // use the root directory as custom lib path by default
-        .add_search_path("res://node_modules") // so far, it's only for editor scripting
-    ;
-
-    for (const String& path : jsb::internal::Settings::get_additional_search_paths())
-    {
-        resolver.add_search_path(path);
-    }
+    static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
+    static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
 
     // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
-    _load_builtin_source("jsb.runtime.bundle.js", GodotJSProjectPreset::get_source_rt);
+    jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
+        "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
 #ifdef TOOLS_ENABLED
-    _load_builtin_source("jsb.editor.bundle.js", GodotJSProjectPreset::get_source_ed);
+    jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
+        "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
 #endif
-}
-
-void GodotJSScriptLanguage::_load_builtin_source(const char* p_filename, BuiltinSourceLoader p_loader)
-{
-    size_t len;
-    const String filename = p_filename;
-    const char* str = p_loader(filename, len);
-    jsb_checkf(str, "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", filename);
-    jsb_check(len == (size_t)(int) len);
-    jsb::AMDModuleLoader::load_source(environment_.get(), str, (int) len, filename);
 }
 
 void GodotJSScriptLanguage::finish()
@@ -81,12 +67,17 @@ void GodotJSScriptLanguage::finish()
     once_inited_ = false;
     environment_->dispose();
     environment_.reset();
+    jsb::Worker::finish();
     JSB_LOG(VeryVerbose, "jsb lang finish");
 }
 
 void GodotJSScriptLanguage::frame()
 {
-    environment_->update();
+    const uint64_t base_ticks = Engine::get_singleton()->get_frame_ticks();
+    const uint64_t elapsed_milli = (base_ticks - last_ticks_) / 1000ULL; // milliseconds
+
+    last_ticks_ = base_ticks;
+    environment_->update(elapsed_milli);
     // environment_->gc();
 }
 
@@ -281,4 +272,14 @@ void GodotJSScriptLanguage::scan_external_changes()
         }
     }
 #endif
+}
+
+void GodotJSScriptLanguage::thread_enter()
+{
+    jsb::Worker::on_thread_enter(Thread::get_caller_id());
+}
+
+void GodotJSScriptLanguage::thread_exit()
+{
+    jsb::Worker::on_thread_exit(Thread::get_caller_id());
 }
