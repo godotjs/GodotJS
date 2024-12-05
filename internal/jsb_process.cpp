@@ -124,7 +124,6 @@ namespace jsb::internal
                 //TODO use async io instead of threading
                 Thread::Settings settings;
                 settings.priority = Thread::PRIORITY_LOW;
-                thread.set_name(proc_name);
                 thread.start(&ProcessImpl::_thread_run, this, settings);
             }
             return OK;
@@ -136,6 +135,7 @@ namespace jsb::internal
             int start_state = 0;
             char buffer[4096];
 
+            Thread::set_name(impl->proc_name);
             while (!impl->is_closing)
             {
                 // Read StdOut and StdErr from pipe.
@@ -267,7 +267,6 @@ namespace jsb::internal
             {
                 Thread::Settings settings;
                 settings.priority = Thread::PRIORITY_LOW;
-                thread.set_name(proc_name);
                 thread.start(&ProcessImpl::_thread_run, this, settings);
             }
             return OK;
@@ -279,6 +278,7 @@ namespace jsb::internal
             char buffer[4096];
             int start_state = 0;
 
+            Thread::set_name(impl->proc_name);
             while (!impl->is_closing)
             {
                 ssize_t bytes_read = 0;
