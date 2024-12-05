@@ -52,8 +52,9 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
             NativeClassID class_id;
             const NativeClassInfoPtr class_info = environment->expose_godot_primitive_class(GetTypeInfo<T>::VARIANT_TYPE, &class_id);
+            jsb_check(class_id);
             const v8::Local<v8::Object> inst = class_info->clazz.NewInstance(context);
-            jsb_check(class_id && inst.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+            jsb_check(TypeConvert::is_variant(inst.As<v8::Object>()));
 
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
             environment->bind_valuetype(class_id, environment->alloc_variant(val), inst.As<v8::Object>());

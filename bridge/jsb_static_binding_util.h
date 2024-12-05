@@ -8,7 +8,7 @@
     template<>\
     struct PrimitiveInstanceUtil<Type> {\
         static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& p_input, Type*& r_value) {\
-            if (p_input->InternalFieldCount() != IF_VariantFieldCount) return false;\
+            if (!TypeConvert::is_variant(p_input)) return false;\
             r_value = VariantInternal::ReaderFunc((Variant*) p_input->GetAlignedPointerFromInternalField(IF_Pointer));\
             return true;\
         }\

@@ -13,9 +13,15 @@ namespace jsb
     {
         enum Type : uint8_t
         {
-            None,
-            GodotObject,
-            GodotPrimitive,
+            // Godot Object classes are registered with name in Environment,
+            // support retrieving ClassID by the class name from godot_classes_index_.
+            GodotObject = 2,
+
+            // Godot Variant classes (valuetype).
+            // Classes are anonymously registered in Environment, only support retrieving NativeClassInfo by ClassID.
+            GodotPrimitive = 4,
+
+            Custom = 8,
         };
     }
 

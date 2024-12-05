@@ -5,8 +5,7 @@
 
 namespace jsb
 {
-    // use the only one field if possible, otherwise it's not straightforward in implementing the same thing with QuickJS
-    enum EInternalFields : uint32_t
+    enum EInternalFields
     {
         IF_Pointer = 0, // pointer to object (used by object/variant both)
         IF_ObjectT = 1, // placeholder for non-valuetype objects

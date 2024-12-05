@@ -109,7 +109,7 @@ namespace jsb
                     return false;
                 }
                 const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-                if (self->InternalFieldCount() != IF_ObjectFieldCount)
+                if (!TypeConvert::is_object(self))
                 {
                     return false;
                 }
@@ -199,8 +199,8 @@ namespace jsb
                 {
                     return false;
                 }
-                v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-                if (self->InternalFieldCount() != IF_VariantFieldCount)
+                const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+                if (!is_variant(self))
                 {
                     return false;
                 }
@@ -303,7 +303,7 @@ namespace jsb
                 {
                     jsb_check(class_id && class_info->type == NativeClassType::GodotPrimitive);
                     r_jval = class_info->clazz.NewInstance(context);
-                    jsb_check(r_jval.As<v8::Object>()->InternalFieldCount() == IF_VariantFieldCount);
+                    jsb_check(TypeConvert::is_variant(r_jval.As<v8::Object>()));
 
                     env->bind_valuetype(class_id, Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
@@ -342,7 +342,7 @@ namespace jsb
             // class_info ptr will be invalid after escape()
             // to avoid possible side effects during `NewInstance`
             r_jval = class_info.escape()->clazz.NewInstance(context);
-            jsb_check(r_jval->InternalFieldCount() == IF_ObjectFieldCount);
+            jsb_check(TypeConvert::is_object(r_jval));
 
             // the lifecycle will be managed by javascript runtime, DO NOT DELETE it externally
             environment->bind_godot_object(class_id, p_godot_obj, r_jval.As<v8::Object>());
@@ -403,7 +403,7 @@ namespace jsb
         // }
         if (p_jval->IsObject())
         {
-            v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+            const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
             switch (self->InternalFieldCount())
             {
             case IF_VariantFieldCount: { r_cvar = *(Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer); return true; }
@@ -457,8 +457,8 @@ namespace jsb
         case Variant::OBJECT:
             {
                 if (!p_val->IsObject()) return false;
-                v8::Local<v8::Object> self = p_val.As<v8::Object>();
-                if (self->InternalFieldCount() != IF_ObjectFieldCount) return false;
+                const v8::Local<v8::Object> self = p_val.As<v8::Object>();
+                if (!TypeConvert::is_object(self)) return false;
 
 #if JSB_VERIFY_GODOT_OBJECT
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -514,7 +514,7 @@ namespace jsb
                     return false;
                 }
                 const v8::Local<v8::Object> self = p_val.As<v8::Object>();
-                if (self->InternalFieldCount() != IF_VariantFieldCount)
+                if (!TypeConvert::is_variant(self))
                 {
                     return false;
                 }
@@ -536,7 +536,7 @@ namespace jsb
             return false;
         }
         const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-        if (self->InternalFieldCount() != IF_ObjectFieldCount)
+        if (!TypeConvert::is_object(self))
         {
             return false;
         }

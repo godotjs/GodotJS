@@ -277,8 +277,8 @@ namespace jsb
         static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(TypeConvert::is_variant(info.This()));
             const Variant* p_self = (Variant*)info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Environment::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
@@ -299,8 +299,8 @@ namespace jsb
         static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(TypeConvert::is_variant(info.This()));
             Variant* p_self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Environment::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
@@ -316,8 +316,8 @@ namespace jsb
         static void _set_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(TypeConvert::is_variant(info.This()));
             const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
             if (info.Length() != 2
                 || !info[0]->IsNumber() // loose int32 check
@@ -346,8 +346,8 @@ namespace jsb
         static void _get_indexed(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(TypeConvert::is_variant(info.This()));
             if (info.Length() != 1 || !info[0]->IsNumber()) // loose int32 check
             {
                 jsb_throw(isolate, "bad params");
@@ -376,8 +376,8 @@ namespace jsb
         static void _set_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(TypeConvert::is_variant(info.This()));
             if (info.Length() != 2)
             {
                 jsb_throw(isolate, "bad params");
@@ -406,8 +406,8 @@ namespace jsb
         static void _get_keyed(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            jsb_check(TypeConvert::is_variant(info.This()));
             if (info.Length() != 1)
             {
                 jsb_throw(isolate, "bad params");
@@ -529,9 +529,9 @@ namespace jsb
         static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
-            Variant* self = info.This()->InternalFieldCount() == IF_VariantFieldCount
+            Variant* self = TypeConvert::is_variant(info.This())
                 ? (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer)
                 : nullptr;
             if (!self)
