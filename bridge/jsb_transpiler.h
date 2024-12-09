@@ -3,7 +3,7 @@
 
 #include "jsb_bridge_pch.h"
 #include "jsb_environment.h"
-
+#include "jsb_type_convert.h"
 #include "jsb_object_handle.h"
 
 #define JSB_CLASS_BOILERPLATE() \
