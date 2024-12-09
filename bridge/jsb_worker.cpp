@@ -140,7 +140,6 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
-            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const WorkerID worker_id = (WorkerID) info.Data().As<v8::Uint32>()->Value();
             Worker::terminate(worker_id);
         }
