@@ -1,6 +1,14 @@
 
 # Worker
 
+## Limitations (Currently): 
+* Can not use script classes (GodotJSScript) in workers 
+* `transferable objects` are not supported
+* `terminate` does not stop the worker thread forcefully
+* `onerror` event is not implemented
+
+## A Simple Example
+
 ```ts
 // tests/master.ts
 // ...
