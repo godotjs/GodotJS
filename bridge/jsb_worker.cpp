@@ -42,7 +42,7 @@ namespace jsb
             const OS* os = OS::get_singleton();
             uint64_t last_ticks = os->get_ticks_msec();
 
-            std::shared_ptr<Environment> env_ptr = std::make_shared<Environment>();
+            std::shared_ptr<Environment> env_ptr = create_environment();
             Environment* env = env_ptr.get();
             env->init();
             {
@@ -134,6 +134,17 @@ namespace jsb
         }
 
     private:
+        static std::shared_ptr<Environment> create_environment()
+        {
+            jsb::Environment::CreateParams params;
+            params.initial_class_slots = JSB_WORKER_INITIAL_CLASS_SLOTS;
+            params.initial_object_slots = JSB_WORKER_INITIAL_OBJECT_SLOTS;
+            params.initial_script_slots = JSB_WORKER_INITIAL_SCRIPT_SLOTS;
+            params.deletion_queue_size = JSB_WORKER_VARIANT_DELETION_QUEUE_SIZE - 1;
+
+            return std::make_shared<Environment>(params);
+        }
+
         // worker.close()
         static void close(const v8::FunctionCallbackInfo<v8::Value>& info)
         {

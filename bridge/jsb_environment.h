@@ -139,7 +139,18 @@ namespace jsb
         internal::VariantInfoCollection variant_info_collection_;
 
     public:
-        Environment();
+        struct CreateParams
+        {
+            int initial_class_slots = 0;
+            int initial_object_slots = 0;
+            int initial_script_slots = 0;
+            int deletion_queue_size = 0;
+
+            // Port for the debugger. Disable if zero.
+            uint16_t debugger_port = 0;
+        };
+
+        Environment(const CreateParams& p_params);
         ~Environment();
 
         // standard init
@@ -274,7 +285,7 @@ namespace jsb
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
 
-        void start_debugger();
+        void start_debugger(uint16_t p_port);
 
         jsb_force_inline void check_internal_state() const { jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet"); }
 

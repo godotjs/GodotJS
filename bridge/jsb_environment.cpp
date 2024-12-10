@@ -176,15 +176,16 @@ namespace jsb
 #endif
     }
 
-    Environment::Environment() : pending_delete_(nearest_shift(JSB_VARIANT_DELETION_QUEUE_SIZE - 1))
+    Environment::Environment(const CreateParams& p_params)
+    : pending_delete_(nearest_shift(p_params.deletion_queue_size))
     {
         JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
+        jsb_check(p_params.deletion_queue_size != 0);
         impl::GlobalInitialize::init();
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
         // create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
-        JSB_LOG(Verbose, "v8 version: %s", V8_VERSION_STRING);
         thread_id_ = Thread::get_caller_id();
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
@@ -202,9 +203,9 @@ namespace jsb
             }
         }
 
-        native_classes_.reserve((int) ClassDB::classes.size() + JSB_INITIAL_CLASS_EXTRA_SLOTS);
-        script_classes_.reserve(JSB_INITIAL_SCRIPT_SLOTS);
-        objects_.reserve(JSB_INITIAL_OBJECT_SLOTS);
+        native_classes_.reserve(p_params.initial_class_slots);
+        script_classes_.reserve(p_params.initial_script_slots);
+        objects_.reserve(p_params.initial_object_slots);
 
         module_loaders_.insert("godot", memnew(GodotModuleLoader));
         module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
@@ -242,7 +243,7 @@ namespace jsb
         }
 
         //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
-        start_debugger();
+        start_debugger(p_params.debugger_port);
     }
 
     Environment::~Environment()
@@ -638,10 +639,10 @@ namespace jsb
         }
     }
 
-    void Environment::start_debugger()
+    void Environment::start_debugger(uint16_t p_port)
     {
 #if JSB_WITH_DEBUGGER
-        debugger_.init(isolate_, internal::Settings::get_debugger_port());
+        debugger_.init(isolate_, p_port);
 #endif
     }
 
