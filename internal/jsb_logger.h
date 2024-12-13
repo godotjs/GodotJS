@@ -17,7 +17,7 @@ namespace jsb::internal
         {
             const String str = format(p_format, p_args...);
             IConsoleOutput::internal_write(p_severity, str);
-            _err_print_error(p_func, p_file, p_line, str, true, ERR_HANDLER_ERROR);
+            _print_error(p_func, p_file, p_line, str, true, ERR_HANDLER_ERROR);
         }
 
         template<ELogSeverity::Type p_severity, typename... TArgs>
@@ -25,7 +25,7 @@ namespace jsb::internal
         {
             const String str = format(p_format, p_args...);
             IConsoleOutput::internal_write(p_severity, str);
-            _err_print_error(p_func, p_file, p_line, str, false, ERR_HANDLER_WARNING);
+            _print_error(p_func, p_file, p_line, str, false, ERR_HANDLER_WARNING);
         }
 
         template<ELogSeverity::Type p_severity, typename... TArgs>
@@ -34,9 +34,9 @@ namespace jsb::internal
             const String str = format(p_format, p_args...);
             IConsoleOutput::internal_write(p_severity, str);
 #if JSB_LOG_WITH_SOURCE
-            ::print_line(format("[%s:%d][%s] %s", simplify_file_name(p_file), p_line, p_func, str));
+            _print_line(format("[%s:%d][%s] %s", simplify_file_name(p_file), p_line, p_func, str));
 #else
-            ::print_line(str);
+            _print_line(str);
 #endif
         }
 
@@ -47,13 +47,31 @@ namespace jsb::internal
             {
                 // all verbose logs write to stdout only
                 const String str = format(p_format, p_args...);
-                OS::get_singleton()->print_rich("\u001b[90m%s\u001b[39m\n", str.utf8().get_data());
+                _print_verbose(str);
             }
         }
 
         Logger() = delete;
 
     private:
+        static void _print_verbose(const String& p_str)
+        {
+            //TODO cache messages from background threads to avoid messing up the output
+            ::OS::get_singleton()->print_rich("\u001b[90m%s\u001b[39m\n", p_str.utf8().get_data());
+        }
+
+        static void _print_line(const String& p_str)
+        {
+            //TODO cache messages from background threads to avoid messing up the output
+            ::print_line(p_str);
+        }
+
+        static void _print_error(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, ErrorHandlerType p_type)
+        {
+            //TODO cache messages from background threads to avoid messing up the output
+            ::_err_print_error(p_function, p_file, p_line, p_error, p_editor_notify, p_type);
+        }
+
         // pick up only the last component of the path for clarity
         static const char* simplify_file_name(const char* p_path)
         {

@@ -318,7 +318,7 @@ void GodotJSREPL::add_string(const String &p_str)
 
 void GodotJSREPL::write(jsb::internal::ELogSeverity::Type p_severity, const String& p_text)
 {
-    //TODO thread-safety issue on output_box_
+    jsb_check(Thread::is_main_thread());
     if (input_submitting_)
     {
         add_string(p_text);
