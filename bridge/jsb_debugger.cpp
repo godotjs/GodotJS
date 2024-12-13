@@ -307,22 +307,28 @@ namespace jsb
         {
             JSB_DEBUGGER_LOG(Debug, "%d", contextGroupId);
             //printf("runIfWaitingForDebugger %d\n", _state);
-            // if (_ctx && _ctx->_waingForDebuggerCallback)
+            // if (_ctx && _ctx->_waitingForDebuggerCallback)
             // {
-            //     _ctx->_waingForDebuggerCallback(_ctx);
+            //     _ctx->_waitingForDebuggerCallback(_ctx);
             // }
         }
 
         void on_context_created(const v8::Local<v8::Context>& p_context)
         {
-            const CharString context_name = jsb_format("context.%d", ++context_index_).utf8();
-            v8_inspector::StringView name((const uint8_t*) context_name.ptr(), context_name.length());
-            inspector_->contextCreated(v8_inspector::V8ContextInfo(p_context, kContextGroupId, name));
+            if (inspector_)
+            {
+                const CharString context_name = jsb_format("context.%d", ++context_index_).utf8();
+                v8_inspector::StringView name((const uint8_t*) context_name.ptr(), context_name.length());
+                inspector_->contextCreated(v8_inspector::V8ContextInfo(p_context, kContextGroupId, name));
+            }
         }
 
         void on_context_destroyed(const v8::Local<v8::Context>& p_context)
         {
-            inspector_->contextDestroyed(p_context);
+            if (inspector_)
+            {
+                inspector_->contextDestroyed(p_context);
+            }
         }
 
     private:
