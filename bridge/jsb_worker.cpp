@@ -57,6 +57,8 @@ namespace jsb
                 v8::HandleScope handle_scope(isolate);
                 const v8::Local<v8::Context> context = env->get_context();
                 const v8::Local<v8::Object> global = context->Global();
+
+                impl::Helper::set_as_interruptible(isolate);
                 global->Set(context,
                     jsb_name(env, postMessage),
                     v8::Function::New(context, &worker_post_message, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
@@ -78,8 +80,6 @@ namespace jsb
             {
                 while (true)
                 {
-                    if (impl->interrupt_requested_.is_set()) break;
-
                     // handle messages from master
                     {
                         std::vector<Buffer>& messages = impl->inbox_.swap();
@@ -99,6 +99,7 @@ namespace jsb
                         }
                     }
 
+                    if (impl->interrupt_requested_.is_set()) break;
                     const uint64_t ticks = os->get_ticks_msec();
                     env->update(ticks - last_ticks);
                     last_ticks = ticks;
@@ -154,8 +155,13 @@ namespace jsb
             jsb_check(env_);
             interrupt_requested_.set();
 
-            //TODO isolate->RequestInterrupt(). how to safely implement it in quickjs.impl without too much overhead.
-            // env_->request_interrupt();
+            v8::Isolate* isolate = env_->get_isolate();
+            if (isolate->IsExecutionTerminating())
+            {
+                JSB_WORKER_LOG(Log, "worker is terminating");
+                return;
+            }
+            isolate->TerminateExecution();
         }
 
         bool on_receive(Buffer&& p_buffer)
@@ -340,15 +346,18 @@ namespace jsb
         lock_.unlock();
     }
 
-    void Worker::terminate(WorkerID p_id)
+    bool Worker::terminate(WorkerID p_id)
     {
+        bool res = false;
         lock_.lock();
         WorkerImplPtr impl;
         if (worker_list_.try_get_value(p_id, impl))
         {
+            res = true;
             impl->finish();
         }
         lock_.unlock();
+        return res;
     }
 
     void Worker::finish()
@@ -453,7 +462,10 @@ namespace jsb
         const v8::Local<v8::Object> self = info.This();
         jsb_check(self->InternalFieldCount() == IF_ObjectFieldCount);
         const Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
-        Worker::terminate(worker->id_);
+        if (!Worker::terminate(worker->id_))
+        {
+            JSB_WORKER_LOG(Warning, "can not terminate a dead worker");
+        }
     }
 
     void Worker::register_(const v8::Local<v8::Context>& p_context, const v8::Local<v8::Object>& p_self)

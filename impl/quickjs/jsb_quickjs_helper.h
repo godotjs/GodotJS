@@ -184,6 +184,11 @@ namespace jsb::impl
             //NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
             memfree(data);
         }
+
+        jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate)
+        {
+            isolate->set_as_interruptible();
+        }
     };
 }
 

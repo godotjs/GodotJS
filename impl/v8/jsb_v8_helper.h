@@ -159,6 +159,8 @@ namespace jsb::impl
         {
             ::free(data);
         }
+
+        jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate) {}
     };
 }
 

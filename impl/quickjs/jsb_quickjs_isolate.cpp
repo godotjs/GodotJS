@@ -254,6 +254,9 @@ namespace v8
         }
         if (!error_thrown_)
         {
+            // it happens in two situations:
+            //     1. the worker thread is forcibly terminated (it's OK)
+            //     2. an exception was thrown by quickjs API but not handled by quickjs.impl (it's not expected)
             JSB_LOG(Warning, "unexpected exception thrown in quickjs");
         }
         const JSValue last = stack_[jsb::impl::StackPos::Exception];

@@ -47,7 +47,7 @@ namespace jsb
         static bool try_get_worker(WorkerID p_id, NativeObjectID& o_handle, void*& o_token_ptr);
 
         // terminate a worker
-        static void terminate(WorkerID p_id);
+        static bool terminate(WorkerID p_id);
 
         // master -> worker
         static void on_receive(WorkerID p_id, Buffer&& p_buffer);

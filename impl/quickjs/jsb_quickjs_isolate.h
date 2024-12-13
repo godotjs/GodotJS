@@ -128,6 +128,10 @@ namespace v8
         void GetHeapStatistics(HeapStatistics* statistics);
         void SetPromiseRejectCallback(PromiseRejectCallback callback) { promise_reject_ = callback; }
 
+        void set_as_interruptible() { JS_SetInterruptHandler(rt_, _interrupt_callback, this); }
+        bool IsExecutionTerminating() const { return interrupted_.is_set(); }
+        void TerminateExecution() { interrupted_.set(); }
+
         jsb_force_inline JSRuntime* rt() const { return rt_; }
         jsb_force_inline JSContext* ctx() const { return ctx_; }
         jsb_force_inline void remove_exception_anyway() const
@@ -349,6 +353,7 @@ namespace v8
 
         static void _finalizer(JSRuntime* rt, JSValue val);
         static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
+        static int _interrupt_callback(JSRuntime* rt, void* data) { return ((Isolate*) data)->interrupted_.is_set(); }
 
         uint32_t ref_count_;
         bool disposed_;
@@ -368,13 +373,14 @@ namespace v8
         bool using_front_free_queue_ = true;
         bool swapping_free_queue_ = false;
 
-
         bool error_thrown_ = false;
         uint16_t stack_pos_;
         JSValue stack_[jsb::impl::kMaxStackSize];
 
         void* embedder_data_ = nullptr;
         void* context_embedder_data_ = nullptr;
+
+        SafeFlag interrupted_ = SafeFlag(false);
     };
 }
 
