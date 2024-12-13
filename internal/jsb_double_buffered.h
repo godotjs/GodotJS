@@ -11,19 +11,37 @@ namespace jsb::internal
         SpinLock spin_lock_;
 
         bool use_front_ = true;
-        Vector<T> front_;
-        Vector<T> back_;
+
+        // use std::vector because we need the move semantics
+        std::vector<T> front_;
+        std::vector<T> back_;
 
     public:
-        void add(const T& p_buffer)
+        DoubleBuffered() = default;
+
+        ~DoubleBuffered()
         {
             spin_lock_.lock();
-            if (use_front_) front_.push_back(p_buffer);
-            else back_.push_back(p_buffer);
+            if (!front_.empty() || !back_.empty())
+            {
+                JSB_LOG(Warning, "discarding unhandled buffers");
+            }
             spin_lock_.unlock();
         }
 
-        Vector<T>& swap()
+        DoubleBuffered(const DoubleBuffered&) = delete;
+        DoubleBuffered& operator=(const DoubleBuffered&) = delete;
+
+        template<typename E>
+        void add(E&& p_buffer)
+        {
+            spin_lock_.lock();
+            if (use_front_) front_.push_back(std::forward<E>(p_buffer));
+            else back_.push_back(std::forward<E>(p_buffer));
+            spin_lock_.unlock();
+        }
+
+        std::vector<T>& swap()
         {
             spin_lock_.lock();
             if (use_front_)

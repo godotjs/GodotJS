@@ -47,12 +47,15 @@ void GodotJSScriptLanguage::init()
     once_inited_ = true;
     JSB_LOG(Verbose, "Runtime: %s", V8_VERSION_STRING);
     JSB_LOG(VeryVerbose, "jsb lang init");
+
     jsb::Environment::CreateParams params;
     params.initial_class_slots = (int) ClassDB::classes.size() + JSB_MASTER_INITIAL_CLASS_EXTRA_SLOTS;
     params.initial_object_slots = JSB_MASTER_INITIAL_OBJECT_SLOTS;
     params.initial_script_slots = JSB_MASTER_INITIAL_SCRIPT_SLOTS;
     params.deletion_queue_size = JSB_MASTER_VARIANT_DELETION_QUEUE_SIZE - 1;
     params.debugger_port = jsb::internal::Settings::get_debugger_port();
+    params.thread_id = Thread::get_caller_id();
+
     environment_ = std::make_shared<jsb::Environment>(params);
     environment_->init();
 

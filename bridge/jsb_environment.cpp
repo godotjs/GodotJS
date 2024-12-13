@@ -31,7 +31,7 @@ namespace jsb
 {
     struct EnvironmentStore
     {
-        // return a Environment shared pointer with a unknown pointer if it's a valid Environment instance.
+        // return an Environment shared pointer with an unknown pointer if it's a valid Environment instance.
         std::shared_ptr<Environment> access(void* p_runtime)
         {
             std::shared_ptr<Environment> rval;
@@ -186,7 +186,7 @@ namespace jsb
         create_params.array_buffer_allocator = &allocator_;
         // create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
-        thread_id_ = Thread::get_caller_id();
+        thread_id_ = p_params.thread_id;
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
@@ -356,6 +356,8 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate_);
             v8::HandleScope handle_scope(isolate_);
 
+            //TODO be able to handle the uncaught exceptions in env (instead of being swallowed in the timer invocation).
+            //     we need to forward it to onerror (if the current env is the master of a worker)
             if (timer_manager_.invoke_timers(isolate_))
             {
                 microtasks_run_ = true;
@@ -364,13 +366,14 @@ namespace jsb
 
         // handle messages from workers
         {
-            Vector<Message>& messages = inbox_.swap();
-            if (!messages.is_empty())
+            std::vector<Message>& messages = inbox_.swap();
+            if (!messages.empty())
             {
                 v8::Isolate::Scope isolate_scope(isolate_);
                 v8::HandleScope handle_scope(isolate_);
                 const v8::Local<v8::Context> context = context_.Get(isolate_);
-                for (Message& message : messages)
+
+                for (const Message& message : messages)
                 {
                     _on_message(context, message);
                 }
@@ -401,21 +404,41 @@ namespace jsb
 
     void Environment::_on_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
     {
-        if (!objects_.is_valid_index(p_message.id_))
+        jsb_check(p_message.get_id());
+        v8::Local<v8::Object> obj;
+        if (ObjectHandle* handle; objects_.try_get_value_pointer(p_message.get_id(), handle))
+        {
+            obj = handle->ref_.Get(isolate_).As<v8::Object>();
+            jsb_check(!obj.IsEmpty());
+        }
+        else
         {
             JSB_LOG(Error, "invalid worker");
             return;
         }
 
-        ObjectHandle& handle = objects_.get_value(p_message.id_);
-        const v8::Local<v8::Object> obj = handle.ref_.Get(isolate_).As<v8::Object>();
-        v8::Local<v8::Value> onmessage;
-        if (!obj->Get(p_context, jsb_name(this, onmessage)).ToLocal(&onmessage) || !onmessage->IsFunction())
+        v8::Local<v8::Value> callback;
+        switch (p_message.get_type())
         {
-            JSB_LOG(Error, "onmessage is not a function");
+        case Message::TYPE_MESSAGE:
+            if (!obj->Get(p_context, jsb_name(this, onmessage)).ToLocal(&callback) || !callback->IsFunction())
+            {
+                JSB_LOG(Error, "onmessage is not a function");
+                return;
+            }
+            break;
+        case Message::TYPE_ERROR:
+            if (!obj->Get(p_context, jsb_name(this, onerror)).ToLocal(&callback) || !callback->IsFunction())
+            {
+                JSB_LOG(Error, "onerror is not a function");
+                return;
+            }
+            break;
+        default:
+            JSB_LOG(Error, "unknown message type %d", p_message.get_type());
             return;
         }
-        v8::ValueDeserializer deserializer(isolate_, p_message.buffer_.ptr(), p_message.buffer_.size());
+        v8::ValueDeserializer deserializer(isolate_, p_message.get_buffer().ptr(), p_message.get_buffer().size());
         bool ok;
         if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
         {
@@ -429,8 +452,8 @@ namespace jsb
             return;
         }
         const impl::TryCatch try_catch(isolate_);
-        const v8::Local<v8::Function> call = onmessage.As<v8::Function>();
-        v8::MaybeLocal<v8::Value> rval = call->Call(p_context, v8::Undefined(isolate_), 1, &value);
+        const v8::Local<v8::Function> call = callback.As<v8::Function>();
+        const v8::MaybeLocal<v8::Value> rval = call->Call(p_context, v8::Undefined(isolate_), 1, &value);
         jsb_unused(rval);
         if (try_catch.has_caught())
         {

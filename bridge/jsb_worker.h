@@ -1,6 +1,7 @@
 #ifndef GODOTJS_WORKER_H
 #define GODOTJS_WORKER_H
 #include "jsb_bridge_pch.h"
+#include "jsb_buffer.h"
 
 namespace jsb
 {
@@ -43,14 +44,13 @@ namespace jsb
         // check if a worker valid
         static bool is_valid(WorkerID p_id);
 
+        static bool try_get_worker(WorkerID p_id, NativeObjectID& o_handle, void*& o_token_ptr);
+
         // terminate a worker
         static void terminate(WorkerID p_id);
 
-        // worker -> master
-        static void on_send(WorkerID p_id, const uint8_t* p_data, size_t p_size);
-
         // master -> worker
-        static void on_receive(WorkerID p_id, const uint8_t* p_data, size_t p_size);
+        static void on_receive(WorkerID p_id, Buffer&& p_buffer);
     };
 }
 

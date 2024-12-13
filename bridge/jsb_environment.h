@@ -148,6 +148,8 @@ namespace jsb
 
             // Port for the debugger. Disable if zero.
             uint16_t debugger_port = 0;
+
+            Thread::ID thread_id = 0;
         };
 
         Environment(const CreateParams& p_params);
@@ -406,7 +408,12 @@ namespace jsb
 
         void update(uint64_t p_delta_msecs);
 
-        void post_message(const Message& p_message) { inbox_.add(p_message); }
+        // [thread safe] it's OK to call this method before the evn inited.
+        void post_message(Message&& p_message)
+        {
+            JSB_LOG(VeryVerbose, "inbox message %d: %d", p_message.get_id(), p_message.get_buffer().size());
+            inbox_.add(std::move(p_message));
+        }
 
         class IModuleLoader* find_module_loader(const StringName& p_module_id) const
         {

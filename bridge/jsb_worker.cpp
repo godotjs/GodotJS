@@ -1,14 +1,13 @@
 #include "jsb_worker.h"
+#include "jsb_buffer.h"
 #include "jsb_environment.h"
 #include "../internal/jsb_sarray.h"
-#include "../internal/jsb_buffer.h"
 #include "../internal/jsb_double_buffered.h"
 
 #define JSB_WORKER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSWorker, Severity, Format, ##__VA_ARGS__)
 
 namespace jsb
 {
-    typedef internal::DoubleBuffered<internal::Buffer> Inbox;
     class WorkerImpl;
 
     class WorkerImpl
@@ -17,16 +16,20 @@ namespace jsb
         void* token_ = nullptr;
         String path_;
 
-        volatile bool stop_ = false;
+        SafeFlag interrupt_requested_ = SafeFlag(false);
         Thread thread_;
+        ::Semaphore startup_;
 
         // object id of this worker object in the master environment
         NativeObjectID handle_;
-        Inbox inbox_;
+        std::shared_ptr<Environment> env_;
+        internal::DoubleBuffered<Buffer> inbox_;
 
     public:
         WorkerImpl(Environment* p_master, const String& p_path, NativeObjectID p_handle)
-        : token_(p_master), path_(p_path), handle_(p_handle) {}
+        : token_(p_master), path_(p_path), handle_(p_handle)
+        {
+        }
 
         jsb_force_inline WorkerID get_id() const { return id_; }
 
@@ -39,11 +42,13 @@ namespace jsb
         static void _run(void* data)
         {
             WorkerImpl* impl = (WorkerImpl*) data;
+
+            impl->startup_.wait();
             const OS* os = OS::get_singleton();
             uint64_t last_ticks = os->get_ticks_msec();
 
-            std::shared_ptr<Environment> env_ptr = create_environment();
-            Environment* env = env_ptr.get();
+            jsb_check(impl->env_);
+            const std::shared_ptr<Environment> env = impl->env_;
             env->init();
             {
                 // setup global 'postMessage', 'onmessage' for worker
@@ -54,12 +59,12 @@ namespace jsb
                 const v8::Local<v8::Object> global = context->Global();
                 global->Set(context,
                     jsb_name(env, postMessage),
-                    v8::Function::New(context, &post_message, v8::Uint32::New(isolate, *impl->id_)).ToLocalChecked()
+                    v8::Function::New(context, &worker_post_message, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
                     )
                 .Check();
                 global->Set(context,
                     jsb_name(env, close),
-                    v8::Function::New(context, &close, v8::Uint32::New(isolate, *impl->id_)).ToLocalChecked()
+                    v8::Function::New(context, &worker_close, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
                     )
                 .Check();
                 global->Set(context,
@@ -73,21 +78,25 @@ namespace jsb
             {
                 while (true)
                 {
-                    if (impl->stop_) break;
+                    if (impl->interrupt_requested_.is_set()) break;
 
-                    Vector<internal::Buffer>& buffers = impl->inbox_.swap();
-                    if (!buffers.is_empty())
+                    // handle messages from master
                     {
-                        v8::Isolate* isolate = env->get_isolate();
-                        v8::Isolate::Scope isolate_scope(isolate);
-                        v8::HandleScope handle_scope(isolate);
-
-                        for (internal::Buffer& buffer : buffers)
+                        std::vector<Buffer>& messages = impl->inbox_.swap();
+                        if (!messages.empty())
                         {
-                            if (impl->stop_) break;
-                            impl->on_message(env, buffer);
+                            v8::Isolate* isolate = env->get_isolate();
+                            v8::Isolate::Scope isolate_scope(isolate);
+                            v8::HandleScope handle_scope(isolate);
+                            const v8::Local<v8::Context> context = env->get_context();
+
+                            for (const Buffer& message : messages)
+                            {
+                                if (impl->interrupt_requested_.is_set()) break;
+                                impl->_on_message(context, message);
+                            }
+                            messages.clear();
                         }
-                        buffers.clear();
                     }
 
                     const uint64_t ticks = os->get_ticks_msec();
@@ -97,8 +106,9 @@ namespace jsb
                 }
             }
 
-            env->dispose();
-            env_ptr = nullptr;
+            impl->interrupt_requested_.set();
+            impl->env_->dispose();
+            impl->env_.reset();
             JSB_WORKER_LOG(Verbose, "thread.run exited %d", impl->id_);
         }
 
@@ -109,12 +119,22 @@ namespace jsb
             id_ = p_id;
             Thread::Settings settings;
             settings.priority = Thread::PRIORITY_LOW;
-            thread_.start(_run, this,  settings);
+            const Thread::ID thread_id = thread_.start(_run, this,  settings);
+
+            jsb::Environment::CreateParams params;
+            params.initial_class_slots = JSB_WORKER_INITIAL_CLASS_SLOTS;
+            params.initial_object_slots = JSB_WORKER_INITIAL_OBJECT_SLOTS;
+            params.initial_script_slots = JSB_WORKER_INITIAL_SCRIPT_SLOTS;
+            params.deletion_queue_size = JSB_WORKER_VARIANT_DELETION_QUEUE_SIZE - 1;
+            params.thread_id = thread_id;
+
+            env_ = std::make_shared<Environment>(params);
+            startup_.post();
         }
 
         void join()
         {
-            jsb_check(stop_);
+            jsb_check(interrupt_requested_.is_set());
             if (thread_.is_started())
             {
                 JSB_WORKER_LOG(Verbose, "wait to finish %d", id_);
@@ -125,28 +145,65 @@ namespace jsb
 
         void finish()
         {
-            stop_ = true;
+            //TODO race condition issue?
+            if (interrupt_requested_.is_set())
+            {
+                return;
+            }
+
+            jsb_check(env_);
+            interrupt_requested_.set();
+
+            //TODO isolate->RequestInterrupt(). how to safely implement it in quickjs.impl without too much overhead.
+            // env_->request_interrupt();
         }
 
-        void on_receive(const internal::Buffer& p_buffer)
+        bool on_receive(Buffer&& p_buffer)
         {
-            inbox_.add(p_buffer);
+            if (interrupt_requested_.is_set())
+            {
+                return false;
+            }
+            inbox_.add(std::move(p_buffer));
+            return true;
         }
 
     private:
-        static std::shared_ptr<Environment> create_environment()
+        void _on_message(const v8::Local<v8::Context>& p_context, const Buffer& p_message)
         {
-            jsb::Environment::CreateParams params;
-            params.initial_class_slots = JSB_WORKER_INITIAL_CLASS_SLOTS;
-            params.initial_object_slots = JSB_WORKER_INITIAL_OBJECT_SLOTS;
-            params.initial_script_slots = JSB_WORKER_INITIAL_SCRIPT_SLOTS;
-            params.deletion_queue_size = JSB_WORKER_VARIANT_DELETION_QUEUE_SIZE - 1;
-
-            return std::make_shared<Environment>(params);
+            const v8::Local<v8::Object> obj = p_context->Global();
+            v8::Local<v8::Value> callback;
+            if (!obj->Get(p_context, jsb_name(env_, onmessage)).ToLocal(&callback) || !callback->IsFunction())
+            {
+                JSB_WORKER_LOG(Error, "onmessage is not a function");
+                return;
+            }
+            v8::Isolate* isolate = env_->get_isolate();
+            v8::ValueDeserializer deserializer(isolate, p_message.ptr(), p_message.size());
+            bool ok;
+            if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
+            {
+                JSB_WORKER_LOG(Error, "failed to parse message header");
+                return;
+            }
+            v8::Local<v8::Value> value;
+            if (!deserializer.ReadValue(p_context).ToLocal(&value))
+            {
+                JSB_WORKER_LOG(Error, "failed to parse message value");
+                return;
+            }
+            const impl::TryCatch try_catch(isolate);
+            const v8::Local<v8::Function> call = callback.As<v8::Function>();
+            const v8::MaybeLocal<v8::Value> rval = call->Call(p_context, v8::Undefined(isolate), 1, &value);
+            jsb_unused(rval);
+            if (try_catch.has_caught())
+            {
+                JSB_WORKER_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
+            }
         }
 
         // worker.close()
-        static void close(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void worker_close(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -156,7 +213,7 @@ namespace jsb
         }
 
         // worker -> master (run in worker env)
-        static void post_message(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void worker_post_message(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -164,16 +221,31 @@ namespace jsb
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const WorkerID worker_id = (WorkerID) info.Data().As<v8::Uint32>()->Value();
 
+            NativeObjectID handle;
+            void* token_ptr = nullptr;
+            if (!Worker::try_get_worker(worker_id, handle, token_ptr))
+            {
+                jsb_throw(isolate, "invalid worker id");
+                return;
+            }
+
+            jsb_check(handle);
+            const std::shared_ptr<Environment> master = Environment::_access(token_ptr);
+            if (!master)
+            {
+                jsb_throw(isolate, "invalid environment");
+                return;
+            }
+
             v8::ValueSerializer serializer(isolate);
             serializer.WriteHeader();
             serializer.WriteValue(context, info[0]);
             const std::pair<uint8_t*, size_t> data = serializer.Release();
-            Worker::on_send(worker_id, data.first, data.second);
-            impl::Helper::free(context, data.first);
+            master->post_message(Message(handle, Message::TYPE_MESSAGE, Buffer::steal(data.first, data.second)));
         }
 
         // dispatch message to worker.onmessage
-        void on_message(Environment* p_env, internal::Buffer& p_buffer)
+        void on_message(Environment* p_env, const Buffer& p_buffer)
         {
             v8::Isolate* isolate = p_env->get_isolate();
             v8::HandleScope handle_scope(isolate);
@@ -217,6 +289,7 @@ namespace jsb
     internal::SArray<WorkerImplPtr, WorkerID> Worker::worker_list_;
     HashMap<Thread::ID, WorkerID> Worker::workers_;
 
+    // construct a Worker object (called from master thread)
     WorkerID Worker::create(Environment* p_master, const String& p_path, NativeObjectID p_handle)
     {
         lock_.lock();
@@ -238,49 +311,33 @@ namespace jsb
         return valid;
     }
 
-    void Worker::on_send(WorkerID p_id, const uint8_t* p_data, size_t p_size)
+    bool Worker::try_get_worker(WorkerID p_id, NativeObjectID& o_handle, void*& o_token_ptr)
     {
-        NativeObjectID handle;
-        void* token_ptr;
-
         lock_.lock();
         WorkerImplPtr impl;
         if (worker_list_.try_get_value(p_id, impl))
         {
-            handle = impl->get_handle();
-            token_ptr = impl->get_token();
+            o_handle = impl->get_handle();
+            o_token_ptr = impl->get_token();
         }
         else
         {
-            handle = {};
-            token_ptr = nullptr;
+            o_handle = {};
+            o_token_ptr = nullptr;
         }
         lock_.unlock();
-
-        if (const std::shared_ptr<Environment> master = Environment::_access(token_ptr))
-        {
-            master->post_message(Message(handle, internal::Buffer(p_data, p_size)));
-        }
-        else
-        {
-            JSB_WORKER_LOG(Error, "master is null");
-        }
+        return (bool) o_handle;
     }
 
-    void Worker::on_receive(WorkerID p_id, const uint8_t* p_data, size_t p_size)
+    void Worker::on_receive(WorkerID p_id, Buffer&& p_buffer)
     {
         lock_.lock();
         WorkerImplPtr impl;
-        if (worker_list_.try_get_value(p_id, impl))
+        if (!worker_list_.try_get_value(p_id, impl) || !impl->on_receive(std::move(p_buffer)))
         {
-            impl->on_receive(internal::Buffer(p_data, p_size));
-            lock_.unlock();
-        }
-        else
-        {
-            lock_.unlock();
             JSB_WORKER_LOG(Error, "can't post message to a dead worker (%d)", p_id);
         }
+        lock_.unlock();
     }
 
     void Worker::terminate(WorkerID p_id)
@@ -336,7 +393,7 @@ namespace jsb
         Worker* self = (Worker*) pointer;
         if (Worker::is_valid(self->id_))
         {
-            JSB_WORKER_LOG(Error, "worker is not explicitly terminated before garbage collected");
+            JSB_WORKER_LOG(Warning, "worker is not explicitly terminated before garbage collected");
         }
         memdelete(self);
     }
@@ -356,10 +413,11 @@ namespace jsb
             return;
         }
 
-        Environment* runtime = Environment::wrap(isolate);
+        Environment* master = Environment::wrap(isolate);
         Worker* ptr = memnew(Worker);
-        const NativeObjectID handle = runtime->bind_pointer(class_id, ptr, self, EBindingPolicy::Managed);
-        ptr->id_ = Worker::create(runtime, path, handle);
+        const NativeObjectID handle = master->bind_pointer(class_id, ptr, self, EBindingPolicy::Managed);
+        jsb_check(handle);
+        ptr->id_ = Worker::create(master, path, handle);
     }
 
     // master.onmessage
@@ -375,14 +433,15 @@ namespace jsb
         v8::Isolate::Scope isolate_scope(isolate);
         const v8::Local<v8::Context> context = isolate->GetCurrentContext();
         const v8::Local<v8::Object> self = info.This();
+        Environment::wrap(isolate)->check_internal_state();
         jsb_check(self->InternalFieldCount() == IF_ObjectFieldCount);
         const Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+
         v8::ValueSerializer serializer(isolate);
         serializer.WriteHeader();
         serializer.WriteValue(context, info[0]);
         const std::pair<uint8_t*, size_t> data = serializer.Release();
-        Worker::on_receive(worker->id_, data.first, data.second);
-        impl::Helper::free(context, data.first);
+        Worker::on_receive(worker->id_, Buffer::steal(data.first, data.second));
     }
 
     void Worker::terminate(const v8::FunctionCallbackInfo<v8::Value>& info)

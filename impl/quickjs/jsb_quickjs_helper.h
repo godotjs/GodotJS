@@ -177,9 +177,12 @@ namespace jsb::impl
             return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
         }
 
-        jsb_force_inline static void free(const v8::Local<v8::Context>& context, uint8_t* data)
+        jsb_force_inline static void free(uint8_t* data)
         {
-            js_free(context->GetIsolate()->ctx(), data);
+            // js_free(context->GetIsolate()->ctx(), data);
+
+            //NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
+            memfree(data);
         }
     };
 }

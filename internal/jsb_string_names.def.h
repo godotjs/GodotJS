@@ -49,5 +49,6 @@ DEF(default)
 // worker
 DEF(Worker)
 DEF(onmessage)
+DEF(onerror)
 DEF(postMessage)
 DEF(close)
