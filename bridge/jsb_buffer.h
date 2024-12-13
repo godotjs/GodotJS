@@ -13,7 +13,10 @@ namespace jsb
         Buffer(uint8_t* p_ptr, size_t p_size) : ptr_(p_ptr), size_(p_size) {}
 
         //NOTE only free the memory, ptr_ itself won't be changed.
-        jsb_force_inline void drop() { impl::Helper::free(ptr_); }
+        jsb_force_inline void drop() 
+        { 
+            if (ptr_) impl::Helper::free(ptr_); 
+        }
 
     public:
         static Buffer steal(uint8_t* p_ptr, size_t p_size)
