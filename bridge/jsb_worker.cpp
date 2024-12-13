@@ -357,9 +357,10 @@ namespace jsb
         {
             WorkerImplPtr impl;
             lock_.lock();
-            if (!worker_list_.is_empty())
+            if (const WorkerID id = worker_list_.get_first_index())
             {
-                impl = worker_list_.get_first_value();
+                impl = worker_list_.get_value(id);
+                worker_list_.remove_at(id);
             }
             lock_.unlock();
             if (!impl) break;
