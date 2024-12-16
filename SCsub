@@ -439,6 +439,9 @@ if is_defined("JSB_WITH_WEB"):
     print("WARNING: web support has not been implemented yet")
 
     env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
+    env.AddJSPre([
+        "impl/web/bridge/out/jsbb.bundle.js"
+    ])
     env.AddJSLibraries([
         "impl/web/jsb_web.library.js",
     ])

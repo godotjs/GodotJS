@@ -1,34 +1,31 @@
-﻿#include "jsb_web_handle_scope.h"
-#include "jsb_web_interop.h"
+#include "jsb_web_handle_scope.h"
 #include "jsb_web_isolate.h"
-
 namespace v8
 {
     HandleScope::HandleScope(Isolate* isolate)
     {
         isolate_ = isolate;
-        is_native_ = true;
-        stack_ = ::jsapi_stack_enter(isolate_->id_);
-        last_ = isolate->top_;
-        isolate->top_ = this;
-    }
 
-    HandleScope::HandleScope(Isolate* isolate, int stack)
-    {
-        isolate_ = isolate;
-        is_native_ = false;
-        last_ = isolate->top_;
-        isolate->top_ = this;
-        stack_ = stack;
+        last_ = isolate_->handle_scope_;
+        stack_ = isolate_->stack_pos_;
+        isolate_->handle_scope_ = this;
+        JSB_WEB_LOG(VeryVerbose, "enter stack frame %d", stack_);
     }
 
     HandleScope::~HandleScope()
     {
-        CRASH_COND_MSG(isolate_->top_ != this, "invalid op");
-        isolate_->top_ = last_;
-        if (is_native_)
+        jsb_check(isolate_->handle_scope_ == this);
+        for (uint16_t i = stack_; i < isolate_->stack_pos_; i++)
         {
-            ::jsapi_stack_exit(isolate_->id_);
+            JS_FreeValue(isolate_->ctx_, isolate_->stack_[i]);
         }
+        isolate_->handle_scope_ = last_;
+        isolate_->stack_pos_ = stack_;
+        if (!isolate_->handle_scope_)
+        {
+            isolate_->swap_free_queue();
+        }
+        JSB_WEB_LOG(VeryVerbose, "leave stack frame %d", stack_);
     }
+
 }

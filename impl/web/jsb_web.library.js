@@ -1,30 +1,41 @@
 
-const GodotJSApi = {
-    $GodotJSApi: function () {
-        return globalThis["$GodotJSApi"];
-    },
-
-    init: function () {
-        return GodotJSApi().init({
+const GodotJSBrowserInterface = {
+    jsbi_init: function () {
+        return jsbb_runtime.init({
             UTF8ToString: UTF8ToString,
-            jsb_web_invoke_gc_callback: Module._jsb_web_invoke_gc_callback,
+
+            gc_callback: Module._jsni_gc_callback,
+            ccall: Module._jsni_ccal,
         });
     },
 
-    // free functions
-    create_engine: function () { return GodotJSApi().create_engine(); },
-    drop_engine: function (engine_id) { return GodotJSApi().drop_engine(engine_id); },
-    
-    // utility functions
+    jsbi_NewEngine: function (opaque) { return jsbb_runtime.NewEngine(opaque); },
+    jsbi_FreeEngine: function (engine_id) { jsbb_runtime.FreeEngine(engine_id); },
+    jsbi_SetHostPromiseRejectionTracker: function (engine_id, cb, data) { jsbb_runtime.GetEngine(engine_id).SetHostPromiseRejectionTracker(cb, data); },
 
-    // engine api functions
-    eval: function (engine_id, pcode) { const engine = GodotJSApi().get_engine(engine_id); return engine.eval(pcode); },
-    set_finalizer: function (engine_id, pfunc) { const engine = GodotJSApi().get_engine(engine_id); return engine.set_finalizer(pfunc); },
-    new_binding_object: function (engine_id, pobj) { const engine = GodotJSApi().get_engine(engine_id); return engine.new_binding_object(pobj); },
-    get_binding_object: function (engine_id, pid) { const engine = GodotJSApi().get_engine(engine_id); return engine.get_binding_object(pid); },
+    jsbi_StackEnter: function (engine_id) { jsbb_runtime.GetEngine(engine_id).stack.EnterScope(); },
+    jsbi_StackExit: function (engine_id) { jsbb_runtime.GetEngine(engine_id).stack.ExitScope(); },
+    jsbi_StackDup: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).StackDup(stack_pos); },
+    jsbi_GetOpaque: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).GetOpaque(stack_pos); },
+    jsbi_SetOpaque: function (engine_id, stack_pos, data) { jsbb_runtime.GetEngine(engine_id).SetOpaque(stack_pos, data); },
+
+    jsbi_NewCFunction: function (engine_id, cb, data) { return jsbb_runtime.GetEngine(engine_id).NewCFunction(cb, data); },
+    jsbi_NewClass: function (engine_id) { return jsbb_runtime.GetEngine(engine_id).NewClass(); },
+    jsbi_SetConstructor: function (engine_id, func, proto) { return jsbb_runtime.GetEngine(engine_id).SetConstructor(func, proto); },
+    jsbi_SetPrototype: function (engine_id, proto, parent) { return jsbb_runtime.GetEngine(engine_id).SetPrototype(proto, parent); },
+    jsbi_NewExternal: function (engine_id, data) { return jsbb_runtime.GetEngine(engine_id).NewExternal(data); },
+    
+    jsbi_IsUndefined: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === undefined; },
+    jsbi_IsNumber: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === "number"; },
+    jsbi_IsString: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === "string"; },
+    jsbi_IsBoolean: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === "boolean"; },
+    jsbi_IsSymbol: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === "symbol"; },
+    jsbi_IsFunction: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === "function"; },
+    jsbi_IsObject: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === "object"; },
+    jsbi_IsExternal: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).IsExternal(stack_pos); },
 }
 
-// addToLibrary(GodotJSApi);
+// addToLibrary(GodotJSBrowserInterface);
 
-autoAddDeps(GodotJSApi, "$GodotJSApi")
-mergeInto(LibraryManager.library, GodotJSApi);
+autoAddDeps(GodotJSBrowserInterface, "$GodotJSBrowserInterface")
+mergeInto(LibraryManager.library, GodotJSBrowserInterface);

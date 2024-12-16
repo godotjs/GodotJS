@@ -12,6 +12,7 @@ __pycache__
 
 /impl/web/bridge/node_modules
 /impl/web/bridge/temp
+/impl/web/bridge/.tsbuildinfo
 
 # macOS
 .DS_Store

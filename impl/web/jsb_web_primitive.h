@@ -1,31 +1,47 @@
-﻿#ifndef GODOTJS_WEB_PRIMITIVE_H
+#ifndef GODOTJS_WEB_PRIMITIVE_H
 #define GODOTJS_WEB_PRIMITIVE_H
-#include <cstdint>
-
-#include "jsb_web_primitive_data.h"
-#include "jsb_web_context.h"
-#include "jsb_web_value.h"
-#include "jsb_web_local_handle.h"
+#include "jsb_web_pch.h"
+#include "jsb_web_data.h"
+#include "jsb_web_handle.h"
 
 namespace v8
 {
     class Isolate;
+    class String;
+    class Context;
 
     template<typename T>
-    class MaybeLocal;
+    class Maybe;
 
-    class Primitive: public Value {};
-    class Name : public Primitive {};
+    class Value : public Data
+    {
+    public:
+        MaybeLocal<String> ToDetailString(Local<Context> context) const;
+        Maybe<double> NumberValue(Local<Context> context) const;
+        Maybe<int32_t> Int32Value(Local<Context> context) const;
+        bool BooleanValue(Isolate* isolate) const;
+
+        MaybeLocal<String> ToString(Local<Context> context) const;
+    };
 
     class External : public Value
     {
     public:
-        static Local<External> New(Isolate* isolate, void* data);
         void* Value() const;
+
+        static Local<External> New(Isolate* isolate, void* value);
     };
 
-    class Function;
-    class FunctionTemplate;
+    class Primitive: public Value {};
+    class Name : public Primitive {};
+
+    class String : public Name
+    {
+    public:
+        int Length() const;
+
+        static Local<String> Empty(Isolate* isolate);
+    };
 
     class Symbol : public Name
     {
@@ -33,45 +49,37 @@ namespace v8
         static Local<Symbol> New(Isolate* isolate);
     };
 
-    class String : public Name
+    class Boolean : public Primitive
     {
     public:
-        static Local<String> Empty(Isolate* isolate);
-
-        int Length() const;
+        bool Value() const;
+        
+        static Local<Boolean> New(Isolate* isolate, bool value);
     };
-
-    typedef Symbol Private;
 
     class Number : public Primitive
     {
     public:
-        static Local<Number> New(Isolate* isolate, double value);
-
         double Value() const;
+
+        static Local<Number> New(Isolate* isolate, double value);
+    };
+
+    class BigInt : public Primitive
+    {
+    public:
+        int64_t Int64Value(bool* lossless = nullptr) const;
+
+        static Local<BigInt> New(Isolate* isolate, int64_t value);
     };
 
     class Integer : public Number
     {
     public:
+        // int64_t Value() const;
+
+        static Local<Integer> New(Isolate* isolate, int32_t value);
         static Local<Integer> NewFromUnsigned(Isolate* isolate, uint32_t value);
-    };
-
-    class Int32 : public Integer
-    {
-    public:
-        static Local<Int32> New(Isolate* isolate, int32_t value);
-        static Local<Int32> New(Isolate* isolate, uint32_t value);
-        int64_t Value() const;
-
-    };
-
-    class BigInt : public Data
-    {
-    public:
-        static Local<BigInt> New(Isolate* isolate, int64_t value);
-
-        int64_t Int64Value() const;
     };
 
     class Uint32 : public Integer
@@ -80,10 +88,10 @@ namespace v8
         uint32_t Value() const;
     };
 
-    class Boolean : public Primitive
+    class Int32 : public Integer
     {
     public:
-        static Local<Boolean> New(Isolate* isolate, bool value);
+        int32_t Value() const;
     };
 
     Local<Primitive> Undefined(Isolate* isolate);

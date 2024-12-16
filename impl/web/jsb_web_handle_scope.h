@@ -1,5 +1,6 @@
 #ifndef GODOTJS_WEB_HANDLE_SCOPE_H
 #define GODOTJS_WEB_HANDLE_SCOPE_H
+#include "jsb_web_pch.h"
 
 namespace v8
 {
@@ -7,15 +8,19 @@ namespace v8
 
     class HandleScope
     {
-    public:
+    private:
         Isolate* isolate_;
         HandleScope* last_;
-        int stack_;
-        bool is_native_;
+        uint16_t stack_;
 
+    public:
         HandleScope(Isolate* isolate);
-        HandleScope(Isolate* isolate, int stack);
         ~HandleScope();
+
+        HandleScope(HandleScope&& other) = delete;
+        HandleScope& operator=(HandleScope&& other) = delete;
+        HandleScope(const HandleScope&) = delete;
+        HandleScope& operator=(const HandleScope&) = delete;
     };
 }
 #endif
