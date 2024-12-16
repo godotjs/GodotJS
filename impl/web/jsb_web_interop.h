@@ -14,7 +14,7 @@
 // global init
 JSAPI_EXTERN void jsbi_init(void);
 
-// engine 
+// engine
 JSAPI_EXTERN int   jsbi_NewEngine(void* opaque);
 JSAPI_EXTERN int   jsbi_FreeEngine(int engine_id);
 JSAPI_EXTERN int   jsbi_SetHostPromiseRejectionTracker(int engine_id, void* cb, void* data);
@@ -26,5 +26,12 @@ JSAPI_EXTERN void  jsbi_StackExit(int engine_id);
 JSAPI_EXTERN int   jsbi_StackDup(int engine_id, int stack_pos);
 
 JSAPI_EXTERN int   jsbi_NewCFunction(int engine_id, void* cb, int data);
+JSAPI_EXTERN int   jsbi_NewSymbol(int engine_id);
+JSAPI_EXTERN int   jsbi_NewExternal(int engine_id, void* data);
+
+JSAPI_EXTERN void* jsbi_GetExternal(int engine_id, int stack_pos);
+JSAPI_EXTERN int   jsbi_GetLength(int engine_id, int stack_pos);
+
+JSAPI_EXTERN bool  jsbi_IsExternal(int engine_id, int stack_pos);
 
 #endif

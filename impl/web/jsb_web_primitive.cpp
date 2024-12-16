@@ -50,26 +50,22 @@ namespace v8
 
     void* External::Value() const
     {
-        const JSValue val = (JSValue) *this;
-        return JS_VALUE_GET_PTR(val);
+        return jsbi_GetExternal(isolate_->rt(), stack_pos_);
     }
 
     Local<External> External::New(Isolate* isolate, void* value)
     {
-        const uint16_t stack_pos = isolate->push_steal(JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, value));
-        return Local<External>(Data(isolate, stack_pos));
+        return Local<External>(Data(isolate, jsbi_NewExternal(isolate->rt(), value)));
     }
 
     Local<Symbol> Symbol::New(Isolate* isolate)
     {
-        return Local<Symbol>(Data(isolate, isolate->push_symbol()));
+        return Local<Symbol>(Data(isolate, jsbi_NewSymbol(isolate->rt())));
     }
 
     int String::Length() const
     {
-        const JSValue val = JS_GetProperty(isolate_->ctx(), (JSValue) *this, jsb::impl::JS_ATOM_length);
-        jsb_check(JS_VALUE_GET_TAG(val) == JS_TAG_INT);
-        return JS_VALUE_GET_INT(val);
+        return jsbi_GetLength(isolate_->rt(), stack_pos_);
     }
 
     Local<String> String::Empty(Isolate* isolate)

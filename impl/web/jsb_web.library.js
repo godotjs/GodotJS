@@ -17,13 +17,16 @@ const GodotJSBrowserInterface = {
     jsbi_StackExit: function (engine_id) { jsbb_runtime.GetEngine(engine_id).stack.ExitScope(); },
     jsbi_StackDup: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).StackDup(stack_pos); },
     jsbi_GetOpaque: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).GetOpaque(stack_pos); },
-    jsbi_SetOpaque: function (engine_id, stack_pos, data) { jsbb_runtime.GetEngine(engine_id).SetOpaque(stack_pos, data); },
+    jsbi_GetExternal: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos).data; },
+    jsbi_GetLength: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos).length; },
 
     jsbi_NewCFunction: function (engine_id, cb, data) { return jsbb_runtime.GetEngine(engine_id).NewCFunction(cb, data); },
     jsbi_NewClass: function (engine_id) { return jsbb_runtime.GetEngine(engine_id).NewClass(); },
     jsbi_SetConstructor: function (engine_id, func, proto) { return jsbb_runtime.GetEngine(engine_id).SetConstructor(func, proto); },
     jsbi_SetPrototype: function (engine_id, proto, parent) { return jsbb_runtime.GetEngine(engine_id).SetPrototype(proto, parent); },
+
     jsbi_NewExternal: function (engine_id, data) { return jsbb_runtime.GetEngine(engine_id).NewExternal(data); },
+    jsbi_NewSymbol: function (engine_id) { return jsbb_runtime.GetEngine(engine_id).NewSymbol(); },
     
     jsbi_IsUndefined: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === undefined; },
     jsbi_IsNumber: function (engine_id, stack_pos) { return typeof jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos) === "number"; },

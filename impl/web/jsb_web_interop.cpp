@@ -7,7 +7,7 @@ JSAPI_EXTERN EMSCRIPTEN_KEEPALIVE void jsni_gc_callback(void* opaque, JSAPI_GC_C
 {
     v8::Isolate *isolate = (v8::Isolate *) opaque;
 
-    const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, get_class_id());
+    const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) ptr;
     {
         jsb::impl::InternalData* data;
         if (isolate->internal_data_.try_get_value_pointer(index, data))
@@ -17,7 +17,7 @@ JSAPI_EXTERN EMSCRIPTEN_KEEPALIVE void jsni_gc_callback(void* opaque, JSAPI_GC_C
                 const WeakCallbackInfo<void> info(isolate, data->weak.parameter, data->internal_fields);
                 callback(info);
             }
-            JSB_WEB_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) JS_VALUE_GET_PTR(val), index);
+            JSB_WEB_LOG(VeryVerbose, "remove internal data id:%s", index);
             isolate->internal_data_.remove_at(index);
         }
     }

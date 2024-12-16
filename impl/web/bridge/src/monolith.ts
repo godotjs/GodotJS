@@ -192,8 +192,10 @@ class jsbb_Registry {
         });
     }
 
-    Add(o: any, opaque: Pointer): void {
-        this.watcher.register(o, opaque);
+    Add(obj: any, opaque: Pointer): void {
+        // opaque saved in obj[opaque.symbol] for GetOpaque(), it's never changed.
+        obj[jsbb_opaque] = opaque;
+        this.watcher.register(obj, opaque);
     }
 }
 
@@ -291,11 +293,6 @@ class jsbb_Engine {
         return this._stack.Push(this._stack.GetValue(stack_pos));
     }
 
-    SetOpaque(stack_pos: StackPosition, opaque: Pointer) {
-        let obj = this._stack.GetValue(stack_pos);
-        obj[jsbb_opaque] = opaque;
-    }
-
     GetOpaque(stack_pos: StackPosition): Pointer {
         let obj = this._stack.GetValue(stack_pos);
         return obj[jsbb_opaque];
@@ -303,6 +300,10 @@ class jsbb_Engine {
 
     NewExternal(data: Pointer): StackPosition {
         return this._stack.Push(new jsbb_External(data));
+    }
+
+    NewSymbol(): StackPosition {
+        return this._stack.Push(Symbol());
     }
 
     IsExternal(stack_pos: StackPosition): boolean {

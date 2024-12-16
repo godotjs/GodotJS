@@ -61,15 +61,6 @@ namespace jsb::impl
         };
     }
 
-    struct ClassID
-    {
-        ClassID() { JS_NewClassID(&id_); }
-        explicit operator JSClassID() const { return id_; }
-
-    private:
-        JSClassID id_;
-    };
-
     struct Phantom
     {
         int watcher_ = 0;
@@ -115,7 +106,7 @@ namespace v8
 
         void* GetData(int index) const { jsb_check(index == 0); return embedder_data_; }
         void SetData(int index, void* data);
-        void PerformMicrotaskCheckpoint();
+        void PerformMicrotaskCheckpoint() {}
         void LowMemoryNotification();
         void SetBatterySaverMode(bool) {}
         void RequestGarbageCollectionForTesting(GarbageCollectionType type);
@@ -130,8 +121,7 @@ namespace v8
         bool IsExecutionTerminating() const { return interrupted_.is_set(); }
         void TerminateExecution() { interrupted_.set(); }
 
-        jsb_force_inline JSRuntime* rt() const { return rt_; }
-        jsb_force_inline JSContext* ctx() const { return ctx_; }
+        jsb_force_inline jsb::impl::JSRuntime rt() const { return rt_; }
         jsb_force_inline void remove_exception_anyway() const
         {
             const JSValue error = JS_GetException(ctx_);
@@ -154,59 +144,9 @@ namespace v8
             return internal_data_.add(jsb::impl::InternalData {  { nullptr, nullptr }, internal_field_count, { nullptr, nullptr }});
         }
 
-        static JSClassID get_class_id() { static jsb::impl::ClassID id; return (JSClassID) id; }
-
-        // get stack value
-        [[nodiscard]] const JSValue& stack_val(const uint16_t index) const
-        {
-            jsb_check(index < stack_pos_);
-            jsb_check(index < jsb::impl::StackPos::Num || handle_scope_);
-            return stack_[index];
-        }
-
-        // get stack value (duplicated)
-        [[nodiscard]] JSValue stack_dup(const uint16_t index) const
-        {
-            return JS_DupValue(ctx_, stack_val(index));
-        }
-
-        // write value to the stack pos 'to' without duplicating
-        void set_stack_steal(const uint16_t to, const JSValueConst value)
-        {
-            jsb_check(to < stack_pos_);
-            jsb_check(to < jsb::impl::StackPos::Num || handle_scope_);
-            JS_FreeValue(ctx_, stack_[to]);
-            stack_[to] = value;
-        }
-
-        // duplicate a value 'from' to the stack pos 'to'
-        void set_stack_copy(const uint16_t to, const uint16_t from)
-        {
-            jsb_check(to != from && to < stack_pos_ && from < stack_pos_);
-            jsb_check(handle_scope_ || (to < jsb::impl::StackPos::Num && from < jsb::impl::StackPos::Num));
-            JS_DupValue(ctx_, stack_[from]);
-            JS_FreeValue(ctx_, stack_[to]);
-            stack_[to] = stack_[from];
-        }
-
         // due to the missing BrowserJS API for NewSymbol/NewMap
         uint16_t push_symbol();
         uint16_t push_map();
-
-        // no copy on value
-        uint16_t push_steal(const JSValue value)
-        {
-            jsb_check(handle_scope_);
-            return emplace_(value);
-        }
-
-        // copy value
-        uint16_t push_copy(const JSValue value)
-        {
-            jsb_check(handle_scope_);
-            JS_DupValue(ctx_, value);
-            return emplace_(value);
-        }
 
         bool try_catch();
 
@@ -349,13 +289,12 @@ namespace v8
             else back_free_queue_.append(value);
         }
 
-        static void _finalizer(JSRuntime* rt, JSValue val);
         static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
-        static int _interrupt_callback(JSRuntime* rt, void* data) { return ((Isolate*) data)->interrupted_.is_set(); }
+        static int _interrupt_callback(jsb::impl::JSRuntime rt, void* data) { return ((Isolate*) data)->interrupted_.is_set(); }
 
         uint32_t ref_count_;
         bool disposed_;
-        JSRuntime* rt_;
+        jsb::impl::JSRuntime rt_;
         HandleScope* handle_scope_;
 
         PromiseRejectCallback promise_reject_;

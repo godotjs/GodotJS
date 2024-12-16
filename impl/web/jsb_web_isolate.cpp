@@ -35,16 +35,6 @@ namespace v8
     {
         rt_ = jsbi_NewEngine(this);
         jsbi_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
-
-        JSClassDef class_def;
-        class_def.class_name = "UniversalBridgeClass";
-        class_def.finalizer = _finalizer;
-        class_def.exotic = nullptr;
-        class_def.gc_mark = nullptr;
-        class_def.call = nullptr;
-
-        details::verified(JS_NewClass(rt_, get_class_id(), &class_def));
-        JS_FreeValue(ctx_, global);
     }
 
     Isolate::~Isolate()
@@ -118,59 +108,11 @@ namespace v8
         return push_steal(details::verified(val));
     }
 
-    void Isolate::_finalizer(JSRuntime* rt, JSValue val)
-    {
-        Isolate* isolate = (Isolate*) JS_GetRuntimeOpaque(rt);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, get_class_id());
-        {
-            jsb::impl::InternalData* data;
-            if (isolate->internal_data_.try_get_value_pointer(index, data))
-            {
-                if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
-                {
-                    const WeakCallbackInfo<void> info(isolate, data->weak.parameter, data->internal_fields);
-                    callback(info);
-                }
-                JSB_WEB_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) JS_VALUE_GET_PTR(val), index);
-                isolate->internal_data_.remove_at(index);
-            }
-        }
-    }
-
     void Isolate::GetHeapStatistics(HeapStatistics* statistics)
     {
         memset(statistics, 0, sizeof(HeapStatistics));
 
         //TODO fill out available heap info
-    }
-
-    void Isolate::PerformMicrotaskCheckpoint()
-    {
-        JSContext* ctx;
-        HandleScope handle_scope(this);
-
-        while (true)
-        {
-            const int err = JS_ExecutePendingJob(rt_, &ctx);
-            if (err >= 0)
-            {
-                if (JS_IsJobPending(rt_) == 0)
-                {
-                    break;
-                }
-            }
-            else
-            {
-                jsb::impl::TryCatch try_catch(this);
-                if (try_catch.has_caught())
-                {
-                    ::String message;
-                    ::String stacktrace;
-                    try_catch.get_message(&message, &stacktrace);
-                    JSB_WEB_LOG(Error, "uncaught exception in pending job: %s\n%s", message, stacktrace);
-                }
-            }
-        }
     }
 
     Local<Context> Isolate::GetCurrentContext()
