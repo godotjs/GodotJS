@@ -46,15 +46,6 @@ namespace jsb::impl
             return rval;
         }
 
-        static bool Equals(JSValueConst a, JSValueConst b)
-        {
-            if (JS_VALUE_GET_TAG(a) != JS_VALUE_GET_TAG(b)) return false;
-
-            //TODO unsafe eq check
-            if (JS_VALUE_GET_PTR(a) != JS_VALUE_GET_PTR(b)) return false;
-            return true;
-        }
-
         static int _RefCount(JSValueConst value)
         {
             if (!JS_VALUE_HAS_REF_COUNT(value)) return 0;

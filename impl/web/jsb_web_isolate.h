@@ -144,10 +144,6 @@ namespace v8
             return internal_data_.add(jsb::impl::InternalData {  { nullptr, nullptr }, internal_field_count, { nullptr, nullptr }});
         }
 
-        // due to the missing BrowserJS API for NewSymbol/NewMap
-        uint16_t push_symbol();
-        uint16_t push_map();
-
         bool try_catch();
 
         // they won't be deleted until the Isolate disposed

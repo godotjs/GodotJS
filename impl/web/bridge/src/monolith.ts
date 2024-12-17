@@ -268,6 +268,35 @@ class jsbb_Engine {
         })
     }
 
+    static GetStringHash(val: string): number {
+        let hash = 0;
+        const len = val.length;
+        for (let i = 0; i < len; ++i) {
+            hash = (hash << 5) - hash + val.charCodeAt(i);
+            hash |= 0;
+        }
+        return hash;
+    }
+
+    static GetNumberHash(val: number): number {
+        if ((val | 0) != 0) return val;
+        return jsbb_Engine.GetStringHash(val.toString());
+    }
+
+    GetIdentityHash(stack_pos: StackPosition) {
+        const val = this._stack.GetValue(stack_pos);
+        if (typeof val === "undefined" || val === null) return 0;
+        if (typeof val === "number") return jsbb_Engine.GetNumberHash(val);
+        if (typeof val === "boolean") return val ? 1 : 0;
+        if (typeof val === "string") return jsbb_Engine.GetStringHash(val);
+        if (typeof val === "bigint") return jsbb_Engine.GetStringHash(val.toString());
+        // if (typeof val === "function")
+        // if (typeof val === "object")
+        // if (typeof val === "symbol") 
+        if (typeof val[jsbb_opaque] !== "undefined") return val[jsbb_opaque] | 0;
+        return 0;
+    }
+
     NewAtom(stack_pos: StackPosition) {
         return this._atoms.Add(new jsbb_Atom(this._stack.GetValue(stack_pos)));
     }
@@ -306,8 +335,28 @@ class jsbb_Engine {
         return this._stack.Push(Symbol());
     }
 
+    NewMap(): StackPosition {
+        return this._stack.Push(new Map());
+    }
+
+    NewArray(): StackPosition {
+        return this._stack.Push([]);
+    }
+
     IsExternal(stack_pos: StackPosition): boolean {
         return this._stack.GetValue(stack_pos) instanceof jsbb_External;
+    }
+
+    SetProperty(obj: StackPosition, key: StackPosition, val: StackPosition) {
+        const obj_sv = this._stack.GetValue(obj);
+        const key_sv = this._stack.GetValue(key);
+        const val_sv = this._stack.GetValue(val);
+
+        if (obj_sv instanceof Map) {
+            obj_sv.set(key_sv, val_sv);
+        } else {
+            obj_sv[key_sv] = val_sv;
+        }
     }
 
     // push global to stack, return it's stack position
@@ -316,7 +365,13 @@ class jsbb_Engine {
     }
 
     Eval(ptr: number) {
-        eval(NativeAPI.UTF8ToString(ptr));
+        let src = NativeAPI.UTF8ToString(ptr);
+        
+        // eval();
+        let script = document.createElement("script");
+        script.type = "type/javascript";
+        script.textContent = `(function() { ${src} })();`;
+        document.head.appendChild(script);
     }
 
     // cb: C++ Function Pointer

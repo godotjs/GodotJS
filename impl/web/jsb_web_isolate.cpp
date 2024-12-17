@@ -94,20 +94,6 @@ namespace v8
         embedder_data_ = data;
     }
 
-    uint16_t Isolate::push_map()
-    {
-        const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::MapClass]), JS_UNDEFINED, 0, nullptr);
-        jsb_check(JS_IsMap(ctx_, val));
-        return push_steal(details::verified(val));
-    }
-
-    uint16_t Isolate::push_symbol()
-    {
-        const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::SymbolClass]), JS_UNDEFINED, 0, nullptr);
-        jsb_check(JS_VALUE_GET_TAG(val) == JS_TAG_SYMBOL);
-        return push_steal(details::verified(val));
-    }
-
     void Isolate::GetHeapStatistics(HeapStatistics* statistics)
     {
         memset(statistics, 0, sizeof(HeapStatistics));

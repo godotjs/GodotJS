@@ -6,132 +6,92 @@ namespace v8
 {
     int Data::GetIdentityHash() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_VALUE_GET_TAG(val) < 0);
-
-        const uintptr_t ptr = (uintptr_t) JS_VALUE_GET_PTR(val);
-        if constexpr (sizeof(int) == sizeof(uintptr_t))
-        {
-            return (int) ((ptr >> 32) ^ (ptr & 0xffffffff));
-        }
-        else
-        {
-            return (int) ptr;
-        }
-    }
-
-    Data::operator JSValue() const
-    {
-        return isolate_->stack_val(stack_pos_);
+        return jsbi_hash(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsNullOrUndefined() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsNull(val) || JS_IsUndefined(val);
+        return jsbi_IsNullOrUndefined(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsUndefined() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsUndefined(val);
+        return jsbi_IsUndefined(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsObject() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsObject(val);
+        return jsbi_IsObject(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsPromise() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsPromise(isolate_->ctx(), val);
+        return jsbi_IsPromise(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsArray() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsArray(isolate_->ctx(), val);
+        return jsbi_IsArray(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsMap() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-
-        //NOTE web source modified
-        return JS_IsMap(isolate_->ctx(), val);
+        return jsbi_IsMap(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsSymbol() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsSymbol(val);
+        return jsbi_IsSymbol(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsString() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsString(val);
+        return jsbi_IsString(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsFunction() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsFunction(isolate_->ctx(), val);
+        return jsbi_IsFunction(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsInt32() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-
-        //TODO we can not determine whether it's int32 or uint32
-        return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
+        return jsbi_IsInt32(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsUint32() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-
-        //TODO we can not determine whether it's int32 or uint32
-        return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
+        return jsbi_IsUint32(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsNumber() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsNumber(val);
+        return jsbi_IsNumber(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsExternal() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_VALUE_GET_TAG(val) == jsb::impl::JS_TAG_EXTERNAL;
+        return jsbi_IsExternal(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsBoolean() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsBool(val);
+        return jsbi_IsBoolean(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsBigInt() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsBigInt(isolate_->ctx(), val);
+        return jsbi_IsBigInt(isolate_->rt(), stack_pos_);
     }
 
     bool Data::IsArrayBuffer() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsArrayBuffer(isolate_->ctx(), val);
+        return jsbi_IsArrayBuffer(isolate_->rt(), stack_pos_);
     }
 
     bool Data::strict_eq(const Data& other) const
     {
-        const JSValue val1 = isolate_->stack_val(stack_pos_);
-        const JSValue val2 = isolate_->stack_val(other.stack_pos_);
-        return jsb::impl::BrowserJS::Equals(val1, val2);
+        return jsbi_strict_eq(isolate_->rt(), stack_pos_, other.stack_pos_);
     }
 
 }

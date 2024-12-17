@@ -6,8 +6,6 @@
 
 namespace jsb::impl
 {
-    typedef int JSRuntime;
-
     // Offset positions based on the current scope
     namespace FunctionStackBase
     {

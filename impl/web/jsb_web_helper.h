@@ -18,18 +18,26 @@ namespace jsb::impl
             Broker::SetWeak(value.data_.isolate_, (JSValue) value, deleter_data, (void*) callback);
         }
 
-        static String Dump(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
+        //TODO copy from HEAP?
+        static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
         {
-            if (value.IsEmpty()) return "(empty)";
-            const JSValue val = (JSValue) value;
-            if (JS_VALUE_HAS_REF_COUNT(val)) return jsb_format("%d:0x%s", JS_VALUE_GET_TAG(val), (uintptr_t) JS_VALUE_GET_PTR(val));
-            if (JS_TAG_FLOAT64 == JS_VALUE_GET_TAG(val)) return jsb_format("%f", JS_VALUE_GET_FLOAT64(val));
-            if (JS_TAG_INT == JS_VALUE_GET_TAG(val)) return jsb_format("%d", JS_VALUE_GET_INT(val));
-            if (JS_TAG_BOOL == JS_VALUE_GET_TAG(val)) return JS_VALUE_GET_INT(val) ? "true" : "false";
-            if (JS_TAG_NULL == JS_VALUE_GET_TAG(val)) return "null";
-            if (JS_TAG_UNDEFINED == JS_VALUE_GET_TAG(val)) return "undefined";
-            if (JS_TAG_EXCEPTION == JS_VALUE_GET_TAG(val)) return "(exception)";
-            return jsb_format("tag: %d", JS_VALUE_GET_TAG(val));;
+            const size_t size = array_buffer->ByteLength();
+            PackedByteArray packed;
+            const Error err = packed.resize((int) size);
+            jsb_unused(err);
+            jsb_check(err == OK);
+            const void* data = array_buffer->Data();
+            memcpy(packed.ptrw(), data, size);
+            return packed;
+        }
+
+        //TODO copy from HEAP?
+        static v8::Local<v8::ArrayBuffer> to_array_buffer(v8::Isolate* isolate, const Vector<uint8_t>& packed)
+        {
+            const v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, packed.size());
+            void* data = buffer->Data();
+            memcpy(data, packed.ptr(), packed.size());
+            return buffer;
         }
 
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)

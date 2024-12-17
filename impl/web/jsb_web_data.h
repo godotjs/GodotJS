@@ -10,12 +10,10 @@ namespace v8
     {
     public:
         Data() = default;
-        Data(Isolate* isolate, uint16_t stack_pos): isolate_(isolate), stack_pos_(stack_pos) {}
+        Data(Isolate* isolate, jsb::impl::StackPosition stack_pos): isolate_(isolate), stack_pos_(stack_pos) {}
 
         Isolate* isolate_ = nullptr;
-        uint16_t stack_pos_ = 0;
-
-        explicit operator JSValue() const;
+        jsb::impl::StackPosition stack_pos_ = 0;
 
         bool operator==(const Data& other) const
         {
