@@ -10,9 +10,24 @@ namespace jsb::impl
     public:
         Helper() = delete;
 
-        static String Dump(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
+        static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
         {
-            return String();
+            const size_t size = array_buffer->ByteLength();
+            PackedByteArray packed;
+            const Error err = packed.resize((int) size);
+            jsb_unused(err);
+            jsb_check(err == OK);
+            const void* data = array_buffer->Data();
+            memcpy(packed.ptrw(), data, size);
+            return packed;
+        }
+
+        static v8::Local<v8::ArrayBuffer> to_array_buffer(v8::Isolate* isolate, const Vector<uint8_t>& packed)
+        {
+            const v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, packed.size());
+            void* data = buffer->Data();
+            memcpy(data, packed.ptr(), packed.size());
+            return buffer;
         }
 
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)

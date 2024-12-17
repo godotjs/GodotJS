@@ -9,6 +9,8 @@ namespace jsb
 {
     namespace
     {
+        // [js helper function]
+        // convert a PackedByteArray to ArrayBuffer (memory copy)
         void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -19,7 +21,7 @@ namespace jsb
                 jsb_throw(isolate, "bad parameter");
                 return;
             }
-            info.GetReturnValue().Set(BridgeHelper::to_array_buffer(isolate, var));
+            info.GetReturnValue().Set(impl::Helper::to_array_buffer(isolate, var));
         }
 
         // construct a callable object

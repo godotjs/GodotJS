@@ -11,7 +11,7 @@ namespace jsb
         {
             if (p_val->IsArrayBuffer())
             {
-                r_packed = BridgeHelper::to_packed_byte_array(isolate, p_val.As<v8::ArrayBuffer>());
+                r_packed = impl::Helper::to_packed_byte_array(isolate, p_val.As<v8::ArrayBuffer>());
                 return true;
             }
         }
@@ -394,7 +394,7 @@ namespace jsb
         // is it proper to convert a ArrayBuffer into Vector<uint8_t>?
         if (p_jval->IsArrayBuffer())
         {
-            r_cvar = BridgeHelper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
+            r_cvar = impl::Helper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
             return true;
         }
         //TODO
