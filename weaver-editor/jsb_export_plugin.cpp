@@ -128,6 +128,8 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
 
 void GodotJSExportPlugin::_export_file(const String& p_path, const String& p_type, const HashSet<String>& p_features)
 {
+    //TODO when exporting for web.impl, need to reorganize all scripts into a monolithic script (like webpack)? and preload it before everything get run.
+
     if (p_path.ends_with("." JSB_TYPESCRIPT_EXT))
     {
         const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(p_path);
