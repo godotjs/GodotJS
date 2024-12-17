@@ -19,9 +19,8 @@ namespace jsb
         // `exports' will be set into `p_module.exports` if loaded successfully
         virtual bool load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module) = 0;
 
-    protected:
         // `p_filename_abs` the absolute file path accessible for debugger
-        bool load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const char* p_source, size_t p_len);
+        static bool load_from_evaluator(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const v8::Local<v8::Function>& p_elevator);
 
     };
 

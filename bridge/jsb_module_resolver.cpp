@@ -5,36 +5,16 @@
 
 namespace jsb
 {
-    bool IModuleResolver::load_from_source(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const String& p_filename_abs, const char* p_source, size_t p_len)
+    bool IModuleResolver::load_from_evaluator(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const v8::Local<v8::Function>& p_elevator)
     {
         v8::Isolate* isolate = p_env->get_isolate();
-        v8::Isolate::Scope isolate_scope(isolate);
-        v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        v8::Context::Scope context_scope(context);
-        jsb_check(context == p_env->get_context());
-        jsb_check((size_t)(int)p_len == p_len);
-
-        // failed to compile or run, immediately return since an exception should already be thrown
-        const v8::MaybeLocal<v8::Value> func_maybe = p_env->_compile_run(p_source, (int) p_len, p_filename_abs);
-        if (func_maybe.IsEmpty())
-        {
-            return false;
-        }
-
-        v8::Local<v8::Value> func;
-        if (!func_maybe.ToLocal(&func) || !func->IsFunction())
-        {
-            jsb_throw(isolate, "bad module elevator");
-            return false;
-        }
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         // use resource path here (begins with `res://`)
         // to make path identification easier during exporting
         // (see `GodotJSExportPlugin::export_compiled_script`)
         const String& filename = p_asset_path;
         const String dirname = internal::PathUtil::dirname(filename);
-        const v8::Local<v8::Function> elevator = func.As<v8::Function>();
         const v8::Local<v8::Object> module_obj = p_module.module.Get(isolate);
 
         static constexpr int kIndexExports = 0;
@@ -55,7 +35,7 @@ namespace jsb
         //TODO set `require.cache`
         // ...
 
-        if (const v8::MaybeLocal<v8::Value> result = elevator->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
+        if (const v8::MaybeLocal<v8::Value> result = p_elevator->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
             result.IsEmpty())
         {
             // failed, usually means error thrown
@@ -210,7 +190,32 @@ namespace jsb
         p_module.time_modified = reader.get_time_modified();
         p_module.hash = reader.get_hash();
 #endif
-        return load_from_source(p_env, p_module, p_asset_path, filename_abs, (const char*) source.ptr(), len);
+        jsb_check((size_t)(int)len == len);
+
+        {
+            v8::Isolate* isolate = p_env->get_isolate();
+            v8::Isolate::Scope isolate_scope(isolate);
+            v8::HandleScope handle_scope(isolate);
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            v8::Context::Scope context_scope(context);
+
+            // source evaluator (the module protocol)
+            const v8::MaybeLocal<v8::Value> func_maybe = p_env->_compile_run((const char*) source.ptr(), (int) len, filename_abs);
+            if (func_maybe.IsEmpty())
+            {
+                //NOTE an exception should have been thrown in _compile_run if MaybeLocal is empty
+                return false;
+            }
+
+            v8::Local<v8::Value> func;
+            if (!func_maybe.ToLocal(&func) || !func->IsFunction())
+            {
+                jsb_throw(p_env->get_isolate(), "bad module elevator");
+                return false;
+            }
+
+            return load_from_evaluator(p_env, p_module, p_asset_path, func.As<v8::Function>());
+        }
     }
 
 }
