@@ -498,14 +498,21 @@ class jsbb_Engine {
         return this._stack.Push(module_eval);
     }
 
-    Call(this_sp: StackPosition, func_sp: StackPosition, argc: number): StackPosition {
+    Call(this_sp: StackPosition, func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
         const thiz = this._stack.GetValue(this_sp);
         const func: Function = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
             //TODO error 
         }
 
-        const args = this._stack.GetValues(argc);
+        let args: Array<any> | undefined = undefined;
+        if (argc > 0) {
+            args = new Array(argc);
+            for (let i = 0; i < argc; ++i) {
+                const arg_sp = NativeAPI.HEAP32[(argv >> 2) + i];
+                args[i] = this._stack.GetValue(arg_sp);
+            }
+        }
         const rval = func.apply(thiz, args);
         return this._stack.Push(rval);
     }
