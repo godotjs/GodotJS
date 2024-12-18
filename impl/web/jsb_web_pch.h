@@ -6,7 +6,7 @@
 #include <memory>
 #include <cstdint>
 
-#define JSB_WEG_LOG(Severity, Format, ...) JSB_LOG_IMPL(web, Severity, Format, ##__VA_ARGS__)
+#define JSB_WEB_LOG(Severity, Format, ...) JSB_LOG_IMPL(web, Severity, Format, ##__VA_ARGS__)
 
 #include "jsb_web_interop.h"
 

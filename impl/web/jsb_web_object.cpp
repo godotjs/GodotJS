@@ -6,8 +6,7 @@ namespace v8
 {
     int Object::InternalFieldCount() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) jsbi_GetOpaque(isolate_->rt(), stack_pos_);
         if (!index) return 0;
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_field_count;
@@ -15,27 +14,24 @@ namespace v8
 
     void Object::SetAlignedPointerInInternalField(int slot, void* data)
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID internal_data_id = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID internal_data_id = (jsb::impl::InternalDataID)(uintptr_t) jsbi_GetOpaque(isolate_->rt(), stack_pos_);
         const jsb::impl::InternalDataPtr internal_data = isolate_->get_internal_data(internal_data_id);
-        JSB_WEB_LOG(VeryVerbose, "set internal data JSObject:%s id:%s data:%s (last:%s)", (uintptr_t) JS_VALUE_GET_PTR(val), internal_data_id, (uintptr_t) data, (uintptr_t) internal_data->internal_fields[slot]);
+        JSB_WEB_LOG(VeryVerbose, "set internal data JSObject:%s id:%s data:%s (last:%s)", stack_pos_, internal_data_id, (uintptr_t) data, (uintptr_t) internal_data->internal_fields[slot]);
         jsb_checkf(!data || !internal_data->internal_fields[slot], "overwriting the internal field is not allowed");
         internal_data->internal_fields[slot] = data;
     }
 
     void* Object::GetAlignedPointerFromInternalField(int slot) const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) jsbi_GetOpaque(isolate_->rt(), stack_pos_);
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_fields[slot];
     }
 
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_IsArray(isolate_->ctx(), self));
-        const int res = JS_SetPropertyUint32(isolate_->ctx(), self, index, JS_DupValue(isolate_->ctx(), (JSValue) value));
+        jsb_check(jsbi_IsArray(isolate_->rt(), stack_pos_));
+        const int res = jsbi_SetPropertyUint32(isolate_->rt(), stack_pos_, index, value->stack_pos_);
         if (res == -1)
         {
             isolate_->mark_as_error_thrown();

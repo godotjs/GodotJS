@@ -10,8 +10,6 @@ namespace v8
     {
     private:
         Isolate* isolate_;
-        HandleScope* last_;
-        uint16_t stack_;
 
     public:
         HandleScope(Isolate* isolate);

@@ -31,9 +31,6 @@ namespace v8
             Local<Value> data = Local<Value>());
 
         Local<Context> GetCreationContextChecked() const;
-
-    private:
-        static JSValue _function_call(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
     };
 
 }

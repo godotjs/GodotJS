@@ -15,42 +15,30 @@ namespace jsb::impl
         struct Atom
         {
         private:
-            JSContext* ctx_;
+            JSRuntime ctx_;
             JSAtom atom_;
 
         public:
-            Atom(JSContext* ctx, JSValueConst value)
-                : ctx_(ctx), atom_(JS_ValueToAtom(ctx, value))
+            Atom(JSRuntime ctx, StackPosition value_sp)
+                : ctx_(ctx), atom_(jsbi_NewAtom(ctx, value_sp))
             {
             }
 
             ~Atom()
             {
-                JS_FreeAtom(ctx_, atom_);
+                jsbi_FreeAtom(ctx_, atom_);
             }
 
             operator JSAtom() const { return atom_; }
         };
 
-        static bool IsNullish(JSValueConst value)
+        static String GetString(JSRuntime ctx, StackPosition value_sp)
         {
-            return JS_IsNull(value) || JS_IsUndefined(value);
-        }
-
-        static String GetString(JSContext* ctx, JSValueConst value)
-        {
-            size_t len;
-            const char* str = JS_ToCStringLen(ctx, &len, value);
+            int32_t len;
+            char* str = jsbi_ToCStringLen(ctx, &len, value_sp);
             String rval = String::utf8(str, (int) len);
-            JS_FreeCString(ctx, str);
+            memfree(str);
             return rval;
-        }
-
-        static int _RefCount(JSValueConst value)
-        {
-            if (!JS_VALUE_HAS_REF_COUNT(value)) return 0;
-            const JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(value);
-            return p ? p->ref_count : 0;
         }
     };
 }

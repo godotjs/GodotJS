@@ -117,9 +117,9 @@ namespace v8
         void GetHeapStatistics(HeapStatistics* statistics);
         void SetPromiseRejectCallback(PromiseRejectCallback callback) { promise_reject_ = callback; }
 
-        void set_as_interruptible() { JS_SetInterruptHandler(rt_, _interrupt_callback, this); }
-        bool IsExecutionTerminating() const { return interrupted_.is_set(); }
-        void TerminateExecution() { interrupted_.set(); }
+        void set_as_interruptible() { }
+        bool IsExecutionTerminating() const { return false; }
+        void TerminateExecution() { }
 
         jsb_force_inline jsb::impl::JSRuntime rt() const { return rt_; }
         jsb_force_inline void remove_exception_anyway() const
@@ -309,8 +309,6 @@ namespace v8
 
         void* embedder_data_ = nullptr;
         void* context_embedder_data_ = nullptr;
-
-        SafeFlag interrupted_ = SafeFlag(false);
     };
 }
 

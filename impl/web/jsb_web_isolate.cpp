@@ -147,12 +147,10 @@ namespace v8
 
     void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type)
     {
-        JS_RunGC(rt_);
     }
 
     void Isolate::LowMemoryNotification()
     {
-        JS_RunGC(rt_);
     }
 
 }

@@ -2,6 +2,9 @@
 type ObjectID = number;
 type ObjectType = number;
 
+// -1 for return value to indicate an error thrown in jsbb_Engine internally (not JS throw)
+type ResultValue = number;
+
 interface ObjectHidden {
     pointer: any;
     type: number;
@@ -13,7 +16,13 @@ type ObjectFinalizer = (id: ObjectID) => void;
 type IntPtr = number;
 
 interface InteropProtocol {
-    UTF8ToString(ptr: any): string;
+    UTF8ToString(ptr: Pointer): string;
+    stringToUTF8(str: string): Pointer;
+    lengthBytesUTF8(str: string): number;
+
+    HEAPU8: Uint8Array,
+    HEAP32: Int32Array, 
+    HEAP64: BigInt64Array, 
 
     gc_callback(engine_opaque: IntPtr, internal_opaque: Pointer): void;
 
@@ -25,6 +34,7 @@ interface InteropProtocol {
 
 // starts from 1
 type UnsafeIndex = number;
+type jsbb_AtomID = UnsafeIndex;
 
 class jsbb_UnsafeArray<T> {
     items: Array<T>;
@@ -88,7 +98,17 @@ class jsbb_Stack<T> {
 
     // get frame value
     GetValue(pos: StackPosition): T {
+        if (pos >= this.values.length) {
+            throw new RangeError("invalidated stack position");
+        }
         return this.values[pos];
+    }
+
+    // return undefined if n is zero, otherwise return the last n values on stack
+    GetValues(n: number): Array<T> | undefined {
+        if (n == 0) return undefined;
+        if (n > this.values.length) throw new RangeError("unsatisfied stack size");
+        return this.values.slice(-n);
     }
 
     // return stack offset
@@ -120,6 +140,7 @@ class jsbb_Wrapper {
 
 type GlobalID = number;
 type Pointer = number;
+type CString = number;
 type FunctionPointer = number;
 
 interface GlobalEntry {
@@ -224,6 +245,8 @@ class jsbb_Atom {
 }
 
 class jsbb_Engine {
+    private _id: EngineID;
+
     // a fake global for Environment
     private _global: object;
     private _stack: jsbb_Stack<any>;
@@ -231,18 +254,22 @@ class jsbb_Engine {
     private _registry: jsbb_Registry;
     private _atoms: jsbb_UnsafeArray<jsbb_Atom>;
 
+    private _scripts: Map<string, Function>;
+
     private _opaque: IntPtr = 0;
     last_error: any = undefined;
 
     get stack() { return this._stack; }
 
-    constructor(opaque: Pointer) {
+    constructor(engine_id: EngineID, opaque: Pointer) {
+        this._id = engine_id;
         this._opaque = opaque;
         this._global = {};
         this._stack = new jsbb_Stack();
         this._globals = new jsbb_Globals();
         this._registry = new jsbb_Registry(opaque);
         this._atoms = new jsbb_UnsafeArray();
+        this._scripts = new Map();
 
         jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Undefined);
         jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Null);
@@ -297,7 +324,7 @@ class jsbb_Engine {
         return 0;
     }
 
-    NewAtom(stack_pos: StackPosition) {
+    NewAtom(stack_pos: StackPosition): jsbb_AtomID {
         return this._atoms.Add(new jsbb_Atom(this._stack.GetValue(stack_pos)));
     }
 
@@ -306,18 +333,59 @@ class jsbb_Engine {
         return this._atoms.Add(new jsbb_Atom(str));
     }
 
-    DupAtom(atom_id: UnsafeIndex) {
+    DupAtom(atom_id: jsbb_AtomID): jsbb_AtomID {
         let atom = this._atoms.Get(atom_id);
         ++atom.rc;
+        return atom_id;
     }
 
-    FreeAtom(atom_id: UnsafeIndex) {
+    FreeAtom(atom_id: jsbb_AtomID) {
         let atom = this._atoms.Get(atom_id);
         if (--atom.rc == 0) {
             this._atoms.Remove(atom_id);
         }
     }
 
+    ToCStringLen(o_size: Pointer, str_sp: StackPosition): Pointer {
+        const str = this._stack.GetValue(str_sp);
+        const len = NativeAPI.lengthBytesUTF8(str);
+
+        NativeAPI.HEAP32[o_size >> 2] = len;
+        return NativeAPI.stringToUTF8(str);
+    }
+
+    ToString(stack_pos: StackPosition): StackPosition {
+        const val = this._stack.GetValue(stack_pos);
+        return this._stack.Push(String(val));
+    }
+
+    NumberValue(stack_pos: StackPosition): number {
+        const val = this._stack.GetValue(stack_pos);
+        return Number(val) + 0;
+    }
+
+    BooleanValue(stack_pos: StackPosition): boolean {
+        const val = this._stack.GetValue(stack_pos);
+        return Boolean(val);
+    }
+
+    Int32Value(stack_pos: StackPosition): number {
+        const val = this._stack.GetValue(stack_pos);
+        return Number(val) | 0;
+    }
+
+    Uint32Value(stack_pos: StackPosition): number {
+        const val = this._stack.GetValue(stack_pos);
+        return (Number(val) | 0) >>> 0;
+    }
+
+    Int64Value(stack_pos: StackPosition, o_value_ptr: Pointer): boolean {
+        const val = this._stack.GetValue(stack_pos);
+        NativeAPI.HEAP64[o_value_ptr >> 3] = val;
+        return true;
+    }
+
+    // duplicate a value to the stack top
     StackDup(stack_pos: StackPosition): StackPosition {
         return this._stack.Push(this._stack.GetValue(stack_pos));
     }
@@ -329,6 +397,23 @@ class jsbb_Engine {
 
     NewExternal(data: Pointer): StackPosition {
         return this._stack.Push(new jsbb_External(data));
+    }
+
+    NewInt32(value: number): StackPosition {
+        return this._stack.Push(value);
+    }
+
+    NewUint32(value: number): StackPosition {
+        return this._stack.Push(value >>> 0);
+    }
+
+    NewNumber(value: number): StackPosition {
+        return this._stack.Push(value);
+    }
+
+    NewBigInt64(val_ptr: Pointer): StackPosition {
+        const val = NativeAPI.HEAP64[val_ptr >> 3];
+        return this._stack.Push(val);
     }
 
     NewSymbol(): StackPosition {
@@ -359,22 +444,75 @@ class jsbb_Engine {
         }
     }
 
+    SetPropertyUint32(obj_sp: StackPosition, index: number, value_sp: StackPosition): ResultValue {
+        const obj = this._stack.GetValue(obj_sp);
+        const val = this._stack.GetValue(value_sp);
+
+        try {
+            obj[index] = val;
+        } catch (err) {
+            //TODO save error 
+            return -1;
+        }
+        return 0;
+    }
+
     // push global to stack, return it's stack position
     GetGlobalObject(): StackPosition {
         return this._stack.Push(this._global);
     }
 
-    Eval(ptr: number) {
-        let src = NativeAPI.UTF8ToString(ptr);
-        
-        // eval();
-        let script = document.createElement("script");
-        script.type = "type/javascript";
-        script.textContent = `(function() { ${src} })();`;
-        document.head.appendChild(script);
+    CompileModuleSource(id: CString, src: CString) {
+        let module_id = NativeAPI.UTF8ToString(id);
+        let module_source = NativeAPI.UTF8ToString(src);
+        let source = `jsbb_runtime.GetEngine(${this._id}).SetModuleEvaluator('${module_id}', ${module_source}});`;
+
+        try {
+            eval(source);
+        } catch (err) {
+            // eval not supported
+            if (err instanceof EvalError) {
+                //TODO if async module is implemented, we can use dynamic scripts which support debugging in browser devtools
+                // but for now, we need a method to eval source synchronously
+                let script = document.createElement("script");
+                script.type = "type/javascript";
+                script.text = source;
+                document.head.appendChild(script);
+            } else {
+                //TODO exception in source
+                console.error(module_id, err);
+            }
+        }
     }
 
+    // internal 
+    SetModuleEvaluator(module_id: string, evaluator: Function) {
+        this._scripts.set(module_id, evaluator);
+    }
+
+    // stack-based call
+    GetModuleEvaluator(module_id_sp: StackPosition): StackPosition {
+        const module_id = this._stack.GetValue(module_id_sp);
+        const module_eval = this._scripts.get(module_id);
+        console.log("GetModuleEvaluator", module_id, typeof module_eval);
+        return this._stack.Push(module_eval);
+    }
+
+    Call(this_sp: StackPosition, func_sp: StackPosition, argc: number): StackPosition {
+        const thiz = this._stack.GetValue(this_sp);
+        const func: Function = this._stack.GetValue(func_sp);
+        if (typeof func !== "function") {
+            //TODO error 
+        }
+
+        const args = this._stack.GetValues(argc);
+        const rval = func.apply(thiz, args);
+        return this._stack.Push(rval);
+    }
+
+    // [stack-based]
     // cb: C++ Function Pointer
+    // return: stack position of the wrapper function 
     NewCFunction(cb: FunctionPointer, data_pos: StackPosition): StackPosition {
         const self = this;
         const data = this._stack.GetValue(data_pos);
@@ -461,7 +599,7 @@ class jsbb_runtime {
         if (typeof engine !== "undefined") {
             throw new Error();
         }
-        engine = new jsbb_Engine(opaque);
+        engine = new jsbb_Engine(0, opaque);
         return 0;
     }
 
