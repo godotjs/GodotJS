@@ -52,8 +52,8 @@ namespace v8
         // cleanup
         jsb_check(!handle_scope_);
         jsb_check(phantom_.is_empty());
-        jsb_check(stack_pos_ == jsb::impl::StackPos::Num);
-        for (int i = 0; i < jsb::impl::StackPos::Num; ++i)
+        jsb_check(stack_pos_ == jsb::impl::StackBase::Num);
+        for (int i = 0; i < jsb::impl::StackBase::Num; ++i)
         {
             JS_FreeValue(ctx_, stack_[i]);
         }
@@ -128,7 +128,7 @@ namespace v8
         const JSValue ex = JS_GetException(ctx_);
         if (JS_IsNull(ex))
         {
-            jsb_checkf(JS_IsNull(stack_[jsb::impl::StackPos::Exception]), "exception read but not handled (get_message)");
+            jsb_checkf(JS_IsNull(stack_[jsb::impl::StackBase::Exception]), "exception read but not handled (get_message)");
             return false;
         }
         if (!error_thrown_)
@@ -138,9 +138,9 @@ namespace v8
             //     2. an exception was thrown by web API but not handled by web.impl (it's not expected)
             JSB_LOG(Warning, "unexpected exception thrown in web");
         }
-        const JSValue last = stack_[jsb::impl::StackPos::Exception];
+        const JSValue last = stack_[jsb::impl::StackBase::Exception];
         jsb_check(JS_IsNull(last));
-        stack_[jsb::impl::StackPos::Exception] = ex;
+        stack_[jsb::impl::StackBase::Exception] = ex;
         error_thrown_ = false;
         return !JS_IsNull(ex);
     }

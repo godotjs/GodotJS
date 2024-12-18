@@ -62,10 +62,19 @@ const GodotJSBrowserInterface = {
     jsbi_Int64Value: function (engine_id, stack_pos, o_value_ptr) { return jsbb_runtime.GetEngine(engine_id).stack.Int64Value(stack_pos, o_value_ptr); },
 
     jsbi_hash: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).GetIdentityHash(stack_pos); },
-    jsbi_strict_eq: function (engine_id, stack_pos1, stack_pos2) {
+    jsbi_stack_eq: function (engine_id, stack_pos1, stack_pos2) {
         const v1 = jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos1);
         const v2 = jsbb_runtime.GetEngine(engine_id).stack.GetValue(stack_pos2);
         return v1 === v2;
+    },
+
+    jsbi_handle_eq: function (engine_id, val1, val2) {
+        const v1 = jsbb_runtime.GetEngine(engine_id).globals.GetValue(val1);
+        const v2 = jsbb_runtime.GetEngine(engine_id).globals.GetValue(val2);
+        return v1 === v2;
+    },
+    jsbi_handle_is_valid: function (engine_id, handle) {
+        return jsbb_runtime.GetEngine(engine_id).globals.IsValid(handle);
     },
     
     jsbi_IsNullOrUndefined: function (engine_id, stack_pos) {

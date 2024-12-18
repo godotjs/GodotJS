@@ -1,17 +1,18 @@
 #include "jsb_web_primitive.h"
 #include "jsb_web_maybe.h"
 #include "jsb_web_isolate.h"
+#include "jsb_web_typedef.h"
 
 namespace v8
 {
     Local<Primitive> Undefined(Isolate* isolate)
     {
-        return Local<Primitive>(Data(isolate, jsb::impl::StackPos::Undefined));
+        return Local<Primitive>(Data(isolate, jsb::impl::StackBase::Undefined));
     }
 
     Local<Primitive> Null(Isolate* isolate)
     {
-        return Local<Primitive>(Data(isolate, jsb::impl::StackPos::Null));
+        return Local<Primitive>(Data(isolate, jsb::impl::StackBase::Null));
     }
 
     MaybeLocal<String> Value::ToDetailString(Local<Context> context) const
@@ -61,7 +62,7 @@ namespace v8
 
     Local<String> String::Empty(Isolate* isolate)
     {
-        return Local<String>(Data(isolate, jsb::impl::StackPos::EmptyString));
+        return Local<String>(Data(isolate, jsb::impl::StackBase::EmptyString));
     }
 
     Local<Integer> Integer::New(Isolate* isolate, int32_t value)
@@ -96,12 +97,14 @@ namespace v8
 
     bool Boolean::Value() const
     {
+        if (stack_pos_ == jsb::impl::StackBase::True) return true;
+        if (stack_pos_ == jsb::impl::StackBase::False) return false;
         return jsbi_BooleanValue(isolate_->rt(), stack_pos_);
     }
 
     Local<Boolean> Boolean::New(Isolate* isolate, bool value)
     {
-        return Local<Boolean>(Data(isolate, value ? jsb::impl::StackPos::True : jsb::impl::StackPos::False));
+        return Local<Boolean>(Data(isolate, value ? jsb::impl::StackBase::True : jsb::impl::StackBase::False));
     }
 
     int64_t BigInt::Int64Value(bool* lossless) const

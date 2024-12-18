@@ -22,7 +22,7 @@ namespace v8
         {
             if (value.IsEmpty())
             {
-                data_.isolate_->set_stack_copy(data_.stack_pos_, jsb::impl::StackPos::Undefined);
+                data_.isolate_->set_stack_copy(data_.stack_pos_, jsb::impl::StackBase::Undefined);
                 return;
             }
             data_.isolate_->set_stack_copy(data_.stack_pos_, value->stack_pos_);
@@ -33,7 +33,7 @@ namespace v8
         {
             if (value.IsEmpty())
             {
-                data_.isolate_->set_stack_copy(data_.stack_pos_, jsb::impl::StackPos::Undefined);
+                data_.isolate_->set_stack_copy(data_.stack_pos_, jsb::impl::StackBase::Undefined);
                 return;
             }
             Set(value.Get(data_.isolate_));
@@ -86,7 +86,7 @@ namespace v8
             {
                 return Local<Value>(v8::Data(isolate_, stack_pos_ + jsb::impl::FunctionStackBase::Num + index));
             }
-            return Local<Value>(v8::Data(isolate_, jsb::impl::StackPos::Undefined));
+            return Local<Value>(v8::Data(isolate_, jsb::impl::StackBase::Undefined));
         }
 
         int Length() const { return len_; }

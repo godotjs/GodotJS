@@ -47,9 +47,9 @@ namespace v8
 
         T* operator->() const { return (T*) &const_cast<Local*>(this)->data_; }
 
-        explicit operator JSValue() const
+        explicit operator jsb::impl::StackPosition() const
         {
-            return data_.isolate_ ? jsb::impl::Broker::stack_val(data_.isolate_, data_.stack_pos_) : JS_UNDEFINED;
+            return data_.isolate_ ? data_.stack_pos_ : jsb::impl::StackBase::Undefined;
         }
 
         template <typename S>
@@ -285,7 +285,8 @@ namespace v8
         template <typename S>
         bool operator==(const Global<S>& other) const
         {
-            return shadow_ == other.shadow_ || jsb::impl::BrowserJS::Equals(value_, other.value_);
+            const jsb::impl::JSRuntime engine = jsb::impl::Broker::get_engine(isolate_);
+            return jsbi_handle_eq(engine, value_, other.value_);
         }
 
         template <typename S>
@@ -295,18 +296,11 @@ namespace v8
         }
 
     private:
-        // A primitive JSValue is always alive (shadow_ == nullptr).
-        // Otherwise, check if the BrowserJS internal JSObject* has not been deleted from the phantom list.
-        bool is_alive() const { return !shadow_ || jsb::impl::Broker::is_phantom_alive(isolate_, shadow_); }
+        bool is_alive() const { return jsbi_handle_is_valid(jsb::impl::Broker::get_engine(isolate_), value_); }
 
         Isolate* isolate_ = nullptr;
 
-        // JSObject pointer shadow
-        void* shadow_ = nullptr;
-
-        // a shadow copy of object without reference control.
-        // only valid if is_alive() returns true.
-        JSValue value_ = JS_UNDEFINED;
+        jsb::impl::GlobalID value_ = -1;
 
         WeakType weak_type_ = WeakType::kStrong;
     };

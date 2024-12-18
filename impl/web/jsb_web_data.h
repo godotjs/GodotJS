@@ -1,6 +1,7 @@
 #ifndef GODOTJS_WEB_DATA_H
 #define GODOTJS_WEB_DATA_H
 #include "jsb_web_pch.h"
+#include "jsb_web_typedef.h"
 
 namespace v8
 {

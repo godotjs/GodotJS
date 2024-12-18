@@ -16,6 +16,11 @@ namespace jsb::impl
         data->weak.callback = (void*) callback;
     }
 
+    JSRuntime Broker::get_engine(v8::Isolate* isolate)
+    {
+        return isolate->rt();
+    }
+
     JSValue Broker::stack_val(v8::Isolate* isolate, uint16_t index)
     {
         return isolate->stack_val(index);

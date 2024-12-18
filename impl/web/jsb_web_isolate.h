@@ -43,24 +43,6 @@ namespace jsb::impl
         uint32_t data = 0;
     };
 
-    namespace StackPos
-    {
-        // reserved absolute stack positions, never released until isolate disposed
-        enum
-        {
-            Undefined,
-            Null,
-            True,
-            False,
-            EmptyString,
-            SymbolClass,
-            MapClass,
-            Exception,
-
-            Num,
-        };
-    }
-
     struct Phantom
     {
         int watcher_ = 0;

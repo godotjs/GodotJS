@@ -19,6 +19,8 @@ namespace jsb::impl
         static void _free(v8::Isolate* isolate, JSValueConst value);
         static void _free_delayed(v8::Isolate* isolate, JSValueConst value);
 
+        static JSRuntime get_engine(v8::Isolate* isolate);
+
         static void add_phantom(v8::Isolate* isolate, void* token);
         static void remove_phantom(v8::Isolate* isolate, void* token);
         static bool is_phantom_alive(v8::Isolate* isolate, void* token);

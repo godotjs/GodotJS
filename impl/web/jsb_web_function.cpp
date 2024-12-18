@@ -19,7 +19,7 @@ namespace v8
     {
         Isolate* isolate = context->isolate_;
         static_assert(sizeof(callback) == sizeof(void*));
-        return MaybeLocal<Function>(Data(isolate, jsbi_NewCFunction(isolate->rt(), callback, data->stack_pos_));
+        return MaybeLocal<Function>(Data(isolate, jsbi_NewCFunction(isolate->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_)));
     }
 
     Local<Context> Function::GetCreationContextChecked() const

@@ -84,9 +84,9 @@ const jsbb_StackPos = {
     EmptyString: 4,
     SymbolClass: 5,
     MapClass: 6,
-    Exception: 7,
+    Error: 7,
 
-    Num: 8,
+    _Num: 8,
 }
 
 // Stack for Locals (starts from zero)
@@ -96,17 +96,24 @@ class jsbb_Stack<T> {
 
     get pos() { return this.values.length; }
 
+    SetValue(pos: StackPosition, value: T): void {
+        if (pos < 0 || pos >= this.values.length) {
+            throw new RangeError("invalid stack position");
+        }
+        this.values[pos] = value;
+    } 
+
     // get frame value
     GetValue(pos: StackPosition): T {
-        if (pos >= this.values.length) {
-            throw new RangeError("invalidated stack position");
+        if (pos < 0 || pos >= this.values.length) {
+            throw new RangeError("invalid stack position");
         }
         return this.values[pos];
     }
 
     // return undefined if n is zero, otherwise return the last n values on stack
     GetValues(n: number): Array<T> | undefined {
-        if (n == 0) return undefined;
+        if (n <= 0) return undefined;
         if (n > this.values.length) throw new RangeError("unsatisfied stack size");
         return this.values.slice(-n);
     }
@@ -153,6 +160,9 @@ interface GlobalEntry {
 }
 
 class jsbb_Globals {
+    //TODO DO NOT REUSE THE INDEX (reimplement SArray in JS, or use a map-like array)
+    //TODO DO NOT REUSE THE INDEX (reimplement SArray in JS, or use a map-like array)
+    //TODO DO NOT REUSE THE INDEX (reimplement SArray in JS, or use a map-like array)
     private handles: jsbb_UnsafeArray<GlobalEntry>;
 
     static isTraceable(o: any): boolean {
@@ -165,7 +175,7 @@ class jsbb_Globals {
     }
 
     // trace an object (it's weak-referenced by default)
-    Add(o: any) {
+    AddValue(o: any) {
         if (!jsbb_Globals.isTraceable(o)) {
             o = new jsbb_Wrapper(o);
         }
@@ -177,13 +187,20 @@ class jsbb_Globals {
         return handle_id;
     }
 
+    IsValid(handle_id: GlobalID): boolean {
+        //TODO IMPLEMENT IT NOW
+        //TODO IMPLEMENT IT NOW
+        //TODO IMPLEMENT IT NOW
+        throw new Error("not implemented");
+    }
+
     // unsafe, must ensure a valid index by yourself
     Remove(handle_id: GlobalID) {
         this.handles.Remove(handle_id);
     }
 
     // return the original target object in registry
-    Get(handle_id: number): any {
+    GetValue(handle_id: number): any {
         const handle = this.handles.Get(handle_id);
         const target = handle.token.deref();
         if (target instanceof jsbb_Wrapper) {
@@ -257,9 +274,19 @@ class jsbb_Engine {
     private _scripts: Map<string, Function>;
 
     private _opaque: IntPtr = 0;
-    last_error: any = undefined;
 
     get stack() { return this._stack; }
+    get globals() { return this._globals; }
+
+    // last error thrown (Error | undefined)
+    get error(): any { return this._stack.GetValue(jsbb_StackPos.Error); }
+    set error(value: any) {
+        const last = this._stack.GetValue(jsbb_StackPos.Error);
+        if (last !== undefined) {
+            console.error("discarding an unhandled error", last);
+        }
+        this._stack.SetValue(jsbb_StackPos.Error, value);
+    }
 
     constructor(engine_id: EngineID, opaque: Pointer) {
         this._id = engine_id;
@@ -278,8 +305,8 @@ class jsbb_Engine {
         jsbb_ensure(this._stack.Push("") === jsbb_StackPos.EmptyString);
         jsbb_ensure(this._stack.Push(Symbol) === jsbb_StackPos.SymbolClass);
         jsbb_ensure(this._stack.Push(Map) === jsbb_StackPos.MapClass);
-        jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Exception);
-        jsbb_ensure(this._stack.pos === jsbb_StackPos.Num);
+        jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Error);
+        jsbb_ensure(this._stack.pos === jsbb_StackPos._Num);
     }
 
     Release() {
@@ -310,6 +337,8 @@ class jsbb_Engine {
         return jsbb_Engine.GetStringHash(val.toString());
     }
 
+    // must return a stable hash for value.
+    // 0 is OK but introduce additional strict_eq evaluation.
     GetIdentityHash(stack_pos: StackPosition) {
         const val = this._stack.GetValue(stack_pos);
         if (typeof val === "undefined" || val === null) return 0;
@@ -320,6 +349,8 @@ class jsbb_Engine {
         // if (typeof val === "function")
         // if (typeof val === "object")
         // if (typeof val === "symbol") 
+        
+        // internal data index as hash since it's never changed
         if (typeof val[jsbb_opaque] !== "undefined") return val[jsbb_opaque] | 0;
         return 0;
     }
@@ -346,6 +377,7 @@ class jsbb_Engine {
         }
     }
 
+    //TODO need type check?
     ToCStringLen(o_size: Pointer, str_sp: StackPosition): Pointer {
         const str = this._stack.GetValue(str_sp);
         const len = NativeAPI.lengthBytesUTF8(str);
@@ -361,7 +393,7 @@ class jsbb_Engine {
 
     NumberValue(stack_pos: StackPosition): number {
         const val = this._stack.GetValue(stack_pos);
-        return Number(val) + 0;
+        return Number(val);
     }
 
     BooleanValue(stack_pos: StackPosition): boolean {
@@ -392,6 +424,9 @@ class jsbb_Engine {
 
     GetOpaque(stack_pos: StackPosition): Pointer {
         let obj = this._stack.GetValue(stack_pos);
+        if (typeof obj !== "object") {
+            return 0;
+        }
         return obj[jsbb_opaque];
     }
 
@@ -432,18 +467,21 @@ class jsbb_Engine {
         return this._stack.GetValue(stack_pos) instanceof jsbb_External;
     }
 
-    SetProperty(obj: StackPosition, key: StackPosition, val: StackPosition) {
-        const obj_sv = this._stack.GetValue(obj);
-        const key_sv = this._stack.GetValue(key);
-        const val_sv = this._stack.GetValue(val);
+    //TODO return error int
+    SetProperty(obj_sp: StackPosition, key_sp: StackPosition, val_sp: StackPosition): ResultValue {
+        const obj = this._stack.GetValue(obj_sp);
+        const key = this._stack.GetValue(key_sp);
+        const val = this._stack.GetValue(val_sp);
 
-        if (obj_sv instanceof Map) {
-            obj_sv.set(key_sv, val_sv);
+        if (obj instanceof Map) {
+            obj.set(key, val);
         } else {
-            obj_sv[key_sv] = val_sv;
+            obj[key] = val;
         }
+        return 0;
     }
 
+    //
     SetPropertyUint32(obj_sp: StackPosition, index: number, value_sp: StackPosition): ResultValue {
         const obj = this._stack.GetValue(obj_sp);
         const val = this._stack.GetValue(value_sp);
@@ -451,6 +489,7 @@ class jsbb_Engine {
         try {
             obj[index] = val;
         } catch (err) {
+            this.error = err;
             //TODO save error 
             return -1;
         }
@@ -502,7 +541,8 @@ class jsbb_Engine {
         const thiz = this._stack.GetValue(this_sp);
         const func: Function = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
-            //TODO error 
+            this.error = new TypeError("not a function");
+            return jsbb_StackPos.Error;
         }
 
         let args: Array<any> | undefined = undefined;
@@ -513,8 +553,13 @@ class jsbb_Engine {
                 args[i] = this._stack.GetValue(arg_sp);
             }
         }
-        const rval = func.apply(thiz, args);
-        return this._stack.Push(rval);
+        try {
+            const rval = func.apply(thiz, args);
+            return this._stack.Push(rval);
+        } catch (error) {
+            this.error = error;
+            return jsbb_StackPos.Error;
+        }
     }
 
     // [stack-based]
@@ -540,14 +585,11 @@ class jsbb_Engine {
             }
 
             try {
-                if (typeof self.last_error !== "undefined") {
-                    self.last_error = undefined;
-                    console.error("Last exeption not handled");
-                }
-
                 NativeAPI.ccall(self._opaque, cb, argc);
             } catch (error) {
-                self.last_error = error;
+                self.error = error;
+                self._stack.ExitScope();
+                return jsbb_StackPos.Error;
             }
             const rval = self._stack.GetValue(rval_pos);
 
@@ -562,19 +604,24 @@ class jsbb_Engine {
     }
 
     NewObjectProtoClass(proto_pos: StackPosition, obj_opaque: Pointer): StackPosition {
-        const proto = this._stack.GetValue(proto_pos);
-        const obj = new proto.constructor();
-        this._registry.Add(obj, obj_opaque);
-        return this._stack.Push(obj);
+        try {
+            const proto = this._stack.GetValue(proto_pos);
+            const obj = new proto.constructor();
+            this._registry.Add(obj, obj_opaque);
+            return this._stack.Push(obj);
+        } catch (error) {
+            this.error = error;
+            return jsbb_StackPos.Error;
+        }
     }
 
-    SetConstructor(func: StackPosition, proto: StackPosition) {
+    SetConstructor(func: StackPosition, proto: StackPosition): void {
         const p = this._stack.GetValue(proto);
         const f = this._stack.GetValue(func);
         p.constructor = f;
     }
 
-    SetPrototype(proto_pos: StackPosition, parent_pos: StackPosition) {
+    SetPrototype(proto_pos: StackPosition, parent_pos: StackPosition): void {
         const a = this._stack.GetValue(proto_pos);
         const b = this._stack.GetValue(parent_pos);
         a.prototype = b.prototype;

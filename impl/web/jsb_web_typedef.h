@@ -7,6 +7,7 @@
 namespace jsb::impl
 {
     // Offset positions based on the current scope
+    //NOTE be cautious to always keep sync with NewCFunction in monolith.ts
     namespace FunctionStackBase
     {
         enum
@@ -20,22 +21,24 @@ namespace jsb::impl
         };
     }
 
-    enum
+    // absolute stack position for common values
+    //NOTE be cautious to always keep sync with jsbb_StackPos in monolith.ts
+    namespace StackBase
     {
-        __JS_ATOM_NULL = JS_ATOM_NULL,
-#pragma push_macro("DEF")
-#   undef DEF
-#   define DEF(name, str) JS_ATOM_ ## name,
-#   include "../../web/web-atom.h"
-#pragma pop_macro("DEF")
-        JS_ATOM_END,
-    };
+        enum
+        {
+            Undefined = 0,
+            Null = 1,
+            True = 2,
+            False = 3,
+            EmptyString = 4,
+            SymbolClass = 5,
+            MapClass = 6,
+            Error = 7,
 
-    //TODO do not know whether it works properly or not
-    enum
-    {
-        JS_TAG_EXTERNAL = JS_TAG_FLOAT64 + 1,
-    };
+            _Num = 8,
+        };
+    }
 }
 
 namespace v8

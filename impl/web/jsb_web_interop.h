@@ -15,11 +15,22 @@
 
 namespace jsb::impl
 {
+    // [reserved] unique id for jsbb_Engine
     typedef int JSRuntime;
+
+    // cached string index in jsbb_Engine
     typedef int JSAtom;
 
+    // 0 means OK
     typedef int ResultValue;
+
+    // error caught if StackBase::Error
     typedef int StackPosition;
+
+    // id of a saved value in GlobalHandle registry,
+    // negative id is invalid.
+    typedef int GlobalID;
+
     typedef void* FunctionPointer;
 }
 
@@ -59,7 +70,7 @@ JSAPI_EXTERN jsb::impl::StackPosition jsbi_NewClass(jsb::impl::JSRuntime engine_
 
 JSAPI_EXTERN void jsbi_SetConstructor(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition func, jsb::impl::StackPosition proto);
 JSAPI_EXTERN void jsbi_SetPrototype(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition proto, jsb::impl::StackPosition parent);
-JSAPI_EXTERN void jsbi_SetProperty(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj, jsb::impl::StackPosition key, jsb::impl::StackPosition value);
+JSAPI_EXTERN jsb::impl::ResultValue jsbi_SetProperty(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj, jsb::impl::StackPosition key, jsb::impl::StackPosition value);
 JSAPI_EXTERN jsb::impl::ResultValue jsbi_SetPropertyUint32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj, uint32_t index, jsb::impl::StackPosition value);
 
 JSAPI_EXTERN void* jsbi_GetExternal(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
@@ -73,7 +84,10 @@ JSAPI_EXTERN uint32_t jsbi_Uint32Value(jsb::impl::JSRuntime engine_id, jsb::impl
 JSAPI_EXTERN bool  jsbi_Int64Value(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos, int64_t* o_value);
 
 JSAPI_EXTERN int   jsbi_hash(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSAPI_EXTERN bool  jsbi_strict_eq(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos1, jsb::impl::StackPosition stack_pos2);
+JSAPI_EXTERN bool  jsbi_stack_eq(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos1, jsb::impl::StackPosition stack_pos2);
+
+JSAPI_EXTERN bool  jsbi_handle_is_valid(jsb::impl::JSRuntime engine_id, jsb::impl::GlobalID handle);
+JSAPI_EXTERN bool  jsbi_handle_eq(jsb::impl::JSRuntime engine_id, jsb::impl::GlobalID handle1, jsb::impl::StackPosition handle2);
 
 JSAPI_EXTERN bool  jsbi_IsNullOrUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSAPI_EXTERN bool  jsbi_IsUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
