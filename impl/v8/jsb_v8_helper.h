@@ -10,6 +10,16 @@ namespace jsb::impl
     public:
         Helper() = delete;
 
+        // deleter for valuetype optimization (no ObjectHandle needed)
+        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> p_object, v8::BackingStore::DeleterCallback callback, void *deleter_data)
+        {
+            v8::Isolate* isolate = p_object->GetIsolate();
+            p_object->Set(isolate->GetCurrentContext(), 0,
+                // in this way, the scavenger could gc it efficiently
+                v8::ArrayBuffer::New(isolate, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(Variant), callback, deleter_data))
+            ).Check();
+        }
+
         static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
         {
             const size_t size = array_buffer->ByteLength();

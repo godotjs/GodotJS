@@ -326,16 +326,7 @@ namespace jsb
         void bind_valuetype_impl(Variant* p_pointer, const v8::Local<v8::Object>& p_object)
         {
             p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
-#if JSB_WITH_QUICKJS
-            impl::Helper::SetDeleter(p_object, _valuetype_deleter, this);
-#elif JSB_WITH_V8
-            p_object->Set(isolate_->GetCurrentContext(), 0,
-                // in this way, the scavenger could gc it efficiently
-                v8::ArrayBuffer::New(isolate_, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(Variant), _valuetype_deleter, this))
-            ).Check();
-#else
-#   error "not implemented"
-#endif
+            impl::Helper::SetDeleter(p_pointer, p_object, _valuetype_deleter, this);
         }
 
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
