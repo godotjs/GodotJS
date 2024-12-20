@@ -74,11 +74,12 @@ namespace jsb
 
     bool DefaultModuleResolver::check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info)
     {
+        static const String cjs_ext = ".cjs";
         static const String js_ext = "." JSB_JAVASCRIPT_EXT;
 
         // direct module
         {
-            const String extended = internal::PathUtil::extends_with(p_module_id, js_ext);
+            const String extended = p_module_id.ends_with(cjs_ext) ? p_module_id : internal::PathUtil::extends_with(p_module_id, js_ext);
 
             //NOTE !!! we use FileAccess::exists instead of access->file_exists because access->file_exists does not consider files from packages
             if(FileAccess::exists(extended))
@@ -111,7 +112,11 @@ namespace jsb
 
                     String main_path;
                     const Dictionary data = json->get_data();
-                    const String main = internal::PathUtil::combine(p_module_id, internal::PathUtil::extends_with(data["main"], js_ext));
+                    const String data_main = data["main"];
+                    const String main = internal::PathUtil::combine(
+                        p_module_id,
+                        data_main.ends_with(cjs_ext) ? data_main : internal::PathUtil::extends_with(data["main"], js_ext)
+                        );
                     error = internal::PathUtil::extract(main, main_path);
                     if (error != OK)
                     {
