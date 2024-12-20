@@ -41,9 +41,9 @@ JSAPI_EXTERN void jsbi_init(void);
 JSAPI_EXTERN jsb::impl::JSRuntime jsbi_NewEngine(void* opaque);
 JSAPI_EXTERN void jsbi_FreeEngine(jsb::impl::JSRuntime engine_id);
 
-JSAPI_EXTERN void jsbi_CompileModuleSource(jsb::impl::JSRuntime engine_id, const char* id, const char* source);;
-JSAPI_EXTERN jsb::impl::StackPosition jsbi_GetModuleEvaluator(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);;
-JSAPI_EXTERN jsb::impl::StackPosition jsbi_Call(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition this_sp, jsb::impl::StackPosition func_sp, int argc, jsb::impl::StackPosition* argv);;
+JSAPI_EXTERN jsb::impl::StackPosition jsbi_CompileFunctionSource(jsb::impl::JSRuntime engine_id, const char* id, const char* source);
+JSAPI_EXTERN jsb::impl::StackPosition jsbi_Eval(jsb::impl::JSRuntime engine_id, const char* id, const char* source);
+JSAPI_EXTERN jsb::impl::StackPosition jsbi_Call(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition this_sp, jsb::impl::StackPosition func_sp, int argc, jsb::impl::StackPosition* argv);
 
 JSAPI_EXTERN void jsbi_SetHostPromiseRejectionTracker(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb, void* data);
 

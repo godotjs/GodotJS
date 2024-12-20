@@ -240,18 +240,6 @@ namespace jsb
 
         void rebind(Object* p_this, ScriptClassID p_class_id);
 
-        /**
-         * \brief run  and return a value from source
-         * \param p_source source bytes (utf-8 encoded)
-         * \param p_source_len length of source
-         * \param p_filename SourceOrigin (compile the code snippet without ScriptOrigin if `p_filename` is empty)
-         * \return js rval
-         */
-        v8::MaybeLocal<v8::Value> _compile_run(const char* p_source, int p_source_len, const String& p_filename)
-        {
-            return impl::Helper::compile_run(context_.Get(isolate_), p_source, p_source_len, p_filename);
-        }
-
         v8::Local<v8::Function> _new_require_func(const String& p_module_id);
 
         bool _get_main_module(v8::Local<v8::Object>* r_main_module) const;

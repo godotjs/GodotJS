@@ -164,14 +164,14 @@ namespace jsb
             "    });"
             "})"
             "";
-        const v8::MaybeLocal<v8::Value> func_maybe_local = p_env->_compile_run(on_demand_loader_source, std::size(on_demand_loader_source) - 1, "on_demand_loader_source");
+        const v8::Local<v8::Context> context = p_env->get_context();
+        const v8::MaybeLocal<v8::Value> func_maybe_local = impl::Helper::compile_function(context, on_demand_loader_source, std::size(on_demand_loader_source) - 1, "on_demand_loader_source");
         if (v8::Local<v8::Value> func_local; func_maybe_local.ToLocal(&func_local))
         {
             jsb_check(func_local->IsFunction());
             const v8::Local<v8::Function> loader = func_local.As<v8::Function>();
 
             v8::Isolate* isolate = p_env->get_isolate();
-            const v8::Local<v8::Context> context = p_env->get_context();
             v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
             const v8::MaybeLocal<v8::Value> result = loader->Call(context, v8::Undefined(isolate), std::size(argv), argv);
 

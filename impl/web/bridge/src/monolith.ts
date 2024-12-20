@@ -271,8 +271,6 @@ class jsbb_Engine {
     private _registry: jsbb_Registry;
     private _atoms: jsbb_UnsafeArray<jsbb_Atom>;
 
-    private _scripts: Map<string, Function>;
-
     private _opaque: IntPtr = 0;
 
     get stack() { return this._stack; }
@@ -296,7 +294,6 @@ class jsbb_Engine {
         this._globals = new jsbb_Globals();
         this._registry = new jsbb_Registry(opaque);
         this._atoms = new jsbb_UnsafeArray();
-        this._scripts = new Map();
 
         jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Undefined);
         jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Null);
@@ -551,41 +548,60 @@ class jsbb_Engine {
         return this._stack.Push(this._global);
     }
 
-    CompileModuleSource(id: CString, src: CString) {
-        let module_id = NativeAPI.UTF8ToString(id);
-        let module_source = NativeAPI.UTF8ToString(src);
-        //TODO implement the source transformation in web.impl layer?
-        let source = `jsbb_runtime.GetEngine(${this._id}).SetModuleEvaluator('${module_id}', ${module_source}});`;
-
+    CompileFunctionSource(filename_ptr: CString, source_ptr: CString): StackPosition {
+        let source = NativeAPI.UTF8ToString(source_ptr);
+        let rval: any = undefined;
         try {
-            eval(source);
+            rval = eval(source);
         } catch (err) {
             // eval not supported
             if (err instanceof EvalError) {
+                // module_source must be a bare function source (like '(function(){ ... })')
+
                 //TODO if async module is implemented, we can use dynamic scripts which support debugging in browser devtools
                 // but for now, we need a method to eval source synchronously
                 let script = document.createElement("script");
                 script.type = "type/javascript";
-                script.text = source;
+                script.text = `jsbb_runtime.eval = ${source};`;
+
+                jsbb_runtime.eval = undefined;
                 document.head.appendChild(script);
+                rval = jsbb_runtime.eval;
+                document.head.removeChild(script);
             } else {
-                //TODO exception in source
-                console.error(module_id, err);
+                let filename = NativeAPI.UTF8ToString(filename_ptr);
+                console.error(filename, err);
+
+                this.error = err;
+                return jsbb_StackPos.Error;
             }
         }
+        
+        if (typeof rval === "undefined") {
+            return jsbb_StackPos.Undefined;
+        }
+        return this._stack.Push(rval);
     }
 
-    // internal 
-    SetModuleEvaluator(module_id: string, evaluator: Function) {
-        this._scripts.set(module_id, evaluator);
-    }
+    Eval(filename_ptr: CString, source_ptr: CString): StackPosition {
+        let source = NativeAPI.UTF8ToString(source_ptr);
+        let rval: any = undefined;
+        try {
+            rval = eval(source);
+        } catch (err) {
+            // it's difficult to emulate the behaviour of eval with script element (get the result without 'return').
+            // just throw error for easier life.
+            let filename = NativeAPI.UTF8ToString(filename_ptr);
+            console.error(filename, err);
 
-    // stack-based call
-    GetModuleEvaluator(module_id_sp: StackPosition): StackPosition {
-        const module_id = this._stack.GetValue(module_id_sp);
-        const module_eval = this._scripts.get(module_id);
-        console.log("GetModuleEvaluator", module_id, typeof module_eval);
-        return this._stack.Push(module_eval);
+            this.error = err;
+            return jsbb_StackPos.Error;
+        }
+        
+        if (typeof rval === "undefined") {
+            return jsbb_StackPos.Undefined;
+        }
+        return this._stack.Push(rval);
     }
 
     Call(this_sp: StackPosition, func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
@@ -693,6 +709,8 @@ declare const global: any;
 const browser = global || globalThis || window;
 
 class jsbb_runtime {
+    static eval: Function | undefined = undefined;
+
     static init(api: InteropProtocol) {
         if (typeof NativeAPI !== "undefined") {
             console.error("Already initialized, do not call it twice");

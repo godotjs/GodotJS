@@ -187,7 +187,6 @@ class jsbb_Engine {
         this._globals = new jsbb_Globals();
         this._registry = new jsbb_Registry(opaque);
         this._atoms = new jsbb_UnsafeArray();
-        this._scripts = new Map();
         jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Undefined);
         jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Null);
         jsbb_ensure(this._stack.Push(true) === jsbb_StackPos.True);
@@ -409,40 +408,56 @@ class jsbb_Engine {
     GetGlobalObject() {
         return this._stack.Push(this._global);
     }
-    CompileModuleSource(id, src) {
-        let module_id = NativeAPI.UTF8ToString(id);
-        let module_source = NativeAPI.UTF8ToString(src);
-        //TODO implement the source transformation in web.impl layer?
-        let source = `jsbb_runtime.GetEngine(${this._id}).SetModuleEvaluator('${module_id}', ${module_source}});`;
+    CompileFunctionSource(filename_ptr, source_ptr) {
+        let source = NativeAPI.UTF8ToString(source_ptr);
+        let rval = undefined;
         try {
-            eval(source);
+            rval = eval(source);
         }
         catch (err) {
             // eval not supported
             if (err instanceof EvalError) {
+                // module_source must be a bare function source (like '(function(){ ... })')
                 //TODO if async module is implemented, we can use dynamic scripts which support debugging in browser devtools
                 // but for now, we need a method to eval source synchronously
                 let script = document.createElement("script");
                 script.type = "type/javascript";
-                script.text = source;
+                script.text = `jsbb_runtime.eval = ${source};`;
+                jsbb_runtime.eval = undefined;
                 document.head.appendChild(script);
+                rval = jsbb_runtime.eval;
+                document.head.removeChild(script);
             }
             else {
-                //TODO exception in source
-                console.error(module_id, err);
+                let filename = NativeAPI.UTF8ToString(filename_ptr);
+                console.error(filename, err);
+                this.error = err;
+                return jsbb_StackPos.Error;
             }
         }
+        if (typeof rval === "undefined") {
+            return jsbb_StackPos.Undefined;
+        }
+        return this._stack.Push(rval);
     }
-    // internal 
-    SetModuleEvaluator(module_id, evaluator) {
-        this._scripts.set(module_id, evaluator);
-    }
-    // stack-based call
-    GetModuleEvaluator(module_id_sp) {
-        const module_id = this._stack.GetValue(module_id_sp);
-        const module_eval = this._scripts.get(module_id);
-        console.log("GetModuleEvaluator", module_id, typeof module_eval);
-        return this._stack.Push(module_eval);
+    Eval(filename_ptr, source_ptr) {
+        let source = NativeAPI.UTF8ToString(source_ptr);
+        let rval = undefined;
+        try {
+            rval = eval(source);
+        }
+        catch (err) {
+            // it's difficult to emulate the behaviour of eval with script element (get the result without 'return').
+            // just throw error for easier life.
+            let filename = NativeAPI.UTF8ToString(filename_ptr);
+            console.error(filename, err);
+            this.error = err;
+            return jsbb_StackPos.Error;
+        }
+        if (typeof rval === "undefined") {
+            return jsbb_StackPos.Undefined;
+        }
+        return this._stack.Push(rval);
     }
     Call(this_sp, func_sp, argc, argv) {
         const thiz = this._stack.GetValue(this_sp);
@@ -554,4 +569,5 @@ class jsbb_runtime {
     }
     static GetEngine(engine_id) { return engine; }
 }
+jsbb_runtime.eval = undefined;
 browser["jsbb_runtime"] = jsbb_runtime;

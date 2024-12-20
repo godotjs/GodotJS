@@ -167,7 +167,7 @@ namespace jsb::impl
             return v8::Number::New(isolate, (double) p_val);
         }
 
-        static v8::MaybeLocal<v8::Value> compile_run(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
+        static v8::MaybeLocal<v8::Value> compile_function(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
         {
             jsb_checkf(p_source[p_source_len] == '\0', "JS_Eval needs a zero-terminated string as input to evaluate");
             v8::Isolate* isolate = context->GetIsolate();
@@ -181,6 +181,11 @@ namespace jsb::impl
                 return v8::MaybeLocal<v8::Value>();
             }
             return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
+        }
+
+        static v8::MaybeLocal<v8::Value> eval(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
+        {
+            return compile_function(context, p_source, p_source_len, p_filename);
         }
 
         jsb_force_inline static void free(uint8_t* data)

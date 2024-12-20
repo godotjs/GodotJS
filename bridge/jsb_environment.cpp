@@ -1070,10 +1070,11 @@ namespace jsb
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Context::Scope context_scope(context_.Get(isolate));
+        const v8::Local<v8::Context> context = context_.Get(isolate);
+        v8::Context::Scope context_scope(context);
 
         const impl::TryCatch try_catch_run(isolate);
-        const v8::MaybeLocal<v8::Value> maybe = _compile_run(p_source, p_length, p_filename);
+        const v8::MaybeLocal<v8::Value> maybe = impl::Helper::eval(context, p_source, p_length, p_filename);
         if (try_catch_run.has_caught())
         {
             r_err = ERR_COMPILATION_FAILED;

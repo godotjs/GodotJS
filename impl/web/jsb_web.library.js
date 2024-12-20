@@ -18,9 +18,8 @@ const GodotJSBrowserInterface = {
     jsbi_NewEngine: function (opaque) { return jsbb_runtime.NewEngine(opaque); },
     jsbi_FreeEngine: function (engine_id) { jsbb_runtime.FreeEngine(engine_id); },
 
-    //TODO handle the error
-    jsbi_CompileModuleSource: function (engine_id, id, src) { jsbb_runtime.GetEngine(engine_id).CompileModuleSource(id, src); }, 
-    jsbi_GetModuleEvaluator: function (engine_id, id) { return jsbb_runtime.GetEngine(engine_id).GetModuleEvaluator(id); },
+    jsbi_CompileFunctionSource: function (engine_id, filename, src) { return jsbb_runtime.GetEngine(engine_id).CompileFunctionSource(filename, src); }, 
+    jsbi_Eval: function (engine_id, filename, src) { return jsbb_runtime.GetEngine(engine_id).Eval(filename, src); }, 
     jsbi_Call: function (engine_id, this_sp, func_sp, argc, argv) { return jsbb_runtime.GetEngine(engine_id).Call(this_sp, func_sp, argc, argv); }, 
 
     jsbi_SetHostPromiseRejectionTracker: function (engine_id, cb, data) { jsbb_runtime.GetEngine(engine_id).SetHostPromiseRejectionTracker(cb, data); },

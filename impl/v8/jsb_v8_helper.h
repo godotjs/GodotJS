@@ -133,7 +133,14 @@ namespace jsb::impl
             return v8::Number::New(isolate, (double) p_val);
         }
 
-        static v8::MaybeLocal<v8::Value> compile_run(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
+        /**
+         * \brief run  and return a value from source
+         * \param p_source source bytes (utf-8 encoded)
+         * \param p_source_len length of source
+         * \param p_filename SourceOrigin (compile the code snippet without ScriptOrigin if `p_filename` is empty)
+         * \return js rval
+         */
+        static v8::MaybeLocal<v8::Value> compile_function(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
         {
             v8::Isolate* isolate = context->GetIsolate();
             v8::MaybeLocal<v8::Script> script;
@@ -167,6 +174,11 @@ namespace jsb::impl
 
             // JSB_LOG(VeryVerbose, "script compiled %s", p_filename);
             return maybe_value;
+        }
+
+        static v8::MaybeLocal<v8::Value> eval(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
+        {
+            return compile_function(context, p_source, p_source_len, p_filename);
         }
 
         template<int N>

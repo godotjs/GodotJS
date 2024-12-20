@@ -169,22 +169,32 @@ namespace jsb::impl
             return v8::Number::New(isolate, (double) p_val);
         }
 
-        static v8::MaybeLocal<v8::Value> compile_run(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
+        static v8::MaybeLocal<v8::Value> compile_function(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
         {
             jsb_checkf(p_source[p_source_len] == '\0', "needs a zero-terminated string as input to evaluate");
             v8::Isolate* isolate = context->GetIsolate();
             const CharString filename = p_filename.utf8();
 
+            const jsb::impl::StackPosition rval_sp = jsbi_CompileFunctionSource(isolate->rt(), filename.get_data(), p_source);
+            if (rval_sp == jsb::impl::StackBase::Error)
+            {
+                return v8::MaybeLocal<v8::Value>();
+            }
+            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, rval_sp));
+        }
 
-            // JSContext* ctx = isolate->ctx();
-            // constexpr int flags = JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT;
-            // const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.get_data(), flags);
-            // if (JS_IsException(rval))
-            // {
-            //     isolate->mark_as_error_thrown();
-            //     return v8::MaybeLocal<v8::Value>();
-            // }
-            // return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
+        static v8::MaybeLocal<v8::Value> eval(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
+        {
+            jsb_checkf(p_source[p_source_len] == '\0', "needs a zero-terminated string as input to evaluate");
+            v8::Isolate* isolate = context->GetIsolate();
+            const CharString filename = p_filename.utf8();
+
+            const jsb::impl::StackPosition rval_sp = jsbi_Eval(isolate->rt(), filename.get_data(), p_source);
+            if (rval_sp == jsb::impl::StackBase::Error)
+            {
+                return v8::MaybeLocal<v8::Value>();
+            }
+            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, rval_sp));
         }
 
         jsb_force_inline static void free(uint8_t* data)

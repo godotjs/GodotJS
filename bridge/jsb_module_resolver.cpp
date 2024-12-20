@@ -200,7 +200,7 @@ namespace jsb
             v8::Context::Scope context_scope(context);
 
             // source evaluator (the module protocol)
-            const v8::MaybeLocal<v8::Value> func_maybe = p_env->_compile_run((const char*) source.ptr(), (int) len, filename_abs);
+            const v8::MaybeLocal<v8::Value> func_maybe = impl::Helper::compile_function(context, (const char*) source.ptr(), (int) len, filename_abs);
             if (func_maybe.IsEmpty())
             {
                 //NOTE an exception should have been thrown in _compile_run if MaybeLocal is empty
