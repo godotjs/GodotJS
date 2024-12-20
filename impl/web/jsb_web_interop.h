@@ -73,8 +73,16 @@ JSAPI_EXTERN void jsbi_SetPrototype(jsb::impl::JSRuntime engine_id, jsb::impl::S
 JSAPI_EXTERN jsb::impl::ResultValue jsbi_SetProperty(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj, jsb::impl::StackPosition key, jsb::impl::StackPosition value);
 JSAPI_EXTERN jsb::impl::ResultValue jsbi_SetPropertyUint32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj, uint32_t index, jsb::impl::StackPosition value);
 
+// return 0 if stackval is not ArrayBuffer
+JSAPI_EXTERN int   jsbi_GetByteLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSAPI_EXTERN void  jsbi_ReadArrayBufferData(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos, int size, void* data_dst);
+JSAPI_EXTERN jsb::impl::StackPosition jsbi_NewArrayBuffer(jsb::impl::JSRuntime engine_id, const uint8_t* data, int size);
+// return nullptr if stackval is not External
 JSAPI_EXTERN void* jsbi_GetExternal(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSAPI_EXTERN int   jsbi_GetLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+// return 0 if stackval is not Array
+JSAPI_EXTERN int   jsbi_GetArrayLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+// return 0 if stackval is not String
+JSAPI_EXTERN int   jsbi_GetStringLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSAPI_EXTERN char* jsbi_ToCStringLen(jsb::impl::JSRuntime engine_id, int32_t* o_size, jsb::impl::StackPosition str_sp);
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_ToString(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSAPI_EXTERN double jsbi_NumberValue(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);

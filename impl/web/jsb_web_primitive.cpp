@@ -57,7 +57,7 @@ namespace v8
 
     int String::Length() const
     {
-        return jsbi_GetLength(isolate_->rt(), stack_pos_);
+        return jsbi_GetStringLength(isolate_->rt(), stack_pos_);
     }
 
     Local<String> String::Empty(Isolate* isolate)

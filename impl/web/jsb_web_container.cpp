@@ -12,7 +12,7 @@ namespace v8
 
     uint32_t Array::Length() const
     {
-        const int len = jsbi_GetLength(isolate_->rt(), stack_pos_);
+        const int len = jsbi_GetArrayLength(isolate_->rt(), stack_pos_);
         return (uint32_t)len;
     }
 

@@ -18,26 +18,24 @@ namespace jsb::impl
             //TODO needed?
         }
 
-        //TODO copy from HEAP?
         static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
         {
-            const size_t size = array_buffer->ByteLength();
+            const int size = jsbi_GetByteLength(isolate->rt(), array_buffer->stack_pos_);
+            jsb_check(size >= 0);
+            if (size == 0) return {};
+
             PackedByteArray packed;
-            const Error err = packed.resize((int) size);
+            const Error err = packed.resize(size);
             jsb_unused(err);
             jsb_check(err == OK);
-            const void* data = array_buffer->Data();
-            memcpy(packed.ptrw(), data, size);
+            jsbi_ReadArrayBufferData(isolate->rt(), array_buffer->stack_pos_, size, packed.ptrw());
             return packed;
         }
 
         //TODO copy from HEAP?
         static v8::Local<v8::ArrayBuffer> to_array_buffer(v8::Isolate* isolate, const Vector<uint8_t>& packed)
         {
-            const v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, packed.size());
-            void* data = buffer->Data();
-            memcpy(data, packed.ptr(), packed.size());
-            return buffer;
+            return v8::Local<v8::ArrayBuffer>(v8::Data(isolate, jsbi_NewArrayBuffer(isolate->rt(), packed.ptr(), packed.size())));
         }
 
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
@@ -113,10 +111,12 @@ namespace jsb::impl
             String ret;
             if (!p_val.IsEmpty() && !p_val->IsNullOrUndefined())
             {
-                size_t len;
-                const char* str = JS_ToCStringLen(isolate->ctx(), &len, (JSValue) p_val);
-                ret = String::utf8(str, (int) len);
-                JS_FreeCString(isolate->ctx(), str);
+                int32_t len;
+                if (char* str = jsbi_ToCStringLen(isolate->rt(), &len, p_val->stack_pos_))
+                {
+                    ret = String::utf8(str, (int) len);
+                    memfree(str);
+                }
             }
             return ret;
         }
@@ -171,18 +171,20 @@ namespace jsb::impl
 
         static v8::MaybeLocal<v8::Value> compile_run(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
         {
-            jsb_checkf(p_source[p_source_len] == '\0', "JS_Eval needs a zero-terminated string as input to evaluate");
+            jsb_checkf(p_source[p_source_len] == '\0', "needs a zero-terminated string as input to evaluate");
             v8::Isolate* isolate = context->GetIsolate();
-            JSContext* ctx = isolate->ctx();
             const CharString filename = p_filename.utf8();
-            constexpr int flags = JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT;
-            const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.get_data(), flags);
-            if (JS_IsException(rval))
-            {
-                isolate->mark_as_error_thrown();
-                return v8::MaybeLocal<v8::Value>();
-            }
-            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
+
+
+            // JSContext* ctx = isolate->ctx();
+            // constexpr int flags = JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT;
+            // const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.get_data(), flags);
+            // if (JS_IsException(rval))
+            // {
+            //     isolate->mark_as_error_thrown();
+            //     return v8::MaybeLocal<v8::Value>();
+            // }
+            // return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
         }
 
         jsb_force_inline static void free(uint8_t* data)

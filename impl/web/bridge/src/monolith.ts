@@ -377,9 +377,59 @@ class jsbb_Engine {
         }
     }
 
+    GetByteLength(buf_sp: StackPosition): number {
+        const buf = this._stack.GetValue(buf_sp);
+        if (buf instanceof ArrayBuffer) {
+            return buf.byteLength;
+        }
+        return 0;
+    }
+
+    ReadArrayBufferData(stack_pos: StackPosition, size: number, data_dst: Pointer): void{
+        const val = this._stack.GetValue(stack_pos);
+        if (val instanceof ArrayBuffer) {
+            if (val.byteLength < size) {
+                console.error("ArrayBuffer: not enough data to read");
+                return;
+            }
+            NativeAPI.HEAPU8.set(new Uint8Array(val), data_dst);
+            return;
+        }
+        console.error("not ArrayBuffer");
+    }
+
+    NewArrayBuffer(data_src: Pointer, size: number): StackPosition {
+        const data = new Uint8Array(NativeAPI.HEAPU8.buffer, data_src, size).slice();
+        return this._stack.Push(data.buffer);
+    }
+
+    GetExternal(stack_pos: StackPosition): Pointer {
+        const val = this._stack.GetValue(stack_pos);
+        if (val instanceof jsbb_External) {
+            return val.data;
+        }
+        return 0;
+    }
+
+    GetStringLength(stack_pos: StackPosition): number{
+        const val = this._stack.GetValue(stack_pos);
+        if (typeof val === "string") {
+            return val.length;
+        }
+        return 0;
+    }
+
+    GetArrayLength(stack_pos: StackPosition): number{
+        const val = this._stack.GetValue(stack_pos);
+        if (val instanceof Array) {
+            return val.length;
+        }
+        return 0;
+    }
+
     //TODO need type check?
     ToCStringLen(o_size: Pointer, str_sp: StackPosition): Pointer {
-        const str = this._stack.GetValue(str_sp);
+        const str = String(this._stack.GetValue(str_sp));
         const len = NativeAPI.lengthBytesUTF8(str);
 
         NativeAPI.HEAP32[o_size >> 2] = len;
@@ -504,6 +554,7 @@ class jsbb_Engine {
     CompileModuleSource(id: CString, src: CString) {
         let module_id = NativeAPI.UTF8ToString(id);
         let module_source = NativeAPI.UTF8ToString(src);
+        //TODO implement the source transformation in web.impl layer?
         let source = `jsbb_runtime.GetEngine(${this._id}).SetModuleEvaluator('${module_id}', ${module_source}});`;
 
         try {
