@@ -18,7 +18,11 @@ namespace v8
 
     MaybeLocal<Map> Map::Set(Local<Context> context, Local<Value> key, Local<Value> value)
     {
-        jsbi_SetProperty(isolate_->rt(), stack_pos_, key->stack_pos_, value->stack_pos_);
+        const jsb::impl::ResultValue rval = jsbi_SetProperty(isolate_->rt(), stack_pos_, key->stack_pos_, value->stack_pos_);
+        if (rval == -1)
+        {
+            return MaybeLocal<Map>();
+        }
         return MaybeLocal<Map>(Data(isolate_, stack_pos_));
     }
 

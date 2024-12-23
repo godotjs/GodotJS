@@ -31,9 +31,13 @@ namespace v8
         return isolate;
     }
 
-    Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr), stack_pos_(0)
+    Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr)
     {
         rt_ = jsbi_NewEngine(this);
+
+        atom_cache_[jsb::impl::JS_ATOM_message] = jsbi_NewAtomStr(rt_, "message");
+        atom_cache_[jsb::impl::JS_ATOM_stack] = jsbi_NewAtomStr(rt_, "stack");
+
         jsbi_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
     }
 
@@ -46,37 +50,15 @@ namespace v8
     {
         JSB_WEB_LOG(VeryVerbose, "release web runtime");
 
-        // manually run GC before freeing the context/runtime to ensure all objects free-ed (valuetype objects)
-        JS_RunGC(rt_);
-
         // cleanup
         jsb_check(!handle_scope_);
-        jsb_check(phantom_.is_empty());
-        jsb_check(stack_pos_ == jsb::impl::StackBase::Num);
-        for (int i = 0; i < jsb::impl::StackBase::Num; ++i)
-        {
-            JS_FreeValue(ctx_, stack_[i]);
-        }
 
-        swap_free_queue();
-        swap_free_queue();
-        jsb_check(front_free_queue_.is_empty());
-        jsb_check(back_free_queue_.is_empty());
-
-#if !JSB_STRICT_DISPOSE
         // make it behave like v8, not to trigger gc callback after the isolate disposed
         internal_data_.clear();
-#endif
 
         // dispose the runtime
-        JS_FreeContext(ctx_);
-        ctx_ = nullptr;
-        JS_FreeRuntime(rt_);
-        rt_ = nullptr;
-
-#if JSB_STRICT_DISPOSE
-        jsb_check(internal_data_.is_empty());
-#endif
+        jsbi_FreeEngine(rt_);
+        rt_ = {};
 
         memdelete(this);
     }
@@ -121,28 +103,6 @@ namespace v8
             );
             isolate->promise_reject_(message);
         }
-    }
-
-    bool Isolate::try_catch()
-    {
-        const JSValue ex = JS_GetException(ctx_);
-        if (JS_IsNull(ex))
-        {
-            jsb_checkf(JS_IsNull(stack_[jsb::impl::StackBase::Exception]), "exception read but not handled (get_message)");
-            return false;
-        }
-        if (!error_thrown_)
-        {
-            // it happens in two situations:
-            //     1. the worker thread is forcibly terminated (it's OK)
-            //     2. an exception was thrown by web API but not handled by web.impl (it's not expected)
-            JSB_LOG(Warning, "unexpected exception thrown in web");
-        }
-        const JSValue last = stack_[jsb::impl::StackBase::Exception];
-        jsb_check(JS_IsNull(last));
-        stack_[jsb::impl::StackBase::Exception] = ex;
-        error_thrown_ = false;
-        return !JS_IsNull(ex);
     }
 
     void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type)

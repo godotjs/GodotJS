@@ -81,15 +81,13 @@ namespace jsb::impl
         template<size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])
         {
-            const uint16_t stack_pos = isolate->push_steal(JS_NewStringLen(isolate->ctx(), literal, N - 1));
-            return v8::Local<v8::String>(v8::Data(isolate, stack_pos));
+            return v8::Local<v8::String>(v8::Data(isolate, jsbi_NewString(isolate->rt(), literal, N - 1)));
         }
 
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const String& p_str)
         {
             const CharString str8 = p_str.utf8();
-            const uint16_t stack_pos = isolate->push_steal(JS_NewStringLen(isolate->ctx(), str8.get_data(), str8.length()));
-            return v8::Local<v8::String>(v8::Data(isolate, stack_pos));
+            return v8::Local<v8::String>(v8::Data(isolate, jsbi_NewString(isolate->rt(), str8.get_data(), str8.length())));
         }
 
         jsb_force_inline static v8::Local<v8::String> new_string_ascii(v8::Isolate* isolate, const String& p_str)

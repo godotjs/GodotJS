@@ -21,15 +21,18 @@ const GodotJSBrowserInterface = {
     jsbi_CompileFunctionSource: function (engine_id, filename, src) { return jsbb_runtime.GetEngine(engine_id).CompileFunctionSource(filename, src); }, 
     jsbi_Eval: function (engine_id, filename, src) { return jsbb_runtime.GetEngine(engine_id).Eval(filename, src); }, 
     jsbi_Call: function (engine_id, this_sp, func_sp, argc, argv) { return jsbb_runtime.GetEngine(engine_id).Call(this_sp, func_sp, argc, argv); }, 
+    jsbi_ThrowError: function (engine_id, message_ptr) { return jsbb_runtime.GetEngine(engine_id).ThrowError(message_ptr); },
+    jsbi_HasError: function (engine_id) { return jsbb_runtime.GetEngine(engine_id).HasError(); },
 
     jsbi_SetHostPromiseRejectionTracker: function (engine_id, cb, data) { jsbb_runtime.GetEngine(engine_id).SetHostPromiseRejectionTracker(cb, data); },
 
     jsbi_StackEnter: function (engine_id) { jsbb_runtime.GetEngine(engine_id).stack.EnterScope(); },
     jsbi_StackExit: function (engine_id) { jsbb_runtime.GetEngine(engine_id).stack.ExitScope(); },
     jsbi_GetOpaque: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).GetOpaque(stack_pos); },
-    jsbi_GetGlobalObject: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).GetGlobalObject(); },
+    jsbi_GetGlobalObject: function (engine_id) { return jsbb_runtime.GetEngine(engine_id).GetGlobalObject(); },
     jsbi_StackDup: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).StackDup(stack_pos); },
 
+    jsbi_NewAtomStr: function (engine_id, cstr_ptr) { return jsbb_runtime.GetEngine(engine_id).NewAtomStr(cstr_ptr); },
     jsbi_NewAtom: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).NewAtom(stack_pos); },
     jsbi_DupAtom: function (engine_id, atom_id) { return jsbb_runtime.GetEngine(engine_id).DupAtom(atom_id); },
     jsbi_FreeAtom: function (engine_id, atom_id) { return jsbb_runtime.GetEngine(engine_id).FreeAtom(atom_id); },
@@ -44,10 +47,11 @@ const GodotJSBrowserInterface = {
     jsbi_NewNumber: function (engine_id, value) { return jsbb_runtime.GetEngine(engine_id).NewNumber(value); },
     jsbi_NewBigInt64: function (engine_id, val_ptr) { return jsbb_runtime.GetEngine(engine_id).NewBigInt64(val_ptr); },
     jsbi_NewClass: function (engine_id) { return jsbb_runtime.GetEngine(engine_id).NewClass(); },
+    jsbi_NewString: function (engine_id, cstr_ptr, len) { return jsbb_runtime.GetEngine(engine_id).NewString(cstr_ptr, len); },
 
     jsbi_SetConstructor: function (engine_id, func, proto) { return jsbb_runtime.GetEngine(engine_id).SetConstructor(func, proto); },
     jsbi_SetPrototype: function (engine_id, proto, parent) { return jsbb_runtime.GetEngine(engine_id).SetPrototype(proto, parent); },
-    jsbi_SetProperty: function (engine_id, obj, key, value) { return jsbb_runtime.GetEngine(engine_id).SetProperty(obj, key, value); },
+    jsbi_SetProperty: function (engine_id, obj_sp, key_sp, value_sp) { return jsbb_runtime.GetEngine(engine_id).SetProperty(obj_sp, key_sp, value_sp); },
     jsbi_SetPropertyUint32: function (engine_id, obj_sp, index, value_sp) { return jsbb_runtime.GetEngine(engine_id).SetPropertyUint32(obj_sp, index, value_sp); },
     
     jsbi_GetByteLength: function (engine_id, stack_pos) { return jsbb_runtime.GetEngine(engine_id).GetByteLength(stack_pos); },

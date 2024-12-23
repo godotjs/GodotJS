@@ -44,6 +44,8 @@ JSAPI_EXTERN void jsbi_FreeEngine(jsb::impl::JSRuntime engine_id);
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_CompileFunctionSource(jsb::impl::JSRuntime engine_id, const char* id, const char* source);
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_Eval(jsb::impl::JSRuntime engine_id, const char* id, const char* source);
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_Call(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition this_sp, jsb::impl::StackPosition func_sp, int argc, jsb::impl::StackPosition* argv);
+JSAPI_EXTERN void jsbi_ThrowError(jsb::impl::JSRuntime engine_id, const char* message);
+JSAPI_EXTERN bool jsbi_HasError(jsb::impl::JSRuntime engine_id);
 
 JSAPI_EXTERN void jsbi_SetHostPromiseRejectionTracker(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb, void* data);
 
@@ -53,6 +55,7 @@ JSAPI_EXTERN void* jsbi_GetOpaque(jsb::impl::JSRuntime engine_id, jsb::impl::Sta
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_GetGlobalObject(jsb::impl::JSRuntime engine_id);
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_StackDup(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 
+JSAPI_EXTERN jsb::impl::JSAtom jsbi_NewAtomStr(jsb::impl::JSRuntime engine_id, const char* str);
 JSAPI_EXTERN jsb::impl::JSAtom jsbi_NewAtom(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition key_sp);
 JSAPI_EXTERN jsb::impl::JSAtom jsbi_DupAtom(jsb::impl::JSRuntime engine_id, jsb::impl::JSAtom atom_id);
 JSAPI_EXTERN void jsbi_FreeAtom(jsb::impl::JSRuntime engine_id, jsb::impl::JSAtom atom_id);
@@ -67,6 +70,7 @@ JSAPI_EXTERN jsb::impl::StackPosition jsbi_NewUint32(jsb::impl::JSRuntime engine
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_NewNumber(jsb::impl::JSRuntime engine_id, double val);
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_NewBigInt64(jsb::impl::JSRuntime engine_id, int64_t* val_ptr);
 JSAPI_EXTERN jsb::impl::StackPosition jsbi_NewClass(jsb::impl::JSRuntime engine_id);
+JSAPI_EXTERN jsb::impl::StackPosition jsbi_NewString(jsb::impl::JSRuntime engine_id, const char* str, int len);
 
 JSAPI_EXTERN void jsbi_SetConstructor(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition func, jsb::impl::StackPosition proto);
 JSAPI_EXTERN void jsbi_SetPrototype(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition proto, jsb::impl::StackPosition parent);

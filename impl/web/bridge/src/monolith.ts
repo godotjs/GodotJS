@@ -356,7 +356,7 @@ class jsbb_Engine {
         return this._atoms.Add(new jsbb_Atom(this._stack.GetValue(stack_pos)));
     }
 
-    NewAtomStr(ptr: Pointer) {
+    NewAtomStr(ptr: CString) {
         let str = NativeAPI.UTF8ToString(ptr);
         return this._atoms.Add(new jsbb_Atom(str));
     }
@@ -469,12 +469,30 @@ class jsbb_Engine {
         return this._stack.Push(this._stack.GetValue(stack_pos));
     }
 
+    HasError(): boolean {
+        return this.error !== undefined;
+    }
+
+    ThrowError(message_ptr: CString): void {
+        if (this.error !== undefined) {
+            console.warn("unhandled error", this.error);
+        }
+        let message = NativeAPI.UTF8ToString(message_ptr);
+        throw new Error(message);
+    }
+
     GetOpaque(stack_pos: StackPosition): Pointer {
         let obj = this._stack.GetValue(stack_pos);
         if (typeof obj !== "object") {
             return 0;
         }
         return obj[jsbb_opaque];
+    }
+
+    // len: is ignored
+    NewString(cstr_ptr: CString, len: number): StackPosition {
+        let str = NativeAPI.UTF8ToString(cstr_ptr);
+        return this._stack.Push(str);
     }
 
     NewExternal(data: Pointer): StackPosition {
@@ -514,33 +532,36 @@ class jsbb_Engine {
         return this._stack.GetValue(stack_pos) instanceof jsbb_External;
     }
 
-    //TODO return error int
     SetProperty(obj_sp: StackPosition, key_sp: StackPosition, val_sp: StackPosition): ResultValue {
-        const obj = this._stack.GetValue(obj_sp);
-        const key = this._stack.GetValue(key_sp);
-        const val = this._stack.GetValue(val_sp);
+        try {
+            const obj = this._stack.GetValue(obj_sp);
+            const key = this._stack.GetValue(key_sp);
+            const val = this._stack.GetValue(val_sp);
 
-        if (obj instanceof Map) {
-            obj.set(key, val);
-        } else {
-            obj[key] = val;
+            if (obj instanceof Map) {
+                obj.set(key, val);
+            } else {
+                obj[key] = val;
+            }
+            return 0;
+        } catch (err) {
+            this.error = err;
+            return -1;
         }
-        return 0;
     }
 
     //
     SetPropertyUint32(obj_sp: StackPosition, index: number, value_sp: StackPosition): ResultValue {
-        const obj = this._stack.GetValue(obj_sp);
-        const val = this._stack.GetValue(value_sp);
-
         try {
+            const obj = this._stack.GetValue(obj_sp);
+            const val = this._stack.GetValue(value_sp);
+    
             obj[index] = val;
+            return 0;
         } catch (err) {
             this.error = err;
-            //TODO save error 
             return -1;
         }
-        return 0;
     }
 
     // push global to stack, return it's stack position

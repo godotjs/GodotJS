@@ -39,6 +39,14 @@ namespace jsb::impl
             _Num = 8,
         };
     }
+
+    enum JSAtomIndex
+    {
+        JS_ATOM_message = 0,
+        JS_ATOM_stack = 1,
+
+        _JS_ATOM_Num = 2,
+    };
 }
 
 namespace v8

@@ -6,7 +6,7 @@ namespace jsb::impl
 {
     bool TryCatch::has_caught() const
     {
-        return isolate_->try_catch();
+        return jsbi_HasError(isolate_->rt());
     }
 
     void TryCatch::get_message(String* r_message, String* r_stacktrace) const
