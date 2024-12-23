@@ -53,7 +53,6 @@ namespace jsb
 
     size_t DefaultModuleResolver::read_all_bytes(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes)
     {
-        //TODO (consider) add `global, globalThis` to shadow the real global object
         static constexpr char header[] = "(function(exports,require,module,__filename,__dirname){";
         static constexpr char footer[] = "\n})";
 
@@ -72,23 +71,45 @@ namespace jsb
         return o_bytes.size() - 1;
     }
 
+    //NOTE !!! we use FileAccess::exists instead of access->file_exists because access->file_exists does not consider files from packages (res://)
+    bool DefaultModuleResolver::check_source_path(const String& p_path, String& o_path)
+    {
+        // if path is with extension
+        if (p_path.contains(".") && FileAccess::exists(p_path))
+        {
+            o_path = p_path;
+            return true;
+        }
+
+        // try with .js
+        const String js_path = internal::PathUtil::extends_with(p_path, "." JSB_JAVASCRIPT_EXT);
+        if (FileAccess::exists(js_path))
+        {
+            o_path = js_path;
+            return true;
+        }
+
+        // try with .cjs
+        const String cjs_path = internal::PathUtil::extends_with(p_path, ".cjs");
+        if (FileAccess::exists(cjs_path))
+        {
+            o_path = cjs_path;
+            return true;
+        }
+
+        return false;
+    }
+
     bool DefaultModuleResolver::check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info)
     {
-        static const String cjs_ext = ".cjs";
-        static const String js_ext = "." JSB_JAVASCRIPT_EXT;
-
+        String source_path;
         // direct module
+        if (check_source_path(p_module_id, source_path))
         {
-            const String extended = p_module_id.ends_with(cjs_ext) ? p_module_id : internal::PathUtil::extends_with(p_module_id, js_ext);
-
-            //NOTE !!! we use FileAccess::exists instead of access->file_exists because access->file_exists does not consider files from packages
-            if(FileAccess::exists(extended))
-            {
-                o_source_info.source_filepath = extended;
-                o_source_info.package_filepath = String();
-                JSB_LOG(Verbose, "checked file path %s", extended);
-                return true;
-            }
+            o_source_info.source_filepath = source_path;
+            o_source_info.package_filepath = String();
+            JSB_LOG(Verbose, "checked file path %s", source_path);
+            return true;
         }
 
         // parse package.json
@@ -110,23 +131,19 @@ namespace jsb
                         break;
                     }
 
-                    String main_path;
                     const Dictionary data = json->get_data();
-                    const String data_main = data["main"];
-                    const String main = internal::PathUtil::combine(
-                        p_module_id,
-                        data_main.ends_with(cjs_ext) ? data_main : internal::PathUtil::extends_with(data["main"], js_ext)
-                        );
-                    error = internal::PathUtil::extract(main, main_path);
+                    const String main = internal::PathUtil::combine(p_module_id, data["main"]);
+                    String extracted_main;
+                    error = internal::PathUtil::extract(main, extracted_main);
                     if (error != OK)
                     {
                         JSB_LOG(Error, "can not extract path %s", main);
                         break;
                     }
 
-                    if(FileAccess::exists(main_path))
+                    if(check_source_path(extracted_main, source_path))
                     {
-                        o_source_info.source_filepath = main_path;
+                        o_source_info.source_filepath = source_path;
                         o_source_info.package_filepath = package_filepath;
                         return true;
                     }
@@ -162,7 +179,7 @@ namespace jsb
             {
                 return true;
             }
-            JSB_LOG(Verbose, "failed to check out module (%s) %s", search_path, p_module_id);
+            JSB_LOG(Verbose, "failed to check out module (search_path: %s) %s", search_path, p_module_id);
         }
         r_source_info = {};
         return false;

@@ -41,6 +41,8 @@ namespace jsb
         // read the source buffer (transformed into commonjs)
         static size_t read_all_bytes(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes);
 
+        static bool check_source_path(const String& p_path, String& o_path);
+
         Vector<String> search_paths_;
     };
 }
