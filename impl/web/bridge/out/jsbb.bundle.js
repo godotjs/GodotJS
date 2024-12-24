@@ -304,7 +304,9 @@ class jsbb_Engine {
         const str = String(this._stack.GetValue(str_sp));
         const len = NativeAPI.lengthBytesUTF8(str);
         NativeAPI.HEAP32[o_size >> 2] = len;
-        return NativeAPI.stringToUTF8(str);
+        const buf = NativeAPI._malloc(len + 1);
+        NativeAPI.stringToUTF8(str, buf, len);
+        return buf;
     }
     ToString(stack_pos) {
         const val = this._stack.GetValue(stack_pos);

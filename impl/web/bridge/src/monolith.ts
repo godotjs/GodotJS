@@ -31,8 +31,9 @@ const jsbb_PropertyFilter = {
     
 interface InteropProtocol {
     UTF8ToString(ptr: Pointer): string;
-    stringToUTF8(str: string): Pointer;
+    stringToUTF8(str: string, buf: Pointer, size: number): void;
     lengthBytesUTF8(str: string): number;
+    _malloc(size: number): Pointer;
 
     HEAPU8: Uint8Array,
     HEAP32: Int32Array, 
@@ -416,7 +417,9 @@ class jsbb_Engine {
         const len = NativeAPI.lengthBytesUTF8(str);
 
         NativeAPI.HEAP32[o_size >> 2] = len;
-        return NativeAPI.stringToUTF8(str);
+        const buf = NativeAPI._malloc(len + 1);
+        NativeAPI.stringToUTF8(str, buf, len);
+        return buf;
     }
 
     ToString(stack_pos: StackPosition): StackPosition {

@@ -7,6 +7,7 @@ const GodotJSBrowserInterface = {
             UTF8ToString: UTF8ToString,
             stringToUTF8: stringToUTF8, 
             lengthBytesUTF8: lengthBytesUTF8, 
+            _malloc: _malloc, 
 
             HEAPU8: HEAPU8, 
             HEAP32: HEAP32, 
@@ -142,5 +143,5 @@ const GodotJSBrowserInterface = {
 
 // addToLibrary(GodotJSBrowserInterface);
 
-autoAddDeps(GodotJSBrowserInterface, "$GodotJSBrowserInterface")
+// autoAddDeps(GodotJSBrowserInterface, "$GodotJSBrowserInterface")
 mergeInto(LibraryManager.library, GodotJSBrowserInterface);
