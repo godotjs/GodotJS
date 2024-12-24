@@ -1,7 +1,7 @@
 #include "jsb_editor_utility_funcs.h"
 #include "jsb_type_convert.h"
 
-#if JSB_WITH_EDITOR_UTILITY_FUNCS && !JSB_FORCE_COMPILE_WEB
+#if JSB_WITH_EDITOR_UTILITY_FUNCS
 namespace jsb_private
 {
     //NOTE dummy functions only for compile-time check and never being really compiled

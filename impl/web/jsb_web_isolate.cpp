@@ -7,24 +7,6 @@
 
 namespace v8
 {
-    struct IsolateInternalFunctions
-    {
-        // crash val is an exception
-        jsb_force_inline static JSValue verified(const JSValue val)
-        {
-            jsb_check(JS_VALUE_GET_TAG(val) != JS_TAG_EXCEPTION);
-            return val;
-        }
-
-        jsb_force_inline static int verified(const int val)
-        {
-            jsb_check(val != -1);
-            return val;
-        }
-    };
-
-    using details = IsolateInternalFunctions;
-
     Isolate *Isolate::New(const CreateParams &params)
     {
         Isolate* isolate = memnew(Isolate);
@@ -34,8 +16,6 @@ namespace v8
     Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr)
     {
         rt_ = jsbi_NewEngine(this);
-
-        jsbi_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
     }
 
     Isolate::~Isolate()

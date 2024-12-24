@@ -3,7 +3,7 @@
 #include "core/io/tcp_server.h"
 
 #if JSB_WITH_DEBUGGER
-#if JSB_WITH_LWS && JSB_WITH_V8 && !JSB_FORCE_COMPILE_WEB
+#if JSB_WITH_LWS && JSB_WITH_V8
 #include "libwebsockets.h"
 
 #define JSB_DEBUGGER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSDebugger, Severity, Format, ##__VA_ARGS__)

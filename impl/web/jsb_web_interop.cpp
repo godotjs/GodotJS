@@ -47,15 +47,15 @@ JSNATIVE_API EMSCRIPTEN_KEEPALIVE void jsni_call_function(v8::Isolate* isolate, 
 
 JSNATIVE_API EMSCRIPTEN_KEEPALIVE void jsni_call_accessor(v8::Isolate* isolate, v8::AccessorNameGetterCallback cb, jsb::impl::StackPosition key_sp, jsb::impl::StackPosition rval_sp)
 {
-    const v8::Local<v8::Name> key = v8::Local<v8::Name>(Data(isolate, key_sp));
+    const v8::Local<v8::Name> key = v8::Local<v8::Name>(v8::Data(isolate, key_sp));
     v8::PropertyCallbackInfo<v8::Value> callback_info(isolate, rval_sp);
-    cb(callback_info);
+    cb(key, callback_info);
 }
 
 JSNATIVE_API EMSCRIPTEN_KEEPALIVE void* jsni_generate_internal_data(v8::Isolate* isolate, int internal_field_count)
 {
     const jsb::impl::InternalDataID index = isolate->add_internal_data(internal_field_count);
-    return (void*)(uintptr_t) index;
+    return (void*)(uintptr_t) *index;
 }
 
 #endif

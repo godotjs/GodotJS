@@ -237,9 +237,9 @@ namespace jsb::impl
             builder.isolate_ = isolate;
             builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, jsbi_NewObject(isolate->rt())));
             builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, jsbi_NewClass(isolate->rt(),
-                /* callback */ constructor,
+                /* callback */ (jsb::impl::FunctionPointer) constructor,
                 /* data */ jsbi_NewUint32(isolate->rt(), class_payload),
-                InternalFieldCount)));
+                (int) InternalFieldCount)));
 
             return builder;
         }

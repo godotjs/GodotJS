@@ -139,6 +139,8 @@ namespace v8
             jsbi_ThrowError(rt_, str8.get_data());
         }
 
+        jsb::internal::SArray<jsb::impl::InternalData, jsb::impl::InternalDataID> internal_data_;
+
     private:
         Isolate();
 
@@ -148,8 +150,6 @@ namespace v8
         bool disposed_;
         jsb::impl::JSRuntime rt_;
         HandleScope* handle_scope_;
-
-        jsb::internal::SArray<jsb::impl::InternalData, jsb::impl::InternalDataID> internal_data_;
 
         void* embedder_data_ = nullptr;
         void* context_embedder_data_ = nullptr;

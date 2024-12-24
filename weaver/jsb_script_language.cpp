@@ -59,13 +59,13 @@ void GodotJSScriptLanguage::init()
     environment_ = std::make_shared<jsb::Environment>(params);
     environment_->init();
 
-    static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
-    static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
-
     // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
+    static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
     jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
         "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
+
 #ifdef TOOLS_ENABLED
+    static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
     jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
         "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
 #endif
@@ -77,7 +77,9 @@ void GodotJSScriptLanguage::finish()
     once_inited_ = false;
     environment_->dispose();
     environment_.reset();
+#if !JSB_WITH_WEB
     jsb::Worker::finish();
+#endif
     JSB_LOG(VeryVerbose, "jsb lang finish");
 }
 
@@ -286,10 +288,14 @@ void GodotJSScriptLanguage::scan_external_changes()
 
 void GodotJSScriptLanguage::thread_enter()
 {
+#if !JSB_WITH_WEB
     jsb::Worker::on_thread_enter(Thread::get_caller_id());
+#endif
 }
 
 void GodotJSScriptLanguage::thread_exit()
 {
+#if !JSB_WITH_WEB
     jsb::Worker::on_thread_exit(Thread::get_caller_id());
+#endif
 }

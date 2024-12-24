@@ -23,7 +23,7 @@
 #include "editor/editor_help.h"
 #endif
 
-#if JSB_WITH_WEB || JSB_FORCE_COMPILE_WEB
+#if JSB_WITH_WEB
 #   include "../impl/web/jsb_web.h"
 #elif JSB_WITH_V8
 #   include "../impl/v8/jsb_v8.h"

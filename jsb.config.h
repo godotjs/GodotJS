@@ -95,7 +95,4 @@
 
 #define JSB_BUNDLE_VERSION 3
 
-//TODO REMOVE THIS
-#define JSB_FORCE_COMPILE_WEB 0
-
 #endif

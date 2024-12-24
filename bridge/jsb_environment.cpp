@@ -236,7 +236,9 @@ namespace jsb
                 module_cache_.init(isolate_, cache_obj);
             }
 
+#if !JSB_WITH_WEB
             Worker::register_(context, global);
+#endif
             Builtins::register_(context, global);
             register_primitive_bindings(this);
             this->on_context_created(context);

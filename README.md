@@ -1,6 +1,6 @@
 
 # GodotJS 
-This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS as an alternative runtime.
+This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS as an alternative runtime, or even directly running scripts on the browser JS VM if porting to web.
 
 [![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
 [![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
@@ -16,9 +16,8 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] Debug with Chrome devtools when using V8
 * [x] REPL in Editor
 * [x] Hot-reloading
-* [x] QuickJS as an alternative runtime (experimental, testing)
-* [ ] Asynchronous module loading (`import` function)
-* [ ] Sandboxed scripting (not multi-threading)
+* [x] QuickJS as an alternative runtime (testing)
+* [x] Directly running on the browser JS VM (experimental, testing, *Only for WebBuild*)
 * [x] Worker threads
 
 ## Get Started
@@ -140,8 +139,8 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | Android:arm64  | ✅              | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | iOS:x86_64     | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
 | iOS:arm64      | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| Web            | ❌              | ✅ (not tested) | 🟡 (incomplete)                | 🟡 (incomplete) |
+| Web            | ❌              | ✅ (not tested) | 🟡 (incomplete)                | ✅ (debugging) |
 
 
-> Android: tested on ndk_platform=android-24  
-> Currently, except for the web, 32-bit platforms are not considered to support. 
+> Android: only tested on ndk_platform=android-24  
+> Web: wasm32 
