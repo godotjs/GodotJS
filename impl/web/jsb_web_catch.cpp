@@ -11,18 +11,13 @@ namespace jsb::impl
 
     void TryCatch::get_message(String* r_message, String* r_stacktrace) const
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue ex = isolate_->stack_val(StackBase::Exception);
-        jsb_check(!JS_IsNull(ex));
+        const JSRuntime ctx = isolate_->rt();
+        jsb_check(!jsbi_IsNullOrUndefined(ctx, StackBase::Error));
 
-        // const JSValue err_filename = JS_GetProperty(ctx, ex, JS_ATOM_fileName);
-        // const JSValue err_line = JS_GetProperty(ctx, ex, JS_ATOM_lineNumber);
-        const JSValue err_message = JS_GetProperty(ctx, ex, JS_ATOM_message);
-        const JSValue err_stack = JS_GetProperty(ctx, ex, JS_ATOM_stack);
+        const StackPosition err_message = jsbi_GetPropertyAtomID(ctx, StackBase::Error, JS_ATOM_message);
+        const StackPosition err_stack = jsbi_GetPropertyAtomID(ctx, StackBase::Error, JS_ATOM_stack);
 
         {
-            // const String filename = BrowserJS::IsNullish(err_filename) ? String("native") : BrowserJS::GetString(ctx, err_filename);
-            // const String line = BrowserJS::IsNullish(err_line) ? String("") : BrowserJS::GetString(ctx, err_line);
             const String message = BrowserJS::GetString(ctx, err_message);
             const String stack = BrowserJS::GetString(ctx, err_stack);
 
@@ -30,13 +25,8 @@ namespace jsb::impl
             if (r_stacktrace) *r_stacktrace = stack;
         }
 
-        // JS_FreeValue(ctx, err_filename);
-        // JS_FreeValue(ctx, err_line);
-        JS_FreeValue(ctx, err_message);
-        JS_FreeValue(ctx, err_stack);
-
         // reset current exception
-        isolate_->set_stack_copy(StackBase::Exception, StackBase::Null);
+        jsbi_StackSet(ctx, StackBase::Error, StackBase::Undefined);
     }
 
 

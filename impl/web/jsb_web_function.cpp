@@ -11,7 +11,11 @@ namespace v8
         {
             vargv[i] = argv[i]->stack_pos_;
         }
-        jsb::impl::StackPosition rval_sp = jsbi_Call(isolate_->rt(), recv->stack_pos_, stack_pos_, argc, vargv);
+        const jsb::impl::StackPosition rval_sp = jsbi_Call(isolate_->rt(), recv->stack_pos_, stack_pos_, argc, vargv);
+        if (rval_sp == jsb::impl::StackBase::Error)
+        {
+            return MaybeLocal<Value>();
+        }
         return MaybeLocal<Value>(Data(isolate_, rval_sp));
     }
 
@@ -19,7 +23,12 @@ namespace v8
     {
         Isolate* isolate = context->isolate_;
         static_assert(sizeof(callback) == sizeof(void*));
-        return MaybeLocal<Function>(Data(isolate, jsbi_NewCFunction(isolate->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_)));
+        const jsb::impl::StackPosition func_sp = jsbi_NewCFunction(isolate->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_);
+        if (func_sp == jsb::impl::StackBase::Error)
+        {
+            return MaybeLocal<Function>();
+        }
+        return MaybeLocal<Function>(Data(isolate, func_sp));
     }
 
     Local<Context> Function::GetCreationContextChecked() const

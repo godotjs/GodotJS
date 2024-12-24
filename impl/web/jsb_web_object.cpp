@@ -1,6 +1,7 @@
 #include "jsb_web_object.h"
 #include "jsb_web_isolate.h"
 #include "jsb_web_function_interop.h"
+#include "jsb_web_template.h"
 
 namespace v8
 {
@@ -30,244 +31,149 @@ namespace v8
 
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
-        jsb_check(jsbi_IsArray(isolate_->rt(), stack_pos_));
-        const int res = jsbi_SetPropertyUint32(isolate_->rt(), stack_pos_, index, value->stack_pos_);
+        const jsb::impl::ResultValue res = jsbi_SetPropertyUint32(isolate_->rt(), stack_pos_, index, value->stack_pos_);
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
-        return Maybe<bool>(true);
+        return Maybe<bool>(!!res);
     }
 
     MaybeLocal<Value> Object::Get(Local<Context> context, uint32_t index) const
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_IsArray(isolate_->ctx(), self));
-        const JSValue val = JS_GetPropertyUint32(isolate_->ctx(), self, index);
-        if (JS_IsException(val))
+        const jsb::impl::StackPosition rval = jsbi_GetPropertyUint32(isolate_->rt(), stack_pos_, index);
+        if (rval == jsb::impl::StackBase::Error)
         {
-            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
+        return MaybeLocal<Value>(Data(isolate_, rval));
     }
 
     Maybe<bool> Object::Set(Local<Context> context, Local<Value> key, Local<Value> value)
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        JSContext* ctx = isolate_->ctx();
-
-        const jsb::impl::BrowserJS::Atom index(ctx, (JSValue) key);
-        const int res = JS_SetProperty(ctx, self, index, JS_DupValue(ctx, (JSValue) value));
+        const jsb::impl::ResultValue res = jsbi_SetProperty(isolate_->rt(), stack_pos_, key->stack_pos_, value->stack_pos_);
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
-        return Maybe<bool>(true);
+        return Maybe<bool>(!!res);
     }
 
     MaybeLocal<Value> Object::Get(Local<Context> context, Local<Value> key) const
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        JSContext* ctx = isolate_->ctx();
-
-        const jsb::impl::BrowserJS::Atom index(ctx, (JSValue) key);
-        const JSValue val = JS_GetProperty(ctx, self, index);
-        if (JS_IsException(val))
+        const jsb::impl::StackPosition rval = jsbi_GetProperty(isolate_->rt(), stack_pos_, key->stack_pos_);
+        if (rval == jsb::impl::StackBase::Error)
         {
-            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
+        return MaybeLocal<Value>(Data(isolate_, rval));
     }
 
     Maybe<bool> Object::HasOwnProperty(Local<Context> context, Local<Name> key) const
     {
-        //TODO unsure
-        JSContext* ctx = isolate_->ctx();
-        const jsb::impl::BrowserJS::Atom prop(ctx, (JSValue) key);
-        const int res = JS_GetOwnProperty(ctx, nullptr, (JSValue) *this, prop);
-
+        const jsb::impl::ResultValue res = jsbi_HasOwnProperty(isolate_->rt(), stack_pos_, key->stack_pos_);
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
-        return Maybe<bool>(res);
+        return Maybe<bool>(!!res);
     }
 
     Maybe<bool> Object::SetPrototype(Local<Context> context, Local<Value> prototype)
     {
-        JSContext* ctx = isolate_->ctx();
-        const int res = JS_SetPrototype(ctx, (JSValue) *this, (JSValue) prototype);
+        const jsb::impl::ResultValue res = jsbi_SetPrototypeOf(isolate_->rt(), stack_pos_, prototype->stack_pos_);
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
             return Maybe<bool>();
         }
-        return Maybe<bool>(res);
+        return Maybe<bool>(!!res);
     }
 
     Local<Value> Object::GetPrototype()
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue prototype = JS_GetPrototype(ctx, (JSValue) *this);
-        if (JS_IsException(prototype))
+        const jsb::impl::StackPosition rval = jsbi_GetPrototypeOf(isolate_->rt(), stack_pos_);
+        if (rval == jsb::impl::StackBase::Error)
         {
-            isolate_->mark_as_error_thrown();
             return Local<Value>();
         }
-        return Local<Value>(Data(isolate_, isolate_->push_steal(prototype)));
+        return Local<Value>(Data(isolate_, rval));
     }
 
     MaybeLocal<Value> Object::CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[])
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue self = (JSValue) *this;
-        JSValue* argvv = jsb_stackalloc(JSValue, argc);
-        for (int i = 0; i < argc; ++i)
+        jsb::impl::StackPosition* vargv = jsb_stackalloc(jsb::impl::StackPosition, argc);
+        for (int i = 0; i < argc; i++)
         {
-            argvv[i] = (JSValue) argv[i];
+            vargv[i] = argv[i]->stack_pos_;
         }
-        const JSValue instance = JS_CallConstructor(ctx, self, argc, argvv);
-        if (JS_IsException(instance))
+        const jsb::impl::StackPosition rval_sp = jsbi_CallAsConstructor(isolate_->rt(), stack_pos_, argc, vargv);
+        if (rval_sp == jsb::impl::StackBase::Error)
         {
-            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(instance)));
+        return MaybeLocal<Value>(Data(isolate_, rval_sp));
     }
 
     Local<Object> Object::New(Isolate* isolate)
     {
-        JSContext* ctx = isolate->ctx();
-        return Local<Object>(Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
+        return Local<Object>(Data(isolate, jsbi_NewObject(isolate->rt())));
     }
 
     MaybeLocal<Value> Object::GetOwnPropertyDescriptor(Local<Context> context, Local<Name> key) const
     {
-        JSContext* ctx = isolate_->ctx();
-        JSPropertyDescriptor desc;
-
-        const JSValue self = (JSValue) *this;
-        const jsb::impl::BrowserJS::Atom prop(ctx, (JSValue) key);
-        const int res = JS_GetOwnProperty(ctx, &desc, self, prop);
-
-        if (res == -1)
+        const jsb::impl::StackPosition rval = jsbi_GetOwnPropertyDescriptor(isolate_->rt(), stack_pos_, key->stack_pos_);
+        if (rval == jsb::impl::StackBase::Error)
         {
-            isolate_->mark_as_error_thrown();
             return MaybeLocal<Value>();
         }
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptor
-        const JSValue desc_js = JS_NewObject(ctx);
-
-        // JSValues in desc are free-ed by set
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_get, desc.getter) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_set, desc.setter) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_value, desc.value) != -1);
-
-        // property flags
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_configurable, JS_MKVAL(JS_TAG_BOOL, !!(desc.flags & JS_PROP_CONFIGURABLE))) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_writable, JS_MKVAL(JS_TAG_BOOL, !!(desc.flags & JS_PROP_WRITABLE))) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_enumerable, JS_MKVAL(JS_TAG_BOOL, !!(desc.flags & JS_PROP_ENUMERABLE))) != -1);
-
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(desc_js)));
-    }
-
-    JSValue Object::_lazy(JSContext* ctx, JSValue this_val, int argc, JSValue* argv, int magic, JSValue* func_data)
-    {
-        Isolate* isolate = (Isolate*) JS_GetContextOpaque(ctx);
-        JSValue rvo;
-
-        // evaluate lazy callback
-        {
-            const AccessorNameGetterCallback getter = (AccessorNameGetterCallback) JS_VALUE_GET_PTR(func_data[1]);
-            HandleScope handle_scope(isolate);
-
-            const uint16_t rvo_pos = isolate->push_copy(JS_UNDEFINED); // return value
-            const PropertyCallbackInfo<Value> info(isolate, rvo_pos);
-            const Local<Name> prop_v(Data(isolate, isolate->push_copy(func_data[0])));
-
-            getter(prop_v, info);
-
-            // We need a duplicated value for returning.
-            // Duplicate the value here because the stack value will become invalid after leaving the handle scope.
-            rvo = isolate->stack_dup(rvo_pos);
-            jsb_check(!JS_IsException(rvo));
-        }
-
-        // overwrite the current lazy getter with rvo
-        {
-            const jsb::impl::BrowserJS::Atom prop(ctx, func_data[0]);
-            constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_VALUE;
-
-            //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-            const int res = JS_DefineProperty(ctx, this_val, prop, rvo, JS_UNDEFINED, JS_UNDEFINED, flags);
-            jsb_check(res >= 0);
-        }
-
-        return rvo;
+        return MaybeLocal<Value>(Data(isolate_, rval));
     }
 
     Maybe<bool> Object::SetLazyDataProperty(Local<Context> context, Local<Name> name, AccessorNameGetterCallback getter)
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
-        constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_GET;
-        JSValue lazy_data[] = { JS_DupValue(ctx, (JSValue) name), JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void *) getter) };
-        const JSValue lazy = JS_NewCFunctionData(ctx, _lazy, /* length */ 0, /* magic */ 0, ::std::size(lazy_data), lazy_data);
-
-        const jsb::impl::BrowserJS::Atom prop(ctx, (JSValue) name);
-        const int res = JS_DefineProperty(ctx, this_obj, prop, JS_UNDEFINED, lazy, JS_UNDEFINED, flags);
-
-        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-        JS_FreeValue(ctx, lazy);
-
-        if (res != -1)
+        const jsb::impl::ResultValue rval = jsbi_DefineLazyProperty(isolate_->rt(), stack_pos_, name->stack_pos_, (jsb::impl::FunctionPointer) getter);
+        if (rval != -1)
         {
-            return Maybe<bool>(!!res);
+            return Maybe<bool>(true);
         }
-        isolate_->mark_as_error_thrown();
         return Maybe<bool>();
     }
 
     Maybe<bool> Object::DefineOwnProperty(Local<Context> context, Local<Name> key, Local<Value> value, PropertyAttribute attributes)
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
-        const JSValue val = (JSValue) value;
-        int flags = JS_PROP_HAS_VALUE;
-        if ((attributes & DontEnum) == 0) flags |= JS_PROP_HAS_ENUMERABLE;
-        if ((attributes & ReadOnly) == 0) flags |= JS_PROP_HAS_WRITABLE;
-        if ((attributes & DontDelete) == 0) flags |= JS_PROP_HAS_CONFIGURABLE;
+        int flags = jsb::impl::PropertyFlags::VALUE;
+        if ((attributes & DontEnum) == 0) flags |= jsb::impl::PropertyFlags::ENUMERABLE;
+        if ((attributes & ReadOnly) == 0) flags |= jsb::impl::PropertyFlags::WRITABLE;
+        if ((attributes & DontDelete) == 0) flags |= jsb::impl::PropertyFlags::CONFIGURABLE;
 
-        const jsb::impl::BrowserJS::Atom prop(ctx, (JSValue) key);
         //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-        const int res = JS_DefineProperty(ctx, this_obj, prop, val, JS_UNDEFINED, JS_UNDEFINED, flags);
+        const jsb::impl::ResultValue res = jsbi_DefineProperty(isolate_->rt(),
+            /* obj */   stack_pos_,
+            /* prop */  key->stack_pos_,
+            /* value */ value->stack_pos_,
+            /* get */   jsb::impl::StackBase::Undefined,
+            /* set */   jsb::impl::StackBase::Undefined,
+            flags);
 
         if (res != -1)
         {
             return Maybe<bool>(!!res);
         }
-        isolate_->mark_as_error_thrown();
         return Maybe<bool>();
     }
 
     void Object::SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter, Local<FunctionTemplate> setter)
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
-        int flags = JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_CONFIGURABLE; //TODO consider remove 'configurable' flags
-        if (!getter.IsEmpty()) flags |= JS_PROP_HAS_GET;
-        if (!setter.IsEmpty()) flags |= JS_PROP_HAS_SET | JS_PROP_HAS_WRITABLE;
+        int flags = jsb::impl::PropertyFlags::ENUMERABLE | jsb::impl::PropertyFlags::CONFIGURABLE; //TODO consider remove 'configurable' flags
+        if (!getter.IsEmpty()) flags |= jsb::impl::PropertyFlags::GET;
+        if (!setter.IsEmpty()) flags |= jsb::impl::PropertyFlags::SET;
 
-        const jsb::impl::BrowserJS::Atom prop(ctx, (JSValue) name);
-        const int res = JS_DefineProperty(ctx, this_obj, prop,
-            JS_UNDEFINED,
-            (JSValue) getter, //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-            (JSValue) setter,
+        const jsb::impl::ResultValue res = jsbi_DefineProperty(isolate_->rt(),
+            /* obj */   stack_pos_,
+            /* prop */  name->stack_pos_,
+            /* value */ jsb::impl::StackBase::Undefined,
+            getter.IsEmpty() ? getter->stack_pos_ : jsb::impl::StackBase::Undefined, //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+            setter.IsEmpty() ? setter->stack_pos_ : jsb::impl::StackBase::Undefined,
             flags);
 
         jsb_check(res >= 0);
@@ -275,36 +181,12 @@ namespace v8
 
     MaybeLocal<Array> Object::GetOwnPropertyNames(Local<Context> context, PropertyFilter filter, KeyConversionMode key_conversion)
     {
-        JSContext* ctx = isolate_->ctx();
-        JSPropertyEnum *tab;
-        uint32_t len;
-
-        int flags = 0;
-        if ((filter & SKIP_STRINGS) == 0) flags |= JS_GPN_STRING_MASK;
-        if ((filter & SKIP_SYMBOLS) == 0) flags |= JS_GPN_SYMBOL_MASK;
-
-        // key_conversion is not available in web.impl
-        jsb_check(key_conversion == v8::KeyConversionMode::kNoNumbers);
-
-        if (JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) *this, flags) < 0)
+        const jsb::impl::StackPosition rval = jsbi_GetOwnPropertyNames(isolate_->rt(), stack_pos_, filter, (int) key_conversion);
+        if (rval == jsb::impl::StackBase::Error)
         {
-            isolate_->mark_as_error_thrown();
             return MaybeLocal<Array>();
         }
-
-        // build the name table
-        const JSValue array = JS_NewArray(ctx);
-
-        for(uint32_t i = 0; i < len; ++i)
-        {
-            JS_SetPropertyUint32(ctx, array, i, JS_AtomToValue(ctx, tab[i].atom));
-
-            // cleanup
-            JS_FreeAtom(ctx, tab[i].atom);
-        }
-        js_free(ctx, tab);
-
-        return MaybeLocal<Array>(Data(isolate_, isolate_->push_steal(array)));
+        return MaybeLocal<Array>(Data(isolate_, rval));
     }
 
 }

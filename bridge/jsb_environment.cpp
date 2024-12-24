@@ -365,6 +365,7 @@ namespace jsb
         }
 
         // handle messages from workers
+#if !JSB_WITH_WEB
         {
             std::vector<Message>& messages = inbox_.swap();
             if (!messages.empty())
@@ -380,6 +381,7 @@ namespace jsb
                 messages.clear();
             }
         }
+#endif
 
         // quickjs delayed the free op after all HandleScope left, we need to swap the free op list manually explicitly.
         // otherwise, object may leak until next evacuation of HandleScope.
@@ -402,6 +404,7 @@ namespace jsb
         }
     }
 
+#if !JSB_WITH_WEB
     void Environment::_on_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
     {
         jsb_check(p_message.get_id());
@@ -460,6 +463,7 @@ namespace jsb
             JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
         }
     }
+#endif
 
     void Environment::gc()
     {

@@ -138,8 +138,7 @@ namespace v8
         void _clear()
         {
             isolate_ = nullptr;
-            shadow_ = nullptr;
-            value_ = JS_UNDEFINED;
+            value_ = -1;
             weak_type_ = WeakType::kStrong;
         }
 
@@ -156,7 +155,6 @@ namespace v8
         {
             isolate_ = other.isolate_;
             weak_type_ = other.weak_type_;
-            shadow_ = other.shadow_;
             value_ = other.value_;
             other._clear();
         }
@@ -171,7 +169,6 @@ namespace v8
                 {
                     isolate_ = other.isolate_;
                     weak_type_ = other.weak_type_;
-                    shadow_ = other.shadow_;
                     value_ = other.value_;
                     other._clear();
                 }
@@ -189,25 +186,22 @@ namespace v8
                 {
                     // release if strong referenced
                     jsb_check(is_alive());
-                    jsb::impl::Broker::_free_delayed(isolate_, value_);
+                    jsbi_handle_Reset(jsb::impl::Broker::get_engine(isolate_), value_);
                     break;
                 }
             case WeakType::kWeakCallback:
                 {
                     // clear callback
                     jsb_check(is_alive());
-                    jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
+                    jsb::impl::Broker::SetWeakCallback(isolate_, value_, nullptr, nullptr);
+                    jsbi_handle_Reset(jsb::impl::Broker::get_engine(isolate_), value_);
                     break;
                 }
             default: break;
             }
 
-            jsb::impl::Broker::remove_phantom(isolate_, shadow_);
-            jsb::impl::Broker::_remove_reference(isolate_);
-
             isolate_ = nullptr;
-            shadow_ = nullptr;
-            value_ = JS_UNDEFINED;
+            value_ = -1;
             weak_type_ = WeakType::kStrong;
         }
 
@@ -218,14 +212,9 @@ namespace v8
             jsb_check(isolate);
             isolate_ = isolate;
 
-            // ensure the runtime alive
-            jsb::impl::Broker::_add_reference(isolate_);
-
             if (!value.IsEmpty())
             {
-                value_ = jsb::impl::Broker::stack_dup(isolate_, value.data_.stack_pos_);
-                shadow_ = JS_VALUE_GET_TAG(value_) < 0 ? JS_VALUE_GET_PTR(value_) : nullptr;
-                jsb::impl::Broker::add_phantom(isolate_, shadow_);
+                value_ = jsbi_handle_New(jsb::impl::Broker::get_engine(isolate_), value.data_.stack_pos_);
                 weak_type_ = WeakType::kStrong;
             }
         }
@@ -242,10 +231,10 @@ namespace v8
             if (weak_type_ == WeakType::kWeakCallback)
             {
                 // clear callback
-                jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
+                jsb::impl::Broker::SetWeakCallback(isolate_, value_, nullptr, nullptr);
             }
             weak_type_ = WeakType::kStrong;
-            jsb::impl::Broker::_dup(isolate_, value_);
+            jsbi_handle_ClearWeak(jsb::impl::Broker::get_engine(isolate_), value_);
         }
 
         // ClearWeak() before SetWeak() if SetWeak(parameter) called priorly
@@ -254,7 +243,7 @@ namespace v8
             jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
 
             weak_type_ = WeakType::kWeak;
-            jsb::impl::Broker::_free_delayed(isolate_, value_);
+            jsbi_handle_SetWeak(jsb::impl::Broker::get_engine(isolate_), value_);
         }
 
         template<typename S>
@@ -262,9 +251,9 @@ namespace v8
         {
             jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
 
-            jsb::impl::Broker::SetWeak(isolate_, value_, parameter, (void*) callback);
+            jsb::impl::Broker::SetWeakCallback(isolate_, value_, parameter, (void*) callback);
             weak_type_ = WeakType::kWeakCallback;
-            jsb::impl::Broker::_free_delayed(isolate_, value_);
+            jsbi_handle_SetWeak(jsb::impl::Broker::get_engine(isolate_), value_);
         }
 
         // Return true if no value held by this handle, or dead for a weak handle.
@@ -273,13 +262,7 @@ namespace v8
         Local<T> Get(Isolate* isolate) const
         {
             jsb_check(isolate_ == isolate && isolate_ && is_alive());
-            return Local<T>(Data(isolate_, jsb::impl::Broker::push_copy(isolate_, value_)));
-        }
-
-        explicit operator JSValue() const
-        {
-            jsb_check(isolate_ && is_alive());
-            return value_;
+            return Local<T>(Data(isolate_, jsbi_handle_PushStack(jsb::impl::Broker::get_engine(isolate_), value_)));
         }
 
         template <typename S>
@@ -296,11 +279,11 @@ namespace v8
         }
 
     private:
-        bool is_alive() const { return jsbi_handle_is_valid(jsb::impl::Broker::get_engine(isolate_), value_); }
+        bool is_alive() const { return jsbi_handle_IsValid(jsb::impl::Broker::get_engine(isolate_), value_); }
 
         Isolate* isolate_ = nullptr;
 
-        jsb::impl::GlobalID value_ = -1;
+        jsb::impl::HandleID value_ = -1;
 
         WeakType weak_type_ = WeakType::kStrong;
     };

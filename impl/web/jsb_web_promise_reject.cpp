@@ -5,12 +5,12 @@ namespace v8
 {
     Local<Promise> PromiseRejectMessage::GetPromise() const
     {
-        return Local<Promise>(Data(isolate_, promise_pos_));
+        return Local<Promise>(Data(isolate_, promise_sp_));
     }
 
     Local<Value> PromiseRejectMessage::GetValue() const
     {
-        return Local<Value>(Data(isolate_, reason_pos_));
+        return Local<Value>(Data(isolate_, reason_sp_));
     }
 
 }

@@ -14,8 +14,8 @@ namespace v8
     class PromiseRejectMessage
     {
     public:
-        PromiseRejectMessage(Isolate* isolate, PromiseRejectEvent event, uint16_t promise_pos, uint16_t reason_pos)
-        : isolate_(isolate), event_(event), promise_pos_(promise_pos), reason_pos_(reason_pos)
+        PromiseRejectMessage(Isolate* isolate, PromiseRejectEvent event, jsb::impl::StackPosition promise_sp, jsb::impl::StackPosition reason_sp)
+        : isolate_(isolate), event_(event), promise_sp_(promise_sp), reason_sp_(reason_sp)
         {}
 
         PromiseRejectEvent GetEvent() const { return event_; }
@@ -26,8 +26,8 @@ namespace v8
     private:
         Isolate* isolate_;
         PromiseRejectEvent event_;
-        uint16_t promise_pos_;
-        uint16_t reason_pos_;
+        jsb::impl::StackPosition promise_sp_;
+        jsb::impl::StackPosition reason_sp_;
     };
 
     using PromiseRejectCallback = void (*)(PromiseRejectMessage);

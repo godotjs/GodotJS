@@ -48,8 +48,6 @@ namespace v8
 
         static Local<Object> New(Isolate* isolate);
 
-    private:
-        static JSValue _lazy(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
     };
 
     class Promise : public Object

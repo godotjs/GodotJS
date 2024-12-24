@@ -3,6 +3,7 @@
 #include "jsb_bridge_pch.h"
 #include "jsb_buffer.h"
 
+#if !JSB_WITH_WEB
 namespace jsb
 {
     typedef internal::Index32 WorkerID;
@@ -53,5 +54,6 @@ namespace jsb
         static void on_receive(WorkerID p_id, Buffer&& p_buffer);
     };
 }
+#endif
 
 #endif

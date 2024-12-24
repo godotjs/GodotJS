@@ -35,9 +35,6 @@ namespace v8
     {
         rt_ = jsbi_NewEngine(this);
 
-        atom_cache_[jsb::impl::JS_ATOM_message] = jsbi_NewAtomStr(rt_, "message");
-        atom_cache_[jsb::impl::JS_ATOM_stack] = jsbi_NewAtomStr(rt_, "stack");
-
         jsbi_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
     }
 
@@ -86,23 +83,6 @@ namespace v8
     Local<Context> Isolate::GetCurrentContext()
     {
         return Local<Context>(Data(this, 0));
-    }
-
-    void Isolate::_promise_rejection_tracker(JSContext* ctx, JSValue promise, JSValue reason, int is_handled, void* user_data)
-    {
-        if (is_handled != 1)
-        {
-            Isolate* isolate = (Isolate*) user_data;
-            if (!isolate->promise_reject_) return;
-
-            HandleScope handle_scope(isolate);
-            const PromiseRejectMessage message(isolate,
-                kPromiseRejectWithNoHandler,
-                isolate->push_copy(promise),
-                isolate->push_copy(reason)
-            );
-            isolate->promise_reject_(message);
-        }
     }
 
     void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type)

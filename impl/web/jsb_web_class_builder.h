@@ -55,12 +55,12 @@ namespace jsb::impl
                 enumeration_->Set(builder_->GetContext(), key, value);
 
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-                const jsb::impl::BrowserJS::Atom value_atom(builder_->ctx(), (JSValue) value);
-
-                // JS_DefinePropertyValue consumes the reference of val
-                JS_DefinePropertyValue(builder_->ctx(), (JSValue) enumeration_, value_atom,
-                    JS_DupValue(builder_->ctx(), (JSValue) key), JS_PROP_CONFIGURABLE | JS_PROP_WRITABLE | JS_PROP_HAS_VALUE);
-
+                jsbi_DefineProperty(builder_->isolate_->rt(), enumeration_->stack_pos_,
+                    value->stack_pos_, // value as key
+                    key->stack_pos_,   // key as value
+                    StackBase::Undefined,
+                    StackBase::Undefined,
+                    PropertyFlags::ENUMERABLE | PropertyFlags::CONFIGURABLE | PropertyFlags::WRITABLE);
                 return *this;
             }
 
@@ -211,20 +211,15 @@ namespace jsb::impl
         {
             jsb_check(!closed_);
             jsb_check(!base.IsEmpty());
-            const JSValue parent = (JSValue) base.prototype_;
-            jsb_check(!JS_IsException(parent));
-            const int res = JS_SetPrototype(isolate_->ctx(), (JSValue) prototype_template_, parent);
-            jsb_unused(res);
-            jsb_check(res == 1);
+            jsbi_SetPrototype(isolate_->rt(), template_->stack_pos_, base.prototype_.Get(isolate_)->stack_pos_);
         }
 
         Class Build()
         {
             jsb_checkf(!closed_, "class builder is already closed");
             closed_ = true;
-            JSContext* ctx = isolate_->ctx();
-            JS_SetConstructor(ctx, (JSValue) template_, (JSValue) prototype_template_);
-            return Class(isolate_, internal_field_count_, prototype_template_, template_);
+            jsbi_SetConstructor(isolate_->rt(), template_->stack_pos_, prototype_template_->stack_pos_);
+            return Class(isolate_, prototype_template_, template_);
         }
 
         template<uint8_t InternalFieldCount>
@@ -233,7 +228,6 @@ namespace jsb::impl
             //NOTE do not use HandleScope here, because prototype/constructor Local handles are temporarily saved
             //     in member fields of builder.
 
-            JSContext* ctx = isolate->ctx();
             ClassBuilder builder;
             const String str = name;
             const CharString str8 = str.utf8();
@@ -241,12 +235,11 @@ namespace jsb::impl
             jsb_checkf(str.length(), "empty string is not allowed for a class name");
             builder.internal_field_count_ = InternalFieldCount;
             builder.isolate_ = isolate;
-            builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
-            builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, isolate->push_steal(JS_NewCFunction2(ctx,
-                (JSCFunction*) &Class::_constructor<InternalFieldCount>, str8.get_data(),
-                /* length */ 0,
-                JS_CFUNC_constructor_magic,
-                /* magic */ isolate->add_constructor_data(constructor, class_payload)))));
+            builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, jsbi_NewObject(isolate->rt())));
+            builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, jsbi_NewClass(isolate->rt(),
+                /* callback */ constructor,
+                /* data */ jsbi_NewUint32(isolate->rt(), class_payload),
+                InternalFieldCount)));
 
             return builder;
         }
@@ -254,8 +247,6 @@ namespace jsb::impl
         ~ClassBuilder() = default;
 
     private:
-        JSContext* ctx() const { return isolate_->ctx(); }
-
         v8::Local<v8::Context> GetContext() const
         {
             return isolate_->GetCurrentContext();

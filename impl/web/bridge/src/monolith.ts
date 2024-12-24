@@ -15,6 +15,20 @@ type ObjectFinalizer = (id: ObjectID) => void;
 
 type IntPtr = number;
 
+enum jsbb_PropertyFlags {
+    CONFIGURABLE = 1 << 0,
+    WRITABLE = 1 << 1,
+    ENUMERABLE = 1 << 2,
+    GET = 1 << 3,
+    SET = 1 << 4,
+    VALUE = 1 << 5,
+}
+
+const jsbb_PropertyFilter = {
+    SKIP_STRINGS: 8,
+    SKIP_SYMBOLS: 16
+};
+    
 interface InteropProtocol {
     UTF8ToString(ptr: Pointer): string;
     stringToUTF8(str: string): Pointer;
@@ -25,8 +39,14 @@ interface InteropProtocol {
     HEAP64: BigInt64Array, 
 
     gc_callback(engine_opaque: IntPtr, internal_opaque: Pointer): void;
+    unhandled_rejection(engine_opaque: IntPtr, cb: FunctionPointer, promise_sp: StackPosition, reason_sp: StackPosition): void;
 
-    ccall(opaque: IntPtr, fn: any, argc: number): void;
+    // is_construct_call: true if it's a constructor call, it's just a shorthand for `new.target !== undefined` on C++ side
+    call_function(opaque: IntPtr, fn: any, is_construct_call: boolean, base_sp: number, argc: number): void;
+
+    call_accessor(opaque: IntPtr, fn: any, key_sp: number, rval_sp: number): void;
+
+    generate_internal_data(opaque: IntPtr, internal_field_count: number): IntPtr;
 };
 
 // FinalizationRegistry (ES2021):
@@ -34,43 +54,7 @@ interface InteropProtocol {
 
 // starts from 1
 type UnsafeIndex = number;
-type jsbb_AtomID = UnsafeIndex;
-
-class jsbb_UnsafeArray<T> {
-    items: Array<T>;
-    freelist: Array<number>;
-
-    constructor() {
-        this.items = [];
-        this.freelist = [];
-    }
-
-    Add(o: T): UnsafeIndex {
-        const available = this.freelist.length - 1;
-        let index: number;
-        if (available >= 0) {
-            index = this.freelist[available];
-            this.freelist.length = available;
-        } else {
-            index = this.items.length;
-        }
-        this.items[index] = o;
-        return index + 1;
-    }
-
-    Get(index: UnsafeIndex): T {
-        return this.items[index - 1];
-    }
-
-    // remove an entry and return it's value
-    Remove(index: UnsafeIndex): T {
-        const abs_index = index - 1;
-        const o = this.items[abs_index];
-        this.items[abs_index] = <any>undefined;
-        this.freelist.push(abs_index);
-        return o;
-    }
-}
+type jsbb_AtomID = number;
 
 // starts from zero
 type StackPosition = number;
@@ -87,7 +71,11 @@ const jsbb_StackPos = {
     Error: 7,
 
     _Num: 8,
-}
+};
+
+const JS_ATOM_message = 0;
+const JS_ATOM_stack = 1;
+const _JS_ATOM_Num = 2;
 
 // Stack for Locals (starts from zero)
 class jsbb_Stack<T> {
@@ -111,17 +99,10 @@ class jsbb_Stack<T> {
         return this.values[pos];
     }
 
-    // return undefined if n is zero, otherwise return the last n values on stack
-    GetValues(n: number): Array<T> | undefined {
-        if (n <= 0) return undefined;
-        if (n > this.values.length) throw new RangeError("unsatisfied stack size");
-        return this.values.slice(-n);
-    }
-
     // return stack offset
     Push(val: T): StackPosition {
         if (this.values.length >= jsbb_kMaxStackSize) {
-            throw new RangeError("stack overflow");
+            console.warn("stack overflow", this.values.length);
         }
         return this.values.push(val) - 1;
     }
@@ -150,7 +131,7 @@ type Pointer = number;
 type CString = number;
 type FunctionPointer = number;
 
-interface GlobalEntry {
+interface jsbb_HandleEntry {
     // a weak reference to a target object
     // jsbb_Wrapper is used as target if the original target is primitive (number, bigint, string etc.)
     token: WeakRef<object>;
@@ -159,49 +140,59 @@ interface GlobalEntry {
     sref: object | undefined;
 }
 
-class jsbb_Globals {
-    //TODO DO NOT REUSE THE INDEX (reimplement SArray in JS, or use a map-like array)
-    //TODO DO NOT REUSE THE INDEX (reimplement SArray in JS, or use a map-like array)
-    //TODO DO NOT REUSE THE INDEX (reimplement SArray in JS, or use a map-like array)
-    private handles: jsbb_UnsafeArray<GlobalEntry>;
+function jsbb_IsTraceable(o: any): boolean {
+    const type = typeof o;
+    return !(o !== null && type !== "function" && type !== "object");
+}
 
-    static isTraceable(o: any): boolean {
-        const type = typeof o;
-        return o !== null && type !== "function" && type !== "object";
-    }
+class jsbb_Handles {
+    private idgen: number = 0;
+    private handles: Array<jsbb_HandleEntry | undefined> = [];
 
     constructor() {
-        this.handles = new jsbb_UnsafeArray();
+        this.handles[999] = undefined;
     }
 
-    // trace an object (it's weak-referenced by default)
+    // trace an object (it's strongly referenced by default)
     AddValue(o: any) {
-        if (!jsbb_Globals.isTraceable(o)) {
+        if (!jsbb_IsTraceable(o)) {
             o = new jsbb_Wrapper(o);
         }
         const token = new WeakRef(o);
-        const handle_id: GlobalID = this.handles.Add({
+        const id = this.idgen++;
+        this.handles[id] = {
             token: token,
             sref: undefined,
-        });
-        return handle_id;
+        };
+        return id;
     }
 
     IsValid(handle_id: GlobalID): boolean {
-        //TODO IMPLEMENT IT NOW
-        //TODO IMPLEMENT IT NOW
-        //TODO IMPLEMENT IT NOW
-        throw new Error("not implemented");
+        const handle = this.handles[handle_id];
+        if (typeof handle === "undefined") {
+            return false;
+        }
+        if (handle.sref != undefined || handle.token.deref() != undefined) {
+            return true;
+        }
+
+        console.warn("obsolete handle", handle_id);
+        delete this.handles[handle_id];
+        return false;
     }
 
     // unsafe, must ensure a valid index by yourself
     Remove(handle_id: GlobalID) {
-        this.handles.Remove(handle_id);
+        delete this.handles[handle_id];
     }
 
     // return the original target object in registry
     GetValue(handle_id: number): any {
-        const handle = this.handles.Get(handle_id);
+        const handle = this.handles[handle_id];
+        if (typeof handle === "undefined") {
+            console.warn("invalid handle id", handle_id);
+            return;
+        }
         const target = handle.token.deref();
         if (target instanceof jsbb_Wrapper) {
             return target.target;
@@ -210,12 +201,20 @@ class jsbb_Globals {
     }
 
     SetWeak(handle_id: number) {
-        const handle = this.handles.Get(handle_id);
+        const handle = this.handles[handle_id];
+        if (typeof handle === "undefined") {
+            console.warn("invalid handle id", handle_id);
+            return;
+        }
         handle.sref = undefined;
     }
 
     SetStrong(handle_id: number) {
-        const handle = this.handles.Get(handle_id);
+        const handle = this.handles[handle_id];
+        if (typeof handle === "undefined") {
+            console.warn("invalid handle id", handle_id);
+            return;
+        }
         handle.sref = handle.token.deref();
     }
 }
@@ -251,33 +250,23 @@ class jsbb_External {
     }
 }
 
-class jsbb_Atom {
-    rc: number;
-    value: any;
-
-    constructor(value: any) {
-        this.value = value;
-        this.rc = 1;
-    }
-}
-
 class jsbb_Engine {
     private _id: EngineID;
 
     // a fake global for Environment
     private _global: object;
     private _stack: jsbb_Stack<any>;
-    private _globals: jsbb_Globals;
+    private _handles: jsbb_Handles;
     private _registry: jsbb_Registry;
-    private _atoms: jsbb_UnsafeArray<jsbb_Atom>;
+    private _atoms: Array<string>;
 
     private _opaque: IntPtr = 0;
 
     get stack() { return this._stack; }
-    get globals() { return this._globals; }
+
+    get handles() { return this._handles; }
 
     // last error thrown (Error | undefined)
-    get error(): any { return this._stack.GetValue(jsbb_StackPos.Error); }
     set error(value: any) {
         const last = this._stack.GetValue(jsbb_StackPos.Error);
         if (last !== undefined) {
@@ -291,9 +280,11 @@ class jsbb_Engine {
         this._opaque = opaque;
         this._global = {};
         this._stack = new jsbb_Stack();
-        this._globals = new jsbb_Globals();
+        this._handles = new jsbb_Handles();
         this._registry = new jsbb_Registry(opaque);
-        this._atoms = new jsbb_UnsafeArray();
+        this._atoms = new Array(_JS_ATOM_Num);
+        this._atoms[JS_ATOM_message] = "message";
+        this._atoms[JS_ATOM_stack] = "stack";
 
         jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Undefined);
         jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Null);
@@ -308,14 +299,31 @@ class jsbb_Engine {
 
     Release() {
         this._global = <any>undefined;
+        this._handles = <any>undefined;
         this._stack = <any>undefined;
         this._registry = <any>undefined;
     }
+    
+    /**
+     * get the last error thrown in native calls, and meanwhile, erase it from stack
+     */
+    GetLastError(): any {
+        const error = this._stack.GetValue(jsbb_StackPos.Error);
+        this._stack.SetValue(jsbb_StackPos.Error, undefined)
+        return error;
+    }
 
     SetHostPromiseRejectionTracker(cb: FunctionPointer, data: Pointer) {
-        //TODO
+        const self = this;
         window.addEventListener("unhandledrejection", function (ev: PromiseRejectionEvent) {
-            console.log("unhandled promise rejection");
+            self._stack.EnterScope();
+            try {
+                NativeAPI.unhandled_rejection(self._opaque, cb, self._stack.Push(ev.promise), self._stack.Push(ev.reason));
+            } catch (err) {
+                // rejection handler must do not throw error
+                console.error("unexpected error", err);
+            }
+            self._stack.ExitScope();
         })
     }
 
@@ -350,28 +358,6 @@ class jsbb_Engine {
         // internal data index as hash since it's never changed
         if (typeof val[jsbb_opaque] !== "undefined") return val[jsbb_opaque] | 0;
         return 0;
-    }
-
-    NewAtom(stack_pos: StackPosition): jsbb_AtomID {
-        return this._atoms.Add(new jsbb_Atom(this._stack.GetValue(stack_pos)));
-    }
-
-    NewAtomStr(ptr: CString) {
-        let str = NativeAPI.UTF8ToString(ptr);
-        return this._atoms.Add(new jsbb_Atom(str));
-    }
-
-    DupAtom(atom_id: jsbb_AtomID): jsbb_AtomID {
-        let atom = this._atoms.Get(atom_id);
-        ++atom.rc;
-        return atom_id;
-    }
-
-    FreeAtom(atom_id: jsbb_AtomID) {
-        let atom = this._atoms.Get(atom_id);
-        if (--atom.rc == 0) {
-            this._atoms.Remove(atom_id);
-        }
     }
 
     GetByteLength(buf_sp: StackPosition): number {
@@ -469,16 +455,21 @@ class jsbb_Engine {
         return this._stack.Push(this._stack.GetValue(stack_pos));
     }
 
+    StackSet(to_sp: StackPosition, from_sp: StackPosition): void {
+        this._stack.SetValue(to_sp, this._stack.GetValue(from_sp));
+    }
+
+    StackSetInt32(to_sp: StackPosition, value: number): void {
+        this._stack.SetValue(to_sp, value);
+    }
+
     HasError(): boolean {
-        return this.error !== undefined;
+        return this._stack.GetValue(jsbb_StackPos.Error) !== undefined;
     }
 
     ThrowError(message_ptr: CString): void {
-        if (this.error !== undefined) {
-            console.warn("unhandled error", this.error);
-        }
         let message = NativeAPI.UTF8ToString(message_ptr);
-        throw new Error(message);
+        this.error = new Error(message);
     }
 
     GetOpaque(stack_pos: StackPosition): Pointer {
@@ -486,7 +477,8 @@ class jsbb_Engine {
         if (typeof obj !== "object") {
             return 0;
         }
-        return obj[jsbb_opaque];
+        const opaque = obj[jsbb_opaque];
+        return typeof opaque === "number" ? opaque : 0;
     }
 
     // len: is ignored
@@ -532,6 +524,70 @@ class jsbb_Engine {
         return this._stack.GetValue(stack_pos) instanceof jsbb_External;
     }
 
+    DefineProperty(obj_sp: StackPosition, key_sp: StackPosition, value_sp: StackPosition, get_sp: StackPosition, set_sp: StackPosition, flags: jsbb_PropertyFlags): ResultValue {
+        const obj = this._stack.GetValue(obj_sp);
+        const key = this._stack.GetValue(key_sp);
+
+        const descriptor: PropertyDescriptor = {
+            configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
+            enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
+            writable: (flags & jsbb_PropertyFlags.WRITABLE) !== 0,
+            get: (flags & jsbb_PropertyFlags.GET) !== 0 ? this._stack.GetValue(get_sp) : undefined,
+            set: (flags & jsbb_PropertyFlags.SET) !== 0 ? this._stack.GetValue(set_sp) : undefined,
+            value: (flags & jsbb_PropertyFlags.VALUE) !== 0 ? this._stack.GetValue(value_sp) : undefined
+        };
+        Object.defineProperty(obj, key, descriptor);
+        return 0;
+    }
+
+    DefineLazyProperty(obj_sp: StackPosition, key_sp: StackPosition, cb: FunctionPointer): ResultValue {
+        const obj = this._stack.GetValue(obj_sp);
+        const key = this._stack.GetValue(key_sp);
+        const self = this;
+
+        Object.defineProperty(obj, key, {
+            get: function () {
+                self._stack.EnterScope();
+
+                // prepare: fixed initial call stack positions
+                const rval_sp = self._stack.Push(undefined);  // 0 return value (placeholder)
+                const key_sp = self._stack.Push(key);
+
+                try {
+                    NativeAPI.call_accessor(self._opaque, cb, key_sp, rval_sp);
+                } catch (error) {
+                    console.error("unexpected error", error);
+                    self.error = error;
+                }
+
+                const error = self.GetLastError();
+                if (error !== undefined) {
+                    // cleanup 
+                    self._stack.ExitScope();
+                    throw error;
+                }
+
+                const rval = self._stack.GetValue(rval_sp);
+
+                // cleanup
+                self._stack.ExitScope();
+
+                // overwrite 
+                Object.defineProperty(this, key, {
+                    value: rval, 
+                    configurable: true,
+                    enumerable: true, 
+                    writable: true
+                });
+                
+                return rval;
+            },
+            configurable: true,
+            enumerable: true
+        });
+        return 1;
+    }
+
     SetProperty(obj_sp: StackPosition, key_sp: StackPosition, val_sp: StackPosition): ResultValue {
         try {
             const obj = this._stack.GetValue(obj_sp);
@@ -543,7 +599,7 @@ class jsbb_Engine {
             } else {
                 obj[key] = val;
             }
-            return 0;
+            return 1;
         } catch (err) {
             this.error = err;
             return -1;
@@ -557,10 +613,101 @@ class jsbb_Engine {
             const val = this._stack.GetValue(value_sp);
     
             obj[index] = val;
-            return 0;
+            return 1;
         } catch (err) {
             this.error = err;
             return -1;
+        }
+    }
+
+    //TODO filter and key_conversion are not implemented (or not supported?)
+    GetOwnPropertyNames(obj_sp: StackPosition, filter: number, key_conversion: number): StackPosition {
+        try {
+            const obj = this._stack.GetValue(obj_sp);
+            const names = Object.getOwnPropertyNames(obj);
+            if (names instanceof Array) { 
+                return this._stack.Push(names);
+            }
+            this.error = new TypeError("GetOwnPropertyDescriptor: unexpected");
+            return jsbb_StackPos.Error;
+        } catch (err) {
+            this.error = err;
+            return jsbb_StackPos.Error;
+        }
+    }
+
+    GetOwnPropertyDescriptor(obj_sp: StackPosition, key_sp: StackPosition) {
+        try {
+            const key = this._stack.GetValue(key_sp);
+            const obj = this._stack.GetValue(obj_sp);
+            const desc = Object.getOwnPropertyDescriptor(obj, key);
+            if (typeof desc === "object") { 
+                return this._stack.Push(desc);
+            }
+            this.error = new TypeError("GetOwnPropertyDescriptor: unexpected");
+            return jsbb_StackPos.Error;
+        } catch (err) {
+            this.error = err;
+            return jsbb_StackPos.Error;
+        }
+    }
+
+    GetPropertyAtomID(obj_sp: StackPosition, atom_id: jsbb_AtomID): StackPosition {
+        const obj = this._stack.GetValue(obj_sp);
+        const key = this._atoms[atom_id];
+        if (typeof key !== "string") {
+            this.error = new Error("invalid atom id");
+            return jsbb_StackPos.Error;
+        }
+        const val = obj[key];
+        if (typeof val === "undefined") {
+            return jsbb_StackPos.Undefined;
+        }
+        return this._stack.Push(val);
+    }
+
+    GetProperty(obj_sp: StackPosition, key_sp: StackPosition): StackPosition {
+        const obj = this._stack.GetValue(obj_sp);
+        const key = this._stack.GetValue(key_sp);
+        if (typeof key !== "string" && typeof key !== "symbol") {
+            this.error = new Error("invalid atom id");
+            return jsbb_StackPos.Error;
+        }
+
+
+        try {
+            const val = obj instanceof Map ? obj.get(key) : obj[key];
+        
+            // saving stack space
+            if (typeof val === "undefined") {
+                return jsbb_StackPos.Undefined;
+            }
+            return this._stack.Push(val);
+        } catch (err) {
+            this.error = err;
+            return jsbb_StackPos.Error;
+        }
+    }
+
+    GetPropertyUint32(obj_sp: StackPosition, index: number): StackPosition {
+        const obj = this._stack.GetValue(obj_sp);
+        if (typeof index !== "number") {
+            this.error = new Error("invalid atom id");
+            return jsbb_StackPos.Error;
+        }
+
+
+        try {
+            const val = obj[index];
+        
+            // saving stack space
+            if (typeof val === "undefined") {
+                return jsbb_StackPos.Undefined;
+            }
+            return this._stack.Push(val);
+        } catch (err) {
+            this.error = err;
+            return jsbb_StackPos.Error;
         }
     }
 
@@ -575,7 +722,7 @@ class jsbb_Engine {
         try {
             rval = eval(source);
         } catch (err) {
-            // eval not supported
+            // eval not supported (CSP restriction)
             if (err instanceof EvalError) {
                 // module_source must be a bare function source (like '(function(){ ... })')
 
@@ -583,11 +730,11 @@ class jsbb_Engine {
                 // but for now, we need a method to eval source synchronously
                 let script = document.createElement("script");
                 script.type = "type/javascript";
-                script.text = `jsbb_runtime.eval = ${source};`;
+                script.text = `_jsbb_.eval = ${source};`;
 
-                jsbb_runtime.eval = undefined;
                 document.head.appendChild(script);
-                rval = jsbb_runtime.eval;
+                rval = _jsbb_.eval;
+                _jsbb_.eval = undefined;
                 document.head.removeChild(script);
             } else {
                 let filename = NativeAPI.UTF8ToString(filename_ptr);
@@ -604,6 +751,10 @@ class jsbb_Engine {
         return this._stack.Push(rval);
     }
 
+    /**
+     * eval source code. 
+     * not supported if CSP is enabled.
+     */
     Eval(filename_ptr: CString, source_ptr: CString): StackPosition {
         let source = NativeAPI.UTF8ToString(source_ptr);
         let rval: any = undefined;
@@ -650,6 +801,58 @@ class jsbb_Engine {
         }
     }
 
+    CallAsConstructor(func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
+        const func = this._stack.GetValue(func_sp);
+        if (typeof func !== "function") {
+            this.error = new TypeError("not a function");
+            return jsbb_StackPos.Error;
+        }
+
+        let args: Array<any> | undefined = undefined;
+        if (argc > 0) {
+            args = new Array(argc);
+            for (let i = 0; i < argc; ++i) {
+                const arg_sp = NativeAPI.HEAP32[(argv >> 2) + i];
+                args[i] = this._stack.GetValue(arg_sp);
+            }
+        }
+        try {
+            const rval = args === undefined ? new func() : new func(...args);
+            return this._stack.Push(rval);
+        } catch (error) {
+            this.error = error;
+            return jsbb_StackPos.Error;
+        }
+    }
+
+    // push `obj.__proto__` to stack
+    GetPrototypeOf(obj_sp: StackPosition): StackPosition {
+        const obj = this._stack.GetValue(obj_sp);
+        return this._stack.Push(Object.getPrototypeOf(obj));
+    }
+
+    // push `obj.__proto__` to stack
+    SetPrototypeOf(obj_sp: StackPosition, proto_sp: StackPosition): ResultValue {
+        const obj = this._stack.GetValue(obj_sp);
+        const proto = this._stack.GetValue(proto_sp);
+        if (typeof obj !== "object" || typeof proto !== "object") {
+            this.error = new TypeError("invalid object or prototype");
+            return -1;
+        }
+        Object.setPrototypeOf(obj, proto);
+        return 1;
+    }
+
+    HasOwnProperty(obj_sp: StackPosition, key_sp: StackPosition): ResultValue {
+        const obj = this._stack.GetValue(obj_sp);
+        const key = this._stack.GetValue(key_sp);
+        if (typeof obj !== "object" || (typeof key !== "string" && typeof key !== "symbol")) {
+            this.error = new TypeError("invalid object or key");
+            return -1;
+        }
+        return obj.hasOwnProperty(key) ? 1 : 0;
+    }
+
     // [stack-based]
     // cb: C++ Function Pointer
     // return: stack position of the wrapper function 
@@ -662,9 +865,9 @@ class jsbb_Engine {
 
             // prepare: fixed initial call stack positions
             const rval_pos = self._stack.Push(undefined);  // 0 return value (placeholder)
-            self._stack.Push(self);                        // 1 this
+            self._stack.Push(this);                        // 1 this (not an error, it's intentionally to be the original this)
             self._stack.Push(data);                        // 2 data
-            self._stack.Push(new.target);                  // 3 new.target
+            self._stack.Push(undefined);                   // 3 new.target
 
             // prepare: arguments
             const argc = arguments.length;
@@ -673,11 +876,65 @@ class jsbb_Engine {
             }
 
             try {
-                NativeAPI.ccall(self._opaque, cb, argc);
+                NativeAPI.call_function(self._opaque, cb, false, rval_pos, argc);
             } catch (error) {
+                console.error("unexpected error", error);
                 self.error = error;
+            }
+            
+            const error = self.GetLastError();
+            if (error !== undefined) {
+                // cleanup 
                 self._stack.ExitScope();
-                return jsbb_StackPos.Error;
+                throw error;
+            }
+
+            const rval = self._stack.GetValue(rval_pos);
+
+            // cleanup
+            self._stack.ExitScope();
+            return rval;
+        });
+    }
+
+    // generate a constructor wrapper function for native class
+    NewClass(cb: FunctionPointer, data_sp: StackPosition, internal_field_count: number): StackPosition {
+        const self = this;
+        const data = this._stack.GetValue(data_sp);
+
+        return this._stack.Push(function () {
+            self._stack.EnterScope();
+
+            const target = new.target;
+            const is_construct_call = target !== undefined;
+
+            // prepare: fixed initial call stack positions
+            const rval_pos = self._stack.Push(undefined);  // 0 return value (placeholder)
+            self._stack.Push(this);                        // 1 this (not an error, it's intentionally to be the original this)
+            self._stack.Push(data);                        // 2 data
+            self._stack.Push(target);                      // 3 new.target
+
+            // prepare: arguments
+            const argc = arguments.length;
+            for (let i = 0; i < argc; ++i) {
+                self._stack.Push(arguments[i]);
+            }
+
+            // register the instance with unique internal data
+            self._registry.Add(this, NativeAPI.generate_internal_data(self._opaque, internal_field_count));
+
+            try {
+                NativeAPI.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
+            } catch (error) {
+                console.error("unexpected error", error);
+                self.error = error;
+            }
+            
+            const error = self.GetLastError();
+            if (error !== undefined) {
+                // cleanup 
+                self._stack.ExitScope();
+                throw error;
             }
             const rval = self._stack.GetValue(rval_pos);
 
@@ -687,31 +944,25 @@ class jsbb_Engine {
         });
     }
 
-    NewClass(): StackPosition {
-        return this._stack.Push(function () { });
+    NewInstance(proto_sp: StackPosition): StackPosition {
+        const proto = this._stack.GetValue(proto_sp);
+        return this._stack.Push(new proto.constructor());
     }
 
-    NewObjectProtoClass(proto_pos: StackPosition, obj_opaque: Pointer): StackPosition {
-        try {
-            const proto = this._stack.GetValue(proto_pos);
-            const obj = new proto.constructor();
-            this._registry.Add(obj, obj_opaque);
-            return this._stack.Push(obj);
-        } catch (error) {
-            this.error = error;
-            return jsbb_StackPos.Error;
-        }
+    NewObject(): StackPosition {
+        return this._stack.Push({});
     }
 
-    SetConstructor(func: StackPosition, proto: StackPosition): void {
-        const p = this._stack.GetValue(proto);
-        const f = this._stack.GetValue(func);
+    SetConstructor(func_sp: StackPosition, proto_sp: StackPosition): void {
+        const p = this._stack.GetValue(proto_sp);
+        const f = this._stack.GetValue(func_sp);
+        f.prototype = p;
         p.constructor = f;
     }
 
-    SetPrototype(proto_pos: StackPosition, parent_pos: StackPosition): void {
-        const a = this._stack.GetValue(proto_pos);
-        const b = this._stack.GetValue(parent_pos);
+    SetPrototype(proto_sp: StackPosition, parent_sp: StackPosition): void {
+        const a = this._stack.GetValue(proto_sp);
+        const b = this._stack.GetValue(parent_sp);
         a.prototype = b.prototype;
     }
 }
@@ -729,7 +980,7 @@ let NativeAPI: InteropProtocol;
 declare const global: any;
 const browser = global || globalThis || window;
 
-class jsbb_runtime {
+class _jsbb_ {
     static eval: Function | undefined = undefined;
 
     static init(api: InteropProtocol) {
@@ -741,7 +992,8 @@ class jsbb_runtime {
 
     static NewEngine(opaque: Pointer) {
         if (typeof engine !== "undefined") {
-            throw new Error();
+            console.error("temporarily support only one engine");
+            return -1;
         }
         engine = new jsbb_Engine(0, opaque);
         return 0;
@@ -749,14 +1001,21 @@ class jsbb_runtime {
 
     static FreeEngine(engine_id: EngineID) {
         if (engine_id !== 0) {
-            throw new Error();
+            console.error("invalid engine id");
+            return;
         }
         engine!.Release();
         engine = undefined;
     }
 
-    static GetEngine(engine_id: EngineID) { return engine; }
+    static GetEngine(engine_id: EngineID) {
+        if (engine_id !== 0) {
+            console.error("invalid engine id");
+            return undefined;
+        }
+        return engine;
+    }
 }
 
-(<any>browser)["jsbb_runtime"] = jsbb_runtime;
+(<any>browser)["_jsbb_"] = _jsbb_;
 

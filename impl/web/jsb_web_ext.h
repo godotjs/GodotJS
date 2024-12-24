@@ -12,26 +12,6 @@ namespace jsb::impl
     class BrowserJS
     {
     public:
-        struct Atom
-        {
-        private:
-            JSRuntime ctx_;
-            JSAtom atom_;
-
-        public:
-            Atom(JSRuntime ctx, StackPosition value_sp)
-                : ctx_(ctx), atom_(jsbi_NewAtom(ctx, value_sp))
-            {
-            }
-
-            ~Atom()
-            {
-                jsbi_FreeAtom(ctx_, atom_);
-            }
-
-            operator JSAtom() const { return atom_; }
-        };
-
         static String GetString(JSRuntime ctx, StackPosition value_sp)
         {
             int32_t len;

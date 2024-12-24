@@ -80,7 +80,9 @@ namespace jsb
         // Vector<Variant*> sync_delete_;
         RingBuffer<Variant*> pending_delete_;
 
+#if !JSB_WITH_WEB
         internal::DoubleBuffered<Message> inbox_;
+#endif
 
         // indirect lookup
         // only godot object classes are mapped
@@ -387,12 +389,14 @@ namespace jsb
 
         void update(uint64_t p_delta_msecs);
 
+#if !JSB_WITH_WEB
         // [thread safe] it's OK to call this method before the evn inited.
         void post_message(Message&& p_message)
         {
             JSB_LOG(VeryVerbose, "inbox message %d: %d", p_message.get_id(), p_message.get_buffer().size());
             inbox_.add(std::move(p_message));
         }
+#endif
 
         class IModuleLoader* find_module_loader(const StringName& p_module_id) const
         {
@@ -480,7 +484,9 @@ namespace jsb
         static std::shared_ptr<Environment> _access(void* p_runtime);
 
     private:
+#if !JSB_WITH_WEB
         void _on_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
+#endif
         void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
 
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,

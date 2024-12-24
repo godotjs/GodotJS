@@ -7,17 +7,17 @@
 namespace jsb::impl
 {
     // Offset positions based on the current scope
-    //NOTE be cautious to always keep sync with NewCFunction in monolith.ts
+    //NOTE be cautious to always keep sync with NewCFunction in monolith.ts `NativeAPI.ccall(self._opaque, cb, rval_pos, argc);`
     namespace FunctionStackBase
     {
         enum
         {
-            ReturnValue,
-            This,
-            Data,
-            NewTarget,
+            ReturnValue = 0,
+            This = 1,
+            Data = 2,
+            NewTarget = 3,
 
-            Num,
+            _Num,
         };
     }
 
@@ -44,8 +44,6 @@ namespace jsb::impl
     {
         JS_ATOM_message = 0,
         JS_ATOM_stack = 1,
-
-        _JS_ATOM_Num = 2,
     };
 }
 

@@ -13,7 +13,6 @@
 #include "jsb_web_function.h"
 #include "jsb_web_function_interop.h"
 #include "jsb_web_promise_reject.h"
-#include "jsb_web_serializer.h"
 
 #include "jsb_web_helper.h"
 #include "jsb_web_statistics.h"

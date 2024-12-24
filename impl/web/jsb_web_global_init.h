@@ -8,6 +8,7 @@ namespace jsb::impl
     {
         static void init()
         {
+            jsbi_init();
         }
     };
 

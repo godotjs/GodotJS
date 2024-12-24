@@ -91,7 +91,7 @@ namespace v8
 
     bool Data::strict_eq(const Data& other) const
     {
-        return jsbi_strict_eq(isolate_->rt(), stack_pos_, other.stack_pos_);
+        return jsbi_stack_eq(isolate_->rt(), stack_pos_, other.stack_pos_);
     }
 
 }

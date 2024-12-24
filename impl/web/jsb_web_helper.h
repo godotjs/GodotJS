@@ -40,27 +40,12 @@ namespace jsb::impl
 
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
         {
-            // const v8::Local<v8::Function> func = v8::Function::New(context, callback, data).ToLocalChecked();
-            v8::Isolate* isolate = context->isolate_;
-            JSValue payload[] = {
-                /* kFuncPayloadCallback */ JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void*) callback),
-                /* kFuncPayloadData*/ isolate->stack_dup(data->stack_pos_),
-            };
-
-            static_assert(sizeof(callback) == sizeof(void*));
-            static_assert(jsb::impl::FuncPayload::kNum == ::std::size(payload));
-            const JSValue func_obj = JS_NewCFunctionData(isolate->ctx(),
-                v8::Function::_function_call,
-                /* length */ 0,
-                /* magic */ 0,
-                ::std::size(payload), payload);
-#if JSB_DEBUG
-            JSContext* ctx = context->GetIsolate()->ctx();
-            jsb_check(JS_IsFunction(ctx, func_obj));
-            jsb_ensure(JS_DefinePropertyValue(ctx, func_obj, JS_ATOM_name, JS_NewString(ctx, name), JS_PROP_CONFIGURABLE) == 1);
-#endif
-            const v8::Local<v8::Function> func = v8::Local<v8::Function>(v8::Data(isolate, isolate->push_steal(func_obj)));
-            return func;
+            const jsb::impl::StackPosition rval = jsbi_NewCFunction(context->isolate_->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_);
+            if (rval == jsb::impl::StackBase::Error)
+            {
+                return v8::Local<v8::Function>();
+            }
+            return v8::Local<v8::Function>(v8::Data(context->isolate_, rval));
         }
 
         static v8::Local<v8::FunctionTemplate> NewFunctionTemplate(v8::Isolate* isolate, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
