@@ -837,6 +837,12 @@ class _jsbb_ {
             console.log("define jsbi", key, typeof api[key]);
         }
     }
+    static updateGlobalBufferAndViews(buf) {
+        jsbb_log("updateGlobalBufferAndViews");
+        this.api.HEAPU8 = new Uint8Array(buf);
+        this.api.HEAP32 = new Int32Array(buf);
+        this.api.HEAP64 = new BigInt64Array(buf);
+    }
     static NewEngine(opaque) {
         if (typeof engine !== "undefined") {
             console.error("temporarily support only one engine");

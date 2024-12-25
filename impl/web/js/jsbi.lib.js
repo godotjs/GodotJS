@@ -1,6 +1,11 @@
 
 const GodotJSBrowserInterface = {
     jsbi_init: function () {
+        let lastCall = updateGlobalBufferAndViews;
+        updateGlobalBufferAndViews = function (buf) {
+            lastCall(buf);
+            _jsbb_.updateGlobalBufferAndViews(buf);
+        };
         return _jsbb_.init({
             //TODO prefer UTF16?
 
