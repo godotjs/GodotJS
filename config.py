@@ -1,12 +1,11 @@
 # config.py
+import os
 
 def can_build(env, platform):
     module_path = os.path.dirname(os.path.abspath("jsb.h"))
     module_name = os.path.basename(module_path)
 
-    # temp
-    # return platform == "windows"
-    # return platform in ["windows", "macos", "linuxbsd", "android", "ios"] # currently supported platforms
+    # `regex` is required for `internal/jsb_source_map_cache`
     env.module_add_dependencies(module_name, ["regex"])
     return True
 

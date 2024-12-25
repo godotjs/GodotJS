@@ -3,6 +3,7 @@
 
 #include "jsb_test_helpers.h"
 #include "../bridge/jsb_builtins.h"
+#include "../bridge/jsb_essentials.h"
 
 #if JSB_WITH_QUICKJS
 // all quickjs.impl specific test cases

@@ -144,11 +144,14 @@ def is_defined(name, value = 1):
             return t.value == value
     return False
 
+zero_terminated = quickjs_support is not None or is_defined("JSB_WITH_WEB")
+
 print("compiling:", module_name)
 print("javascript engine:", "v8" if is_defined("JSB_WITH_V8") else "web" if is_defined("JSB_WITH_WEB") else "quickjs" if is_defined("JSB_WITH_QUICKJS") else "none")
 print("websocket lib:", "lws" if is_defined("JSB_WITH_LWS") else "none")
 print("platform:", jsb_platform)
 print("arch:", jsb_arch)
+print("zero_terminated:", zero_terminated)
 
 if jsb_platform == "android":
     print("ndk_platform:", env["ndk_platform"])
@@ -439,14 +442,11 @@ if is_defined("JSB_WITH_WEB"):
     print("WARNING: web.impl is experimental and may not work as expected")
 
     env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
-    env.AddJSPre([
-        "impl/web/bridge/out/jsbb.bundle.js"
-    ])
-    env.AddJSLibraries([
-        "impl/web/jsb_web.library.js",
-    ])
+    
+    # this script is compiled from impl/web/bridge typescript source
+    env.AddJSPre([ "impl/web/js/jsbb.impl.js" ])
+    env.AddJSLibraries([ "impl/web/js/jsbi.lib.js" ])
 
-zero_terminated = quickjs_support is not None
 generate_code([\
         # presets for runtime
         PresetDefine("scripts/out/jsb.runtime.bundle.js", "", zero_terminated, AMDSourceTransformer()),

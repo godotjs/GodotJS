@@ -13,6 +13,9 @@ const jsbb_PropertyFilter = {
     SKIP_SYMBOLS: 16
 };
 ;
+function jsbb_log(...args) {
+    console.log("[jsbb]", ...args);
+}
 const jsbb_kMaxStackSize = 512;
 const jsbb_StackPos = {
     Undefined: 0,
@@ -33,8 +36,12 @@ class jsbb_Stack {
     constructor() {
         this.frames = [];
         this.values = [];
+        this._depth = 0;
     }
+    /** stack used */
     get pos() { return this.values.length; }
+    /** depth of scope entered */
+    get depth() { return this._depth; }
     SetValue(pos, value) {
         if (pos < 0 || pos >= this.values.length) {
             throw new RangeError("invalid stack position");
@@ -56,9 +63,11 @@ class jsbb_Stack {
         return this.values.push(val) - 1;
     }
     EnterScope() {
+        ++this._depth;
         this.frames.push(this.values.length);
     }
     ExitScope() {
+        --this._depth;
         const frame = this.frames.pop();
         this.values.length = frame;
     }
@@ -141,7 +150,7 @@ class jsbb_Handles {
 class jsbb_Registry {
     constructor(opaque) {
         this.watcher = new FinalizationRegistry(function (info) {
-            NativeAPI.gc_callback(opaque, info);
+            _jsbb_.api.gc_callback(opaque, info);
         });
     }
     Add(obj, opaque) {
@@ -168,6 +177,10 @@ class jsbb_Engine {
         if (last !== undefined) {
             console.error("discarding an unhandled error", last);
         }
+        //TODO ONLY FOR DEBUG
+        if (value !== undefined) {
+            console.log("save error", value);
+        }
         this._stack.SetValue(jsbb_StackPos.Error, value);
     }
     constructor(engine_id, opaque) {
@@ -188,7 +201,7 @@ class jsbb_Engine {
         jsbb_ensure(this._stack.Push("") === jsbb_StackPos.EmptyString);
         jsbb_ensure(this._stack.Push(Symbol) === jsbb_StackPos.SymbolClass);
         jsbb_ensure(this._stack.Push(Map) === jsbb_StackPos.MapClass);
-        jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Error);
+        jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Error);
         jsbb_ensure(this._stack.pos === jsbb_StackPos._Num);
     }
     Release() {
@@ -210,7 +223,7 @@ class jsbb_Engine {
         window.addEventListener("unhandledrejection", function (ev) {
             self._stack.EnterScope();
             try {
-                NativeAPI.unhandled_rejection(self._opaque, cb, self._stack.Push(ev.promise), self._stack.Push(ev.reason));
+                _jsbb_.api.unhandled_rejection(self._opaque, cb, self._stack.Push(ev.promise), self._stack.Push(ev.reason));
             }
             catch (err) {
                 // rejection handler must do not throw error
@@ -269,13 +282,13 @@ class jsbb_Engine {
                 console.error("ArrayBuffer: not enough data to read");
                 return;
             }
-            NativeAPI.HEAPU8.set(new Uint8Array(val), data_dst);
+            _jsbb_.api.HEAPU8.set(new Uint8Array(val), data_dst);
             return;
         }
         console.error("not ArrayBuffer");
     }
     NewArrayBuffer(data_src, size) {
-        const data = new Uint8Array(NativeAPI.HEAPU8.buffer, data_src, size).slice();
+        const data = new Uint8Array(_jsbb_.api.HEAPU8.buffer, data_src, size).slice();
         return this._stack.Push(data.buffer);
     }
     GetExternal(stack_pos) {
@@ -302,10 +315,10 @@ class jsbb_Engine {
     //TODO need type check?
     ToCStringLen(o_size, str_sp) {
         const str = String(this._stack.GetValue(str_sp));
-        const len = NativeAPI.lengthBytesUTF8(str);
-        NativeAPI.HEAP32[o_size >> 2] = len;
-        const buf = NativeAPI._malloc(len + 1);
-        NativeAPI.stringToUTF8(str, buf, len);
+        const len = _jsbb_.api.lengthBytesUTF8(str);
+        _jsbb_.api.HEAP32[o_size >> 2] = len;
+        const buf = _jsbb_.api._malloc(len + 1);
+        _jsbb_.api.stringToUTF8(str, buf, len);
         return buf;
     }
     ToString(stack_pos) {
@@ -330,7 +343,7 @@ class jsbb_Engine {
     }
     Int64Value(stack_pos, o_value_ptr) {
         const val = this._stack.GetValue(stack_pos);
-        NativeAPI.HEAP64[o_value_ptr >> 3] = val;
+        _jsbb_.api.HEAP64[o_value_ptr >> 3] = val;
         return true;
     }
     // duplicate a value to the stack top
@@ -347,7 +360,7 @@ class jsbb_Engine {
         return this._stack.GetValue(jsbb_StackPos.Error) !== undefined;
     }
     ThrowError(message_ptr) {
-        let message = NativeAPI.UTF8ToString(message_ptr);
+        let message = _jsbb_.api.UTF8ToString(message_ptr);
         this.error = new Error(message);
     }
     GetOpaque(stack_pos) {
@@ -360,7 +373,13 @@ class jsbb_Engine {
     }
     // len: is ignored
     NewString(cstr_ptr, len) {
-        let str = NativeAPI.UTF8ToString(cstr_ptr);
+        if (len === 0) {
+            return this._stack.Push("");
+        }
+        let str = _jsbb_.api.UTF8ToString(cstr_ptr);
+        if (typeof str !== "string") {
+            console.error("invalid string", cstr_ptr, len);
+        }
         return this._stack.Push(str);
     }
     NewExternal(data) {
@@ -376,7 +395,7 @@ class jsbb_Engine {
         return this._stack.Push(value);
     }
     NewBigInt64(val_ptr) {
-        const val = NativeAPI.HEAP64[val_ptr >> 3];
+        const val = _jsbb_.api.HEAP64[val_ptr >> 3];
         return this._stack.Push(val);
     }
     NewSymbol() {
@@ -403,6 +422,7 @@ class jsbb_Engine {
             value: (flags & jsbb_PropertyFlags.VALUE) !== 0 ? this._stack.GetValue(value_sp) : undefined
         };
         Object.defineProperty(obj, key, descriptor);
+        jsbb_log("define property", obj, key);
         return 0;
     }
     DefineLazyProperty(obj_sp, key_sp, cb) {
@@ -416,7 +436,7 @@ class jsbb_Engine {
                 const rval_sp = self._stack.Push(undefined); // 0 return value (placeholder)
                 const key_sp = self._stack.Push(key);
                 try {
-                    NativeAPI.call_accessor(self._opaque, cb, key_sp, rval_sp);
+                    _jsbb_.api.call_accessor(self._opaque, cb, key_sp, rval_sp);
                 }
                 catch (error) {
                     console.error("unexpected error", error);
@@ -512,7 +532,11 @@ class jsbb_Engine {
         const obj = this._stack.GetValue(obj_sp);
         const key = this._atoms[atom_id];
         if (typeof key !== "string") {
-            this.error = new Error("invalid atom id");
+            this.error = new Error(`invalid AtomID(${atom_id})`);
+            return jsbb_StackPos.Error;
+        }
+        if (typeof obj !== "object") {
+            this.error = new Error(`invalid object to access property at ${obj_sp} with AtomID ${atom_id}`);
             return jsbb_StackPos.Error;
         }
         const val = obj[key];
@@ -562,12 +586,17 @@ class jsbb_Engine {
     }
     // push global to stack, return it's stack position
     GetGlobalObject() {
-        return this._stack.Push(this._global);
+        //TODO temporarily use browser global object
+        return this._stack.Push(jsbb_browser);
+        // return this._stack.Push(this._global);
     }
     CompileFunctionSource(filename_ptr, source_ptr) {
-        let source = NativeAPI.UTF8ToString(source_ptr);
+        let source = _jsbb_.api.UTF8ToString(source_ptr);
         let rval = undefined;
         try {
+            if (source == null) {
+                throw new Error("source is null");
+            }
             rval = eval(source);
         }
         catch (err) {
@@ -582,10 +611,10 @@ class jsbb_Engine {
                 document.head.appendChild(script);
                 rval = _jsbb_.eval;
                 _jsbb_.eval = undefined;
-                document.head.removeChild(script);
+                // document.head.removeChild(script);
             }
             else {
-                let filename = NativeAPI.UTF8ToString(filename_ptr);
+                let filename = _jsbb_.api.UTF8ToString(filename_ptr);
                 console.error(filename, err);
                 this.error = err;
                 return jsbb_StackPos.Error;
@@ -601,15 +630,18 @@ class jsbb_Engine {
      * not supported if CSP is enabled.
      */
     Eval(filename_ptr, source_ptr) {
-        let source = NativeAPI.UTF8ToString(source_ptr);
+        let source = _jsbb_.api.UTF8ToString(source_ptr);
         let rval = undefined;
         try {
+            if (source == null) {
+                throw new Error("source is null");
+            }
             rval = eval(source);
         }
         catch (err) {
             // it's difficult to emulate the behaviour of eval with script element (get the result without 'return').
             // just throw error for easier life.
-            let filename = NativeAPI.UTF8ToString(filename_ptr);
+            let filename = _jsbb_.api.UTF8ToString(filename_ptr);
             console.error(filename, err);
             this.error = err;
             return jsbb_StackPos.Error;
@@ -620,6 +652,7 @@ class jsbb_Engine {
         return this._stack.Push(rval);
     }
     Call(this_sp, func_sp, argc, argv) {
+        jsbb_log("Call", this_sp, func_sp, argc, argv);
         const thiz = this._stack.GetValue(this_sp);
         const func = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
@@ -630,7 +663,7 @@ class jsbb_Engine {
         if (argc > 0) {
             args = new Array(argc);
             for (let i = 0; i < argc; ++i) {
-                const arg_sp = NativeAPI.HEAP32[(argv >> 2) + i];
+                const arg_sp = _jsbb_.api.HEAP32[(argv >> 2) + i];
                 args[i] = this._stack.GetValue(arg_sp);
             }
         }
@@ -644,6 +677,7 @@ class jsbb_Engine {
         }
     }
     CallAsConstructor(func_sp, argc, argv) {
+        jsbb_log("CallAsConstructor", func_sp, argc, argv);
         const func = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
             this.error = new TypeError("not a function");
@@ -653,7 +687,7 @@ class jsbb_Engine {
         if (argc > 0) {
             args = new Array(argc);
             for (let i = 0; i < argc; ++i) {
-                const arg_sp = NativeAPI.HEAP32[(argv >> 2) + i];
+                const arg_sp = _jsbb_.api.HEAP32[(argv >> 2) + i];
                 args[i] = this._stack.GetValue(arg_sp);
             }
         }
@@ -701,6 +735,7 @@ class jsbb_Engine {
             self._stack.EnterScope();
             // prepare: fixed initial call stack positions
             const rval_pos = self._stack.Push(undefined); // 0 return value (placeholder)
+            //@ts-ignore
             self._stack.Push(this); // 1 this (not an error, it's intentionally to be the original this)
             self._stack.Push(data); // 2 data
             self._stack.Push(undefined); // 3 new.target
@@ -710,7 +745,7 @@ class jsbb_Engine {
                 self._stack.Push(arguments[i]);
             }
             try {
-                NativeAPI.call_function(self._opaque, cb, false, rval_pos, argc);
+                _jsbb_.api.call_function(self._opaque, cb, false, rval_pos, argc);
             }
             catch (error) {
                 console.error("unexpected error", error);
@@ -738,6 +773,7 @@ class jsbb_Engine {
             const is_construct_call = target !== undefined;
             // prepare: fixed initial call stack positions
             const rval_pos = self._stack.Push(undefined); // 0 return value (placeholder)
+            //@ts-ignore
             self._stack.Push(this); // 1 this (not an error, it's intentionally to be the original this)
             self._stack.Push(data); // 2 data
             self._stack.Push(target); // 3 new.target
@@ -747,9 +783,10 @@ class jsbb_Engine {
                 self._stack.Push(arguments[i]);
             }
             // register the instance with unique internal data
-            self._registry.Add(this, NativeAPI.generate_internal_data(self._opaque, internal_field_count));
+            //@ts-ignore
+            self._registry.Add(this, _jsbb_.api.generate_internal_data(self._opaque, internal_field_count));
             try {
-                NativeAPI.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
+                _jsbb_.api.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
             }
             catch (error) {
                 console.error("unexpected error", error);
@@ -789,14 +826,16 @@ class jsbb_Engine {
 // opaque for UniversalBridgeClass
 const jsbb_opaque = Symbol();
 let engine;
-let NativeAPI;
-const browser = global || globalThis || window;
 class _jsbb_ {
     static init(api) {
-        if (typeof NativeAPI !== "undefined") {
+        if (typeof this.api !== "undefined") {
             console.error("Already initialized, do not call it twice");
         }
-        NativeAPI = api;
+        this.api = api;
+        for (let key in api) {
+            //@ts-ignore
+            console.log("define jsbi", key, typeof api[key]);
+        }
     }
     static NewEngine(opaque) {
         if (typeof engine !== "undefined") {
@@ -823,4 +862,5 @@ class _jsbb_ {
     }
 }
 _jsbb_.eval = undefined;
-browser["_jsbb_"] = _jsbb_;
+const jsbb_browser = (typeof globalThis === "object" && globalThis) || (typeof window === "object" && window) || (typeof global === "object" && global);
+jsbb_browser["_jsbb_"] = _jsbb_;

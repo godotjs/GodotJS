@@ -157,6 +157,6 @@ String GodotJSExportPlugin::get_name() const
 bool GodotJSExportPlugin::supports_platform(const Ref<EditorExportPlatform>& p_export_platform) const
 {
     //TODO
-    JSB_EXPORTER_LOG(Verbose, "GodotJSExportPlugin::supports_platform( %s )", p_export_platform.is_valid() ? p_export_platform->get_name() : String("null"));
+    JSB_EXPORTER_LOG(VeryVerbose, "GodotJSExportPlugin::supports_platform( %s )", p_export_platform.is_valid() ? p_export_platform->get_name() : String("null"));
     return true;
 }

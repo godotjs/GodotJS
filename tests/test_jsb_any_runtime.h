@@ -2,7 +2,7 @@
 #define GODOTJS_TESTS_JSB_ANY_RUNTIME_H
 
 #include "jsb_test_helpers.h"
-#include "../bridge/jsb_builtins.h"
+#include "../bridge/jsb_essentials.h"
 #include "../bridge/jsb_type_convert.h"
 
 #define JSB_TESTS_OPTION_ENABLED(OptionName) kOption_##OptionName
@@ -188,7 +188,7 @@ namespace jsb::tests
                 builder1.Instance().Method("Method", StubBindings::method);
                 class1 = builder1.Build();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "B1"), class1.Get(isolate)).Check();
-                Builtins::register_(context, context->Global());
+                Essentials::register_(context, context->Global());
             // }
             // {
             //     v8::HandleScope scope_1(isolate);
@@ -231,7 +231,7 @@ check_class(S2, S3);
 return 1+1;
 }))--";
                 impl::TryCatch try_catch(isolate);
-                v8::MaybeLocal<v8::Value> eval = impl::Helper::compile_run(context, source, ::std::size(source) - 1, "testcase.js");
+                v8::MaybeLocal<v8::Value> eval = impl::Helper::compile_function(context, source, ::std::size(source) - 1, "testcase.js");
                 Utils::print_exception(try_catch);
                 CHECK(!eval.IsEmpty());
                 CHECK(eval.ToLocalChecked()->IsFunction());
@@ -281,7 +281,7 @@ return 1+1;
                 v8::HandleScope scope_1(isolate);
                 // const v8::Context::Scope context_scope(context);
 
-                Builtins::register_(context, context->Global());
+                Essentials::register_(context, context->Global());
 
                 auto exposed = env->expose_godot_object_class(ClassDB::classes.getptr("Object"));
 

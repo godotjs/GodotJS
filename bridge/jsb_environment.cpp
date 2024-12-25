@@ -10,6 +10,7 @@
 #include "jsb_type_convert.h"
 #include "jsb_class_register.h"
 #include "jsb_worker.h"
+#include "jsb_essentials.h"
 
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_class_util.h"
@@ -239,7 +240,7 @@ namespace jsb
 #if !JSB_WITH_WEB
             Worker::register_(context, global);
 #endif
-            Builtins::register_(context, global);
+            Essentials::register_(context, global);
             register_primitive_bindings(this);
             this->on_context_created(context);
         }
