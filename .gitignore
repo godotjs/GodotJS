@@ -23,3 +23,4 @@ __MACOSX
 /jsb_project_preset.gen.cpp
 /weaver-editor/templates/templates.gen.h
 
+.vscode
