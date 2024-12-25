@@ -1,9 +1,13 @@
 # config.py
 
 def can_build(env, platform):
+    module_path = os.path.dirname(os.path.abspath("jsb.h"))
+    module_name = os.path.basename(module_path)
+
     # temp
     # return platform == "windows"
     # return platform in ["windows", "macos", "linuxbsd", "android", "ios"] # currently supported platforms
+    env.module_add_dependencies(module_name, ["regex"])
     return True
 
 def get_opts(platform):
