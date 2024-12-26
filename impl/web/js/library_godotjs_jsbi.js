@@ -1,34 +1,17 @@
 
 const GodotJSBrowserInterface = {
-    jsbi_init: function () {
-        let lastCall = updateGlobalBufferAndViews;
-        updateGlobalBufferAndViews = function (buf) {
-            lastCall(buf);
-            _jsbb_.updateGlobalBufferAndViews(buf);
-        };
-        return _jsbb_.init({
-            //TODO prefer UTF16?
-
-            UTF8ToString: UTF8ToString,
-            stringToUTF8: stringToUTF8, 
-            lengthBytesUTF8: lengthBytesUTF8, 
-            _malloc: _malloc, 
-
-            HEAPU8: HEAPU8, 
-            HEAP32: HEAP32, 
-            HEAP64: HEAP64, 
-
-            unhandled_rejection: Module._jsni_unhandled_rejection,
-            gc_callback: Module._jsni_gc_callback,
-            call_function: Module._jsni_call_function,
-            call_accessor: Module._jsni_call_accessor,
-
-            generate_internal_data: Module._jsni_generate_internal_data,
-        });
+    // $GodotJSBrowserInterface__deps: ['$GodotRuntime'], 
+    // $GodotJSBrowserInterface: {},
+    
+    jsbi_init: function (gc_callback, unhandled_rejection, call_function, call_accessor, generate_internal_data) {
+        console.log("calling jsbi_init");
+        return _jsbb_.init({ gc_callback, unhandled_rejection, call_function, call_accessor, generate_internal_data });
     },
 
     jsbi_NewEngine: function (opaque) { return _jsbb_.NewEngine(opaque); },
     jsbi_FreeEngine: function (engine_id) { _jsbb_.FreeEngine(engine_id); },
+    jsbi_log: function (str_ptr) { _jsbb_.log(str_ptr); },
+    jsbi_error: function (str_ptr) { _jsbb_.error(str_ptr); },
 
     jsbi_CompileFunctionSource: function (engine_id, filename, src) { return _jsbb_.GetEngine(engine_id).CompileFunctionSource(filename, src); }, 
     jsbi_Eval: function (engine_id, filename, src) { return _jsbb_.GetEngine(engine_id).Eval(filename, src); }, 
@@ -145,8 +128,6 @@ const GodotJSBrowserInterface = {
     jsbi_IsArrayBuffer: function (engine_id, stack_pos) { const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);  return val instanceof ArrayBuffer; },
     
 }
-
-// addToLibrary(GodotJSBrowserInterface);
 
 // autoAddDeps(GodotJSBrowserInterface, "$GodotJSBrowserInterface")
 mergeInto(LibraryManager.library, GodotJSBrowserInterface);

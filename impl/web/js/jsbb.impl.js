@@ -1,4 +1,5 @@
 "use strict";
+;
 var jsbb_PropertyFlags;
 (function (jsbb_PropertyFlags) {
     jsbb_PropertyFlags[jsbb_PropertyFlags["CONFIGURABLE"] = 1] = "CONFIGURABLE";
@@ -8,14 +9,6 @@ var jsbb_PropertyFlags;
     jsbb_PropertyFlags[jsbb_PropertyFlags["SET"] = 16] = "SET";
     jsbb_PropertyFlags[jsbb_PropertyFlags["VALUE"] = 32] = "VALUE";
 })(jsbb_PropertyFlags || (jsbb_PropertyFlags = {}));
-const jsbb_PropertyFilter = {
-    SKIP_STRINGS: 8,
-    SKIP_SYMBOLS: 16
-};
-;
-function jsbb_log(...args) {
-    console.log("[jsbb]", ...args);
-}
 const jsbb_kMaxStackSize = 512;
 const jsbb_StackPos = {
     Undefined: 0,
@@ -28,9 +21,24 @@ const jsbb_StackPos = {
     Error: 7,
     _Num: 8,
 };
-const JS_ATOM_message = 0;
-const JS_ATOM_stack = 1;
-const _JS_ATOM_Num = 2;
+const jsbb_PropertyFilter = {
+    SKIP_STRINGS: 8,
+    SKIP_SYMBOLS: 16
+};
+function jsbb_IsTraceable(o) {
+    const type = typeof o;
+    return !(o !== null && type !== "function" && type !== "object");
+}
+function jsbb_ensure(condition) {
+    console.assert(condition);
+}
+function jsbb_log(...args) {
+    console.log("[jsbb]", ...args);
+}
+// opaque for UniversalBridgeClass
+const jsbb_opaque = Symbol();
+//TODO fastpath to verify a UniversalBridgeClass
+// const jsbb_hidden = Symbol();
 // Stack for Locals (starts from zero)
 class jsbb_Stack {
     constructor() {
@@ -77,10 +85,6 @@ class jsbb_Wrapper {
     constructor(target) {
         this.target = target;
     }
-}
-function jsbb_IsTraceable(o) {
-    const type = typeof o;
-    return !(o !== null && type !== "function" && type !== "object");
 }
 class jsbb_Handles {
     constructor() {
@@ -150,7 +154,7 @@ class jsbb_Handles {
 class jsbb_Registry {
     constructor(opaque) {
         this.watcher = new FinalizationRegistry(function (info) {
-            _jsbb_.api.gc_callback(opaque, info);
+            _jsbb_.interop.gc_callback(opaque, info);
         });
     }
     Add(obj, opaque) {
@@ -158,9 +162,6 @@ class jsbb_Registry {
         obj[jsbb_opaque] = opaque;
         this.watcher.register(obj, opaque);
     }
-}
-function jsbb_ensure(condition) {
-    console.assert(condition);
 }
 class jsbb_External {
     get data() { return this._data; }
@@ -179,21 +180,22 @@ class jsbb_Engine {
         }
         //TODO ONLY FOR DEBUG
         if (value !== undefined) {
-            console.log("save error", value);
+            console.log("save error", typeof value, value);
         }
         this._stack.SetValue(jsbb_StackPos.Error, value);
     }
     constructor(engine_id, opaque) {
         this._opaque = 0;
+        console.log("new engine", engine_id, opaque);
         this._id = engine_id;
         this._opaque = opaque;
         this._global = {};
         this._stack = new jsbb_Stack();
         this._handles = new jsbb_Handles();
         this._registry = new jsbb_Registry(opaque);
-        this._atoms = new Array(_JS_ATOM_Num);
-        this._atoms[JS_ATOM_message] = "message";
-        this._atoms[JS_ATOM_stack] = "stack";
+        this._atoms = new Array(2);
+        this._atoms[0] = "message";
+        this._atoms[1] = "stack";
         jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Undefined);
         jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Null);
         jsbb_ensure(this._stack.Push(true) === jsbb_StackPos.True);
@@ -223,7 +225,7 @@ class jsbb_Engine {
         window.addEventListener("unhandledrejection", function (ev) {
             self._stack.EnterScope();
             try {
-                _jsbb_.api.unhandled_rejection(self._opaque, cb, self._stack.Push(ev.promise), self._stack.Push(ev.reason));
+                _jsbb_.interop.unhandled_rejection(self._opaque, cb, self._stack.Push(ev.promise), self._stack.Push(ev.reason));
             }
             catch (err) {
                 // rejection handler must do not throw error
@@ -282,13 +284,14 @@ class jsbb_Engine {
                 console.error("ArrayBuffer: not enough data to read");
                 return;
             }
-            _jsbb_.api.HEAPU8.set(new Uint8Array(val), data_dst);
+            _jsbb_.u8.set(new Uint8Array(val), data_dst);
             return;
         }
         console.error("not ArrayBuffer");
     }
     NewArrayBuffer(data_src, size) {
-        const data = new Uint8Array(_jsbb_.api.HEAPU8.buffer, data_src, size).slice();
+        // make a copy of the memory from data_src with size
+        const data = new Uint8Array(_jsbb_.u8.buffer, data_src, size).slice();
         return this._stack.Push(data.buffer);
     }
     GetExternal(stack_pos) {
@@ -315,10 +318,10 @@ class jsbb_Engine {
     //TODO need type check?
     ToCStringLen(o_size, str_sp) {
         const str = String(this._stack.GetValue(str_sp));
-        const len = _jsbb_.api.lengthBytesUTF8(str);
-        _jsbb_.api.HEAP32[o_size >> 2] = len;
-        const buf = _jsbb_.api._malloc(len + 1);
-        _jsbb_.api.stringToUTF8(str, buf, len);
+        const len = _jsbb_.wasmop.lengthBytesUTF8(str);
+        _jsbb_.i32[o_size >> 2] = len;
+        const buf = _jsbb_.wasmop._malloc(len + 1);
+        _jsbb_.wasmop.stringToUTF8(str, buf, len);
         return buf;
     }
     ToString(stack_pos) {
@@ -343,7 +346,7 @@ class jsbb_Engine {
     }
     Int64Value(stack_pos, o_value_ptr) {
         const val = this._stack.GetValue(stack_pos);
-        _jsbb_.api.HEAP64[o_value_ptr >> 3] = val;
+        _jsbb_.i64[o_value_ptr >> 3] = val;
         return true;
     }
     // duplicate a value to the stack top
@@ -360,7 +363,7 @@ class jsbb_Engine {
         return this._stack.GetValue(jsbb_StackPos.Error) !== undefined;
     }
     ThrowError(message_ptr) {
-        let message = _jsbb_.api.UTF8ToString(message_ptr);
+        let message = _jsbb_.wasmop.UTF8ToString(message_ptr);
         this.error = new Error(message);
     }
     GetOpaque(stack_pos) {
@@ -376,7 +379,7 @@ class jsbb_Engine {
         if (len === 0) {
             return this._stack.Push("");
         }
-        let str = _jsbb_.api.UTF8ToString(cstr_ptr);
+        let str = _jsbb_.wasmop.UTF8ToString(cstr_ptr);
         if (typeof str !== "string") {
             console.error("invalid string", cstr_ptr, len);
         }
@@ -395,7 +398,7 @@ class jsbb_Engine {
         return this._stack.Push(value);
     }
     NewBigInt64(val_ptr) {
-        const val = _jsbb_.api.HEAP64[val_ptr >> 3];
+        const val = _jsbb_.i64[val_ptr >> 3];
         return this._stack.Push(val);
     }
     NewSymbol() {
@@ -436,7 +439,7 @@ class jsbb_Engine {
                 const rval_sp = self._stack.Push(undefined); // 0 return value (placeholder)
                 const key_sp = self._stack.Push(key);
                 try {
-                    _jsbb_.api.call_accessor(self._opaque, cb, key_sp, rval_sp);
+                    _jsbb_.interop.call_accessor(self._opaque, cb, key_sp, rval_sp);
                 }
                 catch (error) {
                     console.error("unexpected error", error);
@@ -591,7 +594,7 @@ class jsbb_Engine {
         // return this._stack.Push(this._global);
     }
     CompileFunctionSource(filename_ptr, source_ptr) {
-        let source = _jsbb_.api.UTF8ToString(source_ptr);
+        let source = _jsbb_.wasmop.UTF8ToString(source_ptr);
         let rval = undefined;
         try {
             if (source == null) {
@@ -601,7 +604,7 @@ class jsbb_Engine {
         }
         catch (err) {
             // eval not supported (CSP restriction)
-            if (err instanceof EvalError) {
+            if (err instanceof EvalError && typeof document !== "undefined") {
                 // module_source must be a bare function source (like '(function(){ ... })')
                 //TODO if async module is implemented, we can use dynamic scripts which support debugging in browser devtools
                 // but for now, we need a method to eval source synchronously
@@ -614,7 +617,7 @@ class jsbb_Engine {
                 // document.head.removeChild(script);
             }
             else {
-                let filename = _jsbb_.api.UTF8ToString(filename_ptr);
+                let filename = _jsbb_.wasmop.UTF8ToString(filename_ptr);
                 console.error(filename, err);
                 this.error = err;
                 return jsbb_StackPos.Error;
@@ -630,7 +633,7 @@ class jsbb_Engine {
      * not supported if CSP is enabled.
      */
     Eval(filename_ptr, source_ptr) {
-        let source = _jsbb_.api.UTF8ToString(source_ptr);
+        let source = _jsbb_.wasmop.UTF8ToString(source_ptr);
         let rval = undefined;
         try {
             if (source == null) {
@@ -641,7 +644,7 @@ class jsbb_Engine {
         catch (err) {
             // it's difficult to emulate the behaviour of eval with script element (get the result without 'return').
             // just throw error for easier life.
-            let filename = _jsbb_.api.UTF8ToString(filename_ptr);
+            let filename = _jsbb_.wasmop.UTF8ToString(filename_ptr);
             console.error(filename, err);
             this.error = err;
             return jsbb_StackPos.Error;
@@ -652,7 +655,7 @@ class jsbb_Engine {
         return this._stack.Push(rval);
     }
     Call(this_sp, func_sp, argc, argv) {
-        jsbb_log("Call", this_sp, func_sp, argc, argv);
+        jsbb_log(`Call this_sp:${this_sp} func_sp:${func_sp}, argc:${argc}, argv:${argv}`);
         const thiz = this._stack.GetValue(this_sp);
         const func = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
@@ -663,8 +666,9 @@ class jsbb_Engine {
         if (argc > 0) {
             args = new Array(argc);
             for (let i = 0; i < argc; ++i) {
-                const arg_sp = _jsbb_.api.HEAP32[(argv >> 2) + i];
+                const arg_sp = _jsbb_.i32[(argv >> 2) + i];
                 args[i] = this._stack.GetValue(arg_sp);
+                jsbb_log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
             }
         }
         try {
@@ -687,7 +691,7 @@ class jsbb_Engine {
         if (argc > 0) {
             args = new Array(argc);
             for (let i = 0; i < argc; ++i) {
-                const arg_sp = _jsbb_.api.HEAP32[(argv >> 2) + i];
+                const arg_sp = _jsbb_.i32[(argv >> 2) + i];
                 args[i] = this._stack.GetValue(arg_sp);
             }
         }
@@ -731,6 +735,7 @@ class jsbb_Engine {
     NewCFunction(cb, data_pos) {
         const self = this;
         const data = this._stack.GetValue(data_pos);
+        jsbb_log("NewCFunction", cb, data);
         return this._stack.Push(function () {
             self._stack.EnterScope();
             // prepare: fixed initial call stack positions
@@ -745,19 +750,18 @@ class jsbb_Engine {
                 self._stack.Push(arguments[i]);
             }
             try {
-                _jsbb_.api.call_function(self._opaque, cb, false, rval_pos, argc);
+                jsbb_log("call_function.pre", self._opaque, cb, rval_pos, argc);
+                _jsbb_.interop.call_function(self._opaque, cb, false, rval_pos, argc);
+                jsbb_log("call_function.post");
             }
-            catch (error) {
-                console.error("unexpected error", error);
-                self.error = error;
-            }
-            const error = self.GetLastError();
-            if (error !== undefined) {
+            catch (err) {
+                console.error("interop.call_function: unexpected error", typeof err, err);
                 // cleanup 
                 self._stack.ExitScope();
-                throw error;
+                throw err;
             }
             const rval = self._stack.GetValue(rval_pos);
+            jsbb_log("call_function.return", rval);
             // cleanup
             self._stack.ExitScope();
             return rval;
@@ -784,9 +788,9 @@ class jsbb_Engine {
             }
             // register the instance with unique internal data
             //@ts-ignore
-            self._registry.Add(this, _jsbb_.api.generate_internal_data(self._opaque, internal_field_count));
+            self._registry.Add(this, _jsbb_.interop.generate_internal_data(self._opaque, internal_field_count));
             try {
-                _jsbb_.api.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
+                _jsbb_.interop.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
             }
             catch (error) {
                 console.error("unexpected error", error);
@@ -823,32 +827,64 @@ class jsbb_Engine {
         a.prototype = b.prototype;
     }
 }
-// opaque for UniversalBridgeClass
-const jsbb_opaque = Symbol();
-let engine;
 class _jsbb_ {
-    static init(api) {
-        if (typeof this.api !== "undefined") {
+    static get u8() {
+        if (wasmMemory.buffer != HEAP8.buffer) {
+            updateMemoryViews();
+        }
+        return HEAPU8;
+    }
+    static get i32() {
+        if (wasmMemory.buffer != HEAP8.buffer) {
+            updateMemoryViews();
+        }
+        return HEAP32;
+    }
+    //TODO may not be supported?
+    static get i64() {
+        if (wasmMemory.buffer != HEAP8.buffer) {
+            updateMemoryViews();
+            this._i64 = new BigInt64Array(wasmMemory.buffer);
+        }
+        return this._i64;
+    }
+    static init(interop) {
+        console.log("init jsbb");
+        if (typeof interop === "undefined") {
+            console.error("invalid interop");
+        }
+        if (typeof this.interop !== "undefined") {
             console.error("Already initialized, do not call it twice");
         }
-        this.api = api;
-        for (let key in api) {
+        try {
+            this.interop = {
+                gc_callback: GodotRuntime.get_func(interop.gc_callback),
+                unhandled_rejection: GodotRuntime.get_func(interop.unhandled_rejection),
+                call_function: GodotRuntime.get_func(interop.call_function),
+                call_accessor: GodotRuntime.get_func(interop.call_accessor),
+                generate_internal_data: GodotRuntime.get_func(interop.generate_internal_data),
+            };
             //@ts-ignore
-            console.log("define jsbi", key, typeof api[key]);
+            this.wasmop = { UTF8ToString, stringToUTF8, lengthBytesUTF8, _malloc, };
+            for (let key in this.interop) {
+                //@ts-ignore
+                console.log("define jsbi.interop", key, typeof this.interop[key]);
+            }
+            for (let key in this.wasmop) {
+                //@ts-ignore
+                console.log("define jsbi.wasmop", key, typeof this.wasmop[key]);
+            }
+        }
+        catch (err) {
+            console.error("unexpected error:", err);
         }
     }
-    static updateGlobalBufferAndViews(buf) {
-        jsbb_log("updateGlobalBufferAndViews");
-        this.api.HEAPU8 = new Uint8Array(buf);
-        this.api.HEAP32 = new Int32Array(buf);
-        this.api.HEAP64 = new BigInt64Array(buf);
-    }
     static NewEngine(opaque) {
-        if (typeof engine !== "undefined") {
+        if (typeof this.engine !== "undefined") {
             console.error("temporarily support only one engine");
             return -1;
         }
-        engine = new jsbb_Engine(0, opaque);
+        this.engine = new jsbb_Engine(0, opaque);
         return 0;
     }
     static FreeEngine(engine_id) {
@@ -856,15 +892,31 @@ class _jsbb_ {
             console.error("invalid engine id");
             return;
         }
-        engine.Release();
-        engine = undefined;
+        this.engine.Release();
+        this.engine = undefined;
     }
     static GetEngine(engine_id) {
         if (engine_id !== 0) {
             console.error("invalid engine id");
             return undefined;
         }
-        return engine;
+        return this.engine;
+    }
+    static log(ptr) {
+        if (typeof UTF8ToString === "function") {
+            let str = UTF8ToString(ptr);
+            if (typeof str === "string" && str.length > 0) {
+                console.log(str);
+            }
+        }
+    }
+    static error(ptr) {
+        if (typeof UTF8ToString === "function") {
+            let str = UTF8ToString(ptr);
+            if (typeof str === "string" && str.length > 0) {
+                console.error(str);
+            }
+        }
     }
 }
 _jsbb_.eval = undefined;

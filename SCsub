@@ -445,7 +445,7 @@ if is_defined("JSB_WITH_WEB"):
     
     # this script is compiled from impl/web/bridge typescript source
     env.AddJSPre([ "impl/web/js/jsbb.impl.js" ])
-    env.AddJSLibraries([ "impl/web/js/jsbi.lib.js" ])
+    env.AddJSLibraries([ "impl/web/js/library_godotjs_jsbi.js" ])
 
 generate_code([\
         # presets for runtime

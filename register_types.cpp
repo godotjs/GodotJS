@@ -21,6 +21,8 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
     {
         GDREGISTER_CLASS(GodotJSScript);
 
+        jsb::impl::GlobalInitialize::init();
+
         // register javascript language
         GodotJSScriptLanguage* script_language_js = memnew(GodotJSScriptLanguage());
         ScriptServer::register_language(script_language_js);

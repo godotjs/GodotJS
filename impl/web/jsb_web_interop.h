@@ -46,11 +46,18 @@ namespace jsb::impl
 }
 
 // global init
-JSBROWSER_API void jsbi_init(void);
+JSBROWSER_API void jsbi_init(
+    jsb::impl::FunctionPointer gc_callback,
+    jsb::impl::FunctionPointer unhandled_rejection,
+    jsb::impl::FunctionPointer call_function,
+    jsb::impl::FunctionPointer call_accessor,
+    jsb::impl::FunctionPointer generate_internal_data);
 
 // engine
 JSBROWSER_API jsb::impl::JSRuntime jsbi_NewEngine(void* opaque);
 JSBROWSER_API void jsbi_FreeEngine(jsb::impl::JSRuntime engine_id);
+JSBROWSER_API void jsbi_log(const char* ptr);
+JSBROWSER_API void jsbi_error(const char* ptr);
 
 JSBROWSER_API jsb::impl::StackPosition jsbi_CompileFunctionSource(jsb::impl::JSRuntime engine_id, const char* id, const char* source);
 JSBROWSER_API jsb::impl::StackPosition jsbi_Eval(jsb::impl::JSRuntime engine_id, const char* id, const char* source);

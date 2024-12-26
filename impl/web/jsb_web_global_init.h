@@ -6,10 +6,9 @@ namespace jsb::impl
 {
     struct GlobalInitialize
     {
-        static void init()
-        {
-            jsbi_init();
-        }
+        GlobalInitialize();
+
+        static void init();
     };
 
 }

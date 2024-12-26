@@ -1,14 +1,18 @@
-﻿#include "jsb_web_interop.h"
+#include "jsb_web_global_init.h"
+#include "../../internal/jsb_logger.h"
+
+#include <cstdint>
+
+#ifdef WEB_ENABLED
+#include <emscripten/emscripten.h>
+#endif
+
 #include "jsb_web_isolate.h"
 #include "jsb_web_function_interop.h"
 
-#ifdef EMSCRIPTEN_KEEPALIVE
+#ifdef __EMSCRIPTEN__
 
-#ifdef __cplusplus
 #define JSNATIVE_API extern "C"
-#else
-#define JSNATIVE_API
-#endif
 
 JSNATIVE_API EMSCRIPTEN_KEEPALIVE void jsni_unhandled_rejection(v8::Isolate* isolate, v8::PromiseRejectCallback cb, jsb::impl::StackPosition promise_sp, jsb::impl::StackPosition reason_sp)
 {
@@ -56,6 +60,49 @@ JSNATIVE_API EMSCRIPTEN_KEEPALIVE void* jsni_generate_internal_data(v8::Isolate*
 {
     const jsb::impl::InternalDataID index = isolate->add_internal_data(internal_field_count);
     return (void*)(uintptr_t) *index;
+}
+
+static void _custom_print_line(const String& p_str)
+{
+    const CharString str8 = p_str.utf8();
+    jsbi_log(str8.get_data());
+}
+
+static void _custom_print_error(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, ErrorHandlerType p_type)
+{
+    const String str = jsb::internal::format("[%s %s:%d] %s", p_function, p_file, p_line, p_error);
+    const CharString str8 = str.utf8();
+    jsbi_error(str8.get_data());
+}
+
+#define JSNI_FUNC(name) (jsb::impl::FunctionPointer) jsni_##name
+
+namespace jsb::impl
+{
+    GlobalInitialize::GlobalInitialize()
+    {
+        internal::Logger::set_callbacks(_custom_print_line, _custom_print_error);
+        jsbi_init(
+            JSNI_FUNC(gc_callback),
+            JSNI_FUNC(unhandled_rejection),
+            JSNI_FUNC(call_function),
+            JSNI_FUNC(call_accessor),
+            JSNI_FUNC(generate_internal_data));
+    }
+
+    void GlobalInitialize::init()
+    {
+        static GlobalInitialize global_initialize;
+        jsb_unused(global_initialize);
+    }
+
+}
+
+#else
+
+namespace jsb::impl
+{
+    void GlobalInitialize::init() {}
 }
 
 #endif
