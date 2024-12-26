@@ -76,7 +76,7 @@ JSBROWSER_API jsb::impl::StackPosition jsbi_StackDup(jsb::impl::JSRuntime engine
 JSBROWSER_API void jsbi_StackSet(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition to_sp, jsb::impl::StackPosition from_sp);
 JSBROWSER_API void jsbi_StackSetInt32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition to_sp, int32_t value);
 
-JSBROWSER_API jsb::impl::StackPosition jsbi_NewCFunction(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb, jsb::impl::StackPosition data_sp);
+JSBROWSER_API jsb::impl::StackPosition jsbi_NewCFunction(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb, jsb::impl::StackPosition data_sp, const char *func_name_ptr);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewSymbol(jsb::impl::JSRuntime engine_id);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewMap(jsb::impl::JSRuntime engine_id);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewArray(jsb::impl::JSRuntime engine_id);

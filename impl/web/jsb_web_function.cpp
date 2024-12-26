@@ -23,7 +23,7 @@ namespace v8
     {
         Isolate* isolate = context->isolate_;
         static_assert(sizeof(callback) == sizeof(void*));
-        const jsb::impl::StackPosition func_sp = jsbi_NewCFunction(isolate->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_);
+        const jsb::impl::StackPosition func_sp = jsbi_NewCFunction(isolate->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_, nullptr);
         if (func_sp == jsb::impl::StackBase::Error)
         {
             return MaybeLocal<Function>();

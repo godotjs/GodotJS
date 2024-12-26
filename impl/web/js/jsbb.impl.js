@@ -752,10 +752,11 @@ class jsbb_Engine {
     // [stack-based]
     // cb: C++ Function Pointer
     // return: stack position of the wrapper function 
-    NewCFunction(cb, data_pos) {
+    NewCFunction(cb, data_pos, func_name_ptr) {
         const self = this;
         const data = this._stack.GetValue(data_pos);
-        jsbb_log("NewCFunction", cb, data);
+        const func_name = func_name_ptr == 0 ? "(CFunction)" : _jsbb_.wasmop.UTF8ToString(func_name_ptr);
+        jsbb_log("NewCFunction", func_name, cb, data);
         return this._stack.Push(function () {
             self._stack.EnterScope();
             // prepare: fixed initial call stack positions
@@ -770,12 +771,12 @@ class jsbb_Engine {
                 self._stack.Push(arguments[i]);
             }
             try {
-                jsbb_log("call_function.pre", self._opaque, cb, rval_pos, argc);
+                jsbb_log("call_function.pre", func_name, self._opaque, cb, rval_pos, argc);
                 _jsbb_.interop.call_function(self._opaque, cb, false, rval_pos, argc);
-                jsbb_log("call_function.post");
+                jsbb_log("call_function.post", func_name);
             }
             catch (err) {
-                console.error("interop.call_function: unexpected error", typeof err, err);
+                console.error("unexpected error in interop.call_function:", func_name, typeof err, err);
                 // cleanup 
                 self._stack.ExitScope();
                 throw err;

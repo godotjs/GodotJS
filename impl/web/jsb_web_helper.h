@@ -40,7 +40,8 @@ namespace jsb::impl
 
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
         {
-            const jsb::impl::StackPosition rval = jsbi_NewCFunction(context->isolate_->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_);
+            static_assert(sizeof(callback) == sizeof(void*));
+            const jsb::impl::StackPosition rval = jsbi_NewCFunction(context->isolate_->rt(), (jsb::impl::FunctionPointer) callback, data->stack_pos_, name);
             if (rval == jsb::impl::StackBase::Error)
             {
                 return v8::Local<v8::Function>();
