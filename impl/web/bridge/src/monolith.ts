@@ -552,20 +552,36 @@ class jsbb_Engine {
     }
 
     DefineProperty(obj_sp: StackPosition, key_sp: StackPosition, value_sp: StackPosition, get_sp: StackPosition, set_sp: StackPosition, flags: jsbb_PropertyFlags): ResultValue {
-        const obj = this._stack.GetValue(obj_sp);
-        const key = this._stack.GetValue(key_sp);
+        try {
+            const obj = this._stack.GetValue(obj_sp);
+            const key = this._stack.GetValue(key_sp);
 
-        const descriptor: PropertyDescriptor = {
-            configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
-            enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
-            writable: (flags & jsbb_PropertyFlags.WRITABLE) !== 0,
-            get: (flags & jsbb_PropertyFlags.GET) !== 0 ? this._stack.GetValue(get_sp) : undefined,
-            set: (flags & jsbb_PropertyFlags.SET) !== 0 ? this._stack.GetValue(set_sp) : undefined,
-            value: (flags & jsbb_PropertyFlags.VALUE) !== 0 ? this._stack.GetValue(value_sp) : undefined
-        };
-        Object.defineProperty(obj, key, descriptor);
-        jsbb_log("define property", obj, key);
-        return 0;
+            if ((flags & jsbb_PropertyFlags.VALUE) !== 0) {
+                // with value
+                jsbb_log("define property value", obj, key, flags, value_sp);
+                if ((flags & jsbb_PropertyFlags.GET) !== 0 || (flags & jsbb_PropertyFlags.SET) !== 0) {
+                    console.warn("do not define a property with value and get/set at the same time");
+                }
+                Object.defineProperty(obj, key, {
+                    configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
+                    enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
+                    value: this._stack.GetValue(value_sp)
+                });
+            } else {
+                // with get/set
+                jsbb_log("define property getset", obj, key, flags, get_sp, set_sp);
+                Object.defineProperty(obj, key, {
+                    configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
+                    enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
+                    get: (flags & jsbb_PropertyFlags.GET) !== 0 ? this._stack.GetValue(get_sp) : undefined,
+                    set: (flags & jsbb_PropertyFlags.SET) !== 0 ? this._stack.GetValue(set_sp) : undefined
+                });
+            }
+            return 1;
+        } catch (err) {
+            this.error = err;
+            return -1;
+        }
     }
 
     DefineLazyProperty(obj_sp: StackPosition, key_sp: StackPosition, cb: FunctionPointer): ResultValue {
