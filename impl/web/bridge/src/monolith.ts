@@ -433,11 +433,13 @@ class jsbb_Engine {
         const len = _jsbb_.wasmop.lengthBytesUTF8(str);
 
         _jsbb_.i32[o_size >> 2] = len;
-        const buf = _jsbb_.wasmop._malloc(len + 1);
-        _jsbb_.wasmop.stringToUTF8(str, buf, len);
+        const size = len + 1;
+        const buf = _jsbb_.wasmop._malloc(size);
+        _jsbb_.wasmop.stringToUTF8(str, buf, size);
         return buf;
     }
 
+    /** push the given value as string on the stack */
     ToString(stack_pos: StackPosition): StackPosition {
         const val = this._stack.GetValue(stack_pos);
         return this._stack.Push(String(val));
