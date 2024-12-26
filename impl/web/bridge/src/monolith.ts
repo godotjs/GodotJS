@@ -833,7 +833,7 @@ class jsbb_Engine {
     }
 
     Call(this_sp: StackPosition, func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
-        jsbb_log(`Call this_sp:${this_sp} func_sp:${func_sp}, argc:${argc}, argv:${argv}`);
+        // jsbb_log(`Call this_sp:${this_sp} func_sp:${func_sp}, argc:${argc}, argv:${argv}`);
 
         const thiz = this._stack.GetValue(this_sp);
         const func: Function = this._stack.GetValue(func_sp);
@@ -848,7 +848,7 @@ class jsbb_Engine {
             for (let i = 0; i < argc; ++i) {
                 const arg_sp = _jsbb_.i32[(argv >> 2) + i];
                 args[i] = this._stack.GetValue(arg_sp);
-                jsbb_log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
+                // jsbb_log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
             }
         }
         try {
@@ -861,7 +861,7 @@ class jsbb_Engine {
     }
 
     CallAsConstructor(func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
-        jsbb_log("CallAsConstructor", func_sp, argc, argv);
+        // jsbb_log("CallAsConstructor", func_sp, argc, argv);
 
         const func = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
@@ -1024,9 +1024,9 @@ class jsbb_Engine {
     }
 
     SetPrototype(proto_sp: StackPosition, parent_sp: StackPosition): void {
-        const a = this._stack.GetValue(proto_sp);
-        const b = this._stack.GetValue(parent_sp);
-        a.prototype = b.prototype;
+        const proto = this._stack.GetValue(proto_sp);
+        const parent = this._stack.GetValue(parent_sp);
+        Object.setPrototypeOf(proto, parent);
     }
 }
 

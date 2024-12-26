@@ -211,7 +211,7 @@ namespace jsb::impl
         {
             jsb_check(!closed_);
             jsb_check(!base.IsEmpty());
-            jsbi_SetPrototype(isolate_->rt(), template_->stack_pos_, base.prototype_.Get(isolate_)->stack_pos_);
+            jsbi_SetPrototype(isolate_->rt(), prototype_template_->stack_pos_, base.prototype_.Get(isolate_)->stack_pos_);
         }
 
         Class Build()
