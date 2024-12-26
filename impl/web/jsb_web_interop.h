@@ -13,6 +13,7 @@
 #define JSBROWSER_API
 #endif
 
+// type placeholder
 namespace jsb::impl
 {
     // [reserved] unique id for jsbb_Engine

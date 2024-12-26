@@ -776,7 +776,7 @@ class jsbb_Engine {
                 jsbb_log("call_function.post", func_name);
             }
             catch (err) {
-                console.error("unexpected error in interop.call_function:", func_name, typeof err, err);
+                console.error("unexpected error in NewCFunction.call_function:", func_name, typeof err, err);
                 // cleanup 
                 self._stack.ExitScope();
                 throw err;
@@ -789,10 +789,13 @@ class jsbb_Engine {
         });
     }
     // generate a constructor wrapper function for native class
-    NewClass(cb, data_sp, internal_field_count) {
+    NewClass(cb, data_sp, internal_field_count, class_name_ptr) {
         const self = this;
         const data = this._stack.GetValue(data_sp);
+        const class_name = class_name_ptr == 0 ? "(CClass)" : _jsbb_.wasmop.UTF8ToString(class_name_ptr);
+        jsbb_log("NewClass", class_name, cb, data);
         return this._stack.Push(function () {
+            console.log("new class", class_name);
             self._stack.EnterScope();
             const target = new.target;
             const is_construct_call = target !== undefined;
@@ -808,22 +811,21 @@ class jsbb_Engine {
                 self._stack.Push(arguments[i]);
             }
             // register the instance with unique internal data
+            const internal_data = _jsbb_.interop.generate_internal_data(self._opaque, internal_field_count);
             //@ts-ignore
-            self._registry.Add(this, _jsbb_.interop.generate_internal_data(self._opaque, internal_field_count));
+            self._registry.Add(this, internal_data);
             try {
+                console.log("new class dispatch", class_name, cb, is_construct_call, rval_pos, argc);
                 _jsbb_.interop.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
             }
-            catch (error) {
-                console.error("unexpected error", error);
-                self.error = error;
-            }
-            const error = self.GetLastError();
-            if (error !== undefined) {
+            catch (err) {
+                console.error("unexpected error in NewClass.call_function", err);
                 // cleanup 
                 self._stack.ExitScope();
-                throw error;
+                throw err;
             }
             const rval = self._stack.GetValue(rval_pos);
+            console.log("NewClass.return", rval);
             // cleanup
             self._stack.ExitScope();
             return rval;
