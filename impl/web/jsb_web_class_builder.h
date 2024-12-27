@@ -55,12 +55,13 @@ namespace jsb::impl
                 enumeration_->Set(builder_->GetContext(), key, value);
 
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'
-                jsbi_DefineProperty(builder_->isolate_->rt(), enumeration_->stack_pos_,
-                    value->stack_pos_, // value as key
-                    key->stack_pos_,   // key as value
-                    StackBase::Undefined,
-                    StackBase::Undefined,
-                    PropertyFlags::ENUMERABLE | PropertyFlags::CONFIGURABLE | PropertyFlags::WRITABLE);
+                jsbi_SetProperty(builder_->isolate_->rt(), enumeration_->stack_pos_, value->stack_pos_, key->stack_pos_);
+                // jsbi_DefineProperty(builder_->isolate_->rt(), enumeration_->stack_pos_,
+                //     value->stack_pos_, // value as key
+                //     key->stack_pos_,   // key as value
+                //     StackBase::Undefined,
+                //     StackBase::Undefined,
+                //     PropertyFlags::ENUMERABLE | PropertyFlags::CONFIGURABLE | PropertyFlags::WRITABLE);
                 return *this;
             }
 
@@ -211,14 +212,14 @@ namespace jsb::impl
         {
             jsb_check(!closed_);
             jsb_check(!base.IsEmpty());
-            jsbi_SetPrototype(isolate_->rt(), prototype_template_->stack_pos_, base.prototype_.Get(isolate_)->stack_pos_);
+            jsb_ensure(jsbi_SetPrototype(isolate_->rt(), prototype_template_->stack_pos_, base.prototype_.Get(isolate_)->stack_pos_) != -1);
         }
 
         Class Build()
         {
             jsb_checkf(!closed_, "class builder is already closed");
             closed_ = true;
-            jsbi_SetConstructor(isolate_->rt(), template_->stack_pos_, prototype_template_->stack_pos_);
+            jsb_ensure(jsbi_SetConstructor(isolate_->rt(), template_->stack_pos_, prototype_template_->stack_pos_) != -1);
             return Class(isolate_, prototype_template_, template_);
         }
 
@@ -239,7 +240,9 @@ namespace jsb::impl
             builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, jsbi_NewClass(isolate->rt(),
                 /* callback */ (jsb::impl::FunctionPointer) constructor,
                 /* data */ jsbi_NewUint32(isolate->rt(), class_payload),
-                (int) InternalFieldCount)));
+                (int) InternalFieldCount,
+                str8.get_data()
+                )));
 
             return builder;
         }

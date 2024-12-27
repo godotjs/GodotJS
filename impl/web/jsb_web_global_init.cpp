@@ -62,6 +62,12 @@ JSNATIVE_API EMSCRIPTEN_KEEPALIVE void* jsni_generate_internal_data(v8::Isolate*
     return (void*)(uintptr_t) *index;
 }
 
+static void _custom_print_verbose(const String& p_str)
+{
+    const CharString str8 = p_str.utf8();
+    jsbi_log(str8.get_data());
+}
+
 static void _custom_print_line(const String& p_str)
 {
     const CharString str8 = p_str.utf8();
@@ -70,7 +76,7 @@ static void _custom_print_line(const String& p_str)
 
 static void _custom_print_error(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, ErrorHandlerType p_type)
 {
-    const String str = jsb::internal::format("[%s %s:%d] %s", p_function, p_file, p_line, p_error);
+    const String str = jsb::internal::format("%s [at %s %s:%d]", p_function, p_file, p_line, p_error);
     const CharString str8 = str.utf8();
     jsbi_error(str8.get_data());
 }
@@ -81,7 +87,7 @@ namespace jsb::impl
 {
     GlobalInitialize::GlobalInitialize()
     {
-        internal::Logger::set_callbacks(_custom_print_line, _custom_print_error);
+        internal::Logger::set_callbacks(_custom_print_verbose, _custom_print_line, _custom_print_error);
         jsbi_init(
             JSNI_FUNC(gc_callback),
             JSNI_FUNC(unhandled_rejection),

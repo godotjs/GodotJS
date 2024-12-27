@@ -40,7 +40,7 @@ const GodotJSBrowserInterface = {
     jsbi_NewNumber: function (engine_id, value) { return _jsbb_.GetEngine(engine_id).NewNumber(value); },
     jsbi_NewBigInt64: function (engine_id, val_ptr) { return _jsbb_.GetEngine(engine_id).NewBigInt64(val_ptr); },
     jsbi_NewObject: function (engine_id) { return _jsbb_.GetEngine(engine_id).NewObject(); },
-    jsbi_NewClass: function (engine_id, cb_ptr, data_sp, field_count) { return _jsbb_.GetEngine(engine_id).NewClass(cb_ptr, data_sp, field_count); },
+    jsbi_NewClass: function (engine_id, cb_ptr, data_sp, field_count, class_name_ptr) { return _jsbb_.GetEngine(engine_id).NewClass(cb_ptr, data_sp, field_count, class_name_ptr); },
     jsbi_NewInstance: function (engine_id, proto_sp) { return _jsbb_.GetEngine(engine_id).NewInstance(proto_sp); },
     jsbi_NewString: function (engine_id, cstr_ptr, len) { return _jsbb_.GetEngine(engine_id).NewString(cstr_ptr, len); },
 

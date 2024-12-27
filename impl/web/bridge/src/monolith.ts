@@ -66,6 +66,8 @@ interface jsbb_HandleEntry {
 
 // starts from zero
 type StackPosition = number;
+
+// a recommended stack size cap (not a limitation)
 const jsbb_kMaxStackSize = 512;
 
 const jsbb_StackPos = {
@@ -93,10 +95,6 @@ function jsbb_IsTraceable(o: any): boolean {
 
 function jsbb_ensure(condition: boolean) {
     console.assert(condition);
-}
-
-function jsbb_log(...args: any[]) {
-    console.log("[jsbb]", ...args);
 }
 
 // opaque for UniversalBridgeClass
@@ -238,16 +236,19 @@ class jsbb_Handles {
 class jsbb_Registry {
     private watcher: FinalizationRegistry<FinalizationRegistryCallbackInfo>;
 
-    constructor(opaque: Pointer) {
-        this.watcher = new FinalizationRegistry(function (info) {
-            _jsbb_.interop.gc_callback(opaque, info);
+    constructor(engine_opaque: Pointer) {
+        this.watcher = new FinalizationRegistry(function (internal_data) {
+            console.log("gc.dealloc", internal_data);
+            _jsbb_.interop.gc_callback(engine_opaque, internal_data);
         });
     }
 
-    Add(obj: any, opaque: Pointer): void {
+    Add(obj: any, internal_data: Pointer): void {
+        console.log("gc.alloc", internal_data);
+
         // opaque saved in obj[opaque.symbol] for GetOpaque(), it's never changed.
-        obj[jsbb_opaque] = opaque;
-        this.watcher.register(obj, opaque);
+        obj[jsbb_opaque] = internal_data;
+        this.watcher.register(obj, internal_data);
     }
 }
 
@@ -277,15 +278,14 @@ class jsbb_Engine {
 
     get handles() { return this._handles; }
 
-    // last error thrown (Error | undefined)
-    set error(value: any) {
+    /** If calling from C++ side, use `_throw(err)` to raise an error instead of `throw`. */
+    private _throw(value: any) {
         const last = this._stack.GetValue(jsbb_StackPos.Error);
         if (last !== undefined) {
             console.error("discarding an unhandled error", last);
         }
-        //TODO ONLY FOR DEBUG
         if (value !== undefined) {
-            console.log("save error", typeof value, value);
+            console.error("throwing an error in native execution context", typeof value, value);
         }
         this._stack.SetValue(jsbb_StackPos.Error, value);
     }
@@ -298,10 +298,13 @@ class jsbb_Engine {
         this._stack = new jsbb_Stack();
         this._handles = new jsbb_Handles();
         this._registry = new jsbb_Registry(opaque);
+
+        // init all commonly used string here
         this._atoms = new Array(2);
         this._atoms[0] = "message";
         this._atoms[1] = "stack";
 
+        // init fixed stack objects
         jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Undefined);
         jsbb_ensure(this._stack.Push(null) === jsbb_StackPos.Null);
         jsbb_ensure(this._stack.Push(true) === jsbb_StackPos.True);
@@ -320,18 +323,10 @@ class jsbb_Engine {
         this._registry = <any>undefined;
     }
 
-    /**
-     * get the last error thrown in native calls, and meanwhile, erase it from stack
-     */
-    GetLastError(): any {
-        const error = this._stack.GetValue(jsbb_StackPos.Error);
-        this._stack.SetValue(jsbb_StackPos.Error, undefined)
-        return error;
-    }
-
     SetHostPromiseRejectionTracker(cb: FunctionPointer, data: Pointer) {
         const self = this;
         window.addEventListener("unhandledrejection", function (ev: PromiseRejectionEvent) {
+            console.warn("unhandled_rejection", ev.promise, ev.reason);
             self._stack.EnterScope();
             try {
                 _jsbb_.interop.unhandled_rejection(self._opaque, cb, self._stack.Push(ev.promise), self._stack.Push(ev.reason));
@@ -384,17 +379,19 @@ class jsbb_Engine {
         return 0;
     }
 
-    ReadArrayBufferData(stack_pos: StackPosition, size: number, data_dst: Pointer): void {
+    /** copy the data of a buffer at stack_pos into HEAP at `data_dst`  */
+    ReadArrayBufferData(stack_pos: StackPosition, size: number, data_dst: Pointer): ResultValue {
         const val = this._stack.GetValue(stack_pos);
         if (val instanceof ArrayBuffer) {
             if (val.byteLength < size) {
                 console.error("ArrayBuffer: not enough data to read");
-                return;
+                return -1;
             }
             _jsbb_.u8.set(new Uint8Array(val), data_dst);
-            return;
+            return 1;
         }
-        console.error("not ArrayBuffer");
+        console.error("ReadArrayBufferData: not an ArrayBuffer");
+        return -1;
     }
 
     NewArrayBuffer(data_src: Pointer, size: number): StackPosition {
@@ -427,7 +424,11 @@ class jsbb_Engine {
         return 0;
     }
 
-    //TODO need type check?
+    /** 
+     * get a native copy of a javascript string (convert if not a string) .
+     * @param o_size [output] size of the returned buffer
+     * @returns pointer the the buffer (HEAP)
+     */
     ToCStringLen(o_size: Pointer, str_sp: StackPosition): Pointer {
         const str = String(this._stack.GetValue(str_sp));
         const len = _jsbb_.wasmop.lengthBytesUTF8(str);
@@ -471,7 +472,7 @@ class jsbb_Engine {
         return true;
     }
 
-    // duplicate a value to the stack top
+    /** duplicate a value to the stack top */
     StackDup(stack_pos: StackPosition): StackPosition {
         return this._stack.Push(this._stack.GetValue(stack_pos));
     }
@@ -488,9 +489,10 @@ class jsbb_Engine {
         return this._stack.GetValue(jsbb_StackPos.Error) !== undefined;
     }
 
+    /** throw an error with a message in native execution context */
     ThrowError(message_ptr: CString): void {
         let message = _jsbb_.wasmop.UTF8ToString(message_ptr);
-        this.error = new Error(message);
+        this._throw(new Error(message));
     }
 
     GetOpaque(stack_pos: StackPosition): Pointer {
@@ -502,7 +504,6 @@ class jsbb_Engine {
         return typeof opaque === "number" ? opaque : 0;
     }
 
-    // len: is ignored
     NewString(cstr_ptr: CString, len: number): StackPosition {
         if (len === 0) {
             return this._stack.Push("");
@@ -522,6 +523,7 @@ class jsbb_Engine {
         return this._stack.Push(value);
     }
 
+    /** treated as an integer, uint32 is not really fully supported */
     NewUint32(value: number): StackPosition {
         return this._stack.Push(value >>> 0);
     }
@@ -558,18 +560,25 @@ class jsbb_Engine {
 
             if ((flags & jsbb_PropertyFlags.VALUE) !== 0) {
                 // with value
-                jsbb_log("define property value", obj, key, flags, value_sp);
+                console.log("define property value", obj, key, flags, value_sp);
                 if ((flags & jsbb_PropertyFlags.GET) !== 0 || (flags & jsbb_PropertyFlags.SET) !== 0) {
                     console.warn("do not define a property with value and get/set at the same time");
                 }
                 Object.defineProperty(obj, key, {
                     configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
                     enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
+                    writable: (flags & jsbb_PropertyFlags.WRITABLE) !== 0,
                     value: this._stack.GetValue(value_sp)
                 });
             } else {
                 // with get/set
-                jsbb_log("define property getset", obj, key, flags, get_sp, set_sp);
+                console.log("define property getset", obj, key, flags, get_sp, set_sp);
+                if ((flags & jsbb_PropertyFlags.WRITABLE) !== 0) {
+                    console.warn("can not define a getset property with writable flag");
+                }
+                if (this._stack.GetValue(get_sp) === undefined && this._stack.GetValue(set_sp) === undefined) {
+                    console.warn("can not define a getset property with getter and setter not defined both");
+                }
                 Object.defineProperty(obj, key, {
                     configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
                     enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
@@ -579,7 +588,7 @@ class jsbb_Engine {
             }
             return 1;
         } catch (err) {
-            this.error = err;
+            this._throw(err);
             return -1;
         }
     }
@@ -599,16 +608,12 @@ class jsbb_Engine {
 
                 try {
                     _jsbb_.interop.call_accessor(self._opaque, cb, key_sp, rval_sp);
-                } catch (error) {
-                    console.error("unexpected error", error);
-                    self.error = error;
-                }
-
-                const error = self.GetLastError();
-                if (error !== undefined) {
+                } catch (err) {
+                    console.error("DefineLazyProperty: unexpected error", err);
                     // cleanup 
                     self._stack.ExitScope();
-                    throw error;
+                    // in javascript execution context
+                    throw err;
                 }
 
                 const rval = self._stack.GetValue(rval_sp);
@@ -616,6 +621,7 @@ class jsbb_Engine {
                 // cleanup
                 self._stack.ExitScope();
 
+                console.log("evaluated lazy property", key, rval);
                 // overwrite 
                 Object.defineProperty(this, key, {
                     value: rval,
@@ -645,7 +651,7 @@ class jsbb_Engine {
             }
             return 1;
         } catch (err) {
-            this.error = err;
+            this._throw(err);
             return -1;
         }
     }
@@ -659,7 +665,7 @@ class jsbb_Engine {
             obj[index] = val;
             return 1;
         } catch (err) {
-            this.error = err;
+            this._throw(err);
             return -1;
         }
     }
@@ -672,10 +678,10 @@ class jsbb_Engine {
             if (names instanceof Array) {
                 return this._stack.Push(names);
             }
-            this.error = new TypeError("GetOwnPropertyDescriptor: unexpected");
+            this._throw(new TypeError("GetOwnPropertyDescriptor: unexpected"));
             return jsbb_StackPos.Error;
         } catch (err) {
-            this.error = err;
+            this._throw(err);
             return jsbb_StackPos.Error;
         }
     }
@@ -688,23 +694,24 @@ class jsbb_Engine {
             if (typeof desc === "object") {
                 return this._stack.Push(desc);
             }
-            this.error = new TypeError("GetOwnPropertyDescriptor: unexpected");
+            this._throw(new TypeError("GetOwnPropertyDescriptor: unexpected"));
             return jsbb_StackPos.Error;
         } catch (err) {
-            this.error = err;
+            this._throw(err);
             return jsbb_StackPos.Error;
         }
     }
 
+    /** get property value by atom_id (a cached string) */
     GetPropertyAtomID(obj_sp: StackPosition, atom_id: AtomID): StackPosition {
         const obj = this._stack.GetValue(obj_sp);
         const key = this._atoms[atom_id];
         if (typeof key !== "string") {
-            this.error = new Error(`invalid AtomID(${atom_id})`);
+            this._throw(new Error(`invalid AtomID(${atom_id})`));
             return jsbb_StackPos.Error;
         }
         if (typeof obj !== "object") {
-            this.error = new Error(`invalid object to access property at ${obj_sp} with AtomID ${atom_id}`);
+            this._throw(new Error(`invalid object to access property at ${obj_sp} with AtomID ${atom_id}`));
             return jsbb_StackPos.Error;
         }
         const val = obj[key];
@@ -718,7 +725,7 @@ class jsbb_Engine {
         const obj = this._stack.GetValue(obj_sp);
         const key = this._stack.GetValue(key_sp);
         if (typeof key !== "string" && typeof key !== "symbol") {
-            this.error = new Error("invalid atom id");
+            this._throw(new Error("invalid atom id"));
             return jsbb_StackPos.Error;
         }
 
@@ -732,7 +739,7 @@ class jsbb_Engine {
             }
             return this._stack.Push(val);
         } catch (err) {
-            this.error = err;
+            this._throw(err);
             return jsbb_StackPos.Error;
         }
     }
@@ -740,7 +747,7 @@ class jsbb_Engine {
     GetPropertyUint32(obj_sp: StackPosition, index: number): StackPosition {
         const obj = this._stack.GetValue(obj_sp);
         if (typeof index !== "number") {
-            this.error = new Error("invalid atom id");
+            this._throw(new Error("invalid atom id"));
             return jsbb_StackPos.Error;
         }
 
@@ -754,7 +761,7 @@ class jsbb_Engine {
             }
             return this._stack.Push(val);
         } catch (err) {
-            this.error = err;
+            this._throw(err);
             return jsbb_StackPos.Error;
         }
     }
@@ -771,36 +778,47 @@ class jsbb_Engine {
         let rval: any = undefined;
         try {
             if (source == null) {
-                throw new Error("source is null");
+                this._throw(new Error("source is null"));
+                return jsbb_StackPos.Error;
             }
+            console.log("compile function source:", source);
             rval = eval(source);
         } catch (err) {
-            // eval not supported (CSP restriction)
             if (err instanceof EvalError && typeof document !== "undefined") {
+                console.warn("eval not supported (CSP restriction), trying script element instead");
                 // module_source must be a bare function source (like '(function(){ ... })')
 
-                //TODO if async module is implemented, we can use dynamic scripts which support debugging in browser devtools
-                // but for now, we need a method to eval source synchronously
-                let script = document.createElement("script");
-                script.type = "type/javascript";
-                script.text = `_jsbb_.eval = ${source};`;
+                try {
+                    //TODO if async module is implemented, we can use dynamic scripts which support debugging in browser devtools
+                    // but for now, we need a method to eval source synchronously
+                    let script = document.createElement("script");
+                    script.type = "type/javascript";
+                    script.text = `_jsbb_.evalResult = ${source};`;
 
-                document.head.appendChild(script);
-                rval = _jsbb_.eval;
-                _jsbb_.eval = undefined;
-                // document.head.removeChild(script);
+                    document.head.appendChild(script);
+                    rval = _jsbb_.evalResult;
+                    _jsbb_.evalResult = undefined;
+                    // document.head.removeChild(script);
+                } catch (err2) {
+                    console.error("unexpected error", err2);
+                    this._throw(err2);
+                    return jsbb_StackPos.Error;
+                }
             } else {
                 let filename = _jsbb_.wasmop.UTF8ToString(filename_ptr);
                 console.error(filename, err);
 
-                this.error = err;
+                this._throw(err);
                 return jsbb_StackPos.Error;
             }
         }
 
-        if (typeof rval === "undefined") {
-            return jsbb_StackPos.Undefined;
+        if (typeof rval !== "function") {
+            this._throw(new Error("source compiled with no function returned"));
+            return jsbb_StackPos.Error;
         }
+
+        console.log("function source is compiled sucessfully");
         return this._stack.Push(rval);
     }
 
@@ -813,7 +831,8 @@ class jsbb_Engine {
         let rval: any = undefined;
         try {
             if (source == null) {
-                throw new Error("source is null");
+                this._throw(new Error("source is null"));
+                return jsbb_StackPos.Error;
             }
             rval = eval(source);
         } catch (err) {
@@ -822,7 +841,7 @@ class jsbb_Engine {
             let filename = _jsbb_.wasmop.UTF8ToString(filename_ptr);
             console.error(filename, err);
 
-            this.error = err;
+            this._throw(err);
             return jsbb_StackPos.Error;
         }
 
@@ -833,85 +852,99 @@ class jsbb_Engine {
     }
 
     Call(this_sp: StackPosition, func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
-        // jsbb_log(`Call this_sp:${this_sp} func_sp:${func_sp}, argc:${argc}, argv:${argv}`);
+        // console.log(`Call this_sp:${this_sp} func_sp:${func_sp}, argc:${argc}, argv:${argv}`);
 
         const thiz = this._stack.GetValue(this_sp);
         const func: Function = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
-            this.error = new TypeError("not a function");
+            this._throw(new TypeError("not a function"));
             return jsbb_StackPos.Error;
         }
 
-        let args: Array<any> | undefined = undefined;
-        if (argc > 0) {
-            args = new Array(argc);
-            for (let i = 0; i < argc; ++i) {
-                const arg_sp = _jsbb_.i32[(argv >> 2) + i];
-                args[i] = this._stack.GetValue(arg_sp);
-                // jsbb_log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
-            }
-        }
         try {
+            let args: Array<any> | undefined = undefined;
+            if (argc > 0) {
+                args = new Array(argc);
+                for (let i = 0; i < argc; ++i) {
+                    const arg_sp = _jsbb_.i32[(argv >> 2) + i];
+                    args[i] = this._stack.GetValue(arg_sp);
+                    // console.log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
+                }
+            }
             const rval = func.apply(thiz, args);
             return this._stack.Push(rval);
         } catch (error) {
-            this.error = error;
+            this._throw(error);
             return jsbb_StackPos.Error;
         }
     }
 
     CallAsConstructor(func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
-        // jsbb_log("CallAsConstructor", func_sp, argc, argv);
+        // console.log("CallAsConstructor", func_sp, argc, argv);
 
         const func = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
-            this.error = new TypeError("not a function");
+            this._throw(new TypeError("not a function"));
             return jsbb_StackPos.Error;
         }
 
-        let args: Array<any> | undefined = undefined;
-        if (argc > 0) {
-            args = new Array(argc);
-            for (let i = 0; i < argc; ++i) {
-                const arg_sp = _jsbb_.i32[(argv >> 2) + i];
-                args[i] = this._stack.GetValue(arg_sp);
-            }
-        }
         try {
+            let args: Array<any> | undefined = undefined;
+            if (argc > 0) {
+                args = new Array(argc);
+                for (let i = 0; i < argc; ++i) {
+                    const arg_sp = _jsbb_.i32[(argv >> 2) + i];
+                    args[i] = this._stack.GetValue(arg_sp);
+                }
+            }
             const rval = args === undefined ? new func() : new func(...args);
             return this._stack.Push(rval);
-        } catch (error) {
-            this.error = error;
+        } catch (err) {
+            this._throw(err);
             return jsbb_StackPos.Error;
         }
     }
 
     // push `obj.__proto__` to stack
     GetPrototypeOf(obj_sp: StackPosition): StackPosition {
-        const obj = this._stack.GetValue(obj_sp);
-        return this._stack.Push(Object.getPrototypeOf(obj));
+        try {
+            const obj = this._stack.GetValue(obj_sp);
+            return this._stack.Push(Object.getPrototypeOf(obj));
+        } catch (err) {
+            this._throw(err);
+            return jsbb_StackPos.Error;
+        }
     }
 
-    // push `obj.__proto__` to stack
     SetPrototypeOf(obj_sp: StackPosition, proto_sp: StackPosition): ResultValue {
-        const obj = this._stack.GetValue(obj_sp);
-        const proto = this._stack.GetValue(proto_sp);
-        if (typeof obj !== "object" || typeof proto !== "object") {
-            this.error = new TypeError("invalid object or prototype");
+        try {
+            const obj = this._stack.GetValue(obj_sp);
+            const proto = this._stack.GetValue(proto_sp);
+            if (typeof obj !== "object" || typeof proto !== "object") {
+                this._throw(new TypeError("invalid object or prototype"));
+                return -1;
+            }
+            Object.setPrototypeOf(obj, proto);
+            return 1;
+        } catch (err) {
+            this._throw(err);
             return -1;
         }
-        Object.setPrototypeOf(obj, proto);
-        return 1;
     }
 
     HasOwnProperty(obj_sp: StackPosition, key_sp: StackPosition): ResultValue {
-        const obj = this._stack.GetValue(obj_sp);
-        const key = this._stack.GetValue(key_sp);
-        if (typeof obj !== "object" || (typeof key !== "string" && typeof key !== "symbol")) {
-            this.error = new TypeError("invalid object or key");
+        try {
+            const obj = this._stack.GetValue(obj_sp);
+            const key = this._stack.GetValue(key_sp);
+            if (typeof obj !== "object" || (typeof key !== "string" && typeof key !== "symbol")) {
+                this._throw(new TypeError("invalid object or key"));
+                return -1;
+            }
+            return obj.hasOwnProperty(key) ? 1 : 0;
+        } catch (err) {
+            this._throw(err);
             return -1;
         }
-        return obj.hasOwnProperty(key) ? 1 : 0;
     }
 
     // [stack-based]
@@ -921,7 +954,7 @@ class jsbb_Engine {
         const self = this;
         const data = this._stack.GetValue(data_pos);
         const func_name = func_name_ptr == 0 ? "(CFunction)" : _jsbb_.wasmop.UTF8ToString(func_name_ptr);
-        jsbb_log("NewCFunction", func_name, cb, data);
+        console.log("NewCFunction", func_name, cb, data);
 
         return this._stack.Push(function () {
             self._stack.EnterScope();
@@ -940,18 +973,19 @@ class jsbb_Engine {
             }
 
             try {
-                jsbb_log("call_function.pre", func_name, self._opaque, cb, rval_pos, argc);
+                console.log("call_function.pre", func_name, self._opaque, cb, rval_pos, argc);
                 _jsbb_.interop.call_function(self._opaque, cb, false, rval_pos, argc);
-                jsbb_log("call_function.post", func_name);
+                console.log("call_function.post", func_name);
             } catch (err) {
                 console.error("unexpected error in NewCFunction.call_function:", func_name, typeof err, err);
                 // cleanup 
                 self._stack.ExitScope();
+                // in javascript execution context
                 throw err;
             }
 
             const rval = self._stack.GetValue(rval_pos);
-            jsbb_log("call_function.return", rval);
+            console.log("call_function.return", rval);
 
             // cleanup
             self._stack.ExitScope();
@@ -964,7 +998,7 @@ class jsbb_Engine {
         const self = this;
         const data = this._stack.GetValue(data_sp);
         const class_name = class_name_ptr == 0 ? "(CClass)" : _jsbb_.wasmop.UTF8ToString(class_name_ptr);
-        jsbb_log("NewClass", class_name, cb, data);
+        console.log("NewClass", class_name, cb, data);
 
         return this._stack.Push(function () {
             console.log("new class", class_name);
@@ -998,6 +1032,7 @@ class jsbb_Engine {
                 console.error("unexpected error in NewClass.call_function", err);
                 // cleanup 
                 self._stack.ExitScope();
+                // in javascript execution context
                 throw err;
             }
 
@@ -1019,22 +1054,34 @@ class jsbb_Engine {
         return this._stack.Push({});
     }
 
-    SetConstructor(func_sp: StackPosition, proto_sp: StackPosition): void {
-        const p = this._stack.GetValue(proto_sp);
-        const f = this._stack.GetValue(func_sp);
-        f.prototype = p;
-        p.constructor = f;
+    SetConstructor(func_sp: StackPosition, proto_sp: StackPosition): ResultValue {
+        try {
+            const p = this._stack.GetValue(proto_sp);
+            const f = this._stack.GetValue(func_sp);
+            f.prototype = p;
+            p.constructor = f;
+            return 1;
+        } catch (err) {
+            this._throw(err);
+            return -1;
+        }
     }
 
-    SetPrototype(proto_sp: StackPosition, parent_sp: StackPosition): void {
-        const proto = this._stack.GetValue(proto_sp);
-        const parent = this._stack.GetValue(parent_sp);
-        Object.setPrototypeOf(proto, parent);
+    SetPrototype(proto_sp: StackPosition, parent_sp: StackPosition): ResultValue {
+        try {
+            const proto = this._stack.GetValue(proto_sp);
+            const parent = this._stack.GetValue(parent_sp);
+            Object.setPrototypeOf(proto, parent);
+            return 1;
+        } catch (err) {
+            this._throw(err);
+            return -1;
+        }
     }
 }
 
 class _jsbb_ {
-    static eval: Function | undefined = undefined;
+    static evalResult: Function | undefined = undefined;
     static interop: InteropProtocol;
     static wasmop: WasmProtocol;
     static engine: jsbb_Engine | undefined;
@@ -1098,6 +1145,9 @@ class _jsbb_ {
             console.error("temporarily support only one engine");
             return -1;
         }
+
+        // currectly, engine_id is hardcoded.
+        // only one single engine is supported to new simultaneously
         this.engine = new jsbb_Engine(0, opaque);
         return 0;
     }

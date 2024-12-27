@@ -57,9 +57,10 @@ namespace jsb::internal
         typedef void (*_print_line_callback)(const String& p_str);
         typedef void (*_print_error_callback)(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, ErrorHandlerType p_type);
 
-        static void set_callbacks(_print_line_callback line_cb, _print_error_callback error_callback)
+        static void set_callbacks(_print_line_callback verbose_cb, _print_line_callback line_cb, _print_error_callback error_callback)
         {
             jsb_check(line_cb && error_callback);
+            _print_verbose = verbose_cb;
             _print_line = line_cb;
             _print_error = error_callback;
         }
@@ -68,15 +69,17 @@ namespace jsb::internal
         Logger()
         {
             if (!_print_line) _print_line = _default_print_line;
+            if (!_print_verbose) _print_verbose = _default_print_verbose;
             if (!_print_error) _print_error = _default_print_error;
         }
 
         static void set_default_callbacks() { static Logger logger; jsb_unused(logger); }
 
         static _print_line_callback _print_line;
+        static _print_line_callback _print_verbose;
         static _print_error_callback _print_error;
 
-        static void _print_verbose(const String& p_str)
+        static void _default_print_verbose(const String& p_str)
         {
             //TODO cache messages from background threads to avoid messing up the output
             ::OS::get_singleton()->print_rich("\u001b[90m%s\u001b[39m\n", p_str.utf8().get_data());
