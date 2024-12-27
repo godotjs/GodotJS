@@ -194,9 +194,11 @@ namespace v8
             case WeakType::kWeakCallback:
                 {
                     // clear callback
-                    jsb_check(is_alive());
-                    jsb::impl::Broker::SetWeakCallback(isolate_, value_, nullptr, nullptr);
-                    jsbi_handle_Reset(jsb::impl::Broker::get_engine(isolate_), value_);
+                    if (is_alive())
+                    {
+                        jsb::impl::Broker::SetWeakCallback(isolate_, value_, nullptr, nullptr);
+                        jsbi_handle_Reset(jsb::impl::Broker::get_engine(isolate_), value_);
+                    }
                     break;
                 }
             default: break;

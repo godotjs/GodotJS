@@ -195,8 +195,10 @@ namespace v8
             case WeakType::kWeakCallback:
                 {
                     // clear callback
-                    jsb_check(is_alive());
-                    jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
+                    if (is_alive())
+                    {
+                        jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
+                    }
                     break;
                 }
             default: break;
