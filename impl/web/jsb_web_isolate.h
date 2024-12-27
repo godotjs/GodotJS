@@ -130,7 +130,8 @@ namespace v8
         template<int N>
         jsb_force_inline void throw_error(const char (&message)[N])
         {
-            throw_error((::String) message);
+            const ::String str = (::String) message;
+            throw_error(str);
         }
 
         jsb_force_inline void throw_error(const ::String& message)

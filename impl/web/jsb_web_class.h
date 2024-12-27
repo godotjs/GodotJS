@@ -13,8 +13,6 @@ namespace jsb::impl
         // strong reference.
         // the counterpart of exposed C++ class.
         // in web, it's the prototype object.
-        //NOTE template_.GetFunction() returns the `constructor`,
-        //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
         v8::Global<v8::Object> prototype_;
 
         //TODO may unnecessary, should be identical with prototype.constructor?

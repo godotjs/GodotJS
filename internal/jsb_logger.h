@@ -46,10 +46,13 @@ namespace jsb::internal
         template<ELogSeverity::Type p_severity, typename... TArgs>
         static void verbose(const char* p_file, int p_line, const char* p_func, const char* p_format, TArgs... p_args)
         {
+#if !JSB_VERBOSE_ENABLED
             if (OS::get_singleton()->is_stdout_verbose())
+#endif
             {
                 // all verbose logs write to stdout only
                 const String str = format(p_format, p_args...);
+                set_default_callbacks();
                 _print_verbose(str);
             }
         }

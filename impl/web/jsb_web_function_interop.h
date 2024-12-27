@@ -15,12 +15,7 @@ namespace v8
         template <typename S>
         void Set(const Local<S>& value) const
         {
-            if (value.IsEmpty())
-            {
-                jsbi_StackSet(data_.isolate_->rt(), data_.stack_pos_, jsb::impl::StackBase::Undefined);
-                return;
-            }
-            jsbi_StackSet(data_.isolate_->rt(), data_.stack_pos_, value->stack_pos_);
+            jsbi_StackSet(data_.isolate_->rt(), data_.stack_pos_, (jsb::impl::StackPosition) value);
         }
 
         template <typename S>

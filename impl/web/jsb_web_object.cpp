@@ -146,7 +146,6 @@ namespace v8
         if ((attributes & ReadOnly) == 0) flags |= jsb::impl::PropertyFlags::WRITABLE;
         if ((attributes & DontDelete) == 0) flags |= jsb::impl::PropertyFlags::CONFIGURABLE;
 
-        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         const jsb::impl::ResultValue res = jsbi_DefineProperty(isolate_->rt(),
             /* obj */   stack_pos_,
             /* prop */  key->stack_pos_,
@@ -172,8 +171,8 @@ namespace v8
             /* obj */   stack_pos_,
             /* prop */  name->stack_pos_,
             /* value */ jsb::impl::StackBase::Undefined,
-            getter.IsEmpty() ? getter->stack_pos_ : jsb::impl::StackBase::Undefined, //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-            setter.IsEmpty() ? setter->stack_pos_ : jsb::impl::StackBase::Undefined,
+            (jsb::impl::StackPosition) getter,
+            (jsb::impl::StackPosition) setter,
             flags);
 
         jsb_check(res >= 0);

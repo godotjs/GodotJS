@@ -149,6 +149,8 @@ namespace v8
         Global(const Global&) = delete;
         Global& operator=(const Global&) = delete;
 
+        jsb::impl::HandleID get_internal_id() const { return value_; }
+
         ~Global() { Reset(); }
 
         Global(Global&& other) noexcept

@@ -41,10 +41,9 @@ namespace jsb
         {
             JSB_LOG(VeryVerbose, "exposing singleton object %s", (String) type_name);
             if (v8::Local<v8::Object> rval;
-                TypeConvert::gd_obj_to_js(isolate, context, gd_singleton, rval))
+                TypeConvert::gd_obj_to_js(isolate, context, gd_singleton, rval) && !rval.IsEmpty())
             {
                 env->mark_as_persistent_object(gd_singleton);
-                jsb_check(!rval.IsEmpty());
                 info.GetReturnValue().Set(rval);
                 return;
             }
@@ -58,7 +57,7 @@ namespace jsb
             //TODO check static bindings at first, and dynamic bindings as a fallback
 
             // dynamic binding:
-            jsb_check(sizeof(Variant::ValidatedUtilityFunction) == sizeof(void*));
+            static_assert(sizeof(Variant::ValidatedUtilityFunction) == sizeof(void*));
             const int32_t utility_func_index = (int32_t) env->get_variant_info_collection().utility_funcs.size();
             env->get_variant_info_collection().utility_funcs.append({});
             internal::FUtilityMethodInfo& method_info = env->get_variant_info_collection().utility_funcs.write[utility_func_index];
@@ -75,8 +74,8 @@ namespace jsb
             method_info.is_vararg = Variant::is_utility_function_vararg(type_name);
             method_info.set_debug_name(type_name);
             method_info.utility_func = Variant::get_validated_utility_function(type_name);
-            jsb_check(method_info.utility_func);
             JSB_LOG(VeryVerbose, "expose godot utility function %s (%d)", type_name, utility_func_index);
+            jsb_check(method_info.utility_func);
 
             info.GetReturnValue().Set(JSB_NEW_FUNCTION(context, ObjectReflectBindingUtil::_godot_utility_func, v8::Int32::New(isolate, utility_func_index)));
             return;
@@ -127,7 +126,7 @@ namespace jsb
         // they are exposed as `Variant.Type` in global constants in godot
         if (type_name == jsb_string_name(Variant))
         {
-            v8::Local<v8::Object> obj = v8::Object::New(isolate);
+            const v8::Local<v8::Object> obj = v8::Object::New(isolate);
             obj->Set(context, impl::Helper::new_string(isolate, "Type"), BridgeHelper::to_global_enum(isolate, context, "Variant.Type")).Check();
             obj->Set(context, impl::Helper::new_string(isolate, "Operator"), BridgeHelper::to_global_enum(isolate, context, "Variant.Operator")).Check();
             info.GetReturnValue().Set(obj);

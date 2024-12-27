@@ -24,6 +24,13 @@
 #define JSB_WITH_CHECK JSB_DEBUG
 #endif
 
+// output verbose log anyway even if `OS::get_singleton()->is_stdout_verbose()` is false
+#ifdef WEB_ENABLED
+#define JSB_VERBOSE_ENABLED 1
+#else
+#define JSB_VERBOSE_ENABLED 0
+#endif
+
 // print benchmark
 #define JSB_BENCHMARK 1
 

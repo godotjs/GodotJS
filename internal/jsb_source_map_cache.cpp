@@ -109,7 +109,9 @@ namespace jsb::internal
 
         it = cached_source_maps_.insert(p_filename, {});
         SourceMap& map = it->value;
-        const String json_data = FileAccess::get_file_as_string(p_filename + ".map");
+        const String map_filename = p_filename + ".map";
+        // check before reading file to avoid annoying error prompt in get_file_as_string
+        const String json_data = FileAccess::exists(map_filename) ? FileAccess::get_file_as_string(map_filename) : "";
         if (json_data.length() != 0)
         {
             map.parse(json_data);

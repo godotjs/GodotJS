@@ -12,6 +12,7 @@ const GodotJSBrowserInterface = {
     jsbi_FreeEngine: function (engine_id) { _jsbb_.FreeEngine(engine_id); },
     jsbi_log: function (str_ptr) { _jsbb_.log(str_ptr); },
     jsbi_error: function (str_ptr) { _jsbb_.error(str_ptr); },
+    jsbi_free: function (ptr) { _jsbb_.free(ptr); },
 
     jsbi_CompileFunctionSource: function (engine_id, filename, src) { return _jsbb_.GetEngine(engine_id).CompileFunctionSource(filename, src); }, 
     jsbi_Eval: function (engine_id, filename, src) { return _jsbb_.GetEngine(engine_id).Eval(filename, src); }, 
@@ -103,15 +104,23 @@ const GodotJSBrowserInterface = {
         return val === null || val === undefined;
     },
     jsbi_IsUndefined: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === undefined; },
-    jsbi_IsExternal: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).IsExternal(stack_pos); },
-    jsbi_IsObject: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === "object"; },
+    jsbi_IsExternal: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).IsExternal(stack_pos); },
+    jsbi_IsObject: function (engine_id, stack_pos) {
+        const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);
+        return _jsbb_.is_object(val); 
+    },
     jsbi_IsSymbol: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === "symbol"; },
     jsbi_IsString: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === "string"; },
     jsbi_IsFunction: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === "function"; },
     jsbi_IsBoolean: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === "boolean"; },
-    jsbi_IsNumber: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === "number"; },
-    jsbi_IsBigInt: function (engine_id, stack_pos) { return typeof _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === "bigint"; },
-
+    jsbi_IsNumber: function (engine_id, stack_pos) {
+        const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);
+        return typeof val === "number";
+    },
+    jsbi_IsBigInt: function (engine_id, stack_pos) {
+        const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);
+        return typeof val === "bigint";
+    },
     jsbi_IsInt32: function (engine_id, stack_pos) {
         const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);
         return typeof val === "number" && Number.isInteger(val);
@@ -122,10 +131,10 @@ const GodotJSBrowserInterface = {
         return typeof val === "number" && Number.isInteger(val);
     },
     
-    jsbi_IsPromise: function (engine_id, stack_pos) { const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);  return val instanceof Promise; },
-    jsbi_IsArray: function (engine_id, stack_pos) { const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);  return val instanceof Array; },
-    jsbi_IsMap: function (engine_id, stack_pos) { const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);  return val instanceof Map; },
-    jsbi_IsArrayBuffer: function (engine_id, stack_pos) { const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);  return val instanceof ArrayBuffer; },
+    jsbi_IsPromise: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) instanceof Promise; },
+    jsbi_IsArray: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) instanceof Array; },
+    jsbi_IsMap: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) instanceof Map; },
+    jsbi_IsArrayBuffer: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) instanceof ArrayBuffer; },
     
 }
 

@@ -17,7 +17,7 @@ namespace jsb::impl
             int32_t len;
             char* str = jsbi_ToCStringLen(ctx, &len, value_sp);
             String rval = String::utf8(str, (int) len);
-            memfree(str);
+            jsbi_free(str);
             return rval;
         }
     };

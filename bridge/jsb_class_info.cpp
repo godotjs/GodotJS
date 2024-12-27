@@ -248,27 +248,38 @@ namespace jsb
         }
     }
 
-    void ScriptClassInfo::_parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module)
+    bool ScriptClassInfo::_parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module)
     {
+        if (p_module.exports.IsEmpty())
+        {
+            JSB_LOG(VeryVerbose, "(script-parser) no exports %s", p_module.source_info.source_filepath);
+            return false;
+        }
         // only classes in files of godot package system could be used as godot js script
-        if (p_module.exports.IsEmpty()
-            || !p_module.source_info.source_filepath.begins_with("res://")
+        if (!p_module.source_info.source_filepath.begins_with("res://")
             || p_module.source_info.source_filepath.begins_with("res://node_modules"))
         {
-            return;
+            JSB_LOG(VeryVerbose, "(script-parser) non-res module %s", p_module.source_info.source_filepath);
+            return false;
         }
         v8::Isolate* isolate = p_context->GetIsolate();
         const v8::Local<v8::Value> exports = p_module.exports.Get(isolate);
         if (!exports->IsObject())
         {
-            return;
+            JSB_LOG(VeryVerbose, "(script-parser) non-standard module %s", p_module.source_info.source_filepath);
+            return false;
         }
         Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Value> default_val;
         if (!exports.As<v8::Object>()->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val)
             || !default_val->IsObject())
         {
-            return;
+#if JSB_WITH_WEB
+            JSB_LOG(VeryVerbose, "(script-parser) no default object %s exports(%d)", p_module.source_info.source_filepath, p_module.exports.get_internal_id());
+#else
+            JSB_LOG(VeryVerbose, "(script-parser) no default object %s", p_module.source_info.source_filepath);
+#endif
+            return false;
         }
 
         // the JS class object itself
@@ -277,7 +288,8 @@ namespace jsb
         if (!class_obj->Get(p_context, jsb_symbol(environment, ClassId)).ToLocal(&class_id_val) || !class_id_val->IsUint32())
         {
             // ignore a javascript which does not inherit from a native class (directly and indirectly both)
-            return;
+            JSB_LOG(VeryVerbose, "(script-parser) base class is non-godot object class %s", p_module.source_info.source_filepath);
+            return false;
         }
 
         // unsafe
@@ -294,7 +306,6 @@ namespace jsb
             existed_class_info->module_id = p_module.id;
         }
 
-        //TODO why it works?? our intention is letting class_obj.prototype.constructor[CrossBind:Symbol] = script_class_id, then `new.target[CrossBind:Symbol]` returns as expected
         // trick: save godot class id for convenience of getting it in JS class constructor
 #ifndef JSB_XXX_CASE1
         class_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
@@ -322,6 +333,7 @@ namespace jsb
         existed_class_info->native_class_id = native_class_id;
 
         _parse_script_class_iterate(p_context, existed_class_info, class_obj);
+        return true;
     }
 
 }

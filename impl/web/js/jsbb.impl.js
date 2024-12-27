@@ -99,7 +99,7 @@ class jsbb_Handles {
         const id = this.idgen++;
         this.handles[id] = {
             token: token,
-            sref: undefined,
+            sref: o,
         };
         return id;
     }
@@ -176,10 +176,10 @@ class jsbb_Engine {
     _throw(value) {
         const last = this._stack.GetValue(jsbb_StackPos.Error);
         if (last !== undefined) {
-            console.error("discarding an unhandled error", last);
+            console.error("discarding an unhandled error:", last);
         }
         if (value !== undefined) {
-            console.error("throwing an error in native execution context", typeof value, value);
+            console.error("throwing an error in native execution context:", typeof value, value);
         }
         this._stack.SetValue(jsbb_StackPos.Error, value);
     }
@@ -320,9 +320,14 @@ class jsbb_Engine {
         const str = String(this._stack.GetValue(str_sp));
         const len = _jsbb_.wasmop.lengthBytesUTF8(str);
         _jsbb_.i32[o_size >> 2] = len;
+        if (len <= 0) {
+            console.warn("alloc.CString (failed)", str);
+            return 0;
+        }
         const size = len + 1;
         const buf = _jsbb_.wasmop._malloc(size);
         _jsbb_.wasmop.stringToUTF8(str, buf, size);
+        console.log("alloc.CString", str, buf, size);
         return buf;
     }
     /** push the given value as string on the stack */
@@ -468,6 +473,7 @@ class jsbb_Engine {
                 const key_sp = self._stack.Push(key);
                 try {
                     _jsbb_.interop.call_accessor(self._opaque, cb, key_sp, rval_sp);
+                    self.rethrow_native_error();
                 }
                 catch (err) {
                     console.error("DefineLazyProperty: unexpected error", err);
@@ -628,7 +634,7 @@ class jsbb_Engine {
                 this._throw(new Error("source is null"));
                 return jsbb_StackPos.Error;
             }
-            console.log("compile function source:", source);
+            // console.log("compile function source:", source);
             rval = eval(source);
         }
         catch (err) {
@@ -711,7 +717,11 @@ class jsbb_Engine {
                     // console.log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
                 }
             }
+            console.log("[Call]", thiz, args);
             const rval = func.apply(thiz, args);
+            if (rval === undefined) {
+                return jsbb_StackPos.Undefined;
+            }
             return this._stack.Push(rval);
         }
         catch (error) {
@@ -774,8 +784,8 @@ class jsbb_Engine {
         try {
             const obj = this._stack.GetValue(obj_sp);
             const key = this._stack.GetValue(key_sp);
-            if (typeof obj !== "object" || (typeof key !== "string" && typeof key !== "symbol")) {
-                this._throw(new TypeError("invalid object or key"));
+            if (!_jsbb_.is_object(obj) || (typeof key !== "string" && typeof key !== "symbol")) {
+                this._throw(new TypeError(`invalid object or key: ${key}`));
                 return -1;
             }
             return obj.hasOwnProperty(key) ? 1 : 0;
@@ -783,6 +793,20 @@ class jsbb_Engine {
         catch (err) {
             this._throw(err);
             return -1;
+        }
+    }
+    /**
+     * Rethrow the last error thrown in native context to javascript execution context.
+     * WILL NEVER RETURN IF ERROR THROWN.
+     */
+    rethrow_native_error() {
+        const error = this._stack.GetValue(jsbb_StackPos.Error);
+        if (error !== undefined) {
+            if (error === null) {
+                console.warn("rethrowing a null error (usually caused by fatal errors in native code?)");
+            }
+            this._stack.SetValue(jsbb_StackPos.Error, undefined);
+            throw error;
         }
     }
     // [stack-based]
@@ -796,7 +820,7 @@ class jsbb_Engine {
         return this._stack.Push(function () {
             self._stack.EnterScope();
             // prepare: fixed initial call stack positions
-            const rval_pos = self._stack.Push(undefined); // 0 return value (placeholder)
+            const stack_base = self._stack.Push(undefined); // 0 return value (placeholder)
             //@ts-ignore
             self._stack.Push(this); // 1 this (not an error, it's intentionally to be the original this)
             self._stack.Push(data); // 2 data
@@ -805,20 +829,22 @@ class jsbb_Engine {
             const argc = arguments.length;
             for (let i = 0; i < argc; ++i) {
                 self._stack.Push(arguments[i]);
+                // console.log(`call_function.arg[${i}] = ${arguments[i]}`);
             }
             try {
-                console.log("call_function.pre", func_name, self._opaque, cb, rval_pos, argc);
-                _jsbb_.interop.call_function(self._opaque, cb, false, rval_pos, argc);
-                console.log("call_function.post", func_name);
+                // console.log("call_function.pre", func_name, self._opaque, cb, stack_base, argc);
+                _jsbb_.interop.call_function(self._opaque, cb, false, stack_base, argc);
+                self.rethrow_native_error();
+                // console.log("call_function.post", func_name);
             }
             catch (err) {
-                console.error("unexpected error in NewCFunction.call_function:", func_name, typeof err, err);
+                console.error("NewCFunction.call_function error:", func_name, typeof err, err);
                 // cleanup 
                 self._stack.ExitScope();
                 // in javascript execution context
                 throw err;
             }
-            const rval = self._stack.GetValue(rval_pos);
+            const rval = self._stack.GetValue(stack_base);
             console.log("call_function.return", rval);
             // cleanup
             self._stack.ExitScope();
@@ -854,9 +880,10 @@ class jsbb_Engine {
             try {
                 console.log("new class dispatch", class_name, cb, is_construct_call, rval_pos, argc);
                 _jsbb_.interop.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
+                self.rethrow_native_error();
             }
             catch (err) {
-                console.error("unexpected error in NewClass.call_function", err);
+                console.error("NewClass.call_function error:", class_name, err);
                 // cleanup 
                 self._stack.ExitScope();
                 // in javascript execution context
@@ -893,7 +920,11 @@ class jsbb_Engine {
         try {
             const proto = this._stack.GetValue(proto_sp);
             const parent = this._stack.GetValue(parent_sp);
-            Object.setPrototypeOf(proto, parent);
+            proto.__proto__ = parent;
+            proto.constructor.__proto__ = parent;
+            // should be equivalent to the above 
+            // Object.setPrototypeOf(proto, parent);
+            // Object.setPrototypeOf(proto.constructor, parent);
             return 1;
         }
         catch (err) {
@@ -940,7 +971,7 @@ class _jsbb_ {
                 generate_internal_data: GodotRuntime.get_func(interop.generate_internal_data),
             };
             //@ts-ignore
-            this.wasmop = { UTF8ToString, stringToUTF8, lengthBytesUTF8, _malloc, };
+            this.wasmop = { UTF8ToString, stringToUTF8, lengthBytesUTF8, _malloc, _free };
             for (let key in this.interop) {
                 //@ts-ignore
                 console.log("define jsbi.interop", key, typeof this.interop[key]);
@@ -978,6 +1009,13 @@ class _jsbb_ {
             return undefined;
         }
         return this.engine;
+    }
+    static is_object(val) {
+        //NOTE IsObject() expects a class (constructor, a function) as an Object 
+        return typeof val === "object" || typeof val === "function";
+    }
+    static free(ptr) {
+        this.wasmop._free(ptr);
     }
     static log(ptr) {
         if (typeof UTF8ToString === "function") {

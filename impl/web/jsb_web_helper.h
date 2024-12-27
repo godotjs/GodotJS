@@ -99,9 +99,11 @@ namespace jsb::impl
                 if (char* str = jsbi_ToCStringLen(isolate->rt(), &len, p_val->stack_pos_))
                 {
                     ret = String::utf8(str, (int) len);
-                    memfree(str);
+                    JSB_LOG(VeryVerbose, "Helper.to_string sp:%d buf:%s len:%d ret:%s", p_val->stack_pos_, str, len, ret);
+                    jsbi_free(str);
                 }
             }
+            JSB_LOG(VeryVerbose, "Helper.to_string sp:%d empty", p_val->stack_pos_);
             return ret;
         }
 
@@ -118,7 +120,8 @@ namespace jsb::impl
         template<int N>
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const char (&message)[N])
         {
-            isolate->throw_error(message);
+            const String str = message;
+            isolate->throw_error(str);
         }
 
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const String& message)
@@ -183,9 +186,7 @@ namespace jsb::impl
 
         jsb_force_inline static void free(uint8_t* data)
         {
-            // js_free(context->GetIsolate()->ctx(), data);
-
-            //NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
+            JSB_LOG(Warning, "SHOULD NOT BE CALLED");
             memfree(data);
         }
 

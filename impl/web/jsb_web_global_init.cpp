@@ -76,7 +76,9 @@ static void _custom_print_line(const String& p_str)
 
 static void _custom_print_error(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, ErrorHandlerType p_type)
 {
-    const String str = jsb::internal::format("%s [at %s %s:%d]", p_function, p_file, p_line, p_error);
+    const String str = jsb::internal::format("[%s] %s [at %s %s:%d]",
+        p_type == ERR_HANDLER_WARNING ? "WARN" : "ERROR", p_error, p_function,
+        p_file, p_line);
     const CharString str8 = str.utf8();
     jsbi_error(str8.get_data());
 }

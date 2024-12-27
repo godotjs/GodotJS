@@ -183,7 +183,7 @@ namespace jsb
 
         static void instantiate(const StringName& p_module_id, const v8::Local<v8::Object>& p_self);
 
-        static void _parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
+        static bool _parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
 
     };
 
