@@ -100,6 +100,7 @@ function jsbb_ensure(condition: boolean) {
 
 // opaque for UniversalBridgeClass
 const jsbb_opaque = Symbol();
+const jsbb_internal_field_count = Symbol();
 
 //TODO fastpath to verify a UniversalBridgeClass
 // const jsbb_hidden = Symbol();
@@ -191,6 +192,7 @@ class jsbb_Handles {
             return true;
         }
 
+        //TODO gc finalizer is run after the object dead, it's impossible to get a valid internal_data in gc_callback
         console.warn("obsolete handle", handle_id);
         delete this.handles[handle_id];
         return false;
@@ -442,7 +444,7 @@ class jsbb_Engine {
         const size = len + 1;
         const buf = _jsbb_.wasmop._malloc(size);
         _jsbb_.wasmop.stringToUTF8(str, buf, size);
-        console.log("alloc.CString", str, buf, size);
+        // console.log("alloc.CString", str, buf, size);
         return buf;
     }
 
@@ -566,7 +568,7 @@ class jsbb_Engine {
 
             if ((flags & jsbb_PropertyFlags.VALUE) !== 0) {
                 // with value
-                console.log("define property value", obj, key, flags, value_sp);
+                // console.log("define property value", obj, key, flags, value_sp);
                 if ((flags & jsbb_PropertyFlags.GET) !== 0 || (flags & jsbb_PropertyFlags.SET) !== 0) {
                     console.warn("do not define a property with value and get/set at the same time");
                 }
@@ -578,7 +580,7 @@ class jsbb_Engine {
                 });
             } else {
                 // with get/set
-                console.log("define property getset", obj, key, flags, get_sp, set_sp);
+                // console.log("define property getset", obj, key, flags, get_sp, set_sp);
                 if ((flags & jsbb_PropertyFlags.WRITABLE) !== 0) {
                     console.warn("can not define a getset property with writable flag");
                 }
@@ -878,7 +880,7 @@ class jsbb_Engine {
                     // console.log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
                 }
             }
-            console.log("[Call]", thiz, args);
+            // console.log("[Call]", thiz, args);
             const rval = func.apply(thiz, args);
             if (rval === undefined) {
                 return jsbb_StackPos.Undefined;
@@ -980,7 +982,7 @@ class jsbb_Engine {
         const self = this;
         const data = this._stack.GetValue(data_pos);
         const func_name = func_name_ptr == 0 ? "(CFunction)" : _jsbb_.wasmop.UTF8ToString(func_name_ptr);
-        console.log("NewCFunction", func_name, cb, data);
+        // console.log("NewCFunction", func_name, cb, data);
 
         return this._stack.Push(function () {
             self._stack.EnterScope();
@@ -1013,7 +1015,7 @@ class jsbb_Engine {
             }
 
             const rval = self._stack.GetValue(stack_base);
-            console.log("call_function.return", rval);
+            // console.log("call_function.return", rval);
 
             // cleanup
             self._stack.ExitScope();
@@ -1026,10 +1028,10 @@ class jsbb_Engine {
         const self = this;
         const data = this._stack.GetValue(data_sp);
         const class_name = class_name_ptr == 0 ? "(CClass)" : _jsbb_.wasmop.UTF8ToString(class_name_ptr);
-        console.log("NewClass", class_name, cb, data);
+        // console.log("NewClass", class_name, cb, data);
 
-        return this._stack.Push(function () {
-            console.log("new class", class_name);
+        const ctor = function () {
+            // console.log("new class", class_name);
             self._stack.EnterScope();
 
             const target = new.target;
@@ -1054,7 +1056,7 @@ class jsbb_Engine {
             self._registry.Add(this, internal_data);
 
             try {
-                console.log("new class dispatch", class_name, cb, is_construct_call, rval_pos, argc);
+                console.log("new class dispatch", class_name, cb, is_construct_call, rval_pos, argc, internal_data);
                 _jsbb_.interop.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
                 self.rethrow_native_error();
             } catch (err) {
@@ -1066,17 +1068,32 @@ class jsbb_Engine {
             }
 
             const rval = self._stack.GetValue(rval_pos);
-            console.log("NewClass.return", rval);
+            // console.log("NewClass.return", rval);
 
             // cleanup
             self._stack.ExitScope();
             return rval;
-        });
+        };
+        ctor[jsbb_internal_field_count] = internal_field_count;
+        return this._stack.Push(ctor);
     }
 
+    // simulate the behaviour of JS_NewObjectProtoClass
     NewInstance(proto_sp: StackPosition): StackPosition {
-        const proto = this._stack.GetValue(proto_sp);
-        return this._stack.Push(new proto.constructor());
+        try {
+            const proto = this._stack.GetValue(proto_sp);
+            const thiz = {};
+            const internal_field_count = proto.constructor[jsbb_internal_field_count];
+            Object.setPrototypeOf(thiz, proto);
+            // register the instance with unique internal data
+            const internal_data = _jsbb_.interop.generate_internal_data(this._opaque, internal_field_count);
+            this._registry.Add(thiz, internal_data);
+            return this._stack.Push(thiz);
+        } catch (err) {
+            this._throw(err);
+            return jsbb_StackPos.Error;
+        }
+        // return this._stack.Push(new proto.constructor());
     }
 
     NewObject(): StackPosition {
@@ -1211,6 +1228,10 @@ class _jsbb_ {
 
     static free(ptr: Pointer): void {
         this.wasmop._free(ptr);
+    }
+
+    static debugbreak(): void{
+        console.trace("debugbreak");
     }
 
     static log(ptr: CString): void {
