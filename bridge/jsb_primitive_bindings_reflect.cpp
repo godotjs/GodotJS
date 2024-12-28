@@ -255,7 +255,7 @@ namespace jsb
                     args[index].~Variant();
                 }
 
-                env->bind_valuetype(constructor_info.class_id, instance, self);
+                env->bind_valuetype(instance, self);
                 return;
             }
 
@@ -598,7 +598,6 @@ namespace jsb
                 internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.env).constructors.write[constructor_index];
                 const int count = Variant::get_constructor_count(TYPE);
                 constructor_info.variants.resize_zeroed(count);
-                constructor_info.class_id = p_class_id; // needed only if not using V8
                 for (int index = 0; index < count; ++index)
                 {
                     internal::FConstructorVariantInfo& variant_info = constructor_info.variants.write[index];

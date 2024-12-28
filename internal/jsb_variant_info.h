@@ -52,13 +52,16 @@ namespace jsb::internal
     struct FConstructorVariantInfo
     {
         Variant::ValidatedConstructor ctor_func;
+
+        // argument types are cached here for better performance at runtime.
         Vector<Variant::Type> argument_types;
     };
 
     struct FConstructorInfo
     {
+        // overloaded constructors for a primitive type.
+        // they are matched at runtime by num/type of arguments
         Vector<FConstructorVariantInfo> variants;
-        NativeClassID class_id;
     };
 
     struct FPropertyInfo2
@@ -73,12 +76,19 @@ namespace jsb::internal
     // necessary reflection info for JS func callback (transferred as index with info.Data)
     struct VariantInfoCollection
     {
+        // constructors of Variant types
         Vector<FConstructorInfo> constructors;
+
+        // all global utility function in godot (lerp/ease/type_string/print.. etc.)
         Vector<FUtilityMethodInfo> utility_funcs;
+
+        // methods of Variant types
         Vector<FBuiltinMethodInfo> methods;
+
+        // properties of Variant types
         Vector<FGetSetInfo> getsets;
 
-        // for godot properties which have an implicit parameter for getter/setter calls
+        // for godot properties which have an implicit (hidden) parameter for getter/setter calls
         Vector<FPropertyInfo2> properties2;
 
     };

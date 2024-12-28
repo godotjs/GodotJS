@@ -12,8 +12,8 @@
 #include "weaver-editor/jsb_export_plugin.h"
 #endif
 
-Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
-Ref<ResourceFormatSaverGodotJSScript> resource_saver_js;
+static Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
+static Ref<ResourceFormatSaverGodotJSScript> resource_saver_js;
 
 void jsb_initialize_module(ModuleInitializationLevel p_level)
 {

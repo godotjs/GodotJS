@@ -205,7 +205,7 @@ namespace jsb
             static_assert(GetTypeInfo<TStruct>::VARIANT_TYPE != Variant::VARIANT_MAX);
             Variant* pointer = Environment::alloc_variant();
             *pointer = p_value;
-            Environment::wrap(isolate)->bind_valuetype(GetTypeInfo<TStruct>::VARIANT_TYPE, pointer, p_object);
+            Environment::wrap(isolate)->bind_valuetype(pointer, p_object);
         }
 
         jsb_force_inline static void bind_valuetype(v8::Isolate* isolate, const v8::Local<v8::Object>& p_object, const TStruct& p_value, const NativeClassID p_class_id)
@@ -213,7 +213,7 @@ namespace jsb
             static_assert(GetTypeInfo<TStruct>::VARIANT_TYPE != Variant::VARIANT_MAX);
             Variant* pointer = Environment::alloc_variant();
             *pointer = p_value;
-            Environment::wrap(isolate)->bind_valuetype(p_class_id, pointer, p_object);
+            Environment::wrap(isolate)->bind_valuetype(pointer, p_object);
         }
     };
 

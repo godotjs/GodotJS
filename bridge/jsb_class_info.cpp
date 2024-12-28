@@ -307,15 +307,8 @@ namespace jsb
         }
 
         // trick: save godot class id for convenience of getting it in JS class constructor
-#ifndef JSB_XXX_CASE1
         class_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
-#else
-        class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
-            ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>()
-            ->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
-#endif
 
-        //TODO EXPERIMENTAL
         const v8::Local<v8::Object> dt_base_obj =
             class_obj
             ->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
@@ -325,7 +318,7 @@ namespace jsb
 
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
         existed_class_info->base_script_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);
-        JSB_LOG(Log, "[EXPERIMENTAL] %s script: %d inherits super: %d native: %d",
+        JSB_LOG(Log, "%s script: %d inherits super: %d native: %d",
             p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_class_id, *native_class_id);
 
         jsb_check(existed_class_info->base_script_class_id != p_module.script_class_id);

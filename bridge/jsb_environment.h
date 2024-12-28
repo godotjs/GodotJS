@@ -297,29 +297,19 @@ namespace jsb
 
         jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const { return symbols_[p_type].Get(isolate_); }
 
+        NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
+
         // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
         NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, EBindingPolicy::Type p_policy);
 
-        // overrides for impl-specific optimization
-        void bind_valuetype(const NativeClassID p_class_id, Variant* p_pointer, const v8::Local<v8::Object>& p_object)
-        {
-            bind_valuetype_impl(p_pointer, p_object);
-        }
-
-        void bind_valuetype(const Variant::Type p_type, Variant* p_pointer, const v8::Local<v8::Object>& p_object)
-        {
-            bind_valuetype_impl(p_pointer, p_object);
-        }
-
-        // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type)
+        // An optimized binder for Variant. All variant values are not registered in `env`, and completely managed by JS.
+        // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type).
         // May change in the future.
-        void bind_valuetype_impl(Variant* p_pointer, const v8::Local<v8::Object>& p_object)
+        jsb_force_inline void bind_valuetype(Variant* p_pointer, const v8::Local<v8::Object>& p_object)
         {
             p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
             impl::Helper::SetDeleter(p_pointer, p_object, _valuetype_deleter, this);
         }
-
-        NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
 
         // whether the pointer registered in the object binding map
         jsb_force_inline bool check_object(void* p_pointer) const { return !!get_object_id(p_pointer); }
