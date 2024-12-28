@@ -1,6 +1,6 @@
 
 # GodotJS 
-This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS as an alternative runtime, or even directly running scripts on the browser JS VM if porting to web.
+This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS as an alternative runtime, or even directly run scripts on the browser JS VM if porting to web.
 
 [![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
 [![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
@@ -17,15 +17,16 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] REPL in Editor
 * [x] Hot-reloading
 * [x] QuickJS as an alternative runtime (**testing**)
-* [x] Directly running on the browser JS VM (**experimental**, **testing**, *Only for WebBuild*)
+* [x] Directly running on the browser JS VM (**experimental**, **testing**, *Only for Web Build*)
 * [x] Worker threads (**experimental**)
 
 ## Get Started
 
-Before initiating, make sure to select the JavaScript runtime you prefer between `v8` and `QuickJS`:
+Before initiating, make sure to select the JavaScript runtime you prefer between `v8`, `QuickJS` and `Web` (See [Supported Platforms](#supported-platforms)):
 
-* `v8` is proven to be one of the most powerful and high-performance JavaScript runtimes
-* `QuickJS` is a remarkable and lightweight option
+* `v8` is proven to be one of the most powerful and high-performance JavaScript runtimes.
+* `QuickJS` is a remarkable and lightweight option.
+* `Web` is only suitable when building for Web. All scripts run on the host browser JS VM.
 
 ### Option 1: v8
 
@@ -83,12 +84,22 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 
 ### Option 2: QuickJS
 
-To enable `QuickJS`, please run scons with the parameter `use_quickjs=yes`.
+To enable `QuickJS`, please run *scons* with the parameter `use_quickjs=yes`.
+
+> [!NOTE]
+> `QuickJS` is also available for WebBuild with the *scons* option `use_quickjs=yes`.
 
 ```sh
 # An example on Windows:
 scons vsproj=yes dev_build=yes p=windows use_quickjs=yes 
 ```
+
+### Option 3: Web
+
+It's enabled by default for WebBuild.
+
+> [!NOTE]
+> Be cautious about the JS compatibility issues between different web browsers.
 
 ## Examples 
 
@@ -113,6 +124,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ### Advanced
 * [Build V8](./docs/build_v8.md)
+* [Web](./docs/build_web.md)
 * [Worker](./docs/worker.md)
 * [QuickJS](./docs/quickjs.md)
 * [Dependencies](./docs/deps.md)
