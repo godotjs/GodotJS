@@ -265,7 +265,9 @@ namespace jsb
         }
 
         // prepare argv
-        if (!internal::VariantUtil::check_argc(method_bind->is_vararg(), argc, method_bind->get_default_argument_count(), method_bind->get_argument_count()))
+        const int method_argc = method_bind->get_argument_count();
+        const bool method_is_vararg = method_bind->is_vararg();
+        if (!internal::VariantUtil::check_argc(method_is_vararg, argc, method_bind->get_default_argument_count(), method_argc))
         {
             jsb_throw(isolate, "num of arguments does not meet the requirement");
             return;
@@ -276,7 +278,15 @@ namespace jsb
         {
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
-            const Variant::Type type = method_bind->get_argument_type(index);
+            const Variant::Type type = index >= method_argc
+                ? Variant::Type::NIL
+                : method_bind->get_argument_type(index);
+#if defined(DEBUG_ENABLED)
+            if (method_bind->get_argument_type(index) != type)
+            {
+                JSB_LOG(Warning, "unexpected return value of get_argument_type:%d (expected:%d)", method_bind->get_argument_type(index) , type);
+            }
+#endif
             if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
