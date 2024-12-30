@@ -15,10 +15,13 @@ namespace jsb::impl
         static String GetString(JSRuntime ctx, StackPosition value_sp)
         {
             int32_t len;
-            char* str = jsbi_ToCStringLen(ctx, &len, value_sp);
-            String rval = String::utf8(str, (int) len);
-            jsbi_free(str);
-            return rval;
+            if (char* str = jsbi_ToCStringLen(ctx, &len, value_sp))
+            {
+                String rval = String::utf8(str, (int) len);
+                jsbi_free(str);
+                return rval;
+            }
+            return String();
         }
     };
 }
