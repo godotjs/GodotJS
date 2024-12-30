@@ -248,13 +248,17 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
     function EDITOR_GET(entry_path) {
         return godot_1.EditorInterface.get_editor_settings().get(entry_path);
     }
+});
+define("jsb.inject", ["require", "exports", "godot"], function (require, exports, godot_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     (function (items) {
         for (let item of items) {
             item.class.prototype[Symbol.iterator] = item.func;
         }
     })([
         {
-            class: godot_1.GDictionary,
+            class: godot_2.GDictionary,
             func: function* () {
                 let self = this;
                 let keys = self.keys();
@@ -265,7 +269,7 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
             }
         },
         {
-            class: godot_1.GArray,
+            class: godot_2.GArray,
             func: function* () {
                 let self = this;
                 for (let i = 0; i < self.size(); ++i) {

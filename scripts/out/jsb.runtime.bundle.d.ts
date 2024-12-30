@@ -59,3 +59,4 @@ declare module "jsb.core" {
      */
     export function EDITOR_GET(entry_path: StringName): any;
 }
+declare module "jsb.inject" { }
