@@ -15,7 +15,6 @@
 #include "jsb_web_promise_reject.h"
 
 #include "jsb_web_helper.h"
-#include "jsb_web_statistics.h"
 
 #include "jsb_web_catch.h"
 #include "jsb_web_class.h"

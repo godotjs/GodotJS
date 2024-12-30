@@ -678,16 +678,7 @@ namespace jsb
 
     void Environment::get_statistics(Statistics& r_stats) const
     {
-        v8::HeapStatistics v8_statistics;
-        isolate_->GetHeapStatistics(&v8_statistics);
-
-        r_stats.used_global_handles_size = v8_statistics.used_global_handles_size();
-        r_stats.total_global_handles_size = v8_statistics.total_global_handles_size();
-        r_stats.used_heap_size = v8_statistics.used_heap_size();
-        r_stats.total_heap_size = v8_statistics.total_heap_size();
-        r_stats.peak_malloced_memory = v8_statistics.peak_malloced_memory();
-        r_stats.malloced_memory = v8_statistics.malloced_memory();
-        r_stats.external_memory = v8_statistics.external_memory();
+        impl::Helper::get_statistics(isolate_, r_stats.custom_fields);
 
         r_stats.objects = objects_.size();
         r_stats.native_classes = native_classes_.size();

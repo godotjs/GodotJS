@@ -3,7 +3,6 @@
 #include "jsb_web_catch.h"
 #include "jsb_web_handle.h"
 #include "jsb_web_context.h"
-#include "jsb_web_statistics.h"
 
 namespace v8
 {

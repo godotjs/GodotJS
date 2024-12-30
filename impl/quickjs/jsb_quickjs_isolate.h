@@ -125,7 +125,6 @@ namespace v8
 
         void AddGCPrologueCallback(GCCallback callback) {}
         void AddGCEpilogueCallback(GCCallback callback) {}
-        void GetHeapStatistics(HeapStatistics* statistics);
         void SetPromiseRejectCallback(PromiseRejectCallback callback) { promise_reject_ = callback; }
 
         void set_as_interruptible() { JS_SetInterruptHandler(rt_, _interrupt_callback, this); }

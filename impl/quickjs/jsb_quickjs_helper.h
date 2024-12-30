@@ -140,6 +140,35 @@ namespace jsb::impl
             isolate->throw_error(message);
         }
 
+        jsb_force_inline static void get_statistics(v8::Isolate* isolate, Vector<CustomField>& p_fields)
+        {
+            JSMemoryUsage usage;
+            JS_ComputeMemoryUsage(isolate->rt(), &usage);
+
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, array_count), usage.array_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, fast_array_count), usage.fast_array_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, fast_array_elements), usage.fast_array_elements));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, binary_object_count), usage.binary_object_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, binary_object_size), usage.binary_object_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, malloc_count), usage.malloc_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, malloc_size), usage.malloc_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, memory_used_size), usage.memory_used_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, atom_count), usage.atom_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, atom_size), usage.atom_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, str_count), usage.str_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, str_size), usage.str_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, obj_count), usage.obj_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, obj_size), usage.obj_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, prop_count), usage.prop_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, prop_size), usage.prop_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, shape_count), usage.shape_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, shape_size), usage.shape_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, js_func_count), usage.js_func_count));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, js_func_size), usage.js_func_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, js_func_code_size), usage.js_func_code_size, CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value(jsb_nameof(JSMemoryUsage, c_func_count), usage.c_func_count));
+        }
+
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
         {
             if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }

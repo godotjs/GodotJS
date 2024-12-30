@@ -50,12 +50,10 @@ void GodotJSStatisticsViewer::on_timer()
     env->get_statistics(stats);
 
     int index = 0;
-    add_row(index++, "v8:global_handles_size", stats.used_global_handles_size, stats.total_global_handles_size);
-    add_row(index++, "v8:heap_size", stats.used_heap_size, stats.total_heap_size, true);
-    add_row(index++, "v8:malloced_memory", String::humanize_size(stats.malloced_memory));
-    add_row(index++, "v8:peak_malloced_memory", String::humanize_size(stats.peak_malloced_memory));
-    add_row(index++, "v8:external_memory", String::humanize_size(stats.external_memory));
-
+    for (const jsb::impl::CustomField& field : stats.custom_fields)
+    {
+        add_row(index++, field);
+    }
     add_row(index++, "jsb:objects", jsb_format("%d (%s)", stats.objects, String::humanize_size(stats.objects * jsb::internal::SArray<jsb::ObjectHandle>::get_slot_size())));
     add_row(index++, "jsb:native_classes", itos(stats.native_classes));
     add_row(index++, "jsb:script_classes", itos(stats.script_classes));
@@ -68,24 +66,51 @@ void GodotJSStatisticsViewer::on_timer()
     }
 }
 
-int GodotJSStatisticsViewer::to_percentage(size_t n, size_t d)
+namespace
 {
-    return (int) ((double) n / (double) d) * 100;
+    template <typename T>
+    String to_percentage(T n, T d)
+    {
+        return d == 0 ? "?" : itos((int64_t) ((double) n / (double) d) * 100);
+    }
+
+    String humanized(int64_t p_size, jsb::impl::CustomField::HintFlags p_hint)
+    {
+        if (p_hint & jsb::impl::CustomField::HINT_SIZE) return String::humanize_size(p_size);
+        return itos(p_size);
+    }
+
+    String humanized(uint64_t p_size, jsb::impl::CustomField::HintFlags p_hint)
+    {
+        if (p_hint & jsb::impl::CustomField::HINT_SIZE) return String::humanize_size(p_size);
+        return uitos(p_size);
+    }
 }
 
-void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, size_t p_usage, size_t p_total, bool p_humanized_size)
+void GodotJSStatisticsViewer::add_row(int p_index, const jsb::impl::CustomField& p_field)
 {
-    if (p_total == 0)
+    switch (p_field.type)
     {
-        add_row(p_index, p_name, "undefined");
-        return;
+    case jsb::impl::CustomField::Type::TYPE_INT_VALUE:
+        add_row(p_index, p_field.name, humanized(p_field.u.i64, p_field.hint));
+        break;
+    case jsb::impl::CustomField::Type::TYPE_UINT_VALUE:
+        add_row(p_index, p_field.name, humanized(p_field.u.u64, p_field.hint));
+        break;
+    case jsb::impl::CustomField::Type::TYPE_INT_CAP:
+        add_row(p_index, p_field.name, jsb_format("%s / %s (%s %%)",
+            humanized(p_field.u.i64_cap[0], p_field.hint), humanized(p_field.u.i64_cap[1], p_field.hint),
+            to_percentage(p_field.u.i64_cap[0], p_field.u.i64_cap[1])));
+        break;
+    case jsb::impl::CustomField::Type::TYPE_UINT_CAP:
+        add_row(p_index, p_field.name, jsb_format("%s / %s (%s %%)",
+            humanized(p_field.u.u64_cap[0], p_field.hint), humanized(p_field.u.u64_cap[1], p_field.hint),
+            to_percentage(p_field.u.u64_cap[0], p_field.u.u64_cap[1])));
+        break;
+    default:
+        JSB_LOG(Error, "unhandled custom field type %d", p_field.type);
+        break;
     }
-    if (p_humanized_size)
-    {
-        add_row(p_index, p_name, jsb_format("%s / %s (%d %%)", String::humanize_size(p_usage), String::humanize_size(p_total), to_percentage(p_usage, p_total)));
-        return;
-    }
-    add_row(p_index, p_name, jsb_format("%d / %d (%d %%)", (uint64_t) p_usage, (uint64_t) p_total, to_percentage(p_usage, p_total)));
 }
 
 void GodotJSStatisticsViewer::add_row(int p_index, const String& p_name, const String& p_text)

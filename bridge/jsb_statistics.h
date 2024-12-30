@@ -1,6 +1,8 @@
 #ifndef GODOTJS_STATISTICS_H
 #define GODOTJS_STATISTICS_H
+
 #include "jsb_bridge_pch.h"
+#include "../impl/shared/jsb_custom_field.h"
 
 namespace jsb
 {
@@ -21,17 +23,9 @@ namespace jsb
         // allocated num of Variants in pool (only valid in debug mode)
         uint32_t allocated_variants;
 
-        //TODO use Dictionary for impl-specific fields?
-
         // impl-specific fields
-        size_t used_global_handles_size;
-        size_t total_global_handles_size;
-        size_t used_heap_size;
-        size_t total_heap_size;
+        Vector<impl::CustomField> custom_fields;
 
-        size_t peak_malloced_memory;
-        size_t malloced_memory;
-        size_t external_memory;
     };
 }
 #endif

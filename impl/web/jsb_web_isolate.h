@@ -84,7 +84,6 @@ namespace v8
 
         void AddGCPrologueCallback(GCCallback callback) {}
         void AddGCEpilogueCallback(GCCallback callback) {}
-        void GetHeapStatistics(HeapStatistics* statistics);
         void SetPromiseRejectCallback(PromiseRejectCallback callback) { jsbi_SetHostPromiseRejectionTracker(rt_, (jsb::impl::FunctionPointer) callback); }
 
         void set_as_interruptible() { }

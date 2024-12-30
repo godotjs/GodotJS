@@ -16,7 +16,6 @@
 #include "jsb_quickjs_serializer.h"
 
 #include "jsb_quickjs_helper.h"
-#include "jsb_quickjs_statistics.h"
 
 #include "jsb_quickjs_catch.h"
 #include "jsb_quickjs_class.h"

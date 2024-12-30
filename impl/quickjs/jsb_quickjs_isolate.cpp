@@ -3,7 +3,6 @@
 #include "jsb_quickjs_catch.h"
 #include "jsb_quickjs_handle.h"
 #include "jsb_quickjs_context.h"
-#include "jsb_quickjs_statistics.h"
 
 namespace v8
 {
@@ -184,13 +183,6 @@ namespace v8
                 isolate->internal_data_.remove_at(index);
             }
         }
-    }
-
-    void Isolate::GetHeapStatistics(HeapStatistics* statistics)
-    {
-        memset(statistics, 0, sizeof(HeapStatistics));
-
-        //TODO fill out available heap info
     }
 
     void Isolate::PerformMicrotaskCheckpoint()

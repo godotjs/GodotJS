@@ -129,6 +129,11 @@ namespace jsb::impl
             isolate->throw_error(message);
         }
 
+        jsb_force_inline static void get_statistics(v8::Isolate* isolate, Vector<CustomField>& p_fields)
+        {
+            //NOTE no statistics for Web
+        }
+
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
         {
             if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }

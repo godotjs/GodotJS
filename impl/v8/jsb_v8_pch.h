@@ -10,4 +10,6 @@
 #include "../../internal/jsb_logger.h"
 #include "../../internal/jsb_macros.h"
 
+#include "../shared/jsb_custom_field.h"
+
 #endif
