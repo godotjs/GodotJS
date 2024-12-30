@@ -319,8 +319,17 @@ class jsbb_Engine {
         jsbb_ensure(this._stack.pos === jsbb_StackPos._Num);
     }
 
+    GetStatistics(data_ptr: Pointer) {
+        if (data_ptr === 0) return;
+
+        const offset = data_ptr >> 2;
+        _jsbb_.i32[offset + 0] = this._stack.pos;
+        _jsbb_.i32[offset + 1] = this._handles.count;
+        _jsbb_.i32[offset + 2] = this._registry.count;
+    }
+
     Release() {
-        this._global = <any>undefined;
+        // this._global = <any>undefined;
         this._handles = <any>undefined;
         this._stack = <any>undefined;
         this._registry = <any>undefined;

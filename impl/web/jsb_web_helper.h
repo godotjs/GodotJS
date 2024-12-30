@@ -131,7 +131,17 @@ namespace jsb::impl
 
         jsb_force_inline static void get_statistics(v8::Isolate* isolate, Vector<CustomField>& p_fields)
         {
-            //NOTE no statistics for Web
+            struct
+            {
+                int32_t stack_size;
+                int32_t handle_count;
+                int32_t registered_object_count;
+            } usage;
+
+            jsbi_GetStatistics(isolate->rt(), &usage);
+            p_fields.append(CustomField::value("stack_size", (int64_t) usage.stack_size));
+            p_fields.append(CustomField::value("handle_count", (int64_t) usage.handle_count));
+            p_fields.append(CustomField::value("registered_object_count", (int64_t) usage.registered_object_count));
         }
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)

@@ -61,6 +61,7 @@ JSBROWSER_API void jsbi_log(const char* ptr);
 JSBROWSER_API void jsbi_error(const char* ptr);
 JSBROWSER_API void jsbi_free(void* ptr);
 JSBROWSER_API void jsbi_debugbreak();
+JSBROWSER_API void jsbi_GetStatistics(jsb::impl::JSRuntime engine_id, void* ptr);
 
 JSBROWSER_API jsb::impl::StackPosition jsbi_CompileFunctionSource(jsb::impl::JSRuntime engine_id, const char* id, const char* source);
 JSBROWSER_API jsb::impl::StackPosition jsbi_Eval(jsb::impl::JSRuntime engine_id, const char* id, const char* source);

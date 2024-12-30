@@ -14,6 +14,7 @@ const GodotJSBrowserInterface = {
     jsbi_error: function (str_ptr) { _jsbb_.error(str_ptr); },
     jsbi_free: function (ptr) { _jsbb_.free(ptr); },
     jsbi_debugbreak: function () { _jsbb_.debugbreak(); },
+    jsbi_GetStatistics: function (engine_id, data_ptr) { _jsbb_.GetEngine(engine_id).GetStatistics(data_ptr); },
 
     jsbi_CompileFunctionSource: function (engine_id, filename, src) { return _jsbb_.GetEngine(engine_id).CompileFunctionSource(filename, src); }, 
     jsbi_Eval: function (engine_id, filename, src) { return _jsbb_.GetEngine(engine_id).Eval(filename, src); }, 
