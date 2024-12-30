@@ -975,7 +975,7 @@ namespace jsb
         }
         else
         {
-            JSB_LOG(Warning, "invalid main module");
+            JSB_LOG(Log, "%s: require.main is not set due to main module not available", p_module_id);
             require->Set(context, jsb_name(this, main), v8::Undefined(isolate_)).Check();
         }
         return require;
