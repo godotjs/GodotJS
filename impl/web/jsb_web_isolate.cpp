@@ -52,24 +52,9 @@ namespace v8
         embedder_data_ = data;
     }
 
-    void Isolate::GetHeapStatistics(HeapStatistics* statistics)
-    {
-        memset(statistics, 0, sizeof(HeapStatistics));
-
-        //TODO fill out available heap info
-    }
-
     Local<Context> Isolate::GetCurrentContext()
     {
         return Local<Context>(Data(this, 0));
-    }
-
-    void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type)
-    {
-    }
-
-    void Isolate::LowMemoryNotification()
-    {
     }
 
 }

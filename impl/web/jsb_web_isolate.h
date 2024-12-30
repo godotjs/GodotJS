@@ -77,9 +77,9 @@ namespace v8
         void* GetData(int index) const { jsb_check(index == 0); return embedder_data_; }
         void SetData(int index, void* data);
         void PerformMicrotaskCheckpoint() {}
-        void LowMemoryNotification();
+        void LowMemoryNotification() {}
         void SetBatterySaverMode(bool) {}
-        void RequestGarbageCollectionForTesting(GarbageCollectionType type);
+        void RequestGarbageCollectionForTesting(GarbageCollectionType type) {}
         Local<Context> GetCurrentContext();
 
         void AddGCPrologueCallback(GCCallback callback) {}
