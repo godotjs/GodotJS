@@ -284,7 +284,7 @@ namespace jsb
 #if defined(DEBUG_ENABLED)
             if (method_bind->get_argument_type(index) != type)
             {
-                JSB_LOG(Warning, "unexpected return value of get_argument_type:%d (expected:%d)", method_bind->get_argument_type(index) , type);
+                JSB_LOG(Verbose, "[WARNING] unexpected return value of get_argument_type:%d (expected:%d)", method_bind->get_argument_type(index) , type);
             }
 #endif
             if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
