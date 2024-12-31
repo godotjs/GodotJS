@@ -14,12 +14,10 @@ GodotJSExportPlugin::GodotJSExportPlugin() : super()
 
 PackedStringArray GodotJSExportPlugin::_get_export_features(const Ref<EditorExportPlatform>& p_export_platform, bool p_debug) const
 {
-    //TODO features (typescript, javascript?)
-    const Ref<DirAccess> dir_access = DirAccess::create(DirAccess::ACCESS_RESOURCES);
-    if (dir_access->exists("res://tsconfig.json"))
-    {
-        return { "typescript" };
-    }
+    // if (FileAccess::exists("res://tsconfig.json"))
+    // {
+    //     return { "typescript" };
+    // }
     return {};
 }
 
