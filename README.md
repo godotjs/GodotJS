@@ -18,7 +18,8 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] Hot-reloading
 * [x] QuickJS as an alternative runtime (**testing**)
 * [x] Directly running on the browser JS VM (**experimental**, **testing**, *Only for Web Build*)
-* [x] Worker threads (**experimental**)
+* [x] Worker threads (limited support) (**experimental**)
+* [ ] Asynchronously loaded modules (limited support)
 
 ## Get Started
 
@@ -123,10 +124,10 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 * [Debugger](./docs/debugger.md)
 
 ### Advanced
-* [Build V8](./docs/build_v8.md)
+* [V8](./docs/build_v8.md)
 * [Web](./docs/build_web.md)
-* [Worker](./docs/worker.md)
 * [QuickJS](./docs/quickjs.md)
+* [Worker](./docs/worker.md)
 * [Dependencies](./docs/deps.md)
 * [Compiler Options](./docs/compiler_options.md)
 * [Unit Testing](./docs/unit_testing.md)
@@ -156,3 +157,4 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 
 > Android: only tested on ndk_platform=android-24  
+> Web: only tested on emsdk-3.1.64
