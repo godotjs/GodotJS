@@ -208,7 +208,7 @@ namespace jsb
         const String filename_abs = reader.get_path_absolute();
         Vector<uint8_t> source;
         const size_t len = read_all_bytes(reader, source);
-#if JSB_SUPPORT_RELOAD
+#if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
         p_module.time_modified = reader.get_time_modified();
         p_module.hash = reader.get_hash();
 #endif

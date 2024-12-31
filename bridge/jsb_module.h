@@ -40,7 +40,7 @@ namespace jsb
         // the default class exported in this JS module
         ScriptClassID script_class_id;
 
-#if JSB_SUPPORT_RELOAD
+#if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
         bool reload_requested = false;
         uint64_t time_modified = 0;
         String hash;

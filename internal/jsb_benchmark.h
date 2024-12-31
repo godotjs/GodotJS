@@ -28,7 +28,7 @@ namespace jsb::internal
             if (total > 20000)
             {
                 const double total_f = (double)total / 1000000.0;
-                JSB_LOG(Log, "slow process %s: %f s (%s:%d)", name_, total_f, file_, line_);
+                JSB_LOG(Debug, "slow process %s: %f s (%s:%d)", name_, total_f, file_, line_);
             }
             // OS::get_singleton()->benchmark_end_measure(name_);
         }

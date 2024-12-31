@@ -32,7 +32,7 @@ namespace jsb::internal
         virtual uint64_t get_length() const override { return file_->get_length(); }
         virtual uint64_t get_buffer(uint8_t *p_dst, uint64_t p_length) const override { return file_->get_buffer(p_dst, p_length); }
 
-#if JSB_SUPPORT_RELOAD
+#if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
         virtual uint64_t get_time_modified() const override { return FileAccess::get_modified_time(file_->get_path()); }
         virtual String get_hash() const override { return FileAccess::get_md5(file_->get_path()); }
 #endif

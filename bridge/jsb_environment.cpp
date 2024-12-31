@@ -804,7 +804,7 @@ namespace jsb
                 jsb_check(existing_module->source_info.source_filepath == source_info.source_filepath);
 
                 JSB_LOG(VeryVerbose, "reload module %s", module_id);
-#if JSB_SUPPORT_RELOAD
+#if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
                 existing_module->reload_requested = false;
 #endif
                 if (!resolver->load(this, source_info.source_filepath, *existing_module))
