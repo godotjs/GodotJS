@@ -282,7 +282,11 @@ namespace v8
     bool Isolate::try_catch()
     {
         const JSValue ex = JS_GetException(ctx_);
+#if JSB_PREFER_QUICKJS_NG
+        if (JS_IsNull(ex) || JS_IsUninitialized(ex))
+#else
         if (JS_IsNull(ex))
+#endif
         {
             jsb_checkf(JS_IsNull(stack_[jsb::impl::StackPos::Exception]), "exception read but not handled (get_message)");
             return false;
