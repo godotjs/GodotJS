@@ -21,6 +21,42 @@ namespace v8
             return val;
         }
 
+#if JSB_PREFER_QUICKJS_NG
+        static void* js_calloc(void* opaque, size_t count, size_t size)
+        {
+            return memalloc(size * count);
+        }
+
+        static void* js_malloc(void* opaque, size_t size)
+        {
+            return memalloc(size);
+        }
+
+        static void js_free(void* opaque, void* ptr)
+        {
+            // avoid error prints on nullptr
+            if (ptr)
+            {
+                memfree(ptr);
+
+                // it's dangerous, but, just haven't found a better solution
+                ((Isolate*) opaque)->_invalidate_phantom(ptr);
+            }
+        }
+
+        static void* js_realloc(void* opaque, void* ptr, size_t size)
+        {
+            //TODO JSObject would never be reallocated, true?
+            //     (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
+            // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
+            return memrealloc(ptr, size);
+        }
+
+        static size_t js_malloc_usable_size(const void* ptr) 
+        {
+            return 0;
+        }
+#else 
         static void* js_malloc(JSMallocState* s, size_t size)
         {
             return memalloc(size);
@@ -45,6 +81,8 @@ namespace v8
             // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
             return memrealloc(ptr, size);
         }
+#endif
+
     };
 
     using details = IsolateInternalFunctions;
@@ -57,7 +95,11 @@ namespace v8
 
     Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr), stack_pos_(0)
     {
+#if JSB_PREFER_QUICKJS_NG
+        const JSMallocFunctions mf = { details::js_calloc, details::js_malloc, details::js_free, details::js_realloc, details::js_malloc_usable_size };
+#else
         const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
+#endif
         rt_ = JS_NewRuntime2(&mf, this);
         ctx_ = JS_NewContext(rt_);
         class_id_.init(rt_);

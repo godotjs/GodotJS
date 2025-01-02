@@ -674,9 +674,10 @@ JS_EXTERN JS_BOOL JS_SetConstructorBit(JSContext *ctx, JSValue func_obj, JS_BOOL
 JS_EXTERN JSValue JS_NewArray(JSContext *ctx);
 JS_EXTERN int JS_IsArray(JSContext *ctx, JSValue val);
 
-    //NOTE jsb:modified [begin]
-    int JS_IsMap(JSContext *ctx, JSValueConst val);
-    //NOTE jsb:modified [end]
+//NOTE jsb:modified [begin]
+int JS_IsMap(JSContext *ctx, JSValueConst val);
+int JS_IsPromise(JSContext *ctx, JSValueConst val);
+//NOTE jsb:modified [end]
 
 JS_EXTERN JSValue JS_NewDate(JSContext *ctx, double epoch_ms);
 

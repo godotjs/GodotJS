@@ -442,7 +442,7 @@ if quickjs_support is not None:
     env_quickjs.add_source_files(quickjs_obj, [f"{quickjs_dir}/{filename}" for filename in quickjs_support[1].sources])
     add_natvis("impl/quickjs/jsb.quickjs.natvis")
 
-    if env.dev_build:
+    if env.dev_build and quickjs_dir != "quickjs-ng":
         env_quickjs.Append(CFLAGS=["-DDUMP_LEAKS=1"])
 
     if env.msvc:

@@ -124,7 +124,11 @@ namespace v8
     bool Data::IsArrayBuffer() const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
+#if JSB_PREFER_QUICKJS_NG
+        return JS_IsArrayBuffer(val);
+#else
         return JS_IsArrayBuffer(isolate_->ctx(), val);
+#endif
     }
 
     bool Data::strict_eq(const Data& other) const
