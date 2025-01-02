@@ -7,7 +7,9 @@ namespace v8
 {
     Local<Array> Array::New(Isolate* isolate, int length)
     {
-        return Local<Array>(Data(isolate, isolate->push_steal(JS_NewArray(isolate->ctx()))));
+        const JSValue val = JS_NewArray(isolate->ctx());
+        jsb_check(JS_IsArray(isolate->ctx(), val));
+        return Local<Array>(Data(isolate, isolate->push_steal(val)));
     }
 
     uint32_t Array::Length() const
@@ -17,11 +19,12 @@ namespace v8
         const JSValue len = JS_GetProperty(ctx, val, jsb::impl::JS_ATOM_length);
         if (JS_IsException(len))
         {
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return 0;
         }
 
         uint32_t rval;
-        JS_ToUint32(ctx, &rval, len);
+        jsb_ensure(JS_ToUint32(ctx, &rval, len) != -1);
         JS_FreeValue(ctx, len);
         return rval;
     }
@@ -35,7 +38,12 @@ namespace v8
         {
             return MaybeLocal<Map>();
         }
-        JS_SetProperty(ctx, (JSValue) *this, key_atom, JS_DupValue(ctx, (JSValue) value));
+        const int res = JS_SetProperty(ctx, (JSValue) *this, key_atom, JS_DupValue(ctx, (JSValue) value));
+        if (res == -1)
+        {
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
+            return MaybeLocal<Map>();
+        }
 
         return MaybeLocal<Map>(Data(isolate_, stack_pos_));
     }

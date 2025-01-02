@@ -326,6 +326,12 @@ class jsbb_Engine {
         this._stack.SetValue(jsbb_StackPos.Error, value);
     }
 
+    //TODO
+    private _throw_trivial(value: any) {
+        //TODO not sure, temporarily throw all trivial errors
+        this._throw(value);
+    }
+
     constructor(engine_id: EngineID, opaque: Pointer) {
         jsbb_console.log("new engine", engine_id, opaque);
         this._id = engine_id;
@@ -641,7 +647,7 @@ class jsbb_Engine {
             }
             return 1;
         } catch (err) {
-            this._throw(err);
+            this._throw_trivial(err);
             return -1;
         }
     }
@@ -705,7 +711,7 @@ class jsbb_Engine {
             }
             return 1;
         } catch (err) {
-            this._throw(err);
+            this._throw_trivial(err);
             return -1;
         }
     }
@@ -719,7 +725,7 @@ class jsbb_Engine {
             obj[index] = val;
             return 1;
         } catch (err) {
-            this._throw(err);
+            this._throw_trivial(err);
             return -1;
         }
     }
@@ -979,13 +985,13 @@ class jsbb_Engine {
             const obj = this._stack.GetValue(obj_sp);
             const proto = this._stack.GetValue(proto_sp);
             if (typeof obj !== "object" || typeof proto !== "object") {
-                this._throw(new TypeError("invalid object or prototype"));
+                this._throw_trivial(new TypeError("invalid object or prototype"));
                 return -1;
             }
             Object.setPrototypeOf(obj, proto);
             return 1;
         } catch (err) {
-            this._throw(err);
+            this._throw_trivial(err);
             return -1;
         }
     }
@@ -995,12 +1001,12 @@ class jsbb_Engine {
             const obj = this._stack.GetValue(obj_sp);
             const key = this._stack.GetValue(key_sp);
             if (!_jsbb_.is_object(obj) || (typeof key !== "string" && typeof key !== "symbol")) {
-                this._throw(new TypeError(`invalid object or key: ${key}`));
+                this._throw_trivial(new TypeError(`invalid object or key: ${key}`));
                 return -1;
             }
             return obj.hasOwnProperty(key) ? 1 : 0;
         } catch (err) {
-            this._throw(err);
+            this._throw_trivial(err);
             return -1;
         }
     }
@@ -1153,7 +1159,7 @@ class jsbb_Engine {
             p.constructor = f;
             return 1;
         } catch (err) {
-            this._throw(err);
+            this._throw_trivial(err);
             return -1;
         }
     }
@@ -1171,7 +1177,7 @@ class jsbb_Engine {
             // Object.setPrototypeOf(proto.constructor, parent);
             return 1;
         } catch (err) {
-            this._throw(err);
+            this._throw_trivial(err);
             return -1;
         }
     }

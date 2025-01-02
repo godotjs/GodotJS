@@ -48,7 +48,7 @@ namespace v8
         const JSValue rval = JS_ReadObject(ctx, buffer_, size_, JS_READ_OBJ_REFERENCE);
         if (JS_IsException(rval))
         {
-            isolate->remove_exception_anyway();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return MaybeLocal<Value>();
         }
 

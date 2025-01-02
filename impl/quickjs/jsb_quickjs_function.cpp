@@ -16,6 +16,7 @@ namespace v8
         const JSValue rval = JS_Call(isolate_->ctx(), func, self, argc, vargv);
         if (JS_IsException(rval))
         {
+            // intentionally keep the exception
             return MaybeLocal<Value>();
         }
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(rval)));

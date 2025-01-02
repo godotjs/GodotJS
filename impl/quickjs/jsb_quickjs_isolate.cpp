@@ -52,11 +52,11 @@ namespace v8
             return ::realloc(ptr, size);
         }
 
-        static size_t js_malloc_usable_size(const void* ptr) 
+        static size_t js_malloc_usable_size(const void* ptr)
         {
             return 0;
         }
-#else 
+#else
         static void* js_malloc(JSMallocState* s, size_t size)
         {
             return memalloc(size);
@@ -277,32 +277,6 @@ namespace v8
             );
             isolate->promise_reject_(message);
         }
-    }
-
-    bool Isolate::try_catch()
-    {
-        const JSValue ex = JS_GetException(ctx_);
-#if JSB_PREFER_QUICKJS_NG
-        if (JS_IsNull(ex) || JS_IsUninitialized(ex))
-#else
-        if (JS_IsNull(ex))
-#endif
-        {
-            jsb_checkf(JS_IsNull(stack_[jsb::impl::StackPos::Exception]), "exception read but not handled (get_message)");
-            return false;
-        }
-        if (!error_thrown_)
-        {
-            // it happens in two situations:
-            //     1. the worker thread is forcibly terminated (it's OK)
-            //     2. an exception was thrown by quickjs API but not handled by quickjs.impl (it's not expected)
-            JSB_LOG(Warning, "unexpected exception thrown in quickjs");
-        }
-        const JSValue last = stack_[jsb::impl::StackPos::Exception];
-        jsb_check(JS_IsNull(last));
-        stack_[jsb::impl::StackPos::Exception] = ex;
-        error_thrown_ = false;
-        return !JS_IsNull(ex);
     }
 
     void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type)

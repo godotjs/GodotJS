@@ -23,7 +23,9 @@ namespace v8
 
     Local<Object> Context::Global() const
     {
-        return Local<Object>(Data(isolate_, isolate_->push_steal(JS_GetGlobalObject(isolate_->ctx()))));
+        const JSValue val = JS_GetGlobalObject(isolate_->ctx());
+        jsb_check(!JS_IsException(val));
+        return Local<Object>(Data(isolate_, isolate_->push_steal(val)));
     }
 
 }

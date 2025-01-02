@@ -94,9 +94,9 @@ namespace v8
     {
         const JSValue val = (JSValue) *this;
         double rval;
-        if (JS_ToFloat64(isolate_->ctx(), &rval, val))
+        if (JS_ToFloat64(isolate_->ctx(), &rval, val) == -1)
         {
-            isolate_->remove_exception_anyway();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
         }
         return rval;
     }
@@ -122,9 +122,9 @@ namespace v8
     {
         const JSValue val = (JSValue) *this;
         int32_t rval;
-        if (JS_ToInt32(isolate_->ctx(), &rval, val))
+        if (JS_ToInt32(isolate_->ctx(), &rval, val) == -1)
         {
-            isolate_->remove_exception_anyway();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
         }
         return rval;
     }
@@ -133,9 +133,9 @@ namespace v8
     {
         const JSValue val = (JSValue) *this;
         uint32_t rval;
-        if (JS_ToUint32(isolate_->ctx(), &rval, val))
+        if (JS_ToUint32(isolate_->ctx(), &rval, val) == -1)
         {
-            isolate_->remove_exception_anyway();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
         }
         return rval;
     }
@@ -155,16 +155,18 @@ namespace v8
     {
         const JSValue val = (JSValue) *this;
         int64_t rval;
-        if (JS_ToBigInt64(isolate_->ctx(), &rval, val))
+        if (JS_ToBigInt64(isolate_->ctx(), &rval, val) == -1)
         {
-            isolate_->remove_exception_anyway();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
         }
         return rval;
     }
 
     Local<BigInt> BigInt::New(Isolate* isolate, int64_t value)
     {
-        const uint16_t stack_pos = isolate->push_steal(JS_NewBigInt64(isolate->ctx(), value));
+        const JSValue val = JS_NewBigInt64(isolate->ctx(), value);
+        jsb_check(!JS_IsException(val));
+        const uint16_t stack_pos = isolate->push_steal(val);
         return Local<String>(Data(isolate, stack_pos));
     }
 

@@ -148,12 +148,6 @@ namespace v8
 
         jsb_force_inline JSRuntime* rt() const { return rt_; }
         jsb_force_inline JSContext* ctx() const { return ctx_; }
-        jsb_force_inline void remove_exception_anyway() const
-        {
-            const JSValue error = JS_GetException(ctx_);
-            jsb_check(!JS_IsNull(error));
-            JS_FreeValue(ctx_, error);
-        }
 
         jsb::impl::InternalDataConstPtr get_internal_data(const jsb::impl::InternalDataID index) const
         {
@@ -224,7 +218,19 @@ namespace v8
             return emplace_(value);
         }
 
-        bool try_catch();
+        bool try_catch()
+        {
+            jsb_checkf(jsb::impl::QuickJS::IsNotErrorThrown(stack_[jsb::impl::StackPos::Exception]), "stack.exception is dirty, TryCatch::get_message() may not be called after has_caught()?");
+
+            const JSValue ex = JS_GetException(ctx_);
+            if (jsb::impl::QuickJS::IsNotErrorThrown(ex))
+            {
+                return false;
+            }
+
+            stack_[jsb::impl::StackPos::Exception] = ex;
+            return true;
+        }
 
         // they won't be deleted until the Isolate disposed
         int add_constructor_data(FunctionCallback callback, uint32_t data)
@@ -297,21 +303,27 @@ namespace v8
         template<int N>
         jsb_force_inline void throw_error(const char (&message)[N])
         {
-            jsb_checkf(!error_thrown_, "overwriting another error");
-            error_thrown_ = true;
+            // the value from GetException() is not deleted properly here because we directly crash the program
+            jsb_checkf(jsb::impl::QuickJS::IsNotErrorThrown(JS_GetException(ctx_)), "overwriting another error");
             JS_ThrowInternalError(ctx_, "%s", message);
         }
 
         jsb_force_inline void throw_error(const ::String& message)
         {
-            jsb_checkf(!error_thrown_, "overwriting another error");
-            error_thrown_ = true;
+            // the value from GetException() is not deleted properly here because we directly crash the program
+            jsb_checkf(jsb::impl::QuickJS::IsNotErrorThrown(JS_GetException(ctx_)), "overwriting another error");
             const CharString str8 = message.utf8();
             JS_ThrowInternalError(ctx_, "%s", str8.get_data());
         }
 
-        jsb_force_inline void mark_as_error_thrown() { jsb_checkf(!error_thrown_, "overwriting another error"); error_thrown_ = true; }
-        jsb_force_inline bool is_error_thrown() const { return error_thrown_; }
+        jsb_force_inline bool is_error_thrown() const
+        {
+            const JSValue ex = JS_GetException(ctx_);
+            if (jsb::impl::QuickJS::IsNotErrorThrown(ex)) return false;
+            // put it back since we just check it without handling
+            JS_Throw(ctx_, ex);
+            return true;
+        }
 
     private:
         Isolate();
@@ -388,7 +400,6 @@ namespace v8
         bool using_front_free_queue_ = true;
         bool swapping_free_queue_ = false;
 
-        bool error_thrown_ = false;
         uint16_t stack_pos_;
         JSValue stack_[jsb::impl::kMaxStackSize];
 

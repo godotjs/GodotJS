@@ -32,6 +32,27 @@ namespace jsb::impl
             operator JSAtom() const { return atom_; }
         };
 
+        static void MarkExceptionAsTrivial(JSContext* ctx)
+        {
+            const JSValue val = JS_GetException(ctx);
+#if JSB_DEBUG
+            if (!IsNotErrorThrown(val))
+            {
+                JSB_QUICKJS_LOG(Verbose, "removed a trivial exception: %s", GetString(ctx, val));
+            }
+#endif
+            JS_FreeValue(ctx, val);
+        }
+
+        static bool IsNotErrorThrown(JSValueConst value)
+        {
+#if JSB_PREFER_QUICKJS_NG
+            return JS_IsNull(value) || JS_IsUninitialized(value);
+#else
+            return JS_IsNull(value);
+#endif
+        }
+
         static bool IsNullish(JSValueConst value)
         {
             return JS_IsNull(value) || JS_IsUndefined(value);
@@ -40,10 +61,17 @@ namespace jsb::impl
         static String GetString(JSContext* ctx, JSValueConst value)
         {
             size_t len;
-            const char* str = JS_ToCStringLen(ctx, &len, value);
-            String rval = String::utf8(str, (int) len);
-            JS_FreeCString(ctx, str);
-            return rval;
+            if (const char* str = JS_ToCStringLen(ctx, &len, value))
+            {
+                const String rval = String::utf8(str, (int) len);
+                JS_FreeCString(ctx, str);
+                return rval;
+            }
+
+            // silently ignore the error
+            const JSValue val = JS_GetException(ctx);
+            JS_FreeValue(ctx, val);
+            return String();
         }
 
         static bool Equals(JSValueConst a, JSValueConst b)

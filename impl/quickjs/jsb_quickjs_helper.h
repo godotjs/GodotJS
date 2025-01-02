@@ -108,15 +108,18 @@ namespace jsb::impl
         // should return an empty string if `p_val` is null or undefined.
         static String to_string(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
         {
-            String ret;
             if (!p_val.IsEmpty() && !p_val->IsNullOrUndefined())
             {
                 size_t len;
-                const char* str = JS_ToCStringLen(isolate->ctx(), &len, (JSValue) p_val);
-                ret = String::utf8(str, (int) len);
-                JS_FreeCString(isolate->ctx(), str);
+                if (const char* str = JS_ToCStringLen(isolate->ctx(), &len, (JSValue) p_val))
+                {
+                    const String ret = String::utf8(str, (int) len);
+                    JS_FreeCString(isolate->ctx(), str);
+                    return ret;
+                }
+                QuickJS::MarkExceptionAsTrivial(isolate->ctx());
             }
-            return ret;
+            return String();
         }
 
         static String to_string_without_side_effect(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val)
@@ -206,7 +209,7 @@ namespace jsb::impl
             const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.get_data(), flags);
             if (JS_IsException(rval))
             {
-                isolate->mark_as_error_thrown();
+                // intentionally keep the exception
                 return v8::MaybeLocal<v8::Value>();
             }
             return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));

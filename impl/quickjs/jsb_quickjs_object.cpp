@@ -38,7 +38,7 @@ namespace v8
         const int res = JS_SetPropertyUint32(isolate_->ctx(), self, index, JS_DupValue(isolate_->ctx(), (JSValue) value));
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
             return Maybe<bool>();
         }
         return Maybe<bool>(true);
@@ -51,7 +51,7 @@ namespace v8
         const JSValue val = JS_GetPropertyUint32(isolate_->ctx(), self, index);
         if (JS_IsException(val))
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
             return MaybeLocal<Value>();
         }
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
@@ -66,7 +66,7 @@ namespace v8
         const int res = JS_SetProperty(ctx, self, index, JS_DupValue(ctx, (JSValue) value));
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
             return Maybe<bool>();
         }
         return Maybe<bool>(true);
@@ -81,7 +81,7 @@ namespace v8
         const JSValue val = JS_GetProperty(ctx, self, index);
         if (JS_IsException(val))
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return MaybeLocal<Value>();
         }
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
@@ -96,10 +96,10 @@ namespace v8
 
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
             return Maybe<bool>();
         }
-        return Maybe<bool>(res);
+        return Maybe<bool>(!!res);
     }
 
     Maybe<bool> Object::SetPrototype(Local<Context> context, Local<Value> prototype)
@@ -108,10 +108,10 @@ namespace v8
         const int res = JS_SetPrototype(ctx, (JSValue) *this, (JSValue) prototype);
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return Maybe<bool>();
         }
-        return Maybe<bool>(res);
+        return Maybe<bool>(!!res);
     }
 
     Local<Value> Object::GetPrototype()
@@ -120,7 +120,7 @@ namespace v8
         const JSValue prototype = JS_GetPrototype(ctx, (JSValue) *this);
         if (JS_IsException(prototype))
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return Local<Value>();
         }
         return Local<Value>(Data(isolate_, isolate_->push_steal(prototype)));
@@ -138,7 +138,7 @@ namespace v8
         const JSValue instance = JS_CallConstructor(ctx, self, argc, argvv);
         if (JS_IsException(instance))
         {
-            isolate_->mark_as_error_thrown();
+            // intentionally keep the exception
             return MaybeLocal<Value>();
         }
         return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(instance)));
@@ -147,7 +147,9 @@ namespace v8
     Local<Object> Object::New(Isolate* isolate)
     {
         JSContext* ctx = isolate->ctx();
-        return Local<Object>(Data(isolate, isolate->push_steal(JS_NewObject(ctx))));
+        const JSValue obj = JS_NewObject(ctx);
+        jsb_check(!JS_IsException(obj));
+        return Local<Object>(Data(isolate, isolate->push_steal(obj)));
     }
 
     MaybeLocal<Value> Object::GetOwnPropertyDescriptor(Local<Context> context, Local<Name> key) const
@@ -161,11 +163,12 @@ namespace v8
 
         if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return MaybeLocal<Value>();
         }
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptor
         const JSValue desc_js = JS_NewObject(ctx);
+        jsb_check(JS_IsObject(desc_js));
 
         // JSValues in desc are free-ed by set
         jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_get, desc.getter) != -1);
@@ -196,6 +199,12 @@ namespace v8
 
             getter(prop_v, info);
 
+            // after back from the impl layer, we need to return JS_EXCEPTION if an error is thrown in quickjs
+            if (isolate->is_error_thrown())
+            {
+                return JS_EXCEPTION;
+            }
+
             // We need a duplicated value for returning.
             // Duplicate the value here because the stack value will become invalid after leaving the handle scope.
             rvo = isolate->stack_dup(rvo_pos);
@@ -210,6 +219,7 @@ namespace v8
             //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
             const int res = JS_DefineProperty(ctx, this_val, prop, rvo, JS_UNDEFINED, JS_UNDEFINED, flags);
             jsb_check(res >= 0);
+            jsb_unused(res);
         }
 
         return rvo;
@@ -229,12 +239,12 @@ namespace v8
         //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         JS_FreeValue(ctx, lazy);
 
-        if (res != -1)
+        if (res == -1)
         {
-            return Maybe<bool>(!!res);
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
+            return Maybe<bool>();
         }
-        isolate_->mark_as_error_thrown();
-        return Maybe<bool>();
+        return Maybe<bool>(!!res);
     }
 
     Maybe<bool> Object::DefineOwnProperty(Local<Context> context, Local<Name> key, Local<Value> value, PropertyAttribute attributes)
@@ -251,12 +261,12 @@ namespace v8
         //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         const int res = JS_DefineProperty(ctx, this_obj, prop, val, JS_UNDEFINED, JS_UNDEFINED, flags);
 
-        if (res != -1)
+        if (res == -1)
         {
-            return Maybe<bool>(!!res);
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
+            return Maybe<bool>();
         }
-        isolate_->mark_as_error_thrown();
-        return Maybe<bool>();
+        return Maybe<bool>(!!res);
     }
 
     void Object::SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter, Local<FunctionTemplate> setter)
@@ -273,8 +283,8 @@ namespace v8
             (JSValue) getter, //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
             (JSValue) setter,
             flags);
-
         jsb_check(res >= 0);
+        jsb_unused(res);
     }
 
     MaybeLocal<Array> Object::GetOwnPropertyNames(Local<Context> context, PropertyFilter filter, KeyConversionMode key_conversion)
@@ -290,9 +300,10 @@ namespace v8
         // key_conversion is not available in quickjs.impl
         jsb_check(key_conversion == v8::KeyConversionMode::kNoNumbers);
 
-        if (JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) *this, flags) < 0)
+        int res = JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) *this, flags);
+        if (res == -1)
         {
-            isolate_->mark_as_error_thrown();
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return MaybeLocal<Array>();
         }
 
@@ -301,7 +312,8 @@ namespace v8
 
         for(uint32_t i = 0; i < len; ++i)
         {
-            JS_SetPropertyUint32(ctx, array, i, JS_AtomToValue(ctx, tab[i].atom));
+            res = JS_SetPropertyUint32(ctx, array, i, JS_AtomToValue(ctx, tab[i].atom));
+            jsb_check(res >= 0);
 
             // cleanup
             JS_FreeAtom(ctx, tab[i].atom);
