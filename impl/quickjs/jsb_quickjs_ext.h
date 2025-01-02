@@ -58,6 +58,12 @@ namespace jsb::impl
         static int _RefCount(JSValueConst value)
         {
             if (!JS_VALUE_HAS_REF_COUNT(value)) return 0;
+#if JSB_PREFER_QUICKJS_NG
+            // unsafe
+            typedef struct JSRefCountHeader {
+                int ref_count;
+            } JSRefCountHeader;
+#endif
             const JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(value);
             return p ? p->ref_count : 0;
         }

@@ -24,12 +24,12 @@ namespace v8
 #if JSB_PREFER_QUICKJS_NG
         static void* js_calloc(void* opaque, size_t count, size_t size)
         {
-            return memalloc(size * count);
+            return ::calloc(count, size);
         }
 
         static void* js_malloc(void* opaque, size_t size)
         {
-            return memalloc(size);
+            return ::malloc(size);
         }
 
         static void js_free(void* opaque, void* ptr)
@@ -37,7 +37,7 @@ namespace v8
             // avoid error prints on nullptr
             if (ptr)
             {
-                memfree(ptr);
+                ::free(ptr);
 
                 // it's dangerous, but, just haven't found a better solution
                 ((Isolate*) opaque)->_invalidate_phantom(ptr);
@@ -49,7 +49,7 @@ namespace v8
             //TODO JSObject would never be reallocated, true?
             //     (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
             // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
-            return memrealloc(ptr, size);
+            return ::realloc(ptr, size);
         }
 
         static size_t js_malloc_usable_size(const void* ptr) 
