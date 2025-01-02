@@ -45,7 +45,7 @@ void GodotJSScriptLanguage::init()
 
     JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, init);
     once_inited_ = true;
-    JSB_LOG(Verbose, "Runtime: %s", V8_VERSION_STRING);
+    JSB_LOG(Verbose, "Runtime: %s", JSB_IMPL_VERSION_STRING);
     JSB_LOG(VeryVerbose, "jsb lang init");
 
     jsb::Environment::CreateParams params;

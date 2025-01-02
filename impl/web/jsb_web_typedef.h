@@ -2,7 +2,7 @@
 #define GODOTJS_WEB_TYPEDEF_H
 
 #include "jsb_web_pch.h"
-#define V8_VERSION_STRING "jsbi-experimental"
+#define JSB_IMPL_VERSION_STRING "jsbi-experimental"
 
 namespace jsb::impl
 {

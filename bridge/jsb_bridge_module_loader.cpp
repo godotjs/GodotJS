@@ -450,9 +450,7 @@ namespace jsb
 #else
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "DEBUG_ENABLED"), v8::Boolean::New(isolate, false)).Check();
 #endif
-            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_MAJOR"), v8::Int32::New(isolate, VERSION_MAJOR)).Check();
-            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_MINOR"), v8::Int32::New(isolate, VERSION_MINOR)).Check();
-            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_PATCH"), v8::Int32::New(isolate, VERSION_PATCH)).Check();
+            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "version"), impl::Helper::new_string(isolate, JSB_IMPL_VERSION_STRING)).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "callable"), JSB_NEW_FUNCTION(context, _new_callable, {})).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "to_array_buffer"), JSB_NEW_FUNCTION(context, _to_array_buffer, {})).Check();
 
