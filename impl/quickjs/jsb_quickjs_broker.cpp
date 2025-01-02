@@ -5,7 +5,7 @@ namespace jsb::impl
 {
     void Broker::SetWeak(v8::Isolate* isolate, JSValue value, void* parameter, void* callback)
     {
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(value, v8::Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(value, isolate->get_class_id());
         const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
         JSB_QUICKJS_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)",
             (uintptr_t) JS_VALUE_GET_PTR(value), index,

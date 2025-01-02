@@ -60,6 +60,7 @@ namespace v8
         const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
         rt_ = JS_NewRuntime2(&mf, this);
         ctx_ = JS_NewContext(rt_);
+        class_id_.init(rt_);
         static_assert(sizeof(stack_) == sizeof(JSValue) * jsb::impl::kMaxStackSize);
 
         // should be fine to leave it uninitialized
@@ -169,7 +170,7 @@ namespace v8
     void Isolate::_finalizer(JSRuntime* rt, JSValue val)
     {
         Isolate* isolate = (Isolate*) JS_GetRuntimeOpaque(rt);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate->get_class_id());
         {
             jsb::impl::InternalData* data;
             if (isolate->internal_data_.try_get_value_pointer(index, data))

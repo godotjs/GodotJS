@@ -67,7 +67,7 @@ namespace jsb::impl
 
         jsb_force_inline static JSValue _NewObject(v8::Isolate* isolate, JSContext* ctx, JSValue prototype, uint8_t internal_field_count)
         {
-            const JSValue this_val = JS_NewObjectProtoClass(ctx, (JSValue) prototype, v8::Isolate::get_class_id());
+            const JSValue this_val = JS_NewObjectProtoClass(ctx, (JSValue) prototype, isolate->get_class_id());
             jsb_check(JS_IsObject(this_val));
             const jsb::impl::InternalDataID internal_data_id = isolate->add_internal_data(internal_field_count);
             JS_SetOpaque(this_val, (void*)(uintptr_t) *internal_data_id);

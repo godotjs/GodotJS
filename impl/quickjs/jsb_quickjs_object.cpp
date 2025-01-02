@@ -7,7 +7,7 @@ namespace v8
     int Object::InternalFieldCount() const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate_->get_class_id());
         if (!index) return 0;
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_field_count;
@@ -16,7 +16,7 @@ namespace v8
     void Object::SetAlignedPointerInInternalField(int slot, void* data)
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID internal_data_id = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID internal_data_id = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate_->get_class_id());
         const jsb::impl::InternalDataPtr internal_data = isolate_->get_internal_data(internal_data_id);
         JSB_QUICKJS_LOG(VeryVerbose, "set internal data JSObject:%s id:%s data:%s (last:%s)", (uintptr_t) JS_VALUE_GET_PTR(val), internal_data_id, (uintptr_t) data, (uintptr_t) internal_data->internal_fields[slot]);
         jsb_checkf(!data || !internal_data->internal_fields[slot], "overwriting the internal field is not allowed");
@@ -26,7 +26,7 @@ namespace v8
     void* Object::GetAlignedPointerFromInternalField(int slot) const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, Isolate::get_class_id());
+        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate_->get_class_id());
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
         return data->internal_fields[slot];
     }

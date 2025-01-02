@@ -65,11 +65,27 @@ namespace jsb::impl
 
     struct ClassID
     {
-        ClassID() { JS_NewClassID(&id_); }
+#if JSB_PREFER_QUICKJS_NG
+        jsb_force_inline void init(JSRuntime* rt) { JS_NewClassID(rt, &id_); }
         explicit operator JSClassID() const { return id_; }
 
     private:
         JSClassID id_;
+#else
+        jsb_force_inline void init(JSRuntime* rt) {}
+        explicit operator JSClassID() const
+        {
+            static Impl impl;
+            return impl.id_;
+        }
+
+    private:
+        struct Impl
+        {
+            Impl() { JS_NewClassID(&id_); }
+            JSClassID id_;
+        };
+#endif
     };
 
     struct Phantom
@@ -87,7 +103,6 @@ namespace v8
     template<typename T> class Global;
     template<typename T> class Local;
     template<typename T> class FunctionCallbackInfo;
-    class HeapStatistics;
     class Context;
     class Value;
 
@@ -155,7 +170,7 @@ namespace v8
             return internal_data_.add(jsb::impl::InternalData {  { nullptr, nullptr }, internal_field_count, { nullptr, nullptr }});
         }
 
-        static JSClassID get_class_id() { static jsb::impl::ClassID id; return (JSClassID) id; }
+        jsb_force_inline JSClassID get_class_id() const { return (JSClassID) class_id_; }
 
         // get stack value
         [[nodiscard]] const JSValue& stack_val(const uint16_t index) const
@@ -354,6 +369,7 @@ namespace v8
         static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
         static int _interrupt_callback(JSRuntime* rt, void* data) { return ((Isolate*) data)->interrupted_.is_set(); }
 
+        jsb::impl::ClassID class_id_;
         uint32_t ref_count_;
         bool disposed_;
         JSRuntime* rt_;
