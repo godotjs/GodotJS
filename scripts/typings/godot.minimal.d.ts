@@ -5,9 +5,11 @@ declare module "godot-jsb" {
     const DEV_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
 
-    const VERSION_MAJOR: number;
-    const VERSION_MINOR: number;
-    const VERSION_PATCH: number;
+    /** version of GodotJS */
+    const version: string;
+
+    /** impl currently used */
+    const impl: string;
 
     /**
      * Create godot Callable with a bound object `self`
