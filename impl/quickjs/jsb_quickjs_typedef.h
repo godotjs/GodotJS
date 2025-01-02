@@ -26,7 +26,11 @@ namespace jsb::impl
 #pragma push_macro("DEF")
 #   undef DEF
 #   define DEF(name, str) JS_ATOM_ ## name,
-#   include "../../quickjs/quickjs-atom.h"
+#   if JSB_PREFER_QUICKJS_NG
+#       include "../../quickjs-ng/quickjs-atom.h"
+#   else
+#       include "../../quickjs/quickjs-atom.h"
+#   endif
 #pragma pop_macro("DEF")
         JS_ATOM_END,
     };

@@ -73,8 +73,8 @@ lws_prebuilt_libs = LibraryDescriptor("lws", \
 quickjs_src_descs = ThirdPartyDescriptor("quickjs", \
 [
     # can't compile with VS2022
-    # ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"], lambda: "MSVC_VERSION" not in env or env["MSVC_VERSION"] != "14.3"), 
-    ThirdPartyDetails("quickjs", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]), 
+    ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"], lambda: "MSVC_VERSION" not in env or env["MSVC_VERSION"] != "14.3"), 
+    ThirdPartyDetails("quickjs",    ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]), 
 ])
 
 class CompileDefines:
@@ -82,6 +82,12 @@ class CompileDefines:
         self.name = name
         self.value = value
         self.help = help
+
+def check(condition, text):
+    '''Directly fail the build if the condition is not met'''
+    if not condition:
+        print("Error: " + text)
+        Exit(2)
 
 # def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, LibraryDetails]:
 def get_library_support(support):
@@ -96,9 +102,10 @@ def get_library_support(support):
     return None
 
 # def get_thirdparty_support(support: ThirdPartyDescriptor) -> tuple[ThirdPartyDescriptor, ThirdPartyDetails]:
-def get_thirdparty_support(support):
+def get_thirdparty_support(support, path):
     for details in support.details:
-        if os.path.exists(details.path) and details.validator():
+        if os.path.exists(details.path) and details.path == path:
+            check(details.validator(), f"{details.path} is unsupported in the current environment")
             return (support, details)
     return None
 
@@ -114,25 +121,40 @@ def read_macro_value(name, def_val = None):
         return def_val
     raise ValueError(f"no {name} defined in jsb.config.h")
 
-prefer_quickjs = env["use_quickjs"]
-quickjs_support = get_thirdparty_support(quickjs_src_descs) if prefer_quickjs else None
+use_quickjs = "quickjs" if env["use_quickjs"] else ("quickjs-ng" if env["use_quickjs_ng"] else None)
+quickjs_support = get_thirdparty_support(quickjs_src_descs, use_quickjs)
 v8_support = get_library_support(v8_prebuilt_libs) if quickjs_support is None else None
 lws_support = get_library_support(lws_prebuilt_libs)
 
 jsb_defines = [
     CompileDefines("JSB_WITH_QUICKJS", 1 if quickjs_support is not None else 0),
-    CompileDefines("JSB_WITH_V8", 1 if v8_support is not None else 0),
-    CompileDefines("JSB_WITH_WEB", 1 if jsb_platform == "web" and quickjs_support is None else 0),
+    CompileDefines("JSB_PREFER_QUICKJS_NG", 1 if quickjs_support is not None and quickjs_support[1].path == "quickjs-ng" else 0, [
+        "(Only effective when `JSB_WITH_QUICKJS` is enabled)", 
+        "Use quickjs-ng instead of quickjs",
+    ]),
+    CompileDefines("JSB_WITH_V8", 1 if v8_support is not None else 0, [
+        "Use v8 as the javascript engine.", 
+        "A prebuilt v8 library is required to build the project. ", 
+        "Please build it in advance by yourself, or download the prebuilt from the following link:",
+        "    " + prebuilt_deps_url, 
+    ]),
+    CompileDefines("JSB_WITH_WEB", 1 if jsb_platform == "web" and quickjs_support is None else 0, [
+        "Use the host browser's javascript engine.", 
+        "Be aware that all script sources are evaluated in the host browser, which can be fully debugged with the browser's developer tools.", 
+        "It's recommended to obfuscate the script sources before deploying the project in a production environment.",
+        "NOTE: web.impl is experimental and may not work as expected.",
+        "NOTE: Obfuscation may not work in the current version. It'll be improved in the future versions. Report an issue if it breaks.",
+    ]),
 
     CompileDefines("JSB_WITH_EDITOR_UTILITY_FUNCS", 1 if jsb_platform != "web" and env.editor_build else 0, [
-        "enables 'jsb.editor'", 
+        "Enables 'jsb.editor'", 
     ]),
     CompileDefines("JSB_WITH_DEBUGGER", 1 if v8_support is not None else 0, [
-        "enable to debug with Chrome devtools with the following link by default:",
+        "Enable to debug with Chrome devtools with the following link by default:",
         "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1",
     ]),
     CompileDefines("JSB_WITH_LWS", 1 if lws_support is not None else 0, [
-        "NOTE: currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`", 
+        "NOTE: Currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`", 
         "`devtools` do not response the upgrading request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`", 
         "and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`", 
     ]),
@@ -144,6 +166,7 @@ def is_defined(name, value = 1):
             return t.value == value
     return False
 
+# quickjs and emscripten API require zero-terminated strings (even if string.length is provided)
 zero_terminated = quickjs_support is not None or is_defined("JSB_WITH_WEB")
 
 print("compiling:", module_name)
@@ -179,11 +202,6 @@ class AMDSourceTransformer(PresetTransformer):
     # def transform(self, data: bytes):
     def transform(self, data):
         return b"(function(define){"+data+b"\n})"
-
-def check(condition, text):
-    if not condition:
-        print("Error: " + text)
-        Exit(2)
 
 def set_defined(name, value):
     for t in jsb_defines:
