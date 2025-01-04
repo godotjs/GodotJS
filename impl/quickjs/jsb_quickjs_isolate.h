@@ -66,7 +66,7 @@ namespace jsb::impl
     struct ClassID
     {
 #if JSB_PREFER_QUICKJS_NG
-        jsb_force_inline void init(JSRuntime* rt) { JS_NewClassID(rt, &id_); }
+        jsb_force_inline void init(JSRuntime* rt) { id_ = 0; JS_NewClassID(rt, &id_); }
         explicit operator JSClassID() const { return id_; }
 
     private:
