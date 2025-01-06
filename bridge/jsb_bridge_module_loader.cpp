@@ -9,12 +9,16 @@ namespace jsb
 {
     namespace
     {
-        // [js helper function]
-        // convert a PackedByteArray to ArrayBuffer (memory copy)
+        jsb_deprecated(
+            "free function '_to_array_buffer' is deprecated and will be removed in a future version, "
+            "use 'PackedByteArray.to_array_buffer()' instead")
         void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
+            JSB_LOG(Warning,
+                "free function '_to_array_buffer' is deprecated and will be removed in a future version, "
+                "use 'PackedByteArray.to_array_buffer()' instead");
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant var;
             if (!TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::PACKED_BYTE_ARRAY, var))
             {

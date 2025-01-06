@@ -10,6 +10,35 @@
 
 namespace jsb
 {
+    template<typename ForType>
+    struct ReflectAdditionalMethodRegister
+    {
+        static void register_(impl::ClassBuilder& class_builder) {}
+    };
+
+    template<>
+    struct ReflectAdditionalMethodRegister<PackedByteArray>
+    {
+        static void register_(impl::ClassBuilder& class_builder)
+        {
+            class_builder.Instance().Method("to_array_buffer", &_to_array_buffer);
+        }
+
+        static void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const v8::Local<v8::Object> self = info.This();
+            Variant var;
+            if (!TypeConvert::js_to_gd_var(isolate, context, self, Variant::PACKED_BYTE_ARRAY, var))
+            {
+                jsb_throw(isolate, "this is not PackedByteArray");
+                return;
+            }
+            info.GetReturnValue().Set(impl::Helper::to_array_buffer(isolate, var));
+        }
+    };
+
     template<bool IsInstancedT = false>
     struct ReflectThis
     {

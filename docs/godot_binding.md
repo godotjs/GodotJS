@@ -124,7 +124,7 @@ view.fill(0);
 file.store_buffer(buffer);
 ```
 
-But reversely, `jsb.to_array_buffer` call is required to get an `ArrayBuffer` from `PackedByteArray`.
+But reversely, `PackedByteArray.to_array_buffer` is required to get an `ArrayBuffer` from `PackedByteArray`.
 
 ```ts
 let packed = FileAccess.get_file_as_bytes("res://something.txt");
@@ -133,7 +133,7 @@ let packed = FileAccess.get_file_as_bytes("res://something.txt");
 console.log(packed.size()); 
 
 // 'buffer' is a `ArrayBuffer`
-let buffer = jsb.to_array_buffer(packed); 
+let buffer = packed.to_array_buffer(); 
 console.log(buffer.byteLength);
 ```
 

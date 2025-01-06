@@ -704,6 +704,7 @@ namespace jsb
                         }
                     }
 #endif
+                    ReflectAdditionalMethodRegister<T>::register_(class_builder);
 
                     // convert method info, and store
                     const int collection_index = (int) GetVariantInfoCollection(p_env.env).methods.size();

@@ -1093,6 +1093,8 @@ export default class TSDCodeGen {
             class_cg.constructor_(constructor_info);
         }
 
+        //TODO [BEGIN] make all these messy hardcoded methods more flexible and readable
+
         // 
         if (cls.type == Variant.Type.TYPE_ARRAY) {
             class_cg.line(`set_indexed(index: number, value: T)`)
@@ -1112,7 +1114,12 @@ export default class TSDCodeGen {
             class_cg.line("[Symbol.iterator](): IteratorObject<{ key: any, value: any}>");
         } else if (cls.type == Variant.Type.TYPE_ARRAY) {
             class_cg.line("[Symbol.iterator](): IteratorObject<T>");
+        } else if (cls.type == Variant.Type.TYPE_PACKED_BYTE_ARRAY) {
+            class_cg.line("/** [jsb utility method] Converts a PackedByteArray to a JavaScript ArrayBuffer. */");
+            class_cg.line("to_array_buffer(): ArrayBuffer");
         }
+
+        //TODO [END] make all these messy hardcoded methods more flexible and readable
 
         for (let method_info of cls.methods) {
             class_cg.ordinary_method_(method_info);
