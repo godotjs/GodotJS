@@ -43291,6 +43291,10 @@ static int getTimezoneOffset(int64_t time)
     ti = time;
 #if defined(_WIN32)
     {
+        //NOTE jsb:modified [begin]
+
+        // ** ORIGINAL QUICKJS CODE **
+        /*
         struct tm *tm;
         time_t gm_ti, loc_ti;
 
@@ -43299,6 +43303,17 @@ static int getTimezoneOffset(int64_t time)
 
         tm = localtime(&ti);
         loc_ti = mktime(tm);
+         */
+
+        struct tm tm;
+        time_t gm_ti, loc_ti;
+
+        gmtime_s(&tm, &ti); // error ignored :(
+        gm_ti = mktime(&tm);
+
+        localtime_s(&tm, &ti); // error ignored :(
+        loc_ti = mktime(&tm);
+        //NOTE jsb:modified [end]
 
         res = (gm_ti - loc_ti) / 60;
     }
