@@ -66,12 +66,16 @@ namespace jsb::impl
     struct ClassID
     {
 #if JSB_PREFER_QUICKJS_NG
+        // in quickjs-ng, the class id is generated and registered in the runtime,
+        // we need to init it for each runtime
         jsb_force_inline void init(JSRuntime* rt) { id_ = 0; JS_NewClassID(rt, &id_); }
         explicit operator JSClassID() const { return id_; }
 
     private:
         JSClassID id_;
 #else
+        // in quickjs, the class id is generated globally.
+        // since we use only one ClassID for UniversalClass, we can init it statically/globally in Impl.
         jsb_force_inline void init(JSRuntime* rt) {}
         explicit operator JSClassID() const
         {
@@ -82,7 +86,7 @@ namespace jsb::impl
     private:
         struct Impl
         {
-            Impl() { JS_NewClassID(&id_); }
+            Impl() { id_ = 0; JS_NewClassID(&id_); }
             JSClassID id_;
         };
 #endif
