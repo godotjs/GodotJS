@@ -335,8 +335,11 @@ void GodotJSREPL::add_history(const String &p_text)
         {
             return;
         }
-        history_.remove_at(index);
-        --size;
+        if (index != -1)
+        {
+            history_.remove_at(index);
+            --size;
+        }
     }
 
     history_.append(p_text);
