@@ -16,7 +16,7 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] Debug with Chrome devtools when using V8
 * [x] REPL in Editor
 * [x] Hot-reloading
-* [x] QuickJS as an alternative runtime (**testing**)
+* [x] Support for alternative javascript runtimes (v8, quickjs, quickjs-ng, the host Browser JS)
 * [x] Directly running on the browser JS VM (**experimental**, **testing**, *Only for Web Build*)
 * [x] Worker threads (limited support) (**experimental**)
 * [ ] Asynchronously loaded modules (limited support)
@@ -85,14 +85,17 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 
 ### Option 2: QuickJS
 
-To enable `QuickJS`, please run *scons* with the parameter `use_quickjs=yes`.
+To enable `QuickJS`, please run *scons* with the parameter `use_quickjs=yes`, or `use_quickjs_ng=yes` if [quickjs-ng](https://github.com/quickjs-ng/quickjs) is preferred.
 
 > [!NOTE]
-> `QuickJS` is also available for WebBuild with the *scons* option `use_quickjs=yes`.
+> `QuickJS` is also available for WebBuild with the *scons* option `use_quickjs=yes`. 
 
 ```sh
 # An example on Windows:
 scons vsproj=yes dev_build=yes p=windows use_quickjs=yes 
+
+# Or, use quickjs-ng on Linux (it currently fails to compile on Windows)
+scons dev_build=yes p=linuxbsd use_quickjs_ng=yes 
 ```
 
 ### Option 3: Web
@@ -140,20 +143,20 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 ## Supported Platforms
 
-|                | v8.impl        | quickjs.impl   | quickjs.impl (quickjs-ng) | web.impl   |
-| -------------- | -------------- | -------------- | ------------------------- | ---------- |
-| Windows:x86_64 | ✅              | ✅              | 🟡 (incomplete)                | ❌        |
-| Windows:arm64  | 🟡 (incomplete) | 🟡 (incomplete)     | 🟡 (incomplete)                | ❌        |
-| MacOS:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| MacOS:arm64    | ✅              | ✅              | 🟡 (incomplete)                | ❌        |
-| Linux:x86_64   | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| Linux:arm64    | 🟡 (incomplete) | ✅              | 🟡 (incomplete)                | ❌        |
-| Android:x86_64 | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| Android:arm64  | ✅              | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| iOS:x86_64     | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| iOS:arm64      | ✅ (not tested) | ✅ (not tested) | 🟡 (incomplete)                | ❌        |
-| Web:wasm32     | ❌              | ✅ (not tested) | 🟡 (incomplete)                | ✅ (debugging) |
-| Debugger     | ✅ chrome devtools  | ❌ | ❌ | ✅ browser devtools |
+|                | v8.impl             | quickjs.impl     | quickjs.impl (quickjs-ng)      | web.impl             |
+| -------------- | ------------------- | ---------------- | ------------------------------ | -------------------- |
+| Windows:x86_64 | ✅                  | ✅              | 🟡 (incomplete)                | ❌                  |
+| Windows:arm64  | 🟡 (incomplete)     | 🟡 (incomplete) | 🟡 (incomplete)                | ❌                  |
+| MacOS:x86_64   | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
+| MacOS:arm64    | ✅                  | ✅              | ✅ (debugging)                 | ❌                  |
+| Linux:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅ (debugging)                 | ❌                  |
+| Linux:arm64    | 🟡 (incomplete)     | ✅              | 🟡 (incomplete)                | ❌                  |
+| Android:x86_64 | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
+| Android:arm64  | ✅                  | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
+| iOS:x86_64     | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
+| iOS:arm64      | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
+| Web:wasm32     | ❌                  | ✅ (not tested) | 🟡 (incomplete)                | ✅ (debugging)      |
+| Debugger       | ✅ chrome devtools  | ❌              | ❌                             | ✅ browser devtools |
 
 
 > Android: only tested on ndk_platform=android-24  
