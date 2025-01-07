@@ -10,14 +10,13 @@ namespace v8
         jsb_check(JS_VALUE_GET_TAG(val) < 0);
 
         const uintptr_t ptr = (uintptr_t) JS_VALUE_GET_PTR(val);
-        if constexpr (sizeof(int) == sizeof(uintptr_t))
-        {
-            return (int) ((ptr >> 32) ^ (ptr & 0xffffffff));
-        }
-        else
-        {
-            return (int) ptr;
-        }
+#if INTPTR_MAX >= INT64_MAX
+        return (int) ((ptr >> 32) ^ (ptr & 0xffffffff));
+#elif INTPTR_MAX >= INT32_MAX
+        return (int) ptr;
+#else
+        #error "quickjs.impl does not support on the current arch"
+#endif
     }
 
     Data::operator JSValue() const
