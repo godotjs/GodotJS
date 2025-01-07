@@ -154,7 +154,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | Android:arm64  | ✅                  | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
 | iOS:x86_64     | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
 | iOS:arm64      | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
-| Web:wasm32     | ❌                  | ✅ (not tested) | 🟡 (incomplete)                | ✅ (debugging)      |
+| Web:wasm32     | ❌                  | ✅ (not tested) | ✅ (not tested)                | ✅ (debugging)      |
 | Debugger       | ✅ chrome devtools  | ❌              | ❌                             | ✅ browser devtools |
 
 
