@@ -17,7 +17,6 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] REPL in Editor
 * [x] Hot-reloading
 * [x] Support for alternative javascript runtimes (v8, quickjs, quickjs-ng, the host Browser JS)
-* [x] Directly running on the browser JS VM (**experimental**, **testing**, *Only for Web Build*)
 * [x] Worker threads (limited support) (**experimental**)
 * [ ] Asynchronously loaded modules (limited support)
 
