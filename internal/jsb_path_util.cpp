@@ -82,6 +82,7 @@ namespace jsb::internal
 
     String PathUtil::convert_typescript_path(const String& p_source_path)
     {
+#ifndef JSB_PREFER_QUICKJS_NG
         if (p_source_path.ends_with("." JSB_TYPESCRIPT_EXT))
         {
             jsb_checkf(p_source_path.begins_with("res://"), "can not proceed typescript sources not under the project directory");
@@ -90,6 +91,7 @@ namespace jsb::internal
                 + JSB_JAVASCRIPT_EXT);
             return replaced;
         }
+#endif
         return p_source_path;
     }
 
