@@ -146,12 +146,12 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | -------------- | ------------------- | ---------------- | ------------------------------ | -------------------- |
 | Windows:x86_64 | ✅                  | ✅              | 🟡 (incomplete)                | ❌                  |
 | Windows:arm64  | 🟡 (incomplete)     | 🟡 (incomplete) | 🟡 (incomplete)                | ❌                  |
-| MacOS:x86_64   | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
-| MacOS:arm64    | ✅                  | ✅              | ✅ (debugging)                 | ❌                  |
-| Linux:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅ (debugging)                 | ❌                  |
-| Linux:arm64    | 🟡 (incomplete)     | ✅              | 🟡 (incomplete)                | ❌                  |
-| Android:x86_64 | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
-| Android:arm64  | ✅                  | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
+| MacOS:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
+| MacOS:arm64    | ✅                  | ✅              | ✅                             | ❌                  |
+| Linux:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅                             | ❌                  |
+| Linux:arm64    | 🟡 (incomplete)     | ✅              | ✅                             | ❌                  |
+| Android:x86_64 | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
+| Android:arm64  | ✅                  | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | iOS:x86_64     | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
 | iOS:arm64      | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
 | Web:wasm32     | ❌                  | ✅ (not tested) | ✅ (not tested)                | ✅ (debugging)      |
