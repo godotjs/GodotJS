@@ -72,8 +72,7 @@ lws_prebuilt_libs = LibraryDescriptor("lws", \
 ])
 quickjs_src_descs = ThirdPartyDescriptor("quickjs", \
 [
-    # can't compile with VS2022
-    ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"], lambda: "MSVC_VERSION" not in env or env["MSVC_VERSION"] != "14.3"), 
+    ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]), 
     ThirdPartyDetails("quickjs",    ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]), 
 ])
 
@@ -452,6 +451,14 @@ if quickjs_support is not None:
             # try to avoid complains from cl about D9025 overriding '/fp:strict' with '/fp:precise'
             env_quickjs["CCFLAGS"].remove("/fp:strict")
         env_quickjs.Append(CCFLAGS=["/fp:precise"])
+
+        # applying quickjs-ng specific flags
+        if quickjs_dir == "quickjs-ng":
+            # c11atomics is required for quickjs-ng
+            env_quickjs.Append(CCFLAGS=["/experimental:c11atomics", "/std:c11"])
+            # remove std:c++ flag due to conflict with std:c11
+            # ! it's added in `godot/SConstruct`.
+            env_quickjs["CCFLAGS"].remove("/std:c++17")
 
     env.modules_sources += quickjs_obj
     env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
