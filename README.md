@@ -1,6 +1,6 @@
 
 # GodotJS 
-This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS as an alternative runtime, or even directly run scripts on the browser JS VM if porting to web.
+This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS, or even directly run scripts on the host browser JS VM if porting to web.
 
 [![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
 [![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
@@ -16,7 +16,7 @@ This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the 
 * [x] Debug with Chrome devtools when using V8
 * [x] REPL in Editor
 * [x] Hot-reloading
-* [x] Support for alternative javascript runtimes (v8, quickjs, quickjs-ng, the host Browser JS)
+* [x] Support for multiple javascript engines ([v8](https://github.com/v8/v8), [quickjs](https://github.com/bellard/quickjs), [quickjs-ng](https://github.com/quickjs-ng/quickjs), the host Browser JS)
 * [x] Worker threads (limited support) (**experimental**)
 * [ ] Asynchronously loaded modules (limited support)
 
@@ -87,14 +87,11 @@ A prebuilt version of `Godot Editor` can be downloaded from [GodotJS-Build](http
 To enable `QuickJS`, please run *scons* with the parameter `use_quickjs=yes`, or `use_quickjs_ng=yes` if [quickjs-ng](https://github.com/quickjs-ng/quickjs) is preferred.
 
 > [!NOTE]
-> `QuickJS` is also available for WebBuild with the *scons* option `use_quickjs=yes`. 
+> `QuickJS` is also available for WebBuild. 
 
 ```sh
 # An example on Windows:
-scons vsproj=yes dev_build=yes p=windows use_quickjs=yes 
-
-# Or, use quickjs-ng on Linux (it currently fails to compile on Windows)
-scons dev_build=yes p=linuxbsd use_quickjs_ng=yes 
+scons vsproj=yes dev_build=yes p=windows use_quickjs_ng=yes 
 ```
 
 ### Option 3: Web
@@ -144,16 +141,16 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 
 |                | v8.impl             | quickjs.impl     | quickjs.impl (quickjs-ng)      | web.impl             |
 | -------------- | ------------------- | ---------------- | ------------------------------ | -------------------- |
-| Windows:x86_64 | ✅                  | ✅              | 🟡 (incomplete)                | ❌                  |
-| Windows:arm64  | 🟡 (incomplete)     | 🟡 (incomplete) | 🟡 (incomplete)                | ❌                  |
+| Windows:x86_64 | ✅                  | ✅              | ✅                             | ❌                  |
+| Windows:arm64  | 🟡                  | 🟡              | 🟡                             | ❌                  |
 | MacOS:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | MacOS:arm64    | ✅                  | ✅              | ✅                             | ❌                  |
 | Linux:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅                             | ❌                  |
-| Linux:arm64    | 🟡 (incomplete)     | ✅              | ✅                             | ❌                  |
+| Linux:arm64    | 🟡                  | ✅              | ✅                             | ❌                  |
 | Android:x86_64 | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | Android:arm64  | ✅                  | ✅ (not tested) | ✅ (not tested)                | ❌                  |
-| iOS:x86_64     | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
-| iOS:arm64      | ✅ (not tested)     | ✅ (not tested) | 🟡 (incomplete)                | ❌                  |
+| iOS:x86_64     | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
+| iOS:arm64      | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | Web:wasm32     | ❌                  | ✅ (not tested) | ✅ (not tested)                | ✅ (debugging)      |
 | Debugger       | ✅ chrome devtools  | ❌              | ❌                             | ✅ browser devtools |
 
