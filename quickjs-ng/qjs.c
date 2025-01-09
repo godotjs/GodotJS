@@ -208,9 +208,6 @@ static const JSCFunctionListEntry navigator_proto_funcs[] = {
 
 static const JSCFunctionListEntry global_obj[] = {
     JS_CFUNC_DEF("gc", 0, js_gc),
-#if defined(__ASAN__) || defined(__UBSAN__)
-    JS_PROP_INT32_DEF("__running_with_sanitizer__", 1, JS_PROP_C_W_E ),
-#endif
 };
 
 /* also used to initialize the worker context */
@@ -392,7 +389,6 @@ void help(void)
            "    --exe          select the executable to use as the base, defaults to the current one\n"
            "    --memory-limit n       limit the memory usage to 'n' Kbytes\n"
            "    --stack-size n         limit the stack size to 'n' Kbytes\n"
-           "    --unhandled-rejection  dump unhandled promise rejections\n"
            "-q  --quit         just instantiate the interpreter and quit\n", JS_GetVersion());
     exit(1);
 }
@@ -403,6 +399,7 @@ int main(int argc, char **argv)
     JSContext *ctx;
     JSValue ret = JS_UNDEFINED;
     struct trace_malloc_data trace_data = { NULL };
+    int r = 0;
     int optind = 1;
     char *compile_file = NULL;
     char *exe = NULL;
@@ -417,7 +414,6 @@ int main(int argc, char **argv)
     int empty_run = 0;
     int module = -1;
     int load_std = 0;
-    int dump_unhandled_promise_rejection = 0;
     char *include_list[32];
     int i, include_count = 0;
     int64_t memory_limit = -1;
@@ -515,10 +511,6 @@ int main(int argc, char **argv)
             }
             if (!strcmp(longopt, "std")) {
                 load_std = 1;
-                continue;
-            }
-            if (!strcmp(longopt, "unhandled-rejection")) {
-                dump_unhandled_promise_rejection = 1;
                 continue;
             }
             if (opt == 'q' || !strcmp(longopt, "quit")) {
@@ -625,10 +617,8 @@ start:
     /* loader for ES6 modules */
     JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 
-    if (dump_unhandled_promise_rejection) {
-        JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
-                                          NULL);
-    }
+    /* exit on unhandled promise rejections */
+    JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);
 
     if (!empty_run) {
         js_std_add_helpers(ctx, argc - optind, argv + optind);
@@ -694,17 +684,16 @@ start:
         }
         if (standalone || compile_file) {
             if (JS_IsException(ret)) {
-                ret = JS_GetException(ctx);
+                r = 1;
             } else {
                 JS_FreeValue(ctx, ret);
-                ret = js_std_loop(ctx);
+                r = js_std_loop(ctx);
             }
         } else {
-            ret = js_std_loop(ctx);
+            r = js_std_loop(ctx);
         }
-        if (!JS_IsUndefined(ret)) {
-            js_std_dump_error1(ctx, ret);
-            JS_FreeValue(ctx, ret);
+        if (r) {
+            js_std_dump_error(ctx);
             goto fail;
         }
     }

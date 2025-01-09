@@ -614,7 +614,7 @@ static inline JS_BOOL JS_IsObject(JSValue v)
 
 JS_EXTERN JSValue JS_Throw(JSContext *ctx, JSValue obj);
 JS_EXTERN JSValue JS_GetException(JSContext *ctx);
-JS_BOOL JS_HasException(JSContext *ctx);
+JS_EXTERN JS_BOOL JS_HasException(JSContext *ctx);
 JS_EXTERN JS_BOOL JS_IsError(JSContext *ctx, JSValue val);
 JS_EXTERN JS_BOOL JS_IsUncatchableError(JSContext* ctx, JSValue val);
 JS_EXTERN void JS_ResetUncatchableError(JSContext *ctx);
@@ -672,10 +672,14 @@ JS_EXTERN JS_BOOL JS_IsFunction(JSContext* ctx, JSValue val);
 JS_EXTERN JS_BOOL JS_IsConstructor(JSContext* ctx, JSValue val);
 JS_EXTERN JS_BOOL JS_SetConstructorBit(JSContext *ctx, JSValue func_obj, JS_BOOL val);
 
+JS_EXTERN JS_BOOL JS_IsRegExp(JSValue val);
+JS_EXTERN JS_BOOL JS_IsMap(JSValue val);
+
 JS_EXTERN JSValue JS_NewArray(JSContext *ctx);
 JS_EXTERN int JS_IsArray(JSContext *ctx, JSValue val);
 
 JS_EXTERN JSValue JS_NewDate(JSContext *ctx, double epoch_ms);
+JS_EXTERN JS_BOOL JS_IsDate(JSValue v);
 
 JS_EXTERN JSValue JS_GetProperty(JSContext *ctx, JSValue this_obj, JSAtom prop);
 JS_EXTERN JSValue JS_GetPropertyUint32(JSContext *ctx, JSValue this_obj,
@@ -820,6 +824,7 @@ typedef enum JSPromiseStateEnum {
 JS_EXTERN JSValue JS_NewPromiseCapability(JSContext *ctx, JSValue *resolving_funcs);
 JS_EXTERN JSPromiseStateEnum JS_PromiseState(JSContext *ctx, JSValue promise);
 JS_EXTERN JSValue JS_PromiseResult(JSContext *ctx, JSValue promise);
+JS_EXTERN JS_BOOL JS_IsPromise(JSValue val);
 
 JS_EXTERN JSValue JS_NewSymbol(JSContext *ctx, const char *description, JS_BOOL is_global);
 
@@ -1042,11 +1047,6 @@ JS_EXTERN int JS_SetModuleExport(JSContext *ctx, JSModuleDef *m, const char *exp
                                  JSValue val);
 JS_EXTERN int JS_SetModuleExportList(JSContext *ctx, JSModuleDef *m,
                                      const JSCFunctionListEntry *tab, int len);
-
-    //NOTE jsb:modified [begin]
-    int JS_IsMap(JSContext *ctx, JSValueConst val);
-    int JS_IsPromise(JSContext *ctx, JSValueConst val);
-    //NOTE jsb:modified [end]
 
 /* Version */
 

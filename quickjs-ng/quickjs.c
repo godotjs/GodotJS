@@ -33,6 +33,7 @@
 #if !defined(_MSC_VER)
 #include <sys/time.h>
 #if defined(_WIN32)
+#include <intrin.h>
 #include <timezoneapi.h>
 #endif
 #endif
@@ -1273,8 +1274,8 @@ static JSValue js_promise_resolve(JSContext *ctx, JSValue this_val,
                                   int argc, JSValue *argv, int magic);
 static JSValue js_promise_then(JSContext *ctx, JSValueConst this_val,
                                int argc, JSValueConst *argv);
-static int js_string_compare(JSContext *ctx,
-                             const JSString *p1, const JSString *p2);
+static BOOL js_string_eq(const JSString *p1, const JSString *p2);
+static int js_string_compare(const JSString *p1, const JSString *p2);
 static JSValue JS_ToNumber(JSContext *ctx, JSValue val);
 static int JS_SetPropertyValue(JSContext *ctx, JSValue this_obj,
                                JSValue prop, JSValue val, int flags);
@@ -1774,10 +1775,23 @@ static int init_class_range(JSRuntime *rt, JSClassShortDef const *tab,
     return 0;
 }
 
-/* Note: OS and CPU dependent */
+/* Uses code from LLVM project. */
 static inline uintptr_t js_get_stack_pointer(void)
 {
+#if defined(__clang__) || defined(__GNUC__)
     return (uintptr_t)__builtin_frame_address(0);
+#elif defined(_MSC_VER)
+    return (uintptr_t)_AddressOfReturnAddress();
+#else
+    char CharOnStack = 0;
+    // The volatile store here is intended to escape the local variable, to
+    // prevent the compiler from optimizing CharOnStack into anything other
+    // than a char on the stack.
+    //
+    // Tested on: MSVC 2015 - 2019, GCC 4.9 - 9, Clang 3.2 - 9, ICC 13 - 19.
+    char *volatile Ptr = &CharOnStack;
+    return (uintptr_t) Ptr;
+#endif
 }
 
 static inline BOOL js_check_stack_overflow(JSRuntime *rt, size_t alloca_size)
@@ -2517,7 +2531,7 @@ JSRuntime *JS_GetRuntime(JSContext *ctx)
 
 static void update_stack_limit(JSRuntime *rt)
 {
-#if defined(__wasi__) || (defined(__ASAN__) && !defined(NDEBUG))
+#if defined(__wasi__)
     rt->stack_limit = 0; /* no limit */
 #else
     if (rt->stack_size == 0) {
@@ -3367,9 +3381,9 @@ static JSValue JS_AtomIsNumericIndex1(JSContext *ctx, JSAtom atom)
         JS_FreeValue(ctx, num);
         return str;
     }
-    ret = js_string_compare(ctx, p, JS_VALUE_GET_STRING(str));
+    ret = js_string_eq(p, JS_VALUE_GET_STRING(str));
     JS_FreeValue(ctx, str);
-    if (ret == 0) {
+    if (ret) {
         return num;
     } else {
         JS_FreeValue(ctx, num);
@@ -3519,7 +3533,7 @@ static inline BOOL JS_IsEmptyString(JSValue v)
 
 /* JSClass support */
 
-/* a new class ID is allocated if *pclass_id != 0 */
+/* a new class ID is allocated if *pclass_id == 0, otherwise *pclass_id is left unchanged */
 JSClassID JS_NewClassID(JSRuntime *rt, JSClassID *pclass_id)
 {
     JSClassID class_id = *pclass_id;
@@ -4276,9 +4290,14 @@ static int js_string_memcmp(const JSString *p1, const JSString *p2, int len)
     return res;
 }
 
+static BOOL js_string_eq(const JSString *p1, const JSString *p2) {
+    if (p1->len != p2->len)
+        return FALSE;
+    return js_string_memcmp(p1, p2, p1->len) == 0;
+}
+
 /* return < 0, 0 or > 0 */
-static int js_string_compare(JSContext *ctx,
-                             const JSString *p1, const JSString *p2)
+static int js_string_compare(const JSString *p1, const JSString *p2)
 {
     int res, len;
     len = min_int(p1->len, p2->len);
@@ -10081,6 +10100,20 @@ BOOL JS_SetConstructorBit(JSContext *ctx, JSValue func_obj, BOOL val)
     return TRUE;
 }
 
+JS_BOOL JS_IsRegExp(JSValue val)
+{
+    if (JS_VALUE_GET_TAG(val) != JS_TAG_OBJECT)
+        return FALSE;
+    return JS_VALUE_GET_OBJ(val)->class_id == JS_CLASS_REGEXP;
+}
+
+JS_BOOL JS_IsMap(JSValue val)
+{
+    if (JS_VALUE_GET_TAG(val) != JS_TAG_OBJECT)
+        return FALSE;
+    return JS_VALUE_GET_OBJ(val)->class_id == JS_CLASS_MAP;
+}
+
 BOOL JS_IsError(JSContext *ctx, JSValue val)
 {
     JSObject *p;
@@ -12939,7 +12972,7 @@ static no_inline int js_relational_slow(JSContext *ctx, JSValue *sp,
         JSString *p1, *p2;
         p1 = JS_VALUE_GET_STRING(op1);
         p2 = JS_VALUE_GET_STRING(op2);
-        res = js_string_compare(ctx, p1, p2);
+        res = js_string_compare(p1, p2);
         switch(op) {
         case OP_lt:
             res = (res < 0);
@@ -13230,7 +13263,7 @@ static BOOL js_strict_eq2(JSContext *ctx, JSValue op1, JSValue op2,
             } else {
                 p1 = JS_VALUE_GET_STRING(op1);
                 p2 = JS_VALUE_GET_STRING(op2);
-                res = (js_string_compare(ctx, p1, p2) == 0);
+                res = js_string_eq(p1, p2);
             }
         }
         break;
@@ -15407,8 +15440,25 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValue func_obj,
             BREAK;
         CASE(OP_check_ctor):
             if (JS_IsUndefined(new_target)) {
+            non_ctor_call:
                 JS_ThrowTypeError(ctx, "class constructors must be invoked with 'new'");
                 goto exception;
+            }
+            BREAK;
+        CASE(OP_init_ctor):
+            {
+                JSValue super, ret;
+                sf->cur_pc = pc;
+                if (JS_IsUndefined(new_target))
+                    goto non_ctor_call;
+                super = JS_GetPrototype(ctx, func_obj);
+                if (JS_IsException(super))
+                    goto exception;
+                ret = JS_CallConstructor2(ctx, super, new_target, argc, argv);
+                JS_FreeValue(ctx, super);
+                if (JS_IsException(ret))
+                    goto exception;
+                *sp++ = ret;
             }
             BREAK;
         CASE(OP_check_brand):
@@ -20392,8 +20442,8 @@ static void emit_source_loc(JSParseState *s)
     DynBuf *bc = &fd->byte_code;
 
     dbuf_putc(bc, OP_source_loc);
-    dbuf_put_u32(bc, s->last_line_num);
-    dbuf_put_u32(bc, s->last_col_num);
+    dbuf_put_u32(bc, s->token.line_num);
+    dbuf_put_u32(bc, s->token.col_num);
 }
 
 static void emit_op(JSParseState *s, uint8_t val)
@@ -21891,9 +21941,6 @@ static __exception int js_parse_class_default_ctor(JSParseState *s,
     fd->has_this_binding = TRUE;
     fd->new_target_allowed = TRUE;
 
-    /* error if not invoked as a constructor */
-    emit_op(s, OP_check_ctor);
-
     push_scope(s);  /* enter body scope */
     fd->body_scope = fd->scope_level;
     if (has_super) {
@@ -21901,43 +21948,17 @@ static __exception int js_parse_class_default_ctor(JSParseState *s,
         fd->super_call_allowed = TRUE;
         fd->arguments_allowed = TRUE;
         fd->has_arguments_binding = TRUE;
-
         func_type = JS_PARSE_FUNC_DERIVED_CLASS_CONSTRUCTOR;
-        /* super */
-        emit_op(s, OP_scope_get_var);
-        emit_atom(s, JS_ATOM_this_active_func);
-        emit_u16(s, 0);
-
-        emit_op(s, OP_get_super);
-
-        emit_op(s, OP_scope_get_var);
-        emit_atom(s, JS_ATOM_new_target);
-        emit_u16(s, 0);
-
-        emit_op(s, OP_array_from);
-        emit_u16(s, 0);
-        emit_op(s, OP_push_i32);
-        emit_u32(s, 0);
-
-        /* arguments */
-        emit_op(s, OP_scope_get_var);
-        emit_atom(s, JS_ATOM_arguments);
-        emit_u16(s, 0);
-
-        emit_op(s, OP_append);
-        /* drop the index */
-        emit_op(s, OP_drop);
-
-        emit_op(s, OP_apply);
-        emit_u16(s, 1);
-        /* set the 'this' value */
-        emit_op(s, OP_dup);
+        emit_op(s, OP_init_ctor);
+        // TODO(bnoordhuis) roll into OP_init_ctor
         emit_op(s, OP_scope_put_var_init);
         emit_atom(s, JS_ATOM_this);
         emit_u16(s, 0);
         emit_class_field_init(s);
     } else {
         func_type = JS_PARSE_FUNC_CLASS_CONSTRUCTOR;
+        /* error if not invoked as a constructor */
+        emit_op(s, OP_check_ctor);
         emit_class_field_init(s);
     }
 
@@ -24431,6 +24452,7 @@ static __exception int js_parse_expr_binary(JSParseState *s, int level,
         }
         if (next_token(s))
             return -1;
+        emit_source_loc(s);
         if (js_parse_expr_binary(s, level - 1, parse_flags))
             return -1;
         emit_op(s, opcode);
@@ -26874,7 +26896,7 @@ static int exported_names_cmp(const void *p1, const void *p2, void *opaque)
         /* XXX: raise an error ? */
         ret = 0;
     } else {
-        ret = js_string_compare(ctx, JS_VALUE_GET_STRING(str1),
+        ret = js_string_compare(JS_VALUE_GET_STRING(str1),
                                 JS_VALUE_GET_STRING(str2));
     }
     JS_FreeValue(ctx, str1);
@@ -39796,7 +39818,7 @@ static int js_array_cmp_generic(const void *a, const void *b, void *opaque) {
                 goto exception;
             bp->str = JS_VALUE_GET_STRING(str);
         }
-        cmp = js_string_compare(ctx, ap->str, bp->str);
+        cmp = js_string_compare(ap->str, bp->str);
     }
     if (cmp != 0)
         return cmp;
@@ -48530,6 +48552,13 @@ JSValue JS_PromiseResult(JSContext *ctx, JSValue promise)
     return JS_DupValue(ctx, s->promise_result);
 }
 
+JS_BOOL JS_IsPromise(JSValue val)
+{
+    if (JS_VALUE_GET_TAG(val) != JS_TAG_OBJECT)
+        return FALSE;
+    return JS_VALUE_GET_OBJ(val)->class_id == JS_CLASS_PROMISE;
+}
+
 static int js_create_resolving_functions(JSContext *ctx, JSValue *args,
                                          JSValue promise);
 
@@ -51272,6 +51301,13 @@ JSValue JS_NewDate(JSContext *ctx, double epoch_ms)
     return obj;
 }
 
+JS_BOOL JS_IsDate(JSValue v)
+{
+    if (JS_VALUE_GET_TAG(v) != JS_TAG_OBJECT)
+        return FALSE;
+    return JS_VALUE_GET_OBJ(v)->class_id == JS_CLASS_DATE;
+}
+
 void JS_AddIntrinsicDate(JSContext *ctx)
 {
     JSValue obj;
@@ -51883,18 +51919,6 @@ JSValue JS_NewArrayBuffer(JSContext *ctx, uint8_t *buf, size_t len,
 JS_BOOL JS_IsArrayBuffer(JSValue obj) {
     return JS_GetClassID(obj) == JS_CLASS_ARRAY_BUFFER;
 }
-
-//NOTE jsb:modified [begin]
-/* return -1 if exception (proxy case) or TRUE/FALSE */
-int JS_IsMap(JSContext *ctx, JSValueConst val)
-{
-    return JS_GetClassID(val) == JS_CLASS_MAP;
-}
-int JS_IsPromise(JSContext *ctx, JSValueConst val)
-{
-    return JS_GetClassID(val) == JS_CLASS_PROMISE;
-}
-//NOTE jsb:modified [end]
 
 /* create a new ArrayBuffer of length 'len' and copy 'buf' to it */
 JSValue JS_NewArrayBufferCopy(JSContext *ctx, const uint8_t *buf, size_t len)

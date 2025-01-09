@@ -747,9 +747,9 @@ JSValue JS_NewArray(JSContext *ctx);
 int JS_IsArray(JSContext *ctx, JSValueConst val);
 
 //NOTE jsb:modified [begin]
-int JS_IsMap(JSContext *ctx, JSValueConst val);
-int JS_IsPromise(JSContext *ctx, JSValueConst val);
-int JS_IsArrayBuffer(JSContext *ctx, JSValueConst val);
+int JS_IsMap(JSValueConst val);
+int JS_IsPromise(JSValueConst val);
+int JS_IsArrayBuffer(JSValueConst val);
 //NOTE jsb:modified [end]
 
 JSValue JS_GetPropertyInternal(JSContext *ctx, JSValueConst obj,

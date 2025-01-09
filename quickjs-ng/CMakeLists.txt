@@ -165,10 +165,6 @@ endif()
 
 if(CONFIG_UBSAN)
 message(STATUS "Building with UBSan")
-# __has_feature(undefined_sanitizer) or __SANITIZE_UNDEFINED__ don't exist
-add_compile_definitions(
-    __UBSAN__=1
-)
 add_compile_options(
     -fsanitize=undefined
     -fno-sanitize-recover=all
@@ -373,10 +369,6 @@ if(BUILD_EXAMPLES)
     target_compile_definitions(test_fib PRIVATE ${qjs_defines})
     target_link_libraries(test_fib qjs)
 endif()
-
-add_executable(test_conv
-    tests/test_conv.c
-)
 
 # Install target
 #

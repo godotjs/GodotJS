@@ -54,14 +54,6 @@ extern "C" {
 #include <pthread.h>
 #endif
 
-#if defined(__SANITIZE_ADDRESS__)
-# define __ASAN__ 1
-#elif defined(__has_feature)
-# if __has_feature(address_sanitizer)
-#  define __ASAN__ 1
-# endif
-#endif
-
 #if defined(_MSC_VER) && !defined(__clang__)
 #  define likely(x)       (x)
 #  define unlikely(x)     (x)
@@ -70,10 +62,6 @@ extern "C" {
 #  define __maybe_unused
 #  define __attribute__(x)
 #  define __attribute(x)
-#  include <intrin.h>
-static void *__builtin_frame_address(unsigned int level) {
-    return (void *)((char*)_AddressOfReturnAddress() - sizeof(int *) - level * sizeof(int *));
-}
 #else
 #  define likely(x)       __builtin_expect(!!(x), 1)
 #  define unlikely(x)     __builtin_expect(!!(x), 0)

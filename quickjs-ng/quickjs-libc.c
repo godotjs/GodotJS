@@ -161,7 +161,6 @@ typedef struct JSThreadState {
     struct list_head port_list; /* list of JSWorkerMessageHandler.link */
     int eval_script_recurse; /* only used in the main thread */
     int64_t next_timer_id; /* for setTimeout / setInterval */
-    JSValue exc; /* current exception from one of our handlers */
     BOOL can_js_os_poll;
     /* not used in the main thread */
     JSWorkerMessagePipe *recv_pipe, *send_pipe;
@@ -2274,12 +2273,8 @@ static int call_handler(JSContext *ctx, JSValue func)
     ret = JS_Call(ctx, func1, JS_UNDEFINED, 0, NULL);
     JS_FreeValue(ctx, func1);
     r = 0;
-    if (JS_IsException(ret)) {
-        JSRuntime *rt = JS_GetRuntime(ctx);
-        JSThreadState *ts = js_get_thread_state(rt);
-        ts->exc = JS_GetException(ctx);
+    if (JS_IsException(ret))
         r = -1;
-    }
     JS_FreeValue(ctx, ret);
     return r;
 }
@@ -3035,14 +3030,18 @@ static int my_execvpe(const char *filename, char **argv, char **envp)
     return -1;
 }
 
-static js_once_t js_os_exec_once = JS_ONCE_INIT;
-
 static void (*js_os_exec_closefrom)(int);
+
+#if !defined(EMSCRIPTEN) && !defined(__wasi__)
+
+static js_once_t js_os_exec_once = JS_ONCE_INIT;
 
 static void js_os_exec_once_init(void)
 {
     js_os_exec_closefrom = dlsym(RTLD_DEFAULT, "closefrom");
 }
+
+#endif
 
 /* exec(args[, options]) -> exitcode */
 static JSValue js_os_exec(JSContext *ctx, JSValue this_val,
@@ -3163,9 +3162,11 @@ static JSValue js_os_exec(JSContext *ctx, JSValue this_val,
         }
     }
 
+#if !defined(EMSCRIPTEN) && !defined(__wasi__)
     // should happen pre-fork because it calls dlsym()
     // and that's not an async-signal-safe function
     js_once(&js_os_exec_once, js_os_exec_once_init);
+#endif
 
     pid = fork();
     if (pid < 0) {
@@ -3537,10 +3538,10 @@ static void *worker_func(void *opaque)
         js_std_dump_error(ctx);
     JS_FreeValue(ctx, val);
 
-    JS_FreeValue(ctx, js_std_loop(ctx));
+    js_std_loop(ctx);
 
-    JS_FreeContext(ctx);
     js_std_free_handlers(rt);
+    JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
     return NULL;
 }
@@ -4076,7 +4077,6 @@ void js_std_init_handlers(JSRuntime *rt)
     init_list_head(&ts->port_list);
 
     ts->next_timer_id = 1;
-    ts->exc = JS_UNDEFINED;
 
     js_set_thread_state(rt, ts);
     JS_AddRuntimeFinalizer(rt, js_std_finalize, ts);
@@ -4134,7 +4134,7 @@ static void js_dump_obj(JSContext *ctx, FILE *f, JSValue val)
     }
 }
 
-void js_std_dump_error1(JSContext *ctx, JSValue exception_val)
+static void js_std_dump_error1(JSContext *ctx, JSValue exception_val)
 {
     JSValue val;
     BOOL is_error;
@@ -4166,16 +4166,17 @@ void js_std_promise_rejection_tracker(JSContext *ctx, JSValue promise,
     if (!is_handled) {
         fprintf(stderr, "Possibly unhandled promise rejection: ");
         js_std_dump_error1(ctx, reason);
+        fflush(stderr);
+        exit(1);
     }
 }
 
 /* main loop which calls the user JS callbacks */
-JSValue js_std_loop(JSContext *ctx)
+int js_std_loop(JSContext *ctx)
 {
     JSRuntime *rt = JS_GetRuntime(ctx);
     JSThreadState *ts = js_get_thread_state(rt);
     JSContext *ctx1;
-    JSValue ret;
     int err;
 
     for(;;) {
@@ -4183,10 +4184,8 @@ JSValue js_std_loop(JSContext *ctx)
         for(;;) {
             err = JS_ExecutePendingJob(JS_GetRuntime(ctx), &ctx1);
             if (err <= 0) {
-                if (err < 0) {
-                    ts->exc = JS_GetException(ctx1);
+                if (err < 0)
                     goto done;
-                }
                 break;
             }
         }
@@ -4195,9 +4194,7 @@ JSValue js_std_loop(JSContext *ctx)
             break;
     }
 done:
-    ret = ts->exc;
-    ts->exc = JS_UNDEFINED;
-    return ret;
+    return JS_HasException(ctx);
 }
 
 /* Wait for a promise and execute pending jobs while waiting for

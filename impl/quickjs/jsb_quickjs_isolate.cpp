@@ -198,7 +198,7 @@ namespace v8
     uint16_t Isolate::push_map()
     {
         const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::MapClass]), JS_UNDEFINED, 0, nullptr);
-        jsb_check(JS_IsMap(ctx_, val));
+        jsb_check(JS_IsMap(val));
         return push_steal(details::verified(val));
     }
 

@@ -12075,7 +12075,7 @@ int JS_IsArray(JSContext *ctx, JSValueConst val)
 
 //NOTE jsb:modified [begin]
 /* return -1 if exception (proxy case) or TRUE/FALSE */
-int JS_IsMap(JSContext *ctx, JSValueConst val)
+int JS_IsMap(JSValueConst val)
 {
     JSObject *p;
     if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
@@ -12085,7 +12085,7 @@ int JS_IsMap(JSContext *ctx, JSValueConst val)
         return FALSE;
     }
 }
-int JS_IsPromise(JSContext *ctx, JSValueConst val)
+int JS_IsPromise(JSValueConst val)
 {
     JSObject *p;
     if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
@@ -12095,7 +12095,7 @@ int JS_IsPromise(JSContext *ctx, JSValueConst val)
         return FALSE;
     }
 }
-int JS_IsArrayBuffer(JSContext *ctx, JSValueConst val)
+int JS_IsArrayBuffer(JSValueConst val)
 {
     JSObject *p;
     if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
