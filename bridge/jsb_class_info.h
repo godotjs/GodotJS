@@ -108,7 +108,6 @@ namespace jsb
 
         StringName name;
 
-        //TODO class_name is needed if type is OBJECT
         StringName class_name;
 
         String hint_string;

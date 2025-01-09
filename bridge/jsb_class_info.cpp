@@ -229,6 +229,10 @@ namespace jsb
                     property_info.hint = BridgeHelper::to_enum<PropertyHint>(context, obj->Get(context, jsb_name(environment, hint)), PROPERTY_HINT_NONE);
                     property_info.hint_string = impl::Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
                     property_info.usage = BridgeHelper::to_enum<PropertyUsageFlags>(context, obj->Get(context, jsb_name(environment, usage)), PROPERTY_USAGE_DEFAULT);
+                    if (property_info.type == Variant::Type::OBJECT) {
+                        // TODO: make the string "class_name" a well known string ?
+                        property_info.class_name = impl::Helper::to_string(isolate, obj->Get(context, environment->get_string_value("class_name")).ToLocalChecked());
+                    }
 #ifdef TOOLS_ENABLED
                     if (v8::Local<v8::Value> val; !doc_map.IsEmpty() && doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
                     {
