@@ -218,7 +218,14 @@ namespace jsb
                     ScriptPropertyInfo property_info;
                     v8::Local<v8::Value> prop_name = obj->Get(context, jsb_name(environment, name)).ToLocalChecked();
                     property_info.name = impl::Helper::to_string(isolate, prop_name); // string
-                    property_info.type = (Variant::Type) obj->Get(context, jsb_name(environment, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    {
+                        auto type = obj->Get(context, jsb_name(environment, type)).ToLocalChecked()->Int32Value(context);
+                        if (type.IsNothing()) {
+                                JSB_LOG(Error, "Property type is invalid for `%s.%s'", p_class_info->js_class_name, property_info.name);
+                                continue; // Skip this export.
+                        }
+                        property_info.type = (Variant::Type) obj->Get(context, jsb_name(environment, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    }
                     property_info.hint = BridgeHelper::to_enum<PropertyHint>(context, obj->Get(context, jsb_name(environment, hint)), PROPERTY_HINT_NONE);
                     property_info.hint_string = impl::Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
                     property_info.usage = BridgeHelper::to_enum<PropertyUsageFlags>(context, obj->Get(context, jsb_name(environment, usage)), PROPERTY_USAGE_DEFAULT);
