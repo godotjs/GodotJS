@@ -293,7 +293,7 @@ namespace jsb
 #endif
         }
 
-        // function (target: any, name: string, details: ScriptPropertyInfo): void;
+        // function (target: any, details: ScriptPropertyInfo): void;
         void _add_script_property(const v8::FunctionCallbackInfo<v8::Value> &info)
         {
             v8::Isolate* isolate = info.GetIsolate();
