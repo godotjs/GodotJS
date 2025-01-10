@@ -106,6 +106,7 @@
 #define JSB_DTS_EXT "d.ts"
 #define JSB_TYPESCRIPT_EXT "ts"
 #define JSB_JAVASCRIPT_EXT "js"
+#define JSB_COMMONJS_EXT   "cjs"
 
 // A helper version tag for the jsb.*.bundle.js scripts (which is embedded in .cpp source).
 // It could ensure your engine built with the expected version of the jsb bundle scripts.

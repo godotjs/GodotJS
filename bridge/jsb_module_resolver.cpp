@@ -90,7 +90,7 @@ namespace jsb
         }
 
         // try with .cjs
-        const String cjs_path = internal::PathUtil::extends_with(p_path, ".cjs");
+        const String cjs_path = internal::PathUtil::extends_with(p_path, "." JSB_COMMONJS_EXT);
         if (FileAccess::exists(cjs_path))
         {
             o_path = cjs_path;
@@ -214,6 +214,12 @@ namespace jsb
 #endif
         jsb_check((size_t)(int)len == len);
 
+#if JSB_DEBUG
+        if (!internal::PathUtil::is_recognized_javascript_extension(p_asset_path))
+        {
+            JSB_LOG(Warning, "the loading module %s is suspiciously not a JavaScript file", p_asset_path);
+        }
+#endif
         {
             v8::Isolate* isolate = p_env->get_isolate();
             v8::Isolate::Scope isolate_scope(isolate);

@@ -53,6 +53,9 @@ namespace jsb::internal
          */
         static String convert_javascript_path(const String& p_source_path);
 
+        /** simply verify the file extension (.js || .cjs) */
+        static bool is_recognized_javascript_extension(const String& p_path);
+
         static bool delete_file(const String& p_path);
     };
 

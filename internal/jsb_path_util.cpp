@@ -107,6 +107,11 @@ namespace jsb::internal
         return p_source_path;
     }
 
+    bool PathUtil::is_recognized_javascript_extension(const String& p_path)
+    {
+        return p_path.ends_with("." JSB_JAVASCRIPT_EXT) || p_path.ends_with("." JSB_COMMONJS_EXT);
+    }
+
     bool PathUtil::delete_file(const String& p_path)
     {
 #ifdef WINDOWS_ENABLED
