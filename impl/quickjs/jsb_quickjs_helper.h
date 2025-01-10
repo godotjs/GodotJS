@@ -225,7 +225,11 @@ namespace jsb::impl
             // js_free(context->GetIsolate()->ctx(), data);
 
             //NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
+#if JSB_PREFER_QUICKJS_NG
+            ::free(data);
+#else
             memfree(data);
+#endif
         }
 
         jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate)
