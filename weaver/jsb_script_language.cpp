@@ -22,6 +22,8 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
     JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, Construct);
     jsb_check(!singleton_);
     singleton_ = this;
+    js_class_name_matcher_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*(\w+)\s*;?)");
+    ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
     jsb::internal::StringNames::create();
 }
 
@@ -230,26 +232,50 @@ void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions
 
 String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path) const
 {
-    // we can not load the script module in-place because `get_global_class_name` could be called from EditorFileSystem (background) scan
+    // GodotJSScript implementation do not really support threaded access for now.
+    // So, we can not load the script module in-place because `get_global_class_name` could be called from EditorFileSystem (background) scan.
+    // And for simplicity, we use regex to extract the class name from the source code instead of using ANTLR or similar.
+    // Please follow the rules of the class name declaration in the source code.
+    //     * .ts files: `export default class ClassName extends BaseClassName`
+    //     * .js files: `class ClassName extends BaseClassName` and `exports.default = ClassName` (with or without `;`)
+
     Error err;
-    Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::READ, &err);
+    const Ref<FileAccess> file_access = FileAccess::open(p_path, FileAccess::READ, &err);
     if (err)
     {
         return String();
     }
 
-    const String source = f->get_as_utf8_string();
-    if (class_name_matcher_.is_null())
+    const String source = file_access->get_as_utf8_string();
+    if (jsb::internal::PathUtil::is_recognized_javascript_extension(p_path))
     {
-        const_cast<GodotJSScriptLanguage*>(this)->class_name_matcher_ =
-            RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
+        jsb_check(!js_class_name_matcher_.is_null());
+        const Ref<RegExMatch> match = js_class_name_matcher_->search(source);
+        if (match.is_valid() && match->get_group_count() == 1)
+        {
+            const String class_name = match->get_string(1);
+            if (r_base_type)
+            {
+                const Ref<RegEx> base_matcher = RegEx::create_from_string(jsb::internal::format(R"(\s*class\s*%s\s*extends\s*(\w+)\s*\{?)", class_name));
+                const Ref<RegExMatch> base_match = base_matcher->search(source);
+                if (base_match.is_valid() && base_match->get_group_count() == 1)
+                {
+                    *r_base_type = base_match->get_string(1);
+                }
+            }
+            return class_name;
+        }
     }
-    const Ref<RegExMatch> match = class_name_matcher_->search(source);
-    if (match.is_valid() && match->get_group_count() == 2)
+    else
     {
-        const String class_name = match->get_string(1);
-        if (r_base_type) *r_base_type = match->get_string(2);
-        return class_name;
+        jsb_check(!ts_class_name_matcher_.is_null());
+        const Ref<RegExMatch> match = ts_class_name_matcher_->search(source);
+        if (match.is_valid() && match->get_group_count() == 2)
+        {
+            const String class_name = match->get_string(1);
+            if (r_base_type) *r_base_type = match->get_string(2);
+            return class_name;
+        }
     }
     return {};
 }

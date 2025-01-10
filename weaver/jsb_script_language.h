@@ -21,7 +21,8 @@ private:
     uint64_t last_ticks_ = 0;
     std::shared_ptr<jsb::Environment> environment_;
 
-    Ref<RegEx> class_name_matcher_;
+    Ref<RegEx> ts_class_name_matcher_;
+    Ref<RegEx> js_class_name_matcher_;
 
 public:
     jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
