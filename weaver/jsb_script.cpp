@@ -500,7 +500,7 @@ void GodotJSScript::load_module_immediately()
             const Vector<DocData::ClassDoc> documentations = get_documentation();
             for (int i = 0; i < documentations.size(); i++)
             {
-                const DocData::ClassDoc &doc = documentations.get(i);
+                const DocData::ClassDoc& doc = documentations.get(i);
                 doc_tools->add_doc(doc);
             }
         }
