@@ -25,7 +25,7 @@ Error ResourceFormatSaverGodotJSScript::save(const Ref<Resource>& p_resource, co
     if (ScriptServer::is_reload_scripts_on_save_enabled())
     {
         // WTF??
-        GodotJSScriptLanguage::get_singleton()->reload_tool_script(p_resource, true);
+        sqscr->get_language()->reload_tool_script(p_resource, true);
     }
 
     return OK;
