@@ -13,7 +13,7 @@
 #endif
 
 static GodotJSScriptLanguage* script_language_js;
-static Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
+static Ref<ResourceFormatLoaderGodotJSScript> resource_loader;
 static Ref<ResourceFormatSaverGodotJSScript> resource_saver_js;
 
 void jsb_initialize_module(ModuleInitializationLevel p_level)
@@ -28,8 +28,10 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
         script_language_js = memnew(GodotJSScriptLanguage());
         ScriptServer::register_language(script_language_js);
 
-        resource_loader_js.instantiate();
-        ResourceLoader::add_resource_format_loader(resource_loader_js);
+        resource_loader.instantiate();
+        resource_loader->register_resource_extension(JSB_TYPESCRIPT_EXT, script_language_js);
+        resource_loader->register_resource_extension(JSB_JAVASCRIPT_EXT, script_language_js);
+        ResourceLoader::add_resource_format_loader(resource_loader);
 
         resource_saver_js.instantiate();
         ResourceSaver::add_resource_format_saver(resource_saver_js);
@@ -54,8 +56,8 @@ void jsb_uninitialize_module(ModuleInitializationLevel p_level)
 {
     if (p_level == MODULE_INITIALIZATION_LEVEL_CORE)
     {
-        ResourceLoader::remove_resource_format_loader(resource_loader_js);
-        resource_loader_js.unref();
+        ResourceLoader::remove_resource_format_loader(resource_loader);
+        resource_loader.unref();
 
         ResourceSaver::remove_resource_format_saver(resource_saver_js);
         resource_saver_js.unref();
