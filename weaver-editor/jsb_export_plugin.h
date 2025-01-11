@@ -15,7 +15,7 @@ class GodotJSExportPlugin: public EditorExportPlugin
     GDCLASS(GodotJSExportPlugin, EditorExportPlugin)
 
 public:
-    GodotJSExportPlugin();
+    GodotJSExportPlugin(std::shared_ptr<jsb::Environment> & env);
     virtual String get_name() const override;
     virtual bool supports_platform(const Ref<EditorExportPlatform>& p_export_platform) const override;
 

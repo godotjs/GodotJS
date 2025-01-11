@@ -43,7 +43,7 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
             EditorNode::add_editor_plugin(plugin);
 
             Ref<GodotJSExportPlugin> exporter;
-            exporter.instantiate();
+            exporter.instantiate(script_language_js->get_environment());
             EditorExport::get_singleton()->add_export_plugin(exporter);
 
             plugin->set_name(jsb_typename(GodotJSEditorPlugin));

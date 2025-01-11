@@ -2,14 +2,13 @@
 
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 
-GodotJSExportPlugin::GodotJSExportPlugin() : super()
+GodotJSExportPlugin::GodotJSExportPlugin(std::shared_ptr<jsb::Environment> & env) : super(), env_(env)
 {
     // explicitly ignored files (not used by runtime)
     ignored_paths_.insert("res://jsconfig.json");
     ignored_paths_.insert("res://tsconfig.json");
     ignored_paths_.insert("res://package.json");
     ignored_paths_.insert("res://package-lock.json");
-    env_ = GodotJSScriptLanguage::get_singleton()->get_environment();
     jsb_check(env_);
 }
 
