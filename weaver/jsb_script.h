@@ -20,6 +20,8 @@ private:
     bool source_changed_cache = false;
     Ref<GodotJSScript> base;
 
+    GodotJSScriptLanguage * lang_;
+
     HashSet<PlaceHolderScriptInstance*> placeholders;
 
     // WTF??
@@ -56,7 +58,7 @@ private:
     std::shared_ptr<jsb::Environment> get_environment() const { return jsb::Environment::_access(env_id_); }
 
 public:
-    GodotJSScript();
+    GodotJSScript(GodotJSScriptLanguage * lang = nullptr);
     virtual ~GodotJSScript() override;
 
     void attach_source(const String& p_path);

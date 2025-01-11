@@ -156,7 +156,8 @@ void GodotJSScriptLanguage::get_string_delimiters(List<String>* p_delimiters) co
 
 Script* GodotJSScriptLanguage::create_script() const
 {
-    return memnew(GodotJSScript);
+    // Remove const because actually the script constructor will register himself in `this'
+    return memnew(GodotJSScript(const_cast<GodotJSScriptLanguage *>(this)));
 }
 
 bool GodotJSScriptLanguage::validate(const String& p_script, const String& p_path, List<String>* r_functions, List<ScriptError>* r_errors, List<Warning>* r_warnings, HashSet<int>* r_safe_lines) const
@@ -178,7 +179,7 @@ bool GodotJSScriptLanguage::validate(const String& p_script, const String& p_pat
 Ref<Script> GodotJSScriptLanguage::make_template(const String& p_template, const String& p_class_name, const String& p_base_class_name) const
 {
     Ref<GodotJSScript> spt;
-    spt.instantiate();
+    spt.instantiate(const_cast<GodotJSScriptLanguage *>(this));
     String processed_template = p_template;
     processed_template = processed_template.replace("_BASE_", p_base_class_name)
                                  .replace("_CLASS_SNAKE_CASE_", jsb::internal::VariantUtil::to_snake_case_id(p_class_name))

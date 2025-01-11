@@ -10,12 +10,11 @@
 #include "editor/editor_help.h"
 #endif
 
-GodotJSScript::GodotJSScript(): script_list_(this)
+GodotJSScript::GodotJSScript(GodotJSScriptLanguage * lang): script_list_(this), lang_(lang)
 {
     {
         JSB_BENCHMARK_SCOPE(GodotJSScript, Construct);
-        GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
-        MutexLock lock(lang->mutex_);
+        MutexLock lock(lang_->mutex_);
 
         lang->script_list_.add(&script_list_);
     }
@@ -29,8 +28,7 @@ GodotJSScript::~GodotJSScript()
 
     {
         JSB_BENCHMARK_SCOPE(GodotJSScript, Destruct);
-        const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
-        MutexLock lock(lang->mutex_);
+        MutexLock lock(lang_->mutex_);
 
         script_list_.remove_from_list();
     }
@@ -110,7 +108,7 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
 
     /* STEP 2, INITIALIZE AND CONSTRUCT */
     {
-        MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+        MutexLock lock(lang_->mutex_);
         instances_.insert(owner);
     }
     instance->object_id_ = get_environment()->bind_godot_object(get_script_class()->native_class_id, owner, p_this);
@@ -120,7 +118,7 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
         instance->owner_->set_script_instance(nullptr);
         //NOTE `instance` becomes an invalid pointer since it's deleted in `set_script_instance`
         {
-            MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+            MutexLock lock(lang_->mutex_);
             instances_.erase(owner);
         }
         memdelete(owner);
@@ -147,7 +145,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 
     /* STEP 2, INITIALIZE AND CONSTRUCT */
     {
-        MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+        MutexLock lock(lang_->mutex_);
         instances_.insert(instance->owner_);
     }
     instance->object_id_ = get_environment()->crossbind(p_this, script_class_id_);
@@ -157,7 +155,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
         instance->owner_->set_script_instance(nullptr);
         //NOTE `instance` becomes an invalid pointer since it's deleted in `set_script_instance`
         {
-            MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+            MutexLock lock(lang_->mutex_);
             instances_.erase(p_this);
         }
         JSB_LOG(Error, "Error constructing a GodotJSScriptInstance");
@@ -174,7 +172,7 @@ Error GodotJSScript::reload(bool p_keep_state)
 
     if (!p_keep_state)
     {
-        MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+        MutexLock lock(lang_->mutex_);
         if (instances_.size())
         {
             return ERR_ALREADY_IN_USE;
@@ -209,7 +207,7 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 
     const jsb::ScriptClassInfoPtr class_info = get_script_class();
     String base_type;
-    const String class_name = GodotJSScriptLanguage::get_singleton()->get_global_class_name(get_path(), &base_type);
+    const String class_name = lang_->get_global_class_name(get_path(), &base_type);
     DocData::ClassDoc class_doc_data;
 
     class_doc_data.name = class_name;
@@ -293,7 +291,7 @@ MethodInfo GodotJSScript::get_method_info(const StringName& p_method) const
 
 ScriptLanguage* GodotJSScript::get_language() const
 {
-    return GodotJSScriptLanguage::get_singleton();
+    return lang_;
 }
 
 bool GodotJSScript::has_script_signal(const StringName& p_signal) const
@@ -387,7 +385,7 @@ bool GodotJSScript::has_static_method(const StringName& p_method) const
 bool GodotJSScript::instance_has(const Object* p_this) const
 {
     jsb_check(loaded_);
-    MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
+    MutexLock lock(lang_->mutex_);
     return instances_.has(const_cast<Object*>(p_this));
 }
 
@@ -431,8 +429,7 @@ void GodotJSScript::load_module_immediately()
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
     const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
-    const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
-    const std::shared_ptr<jsb::Environment> env = lang->get_environment();
+    const std::shared_ptr<jsb::Environment> env = lang_->get_environment();
 
     env_id_ = env->id();
     loaded_ = true;
@@ -464,7 +461,7 @@ void GodotJSScript::load_module_immediately()
         JSB_LOG(VeryVerbose, "GodotJSScript module loaded %s", path);
         {
             //TODO a dirty but approaching solution for hot-reloading
-            MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_); // necessary?
+            MutexLock lock(lang_->mutex_); // necessary?
             for (RBSet<Object *>::Element *E = instances_.front(); E;)
             {
                 RBSet<Object *>::Element *N = E->next();
@@ -583,7 +580,7 @@ PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_
     {
         JSB_LOG(Warning, "creating placeholder instance on invalid script (%s)", get_path());
     }
-    PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(GodotJSScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
+    PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(lang_, Ref<Script>(this), p_this));
     placeholders.insert(si);
     _update_exports(si);
     return si;
