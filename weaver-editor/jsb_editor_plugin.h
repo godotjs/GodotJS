@@ -53,6 +53,8 @@ private:
 
     std::shared_ptr<jsb::internal::Process> tsc_;
 
+    GodotJSScriptLanguage * lang_;
+
 protected:
     static void _bind_methods();
 
@@ -70,8 +72,10 @@ protected:
     static bool delete_file(const String& p_file);
 
 public:
-    GodotJSEditorPlugin();
+    GodotJSEditorPlugin(GodotJSScriptLanguage * lang_);
     virtual ~GodotJSEditorPlugin() override;
+
+    GodotJSScriptLanguage * get_lang() const { return lang_; }
 
     void start_tsc_watch();
     bool is_tsc_watching();

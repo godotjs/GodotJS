@@ -1,5 +1,6 @@
 #include "jsb_statistics_viewer.h"
 #include "jsb_editor_pch.h"
+#include "jsb_editor_plugin.h"
 
 GodotJSStatisticsViewer::GodotJSStatisticsViewer()
 {
@@ -41,7 +42,7 @@ void GodotJSStatisticsViewer::activate(bool p_active)
 
 void GodotJSStatisticsViewer::on_timer()
 {
-    const GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    const GodotJSScriptLanguage* lang = GodotJSEditorPlugin::get_singleton()->get_lang();
     if (!lang) return;
     const std::shared_ptr<jsb::Environment> env = lang->get_environment();
     if (!env) return;
