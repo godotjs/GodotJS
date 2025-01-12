@@ -15,13 +15,10 @@
 #ifdef TOOLS_ENABLED
 #include "../weaver-editor/templates/templates.gen.h"
 #endif
-GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;
 
 GodotJSScriptLanguage::GodotJSScriptLanguage()
 {
     JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, Construct);
-    jsb_check(!singleton_);
-    singleton_ = this;
     js_class_name_matcher1_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*class\s*(\w+)\s*extends\s*(\w+)\s*\{?)");
     js_class_name_matcher2_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*(\w+)\s*;?)");
     ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
@@ -31,8 +28,6 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
 GodotJSScriptLanguage::~GodotJSScriptLanguage()
 {
     jsb::internal::StringNames::free();
-    jsb_check(singleton_ == this);
-    singleton_ = nullptr;
 
     //TODO manage script list in a safer way (access and ref with script.id)
     MutexLock lock(mutex_);

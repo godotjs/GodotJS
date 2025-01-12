@@ -12,8 +12,6 @@ private:
     friend class GodotJSScriptInstance;
     friend class ResourceFormatLoaderGodotJSScript;
 
-    static GodotJSScriptLanguage* singleton_;
-
     Mutex mutex_;
     SelfList<class GodotJSScript>::List script_list_;
 
@@ -31,8 +29,6 @@ private:
     Ref<RegEx> js_class_name_matcher1_;
 
 public:
-    jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
-
     // main context
     jsb_force_inline std::shared_ptr<jsb::Environment> get_environment() const
     {
