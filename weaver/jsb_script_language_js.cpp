@@ -13,7 +13,7 @@
 #include "modules/regex/regex.h"
 
 #ifdef TOOLS_ENABLED
-#include "../weaver-editor/templates/templates.gen.h"
+#include "../weaver-editor/templates/templates.js.gen.h"
 #endif
 
 GodotJavascriptLanguage * GodotJavascriptLanguage::singleton_ = nullptr;
@@ -42,5 +42,18 @@ String GodotJavascriptLanguage::get_name() const
 String GodotJavascriptLanguage::get_type() const
 {
     return jsb_typename(GodotJavaScript);
+}
+
+Vector<ScriptLanguage::ScriptTemplate> GodotJavascriptLanguage::get_built_in_templates(ConstStringNameRefCompat p_object)
+{
+    Vector<ScriptTemplate> templates;
+#ifdef TOOLS_ENABLED
+    for (int i = 0; i < TEMPLATES_ARRAY_SIZE; i++) {
+        if (TEMPLATES[i].inherit == p_object) {
+            templates.append(TEMPLATES[i]);
+        }
+    }
+#endif
+    return templates;
 }
 

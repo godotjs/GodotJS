@@ -12,10 +12,6 @@
 
 #include "modules/regex/regex.h"
 
-#ifdef TOOLS_ENABLED
-#include "../weaver-editor/templates/templates.gen.h"
-#endif
-
 int GodotJSScriptLanguageBase::prevent_environment_dispose_ = 0;
 std::shared_ptr<jsb::Environment> GodotJSScriptLanguageBase::environment_ = nullptr;
 
@@ -189,19 +185,6 @@ Ref<Script> GodotJSScriptLanguageBase::make_template(const String& p_template, c
                                  .replace("_TS_", jsb::internal::Settings::get_indentation());
     spt->set_source_code(processed_template);
     return spt;
-}
-
-Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguageBase::get_built_in_templates(ConstStringNameRefCompat p_object)
-{
-    Vector<ScriptTemplate> templates;
-#ifdef TOOLS_ENABLED
-    for (int i = 0; i < TEMPLATES_ARRAY_SIZE; i++) {
-        if (TEMPLATES[i].inherit == p_object) {
-            templates.append(TEMPLATES[i]);
-        }
-    }
-#endif
-    return templates;
 }
 
 #if GODOT_4_3_OR_NEWER

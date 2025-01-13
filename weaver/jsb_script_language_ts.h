@@ -15,6 +15,7 @@ public:
     virtual bool handles_global_class_type(const String& p_type) const override;
     virtual String get_name() const override;
     virtual String get_type() const override;
+    virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) override;
 
 };
 

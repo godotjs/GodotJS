@@ -64,7 +64,7 @@ public:
     virtual void thread_exit() override;
 
     virtual bool is_control_flow_keyword(ConstStringRefCompat p_keyword) const override;
-    virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) override;
+    virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) = 0;
 
     virtual void get_reserved_words(List<String>* p_words) const override;
     virtual void get_doc_comment_delimiters(List<String>* p_delimiters) const override;
