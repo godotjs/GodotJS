@@ -13,6 +13,7 @@ def get_opts(platform):
     from SCons.Variables import BoolVariable, EnumVariable
 
     return [
+        BoolVariable("use_typescript", "Build with typescript support (enabled by default)", True),
         BoolVariable("use_quickjs", "Prefer to use QuickJS rather than the default VM on the current platform", False),
         BoolVariable("use_quickjs_ng", "Prefer to use QuickJS-NG rather than the default VM on the current platform", False),
     ]
