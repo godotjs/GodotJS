@@ -31,6 +31,7 @@ GodotJSREPL::GodotJSREPL()
         gc_button_->set_tooltip_text(TTR("Explicit GC"));
         gc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_gc_pressed));
     }
+#if JSB_USE_TYPESCRIPT
     {
         dts_button_ = memnew(Button);
         tool_bar_box->add_child(dts_button_);
@@ -39,6 +40,7 @@ GodotJSREPL::GodotJSREPL()
         dts_button_->set_tooltip_text(TTR("Generate godot.d.ts files"));
         dts_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_generate_dts_pressed));
     }
+#endif
     {
         preset_button_ = memnew(Button);
         tool_bar_box->add_child(preset_button_);
@@ -52,6 +54,7 @@ GodotJSREPL::GodotJSREPL()
         tool_bar_box->add_child(preset_hint_label_);
         preset_hint_label_->set_text(TTR("Suggest re-installing GodotJS preset files."));
     }
+#if JSB_USE_TYPESCRIPT
     {
         start_tsc_button_ = memnew(Button);
         tool_bar_box->add_child(start_tsc_button_);
@@ -59,6 +62,7 @@ GodotJSREPL::GodotJSREPL()
         start_tsc_button_->set_focus_mode(FOCUS_NONE);
         start_tsc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_start_tsc_pressed));
     }
+#endif
 
     Panel* output_container = memnew(Panel);
     output_container->set_h_size_flags(SIZE_EXPAND_FILL);
@@ -131,13 +135,17 @@ void GodotJSREPL::_update_theme()
 {
     gc_button_->set_icon(get_editor_theme_icon("CollapseTree"));
     clear_button_->set_icon(get_editor_theme_icon("Clear"));
-    dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
+    if (dts_button_)
+    {
+        dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
+    }
     preset_button_->set_icon(get_editor_theme_icon("Window"));
     check_tsc();
 }
 
 void GodotJSREPL::check_tsc()
 {
+#if JSB_USE_TYPESCRIPT
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton(); editor_plugin && editor_plugin->is_tsc_watching())
     {
         start_tsc_button_->set_icon(get_editor_theme_icon("Stop"));
@@ -148,6 +156,7 @@ void GodotJSREPL::check_tsc()
         start_tsc_button_->set_icon(get_editor_theme_icon("GodotJSRun"));
         start_tsc_button_->set_tooltip_text(TTR("Start tsc (watch)"));
     }
+#endif
 }
 
 void GodotJSREPL::check_install()

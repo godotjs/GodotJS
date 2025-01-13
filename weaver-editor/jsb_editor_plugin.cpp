@@ -66,8 +66,10 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // jsb::internal::Settings::on_editor_init();
     PopupMenu *menu = memnew(PopupMenu);
     add_tool_submenu_item(TTR("GodotJS"), menu);
-    menu->add_item(TTR("Install TS Project"), MENU_ID_INSTALL_TS_PROJECT);
+    menu->add_item(TTR("Install Preset files"), MENU_ID_INSTALL_TS_PROJECT);
+#if JSB_USE_TYPESCRIPT
     menu->add_item(TTR("Generate Godot d.ts"), MENU_ID_GENERATE_GODOT_DTS);
+#endif
     menu->add_separator();
     menu->add_item(TTR("Cleanup invalid files"), MENU_ID_CLEANUP_INVALID_FILES);
     menu->connect("id_pressed", callable_mp(this, &GodotJSEditorPlugin::_on_menu_pressed));
@@ -80,11 +82,14 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_control_to_bottom_panel(memnew(GodotJSDockedPanel), TTR("GodotJS"));
 
     // config files
+#if JSB_USE_TYPESCRIPT
     add_install_file({ "tsconfig.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_REPLACE_VARS });
+#endif
     add_install_file({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
     add_install_file({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });
     add_install_file({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
 
+#if JSB_USE_TYPESCRIPT
     // type declaration files
     add_install_file({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
     add_install_file({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
@@ -93,6 +98,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 
     // obsolete files (for upgrading from old versions)
     add_install_file({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS | jsb::weaver::CH_OBSOLETE});
+#endif
 
     // write `.gdignore` in the `node_modules` folder anyway to avoid scanning in the situation that `node_modules` is generated externally before starting the Godot engine.
     if (DirAccess::exists("res://node_modules") && !FileAccess::exists("res://node_modules/.gdignore"))
@@ -198,7 +204,7 @@ void GodotJSEditorPlugin::try_install_ts_project()
         }
     }
     confirm_dialog_->pending_installs_ = modified;
-    confirm_dialog_->set_text(TTR("Found existing/missing files, re-installing TS project will overwrite:") + modified_file_list);
+    confirm_dialog_->set_text(TTR("Found existing/missing files, re-installing presets will overwrite:") + modified_file_list);
     confirm_dialog_->popup_centered();
 }
 

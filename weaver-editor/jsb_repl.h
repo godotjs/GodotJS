@@ -18,10 +18,10 @@ private:
 
     Button* clear_button_;
     Button* gc_button_;
-    Button* dts_button_;
+    Button* dts_button_ = nullptr;
     Button* preset_button_;
     Label* preset_hint_label_;
-    Button* start_tsc_button_;
+    Button* start_tsc_button_ = nullptr;
 
     ItemList* candidate_list_;
 

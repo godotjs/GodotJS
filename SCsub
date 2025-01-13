@@ -126,6 +126,7 @@ v8_support = get_library_support(v8_prebuilt_libs) if quickjs_support is None el
 lws_support = get_library_support(lws_prebuilt_libs)
 
 jsb_defines = [
+    CompileDefines("JSB_USE_TYPESCRIPT", 1 if env["use_typescript"] else 0),
     CompileDefines("JSB_WITH_QUICKJS", 1 if quickjs_support is not None else 0),
     CompileDefines("JSB_PREFER_QUICKJS_NG", 1 if quickjs_support is not None and quickjs_support[1].path == "quickjs-ng" else 0, [
         "(Only effective when `JSB_WITH_QUICKJS` is enabled)", 

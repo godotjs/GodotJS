@@ -87,7 +87,12 @@ public:
 #pragma region DEFAULTLY AND PARTIALLY SUPPORTED
     virtual String get_name() const override;
     virtual String get_type() const override;
+
+#if JSB_USE_TYPESCRIPT
     virtual String get_extension() const override { return JSB_TYPESCRIPT_EXT; }
+#else
+    virtual String get_extension() const override { return JSB_JAVASCRIPT_EXT; }
+#endif
 
     virtual bool is_using_templates() override { return true; }
 #ifndef DISABLE_DEPRECATED
