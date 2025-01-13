@@ -1,5 +1,7 @@
 #include "jsb_script.h"
 #include "jsb_script_language.h"
+#include "jsb_script_language_ts.h"
+#include "jsb_script_language_js.h"
 #include "jsb_script_instance.h"
 #include "../internal/jsb_path_util.h"
 

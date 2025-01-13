@@ -1,6 +1,8 @@
 #include "register_types.h"
 
 #include "weaver/jsb_script_language.h"
+#include "weaver/jsb_script_language_ts.h"
+#include "weaver/jsb_script_language_js.h"
 #include "weaver/jsb_script.h"
 #include "weaver/jsb_resource_loader.h"
 #include "weaver/jsb_resource_saver.h"

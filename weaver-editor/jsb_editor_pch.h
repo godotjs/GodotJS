@@ -14,6 +14,7 @@
 #include "../internal/jsb_settings.h"
 
 #include "../weaver/jsb_script_language.h"
+#include "../weaver/jsb_script_language_ts.h"
 
 #if GODOT_4_3_OR_NEWER
 #   include "editor/plugins/editor_plugin.h"
