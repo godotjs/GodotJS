@@ -84,6 +84,8 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // config files
 #if JSB_USE_TYPESCRIPT
     add_install_file({ "tsconfig.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_REPLACE_VARS });
+#else
+    add_install_file({ "jsconfig.json", "res://", jsb::weaver::CH_JAVASCRIPT });
 #endif
     add_install_file({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
     add_install_file({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });

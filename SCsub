@@ -490,6 +490,7 @@ generate_code([\
 
         PresetDefine("scripts/presets/package.json.txt", "package.json"),
         PresetDefine("scripts/presets/tsconfig.json.txt", "tsconfig.json"),
+        PresetDefine("scripts/presets/jsconfig.json.txt", "jsconfig.json"),
         PresetDefine("scripts/presets/gdignore.txt", ".gdignore"),
     ])
     

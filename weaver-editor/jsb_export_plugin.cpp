@@ -5,6 +5,7 @@
 GodotJSExportPlugin::GodotJSExportPlugin() : super()
 {
     // explicitly ignored files (not used by runtime)
+    ignored_paths_.insert("res://jsconfig.json");
     ignored_paths_.insert("res://tsconfig.json");
     ignored_paths_.insert("res://package.json");
     ignored_paths_.insert("res://package-lock.json");
