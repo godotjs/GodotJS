@@ -21,8 +21,14 @@ private:
     uint64_t last_ticks_ = 0;
     std::shared_ptr<jsb::Environment> environment_;
 
+    // [TS] matches 'export default class ClassName extends BaseName {'
     Ref<RegEx> ts_class_name_matcher_;
-    Ref<RegEx> js_class_name_matcher_;
+
+    // [JS] export & declare in two lines, matches 'class ClassName extends BaseName' + 'exports.default = ClassName'
+    Ref<RegEx> js_class_name_matcher2_;
+
+    // [JS] export & declare in a single line, matches 'exports.default = class ClassName extends BaseName'
+    Ref<RegEx> js_class_name_matcher1_;
 
 public:
     jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
