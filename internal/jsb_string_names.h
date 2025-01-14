@@ -6,22 +6,24 @@
 #define jsb_string_name(name) ::jsb::internal::StringNames::get_singleton().sn_##name
 #define jsb_literal(name) (sizeof(::jsb::internal::StringNames::sn_##name) == sizeof(StringName), #name)
 
-class GodotJSScriptLanguage;
+class GodotJSScriptLanguageBase;
 
 namespace jsb::internal
 {
     class StringNames
     {
     private:
-        friend class ::GodotJSScriptLanguage;
+        friend class ::GodotJSScriptLanguageBase;
 
         static StringNames* singleton_;
 
         static void create() { singleton_ = memnew(StringNames); }
         static void free()
         {
-            memdelete(singleton_);
-            singleton_ = nullptr;
+            if (singleton_) {
+                memdelete(singleton_);
+                singleton_ = nullptr;
+            }
         }
 
         // we need to ignore some names used in godot (such as XXX.name) to avoid conflicts in javascript.

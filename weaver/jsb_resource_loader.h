@@ -11,12 +11,12 @@ class ResourceFormatLoaderGodotJSScript : public ResourceFormatLoader
     ResourceFormatLoaderGodotJSScript(ResourceFormatLoaderGodotJSScript const &) = delete;
     ResourceFormatLoaderGodotJSScript & operator=(ResourceFormatLoaderGodotJSScript const &) = delete;
 
-    HashMap<String, GodotJSScriptLanguage *> lang_map_;
+    HashMap<String, GodotJSScriptLanguageBase *> lang_map_;
 
 public:
     ResourceFormatLoaderGodotJSScript() { }
 
-    void register_resource_extension(String ext, GodotJSScriptLanguage * lang);
+    void register_resource_extension(String ext, GodotJSScriptLanguageBase * lang);
 
     virtual Ref<Resource> load(const String& p_path, const String& p_original_path = "", Error* r_error = nullptr, bool p_use_sub_threads = false, float* r_progress = nullptr, CacheMode p_cache_mode = CACHE_MODE_REUSE) override;
     virtual void get_recognized_extensions(List<String>* p_extensions) const override;

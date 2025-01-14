@@ -12,7 +12,6 @@
 #include "weaver-editor/jsb_export_plugin.h"
 #endif
 
-static GodotJSScriptLanguage* script_language_js;
 static Ref<ResourceFormatLoaderGodotJSScript> resource_loader;
 static Ref<ResourceFormatSaverGodotJSScript> resource_saver;
 
@@ -21,29 +20,31 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
     if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
     {
         GDREGISTER_CLASS(GodotJSScript);
+        GDREGISTER_CLASS(GodotJavaScript);
 
         jsb::impl::GlobalInitialize::init();
 
         // register javascript language
-        script_language_js = memnew(GodotJSScriptLanguage());
-        ScriptServer::register_language(script_language_js);
+        ScriptServer::register_language(GodotJSScriptLanguage::create_singleton());
+        ScriptServer::register_language(GodotJavascriptLanguage::create_singleton());
 
         resource_loader.instantiate();
-        resource_loader->register_resource_extension(JSB_TYPESCRIPT_EXT, script_language_js);
-        resource_loader->register_resource_extension(JSB_JAVASCRIPT_EXT, script_language_js);
+        resource_loader->register_resource_extension(JSB_TYPESCRIPT_EXT, GodotJSScriptLanguage::get_singleton());
+        resource_loader->register_resource_extension(JSB_JAVASCRIPT_EXT, GodotJavascriptLanguage::get_singleton());
         ResourceLoader::add_resource_format_loader(resource_loader);
 
         resource_saver.instantiate();
         ResourceSaver::add_resource_format_saver(resource_saver);
 
+
 #ifdef TOOLS_ENABLED
         EditorNode::add_init_callback([]
         {
-            GodotJSEditorPlugin* plugin = memnew(GodotJSEditorPlugin(script_language_js));
+            GodotJSEditorPlugin* plugin = memnew(GodotJSEditorPlugin(GodotJSScriptLanguage::get_singleton()));
             EditorNode::add_editor_plugin(plugin);
 
             Ref<GodotJSExportPlugin> exporter;
-            exporter.instantiate(script_language_js->get_environment());
+            exporter.instantiate(GodotJSScriptLanguage::get_singleton()->get_environment());
             EditorExport::get_singleton()->add_export_plugin(exporter);
 
             plugin->set_name(jsb_typename(GodotJSEditorPlugin));
@@ -62,8 +63,10 @@ void jsb_uninitialize_module(ModuleInitializationLevel p_level)
         ResourceSaver::remove_resource_format_saver(resource_saver);
         resource_saver.unref();
 
-        jsb_check(script_language_js);
-        ScriptServer::unregister_language(script_language_js);
-        memdelete(script_language_js);
+        ScriptServer::unregister_language(GodotJSScriptLanguage::get_singleton());
+        GodotJSScriptLanguage::destroy_singleton();
+
+        ScriptServer::unregister_language(GodotJavascriptLanguage::get_singleton());
+        GodotJavascriptLanguage::destroy_singleton();
     }
 }

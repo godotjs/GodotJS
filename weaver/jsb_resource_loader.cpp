@@ -4,7 +4,7 @@
 #include "jsb_script.h"
 
 
-void ResourceFormatLoaderGodotJSScript::register_resource_extension(String ext, GodotJSScriptLanguage * lang)
+void ResourceFormatLoaderGodotJSScript::register_resource_extension(String ext, GodotJSScriptLanguageBase * lang)
 {
     lang_map_.insert(ext, lang);
 }
@@ -13,7 +13,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 {
     JSB_BENCHMARK_SCOPE(ResourceFormatLoaderGodotJSScript, load);
 
-    GodotJSScriptLanguage * lang = nullptr;
+    GodotJSScriptLanguageBase * lang = nullptr;
     for (auto const & i: lang_map_) {
         if (p_path.ends_with(i.key)) {
             lang = i.value;
@@ -29,7 +29,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
     {
         //TODO a dirty but approaching solution for hot-reloading
         MutexLock lock(lang->mutex_);
-        SelfList<GodotJSScript> *elem = lang->script_list_.first();
+        SelfList<GodotJSScriptBase> *elem = lang->script_list_.first();
         while (elem)
         {
             if (elem->self()->get_path() == p_path)
@@ -68,7 +68,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
     JSB_LOG(VeryVerbose, "loading script resource %s on thread %s", p_path, uitos(Thread::get_caller_id()));
 
     // return a skeleton script which only contains path and source code without actually loaded in `realm` since `load` may called from background threads
-    Ref<GodotJSScript> spt = reinterpret_cast<GodotJSScript*>(lang->create_script());
+    Ref<GodotJSScriptBase> spt = lang->create_godotjsscript();
     spt->attach_source(p_path);
     if (r_error) *r_error = OK;
     return spt;

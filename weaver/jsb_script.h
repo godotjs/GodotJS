@@ -6,21 +6,22 @@
 
 #include "../bridge/jsb_bridge.h"
 
-class GodotJSScript : public Script
+class GodotJSScriptLanguageBase;
+
+class GodotJSScriptBase : public Script
 {
     friend class GodotJSScriptInstance;
     typedef Script super;
 
-    GDCLASS(GodotJSScript, Script)
 
 private:
     // if the script invalid (or not actually loaded yet)
     bool valid_ = false;
     bool loaded_ = false;
     bool source_changed_cache = false;
-    Ref<GodotJSScript> base;
+    Ref<GodotJSScriptBase> base;
 
-    GodotJSScriptLanguage * lang_;
+    GodotJSScriptLanguageBase * lang_;
 
     HashSet<PlaceHolderScriptInstance*> placeholders;
 
@@ -28,7 +29,7 @@ private:
     HashMap<StringName, Variant> member_default_values_cache;
     List<PropertyInfo> members_cache;
 
-    SelfList<GodotJSScript> script_list_;
+    SelfList<GodotJSScriptBase> script_list_;
     RBSet<Object*> instances_;
 
     //TODO improvement needed
@@ -50,16 +51,18 @@ private:
     void call_prelude(jsb::NativeObjectID p_object_id);
 
     void load_module_immediately();
-    jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately(); }
+    jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScriptBase*>(this)->load_module_immediately(); }
 
     void _update_exports(PlaceHolderScriptInstance *p_instance_to_update, bool p_base_exports_changed = false);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
 
     std::shared_ptr<jsb::Environment> get_environment() const { return jsb::Environment::_access(env_id_); }
 
+protected:
+    GodotJSScriptBase(GodotJSScriptLanguageBase * lang);
+
 public:
-    GodotJSScript(GodotJSScriptLanguage * lang = nullptr);
-    virtual ~GodotJSScript() override;
+    virtual ~GodotJSScriptBase() override;
 
     void attach_source(const String& p_path);
     void load_source_code_from_path();
@@ -143,6 +146,18 @@ protected:
 
 #pragma endregion
 
+};
+
+class GodotJSScript : public GodotJSScriptBase {
+    GDCLASS(GodotJSScript, Script)
+public:
+    GodotJSScript();
+};
+
+class GodotJavaScript : public GodotJSScriptBase {
+    GDCLASS(GodotJavaScript, Script)
+public:
+    GodotJavaScript();
 };
 
 #endif
