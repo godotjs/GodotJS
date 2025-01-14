@@ -31,7 +31,6 @@ GodotJSREPL::GodotJSREPL()
         gc_button_->set_tooltip_text(TTR("Explicit GC"));
         gc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_gc_pressed));
     }
-#if JSB_USE_TYPESCRIPT
     {
         dts_button_ = memnew(Button);
         tool_bar_box->add_child(dts_button_);
@@ -40,7 +39,6 @@ GodotJSREPL::GodotJSREPL()
         dts_button_->set_tooltip_text(TTR("Generate godot.d.ts files"));
         dts_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_generate_dts_pressed));
     }
-#endif
     {
         preset_button_ = memnew(Button);
         tool_bar_box->add_child(preset_button_);

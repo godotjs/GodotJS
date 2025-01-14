@@ -67,9 +67,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     PopupMenu *menu = memnew(PopupMenu);
     add_tool_submenu_item(TTR("GodotJS"), menu);
     menu->add_item(TTR("Install Preset files"), MENU_ID_INSTALL_TS_PROJECT);
-#if JSB_USE_TYPESCRIPT
     menu->add_item(TTR("Generate Godot d.ts"), MENU_ID_GENERATE_GODOT_DTS);
-#endif
     menu->add_separator();
     menu->add_item(TTR("Cleanup invalid files"), MENU_ID_CLEANUP_INVALID_FILES);
     menu->connect("id_pressed", callable_mp(this, &GodotJSEditorPlugin::_on_menu_pressed));

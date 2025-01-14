@@ -5,7 +5,7 @@ A javascript class can extend a Godot Object class:
 > This example is written in TypeScript.
 
 ```ts
-import { Node, Signal0 } from "godot";
+import { Node, Signal0, Callable } from "godot";
 import { signal, seconds } from "jsb.core";
 
 export default class MyJSNode extends Node {
@@ -18,9 +18,9 @@ export default class MyJSNode extends Node {
     _ready() {
         console.log("MyJSNode _ready");
 
-        this.test.connect(jsb.callable(this, this._on_test), 0);
+        this.test.connect(Callable.create(this, this._on_test), 0);
         this.test.emit();
-        this.test.disconnect(jsb.callable(this, this._on_test));
+        this.test.disconnect(Callable.create(this, this._on_test));
     }
 
     // it's also possible to use async functions in scripts (even the `_ready` call)
