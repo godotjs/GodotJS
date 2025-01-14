@@ -36,6 +36,45 @@ GodotJSScriptLanguageBase::~GodotJSScriptLanguageBase()
     }
 }
 
+void GodotJSScriptLanguageBase::create_environment()
+{
+    ++prevent_environment_dispose_;
+    if (environment_)
+        return;
+    jsb::Environment::CreateParams params;
+    params.initial_class_slots = (int) ClassDB::classes.size() + JSB_MASTER_INITIAL_CLASS_EXTRA_SLOTS;
+    params.initial_object_slots = JSB_MASTER_INITIAL_OBJECT_SLOTS;
+    params.initial_script_slots = JSB_MASTER_INITIAL_SCRIPT_SLOTS;
+    params.deletion_queue_size = JSB_MASTER_VARIANT_DELETION_QUEUE_SIZE - 1;
+    params.debugger_port = jsb::internal::Settings::get_debugger_port();
+    params.thread_id = Thread::get_caller_id();
+
+    environment_ = std::make_shared<jsb::Environment>(params);
+    environment_->init();
+
+    // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
+    static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
+    jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
+        "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
+    jsb_ensuref(environment_->load("jsb.inject") == OK, "failed to load jsb.inject");
+
+#ifdef TOOLS_ENABLED
+    static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
+    jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
+        "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
+#endif
+}
+
+void GodotJSScriptLanguageBase::destroy_environment()
+{
+    if (!environment_)
+        return;
+    if (--prevent_environment_dispose_ == 1) {
+        environment_->dispose();
+        environment_.reset();
+    }
+}
+
 void GodotJSScriptLanguageBase::init()
 {
     if (once_inited_) return;
@@ -45,42 +84,16 @@ void GodotJSScriptLanguageBase::init()
     JSB_LOG(Verbose, "Runtime: %s", JSB_IMPL_VERSION_STRING);
     JSB_LOG(VeryVerbose, "jsb lang init");
 
-    jsb::Environment::CreateParams params;
-    params.initial_class_slots = (int) ClassDB::classes.size() + JSB_MASTER_INITIAL_CLASS_EXTRA_SLOTS;
-    params.initial_object_slots = JSB_MASTER_INITIAL_OBJECT_SLOTS;
-    params.initial_script_slots = JSB_MASTER_INITIAL_SCRIPT_SLOTS;
-    params.deletion_queue_size = JSB_MASTER_VARIANT_DELETION_QUEUE_SIZE - 1;
-    params.debugger_port = jsb::internal::Settings::get_debugger_port();
-    params.thread_id = Thread::get_caller_id();
+    create_environment();
 
-    ++prevent_environment_dispose_;
-    // Initialize only once
-    if (!environment_) {
-        environment_ = std::make_shared<jsb::Environment>(params);
-        environment_->init();
-
-        // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
-        static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
-        jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
-            "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
-        jsb_ensuref(environment_->load("jsb.inject") == OK, "failed to load jsb.inject");
-
-#ifdef TOOLS_ENABLED
-        static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
-        jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
-            "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
-#endif
-    }
 }
 
 void GodotJSScriptLanguageBase::finish()
 {
     jsb_check(once_inited_);
     once_inited_ = false;
-    if (--prevent_environment_dispose_ == 1) {
-        environment_->dispose();
-        environment_.reset();
-    }
+
+    destroy_environment();
 #if !JSB_WITH_WEB
     jsb::Worker::finish();
 #endif

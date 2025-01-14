@@ -70,5 +70,6 @@ void jsb_uninitialize_module(ModuleInitializationLevel p_level)
 
         ScriptServer::unregister_language(GodotJavascriptLanguage::get_singleton());
         GodotJavascriptLanguage::destroy_singleton();
+
     }
 }

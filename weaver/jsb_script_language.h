@@ -31,6 +31,12 @@ private:
 
 public:
     // main context
+
+    static void create_environment();
+
+    static void destroy_environment();
+
+    // Get the environment singleton
     jsb_force_inline std::shared_ptr<jsb::Environment> get_environment() const
     {
         jsb_check(once_inited_ && environment_);
