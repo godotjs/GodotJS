@@ -1,18 +1,77 @@
 
-import { EditorInterface, ProjectSettings, PropertyHint, PropertyUsageFlags, StringName, Variant, MultiplayerAPI, MultiplayerPeer } from "godot";
+import { MultiplayerAPI, MultiplayerPeer, PropertyHint, PropertyUsageFlags, Variant } from "godot";
 import * as jsb from "godot-jsb";
 
+// [WARNING] ALL IMPLEMENTATIONS BELOW ARE FOR BACKWARD COMPATIBILITY ONLY.
+// [WARNING] THEY EXIST TO TEMPORARILY SUPPORT OLD CODES THAT USE THESE FUNCTIONS.
+// [WARNING] FOLLOW THE CHANGES IN `https://github.com/godotjs/GodotJS/tree/main/docs/breaking_changes.md` TO UPDATE YOUR CODES.
+
 /**
- *
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use `SignalN<..., R>.as_promise()` instead.
  */
-export function signal() {
+exports.$wait = function (signal: any) {
+    return new Promise(resolve => {
+        let fn: any = null;
+        fn = require("godot").Callable.create(function () {
+            signal.disconnect(fn);
+            if (arguments.length == 0) {
+                resolve(undefined);
+                return;
+            }
+            if (arguments.length == 1) {
+                resolve(arguments[0]);
+                return;
+            }
+            // return as javascript array if more than one 
+            resolve(Array.from(arguments));
+            jsb.internal.notify_microtasks_run();
+        });
+        signal.connect(fn, 0);
+    })
+}
+
+/**
+ * Wait for seconds as a promise.
+ * ```typescript
+ * function seconds(secs: number) {
+ *    return new Promise(function (resolve) {
+ *        setTimeout(function () {
+ *            resolve(undefined);
+ *        }, secs * 1000);
+ *    });
+ *}
+ * ```
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Implement your own version of this function.
+ * @param secs time to wait in seconds
+ * @returns Promise to await
+ */
+exports.seconds = function(secs: number) {
+    return new Promise(function (resolve) {
+        setTimeout(function () {
+            resolve(undefined);
+        }, secs * 1000);
+    });
+}
+
+
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.signal = function() {
     return function (target: any, key: string) {
         jsb.internal.add_script_signal(target, key);
     }
 }
 
-export function export_multiline() {
-    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_MULTILINE_TEXT });
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_multiline = function () {
+    return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_MULTILINE_TEXT });
 }
 
 function __export_range(type: Variant.Type, min: number, max: number, step: number = 1, ...extra_hints: string[]) {
@@ -20,38 +79,75 @@ function __export_range(type: Variant.Type, min: number, max: number, step: numb
     if (typeof extra_hints !== "undefined") {
         hint_string += "," + extra_hints.join(",");
     }
-    return export_(type, { hint: PropertyHint.PROPERTY_HINT_RANGE, hint_string: hint_string });
+    return exports.export_(type, { hint: PropertyHint.PROPERTY_HINT_RANGE, hint_string: hint_string });
 }
 
-export function export_range(min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_range = function (min: number, max: number, step: number = 1, ...extra_hints: string[]) {
     return __export_range(Variant.Type.TYPE_FLOAT, min, max, step, ...extra_hints);
 }
 
-export function export_range_i(min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_range_i = function (min: number, max: number, step: number = 1, ...extra_hints: string[]) {
     return __export_range(Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
 }
 
-export function export_file(filter: string) {
-    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_file = function (filter: string) {
+    return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
 }
 
-export function export_dir(filter: string) {
-    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_DIR, hint_string: filter });
+
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_dir = function (filter: string) {
+    return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_DIR, hint_string: filter });
 }
 
-export function export_global_file(filter: string) {
-    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_FILE, hint_string: filter });
+
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_global_file = function (filter: string) {
+    return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_FILE, hint_string: filter });
 }
 
-export function export_global_dir(filter: string) {
-    return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_DIR, hint_string: filter });
+
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_global_dir = function (filter: string) {
+    return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_DIR, hint_string: filter });
 }
 
-export function export_exp_easing(hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only") {
-    return export_(Variant.Type.TYPE_FLOAT, { hint: PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
+
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_exp_easing = function (hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only") {
+    return exports.export_(Variant.Type.TYPE_FLOAT, { hint: PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
 }
 
-export function export_(type: Variant.Type, details?: { class_?: Function, hint?: PropertyHint, hint_string?: string, usage?: PropertyUsageFlags }) {
+
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.export_ = function (type: Variant.Type, details?: { class_?: Function, hint?: PropertyHint, hint_string?: string, usage?: PropertyUsageFlags }) {
     return function (target: any, key: string) {
         let ebd = { name: key, type: type, hint: PropertyHint.PROPERTY_HINT_NONE, hint_string: "", usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         if (typeof details === "object") {
@@ -64,9 +160,10 @@ export function export_(type: Variant.Type, details?: { class_?: Function, hint?
 }
 
 /**
- * NOTE only int value enums are allowed
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
-export function export_enum(enum_type: any) {
+exports.export_enum = function (enum_type: any) {
     return function (target: any, key: string) {
         let enum_vs: Array<string> = [];
         for (let c in enum_type) {
@@ -81,9 +178,10 @@ export function export_enum(enum_type: any) {
 }
 
 /**
- * NOTE only int value enums are allowed
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
-export function export_flags(enum_type: any) {
+exports.export_flags = function (enum_type: any) {
     return function (target: any, key: string) {
         let enum_vs: Array<string> = [];
         for (let c in enum_type) {
@@ -97,14 +195,18 @@ export function export_flags(enum_type: any) {
     }
 }
 
-export interface RPCConfig {
+interface RPCConfig {
     mode?: MultiplayerAPI.RPCMode,
     sync?: "call_remote" | "call_local",
     transfer_mode?: MultiplayerPeer.TransferMode,
     transfer_channel?: number,
 }
 
-export function rpc(config?: RPCConfig) {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.rpc = function (config?: RPCConfig) {
     return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
         if (typeof propertyKey !== "string") {
             throw new Error("only string is allowed as propertyKey for rpc config");
@@ -125,29 +227,41 @@ export function rpc(config?: RPCConfig) {
 }
 
 /**
- * auto initialized on ready (before _ready called)
- * @param evaluator for now, only string is accepted
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
-export function onready(evaluator: string | jsb.internal.OnReadyEvaluatorFunc) {
+exports.onready = function (evaluator: string | jsb.internal.OnReadyEvaluatorFunc) {
     return function (target: any, key: string) {
         let ebd = { name: key, evaluator: evaluator };
         jsb.internal.add_script_ready(target, ebd);
     }
 }
 
-export function tool() {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.tool = function () {
     return function (target: any) {
         jsb.internal.add_script_tool(target);
     }
 }
 
-export function icon(path: string) {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.icon = function (path: string) {
     return function (target: any) {
         jsb.internal.add_script_icon(target, path);
     }
 }
 
-export function deprecated(message?: string) {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.deprecated = function (message?: string) {
     return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
         if (typeof propertyKey === "undefined") {
             jsb.internal.set_script_doc(target, undefined, 0, message ?? "");
@@ -158,7 +272,11 @@ export function deprecated(message?: string) {
     }
 }
 
-export function experimental(message?: string) {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.experimental = function (message?: string) {
     return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
         if (typeof propertyKey === "undefined") {
             jsb.internal.set_script_doc(target, undefined, 1, message ?? "");
@@ -169,7 +287,11 @@ export function experimental(message?: string) {
     }
 }
 
-export function help(message?: string) {
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
+ */
+exports.help = function (message?: string) {
     return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
         if (typeof propertyKey === "undefined") {
             jsb.internal.set_script_doc(target, undefined, 2, message ?? "");
@@ -180,49 +302,18 @@ export function help(message?: string) {
     }
 }
 
-export function $wait(signal: any) {
-    return new Promise(resolve => {
-        let fn: any = null;
-        fn = jsb.callable(function () {
-            signal.disconnect(fn);
-            if (arguments.length == 0) {
-                resolve(undefined);
-                return;
-            }
-            if (arguments.length == 1) {
-                resolve(arguments[0]);
-                return;
-            }
-            // return as javascript array if more than one 
-            resolve(Array.from(arguments));
-            jsb.internal.notify_microtasks_run();
-        });
-        signal.connect(fn, 0);
-    })
+/**
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot` instead.
+ */
+exports.GLOBAL_GET = function (entry_path: any): any {
+    return require("godot").ProjectSettings.get_setting_with_override(entry_path);
 }
 
 /**
- * Wait for seconds
- * @param secs time to wait in seconds
- * @returns Promise to await
+ * FOR BACKWARD COMPATIBILITY ONLY
+ * @deprecated [WARNING] This function is deprecated. Use the same function from `godot` instead.
  */
-export function seconds(secs: number) {
-    return new Promise(function (resolve) {
-        setTimeout(function () {
-            resolve(undefined);
-        }, secs * 1000);
-    });
-}
-
-/** shorthand for getting project settings */
-export function GLOBAL_GET(entry_path: StringName): any {
-    return ProjectSettings.get_setting_with_override(entry_path);
-}
-
-/** 
- * shorthand for getting editor settings  
- * NOTE: calling before EditorSettings created will cause null reference exception.
- */
-export function EDITOR_GET(entry_path: StringName): any {
-    return EditorInterface.get_editor_settings().get(entry_path);
+exports.EDITOR_GET = function (entry_path: any): any {
+    return require("godot").EditorInterface.get_editor_settings().get(entry_path);
 }

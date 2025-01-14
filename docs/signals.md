@@ -37,15 +37,15 @@ class MyClass extends Node {
 
 ## Await a Signal
 
-With a simple wrapper, `Signal` can be awaitable in javascript:
+`Signal` can be awaitable in javascript by calling `as_promise()`:
 
 ```ts
-import { Node, Signal } from "godot";
-import { $wait, signal } from "jsb.core";
+import { Node, Signal1 } from "godot";
+import { signal } from "godot.annotations";
 
 class ExampleClass extends Node {
     @signal()
-    test_signal!: Signal;
+    test_signal!: Signal1<number>;
 
     _ready() {
         test();
@@ -54,7 +54,7 @@ class ExampleClass extends Node {
     async test() {
         console.log("before signal emit");
         // result is 123
-        const result = await $wait(this.test_signal); 
+        const result = await this.test_signal.as_promise(); 
         console.log("after signal emit", result);
     }
 

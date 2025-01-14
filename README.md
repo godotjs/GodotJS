@@ -1,6 +1,8 @@
 
 # GodotJS 
-This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS, or even directly run scripts on the host browser JS VM if porting to web.
+This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS, or even directly run scripts on the host browser JS VM if porting to web.  
+
+See [Breaking Changes](./docs/breaking_changes.md) if upgrading from old versions.
 
 [![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
 [![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
@@ -133,6 +135,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 * [Compiler Options](./docs/compiler_options.md)
 * [Unit Testing](./docs/unit_testing.md)
 * [Misc](./docs/misc.md)
+* [Breaking Changes](./docs/breaking_changes.md)
 
 ## Auxiliary Repositories
 * [GodotJSExample](https://github.com/ialex32x/GodotJSExample): An example godot project for demonstrating how to use GodotJS

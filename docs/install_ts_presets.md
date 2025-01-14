@@ -1,5 +1,5 @@
 
-Install TS project presets with `Godot Editor` menu item `Project > Tools > GodotJS > Install TS Project`.
+Install Preset files with `Godot Editor` menu item `Project > Tools > GodotJS > Install Preset files`.
 > All `jsb` premade configurations/scripts will be generated at the root of the project (`res://`).
 > `d.ts` files of godot classes will also be generated at the same time.
 

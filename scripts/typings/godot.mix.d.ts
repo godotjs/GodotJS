@@ -96,6 +96,8 @@ declare module "godot" {
         disconnect(callable: Callable0): void;
         is_connected(callable: Callable0): boolean;
         emit(): void;
+
+        as_promise(): Promise<void>;
     }
 
     interface Signal1<T1> extends AnySignal {
@@ -103,6 +105,9 @@ declare module "godot" {
         disconnect(callable: Callable1<T1>): void;
         is_connected(callable: Callable1<T1>): boolean;
         emit(v1: T1): void;
+
+        // the first argument is used as the resolved value
+        as_promise(): Promise<T1>;
     }
 
     interface Signal2<T1, T2> extends AnySignal {
@@ -110,6 +115,9 @@ declare module "godot" {
         disconnect(callable: Callable2<T1, T2>): void;
         is_connected(callable: Callable2<T1, T2>): boolean;
         emit(v1: T1, v2: T2): void;
+
+        // the first argument is used as the resolved value
+        as_promise(): Promise<T1>;
     }
 
     interface Signal3<T1, T2, T3> extends AnySignal {
@@ -117,6 +125,9 @@ declare module "godot" {
         disconnect(callable: Callable3<T1, T2, T3>): void;
         is_connected(callable: Callable3<T1, T2, T3>): boolean;
         emit(v1: T1, v2: T2, v3: T3): void;
+
+        // the first argument is used as the resolved value
+        as_promise(): Promise<T1>;
     }
 
     interface Signal4<T1, T2, T3, T4> extends AnySignal {
@@ -124,6 +135,9 @@ declare module "godot" {
         disconnect(callable: Callable4<T1, T2, T3, T4>): void;
         is_connected(callable: Callable4<T1, T2, T3, T4>): boolean;
         emit(v1: T1, v2: T2, v3: T3, v4: T4): void;
+
+        // the first argument is used as the resolved value
+        as_promise(): Promise<T1>;
     }
 
     interface Signal5<T1, T2, T3, T4, T5> extends AnySignal {
@@ -131,6 +145,9 @@ declare module "godot" {
         disconnect(callable: Callable5<T1, T2, T3, T4, T5>): void;
         is_connected(callable: Callable5<T1, T2, T3, T4, T5>): boolean;
         emit(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5): void;
+
+        // the first argument is used as the resolved value
+        as_promise(): Promise<T1>;
     }
 
 }

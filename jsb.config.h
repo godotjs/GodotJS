@@ -111,6 +111,6 @@
 // A helper version tag for the jsb.*.bundle.js scripts (which is embedded in .cpp source).
 // It could ensure your engine built with the expected version of the jsb bundle scripts.
 // If static_assert in `jsb_project_preset.gen.cpp` fails, please run your `scons` command again to update all bundle scripts.
-#define JSB_BUNDLE_VERSION 5
+#define JSB_BUNDLE_VERSION 6
 
 #endif

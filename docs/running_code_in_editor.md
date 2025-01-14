@@ -10,7 +10,7 @@ It's also possible to show warnings on a `Node` on `Scene` panel with `_get_conf
 
 ```ts
 import { Engine, PackedStringArray, Sprite2D, Variant } from "godot";
-import { export_, tool } from "jsb.core";
+import { export_, tool } from "godot.annotations";
 
 @tool()
 export default class MyEditorSprite extends Sprite2D {
@@ -82,7 +82,7 @@ This is available in Godot by extending `EditorScript` in a script. This provide
 
 ```ts 
 import { EditorScript } from "godot";
-import { tool } from "jsb.core";
+import { tool } from "godot.annotations";
 
 @tool()
 export default class MyEditorScript1 extends EditorScript {

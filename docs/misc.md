@@ -7,6 +7,7 @@ flowchart LR
 subgraph JS Environment
     v8-->v8.impl
     quickjs-->quickjs.impl
+    quickjs-ng-->quickjs.impl
     web{emscripten}-->web.impl
 end 
 

@@ -118,6 +118,20 @@ const CallableFuncBind = {
         "static create<T1, T2, T3, T4, T5, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
     ]
 }
+const GlobalUtilityFuncs = [
+    {
+        description: "shorthand for getting project settings",
+        method: "function GLOBAL_GET(entry_path: StringName): any"
+    },
+
+    {
+        description: [
+            "shorthand for getting editor settings",
+            "NOTE: calling before EditorSettings created will cause null reference exception."
+        ], 
+        method: "function EDITOR_GET(entry_path: StringName): any"
+    }
+]
 
 const PrimitiveTypesSet = (function (): Set<string> {
     let set = new Set<string>();
@@ -301,10 +315,12 @@ class DocCommentHelper {
         return text;
     }
 
-    static write(writer: CodeWriter, description: Description | string | undefined, newline: boolean): boolean {
+    static write(writer: CodeWriter, description: Description | string | string[] | undefined, newline: boolean): boolean {
         if (typeof description === "undefined" || description.length == 0) return false;
-        let rawlines = typeof description === "string" ? Description.forAny(description).text : description.text;
-        let lines = this.get_simplified_description(rawlines).replace("\r\n", "\n").split("\n");
+        let lines =
+            description instanceof Array
+                ? description
+                : this.get_simplified_description(typeof description === "string" ? Description.forAny(description).text : description.text).replace("\r\n", "\n").split("\n");
         if (lines.length > 0 && this.is_empty_or_whitespace(lines[0])) lines.splice(0, 1);
         if (lines.length > 0 && this.is_empty_or_whitespace(lines[lines.length - 1])) lines.splice(lines.length - 1, 1);
         if (lines.length == 0) return false;
@@ -1048,6 +1064,13 @@ export default class TSDCodeGen {
             DocCommentHelper.write(cg, doc?.methods[utility_func.name]?.description, separator_line);
             separator_line = true;
             cg.utility_(utility_func);
+        }
+
+        for (let mi of GlobalUtilityFuncs) {
+            const cg = this.split();
+            DocCommentHelper.write(cg, mi.description, separator_line);
+            separator_line = true;
+            cg.line(mi.method);
         }
     }
 
