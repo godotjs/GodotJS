@@ -1,6 +1,6 @@
 
 declare module "godot-jsb" {
-    import { Callable as GDCallable, Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable4, StringName, MultiplayerAPI, MultiplayerPeer } from "godot";
+    import { Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable2, Callable3, Callable4, Callable5, StringName, MultiplayerAPI, MultiplayerPeer } from "godot";
 
     const DEV_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
@@ -12,26 +12,66 @@ declare module "godot-jsb" {
     const impl: string;
 
     /**
-     * Create godot Callable with a bound object `self`
+     * Create godot Callable with a bound object `self`. 
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
      */
     function callable<R = void>(self: GDObject, fn: () => R): Callable0<R>;
+    /**
+     * Create godot Callable with a bound object `self`. 
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, R = void>(self: GDObject, fn: (v1: T1) => R): Callable1<T1, R>;
+    /**
+     * Create godot Callable with a bound object `self`. 
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, R = void>(self: GDObject, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>;
+    /**
+     * Create godot Callable with a bound object `self`. 
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, T3, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>;
+    /**
+     * Create godot Callable with a bound object `self`. 
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, T3, T4, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>;
+    /**
+     * Create godot Callable with a bound object `self`. 
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, T3, T4, T5, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>;
-    // function callable(self: GDObject, fn: Function): GDCallable;
 
     /**
-     * Create godot Callable without a bound object
+     * Create godot Callable without a bound object.
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
      */
     function callable<R = void>(fn: () => R): Callable0<R>;
+    /**
+     * Create godot Callable without a bound object.
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, R = void>(fn: (v1: T1) => R): Callable1<T1, R>;
+    /**
+     * Create godot Callable without a bound object.
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, R = void>(fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>;
+    /**
+     * Create godot Callable without a bound object.
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, T3, R = void>(fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>;
+    /**
+     * Create godot Callable without a bound object.
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, T3, T4, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>;
+    /**
+     * Create godot Callable without a bound object.
+     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
+     */
     function callable<T1, T2, T3, T4, T5, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>;
-    // function callable(fn: Function): GDCallable;
 
     /**
      * Explicitly convert a `PackedByteArray`(aka `Vector<uint8_t>`) into a javascript `ArrayBuffer` 

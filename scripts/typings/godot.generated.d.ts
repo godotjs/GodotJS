@@ -326,6 +326,10 @@ declare module "godot" {
         }
     }
 
+    class Callable implements AnyCallable {
+        static create(variant: any, method: StringName): AnyCallable
+    }
+
     static function type_string(type: int64): string;
     static function str(o: any): string;
 }

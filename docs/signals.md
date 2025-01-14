@@ -7,32 +7,33 @@ Leveraging TypeScript's strong type checking, when you connect an incorrect call
 
 ## Callable
 
-`jsb.callable` returns a `Callable` javascript object.  
+`Callable.create` returns a `Callable` object.  
+
+> [!NOTE]
+> Since `v0.9.8`, the function `callable` from module `godot-jsb` is deprecated. 
+> Please directly use the static function `create` in `Callable` from module `godot`.
 
 > [!WARNING]
-> Please be cautious that `jsb.callable(this, this.xxx) === jsb.callable(this, this.xxx)` returns `false`.   
+> Please be cautious that `Callable.create(this, this.xxx) === Callable.create(this, this.xxx)` returns `false`.   
 > But it's compared internally in C++ to check equality when using them for `connect` and `disconnect`.
 
 ```ts
-import { Node } from "godot";
-import * as jsb from "godot-jsb";
+import { Node, Callable } from "godot";
 
 class MyClass extends Node {
     foo() {
         // subscribe
-        this.onclick.connect(jsb.callable(this, this.handle_onclick), 0);
+        this.onclick.connect(Callable.create(this, this.handle_onclick), 0);
 
         // unsubscribe
-        this.onclick.disconnect(jsb.callable(this, this.handle_onclick));
+        this.onclick.disconnect(Callable.create(this, this.handle_onclick));
     }
 }
 ```
 
-> [!NOTE]
-> `jsb.callable` does not hold a strong reference on `this` which given as the first parameter. It becomes invalid after the corresponding javascript object is garbage collected.  
-
 > [!WARNING]
-> However, it may cause object leaks if `this` is captured in a lambda function. So avoid coding in this way `jsb.callable(this, () => this.xxx())`.
+> `Callable` does not hold a strong reference on `this` which given as the first parameter. It becomes invalid after the corresponding javascript object is garbage collected.  
+> **HOWEVER**, it may cause object leaks if `this` is captured in a lambda function. So avoid coding in this way `Callable.create(this, () => this.xxx())`.
 
 ## Await a Signal
 

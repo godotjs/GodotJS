@@ -249,9 +249,10 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
         return godot_1.EditorInterface.get_editor_settings().get(entry_path);
     }
 });
-define("jsb.inject", ["require", "exports", "godot"], function (require, exports, godot_2) {
+define("jsb.inject", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_2, godot_jsb_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    let inject_mark = Symbol();
     (function (items) {
         for (let item of items) {
             item.class.prototype[Symbol.iterator] = item.func;
@@ -278,5 +279,23 @@ define("jsb.inject", ["require", "exports", "godot"], function (require, exports
             }
         }
     ]);
+    let callable_create = godot_2.Callable.create;
+    // @ts-ignore
+    godot_2.Callable.create = function () {
+        const argc = arguments.length;
+        if (argc == 1) {
+            if (typeof arguments[0] !== "function") {
+                throw new Error("not a function");
+            }
+            return (0, godot_jsb_1.callable)(arguments[0]);
+        }
+        if (argc == 2) {
+            if (typeof arguments[1] !== "function") {
+                return callable_create(arguments[0], arguments[1]);
+            }
+            return (0, godot_jsb_1.callable)(arguments[0], arguments[1]);
+        }
+        throw new Error("invalid arguments");
+    };
 });
 //# sourceMappingURL=jsb.runtime.bundle.js.map

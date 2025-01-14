@@ -91,6 +91,28 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
         "GDScriptNativeClass",
         "GDScriptSyntaxHighlighter",
     ]);
+    const CallableBind = {
+        description: "Create a callable object with a bound object `self`",
+        methods: [
+            "static create<R = void>(self: GDObject, fn: () => R): Callable0<R>",
+            "static create<T1, R = void>(self: GDObject, fn: (v1: T1) => R): Callable1<T1, R>",
+            "static create<T1, T2, R = void>(self: GDObject, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
+            "static create<T1, T2, T3, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
+            "static create<T1, T2, T3, T4, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
+            "static create<T1, T2, T3, T4, T5, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
+        ]
+    };
+    const CallableFuncBind = {
+        description: "Create godot Callable without a bound object",
+        methods: [
+            "static create<R = void>(fn: () => R): Callable0<R>",
+            "static create<T1, R = void>(fn: (v1: T1) => R): Callable1<T1, R>",
+            "static create<T1, T2, R = void>(fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
+            "static create<T1, T2, T3, R = void>(fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
+            "static create<T1, T2, T3, T4, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
+            "static create<T1, T2, T3, T4, T5, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
+        ]
+    };
     const PrimitiveTypesSet = (function () {
         let set = new Set();
         for (let name in godot_1.Variant.Type) {
@@ -1007,6 +1029,16 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             else if (cls.type == godot_1.Variant.Type.TYPE_PACKED_BYTE_ARRAY) {
                 class_cg.line("/** [jsb utility method] Converts a PackedByteArray to a JavaScript ArrayBuffer. */");
                 class_cg.line("to_array_buffer(): ArrayBuffer");
+            }
+            else if (cls.type == godot_1.Variant.Type.TYPE_CALLABLE) {
+                CallableBind.methods.forEach(method => {
+                    class_cg.line(`/** ${CallableBind.description} */`);
+                    class_cg.line(method);
+                });
+                CallableFuncBind.methods.forEach(method => {
+                    class_cg.line(`/** ${CallableFuncBind.description} */`);
+                    class_cg.line(method);
+                });
             }
             //TODO [END] make all these messy hardcoded methods more flexible and readable
             for (let method_info of cls.methods) {

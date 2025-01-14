@@ -1,4 +1,7 @@
-import { GArray, GDictionary } from "godot";
+import { GArray, GDictionary, Callable } from "godot";
+import { callable } from "godot-jsb";
+
+let inject_mark = Symbol();
 
 (function (items: Array<{ class: any, func: Function }>) {
     for (let item of items) {
@@ -28,3 +31,23 @@ import { GArray, GDictionary } from "godot";
         }
     ]
 );
+
+let callable_create = Callable.create;
+
+// @ts-ignore
+Callable.create = function () {
+    const argc = arguments.length;
+    if (argc == 1) {
+        if (typeof arguments[0] !== "function") {
+            throw new Error("not a function");
+        }
+        return callable(arguments[0]);
+    }
+    if (argc == 2) {
+        if (typeof arguments[1] !== "function") {
+            return callable_create(arguments[0], arguments[1]);
+        }
+        return callable(arguments[0], arguments[1]);
+    }
+    throw new Error("invalid arguments");
+}
