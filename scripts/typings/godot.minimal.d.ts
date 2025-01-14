@@ -34,7 +34,7 @@ declare module "godot-jsb" {
     // function callable(fn: Function): GDCallable;
 
     /**
-     * Explicitly convert a `PackedByteArray`(aka Vector<uint8_t>) into a javascript `ArrayBuffer` 
+     * Explicitly convert a `PackedByteArray`(aka `Vector<uint8_t>`) into a javascript `ArrayBuffer` 
      * @deprecated [WARNING] This free function '_to_array_buffer' is deprecated and will be removed in a future version, use 'PackedByteArray.to_array_buffer()' instead. 
      */
     function to_array_buffer(packed: PackedByteArray): ArrayBuffer;
