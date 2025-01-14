@@ -139,9 +139,9 @@ namespace jsb::impl
             } usage;
 
             jsbi_GetStatistics(isolate->rt(), &usage);
-            p_fields.append(CustomField::value("stack_size", (int64_t) usage.stack_size));
-            p_fields.append(CustomField::value("handle_count", (int64_t) usage.handle_count));
-            p_fields.append(CustomField::value("registered_object_count", (int64_t) usage.registered_object_count));
+            p_fields.append(CustomField::value_i64("stack_size", (int64_t) usage.stack_size));
+            p_fields.append(CustomField::value_i64("handle_count", (int64_t) usage.handle_count));
+            p_fields.append(CustomField::value_i64("registered_object_count", (int64_t) usage.registered_object_count));
         }
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)

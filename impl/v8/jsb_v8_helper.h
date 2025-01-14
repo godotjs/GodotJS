@@ -202,11 +202,11 @@ namespace jsb::impl
             v8::HeapStatistics v8_statistics;
             isolate->GetHeapStatistics(&v8_statistics);
 
-            p_fields.append(CustomField::cap("global_handles_size", v8_statistics.used_global_handles_size(), v8_statistics.total_global_handles_size()));
-            p_fields.append(CustomField::cap("heap_size", v8_statistics.used_heap_size(), v8_statistics.total_heap_size(), CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value("peak_malloced_memory", v8_statistics.peak_malloced_memory()));
-            p_fields.append(CustomField::value("malloced_memory", v8_statistics.malloced_memory()));
-            p_fields.append(CustomField::value("external_memory", v8_statistics.external_memory()));
+            p_fields.append(CustomField::cap_u64("global_handles_size", v8_statistics.used_global_handles_size(), v8_statistics.total_global_handles_size()));
+            p_fields.append(CustomField::cap_u64("heap_size", v8_statistics.used_heap_size(), v8_statistics.total_heap_size(), CustomField::HINT_SIZE));
+            p_fields.append(CustomField::value_u64("peak_malloced_memory", v8_statistics.peak_malloced_memory()));
+            p_fields.append(CustomField::value_u64("malloced_memory", v8_statistics.malloced_memory()));
+            p_fields.append(CustomField::value_u64("external_memory", v8_statistics.external_memory()));
         }
 
         jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate) {}

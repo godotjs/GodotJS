@@ -37,7 +37,7 @@ namespace jsb::impl
         Type type;
         HintFlags hint;
 
-        static CustomField value(const String& p_name, const uint64_t p_value, const HintFlags p_flags = HINT_NONE)
+        static CustomField value_u64(const String& p_name, const uint64_t p_value, const HintFlags p_flags = HINT_NONE)
         {
             CustomField cf;
             cf.name = p_name;
@@ -47,7 +47,7 @@ namespace jsb::impl
             return cf;
         }
 
-        static CustomField cap(const String& p_name, const uint64_t p_used, const uint64_t p_max, const HintFlags p_flags = HINT_NONE)
+        static CustomField cap_u64(const String& p_name, const uint64_t p_used, const uint64_t p_max, const HintFlags p_flags = HINT_NONE)
         {
             CustomField cf;
             cf.name = p_name;
@@ -58,7 +58,7 @@ namespace jsb::impl
             return cf;
         }
 
-        static CustomField value(const String& p_name, const int64_t p_value, const HintFlags p_flags = HINT_NONE)
+        static CustomField value_i64(const String& p_name, const int64_t p_value, const HintFlags p_flags = HINT_NONE)
         {
             CustomField cf;
             cf.name = p_name;
@@ -68,7 +68,7 @@ namespace jsb::impl
             return cf;
         }
 
-        static CustomField cap(const String& p_name, const int64_t p_used, const int64_t p_max, const HintFlags p_flags = HINT_NONE)
+        static CustomField cap_i64(const String& p_name, const int64_t p_used, const int64_t p_max, const HintFlags p_flags = HINT_NONE)
         {
             CustomField cf;
             cf.name = p_name;
