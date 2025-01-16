@@ -114,8 +114,8 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 ## More Details
 
 ### Scripting
-* [Create a TypeScript Project from scratch](./docs/create_typescript_project.md)
-* [Create a JavaScript Project from scratch](./docs/create_javascript_project.md)
+* [Create a TypeScript Project from Scratch](./docs/create_typescript_project.md)
+* [Create a JavaScript Project from Scratch](./docs/create_javascript_project.md)
 * [GodotJS Scripts](./docs/godotjs_scripts.md)
 * [Godot Bindings](./docs/godot_binding.md)
 * [Running code in the editor](./docs/running_code_in_editor.md)
