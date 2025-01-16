@@ -8,12 +8,25 @@ declare module "godot.annotations" {
     export function export_multiline(): (target: any, key: string) => void;
     export function export_range(min: number, max: number, step?: number, ...extra_hints: string[]): (target: any, key: string) => void;
     export function export_range_i(min: number, max: number, step?: number, ...extra_hints: string[]): (target: any, key: string) => void;
+    /** String as a path to a file, custom filter provided as hint. */
     export function export_file(filter: string): (target: any, key: string) => void;
     export function export_dir(filter: string): (target: any, key: string) => void;
     export function export_global_file(filter: string): (target: any, key: string) => void;
     export function export_global_dir(filter: string): (target: any, key: string) => void;
     export function export_exp_easing(hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only"): (target: any, key: string) => void;
     export function export_(type: Variant.Type, details?: {
+        class_?: Function;
+        hint?: PropertyHint;
+        hint_string?: string;
+        usage?: PropertyUsageFlags;
+    }): (target: any, key: string) => void;
+    /**
+     * In Godot, class members can be exported.
+     * This means their value gets saved along with the resource (such as the scene) they're attached to.
+     * They will also be available for editing in the property editor.
+     * Exporting is done by using the `@export_var` (or `@export_`) annotation.
+     */
+    export function export_var(type: Variant.Type, details?: {
         class_?: Function;
         hint?: PropertyHint;
         hint_string?: string;

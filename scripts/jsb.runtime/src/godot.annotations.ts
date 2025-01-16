@@ -31,6 +31,7 @@ export function export_range_i(min: number, max: number, step: number = 1, ...ex
     return __export_range(Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
 }
 
+/** String as a path to a file, custom filter provided as hint. */
 export function export_file(filter: string) {
     return export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
 }
@@ -61,6 +62,16 @@ export function export_(type: Variant.Type, details?: { class_?: Function, hint?
         }
         jsb.internal.add_script_property(target, ebd);
     }
+}
+
+/**
+ * In Godot, class members can be exported. 
+ * This means their value gets saved along with the resource (such as the scene) they're attached to.
+ * They will also be available for editing in the property editor. 
+ * Exporting is done by using the `@export_var` (or `@export_`) annotation.
+ */
+export function export_var(type: Variant.Type, details?: { class_?: Function, hint?: PropertyHint, hint_string?: string, usage?: PropertyUsageFlags }) {
+    return export_(type, details);
 }
 
 /**

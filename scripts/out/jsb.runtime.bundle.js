@@ -34,6 +34,7 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
     exports.export_global_dir = export_global_dir;
     exports.export_exp_easing = export_exp_easing;
     exports.export_ = export_;
+    exports.export_var = export_var;
     exports.export_enum = export_enum;
     exports.export_flags = export_flags;
     exports.rpc = rpc;
@@ -68,6 +69,7 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
     function export_range_i(min, max, step = 1, ...extra_hints) {
         return __export_range(godot_1.Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
     }
+    /** String as a path to a file, custom filter provided as hint. */
     function export_file(filter) {
         return export_(godot_1.Variant.Type.TYPE_STRING, { hint: godot_1.PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
     }
@@ -96,6 +98,15 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
             }
             jsb.internal.add_script_property(target, ebd);
         };
+    }
+    /**
+     * In Godot, class members can be exported.
+     * This means their value gets saved along with the resource (such as the scene) they're attached to.
+     * They will also be available for editing in the property editor.
+     * Exporting is done by using the `@export_var` (or `@export_`) annotation.
+     */
+    function export_var(type, details) {
+        return export_(type, details);
     }
     /**
      * NOTE only int value enums are allowed
