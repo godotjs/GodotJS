@@ -179,7 +179,6 @@ namespace jsb
         v8::Isolate* isolate = info.GetIsolate();
         if (!info[0]->IsInt32())
         {
-            jsb_throw(isolate, "bad argument");
             return;
         }
 
@@ -215,6 +214,8 @@ namespace jsb
             self->Set(context, impl::Helper::new_string_ascii(isolate, "setTimeout"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout))).Check();
             self->Set(context, impl::Helper::new_string_ascii(isolate, "setImmediate"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate))).Check();
             self->Set(context, impl::Helper::new_string_ascii(isolate, "clearInterval"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "clearTimeout"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "clearImmediate"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
         }
     }
 #endif
