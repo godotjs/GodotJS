@@ -152,10 +152,15 @@ namespace jsb::impl
             }
             else
             {
+#if JSB_WITH_URI_SCRIPT_ORIGIN
+                const String prefixed = "file://" + p_filename;
+                const CharString filename = prefixed.utf8();
+#else
 #ifdef WINDOWS_ENABLED
                 const CharString filename = p_filename.replace("/", "\\").utf8();
 #else
                 const CharString filename = p_filename.utf8();
+#endif
 #endif
                 v8::ScriptOrigin origin(isolate, v8::String::NewFromUtf8(isolate, filename, v8::NewStringType::kNormal, filename.length()).ToLocalChecked());
                 script = v8::Script::Compile(context, source, &origin);

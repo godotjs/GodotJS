@@ -113,8 +113,8 @@ namespace jsb
             if (lws_is_final_fragment(wsi_))
             {
                 const bool is_binary = lws_frame_is_binary(wsi_) == 1;
-                if (is_binary) { JSB_DEBUGGER_LOG(Debug, "receive binary message: %d", recv_buffer_->get_position()); }
-                else { JSB_DEBUGGER_LOG(Debug, "receive text message: %s", String::utf8((const char*) recv_buffer_->get_data_array().ptr(), recv_buffer_->get_position())); }
+                if (is_binary) { JSB_DEBUGGER_LOG(Verbose, "receive binary message: %d", recv_buffer_->get_position()); }
+                else { JSB_DEBUGGER_LOG(Verbose, "receive text message: %s", String::utf8((const char*) recv_buffer_->get_data_array().ptr(), recv_buffer_->get_position())); }
 
                 v8::Isolate* isolate = isolate_;
                 v8::Isolate::Scope isolate_scope(isolate);
@@ -336,7 +336,7 @@ namespace jsb
         {
             if (channel_ && *channel_ == wsi)
             {
-                JSB_DEBUGGER_LOG(Debug, "connection closed");
+                JSB_DEBUGGER_LOG(Verbose, "connection closed");
                 channel_.reset();
             }
         }
@@ -396,7 +396,7 @@ namespace jsb
                 // JSB_DEBUGGER_LOG(VeryVerbose, "on writeable callback");
                 return 0;
             case LWS_CALLBACK_CLOSED:
-                JSB_DEBUGGER_LOG(Debug, "wsi closed");
+                JSB_DEBUGGER_LOG(Verbose, "wsi closed");
                 impl->_on_lws_close(wsi);
                 return -1;
             case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
