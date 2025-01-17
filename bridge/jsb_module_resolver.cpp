@@ -132,6 +132,11 @@ namespace jsb
                     }
 
                     const Dictionary data = json->get_data();
+                    if (!data.has("main"))
+                    {
+                        break;
+                    }
+                    
                     const String main = internal::PathUtil::combine(p_module_id, data["main"]);
                     String extracted_main;
                     error = internal::PathUtil::extract(main, extracted_main);
