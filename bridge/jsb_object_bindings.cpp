@@ -153,14 +153,18 @@ namespace jsb
     void ObjectReflectBindingUtil::_godot_object_signal(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         Environment* environment = Environment::wrap(isolate);
         const StringName name = environment->get_string_name_cache().get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
 
-        v8::Local<v8::Object> self = info.This();
+        const v8::Local<v8::Object> self = info.This();
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-        jsb_check(environment->check_object(pointer));
+        if (!environment->check_object(pointer))
+        {
+            jsb_throw(isolate, "signal owner is a dead object");
+            return;
+        }
 
         // signal must be instance-owned
         const Object* gd_object = (Object*) pointer;
@@ -184,7 +188,7 @@ namespace jsb
         }
 
         Callable::CallError err;
-        Variant dummy = gd_object->callp(jsb_string_name(free), nullptr, 0, err);
+        const Variant dummy = gd_object->callp(jsb_string_name(free), nullptr, 0, err);
         jsb_check(dummy.get_type() == Variant::NIL);
         if (jsb_unlikely(err.error != Callable::CallError::CALL_OK))
         {
