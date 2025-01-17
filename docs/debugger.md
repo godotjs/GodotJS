@@ -41,8 +41,8 @@ Open `devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws
 
 ## Troubleshoot
 
-Q: The debugger is connected successfully, but why no breakpoints can hit (or the devtools reports that a source can not be located)?
-A: The debugger resolves the source from a wrong place. Please update the value of `sourceRoot` in your `tsconfig.json` to a appropriate path (can be a relative path).
+Q: The debugger is connected successfully, but why no breakpoints can hit (or the devtools reports that a source can not be located)?  
+A: The debugger is resolving the source from a wrong place. Please update the value of `sourceRoot` in your `tsconfig.json` to an appropriate path (can be a relative path).
 
 ---
 
