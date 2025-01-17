@@ -103,6 +103,12 @@ a2.append("test2");
 a1.append_array(["hey", "there"]); // implicit, it will fail if `JSB_IMPLICIT_PACKED_ARRAY_CONVERSION` is `0`
 a1.append_array(a2); // explicit
 
+// To get value from PackedArray use `get_indexed`
+a1.get_indexed(2);
+
+// To set value in PackedArray use `set_indexed`
+a1.set_indexed(2, "new value");
+
 let b1 = new PackedByteArray();
 b1.append_array([20, 1, 6, 5]); 
 
