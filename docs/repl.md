@@ -8,7 +8,8 @@ A dropdown list will be shown if `auto-complete` is available for the input part
 
 
 > [!NOTE] 
-> So far, `REPL` runs on the javascript runtime the `ScriptLanguage` using.   
+> So far, `REPL` runs on the javascript runtime the `ScriptLanguage` using.  
+> And, the `auto-complete` feature may have side effects because the partial input is evaluated to get available candidates. 
 
 ---
 

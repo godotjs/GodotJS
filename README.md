@@ -15,7 +15,7 @@ See [Breaking Changes](./docs/breaking_changes.md) if upgrading from old version
 
 ## Features
 * [x] Godot ScriptLanguage integration
-* [x] Debug with Chrome devtools when using V8
+* [x] Debug with Chrome/VSCode when using V8
 * [x] REPL in Editor
 * [x] Hot-reloading
 * [x] Support for multiple javascript engines ([v8](https://github.com/v8/v8), [quickjs](https://github.com/bellard/quickjs), [quickjs-ng](https://github.com/quickjs-ng/quickjs), the host Browser JS)
@@ -74,7 +74,7 @@ The module directroy structure looks like this:
         ┣━ ...
 ```
 
-The currently used version of `v8` is `12.4.254.20`.
+The currently used version of `v8` is `12.4.254.21`.
 
 **STEP 3:** Compile and launch `Godot Editor`. Then, [install TypeScript/JavaScript presets](./docs/install_ts_presets.md) into a Godot project.
 
@@ -157,7 +157,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | iOS:x86_64     | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | iOS:arm64      | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | Web:wasm32     | ❌                  | ✅ (not tested) | ✅ (not tested)                | ✅ (debugging)      |
-| Debugger       | ✅ chrome devtools  | ❌              | ❌                             | ✅ browser devtools |
+| Debugger       | ✅ Chrome/VSCode  | ❌              | ❌                             | ✅ browser devtools |
 
 
 > Android: only tested on ndk_platform=android-24  
