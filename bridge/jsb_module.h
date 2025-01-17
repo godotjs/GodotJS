@@ -106,6 +106,11 @@ namespace jsb
             return p_name == main_;
         }
 
+        jsb_force_inline v8::Local<v8::Object> get_cache(v8::Isolate* isolate) const
+        {
+            return cache_object_.Get(isolate);
+        }
+
         JavaScriptModule& insert(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& p_name, bool p_main_candidate, bool p_init_loaded);
     };
 

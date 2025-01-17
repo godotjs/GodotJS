@@ -216,7 +216,7 @@ namespace jsb
             {
                 const v8::Local<v8::Object> cache_obj = v8::Object::New(isolate_);
                 const v8::Local<v8::Function> require_func = JSB_NEW_FUNCTION(context, Builtins::_require, {});
-                require_func->Set(context, impl::Helper::new_string_ascii(isolate_, "cache"), cache_obj).Check();
+                require_func->Set(context, jsb_name(this, cache), cache_obj).Check();
                 require_func->Set(context, impl::Helper::new_string_ascii(isolate_, "moduleId"), v8::String::Empty(isolate_)).Check();
                 global->Set(context, impl::Helper::new_string_ascii(isolate_, "require"), require_func).Check();
                 global->Set(context, impl::Helper::new_string_ascii(isolate_, "define"), JSB_NEW_FUNCTION(context, Builtins::_define, {})).Check();
@@ -968,6 +968,7 @@ namespace jsb
             JSB_LOG(Log, "%s: require.main is not set due to main module not available", p_module_id);
             require->Set(context, jsb_name(this, main), v8::Undefined(isolate_)).Check();
         }
+        require->Set(context, jsb_name(this, cache), module_cache_.get_cache(isolate_)).Check();
         return require;
     }
 
