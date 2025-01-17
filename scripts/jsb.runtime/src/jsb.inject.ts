@@ -51,11 +51,12 @@ Callable.create = function () {
     throw new Error("invalid arguments");
 }
 
-Signal.prototype.as_promise = function (signal: any) {
-    return new Promise(resolve => {
+Signal.prototype.as_promise = function () {
+    let self = this;
+    return new Promise(function (resolve, reject) {
         let fn: any = null;
         fn = Callable.create(function () {
-            //signal.disconnect(fn);
+            //self.disconnect(fn);
             if (arguments.length == 0) {
                 resolve(undefined);
                 return;
@@ -68,7 +69,8 @@ Signal.prototype.as_promise = function (signal: any) {
             resolve(Array.from(arguments));
             jsb.internal.notify_microtasks_run();
         });
-        signal.connect(fn, GObject.ConnectFlags.CONNECT_ONE_SHOT);
+        self.connect(fn, GObject.ConnectFlags.CONNECT_ONE_SHOT);
+        self = undefined;
     });
 }
 

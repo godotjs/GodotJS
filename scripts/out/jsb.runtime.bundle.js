@@ -550,11 +550,12 @@ define("jsb.inject", ["require", "exports", "godot"], function (require, exports
         }
         throw new Error("invalid arguments");
     };
-    godot_3.Signal.prototype.as_promise = function (signal) {
-        return new Promise(resolve => {
+    godot_3.Signal.prototype.as_promise = function () {
+        let self = this;
+        return new Promise(function (resolve, reject) {
             let fn = null;
             fn = godot_3.Callable.create(function () {
-                //signal.disconnect(fn);
+                //self.disconnect(fn);
                 if (arguments.length == 0) {
                     resolve(undefined);
                     return;
@@ -567,7 +568,8 @@ define("jsb.inject", ["require", "exports", "godot"], function (require, exports
                 resolve(Array.from(arguments));
                 jsb.internal.notify_microtasks_run();
             });
-            signal.connect(fn, godot_3.Object.ConnectFlags.CONNECT_ONE_SHOT);
+            self.connect(fn, godot_3.Object.ConnectFlags.CONNECT_ONE_SHOT);
+            self = undefined;
         });
     };
     Object.defineProperty(require("godot"), "GLOBAL_GET", {
