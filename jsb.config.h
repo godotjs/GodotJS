@@ -91,6 +91,10 @@
 #define JSB_SARRAY_DEBUG 0
 #define JSB_SARRAY_CONSISTENCY_CHECK 0
 
+// use url scheme to avoid the file separator conversion on windows.
+// disable if not supported by the remote debugger.
+#define JSB_WITH_URI_SCRIPT_ORIGIN 0
+
 // slots for object/script/class info is reallocated on heap (as a whole block of memory)
 // a suitable value can avoid unnecessary reallocation
 #define JSB_MASTER_INITIAL_OBJECT_SLOTS (1024 * 64)

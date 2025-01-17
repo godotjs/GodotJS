@@ -163,20 +163,6 @@ namespace jsb
         }
     }
 
-    void Environment::on_context_created(const v8::Local<v8::Context>& p_context)
-    {
-#if JSB_WITH_DEBUGGER
-        debugger_.on_context_created(p_context);
-#endif
-    }
-
-    void Environment::on_context_destroyed(const v8::Local<v8::Context>& p_context)
-    {
-#if JSB_WITH_DEBUGGER
-        debugger_.on_context_destroyed(p_context);
-#endif
-    }
-
     Environment::Environment(const CreateParams& p_params)
     : pending_delete_(nearest_shift(p_params.deletion_queue_size))
     {
@@ -242,7 +228,6 @@ namespace jsb
 #endif
             Essentials::register_(context, global);
             register_primitive_bindings(this);
-            this->on_context_created(context);
         }
 
         //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
@@ -316,7 +301,9 @@ namespace jsb
             while (!function_bank_.is_empty()) function_bank_.remove_last();
             // function_bank_.clear();
 
-            this->on_context_destroyed(context);
+#if JSB_WITH_DEBUGGER
+            debugger_.on_context_destroyed(context);
+#endif
             context->SetAlignedPointerInEmbedderData(kContextEmbedderData, nullptr);
 
             module_cache_.deinit();
@@ -672,7 +659,10 @@ namespace jsb
     void Environment::start_debugger(uint16_t p_port)
     {
 #if JSB_WITH_DEBUGGER
+        JSB_HANDLE_SCOPE(isolate_);
+
         debugger_.init(isolate_, p_port);
+        debugger_.on_context_created(context_.Get(isolate_));
 #endif
     }
 

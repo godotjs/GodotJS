@@ -482,9 +482,6 @@ namespace jsb
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,
             const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
 
-        void on_context_created(const v8::Local<v8::Context>& p_context);
-        void on_context_destroyed(const v8::Local<v8::Context>& p_context);
-
         void exec_sync_delete();
 
         // callback from v8 gc (not 100% guaranteed called)
