@@ -54,6 +54,7 @@ module_name = os.path.basename(module_path)
 v8_prebuilt_libs = LibraryDescriptor("v8", \
 [ 
     LibraryDetails("windows", "x86_64", "v8_monolith.lib",  "_"), 
+    LibraryDetails("windows", "arm64",  "v8_monolith.lib",  "_"), 
     LibraryDetails("linux",   "x86_64", "libv8_monolith.a", "."), 
     LibraryDetails("macos",   "x86_64", "libv8_monolith.a", "."), 
     LibraryDetails("macos",   "arm64",  "libv8_monolith.a", "."), 
