@@ -45,7 +45,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 |                | v8.impl             | quickjs.impl     | quickjs.impl (quickjs-ng)      | web.impl             |
 | -------------- | ------------------- | ---------------- | ------------------------------ | -------------------- |
 | Windows:x86_64 | ✅                  | ✅              | ✅                             | ❌                  |
-| Windows:arm64  | 🟡                  | ✅              | ✅                             | ❌                  |
+| Windows:arm64  | ✅                  | ✅              | ✅                             | ❌                  |
 | MacOS:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | MacOS:arm64    | ✅                  | ✅              | ✅                             | ❌                  |
 | Linux:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅                             | ❌                  |
