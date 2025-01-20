@@ -20,5 +20,14 @@
 #   define __js_printf_like(a, b)
 #endif
 
+#ifdef _cplusplus
+extern "C" {
+#ifdef _MSC_VER
+#include "malloc.h"
+#endif
+#endif
+#ifdef _cplusplus
+}
+#endif
 
 #endif
