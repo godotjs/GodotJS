@@ -159,6 +159,11 @@ namespace jsb
         const StringName name = environment->get_string_name_cache().get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
 
         const v8::Local<v8::Object> self = info.This();
+        // (assume) debugger may trigger the property getter of signal without an instance
+        if (self.IsEmpty() || !self->IsObject())
+        {
+            return;
+        }
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
         if (!environment->check_object(pointer))
         {
