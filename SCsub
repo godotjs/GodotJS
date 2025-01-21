@@ -43,7 +43,7 @@ class ThirdPartyDescriptor:
 jsb_platform = "linux" if env["platform"] == "linuxbsd" else env["platform"]
 jsb_arch = env["arch"]
 
-prebuilt_deps_url = "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/v8_r12/v8_r12.zip"
+prebuilt_deps_url = "https://github.com/ialex32x/GodotJS-Dependencies/releases" 
 module_path = os.path.dirname(os.path.abspath("jsb.h"))
 module_name = os.path.basename(module_path)
 
