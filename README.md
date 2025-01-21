@@ -49,7 +49,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | MacOS:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | MacOS:arm64    | ✅                  | ✅              | ✅                             | ❌                  |
 | Linux:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅                             | ❌                  |
-| Linux:arm64    | 🟡                  | ✅              | ✅                             | ❌                  |
+| Linux:arm64    | ✅                  | ✅              | ✅                             | ❌                  |
 | Android:x86_64 | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | Android:arm64  | ✅                  | ✅ (not tested) | ✅ (not tested)                | ❌                  |
 | iOS:x86_64     | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)                | ❌                  |
