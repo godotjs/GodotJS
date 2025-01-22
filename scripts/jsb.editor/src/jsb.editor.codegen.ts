@@ -99,12 +99,12 @@ const IgnoredTypes = new Set([
 const CallableBind = {
     description: "Create a callable object with a bound object `self`",
     methods: [
-        "static create<R = void>(self: GDObject, fn: () => R): Callable0<R>",
-        "static create<T1, R = void>(self: GDObject, fn: (v1: T1) => R): Callable1<T1, R>",
-        "static create<T1, T2, R = void>(self: GDObject, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
-        "static create<T1, T2, T3, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
-        "static create<T1, T2, T3, T4, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
-        "static create<T1, T2, T3, T4, T5, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
+        "static create<R = void>(self: Object, fn: () => R): Callable0<R>",
+        "static create<T1, R = void>(self: Object, fn: (v1: T1) => R): Callable1<T1, R>",
+        "static create<T1, T2, R = void>(self: Object, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
+        "static create<T1, T2, T3, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
+        "static create<T1, T2, T3, T4, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
+        "static create<T1, T2, T3, T4, T5, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
     ]
 }
 const CallableFuncBind = {
