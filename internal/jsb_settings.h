@@ -36,6 +36,8 @@ namespace jsb::internal
 
         static PackedStringArray get_additional_search_paths();
 
+        static String get_entry_script_path();
+
 #ifdef TOOLS_ENABLED
         static PackedStringArray get_ignored_classes();
 #endif

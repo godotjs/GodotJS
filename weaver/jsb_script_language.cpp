@@ -71,6 +71,12 @@ void GodotJSScriptLanguage::init()
     jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
         "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
 #endif
+
+    if (const String entry_script_path = jsb::internal::Settings::get_entry_script_path();
+        !entry_script_path.is_empty())
+    {
+        environment_->load(entry_script_path);
+    }
 }
 
 void GodotJSScriptLanguage::finish()

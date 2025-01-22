@@ -20,6 +20,7 @@ namespace jsb::internal
     static constexpr char kRtSourceMapEnabled[] = JSB_MODULE_NAME_STRING "/logger/source_map_enabled";
     static constexpr char kRtPackagingWithSourceMap[] = JSB_MODULE_NAME_STRING "/packaging/source_map_included";
     static constexpr char kRtAdditionalSearchPaths[] = JSB_MODULE_NAME_STRING "/core/additional_search_paths";
+    static constexpr char kRtEntryScriptPath[] = JSB_MODULE_NAME_STRING "/core/entry_script_path";
 
     void init_settings()
     {
@@ -51,6 +52,7 @@ namespace jsb::internal
             _GLOBAL_DEF(kRtSourceMapEnabled, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtPackagingWithSourceMap, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtAdditionalSearchPaths, PackedStringArray(), JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtEntryScriptPath, String(), JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
         }
     }
 
@@ -112,6 +114,12 @@ namespace jsb::internal
     {
         init_settings();
         return GLOBAL_GET(kRtAdditionalSearchPaths);
+    }
+
+    String Settings::get_entry_script_path()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtEntryScriptPath);
     }
 
     String Settings::get_indentation()
