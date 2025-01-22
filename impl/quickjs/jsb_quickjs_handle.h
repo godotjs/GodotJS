@@ -90,7 +90,7 @@ namespace v8
         MaybeLocal(Local<S> other) : data_(other.data_) {}
 
         bool IsEmpty() const { return !data_.isolate_; }
-        Local<T> ToLocalChecked() const
+        Local<T> ToLocalChecked()
         {
             jsb_check(!IsEmpty());
             return Local<T>(data_);
