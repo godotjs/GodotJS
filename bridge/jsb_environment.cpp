@@ -1028,6 +1028,8 @@ namespace jsb
             jsb_check(class_register->id);
             JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, class_register->id);
             if (r_class_id) *r_class_id = class_register->id;
+
+            on_class_post_bind(class_info);
             return class_info;
         }
     }
@@ -1050,19 +1052,35 @@ namespace jsb
             return class_info;
         }
 
-        return ObjectReflectBindingUtil::reflect_bind(this, p_class_info, r_class_id);
+        NativeClassInfoPtr class_ = ObjectReflectBindingUtil::reflect_bind(this, p_class_info, r_class_id);
+
+        on_class_post_bind(class_);
+        return class_;
+    }
+
+    void Environment::on_class_post_bind(const NativeClassInfoPtr& p_class_info)
+    {
+        const JavaScriptModule& typeloader = *this->get_module_cache().find(jsb_string_name(godot_typeloader));
+        const v8::Local<v8::Object> typeloader_exports = typeloader.exports.Get(this->get_isolate());
+        const v8::Local<v8::Context> context = context_.Get(isolate_);
+        const v8::Local<v8::Value> post_bind_val = typeloader_exports->Get(context, jsb_name(this, godot_postbind)).ToLocalChecked();
+        jsb_check(!post_bind_val.IsEmpty() && post_bind_val->IsFunction());
+        const v8::Local<v8::Function> post_bind = post_bind_val.As<v8::Function>();
+        v8::Local<v8::Value> argv[] = { this->get_string_value(p_class_info->name), p_class_info->clazz.Get(isolate_) };
+        const v8::MaybeLocal<v8::Value> rval = post_bind->Call(context, v8::Undefined(isolate_), std::size(argv), argv);
+        jsb_unused(rval);
+        jsb_check(rval.ToLocalChecked()->IsUndefined());
     }
 
     JSValueMove Environment::eval_source(const char* p_source, int p_length, const String& p_filename, Error& r_err)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, eval_source);
-        v8::Isolate* isolate = get_isolate();
-        v8::Isolate::Scope isolate_scope(isolate);
-        v8::HandleScope handle_scope(isolate);
-        const v8::Local<v8::Context> context = context_.Get(isolate);
+        v8::Isolate::Scope isolate_scope(isolate_);
+        v8::HandleScope handle_scope(isolate_);
+        const v8::Local<v8::Context> context = context_.Get(isolate_);
         v8::Context::Scope context_scope(context);
 
-        const impl::TryCatch try_catch_run(isolate);
+        const impl::TryCatch try_catch_run(isolate_);
         const v8::MaybeLocal<v8::Value> maybe = impl::Helper::eval(context, p_source, p_length, p_filename);
         if (try_catch_run.has_caught())
         {

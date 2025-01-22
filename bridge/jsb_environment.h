@@ -454,6 +454,9 @@ namespace jsb
             return class_id;
         }
 
+        // [unsafe, lowlevel, experimental] call a tweak function on the class
+        void on_class_post_bind(const NativeClassInfoPtr& p_class_info);
+
         // [unsafe]
         // It's dangerous to hold the `NativeClassInfo` reference/pointer because the address is not ensured stable.
         // All `get_` methods will crash if `p_class_id` is invalid

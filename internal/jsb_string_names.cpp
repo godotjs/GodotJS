@@ -16,6 +16,8 @@ namespace jsb::internal
 #   define DEF(KeyName) sn_##KeyName = _scs_create(#KeyName);
 #   include "jsb_string_names.def.h"
 #pragma pop_macro("DEF")
+        sn_godot_typeloader = _scs_create("godot.typeloader");
+        sn_godot_postbind = _scs_create("_post_bind_");
 
         ignored_.insert(sn_name);
         add_replacement(Variant::get_type_name(Variant::DICTIONARY), "GDictionary");

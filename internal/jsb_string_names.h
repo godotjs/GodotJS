@@ -55,11 +55,13 @@ namespace jsb::internal
             return p_name;
         }
 
+        StringName sn_godot_typeloader;
+        StringName sn_godot_postbind;
+
 #pragma push_macro("DEF")
 #   undef DEF
 #   define DEF(KeyName) StringName sn_##KeyName;
 #   include "jsb_string_names.def.h"
-
 #pragma pop_macro("DEF")
 
     };

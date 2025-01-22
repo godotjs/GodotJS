@@ -214,6 +214,88 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
         };
     }
 });
+define("godot.typeloader", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.on_type_loaded = on_type_loaded;
+    const type_db = {};
+    class TypeProcessor {
+        constructor() {
+            // avoid cyclic call on the same type
+            this.locked = false;
+            this.callbacks = [];
+        }
+        push(callback) {
+            if (this.locked) {
+                throw new Error('TypeProcessor is locked');
+            }
+            this.callbacks.push(callback);
+            return this;
+        }
+        exec(type) {
+            if (this.locked) {
+                throw new Error('TypeProcessor is locked');
+            }
+            this.locked = true;
+            for (let cb of this.callbacks) {
+                try {
+                    cb(type);
+                }
+                catch (e) {
+                    console.error(e);
+                }
+            }
+            this.locked = false;
+        }
+    }
+    const type_processors = new Map();
+    // callback on a godot type loaded by jsb_godot_module_loader.
+    // each callback will be called only once.
+    function on_type_loaded(type_name, callback) {
+        if (typeof type_name !== 'string') {
+            throw new Error('type_name must be a string');
+        }
+        if (typeof type_db[type_name] !== 'undefined') {
+            callback(type_db[type_name]);
+            return;
+        }
+        if (type_processors.has(type_name)) {
+            type_processors.get(type_name).push(callback);
+        }
+        else {
+            type_processors.set(type_name, new TypeProcessor().push(callback));
+        }
+    }
+    // callback on a godot type loaded by jsb_godot_module_loader
+    exports._mod_proxy_ = function (type_loader_func) {
+        return new Proxy(type_db, {
+            // @ts-ignore
+            set: function (target, prop_name, value) {
+                if (typeof prop_name !== 'string') {
+                    throw new Error(`only string key is allowed`);
+                }
+                if (typeof target[prop_name] !== 'undefined') {
+                    console.warn('overwriting existing value', prop_name);
+                }
+                target[prop_name] = value;
+            },
+            get: function (target, prop_name) {
+                let o = target[prop_name];
+                if (typeof o === 'undefined' && typeof prop_name === 'string') {
+                    o = target[prop_name] = type_loader_func(prop_name);
+                }
+                return o;
+            }
+        });
+    };
+    exports._post_bind_ = function (type_name, type) {
+        const processors = type_processors.get(type_name);
+        if (processors !== undefined) {
+            processors.exec(type);
+            type_processors.delete(type_name);
+        }
+    };
+});
 define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_2, jsb) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -503,38 +585,7 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
         return require("godot").EditorInterface.get_editor_settings().get(entry_path);
     };
 });
-define("jsb.hook", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.on_godot_type_loaded = on_godot_type_loaded;
-    const typeload_callbacks = new Map();
-    // callback on a godot type loaded by jsb_godot_module_loader.
-    // each callback will be called only once.
-    function on_godot_type_loaded(type_name, callback) {
-        if (!typeload_callbacks.has(type_name)) {
-            typeload_callbacks.set(type_name, [callback]);
-        }
-        else {
-            typeload_callbacks.get(type_name).push(callback);
-        }
-    }
-    // hide it in d.ts
-    // callback on a godot type loaded by jsb_godot_module_loader
-    exports._godot_type_loaded = function (type_name, type) {
-        let list = typeload_callbacks.get(type_name);
-        if (list !== undefined) {
-            typeload_callbacks.delete(type_name);
-            for (let cb of list) {
-                const rval = cb(type);
-                if (typeof rval !== "undefined") {
-                    type = rval;
-                }
-            }
-        }
-        return type;
-    };
-});
-require("jsb.hook").on_godot_type_loaded("GArray", function (type) {
+require("godot.typeloader").on_type_loaded("GArray", function (type) {
     type.prototype[Symbol.iterator] = function* () {
         let self = this;
         for (let i = 0; i < self.size(); ++i) {
@@ -542,7 +593,7 @@ require("jsb.hook").on_godot_type_loaded("GArray", function (type) {
         }
     };
 });
-require("jsb.hook").on_godot_type_loaded("GDictionary", function (type) {
+require("godot.typeloader").on_type_loaded("GDictionary", function (type) {
     type.prototype[Symbol.iterator] = function* () {
         let self = this;
         let keys = self.keys();
@@ -552,7 +603,7 @@ require("jsb.hook").on_godot_type_loaded("GDictionary", function (type) {
         }
     };
 });
-require("jsb.hook").on_godot_type_loaded("Callable", function (type) {
+require("godot.typeloader").on_type_loaded("Callable", function (type) {
     const orignal_cc = type.create;
     const custom_cc = require("godot-jsb").callable;
     type.create = function () {
@@ -572,7 +623,7 @@ require("jsb.hook").on_godot_type_loaded("Callable", function (type) {
         throw new Error("invalid arguments");
     };
 });
-require("jsb.hook").on_godot_type_loaded("Signal", function (type) {
+require("godot.typeloader").on_type_loaded("Signal", function (type) {
     type.prototype.as_promise = function () {
         let self = this;
         return new Promise(function (resolve, reject) {

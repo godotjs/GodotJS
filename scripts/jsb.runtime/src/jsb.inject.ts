@@ -1,5 +1,5 @@
 
-require("jsb.hook").on_godot_type_loaded("GArray", function (type: any) {
+require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
     type.prototype[Symbol.iterator] = function* () {
         let self = <any>this;
         for (let i = 0; i < self.size(); ++i) {
@@ -8,7 +8,7 @@ require("jsb.hook").on_godot_type_loaded("GArray", function (type: any) {
     }
 });
 
-require("jsb.hook").on_godot_type_loaded("GDictionary", function (type: any) {
+require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
     type.prototype[Symbol.iterator] = function* () {
         let self = <any>this;
         let keys = self.keys();
@@ -19,7 +19,7 @@ require("jsb.hook").on_godot_type_loaded("GDictionary", function (type: any) {
     }
 });
 
-require("jsb.hook").on_godot_type_loaded("Callable", function (type: any) {
+require("godot.typeloader").on_type_loaded("Callable", function (type: any) {
     const orignal_cc = type.create;
     const custom_cc = require("godot-jsb").callable;
 
@@ -41,7 +41,7 @@ require("jsb.hook").on_godot_type_loaded("Callable", function (type: any) {
     }
 });
 
-require("jsb.hook").on_godot_type_loaded("Signal", function (type: any) {
+require("godot.typeloader").on_type_loaded("Signal", function (type: any) {
     type.prototype.as_promise = function () {
         let self = this;
         return new Promise(function (resolve, reject) {

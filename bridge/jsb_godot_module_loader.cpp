@@ -139,40 +139,17 @@ namespace jsb
     v8::Local<v8::Object> GodotModuleLoader::_get_loader_proxy(Environment* p_env)
     {
         if (!loader_.IsEmpty()) return loader_.Get(p_env->get_isolate());
-
-        // load_type_impl: function(name)
-        static constexpr char on_demand_loader_source[] = ""
-            "(function (type_loader_func) {"
-            "    return new Proxy({}, {"
-            "        set: function (target, prop_name, value) {"
-            "            if (typeof prop_name !== 'string') {"
-            "                throw new Error(`only string key is allowed`);"
-            "            }"
-            "            if (typeof target[prop_name] !== 'undefined') {"
-            "                console.warn('overwriting existing value', prop_name);"
-            "            }"
-            "            target[prop_name] = value;"
-            "        },"
-            "        get: function (target, prop_name) {"
-            "            let o = target[prop_name];"
-            "            if (typeof o === 'undefined' && typeof prop_name === 'string') {"
-            "                o = target[prop_name] = require('jsb.hook')._godot_type_loaded(prop_name, type_loader_func(prop_name));"
-            "            }"
-            "            return o;"
-            "        }"
-            "    });"
-            "})"
-            "";
         const v8::Local<v8::Context> context = p_env->get_context();
-        const v8::MaybeLocal<v8::Value> func_maybe_local = impl::Helper::compile_function(context, on_demand_loader_source, std::size(on_demand_loader_source) - 1, "on_demand_loader_source");
-        if (v8::Local<v8::Value> func_local; func_maybe_local.ToLocal(&func_local))
+        const JavaScriptModule& typeloader = *p_env->get_module_cache().find(jsb_string_name(godot_typeloader));
+        const v8::Local<v8::Object> typeloader_exports = typeloader.exports.Get(p_env->get_isolate());
+        // not using string cache, as it's run only once
+        const v8::Local<v8::Value> proxy_func_val = typeloader_exports->Get(context, impl::Helper::new_string_ascii(p_env->get_isolate(), "_mod_proxy_")).ToLocalChecked();
+        jsb_check(!proxy_func_val.IsEmpty() && proxy_func_val->IsFunction());
+        const v8::Local<v8::Function> proxy_func = proxy_func_val.As<v8::Function>();
         {
-            jsb_check(func_local->IsFunction());
-            const v8::Local<v8::Function> loader = func_local.As<v8::Function>();
-
             v8::Isolate* isolate = p_env->get_isolate();
             v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
-            const v8::MaybeLocal<v8::Value> result = loader->Call(context, v8::Undefined(isolate), std::size(argv), argv);
+            const v8::MaybeLocal<v8::Value> result = proxy_func->Call(context, v8::Undefined(isolate), std::size(argv), argv);
 
             if (v8::Local<v8::Value> proxy; result.ToLocal(&proxy))
             {

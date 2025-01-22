@@ -66,8 +66,6 @@ void GodotJSScriptLanguage::init()
     static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
     jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
         "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
-    jsb_checkf(environment_->load("jsb.hook") == OK, "failed to load jsb.hook");
-
 #ifdef TOOLS_ENABLED
     static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
     jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
