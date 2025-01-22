@@ -36,9 +36,7 @@ class TypeProcessor {
 }
 const type_processors = new Map<string, TypeProcessor>();
 
-// callback on a godot type loaded by jsb_godot_module_loader.
-// each callback will be called only once.
-export function on_type_loaded(type_name: string, callback: TypeLoadedCallback) {
+function _on_type_loaded(type_name: string, callback: TypeLoadedCallback) {
     if (typeof type_name !== 'string') {
         throw new Error('type_name must be a string');
     }
@@ -52,6 +50,20 @@ export function on_type_loaded(type_name: string, callback: TypeLoadedCallback) 
         type_processors.get(type_name)!.push(callback);
     } else {
         type_processors.set(type_name, new TypeProcessor().push(callback));
+    }
+}
+
+// callback on a godot type loaded by jsb_godot_module_loader.
+// each callback will be called only once.
+export function on_type_loaded(type_name: string | string[], callback: TypeLoadedCallback) {
+    if (typeof type_name === 'string') {
+        _on_type_loaded(type_name, callback);
+    } else if (Array.isArray(type_name)) {
+        for (let name of type_name) {
+            _on_type_loaded(name, callback);
+        }
+    } else {
+        throw new Error('type_name must be a string or an array of strings');
     }
 }
 

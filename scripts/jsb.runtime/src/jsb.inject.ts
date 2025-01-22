@@ -1,5 +1,5 @@
 
-require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
+require("godot.typeloader").on_type_loaded("Array", function (type: any) {
     type.prototype[Symbol.iterator] = function* () {
         let self = <any>this;
         for (let i = 0; i < self.size(); ++i) {
@@ -8,7 +8,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
     }
 });
 
-require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
+require("godot.typeloader").on_type_loaded("Dictionary", function (type: any) {
     type.prototype[Symbol.iterator] = function* () {
         let self = <any>this;
         let keys = self.keys();

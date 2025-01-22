@@ -249,9 +249,7 @@ define("godot.typeloader", ["require", "exports"], function (require, exports) {
         }
     }
     const type_processors = new Map();
-    // callback on a godot type loaded by jsb_godot_module_loader.
-    // each callback will be called only once.
-    function on_type_loaded(type_name, callback) {
+    function _on_type_loaded(type_name, callback) {
         if (typeof type_name !== 'string') {
             throw new Error('type_name must be a string');
         }
@@ -264,6 +262,21 @@ define("godot.typeloader", ["require", "exports"], function (require, exports) {
         }
         else {
             type_processors.set(type_name, new TypeProcessor().push(callback));
+        }
+    }
+    // callback on a godot type loaded by jsb_godot_module_loader.
+    // each callback will be called only once.
+    function on_type_loaded(type_name, callback) {
+        if (typeof type_name === 'string') {
+            _on_type_loaded(type_name, callback);
+        }
+        else if (Array.isArray(type_name)) {
+            for (let name of type_name) {
+                _on_type_loaded(name, callback);
+            }
+        }
+        else {
+            throw new Error('type_name must be a string or an array of strings');
         }
     }
     // callback on a godot type loaded by jsb_godot_module_loader
@@ -585,7 +598,7 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
         return require("godot").EditorInterface.get_editor_settings().get(entry_path);
     };
 });
-require("godot.typeloader").on_type_loaded("GArray", function (type) {
+require("godot.typeloader").on_type_loaded("Array", function (type) {
     type.prototype[Symbol.iterator] = function* () {
         let self = this;
         for (let i = 0; i < self.size(); ++i) {
@@ -593,7 +606,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type) {
         }
     };
 });
-require("godot.typeloader").on_type_loaded("GDictionary", function (type) {
+require("godot.typeloader").on_type_loaded("Dictionary", function (type) {
     type.prototype[Symbol.iterator] = function* () {
         let self = this;
         let keys = self.keys();

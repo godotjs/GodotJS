@@ -63,6 +63,6 @@ declare module "godot.typeloader" {
      * @param type the loaded type or function in godot module
      */
     export type TypeLoadedCallback = (type: any) => void;
-    export function on_type_loaded(type_name: string, callback: TypeLoadedCallback): void;
+    export function on_type_loaded(type_name: string | string[], callback: TypeLoadedCallback): void;
 }
 declare module "jsb.core" { }
