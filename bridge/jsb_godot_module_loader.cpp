@@ -156,7 +156,7 @@ namespace jsb
             "        get: function (target, prop_name) {"
             "            let o = target[prop_name];"
             "            if (typeof o === 'undefined' && typeof prop_name === 'string') {"
-            "                o = target[prop_name] = type_loader_func(prop_name);"
+            "                o = target[prop_name] = require('jsb.hook')._godot_type_loaded(prop_name, type_loader_func(prop_name));"
             "            }"
             "            return o;"
             "        }"

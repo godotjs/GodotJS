@@ -1,3 +1,4 @@
+"use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -502,59 +503,82 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
         return require("godot").EditorInterface.get_editor_settings().get(entry_path);
     };
 });
-define("jsb.inject", ["require", "exports", "godot"], function (require, exports, godot_3) {
+define("jsb.hook", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const jsb = require("godot-jsb");
-    (function (items) {
-        for (let item of items) {
-            item.class.prototype[Symbol.iterator] = item.func;
+    exports.on_godot_type_loaded = on_godot_type_loaded;
+    const typeload_callbacks = new Map();
+    // callback on a godot type loaded by jsb_godot_module_loader.
+    // each callback will be called only once.
+    function on_godot_type_loaded(type_name, callback) {
+        if (!typeload_callbacks.has(type_name)) {
+            typeload_callbacks.set(type_name, [callback]);
         }
-    })([
-        {
-            class: godot_3.GDictionary,
-            func: function* () {
-                let self = this;
-                let keys = self.keys();
-                for (let i = 0; i < keys.size(); ++i) {
-                    const key = keys.get_indexed(i);
-                    yield { key: key, value: self.get_keyed(key) };
+        else {
+            typeload_callbacks.get(type_name).push(callback);
+        }
+    }
+    // hide it in d.ts
+    // callback on a godot type loaded by jsb_godot_module_loader
+    exports._godot_type_loaded = function (type_name, type) {
+        let list = typeload_callbacks.get(type_name);
+        if (list !== undefined) {
+            typeload_callbacks.delete(type_name);
+            for (let cb of list) {
+                const rval = cb(type);
+                if (typeof rval !== "undefined") {
+                    type = rval;
                 }
             }
-        },
-        {
-            class: godot_3.GArray,
-            func: function* () {
-                let self = this;
-                for (let i = 0; i < self.size(); ++i) {
-                    yield self.get_indexed(i);
-                }
-            }
         }
-    ]);
-    let orignal_cc = godot_3.Callable.create;
-    // @ts-ignore
-    godot_3.Callable.create = function () {
+        return type;
+    };
+});
+require("jsb.hook").on_godot_type_loaded("GArray", function (type) {
+    type.prototype[Symbol.iterator] = function* () {
+        let self = this;
+        for (let i = 0; i < self.size(); ++i) {
+            yield self.get_indexed(i);
+        }
+    };
+});
+require("jsb.hook").on_godot_type_loaded("GDictionary", function (type) {
+    type.prototype[Symbol.iterator] = function* () {
+        let self = this;
+        let keys = self.keys();
+        for (let i = 0; i < keys.size(); ++i) {
+            const key = keys.get_indexed(i);
+            yield { key: key, value: self.get_keyed(key) };
+        }
+    };
+});
+require("jsb.hook").on_godot_type_loaded("Callable", function (type) {
+    const orignal_cc = type.create;
+    const custom_cc = require("godot-jsb").callable;
+    type.create = function () {
         const argc = arguments.length;
         if (argc == 1) {
             if (typeof arguments[0] !== "function") {
                 throw new Error("not a function");
             }
-            return jsb.callable(arguments[0]);
+            return custom_cc(arguments[0]);
         }
         if (argc == 2) {
             if (typeof arguments[1] !== "function") {
                 return orignal_cc(arguments[0], arguments[1]);
             }
-            return jsb.callable(arguments[0], arguments[1]);
+            return custom_cc(arguments[0], arguments[1]);
         }
         throw new Error("invalid arguments");
     };
-    godot_3.Signal.prototype.as_promise = function () {
+});
+require("jsb.hook").on_godot_type_loaded("Signal", function (type) {
+    type.prototype.as_promise = function () {
         let self = this;
         return new Promise(function (resolve, reject) {
             let fn = null;
-            fn = godot_3.Callable.create(function () {
+            let gd = require("godot");
+            fn = gd.Callable.create(function () {
                 //self.disconnect(fn);
                 if (arguments.length == 0) {
                     resolve(undefined);
@@ -566,21 +590,22 @@ define("jsb.inject", ["require", "exports", "godot"], function (require, exports
                 }
                 // return as javascript array if more than one 
                 resolve(Array.from(arguments));
-                jsb.internal.notify_microtasks_run();
+                require("godot-jsb").internal.notify_microtasks_run();
             });
-            self.connect(fn, godot_3.Object.ConnectFlags.CONNECT_ONE_SHOT);
+            self.connect(fn, gd.Object.ConnectFlags.CONNECT_ONE_SHOT);
             self = undefined;
         });
     };
-    Object.defineProperty(require("godot"), "GLOBAL_GET", {
-        value: function (entry_path) {
-            return godot_3.ProjectSettings.get_setting_with_override(entry_path);
-        }
-    });
-    Object.defineProperty(require("godot"), "EDITOR_GET", {
-        value: function (entry_path) {
-            return godot_3.EditorInterface.get_editor_settings().get(entry_path);
-        }
-    });
 });
+Object.defineProperty(require("godot"), "GLOBAL_GET", {
+    value: function (entry_path) {
+        return require("godot").ProjectSettings.get_setting_with_override(entry_path);
+    }
+});
+Object.defineProperty(require("godot"), "EDITOR_GET", {
+    value: function (entry_path) {
+        return require("godot").EditorInterface.get_editor_settings().get(entry_path);
+    }
+});
+console.debug("jsb.inject loaded successfully");
 //# sourceMappingURL=jsb.runtime.bundle.js.map

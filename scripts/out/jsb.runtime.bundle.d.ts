@@ -59,4 +59,11 @@ declare module "godot.annotations" {
     export function help(message?: string): (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) => void;
 }
 declare module "jsb.core" { }
-declare module "jsb.inject" { }
+declare module "jsb.hook" {
+    /**
+     * @param type the loaded type or function in godot module
+     * @returns the return value will be used as the actually loaded type in godot module, simply return the `type` in most situations.
+     */
+    export type GodotTypeLoadedCallback = (type: any) => any;
+    export function on_godot_type_loaded(type_name: string, callback: GodotTypeLoadedCallback): void;
+}
