@@ -1061,13 +1061,14 @@ namespace jsb
     void Environment::on_class_post_bind(const NativeClassInfoPtr& p_class_info)
     {
         const JavaScriptModule& typeloader = *this->get_module_cache().find(jsb_string_name(godot_typeloader));
-        const v8::Local<v8::Object> typeloader_exports = typeloader.exports.Get(this->get_isolate());
+        const v8::Local<v8::Value> typeloader_exports = typeloader.exports.Get(this->get_isolate());
+        jsb_check(!typeloader_exports.IsEmpty() && typeloader_exports->IsObject());
         const v8::Local<v8::Context> context = context_.Get(isolate_);
-        const v8::Local<v8::Value> post_bind_val = typeloader_exports->Get(context, jsb_name(this, godot_postbind)).ToLocalChecked();
+        const v8::Local<v8::Value> post_bind_val = typeloader_exports.As<v8::Object>()->Get(context, jsb_name(this, godot_postbind)).ToLocalChecked();
         jsb_check(!post_bind_val.IsEmpty() && post_bind_val->IsFunction());
         const v8::Local<v8::Function> post_bind = post_bind_val.As<v8::Function>();
         v8::Local<v8::Value> argv[] = { this->get_string_value(p_class_info->name), p_class_info->clazz.Get(isolate_) };
-        const v8::MaybeLocal<v8::Value> rval = post_bind->Call(context, v8::Undefined(isolate_), std::size(argv), argv);
+        v8::MaybeLocal<v8::Value> rval = post_bind->Call(context, v8::Undefined(isolate_), std::size(argv), argv);
         jsb_unused(rval);
         jsb_check(rval.ToLocalChecked()->IsUndefined());
     }

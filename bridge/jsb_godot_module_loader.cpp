@@ -141,9 +141,10 @@ namespace jsb
         if (!loader_.IsEmpty()) return loader_.Get(p_env->get_isolate());
         const v8::Local<v8::Context> context = p_env->get_context();
         const JavaScriptModule& typeloader = *p_env->get_module_cache().find(jsb_string_name(godot_typeloader));
-        const v8::Local<v8::Object> typeloader_exports = typeloader.exports.Get(p_env->get_isolate());
+        const v8::Local<v8::Value> typeloader_exports = typeloader.exports.Get(p_env->get_isolate());
+        jsb_check(!typeloader_exports.IsEmpty() && typeloader_exports->IsObject());
         // not using string cache, as it's run only once
-        const v8::Local<v8::Value> proxy_func_val = typeloader_exports->Get(context, impl::Helper::new_string_ascii(p_env->get_isolate(), "_mod_proxy_")).ToLocalChecked();
+        const v8::Local<v8::Value> proxy_func_val = typeloader_exports.As<v8::Object>()->Get(context, impl::Helper::new_string_ascii(p_env->get_isolate(), "_mod_proxy_")).ToLocalChecked();
         jsb_check(!proxy_func_val.IsEmpty() && proxy_func_val->IsFunction());
         const v8::Local<v8::Function> proxy_func = proxy_func_val.As<v8::Function>();
         {
