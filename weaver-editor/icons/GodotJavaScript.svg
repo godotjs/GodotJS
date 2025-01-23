@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo
+Mixer Tools -->
+
+<svg
+   width="16px"
+   height="16px"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="JavaScript.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="9.1923881"
+     inkscape:cx="4.786569"
+     inkscape:cy="10.062673"
+     inkscape:window-width="1920"
+     inkscape:window-height="1214"
+     inkscape:window-x="0"
+     inkscape:window-y="29"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <title
+     id="title1">file_type_typescript_official</title>
+  <rect
+     x="2"
+     y="2"
+     width="28"
+     height="28"
+     rx="1.312"
+     style="fill:#3178c6"
+     id="rect1" />
+  <path
+     style="font-weight:bold;font-size:18.6667px;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans Bold';fill:#ffffff;stroke-width:2"
+     d="m 11.303191,28.24899 q -1.996097,0 -3.0716197,-0.865887 -1.0664082,-0.865887 -1.4218776,-2.798182 l 2.6705777,-0.391928 q 0.1640628,0.993492 0.6106786,1.476565 0.446615,0.47396 1.230471,0.47396 0.802084,0 1.212241,-0.537762 0.419272,-0.537761 0.419272,-1.540367 V 17.3297 h -2.561203 v -2.105473 h 5.240895 v 8.77736 q 0,2.005212 -1.139325,3.126307 -1.139325,1.121096 -3.19011,1.121096 z m 17.326854,-3.882819 q 0,1.886722 -1.403648,2.889328 -1.394534,0.993491 -4.10157,0.993491 -2.470057,0 -3.873705,-0.875002 -1.403648,-0.875001 -1.804691,-2.652348 l 2.597661,-0.428386 q 0.264324,1.020835 1.02995,1.48568 0.765626,0.45573 2.123702,0.45573 2.816411,0 2.816411,-1.713545 0,-0.546876 -0.328125,-0.902346 -0.319011,-0.355469 -0.91146,-0.592449 -0.583335,-0.236979 -2.251307,-0.574219 -1.440106,-0.337241 -2.005212,-0.537762 -0.565105,-0.209636 -1.020835,-0.483074 -0.45573,-0.282552 -0.774741,-0.67448 -0.319011,-0.391928 -0.501303,-0.920575 -0.173177,-0.528646 -0.173177,-1.212241 0,-1.740889 1.303388,-2.661463 1.312502,-0.92969 3.809902,-0.92969 2.388026,0 3.582038,0.747398 1.203127,0.747397 1.549482,2.470056 l -2.606775,0.355469 q -0.200522,-0.829428 -0.820314,-1.2487 -0.610679,-0.419271 -1.759118,-0.419271 -2.442713,0 -2.442713,1.531252 0,0.501303 0.255209,0.820314 0.264323,0.319011 0.774741,0.546876 0.510417,0.218751 2.069014,0.555991 1.850264,0.391928 2.643234,0.729168 0.802085,0.328126 1.266929,0.774741 0.464845,0.437501 0.710939,1.057294 0.246094,0.610678 0.246094,1.412763 z"
+     id="text1"
+     aria-label="JS" />
+</svg>

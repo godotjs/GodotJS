@@ -42,11 +42,10 @@ else:
         src_suffix = ".ts",
     )
 
-language = "ts" if env["use_typescript"] else "js"
-print("generate templates for", language)
-
 # Template files 
 # the suffix should be `.ts`, but `editor/template_builders.py` hardcoded the delimiter with `.cs`
-templates_sources = Glob(f"*/*.{language}.cs")
+templates_ts_sources = Glob(f"*/*.ts.cs")
+env.Alias("editor_template_ts", [env.MakeGodotJSTemplateBuilder("templates.ts.gen.h", templates_ts_sources)])
 
-env.Alias("editor_template_ts", [env.MakeGodotJSTemplateBuilder("templates.gen.h", templates_sources)])
+templates_js_sources = Glob(f"*/*.js.cs")
+env.Alias("editor_template_js", [env.MakeGodotJSTemplateBuilder("templates.js.gen.h", templates_js_sources)])

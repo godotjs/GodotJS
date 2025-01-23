@@ -41,7 +41,7 @@ void GodotJSEditorPlugin::_notification(int p_what)
     switch (p_what)
     {
     case NOTIFICATION_APPLICATION_FOCUS_IN:
-        if (GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton())
+        if (GodotJSScriptLanguage* lang = lang_)
         {
             lang->scan_external_changes();
         }
@@ -61,7 +61,7 @@ void GodotJSEditorPlugin::_on_menu_pressed(int p_what)
     }
 }
 
-GodotJSEditorPlugin::GodotJSEditorPlugin()
+GodotJSEditorPlugin::GodotJSEditorPlugin(GodotJSScriptLanguage * lang) : lang_(lang)
 {
     // jsb::internal::Settings::on_editor_init();
     PopupMenu *menu = memnew(PopupMenu);
@@ -369,7 +369,7 @@ void GodotJSEditorPlugin::generate_godot_dts()
         install_files(filter_files(editor_plugin->install_files_, jsb::weaver::CH_D_TS));
     }
 
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    GodotJSScriptLanguage * lang = get_singleton()->lang_;
     jsb_check(lang);
     Error err;
     const String code = jsb_format(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.default("%s")).emit();})())--", "./" JSB_TYPE_ROOT);
@@ -382,7 +382,7 @@ void GodotJSEditorPlugin::generate_godot_dts()
 
 void GodotJSEditorPlugin::load_editor_entry_module()
 {
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    GodotJSScriptLanguage * lang = get_singleton()->lang_;
     jsb_check(lang);
     const Error err = lang->get_environment()->load("jsb.editor.main");
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.main");
@@ -458,7 +458,7 @@ GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
 
 void GodotJSEditorPlugin::ensure_tsc_installed()
 {
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    GodotJSScriptLanguage * lang = get_singleton()->lang_;
     jsb_check(lang);
 
     Error err;

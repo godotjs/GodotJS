@@ -5,21 +5,20 @@
 
 #include "core/object/script_language.h"
 
-class GodotJSScriptLanguage : public ScriptLanguage
+class GodotJSScriptLanguageBase : public ScriptLanguage
 {
 private:
-    friend class GodotJSScript;
+    friend class GodotJSScriptBase;
     friend class GodotJSScriptInstance;
     friend class ResourceFormatLoaderGodotJSScript;
 
-    static GodotJSScriptLanguage* singleton_;
-
     Mutex mutex_;
-    SelfList<class GodotJSScript>::List script_list_;
+    SelfList<class GodotJSScriptBase>::List script_list_;
 
     bool once_inited_ = false;
     uint64_t last_ticks_ = 0;
-    std::shared_ptr<jsb::Environment> environment_;
+    static int prevent_environment_dispose_;
+    static std::shared_ptr<jsb::Environment> environment_;
 
     // [TS] matches 'export default class ClassName extends BaseName {'
     Ref<RegEx> ts_class_name_matcher_;
@@ -31,9 +30,13 @@ private:
     Ref<RegEx> js_class_name_matcher1_;
 
 public:
-    jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
-
     // main context
+
+    static void create_environment();
+
+    static void destroy_environment();
+
+    // Get the environment singleton
     jsb_force_inline std::shared_ptr<jsb::Environment> get_environment() const
     {
         jsb_check(once_inited_ && environment_);
@@ -54,8 +57,10 @@ public:
         return environment_->eval_source(str.get_data(), str.length(), "eval", r_err);
     }
 
-    GodotJSScriptLanguage();
-    virtual ~GodotJSScriptLanguage() override;
+    virtual GodotJSScriptBase* create_godotjsscript() const = 0;
+
+    GodotJSScriptLanguageBase();
+    virtual ~GodotJSScriptLanguageBase() override;
 
     virtual void init() override;
     virtual void finish() override;
@@ -65,7 +70,7 @@ public:
     virtual void thread_exit() override;
 
     virtual bool is_control_flow_keyword(ConstStringRefCompat p_keyword) const override;
-    virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) override;
+    virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) = 0;
 
     virtual void get_reserved_words(List<String>* p_words) const override;
     virtual void get_doc_comment_delimiters(List<String>* p_delimiters) const override;
@@ -75,7 +80,7 @@ public:
     virtual bool validate(const String& p_script, const String& p_path = "", List<String>* r_functions = nullptr, List<ScriptError>* r_errors = nullptr, List<Warning>* r_warnings = nullptr, HashSet<int>* r_safe_lines = nullptr) const override;
     virtual Ref<Script> make_template(const String& p_template, const String& p_class_name, const String& p_base_class_name) const override;
     virtual void reload_all_scripts() override;
-    virtual void get_recognized_extensions(List<String>* p_extensions) const override;
+    virtual void get_recognized_extensions(List<String>* p_extensions) const = 0;
 
     virtual bool supports_documentation() const override { return true; }
 
@@ -85,14 +90,9 @@ public:
 #endif
 
 #pragma region DEFAULTLY AND PARTIALLY SUPPORTED
-    virtual String get_name() const override;
-    virtual String get_type() const override;
-
-#if JSB_USE_TYPESCRIPT
-    virtual String get_extension() const override { return JSB_TYPESCRIPT_EXT; }
-#else
-    virtual String get_extension() const override { return JSB_JAVASCRIPT_EXT; }
-#endif
+    virtual String get_name() const = 0;
+    virtual String get_type() const = 0;
+    virtual String get_extension() const = 0;
 
     virtual bool is_using_templates() override { return true; }
 #ifndef DISABLE_DEPRECATED
@@ -148,7 +148,7 @@ public:
     virtual int profiling_get_accumulated_data(ProfilingInfo* p_info_arr, int p_info_max) override { return -1; }
     virtual int profiling_get_frame_data(ProfilingInfo* p_info_arr, int p_info_max) override { return -1; }
 
-    virtual bool handles_global_class_type(const String& p_type) const override;
+    virtual bool handles_global_class_type(const String& p_type) const = 0;
     virtual String get_global_class_name(const String& p_path, String* r_base_type = nullptr, String* r_icon_path = nullptr) const override;
 #pragma endregion
 

@@ -7,10 +7,10 @@
 class GodotJSScriptInstance : public ScriptInstance
 {
 private:
-    friend class GodotJSScript;
+    friend class GodotJSScriptBase;
 
     Object* owner_ = nullptr;
-    Ref<GodotJSScript> script_;
+    Ref<GodotJSScriptBase> script_;
     // object handle id
     jsb::NativeObjectID object_id_;
 

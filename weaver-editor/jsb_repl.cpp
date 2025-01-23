@@ -174,7 +174,7 @@ void GodotJSREPL::check_install()
 
 void GodotJSREPL::_gc_pressed()
 {
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    GodotJSScriptLanguage* lang = GodotJSEditorPlugin::get_singleton()->get_lang();
     jsb_check(lang);
     lang->get_environment()->gc();
     add_line("Explicit GC requested");
@@ -301,7 +301,7 @@ void GodotJSREPL::_input_submitted(const String &p_text)
 
 jsb::JSValueMove GodotJSREPL::eval_source(const String& p_code)
 {
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    GodotJSScriptLanguage* lang = GodotJSEditorPlugin::get_singleton()->get_lang();
     jsb_check(lang);
     Error err;
     return lang->eval_source(p_code, err);
