@@ -125,8 +125,9 @@ def read_macro_value(name, def_val = None):
     raise ValueError(f"no {name} defined in jsb.config.h")
 
 use_quickjs = "quickjs" if env["use_quickjs"] else ("quickjs-ng" if env["use_quickjs_ng"] else None)
+jsc_support = "jsc" if env["use_jsc"] and use_quickjs is None else None
 quickjs_support = get_thirdparty_support(quickjs_src_descs, use_quickjs)
-v8_support = get_library_support(v8_prebuilt_libs) if quickjs_support is None else None
+v8_support = get_library_support(v8_prebuilt_libs) if quickjs_support is None and jsc_support is None else None
 lws_support = get_library_support(lws_prebuilt_libs)
 
 jsb_defines = [
@@ -148,6 +149,11 @@ jsb_defines = [
         "It's recommended to obfuscate the script sources before deploying the project in a production environment.",
         "NOTE: web.impl is experimental and may not work as expected.",
         "NOTE: Obfuscation may not work in the current version. It'll be improved in the future versions. Report an issue if it breaks.",
+    ]),
+    CompileDefines("JSB_WITH_JAVASCRIPTCORE", 1 if jsc_support is not None else 0, [
+        "Use JavaScriptCore as the javascript engine.", 
+        "NOTE: JavaScriptCore is only supported on macOS/iOS.",
+        "NOTE: THIS FEATURE IS WORK-IN-PROGRESS, DO NOT USE IT.",
     ]),
 
     CompileDefines("JSB_WITH_EDITOR_UTILITY_FUNCS", 1 if jsb_platform != "web" and env.editor_build else 0, [
@@ -476,6 +482,10 @@ if is_defined("JSB_WITH_WEB"):
     # this script is compiled from impl/web/bridge typescript source
     env.AddJSPre([ "impl/web/js/jsbb.impl.js" ])
     env.AddJSLibraries([ "impl/web/js/library_godotjs_jsbi.js" ])
+
+if is_defined("JSB_WITH_JAVASCRIPTCORE"):
+    env_jsb.add_source_files(module_obj, "impl/jsc/*.cpp")
+    env.Append(LINKFLAGS=[ "-framework", "JavaScriptCore" ])
 
 generate_code([\
         # presets for runtime
