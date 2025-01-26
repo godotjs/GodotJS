@@ -1,6 +1,6 @@
 
 # GodotJS 
-This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS, or even directly run scripts on the host browser JS VM if porting to web.  
+This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS, JavaScriptCore, or even directly run scripts on the host browser JS VM if porting to web.  
 
 See [Breaking Changes](https://github.com/godotjs/GodotJS/wiki/Misc-Breaking-Changes) if upgrading from old versions.
 
@@ -15,10 +15,10 @@ See [Breaking Changes](https://github.com/godotjs/GodotJS/wiki/Misc-Breaking-Cha
 
 ## Features
 * [x] Godot ScriptLanguage integration
-* [x] Debug with Chrome/VSCode when using V8
+* [x] Debug with Chrome/VSCode (with v8) and Safari (with JavaScriptCore)
 * [x] REPL in Editor
 * [x] Hot-reloading
-* [x] Support for multiple javascript engines ([v8](https://github.com/v8/v8), [quickjs](https://github.com/bellard/quickjs), [quickjs-ng](https://github.com/quickjs-ng/quickjs), the host Browser JS)
+* [x] Support for multiple javascript engines ([v8](https://github.com/v8/v8), [quickjs](https://github.com/bellard/quickjs), [quickjs-ng](https://github.com/quickjs-ng/quickjs), [JavaScriptCore](https://developer.apple.com/documentation/javascriptcore), the host Browser JS)
 * [x] Worker threads (limited support) (**experimental**)
 * [ ] Asynchronously loaded modules (limited support)
 
@@ -28,6 +28,7 @@ Before initiating, make sure to select the JavaScript runtime you prefer between
 
 * `v8` is proven to be one of the most powerful and high-performance JavaScript runtimes.
 * `QuickJS` is a remarkable and lightweight option.
+* `JavaScriptCore` is the built-in JavaScript engine for WebKit and bundled with macOS/iOS.
 * `Web` is only suitable when building for Web. All scripts run on the host browser JS VM rather than an additional interpreter.
 
 See [Wiki](https://github.com/godotjs/GodotJS/wiki) for more details.
@@ -47,7 +48,7 @@ For more information on how to use `GodotJS` in a project, check out [GodotJSExa
 | Windows:x86_64 | ✅                  | ✅              | ✅                     | ❌                  | ❌             |
 | Windows:arm64  | ✅                  | ✅              | ✅                     | ❌                  | ❌             |
 | MacOS:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)        | ❌                  | 🟡             |
-| MacOS:arm64    | ✅                  | ✅              | ✅                     | ❌                  | 🟡             |
+| MacOS:arm64    | ✅                  | ✅              | ✅                     | ❌                  | ✅ (debugging) |
 | Linux:x86_64   | ✅ (not tested)     | ✅ (not tested) | ✅                     | ❌                  | ❌             |
 | Linux:arm64    | ✅                  | ✅              | ✅                     | ❌                  | ❌             |
 | Android:x86_64 | ✅ (not tested)     | ✅ (not tested) | ✅ (not tested)        | ❌                  | ❌             |
