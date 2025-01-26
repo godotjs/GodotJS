@@ -163,10 +163,14 @@ namespace jsb::impl
             jsb_checkf(p_source[p_source_len] == '\0', "JS_Eval needs a zero-terminated string as input to evaluate");
             v8::Isolate* isolate = context->GetIsolate();
             const JSContextRef ctx = isolate->ctx();
-
+            const CharString filename_cs =  p_filename.utf8();
+            const JSStringRef filename_ref = JSStringCreateWithUTF8CString(filename_cs.get_data());
             const JSStringRef code = JSStringCreateWithUTF8CString(p_source);
+
             JSValueRef error = nullptr;
-            const JSValueRef rval = JSEvaluateScript(ctx, code, nullptr, nullptr, 0, &error);
+            const JSValueRef rval = JSEvaluateScript(ctx, code, nullptr, filename_ref, 1, &error);
+            JSStringRelease(filename_ref);
+            JSStringRelease(code);
             if (error)
             {
                 // intentionally keep the exception
@@ -174,7 +178,6 @@ namespace jsb::impl
                 return v8::MaybeLocal<v8::Value>();
             }
             jsb_check(rval);
-            JSStringRelease(code);
             return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_copy(rval)));
         }
 
