@@ -5,16 +5,17 @@ namespace jsb::impl
 {
     void Broker::SetWeak(v8::Isolate* isolate, JSObjectRef value, void* parameter, void* callback)
     {
-        jsb_check(value);
-        jsb::impl::InternalData* data = (jsb::impl::InternalData*) JSObjectGetPrivate(value);
-        jsb_check(data);
-        JSB_JSC_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)",
-            (uintptr_t) value, (uintptr_t) data,
-            (uintptr_t) parameter, (uintptr_t) callback,
-            (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
-        jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
-        data->weak.parameter = (void*) parameter;
-        data->weak.callback = (void*) callback;
+        if (!value) return;
+        if (jsb::impl::InternalData* data = (jsb::impl::InternalData*) JSObjectGetPrivate(value))
+        {
+            JSB_JSC_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)",
+                (uintptr_t) value, (uintptr_t) data,
+                (uintptr_t) parameter, (uintptr_t) callback,
+                (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
+            jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
+            data->weak.parameter = (void*) parameter;
+            data->weak.callback = (void*) callback;
+        }
     }
 
     JSValueRef Broker::stack_val(v8::Isolate* isolate, uint16_t index)

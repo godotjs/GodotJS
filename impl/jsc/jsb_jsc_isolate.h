@@ -308,6 +308,8 @@ namespace v8
         JSObjectRef bridge_calls_[jsb::impl::JSBridgeCall::Num];
 
         jsb::internal::SArray<JSValueRef, jsb::impl::CapturedValueID> captured_values_;
+        RingBuffer<jsb::impl::CapturedValueID> pending_delete_;
+        RingBuffer<jsb::impl::InternalData*> pending_finalize_; //TODO improve
 
         uint16_t stack_pos_;
         JSValueRef stack_[jsb::impl::kMaxStackSize];

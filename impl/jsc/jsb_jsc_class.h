@@ -82,7 +82,7 @@ namespace jsb::impl
             const CConstructorPayload& constructor_data = *(CConstructorPayload*) JSObjectGetPrivate(new_target);
 
             const JSValueRef proto = isolate->_GetProperty(new_target, JS_ATOM_prototype);
-            jsb_check(proto && JSValueIsObject(ctx, proto));
+            jsb_check(proto);
             const JSObjectRef this_val = _NewObject(isolate, proto, InternalFieldCount);
             jsb_check(this_val);
             v8::FunctionCallbackInfo<v8::Value> info(isolate, argumentCount, true);

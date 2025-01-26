@@ -16,20 +16,36 @@
     JSValueRef _rval_##CallName = _compile_bridge_call(CallBody);\
     JSValueProtect(ctx_, _rval_##CallName);\
     bridge_calls_[_bridge_call_index_gen_++] = jsb::impl::JavaScriptCore::AsObject(ctx_, _rval_##CallName)
-#define JSB_JSC_DEFINE_BRIDGE_CALL_END() jsb_check(_bridge_call_index_gen_ == jsb::impl::JS_ATOM_END)
+#define JSB_JSC_DEFINE_BRIDGE_CALL_END() jsb_check(_bridge_call_index_gen_ == jsb::impl::JSBridgeCall::Num)
 
 namespace v8
 {
+    JSGlobalContextRef _CreateContext(JSContextGroupRef rt)
+    {
+        JSClassDefinition cd = kJSClassDefinitionEmpty;
+        cd.className = "CGlobal";
+        const JSClassRef cls = JSClassCreate(&cd);
+        JSGlobalContextRef ctx = JSGlobalContextCreateInGroup(rt, cls);
+        JSClassRelease(cls);
+        return ctx;
+    }
+
     Isolate *Isolate::New(const CreateParams &params)
     {
         Isolate* isolate = memnew(Isolate);
         return isolate;
     }
 
-    Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr), stack_pos_(0)
+    Isolate::Isolate() : 
+        ref_count_(1), disposed_(false), handle_scope_(nullptr), 
+        pending_delete_(nearest_shift(2048)), 
+        pending_finalize_(nearest_shift(2048)), 
+        stack_pos_(0)
     {
         rt_ = JSContextGroupCreate();
-        ctx_ = JSGlobalContextCreateInGroup(rt_, /*JSClassRef globalObjectClass*/ nullptr);
+        ctx_ = _CreateContext(rt_);
+
+        const JSObjectRef global = JSContextGetGlobalObject(ctx_);
 
         JSB_JSC_DEFINE_BRIDGE_CALL_BEGIN();
         {
@@ -52,8 +68,8 @@ function(key, value, getter, setter) {
     }
 }
 ))--");
-            JSB_JSC_DEFINE_BRIDGE_CALL(GetOwnPropertyDescriptor, "(function(key){ Object.getOwnPropertyDescriptor(this, key); })");
-            JSB_JSC_DEFINE_BRIDGE_CALL(GetOwnPropertyNames, "(function(){ Object.getOwnPropertyNames(this); })");
+            JSB_JSC_DEFINE_BRIDGE_CALL(GetOwnPropertyDescriptor, "(function(key){ return Object.getOwnPropertyDescriptor(this, key); })");
+            JSB_JSC_DEFINE_BRIDGE_CALL(GetOwnPropertyNames, "(function(){ return Object.getOwnPropertyNames(this); })");
             JSB_JSC_DEFINE_BRIDGE_CALL(InstanceOf, "(function(parent){ return this instanceof parent; })");
         }
         JSB_JSC_DEFINE_BRIDGE_CALL_END();
@@ -73,6 +89,7 @@ function(key, value, getter, setter) {
 
             JSB_JSC_DEFINE_ATOM(Map);
             JSB_JSC_DEFINE_ATOM(Promise);
+            JSB_JSC_DEFINE_ATOM(ArrayBuffer);
 
             // the following ATOMs may be unnecessary
             JSB_JSC_DEFINE_ATOM(get);
@@ -103,9 +120,8 @@ function(key, value, getter, setter) {
         // should be fine to leave it uninitialized
         // memset(stack_, 0, sizeof(stack_));
 
-        const JSObjectRef global = JSContextGetGlobalObject(ctx_);
-
         jsb::impl::JavaScriptCore::SetContextOpaque(ctx_, this);
+        jsb_check(jsb::impl::JavaScriptCore::GetContextOpaque(ctx_) == this);
         // JS_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
 #if JSB_WITH_DEBUGGER
         JSGlobalContextSetInspectable(ctx_, true);
@@ -143,6 +159,7 @@ function(key, value, getter, setter) {
 
         // manually run GC before freeing the context/runtime to ensure all objects free-ed (valuetype objects)
         JSGarbageCollect(ctx_);
+        PerformMicrotaskCheckpoint();
 
         // cleanup
         jsb_check(!handle_scope_);
@@ -219,24 +236,25 @@ function(key, value, getter, setter) {
         return push_copy(val);
     }
 
-    // no guarantee for main thread
-    void Isolate::_BridgeInstance_finalizer(JSObjectRef obj)
-    {
-        if (jsb::impl::InternalData* data = (jsb::impl::InternalData*) JSObjectGetPrivate(obj))
-        {
-            v8::Isolate* isolate = (v8::Isolate*) data->isolate;
-            if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
-            {
-                const WeakCallbackInfo<void> info(isolate, data->weak.parameter, data->internal_fields);
-                callback(info);
-            }
-            JSB_JSC_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) obj, (uintptr_t) data);
-            memdelete(data);
-        }
-    }
-
     void Isolate::PerformMicrotaskCheckpoint()
     {
+        while (pending_delete_.data_left())
+        {
+            const jsb::impl::CapturedValueID id = pending_delete_.read();
+            const JSValueRef value = captured_values_.get_value(id);
+            JSValueUnprotect(ctx_, value);
+            captured_values_.remove_at(id);
+        }
+        while (pending_finalize_.data_left())
+        {
+            jsb::impl::InternalData* data = pending_finalize_.read();
+            if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
+            {
+                const WeakCallbackInfo<void> info(this, data->weak.parameter, data->internal_fields);
+                callback(info);
+            }
+            memdelete(data);
+        }
     }
 
     Local<Context> Isolate::GetCurrentContext()
@@ -308,8 +326,9 @@ function(key, value, getter, setter) {
 
     bool Isolate::_DefineProperty(JSObjectRef obj, JSValueRef key, JSValueRef value)
     {
+        jsb_check(obj && key && value);
         jsb_check(!JSValueIsUndefined(ctx_, obj));
-        jsb_check(JSValueIsString(ctx_, key));
+        jsb_check(!JSValueIsUndefined(ctx_, key) && !JSValueIsNull(ctx_, key));
 
         const JSObjectRef call = bridge_calls_[jsb::impl::JSBridgeCall::DefineProperty];
         const JSValueRef args[2] = { key, value };
@@ -327,9 +346,16 @@ function(key, value, getter, setter) {
     {
         jsb_check(!JSValueIsUndefined(ctx_, obj));
         jsb_check(JSValueIsString(ctx_, key));
+        jsb_check(!getter || JSObjectIsFunction(ctx_, getter));
+        jsb_check(!setter || JSObjectIsFunction(ctx_, setter));
 
         const JSObjectRef call = bridge_calls_[jsb::impl::JSBridgeCall::DefineProperty];
-        const JSValueRef args[4] = { key, stack_[jsb::impl::StackPos::Undefined], getter, setter };
+        const JSValueRef args[4] = { 
+            key, 
+            stack_[jsb::impl::StackPos::Undefined], 
+            getter ? getter : stack_[jsb::impl::StackPos::Undefined], 
+            setter ? setter : stack_[jsb::impl::StackPos::Undefined]
+        };
         JSValueRef error = nullptr;
         JSObjectCallAsFunction(ctx_, call, obj, std::size(args), args, &error);
         if (jsb_unlikely(error))
@@ -367,13 +393,15 @@ function(key, value, getter, setter) {
 
     void Isolate::_ThrowError(JSValueRef error)
     {
+        jsb_check(error && !JSValueIsUndefined(ctx_, error));
         const JSValueRef last = stack_[jsb::impl::StackPos::Exception];
-        if (last)
+        if (last && !JSValueIsUndefined(ctx_, last))
         {
-            JSB_JSC_LOG(Warning, "overwriting the previous exception");
+            JSB_JSC_LOG(Warning, "overwriting the previous exception: %s", jsb::impl::JavaScriptCore::GetString(ctx_, last));
             JSValueUnprotect(ctx_, last);
         }
         JSValueProtect(ctx_, error);
+        JSB_JSC_LOG(Verbose, "throw error: %s", jsb::impl::JavaScriptCore::GetString(ctx_, error));
         stack_[jsb::impl::StackPos::Exception] = error;
     }
 
@@ -409,6 +437,20 @@ function(key, value, getter, setter) {
         jsb_check(payload);
         payload->isolate->_delete_cfunction(payload->captured_value_id);
         memdelete(payload);
+    }
+
+    // no guarantee for main thread
+    void Isolate::_BridgeInstance_finalizer(JSObjectRef obj)
+    {
+        if (jsb::impl::InternalData* data = (jsb::impl::InternalData*) JSObjectGetPrivate(obj))
+        {
+            v8::Isolate* isolate = (v8::Isolate*) data->isolate;
+            JSB_JSC_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) obj, (uintptr_t) data);
+
+            //TODO improve: always handle it in environment
+            const ::Error error = isolate->pending_finalize_.write(data);
+            jsb_check(error == ::OK);
+        }
     }
 
     JSValueRef _NotAllowedCallAsFunction(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
@@ -479,7 +521,8 @@ function(key, value, getter, setter) {
     {
         //TODO delete FunctionData in a thread safe way
         //TODO JSValueUnprotect(data.data);
-        jsb_checkf(false, "delete FunctionData in a thread safe way");
+        const ::Error error = pending_delete_.write(id);
+        jsb_check(error == ::OK);
     }
 
 }

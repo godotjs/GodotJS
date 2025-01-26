@@ -17,7 +17,8 @@ namespace jsb::impl
         static JSObjectRef AsObject(JSContextRef ctx, JSValueRef val)
         {
             // return JSValueToObject(ctx, val, nullptr);
-            if (JSValueIsObject(ctx, val)) return (JSObjectRef) val;
+            if (val) return JSValueToObject(ctx, val, nullptr);
+            // if (JSValueIsObject(ctx, val)) return (JSObjectRef) val;
             return nullptr;
         }
 

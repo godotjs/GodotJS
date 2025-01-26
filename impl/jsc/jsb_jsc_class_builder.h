@@ -223,12 +223,14 @@ namespace jsb::impl
             jsb_checkf(!closed_, "class builder is already closed");
             closed_ = true;
             const JSObjectRef prototype = JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) prototype_);
-            const JSValueRef constructor = (JSValueRef) constructor_;
+            const JSObjectRef constructor = JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) constructor_);
             jsb_check(prototype);
             jsb_check(constructor);
-            const bool rval = isolate_->_SetProperty(prototype, jsb::impl::JS_ATOM_constructor, constructor);
-            jsb_check(rval);
-            jsb_unused(rval);
+            const bool rval1 = isolate_->_SetProperty(prototype, jsb::impl::JS_ATOM_constructor, constructor);
+            const bool rval2 = isolate_->_SetProperty(constructor, jsb::impl::JS_ATOM_prototype, prototype);
+            jsb_check(rval1 && rval2);
+            jsb_unused(rval1);
+            jsb_unused(rval2);
             return Class(isolate_, internal_field_count_, prototype_, constructor_);
         }
 

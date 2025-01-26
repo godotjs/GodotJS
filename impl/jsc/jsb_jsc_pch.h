@@ -5,6 +5,8 @@
 #include "../shared/jsb_custom_field.h"
 #include "../../internal/jsb_internal.h"
 
+#include "core/templates/ring_buffer.h"
+
 //TODO WARNING: ONLY FOR DEV, NOT SUPPORTED TO BUILD. REMOVE IT AFTER jsc.impl IS READY.
 #if !defined(API_AVAILABLE) && !defined(MACOS_ENABLED) && !defined(IOS_ENABLED)
 #define API_AVAILABLE(...)
