@@ -6,39 +6,36 @@ namespace v8
 {
     int Object::InternalFieldCount() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate_->get_class_id());
-        if (!index) return 0;
-        const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
-        return data->internal_field_count;
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const jsb::impl::InternalData* internal_data = (jsb::impl::InternalData*) JSObjectGetPrivate(self);
+        return internal_data ? internal_data->internal_field_count : 0;
     }
 
     void Object::SetAlignedPointerInInternalField(int slot, void* data)
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID internal_data_id = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate_->get_class_id());
-        const jsb::impl::InternalDataPtr internal_data = isolate_->get_internal_data(internal_data_id);
-        JSB_JSC_LOG(VeryVerbose, "set internal data JSObject:%s id:%s data:%s (last:%s)", (uintptr_t) JS_VALUE_GET_PTR(val), internal_data_id, (uintptr_t) data, (uintptr_t) internal_data->internal_fields[slot]);
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        jsb::impl::InternalData* internal_data = (jsb::impl::InternalData*) JSObjectGetPrivate(self);
+        jsb_check(internal_data);
         jsb_checkf(!data || !internal_data->internal_fields[slot], "overwriting the internal field is not allowed");
         internal_data->internal_fields[slot] = data;
     }
 
     void* Object::GetAlignedPointerFromInternalField(int slot) const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate_->get_class_id());
-        const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
-        return data->internal_fields[slot];
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const jsb::impl::InternalData* internal_data = (jsb::impl::InternalData*) JSObjectGetPrivate(self);
+        jsb_check(internal_data);
+        return internal_data->internal_fields[slot];
     }
 
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_IsArray(isolate_->ctx(), self));
-        const int res = JS_SetPropertyUint32(isolate_->ctx(), self, index, JS_DupValue(isolate_->ctx(), (JSValue) value));
-        if (res == -1)
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        JSValueRef error = nullptr;
+        JSObjectSetPropertyAtIndex(isolate_->ctx(), self, index, (JSValueRef) value, &error);
+        if (jsb_unlikely(error))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(isolate_->ctx(), error);
             return Maybe<bool>();
         }
         return Maybe<bool>(true);
@@ -46,27 +43,25 @@ namespace v8
 
     MaybeLocal<Value> Object::Get(Local<Context> context, uint32_t index) const
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_IsArray(isolate_->ctx(), self));
-        const JSValue val = JS_GetPropertyUint32(isolate_->ctx(), self, index);
-        if (JS_IsException(val))
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        JSValueRef error = nullptr;
+        const JSValueRef val = JSObjectGetPropertyAtIndex(isolate_->ctx(), self, index, &error);
+        if (jsb_unlikely(error))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(isolate_->ctx(), error);
             return MaybeLocal<Value>();
         }
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
+        return MaybeLocal<Value>(Data(isolate_, isolate_->push_copy(val)));
     }
 
     Maybe<bool> Object::Set(Local<Context> context, Local<Value> key, Local<Value> value)
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        JSContext* ctx = isolate_->ctx();
-
-        const jsb::impl::QuickJS::Atom index(ctx, (JSValue) key);
-        const int res = JS_SetProperty(ctx, self, index, JS_DupValue(ctx, (JSValue) value));
-        if (res == -1)
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        JSValueRef error = nullptr;
+        JSObjectSetPropertyForKey(isolate_->ctx(), self, (JSValueRef) key, (JSValueRef) value, kJSPropertyAttributeNone, &error);
+        if (jsb_unlikely(error))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(isolate_->ctx(), error);
             return Maybe<bool>();
         }
         return Maybe<bool>(true);
@@ -74,253 +69,172 @@ namespace v8
 
     MaybeLocal<Value> Object::Get(Local<Context> context, Local<Value> key) const
     {
-        const JSValue self = isolate_->stack_val(stack_pos_);
-        JSContext* ctx = isolate_->ctx();
-
-        const jsb::impl::QuickJS::Atom index(ctx, (JSValue) key);
-        const JSValue val = JS_GetProperty(ctx, self, index);
-        if (JS_IsException(val))
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        JSValueRef error = nullptr;
+        const JSValueRef val = JSObjectGetPropertyForKey(isolate_->ctx(), self, (JSValueRef) key, &error);
+        if (jsb_unlikely(error))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return MaybeLocal<Value>();
         }
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(val)));
+        return MaybeLocal<Value>(Data(isolate_, isolate_->push_copy(val)));
     }
 
     Maybe<bool> Object::HasOwnProperty(Local<Context> context, Local<Name> key) const
     {
-        //TODO unsure
-        JSContext* ctx = isolate_->ctx();
-        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
-        const int res = JS_GetOwnProperty(ctx, nullptr, (JSValue) *this, prop);
-
-        if (res == -1)
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        JSValueRef error = nullptr;
+        const bool res = JSObjectHasPropertyForKey(isolate_->ctx(), self, (JSValueRef) key, &error);
+        if (jsb_unlikely(error))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
             return Maybe<bool>();
         }
-        return Maybe<bool>(!!res);
+        return Maybe<bool>(res);
     }
 
     Maybe<bool> Object::SetPrototype(Local<Context> context, Local<Value> prototype)
     {
-        JSContext* ctx = isolate_->ctx();
-        const int res = JS_SetPrototype(ctx, (JSValue) *this, (JSValue) prototype);
-        if (res == -1)
-        {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
-            return Maybe<bool>();
-        }
-        return Maybe<bool>(!!res);
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+
+        // no straightforward way to check if it's successfully set
+        JSObjectSetPrototype(isolate_->ctx(), self, (JSValueRef) prototype);
+        return Maybe<bool>(true);
     }
 
+    // obj.__proto__
     Local<Value> Object::GetPrototype()
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue prototype = JS_GetPrototype(ctx, (JSValue) *this);
-        if (JS_IsException(prototype))
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSValueRef prototype = JSObjectGetPrototype(isolate_->ctx(), self);
+        if (jsb_unlikely(!prototype))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return Local<Value>();
         }
-        return Local<Value>(Data(isolate_, isolate_->push_steal(prototype)));
+        return Local<Value>(Data(isolate_, isolate_->push_copy(prototype)));
     }
 
     MaybeLocal<Value> Object::CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[])
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue self = (JSValue) *this;
-        JSValue* argvv = jsb_stackalloc(JSValue, argc);
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        JSValueRef* argvv = jsb_stackalloc(JSValueRef, argc);
         for (int i = 0; i < argc; ++i)
         {
-            argvv[i] = (JSValue) argv[i];
+            argvv[i] = (JSValueRef) argv[i];
         }
-        const JSValue instance = JS_CallConstructor(ctx, self, argc, argvv);
-        if (JS_IsException(instance))
+        const JSValueRef instance = isolate_->_CallAsConstructor(self, argc, argvv);
+        if (jsb_unlikely(!instance))
         {
             // intentionally keep the exception
             return MaybeLocal<Value>();
         }
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(instance)));
+        return MaybeLocal<Value>(Data(isolate_, isolate_->push_copy(instance)));
     }
 
+    // new plain object
     Local<Object> Object::New(Isolate* isolate)
     {
-        JSContext* ctx = isolate->ctx();
-        const JSValue obj = JS_NewObject(ctx);
-        jsb_check(!JS_IsException(obj));
-        return Local<Object>(Data(isolate, isolate->push_steal(obj)));
+        const JSObjectRef obj = JSObjectMake(isolate->ctx(), nullptr, nullptr);
+        jsb_check(obj);
+        return Local<Object>(Data(isolate, isolate->push_copy(obj)));
     }
 
     MaybeLocal<Value> Object::GetOwnPropertyDescriptor(Local<Context> context, Local<Name> key) const
     {
-        JSContext* ctx = isolate_->ctx();
-        JSPropertyDescriptor desc;
-
-        const JSValue self = (JSValue) *this;
-        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
-        const int res = JS_GetOwnProperty(ctx, &desc, self, prop);
-
-        if (res == -1)
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSValueRef rval = isolate_->_GetOwnPropertyDescriptor(self, (JSValueRef) key);
+        if (rval)
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
-            return MaybeLocal<Value>();
+            return MaybeLocal<Value>(Data(isolate_, isolate_->push_copy(rval)));
         }
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptor
-        const JSValue desc_js = JS_NewObject(ctx);
-        jsb_check(JS_IsObject(desc_js));
-
-        // JSValues in desc are free-ed by set
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_get, desc.getter) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_set, desc.setter) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_value, desc.value) != -1);
-
-        // property flags
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_configurable, JS_MKVAL(JS_TAG_BOOL, !!(desc.flags & JS_PROP_CONFIGURABLE))) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_writable, JS_MKVAL(JS_TAG_BOOL, !!(desc.flags & JS_PROP_WRITABLE))) != -1);
-        jsb_ensure(JS_SetProperty(ctx, desc_js, jsb::impl::JS_ATOM_enumerable, JS_MKVAL(JS_TAG_BOOL, !!(desc.flags & JS_PROP_ENUMERABLE))) != -1);
-
-        return MaybeLocal<Value>(Data(isolate_, isolate_->push_steal(desc_js)));
+        return MaybeLocal<Value>();
     }
 
-    JSValue Object::_lazy(JSContext* ctx, JSValue this_val, int argc, JSValue* argv, int magic, JSValue* func_data)
+    // JSValue _lazy(JSContext* ctx, JSValue this_val, int argc, JSValue* argv, int magic, JSValue* func_data)
+    JSValueRef _lazy(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
     {
-        Isolate* isolate = (Isolate*) JS_GetContextOpaque(ctx);
-        JSValue rvo;
+        Isolate* isolate = (Isolate*) jsb::impl::JavaScriptCore::GetContextOpaque(ctx);
+        const jsb::impl::CFunctionPayload& payload = *(jsb::impl::CFunctionPayload*) JSObjectGetPrivate(function);
+        JSValueRef rvo = nullptr;
+        const JSValueRef captured_value = isolate->_get_captured_value(payload.captured_value_id);
+        jsb_check(captured_value);
 
         // evaluate lazy callback
         {
-            const AccessorNameGetterCallback getter = (AccessorNameGetterCallback) JS_VALUE_GET_PTR(func_data[1]);
+            const AccessorNameGetterCallback getter = (AccessorNameGetterCallback) payload.callback;
             HandleScope handle_scope(isolate);
 
-            const uint16_t rvo_pos = isolate->push_copy(JS_UNDEFINED); // return value
+            const uint16_t rvo_pos = isolate->push_undefined(); // reserved stack position for return value
             const PropertyCallbackInfo<Value> info(isolate, rvo_pos);
-            const Local<Name> prop_v(Data(isolate, isolate->push_copy(func_data[0])));
+            const Local<Name> prop_v(Data(isolate, isolate->push_copy(captured_value)));
 
             getter(prop_v, info);
 
             // after back from the impl layer, we need to return JS_EXCEPTION if an error is thrown in quickjs
-            if (isolate->is_error_thrown())
+            if (isolate->_HasError())
             {
-                return JS_EXCEPTION;
+                *exception = isolate->_GetError();
+                return nullptr;
             }
 
             // We need a duplicated value for returning.
             // Duplicate the value here because the stack value will become invalid after leaving the handle scope.
             rvo = isolate->stack_dup(rvo_pos);
-            jsb_check(!JS_IsException(rvo));
         }
 
         // overwrite the current lazy getter with rvo
         {
-            const jsb::impl::QuickJS::Atom prop(ctx, func_data[0]);
-            constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_VALUE;
-
-            //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-            const int res = JS_DefineProperty(ctx, this_val, prop, rvo, JS_UNDEFINED, JS_UNDEFINED, flags);
-            jsb_check(res >= 0);
-            jsb_unused(res);
+            const bool rval = isolate->_DefineProperty(thisObject, captured_value, rvo);  // NOLINT(readability-suspicious-call-argument)
+            jsb_check(rval);
+            jsb_unused(rval);
         }
 
+        //TODO correct?
+        JSValueUnprotect(ctx, rvo);
         return rvo;
     }
 
     Maybe<bool> Object::SetLazyDataProperty(Local<Context> context, Local<Name> name, AccessorNameGetterCallback getter)
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
-        constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_GET;
-        JSValue lazy_data[] = { JS_DupValue(ctx, (JSValue) name), JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void *) getter) };
-        const JSValue lazy = JS_NewCFunctionData(ctx, _lazy, /* length */ 0, /* magic */ 0, ::std::size(lazy_data), lazy_data);
-
-        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) name);
-        const int res = JS_DefineProperty(ctx, this_obj, prop, JS_UNDEFINED, lazy, JS_UNDEFINED, flags);
-
-        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-        JS_FreeValue(ctx, lazy);
-
-        if (res == -1)
+        const JSContextRef ctx = isolate_->ctx();
+        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSObjectRef lazy = isolate_->_NewFunction(_lazy, nullptr, (void*) getter, (JSValueRef) name);
+        if (!isolate_->_DefineProperty(this_obj, (JSValueRef) name, lazy, nullptr))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return Maybe<bool>();
         }
-        return Maybe<bool>(!!res);
+        return Maybe<bool>(true);
     }
 
     Maybe<bool> Object::DefineOwnProperty(Local<Context> context, Local<Name> key, Local<Value> value, PropertyAttribute attributes)
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
-        const JSValue val = (JSValue) value;
-        int flags = JS_PROP_HAS_VALUE;
-        if ((attributes & DontEnum) == 0) flags |= JS_PROP_HAS_ENUMERABLE;
-        if ((attributes & ReadOnly) == 0) flags |= JS_PROP_HAS_WRITABLE;
-        if ((attributes & DontDelete) == 0) flags |= JS_PROP_HAS_CONFIGURABLE;
+        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSValueRef val = (JSValueRef) value;
+        const JSValueRef prop = (JSValueRef) key;
 
-        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
-        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-        const int res = JS_DefineProperty(ctx, this_obj, prop, val, JS_UNDEFINED, JS_UNDEFINED, flags);
-
-        if (res == -1)
+        if (isolate_->_DefineProperty(this_obj, prop, val))
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
-            return Maybe<bool>();
+            return Maybe<bool>(true);
         }
-        return Maybe<bool>(!!res);
+        return Maybe<bool>();
     }
 
     void Object::SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter, Local<FunctionTemplate> setter)
     {
-        JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
-        int flags = JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_CONFIGURABLE; //TODO consider remove 'configurable' flags
-        if (!getter.IsEmpty()) flags |= JS_PROP_HAS_GET;
-        if (!setter.IsEmpty()) flags |= JS_PROP_HAS_SET | JS_PROP_HAS_WRITABLE;
-
-        const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) name);
-        const int res = JS_DefineProperty(ctx, this_obj, prop,
-            JS_UNDEFINED,
-            (JSValue) getter, //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-            (JSValue) setter,
-            flags);
-        jsb_check(res >= 0);
-        jsb_unused(res);
+        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        isolate_->_DefineProperty(this_obj, (JSValueRef) name,
+            jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) getter),
+            jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) setter));
     }
 
     MaybeLocal<Array> Object::GetOwnPropertyNames(Local<Context> context, PropertyFilter filter, KeyConversionMode key_conversion)
     {
-        JSContext* ctx = isolate_->ctx();
-        JSPropertyEnum *tab;
-        uint32_t len;
-
-        int flags = 0;
-        if ((filter & SKIP_STRINGS) == 0) flags |= JS_GPN_STRING_MASK;
-        if ((filter & SKIP_SYMBOLS) == 0) flags |= JS_GPN_SYMBOL_MASK;
-
-        // key_conversion is not available in quickjs.impl
-        jsb_check(key_conversion == v8::KeyConversionMode::kNoNumbers);
-
-        int res = JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) *this, flags);
-        if (res == -1)
+        //NOTE we use bridge call rather than JSC API here for simplicity (no need to handle JSPropertyNameArrayRef stuff)
+        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSValueRef rval = isolate_->_GetOwnPropertyNames(this_obj);
+        if (rval)
         {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
-            return MaybeLocal<Array>();
+            return MaybeLocal<Array>(Data(isolate_, isolate_->push_copy(rval)));
         }
-
-        // build the name table
-        const JSValue array = JS_NewArray(ctx);
-
-        for(uint32_t i = 0; i < len; ++i)
-        {
-            res = JS_SetPropertyUint32(ctx, array, i, JS_AtomToValue(ctx, tab[i].atom));
-            jsb_check(res >= 0);
-
-            // cleanup
-            JS_FreeAtom(ctx, tab[i].atom);
-        }
-        js_free(ctx, tab);
-
-        return MaybeLocal<Array>(Data(isolate_, isolate_->push_steal(array)));
+        return MaybeLocal<Array>();
     }
 
 }

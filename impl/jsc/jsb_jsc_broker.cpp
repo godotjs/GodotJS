@@ -3,12 +3,13 @@
 
 namespace jsb::impl
 {
-    void Broker::SetWeak(v8::Isolate* isolate, JSValue value, void* parameter, void* callback)
+    void Broker::SetWeak(v8::Isolate* isolate, JSObjectRef value, void* parameter, void* callback)
     {
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(value, isolate->get_class_id());
-        const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
+        jsb_check(value);
+        jsb::impl::InternalData* data = (jsb::impl::InternalData*) JSObjectGetPrivate(value);
+        jsb_check(data);
         JSB_JSC_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)",
-            (uintptr_t) JS_VALUE_GET_PTR(value), index,
+            (uintptr_t) value, (uintptr_t) data,
             (uintptr_t) parameter, (uintptr_t) callback,
             (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
         jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
@@ -16,34 +17,19 @@ namespace jsb::impl
         data->weak.callback = (void*) callback;
     }
 
-    JSValue Broker::stack_val(v8::Isolate* isolate, uint16_t index)
+    JSValueRef Broker::stack_val(v8::Isolate* isolate, uint16_t index)
     {
         return isolate->stack_val(index);
     }
 
-    JSValue Broker::stack_dup(v8::Isolate* isolate, uint16_t index)
+    JSValueRef Broker::stack_dup(v8::Isolate* isolate, uint16_t index)
     {
         return isolate->stack_dup(index);
     }
 
-    uint16_t Broker::push_copy(v8::Isolate* isolate, JSValue value)
+    uint16_t Broker::push_copy(v8::Isolate* isolate, JSValueRef value)
     {
         return isolate->push_copy(value);
-    }
-
-    void Broker::add_phantom(v8::Isolate* isolate, void* token)
-    {
-        return isolate->add_phantom(token);
-    }
-
-    void Broker::remove_phantom(v8::Isolate* isolate, void* token)
-    {
-        return isolate->remove_phantom(token);
-    }
-
-    bool Broker::is_phantom_alive(v8::Isolate* isolate, void* token)
-    {
-        return isolate->is_phantom_alive(token);
     }
 
     void Broker::_add_reference(v8::Isolate* isolate)
@@ -56,19 +42,19 @@ namespace jsb::impl
         isolate->_remove_reference();;
     }
 
-    JSValue Broker::_dup(v8::Isolate* isolate, JSValueConst value)
+    bool Broker::IsStrictEqual(v8::Isolate* isolate, JSValueRef a, JSValueRef b)
     {
-        return JS_DupValue(isolate->ctx(), value);
+        return JSValueIsStrictEqual(isolate->ctx(), a, b);
     }
 
-    void Broker::_free(v8::Isolate* isolate, JSValueConst value)
+    JSContextRef Broker::ctx(v8::Isolate* isolate)
     {
-        JS_FreeValue(isolate->ctx(), value);
+        return isolate->ctx();
     }
 
-    void Broker::_free_delayed(v8::Isolate* isolate, JSValueConst value)
+    JSContextGroupRef Broker::rt(v8::Isolate* isolate)
     {
-        isolate->free_value(value);
+        return isolate->rt();
     }
 
 }

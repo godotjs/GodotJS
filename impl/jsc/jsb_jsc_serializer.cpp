@@ -18,9 +18,8 @@ namespace v8
 
     Maybe<bool> ValueSerializer::WriteValue(Local<Context> context, Local<Value> value)
     {
-        JSContext* ctx = context->GetIsolate()->ctx();
-        buffer_ = JS_WriteObject(ctx, &size_, (JSValue) value, JS_WRITE_OBJ_REFERENCE);
-        return Maybe(!!buffer_);
+        //TODO serialize with JSON as a workaround?
+        return Maybe<bool>();
     }
 
     std::pair<uint8_t*, size_t> ValueSerializer::Release()
@@ -43,16 +42,8 @@ namespace v8
 
     MaybeLocal<Value> ValueDeserializer::ReadValue(Local<Context> context)
     {
-        v8::Isolate* isolate = context->GetIsolate();
-        JSContext* ctx = isolate->ctx();
-        const JSValue rval = JS_ReadObject(ctx, buffer_, size_, JS_READ_OBJ_REFERENCE);
-        if (JS_IsException(rval))
-        {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
-            return MaybeLocal<Value>();
-        }
-
-        return MaybeLocal<Value>(Data(isolate, isolate->push_steal(rval)));
+        //TODO deserialize with JSON as a workaround?
+        return MaybeLocal<Value>();
     }
 
 }

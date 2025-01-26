@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_PRIMITIVE_H
-#define GODOTJS_QUICKJS_PRIMITIVE_H
+#ifndef GODOTJS_JSC_PRIMITIVE_H
+#define GODOTJS_JSC_PRIMITIVE_H
 #include "jsb_jsc_pch.h"
 #include "jsb_jsc_data.h"
 #include "jsb_jsc_handle.h"
@@ -53,13 +53,14 @@ namespace v8
     {
     public:
         bool Value() const;
-        
+
         static Local<Boolean> New(Isolate* isolate, bool value);
     };
 
     class Number : public Primitive
     {
     public:
+        // will return NaN if an error is thrown (but ignored)
         double Value() const;
 
         static Local<Number> New(Isolate* isolate, double value);
@@ -91,6 +92,7 @@ namespace v8
     class Int32 : public Integer
     {
     public:
+        // will return 0 if an error is thrown (but ignored)
         int32_t Value() const;
     };
 

@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_CATCH_H
-#define GODOTJS_QUICKJS_CATCH_H
+#ifndef GODOTJS_JSC_CATCH_H
+#define GODOTJS_JSC_CATCH_H
 
 #include "core/string/ustring.h"
 

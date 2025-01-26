@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_HANDLE_H
-#define GODOTJS_QUICKJS_HANDLE_H
+#ifndef GODOTJS_JSC_HANDLE_H
+#define GODOTJS_JSC_HANDLE_H
 
 #include "jsb_jsc_pch.h"
 #include "jsb_jsc_data.h"
@@ -47,9 +47,9 @@ namespace v8
 
         T* operator->() const { return (T*) &const_cast<Local*>(this)->data_; }
 
-        explicit operator JSValue() const
+        explicit operator JSValueRef() const
         {
-            return data_.isolate_ ? jsb::impl::Broker::stack_val(data_.isolate_, data_.stack_pos_) : JS_UNDEFINED;
+            return data_.isolate_ ? jsb::impl::Broker::stack_val(data_.isolate_, data_.stack_pos_) : nullptr;
         }
 
         template <typename S>
@@ -129,6 +129,7 @@ namespace v8
         void** internal_fields_;
     };
 
+    //TODO use JSWeakRef (JSWeakPrivate.h)
     template <typename T>
     class Global
     {
@@ -139,7 +140,7 @@ namespace v8
         {
             isolate_ = nullptr;
             shadow_ = nullptr;
-            value_ = JS_UNDEFINED;
+            value_ = nullptr;
             weak_type_ = WeakType::kStrong;
         }
 
@@ -188,28 +189,27 @@ namespace v8
             case WeakType::kStrong:
                 {
                     // release if strong referenced
-                    jsb_check(is_alive());
-                    jsb::impl::Broker::_free_delayed(isolate_, value_);
+                    const JSContextRef ctx = jsb::impl::Broker::ctx(isolate_);
+                    JSValueUnprotect(ctx, value_);
+                    value_ = nullptr;
                     break;
                 }
+            case WeakType::kWeak:
             case WeakType::kWeakCallback:
                 {
                     // clear callback
-                    if (is_alive())
-                    {
-                        jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
-                    }
+                    const JSContextGroupRef rt = jsb::impl::Broker::rt(isolate_);
+                    jsb::impl::Broker::SetWeak(isolate_, JSWeakGetObject(shadow_), nullptr, nullptr);
+                    JSWeakRelease(rt, shadow_);
+                    shadow_ = nullptr;
                     break;
                 }
             default: break;
             }
 
-            jsb::impl::Broker::remove_phantom(isolate_, shadow_);
             jsb::impl::Broker::_remove_reference(isolate_);
 
             isolate_ = nullptr;
-            shadow_ = nullptr;
-            value_ = JS_UNDEFINED;
             weak_type_ = WeakType::kStrong;
         }
 
@@ -225,9 +225,9 @@ namespace v8
 
             if (!value.IsEmpty())
             {
+                // protected
                 value_ = jsb::impl::Broker::stack_dup(isolate_, value.data_.stack_pos_);
-                shadow_ = JS_VALUE_GET_TAG(value_) < 0 ? JS_VALUE_GET_PTR(value_) : nullptr;
-                jsb::impl::Broker::add_phantom(isolate_, shadow_);
+                shadow_ = nullptr;
                 weak_type_ = WeakType::kStrong;
             }
         }
@@ -240,33 +240,52 @@ namespace v8
         void ClearWeak()
         {
             jsb_check(isolate_ && weak_type_ != WeakType::kStrong && is_alive());
+            const JSContextGroupRef rt = jsb::impl::Broker::rt(isolate_);
+            const JSContextRef ctx = jsb::impl::Broker::ctx(isolate_);
 
             if (weak_type_ == WeakType::kWeakCallback)
             {
                 // clear callback
-                jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
+                const JSObjectRef obj = jsb::impl::JavaScriptCore::AsObject(ctx, value_);
+                jsb::impl::Broker::SetWeak(isolate_, obj, nullptr, nullptr);
             }
+
             weak_type_ = WeakType::kStrong;
-            jsb::impl::Broker::_dup(isolate_, value_);
+            value_ = JSWeakGetObject(shadow_);
+            JSValueProtect(ctx, value_);
+            JSWeakRelease(rt, shadow_);
+            shadow_ = nullptr;
         }
 
         // ClearWeak() before SetWeak() if SetWeak(parameter) called priorly
         void SetWeak()
         {
-            jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
+            jsb_check(isolate_ && weak_type_ == WeakType::kStrong);
+            const JSContextGroupRef rt = jsb::impl::Broker::rt(isolate_);
+            const JSContextRef ctx = jsb::impl::Broker::ctx(isolate_);
 
             weak_type_ = WeakType::kWeak;
-            jsb::impl::Broker::_free_delayed(isolate_, value_);
+            const JSObjectRef obj = jsb::impl::JavaScriptCore::AsObject(ctx, value_);
+            shadow_ = JSWeakCreate(rt, obj);
+            jsb::impl::Broker::SetWeak(isolate_, obj, nullptr, nullptr);
+            JSValueUnprotect(ctx, value_);
+            value_ = nullptr;
         }
 
         template<typename S>
         void SetWeak(S* parameter, typename WeakCallbackInfo<S>::Callback callback, v8::WeakCallbackType type)
         {
-            jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
+            jsb_check(isolate_ && weak_type_ == WeakType::kStrong);
+            const JSContextGroupRef rt = jsb::impl::Broker::rt(isolate_);
+            const JSContextRef ctx = jsb::impl::Broker::ctx(isolate_);
+            jsb_check(JSValueIsObject(ctx, value_));
 
-            jsb::impl::Broker::SetWeak(isolate_, value_, parameter, (void*) callback);
             weak_type_ = WeakType::kWeakCallback;
-            jsb::impl::Broker::_free_delayed(isolate_, value_);
+            const JSObjectRef obj = jsb::impl::JavaScriptCore::AsObject(ctx, value_);
+            shadow_ = JSWeakCreate(rt, obj);
+            jsb::impl::Broker::SetWeak(isolate_, obj, parameter, (void*) callback);
+            JSValueUnprotect(ctx, value_);
+            value_ = nullptr;
         }
 
         // Return true if no value held by this handle, or dead for a weak handle.
@@ -275,19 +294,22 @@ namespace v8
         Local<T> Get(Isolate* isolate) const
         {
             jsb_check(isolate_ == isolate && isolate_ && is_alive());
-            return Local<T>(Data(isolate_, jsb::impl::Broker::push_copy(isolate_, value_)));
+            return Local<T>(Data(isolate_, jsb::impl::Broker::push_copy(isolate_, (JSValueRef) *this)));
         }
 
-        explicit operator JSValue() const
+        explicit operator JSValueRef() const
         {
-            jsb_check(isolate_ && is_alive());
-            return value_;
+            jsb_check(isolate_);
+            if (weak_type_ == WeakType::kStrong) return value_;
+            return JSWeakGetObject(shadow_);
         }
 
         template <typename S>
         bool operator==(const Global<S>& other) const
         {
-            return shadow_ == other.shadow_ || jsb::impl::QuickJS::Equals(value_, other.value_);
+            return jsb::impl::Broker::IsStrictEqual(isolate_,
+                weak_type_ != WeakType::kStrong ? JSWeakGetObject(shadow_) : value_,
+                other.weak_type_ != WeakType::kStrong ? JSWeakGetObject(other.shadow_) : other.value_);
         }
 
         template <typename S>
@@ -299,16 +321,15 @@ namespace v8
     private:
         // A primitive JSValue is always alive (shadow_ == nullptr).
         // Otherwise, check if the QuickJS internal JSObject* has not been deleted from the phantom list.
-        bool is_alive() const { return !shadow_ || jsb::impl::Broker::is_phantom_alive(isolate_, shadow_); }
+        bool is_alive() const { return weak_type_ == WeakType::kStrong || !!JSWeakGetObject(shadow_); }
 
         Isolate* isolate_ = nullptr;
 
-        // JSObject pointer shadow
-        void* shadow_ = nullptr;
+        // only used for weak handle
+        JSWeakRef shadow_ = nullptr;
 
-        // a shadow copy of object without reference control.
-        // only valid if is_alive() returns true.
-        JSValue value_ = JS_UNDEFINED;
+        // value_ is not protected if this handle is weak, check is_alive() before accessing value_
+        JSValueRef value_ = nullptr;
 
         WeakType weak_type_ = WeakType::kStrong;
     };

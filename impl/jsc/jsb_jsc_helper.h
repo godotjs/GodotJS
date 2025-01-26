@@ -1,5 +1,5 @@
-﻿#ifndef GODOTJS_QUICKJS_HELPER_H
-#define GODOTJS_QUICKJS_HELPER_H
+﻿#ifndef GODOTJS_JSC_HELPER_H
+#define GODOTJS_JSC_HELPER_H
 #include "jsb_jsc_catch.h"
 #include "jsb_jsc_pch.h"
 #include "jsb_jsc_isolate.h"
@@ -15,7 +15,8 @@ namespace jsb::impl
         // deleter for valuetype optimization (no ObjectHandle needed)
         static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Value> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
         {
-            Broker::SetWeak(value.data_.isolate_, (JSValue) value, deleter_data, (void*) callback);
+            JSObjectRef obj = JavaScriptCore::AsObject(value.data_.isolate_->ctx(), (JSValueRef) value);
+            Broker::SetWeak(value.data_.isolate_, obj, deleter_data, (void*) callback);
         }
 
         static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
@@ -40,26 +41,10 @@ namespace jsb::impl
 
         static v8::Local<v8::Function> NewFunction(v8::Local<v8::Context> context, const char* name, v8::FunctionCallback callback, v8::Local<v8::Value> data)
         {
-            // const v8::Local<v8::Function> func = v8::Function::New(context, callback, data).ToLocalChecked();
             v8::Isolate* isolate = context->isolate_;
-            JSValue payload[] = {
-                /* kFuncPayloadCallback */ JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void*) callback),
-                /* kFuncPayloadData*/ isolate->stack_dup(data->stack_pos_),
-            };
-
+            const JSObjectRef func_obj = isolate->_NewFunction(v8::Function::_function_call, name, (void*) callback, (JSValueRef) data);
             static_assert(sizeof(callback) == sizeof(void*));
-            static_assert(jsb::impl::FuncPayload::kNum == ::std::size(payload));
-            const JSValue func_obj = JS_NewCFunctionData(isolate->ctx(),
-                v8::Function::_function_call,
-                /* length */ 0,
-                /* magic */ 0,
-                ::std::size(payload), payload);
-#if JSB_DEBUG
-            JSContext* ctx = context->GetIsolate()->ctx();
-            jsb_check(JS_IsFunction(ctx, func_obj));
-            jsb_ensure(JS_DefinePropertyValue(ctx, func_obj, JS_ATOM_name, JS_NewString(ctx, name), JS_PROP_CONFIGURABLE) == 1);
-#endif
-            const v8::Local<v8::Function> func = v8::Local<v8::Function>(v8::Data(isolate, isolate->push_steal(func_obj)));
+            const v8::Local<v8::Function> func = v8::Local<v8::Function>(v8::Data(isolate, isolate->push_copy(func_obj)));
             return func;
         }
 
@@ -81,14 +66,20 @@ namespace jsb::impl
         template<size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])
         {
-            const uint16_t stack_pos = isolate->push_steal(JS_NewStringLen(isolate->ctx(), literal, N - 1));
+            const JSStringRef str_ref = JSStringCreateWithUTF8CString(literal);
+            const JSValueRef val_ref = JSValueMakeString(isolate->ctx(), str_ref);
+            JSStringRelease(str_ref);
+            const uint16_t stack_pos = isolate->push_copy(val_ref);
             return v8::Local<v8::String>(v8::Data(isolate, stack_pos));
         }
 
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const String& p_str)
         {
             const CharString str8 = p_str.utf8();
-            const uint16_t stack_pos = isolate->push_steal(JS_NewStringLen(isolate->ctx(), str8.get_data(), str8.length()));
+            const JSStringRef str_ref = JSStringCreateWithUTF8CString(str8.get_data());
+            const JSValueRef val_ref = JSValueMakeString(isolate->ctx(), str_ref);
+            JSStringRelease(str_ref);
+            const uint16_t stack_pos = isolate->push_copy(val_ref);
             return v8::Local<v8::String>(v8::Data(isolate, stack_pos));
         }
 
@@ -110,14 +101,7 @@ namespace jsb::impl
         {
             if (!p_val.IsEmpty() && !p_val->IsNullOrUndefined())
             {
-                size_t len;
-                if (const char* str = JS_ToCStringLen(isolate->ctx(), &len, (JSValue) p_val))
-                {
-                    const String ret = String::utf8(str, (int) len);
-                    JS_FreeCString(isolate->ctx(), str);
-                    return ret;
-                }
-                QuickJS::MarkExceptionAsTrivial(isolate->ctx());
+                return JavaScriptCore::GetString(isolate->ctx(), (JSValueRef) p_val);
             }
             return String();
         }
@@ -145,31 +129,6 @@ namespace jsb::impl
 
         jsb_force_inline static void get_statistics(v8::Isolate* isolate, Vector<CustomField>& p_fields)
         {
-            JSMemoryUsage usage;
-            JS_ComputeMemoryUsage(isolate->rt(), &usage);
-
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, array_count), usage.array_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, fast_array_count), usage.fast_array_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, fast_array_elements), usage.fast_array_elements));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, binary_object_count), usage.binary_object_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, binary_object_size), usage.binary_object_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, malloc_count), usage.malloc_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, malloc_size), usage.malloc_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, memory_used_size), usage.memory_used_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, atom_count), usage.atom_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, atom_size), usage.atom_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, str_count), usage.str_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, str_size), usage.str_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, obj_count), usage.obj_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, obj_size), usage.obj_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, prop_count), usage.prop_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, prop_size), usage.prop_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, shape_count), usage.shape_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, shape_size), usage.shape_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, js_func_count), usage.js_func_count));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, js_func_size), usage.js_func_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, js_func_code_size), usage.js_func_code_size, CustomField::HINT_SIZE));
-            p_fields.append(CustomField::value_i64(jsb_nameof(JSMemoryUsage, c_func_count), usage.c_func_count));
         }
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
@@ -203,16 +162,20 @@ namespace jsb::impl
         {
             jsb_checkf(p_source[p_source_len] == '\0', "JS_Eval needs a zero-terminated string as input to evaluate");
             v8::Isolate* isolate = context->GetIsolate();
-            JSContext* ctx = isolate->ctx();
-            const CharString filename = p_filename.utf8();
-            constexpr int flags = JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT;
-            const JSValue rval = JS_Eval(ctx, p_source, p_source_len, filename.get_data(), flags);
-            if (JS_IsException(rval))
+            const JSContextRef ctx = isolate->ctx();
+
+            const JSStringRef code = JSStringCreateWithUTF8CString(p_source);
+            JSValueRef error = nullptr;
+            const JSValueRef rval = JSEvaluateScript(ctx, code, nullptr, nullptr, 0, &error);
+            if (error)
             {
                 // intentionally keep the exception
+                isolate->_ThrowError(error);
                 return v8::MaybeLocal<v8::Value>();
             }
-            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
+            jsb_check(rval);
+            JSStringRelease(code);
+            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_copy(rval)));
         }
 
         static v8::MaybeLocal<v8::Value> eval(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
@@ -222,19 +185,13 @@ namespace jsb::impl
 
         jsb_force_inline static void free(uint8_t* data)
         {
-            // js_free(context->GetIsolate()->ctx(), data);
-
             //NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
-#if JSB_PREFER_QUICKJS_NG
-            ::free(data);
-#else
             memfree(data);
-#endif
         }
 
         jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate)
         {
-            isolate->set_as_interruptible();
+            JSB_JSC_LOG(Error, "set_as_interruptible is not supported by JSC");
         }
     };
 }

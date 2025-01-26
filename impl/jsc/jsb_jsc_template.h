@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_TEMPLATE_H
-#define GODOTJS_QUICKJS_TEMPLATE_H
+#ifndef GODOTJS_JSC_TEMPLATE_H
+#define GODOTJS_JSC_TEMPLATE_H
 #include "jsb_jsc_object.h"
 #include "jsb_jsc_typedef.h"
 

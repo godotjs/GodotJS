@@ -1,15 +1,10 @@
-#ifndef GODOTJS_QUICKJS_FUNCTION_H
-#define GODOTJS_QUICKJS_FUNCTION_H
+#ifndef GODOTJS_JSC_FUNCTION_H
+#define GODOTJS_JSC_FUNCTION_H
 #include "jsb_jsc_object.h"
 #include "jsb_jsc_function_interop.h"
 
 namespace jsb::impl
 {
-    namespace FuncPayload
-    {
-        enum { kCallback, kData, kNum, };
-    }
-
     class Helper;
 }
 
@@ -33,7 +28,7 @@ namespace v8
         Local<Context> GetCreationContextChecked() const;
 
     private:
-        static JSValue _function_call(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
+        static JSValueRef _function_call(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception);
     };
 
 }

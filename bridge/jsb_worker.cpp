@@ -4,7 +4,7 @@
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_double_buffered.h"
 
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
 #define JSB_WORKER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSWorker, Severity, Format, ##__VA_ARGS__)
 
 namespace jsb

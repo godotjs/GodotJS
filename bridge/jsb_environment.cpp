@@ -223,7 +223,7 @@ namespace jsb
                 module_cache_.init(isolate_, cache_obj);
             }
 
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
             Worker::register_(context, global);
 #endif
             Essentials::register_(context, global);
@@ -355,7 +355,7 @@ namespace jsb
         }
 
         // handle messages from workers
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         {
             std::vector<Message>& messages = inbox_.swap();
             if (!messages.empty())
@@ -375,7 +375,7 @@ namespace jsb
 
         // quickjs delayed the free op after all HandleScope left, we need to swap the free op list manually explicitly.
         // otherwise, object may leak until next evacuation of HandleScope.
-#if JSB_WITH_QUICKJS
+#if JSB_WITH_QUICKJS || JSB_WITH_JAVASCRIPT
         isolate_->PerformMicrotaskCheckpoint();
 #else
         if (microtasks_run_)
@@ -394,7 +394,7 @@ namespace jsb
         }
     }
 
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
     void Environment::_on_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
     {
         jsb_check(p_message.get_id());

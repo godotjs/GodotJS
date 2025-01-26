@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_MAYBE_H
-#define GODOTJS_QUICKJS_MAYBE_H
+#ifndef GODOTJS_JSC_MAYBE_H
+#define GODOTJS_JSC_MAYBE_H
 namespace v8
 {
     template<typename T>

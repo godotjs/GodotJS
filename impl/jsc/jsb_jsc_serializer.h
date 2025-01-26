@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_SERIALIZER_H
-#define GODOTJS_QUICKJS_SERIALIZER_H
+#ifndef GODOTJS_JSC_SERIALIZER_H
+#define GODOTJS_JSC_SERIALIZER_H
 #include "jsb_jsc_pch.h"
 
 namespace v8

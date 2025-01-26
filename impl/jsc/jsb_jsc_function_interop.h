@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_FUNCTION_INTEROP_H
-#define GODOTJS_QUICKJS_FUNCTION_INTEROP_H
+#ifndef GODOTJS_JSC_FUNCTION_INTEROP_H
+#define GODOTJS_JSC_FUNCTION_INTEROP_H
 #include "jsb_jsc_object.h"
 #include "jsb_jsc_isolate.h"
 #include "jsb_jsc_typedef.h"
@@ -12,7 +12,7 @@ namespace v8
     public:
         ReturnValue(const Data& data) : data_(data) {}
 
-        explicit operator JSValue() const
+        explicit operator JSValueRef() const
         {
             return data_.isolate_->stack_val(data_.stack_pos_);
         }
@@ -41,7 +41,7 @@ namespace v8
 
         void Set(int32_t value) const
         {
-            data_.isolate_->set_stack_steal(data_.stack_pos_, JS_NewInt32(data_.isolate_->ctx(), value));
+            data_.isolate_->set_stack_copy(data_.stack_pos_, JSValueMakeNumber(data_.isolate_->ctx(), value));
         }
 
     private:

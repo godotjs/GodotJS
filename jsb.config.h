@@ -9,6 +9,12 @@
 #   endif
 #endif
 
+// Enable the debugger bridge.
+// For v8, use Chrome devtools with the following link by default:
+//      devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1
+// For JavaScriptCore, use Safari.
+#define JSB_WITH_DEBUGGER JSB_DEBUG
+
 // lower log levels are completely skipped (at compile-time)
 // see `internal/jsb_log_severity.def.h`
 #ifndef JSB_MIN_LOG_LEVEL

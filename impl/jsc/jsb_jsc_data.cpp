@@ -6,131 +6,135 @@ namespace v8
 {
     int Data::GetIdentityHash() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_VALUE_GET_TAG(val) < 0);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        //TODO improve jsc value hash
 
-        const uintptr_t ptr = (uintptr_t) JS_VALUE_GET_PTR(val);
+        if (!JSValueIsObject(isolate_->ctx(), val))
+        {
+            return 0;
+        }
+
+        const uintptr_t ptr = (uintptr_t) val;
 #if INTPTR_MAX >= INT64_MAX
         return (int) ((ptr >> 32) ^ (ptr & 0xffffffff));
 #elif INTPTR_MAX >= INT32_MAX
         return (int) ptr;
 #else
-        #error "quickjs.impl does not support on the current arch"
+        #error "jsc.impl does not support on the current arch"
 #endif
     }
 
-    Data::operator JSValue() const
+    Data::operator JSValueRef() const
     {
         return isolate_->stack_val(stack_pos_);
     }
 
     bool Data::IsNullOrUndefined() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsNull(val) || JS_IsUndefined(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsNull(isolate_->ctx(), val) || JSValueIsUndefined(isolate_->ctx(), val);
     }
 
     bool Data::IsUndefined() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsUndefined(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsUndefined(isolate_->ctx(), val);
     }
 
     bool Data::IsObject() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsObject(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsObject(isolate_->ctx(), val);
     }
 
     bool Data::IsPromise() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsPromise(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return isolate_->_IsPromise(val);
     }
 
     bool Data::IsArray() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsArray(isolate_->ctx(), val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsArray(isolate_->ctx(), val);
     }
 
     bool Data::IsMap() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-
-        //NOTE quickjs source modified
-        return JS_IsMap(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return isolate_->_IsMap(val);
     }
 
     bool Data::IsSymbol() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsSymbol(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsSymbol(isolate_->ctx(), val);
     }
 
     bool Data::IsString() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsString(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsString(isolate_->ctx(), val);
     }
 
     bool Data::IsFunction() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsFunction(isolate_->ctx(), val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        const JSObjectRef obj = JSValueToObject(isolate_->ctx(), val, nullptr);
+        return obj && JSObjectIsFunction(isolate_->ctx(), obj);
     }
 
     bool Data::IsInt32() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
 
-        //TODO we can not determine whether it's int32 or uint32
-        return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
+        //TODO JSC, not strict int32 check
+        return JSValueIsNumber(isolate_->ctx(), val);
     }
 
     bool Data::IsUint32() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
 
-        //TODO we can not determine whether it's int32 or uint32
-        return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
+        //TODO JSC, not strict int32 check
+        return JSValueIsNumber(isolate_->ctx(), val);
     }
 
     bool Data::IsNumber() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsNumber(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsNumber(isolate_->ctx(), val);
     }
 
     bool Data::IsExternal() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_VALUE_GET_TAG(val) == jsb::impl::JS_TAG_EXTERNAL;
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return isolate_->_IsExternal(val);
     }
 
     bool Data::IsBoolean() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsBool(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsBoolean(isolate_->ctx(), val);
     }
 
     bool Data::IsBigInt() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsBigInt(isolate_->ctx(), val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsBigInt(isolate_->ctx(), val);
     }
 
     bool Data::IsArrayBuffer() const
     {
-        const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsArrayBuffer(val);
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return isolate_->_IsArrayBuffer(val);
     }
 
     bool Data::strict_eq(const Data& other) const
     {
-        const JSValue val1 = isolate_->stack_val(stack_pos_);
-        const JSValue val2 = isolate_->stack_val(other.stack_pos_);
-        return jsb::impl::QuickJS::Equals(val1, val2);
+        const JSValueRef val1 = isolate_->stack_val(stack_pos_);
+        const JSValueRef val2 = isolate_->stack_val(other.stack_pos_);
+        return JSValueIsStrictEqual(isolate_->ctx(), val1, val2);
     }
 
 }

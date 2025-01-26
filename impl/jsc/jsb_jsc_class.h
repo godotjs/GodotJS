@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_CLASS_H
-#define GODOTJS_QUICKJS_CLASS_H
+#ifndef GODOTJS_JSC_CLASS_H
+#define GODOTJS_JSC_CLASS_H
 #include "jsb_jsc_pch.h"
 #include "jsb_jsc_handle.h"
 
@@ -39,22 +39,18 @@ namespace jsb::impl
 
         jsb_force_inline v8::Local<v8::Object> Get(v8::Isolate* isolate) const
         {
-            const JSValue constructor = JS_GetProperty(isolate->ctx(), (JSValue) prototype_, JS_ATOM_constructor);
-            jsb_check(!JS_IsException(constructor));
-            // jsb_check(JS_VALUE_GET_PTR(constructor_) == JS_VALUE_GET_PTR(constructor));
-            return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(constructor)));
+            const JSObjectRef prototype = JavaScriptCore::AsObject(isolate->ctx(), (JSValueRef) prototype_);
+            const JSValueRef constructor = isolate->_GetProperty(prototype, JS_ATOM_constructor);
+            jsb_check(constructor);
+            return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_copy(constructor)));
         }
 
         //NOTE NewInstance should not trigger the underlying native constructor of this class
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
         {
             v8::Isolate* isolate = context->GetIsolate();
-            JSContext* ctx = isolate->ctx();
-            // const JSValue inst = JS_CallConstructor(ctx, (JSValue) constructor_, 0, nullptr);
-            // jsb_check(!JS_IsException(inst));
-            // return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(inst)));
-            return v8::Local<v8::Object>(v8::Data(isolate,isolate->push_steal(
-                _NewObject(isolate, ctx, (JSValue) prototype_, internal_field_count_))));
+            return v8::Local<v8::Object>(v8::Data(isolate,isolate->push_copy(
+                _NewObject(isolate, (JSValueRef) prototype_, internal_field_count_))));
         }
 
     private:
@@ -65,34 +61,35 @@ namespace jsb::impl
             constructor_.Reset(isolate, constructor);
         }
 
-        jsb_force_inline static JSValue _NewObject(v8::Isolate* isolate, JSContext* ctx, JSValue prototype, uint8_t internal_field_count)
+        jsb_force_inline static JSObjectRef _NewObject(v8::Isolate* isolate, JSValueRef prototype, uint8_t internal_field_count)
         {
-            const JSValue this_val = JS_NewObjectProtoClass(ctx, (JSValue) prototype, isolate->get_class_id());
-            jsb_check(JS_IsObject(this_val));
-            const jsb::impl::InternalDataID internal_data_id = isolate->add_internal_data(internal_field_count);
-            JS_SetOpaque(this_val, (void*)(uintptr_t) *internal_data_id);
-            JSB_JSC_LOG(VeryVerbose, "allocating internal data JSObject:%s id:%s", (uintptr_t) JS_VALUE_GET_PTR(this_val), internal_data_id);
+            InternalData* internal_data = memnew(InternalData);
+            internal_data->internal_field_count = internal_field_count;
+            internal_data->isolate = isolate;
+            const JSObjectRef this_val = isolate->_NewObjectProtoClass(prototype, internal_data);
+            jsb_check(this_val);
+            jsb_check(prototype);
             return this_val;
         }
 
         //NOTE JS_CFUNC_constructor_magic DO NOT support func_data
         template<uint8_t InternalFieldCount>
-        static JSValue _constructor(JSContext* ctx, JSValueConst new_target, int argc, JSValueConst* argv, int magic)
+        static JSObjectRef _constructor(JSContextRef ctx, JSObjectRef new_target, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
         {
-            v8::Isolate* isolate = (v8::Isolate*) JS_GetContextOpaque(ctx);
+            v8::Isolate* isolate = (v8::Isolate*) jsb::impl::JavaScriptCore::GetContextOpaque(ctx);
             v8::HandleScope handle_scope(isolate);
-            const jsb::impl::ConstructorData constructor_data = isolate->get_constructor_data(magic);
 
-            const JSValue proto = JS_GetProperty(ctx, new_target, JS_ATOM_prototype);
-            jsb_check(!JS_IsException(proto) && JS_IsObject(proto));
-            const JSValue this_val = _NewObject(isolate, ctx, proto, InternalFieldCount);
-            JS_FreeValue(ctx, proto);
+            const CConstructorPayload& constructor_data = *(CConstructorPayload*) JSObjectGetPrivate(new_target);
 
-            v8::FunctionCallbackInfo<v8::Value> info(isolate, argc, true);
+            const JSValueRef proto = isolate->_GetProperty(new_target, JS_ATOM_prototype);
+            jsb_check(proto && JSValueIsObject(ctx, proto));
+            const JSObjectRef this_val = _NewObject(isolate, proto, InternalFieldCount);
+            jsb_check(this_val);
+            v8::FunctionCallbackInfo<v8::Value> info(isolate, argumentCount, true);
 
             // init function stack base
             static_assert(jsb::impl::FunctionStackBase::ReturnValue == 0);
-            const uint16_t stack_check1 = isolate->push_copy(JS_UNDEFINED);
+            const uint16_t stack_check1 = isolate->push_undefined();
             jsb_unused(stack_check1);
 
             static_assert(jsb::impl::FunctionStackBase::This == 1);
@@ -100,7 +97,7 @@ namespace jsb::impl
             jsb_unused(stack_this);
 
             static_assert(jsb::impl::FunctionStackBase::Data == 2);
-            isolate->push_steal(JS_NewUint32(ctx, constructor_data.data));
+            isolate->push_copy(JSValueMakeNumber(ctx, constructor_data.class_payload));
 
             static_assert(jsb::impl::FunctionStackBase::NewTarget == 3);
             const uint16_t stack_check2 = isolate->push_copy(new_target);
@@ -110,15 +107,16 @@ namespace jsb::impl
             static_assert(jsb::impl::FunctionStackBase::Num == 4);
 
             // push arguments
-            for (int i = 0; i < argc; ++i)
+            for (int i = 0; i < argumentCount; ++i)
             {
-                isolate->push_copy(argv[i]);
+                isolate->push_copy(arguments[i]);
             }
 
             constructor_data.callback(info);
-            if (isolate->is_error_thrown())
+            if (isolate->_HasError())
             {
-                return JS_EXCEPTION;
+                *exception = isolate->_GetError();
+                return nullptr;
             }
 
             return this_val;

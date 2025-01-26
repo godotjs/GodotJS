@@ -29,6 +29,8 @@
 #   include "../impl/v8/jsb_v8.h"
 #elif JSB_WITH_QUICKJS
 #   include "../impl/quickjs/jsb_quickjs.h"
+#elif JSB_WITH_JAVASCRIPTCORE
+#   include "../impl/jsc/jsb_jsc.h"
 #else
 #   error unknown javascript runtime
 #endif

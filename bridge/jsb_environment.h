@@ -80,7 +80,7 @@ namespace jsb
         // Vector<Variant*> sync_delete_;
         RingBuffer<Variant*> pending_delete_;
 
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         internal::DoubleBuffered<Message> inbox_;
 #endif
 
@@ -379,7 +379,7 @@ namespace jsb
 
         void update(uint64_t p_delta_msecs);
 
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         // [thread safe] it's OK to call this method before the evn inited.
         void post_message(Message&& p_message)
         {
@@ -477,7 +477,7 @@ namespace jsb
         static std::shared_ptr<Environment> _access(void* p_runtime);
 
     private:
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         void _on_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
 #endif
         void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
@@ -491,6 +491,10 @@ namespace jsb
         template<bool kShouldFree>
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
+            #if JSB_WITH_JAVASCRIPTCORE
+            //TODO may not call from main thread
+            #endif
+
             Environment* environment = wrap(info.GetIsolate());
             environment->free_object(info.GetParameter(), kShouldFree);
         }
@@ -505,8 +509,8 @@ namespace jsb
         {
             Variant* variant = (Variant*) data;
 
-            // valuetype deleter is run in a background thread only in v8.impl
-#if JSB_WITH_V8
+            // valuetype deleter is run in a background thread in v8.impl and jsc.impl
+#if JSB_WITH_V8 || JSB_WITH_JAVASCRIPTCORE
             // `Callable/Array/Dictionary` may contain reference-based objects.
             // executing the destructor of a reference-based object may cause crash (not thread-safe),
             // release them in main thread for simplicity.

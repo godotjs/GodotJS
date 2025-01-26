@@ -159,10 +159,6 @@ jsb_defines = [
     CompileDefines("JSB_WITH_EDITOR_UTILITY_FUNCS", 1 if jsb_platform != "web" and env.editor_build else 0, [
         "Enables 'jsb.editor'", 
     ]),
-    CompileDefines("JSB_WITH_DEBUGGER", 1 if v8_support is not None else 0, [
-        "Enable to debug with Chrome devtools with the following link by default:",
-        "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:9229/1",
-    ]),
     CompileDefines("JSB_WITH_LWS", 1 if lws_support is not None else 0, [
         "NOTE: Currently use `libwebsockets` to handle v8 debugger connection since `modules/websocket` fail to handshake with `devtools`", 
         "`devtools` do not response the upgrading request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`", 
@@ -176,12 +172,12 @@ def is_defined(name, value = 1):
             return t.value == value
     return False
 
-# quickjs and emscripten API require zero-terminated strings (even if string.length is provided)
-zero_terminated = quickjs_support is not None or is_defined("JSB_WITH_WEB")
+# quickjs/emscripten/jsc API require zero-terminated strings (even if string.length is provided)
+zero_terminated = is_defined("JSB_WITH_QUICKJS") or is_defined("JSB_WITH_WEB") or is_defined("JSB_WITH_JAVASCRIPTCORE")
 
 print("compiling:", module_name)
-print("javascript engine:", "v8" if is_defined("JSB_WITH_V8") else "web" if is_defined("JSB_WITH_WEB") else "quickjs" if is_defined("JSB_WITH_QUICKJS") else "none")
-print("websocket lib:", "lws" if is_defined("JSB_WITH_LWS") else "none")
+print("javascript engine:", "v8" if is_defined("JSB_WITH_V8") else "web" if is_defined("JSB_WITH_WEB") else use_quickjs if is_defined("JSB_WITH_QUICKJS") else "JavaScriptCore" if is_defined("JSB_WITH_JAVASCRIPTCORE") else "none")
+print("websocket lib:", "lws" if is_defined("JSB_WITH_LWS") and is_defined("JSB_WITH_V8") else "none")
 print("platform:", jsb_platform)
 print("arch:", jsb_arch)
 print("zero_terminated:", zero_terminated)
@@ -486,6 +482,12 @@ if is_defined("JSB_WITH_WEB"):
 if is_defined("JSB_WITH_JAVASCRIPTCORE"):
     env_jsb.add_source_files(module_obj, "impl/jsc/*.cpp")
     env.Append(LINKFLAGS=[ "-framework", "JavaScriptCore" ])
+
+    if jsb_platform not in ["macos", "ios"]:
+        print("WARNING: INCLUDING JSC HEADERS ONLY FOR DEV, NOT SUPPORTED TO BUILD")
+        env_jsb.Append(CPPPATH=[f"jsc"])
+        if env.msvc and env["vsproj"]:
+            env.Append(CPPPATH=[f"#modules/{module_name}/impl/jsc/_NOT_FOR_INCLUDE_"])
 
 generate_code([\
         # presets for runtime

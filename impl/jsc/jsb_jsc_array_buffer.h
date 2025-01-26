@@ -1,5 +1,5 @@
-﻿#ifndef GODOTJS_QUICKJS_ARRAY_BUFFER_H
-#define GODOTJS_QUICKJS_ARRAY_BUFFER_H
+﻿#ifndef GODOTJS_JSC_ARRAY_BUFFER_H
+#define GODOTJS_JSC_ARRAY_BUFFER_H
 #include "jsb_jsc_object.h"
 
 namespace v8
@@ -25,7 +25,7 @@ namespace v8
         static Local<ArrayBuffer> New(Isolate* isolate, size_t length);
 
     private:
-        static void _free(JSRuntime *rt, void *opaque, void *ptr);
+        static void _deallocator(void* bytes, void* deallocatorContext);
     };
 }
 #endif

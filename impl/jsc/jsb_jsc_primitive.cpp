@@ -16,60 +16,73 @@ namespace v8
 
     MaybeLocal<String> Value::ToDetailString(Local<Context> context) const
     {
-        const uint16_t stack_pos = isolate_->push_steal(JS_ToString(isolate_->ctx(), (JSValue) *this));
-        return MaybeLocal<String>(Data(isolate_, stack_pos));
+        //TODO no equivalent implementation
+        return ToString(context);
     }
 
     Maybe<int32_t> Value::Int32Value(Local<Context> context) const
     {
-        const JSValue val = (JSValue) *this;
-        if (JS_VALUE_GET_TAG(val) == JS_TAG_INT) return Maybe<int32_t>(JS_VALUE_GET_INT(val));
-        return Maybe<int32_t>();
+        JSValueRef error = nullptr;
+        const int32_t rval = JSValueToInt32(isolate_->ctx(), (JSValueRef) *this, &error);
+        if (jsb_unlikely(error)) return Maybe<int32_t>();
+        return Maybe<int32_t>(rval);
     }
 
     bool Value::BooleanValue(Isolate* isolate) const
     {
-        const JSValue val = (JSValue) *this;
-        const int res = JS_ToBool(isolate_->ctx(), val);
-        jsb_ensure(res >= 0);
-        return !!res;
+        return JSValueToBoolean(isolate_->ctx(), (JSValueRef) *this);
     }
 
     Maybe<double> Value::NumberValue(Local<Context> context) const
     {
-        const JSValue val = (JSValue) *this;
-        if (JS_VALUE_GET_TAG(val) == JS_TAG_INT) return Maybe<double>(JS_VALUE_GET_INT(val));
-        if (JS_VALUE_GET_TAG(val) == JS_TAG_FLOAT64) return Maybe<double>(JS_VALUE_GET_FLOAT64(val));
-        return  Maybe<double>();
+        JSValueRef error = nullptr;
+        const double rval = JSValueToNumber(isolate_->ctx(), (JSValueRef) *this, &error);
+        if (jsb_unlikely(error)) return Maybe<double>();
+        return Maybe<double>(rval);
     }
 
     MaybeLocal<String> Value::ToString(Local<Context> context) const
     {
-        return MaybeLocal<String>(Data(isolate_, isolate_->push_steal(JS_ToString(isolate_->ctx(), (JSValue) *this))));
+        if (const JSStringRef str = JSValueToStringCopy(isolate_->ctx(), (JSValueRef) *this, nullptr))
+        {
+            const JSValueRef val = JSValueMakeString(isolate_->ctx(), str);
+            return MaybeLocal<String>(Data(isolate_, isolate_->push_copy(val)));
+        }
+        return MaybeLocal<String>();
     }
 
     void* External::Value() const
     {
-        const JSValue val = (JSValue) *this;
-        return JS_VALUE_GET_PTR(val);
+        const JSValueRef val = (JSValueRef) *this;
+        jsb_check(isolate_->_IsExternal(val));
+        //TODO we know val must be an instance of External. uncertain whether it's reasonable not using `JSValueToObject` here?
+        return JSObjectGetPrivate((JSObjectRef) val);
     }
 
     Local<External> External::New(Isolate* isolate, void* value)
     {
-        const uint16_t stack_pos = isolate->push_steal(JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, value));
+        const JSObjectRef obj = isolate->_NewExternal(value);
+        const uint16_t stack_pos = isolate->push_copy(obj);
         return Local<External>(Data(isolate, stack_pos));
     }
 
     Local<Symbol> Symbol::New(Isolate* isolate)
     {
-        return Local<Symbol>(Data(isolate, isolate->push_symbol()));
+        const JSValueRef val = JSValueMakeSymbol(isolate->ctx(), nullptr);
+        jsb_check(val);
+        return Local<Symbol>(Data(isolate, isolate->push_copy(val)));
     }
 
     int String::Length() const
     {
-        const JSValue val = JS_GetProperty(isolate_->ctx(), (JSValue) *this, jsb::impl::JS_ATOM_length);
-        jsb_check(JS_VALUE_GET_TAG(val) == JS_TAG_INT);
-        return JS_VALUE_GET_INT(val);
+        jsb_check(JSValueIsString(isolate_->ctx(), (JSValueRef) *this));
+        if (const JSStringRef str = JSValueToStringCopy(isolate_->ctx(), (JSValueRef) *this, nullptr))
+        {
+            const size_t len = JSStringGetLength(str);
+            jsb_check((size_t)(int) len == len);
+            return (int) len;
+        }
+        return 0;
     }
 
     Local<String> String::Empty(Isolate* isolate)
@@ -79,71 +92,43 @@ namespace v8
 
     Local<Integer> Integer::New(Isolate* isolate, int32_t value)
     {
-        const uint16_t stack_pos = isolate->push_steal(JS_NewInt32(isolate->ctx(), value));
+        const JSValueRef val = JSValueMakeNumber(isolate->ctx(), (int32_t) value);
+        const uint16_t stack_pos = isolate->push_copy(val);
         return Local<String>(Data(isolate, stack_pos));
     }
 
     Local<Integer> Integer::NewFromUnsigned(Isolate* isolate, uint32_t value)
     {
-        //TODO avoid using Uint32 because the underlying tag is INT or FLOAT64
-        const uint16_t stack_pos = isolate->push_steal(JS_NewUint32(isolate->ctx(), value));
+        const JSValueRef val = JSValueMakeNumber(isolate->ctx(), (uint32_t) value);
+        const uint16_t stack_pos = isolate->push_copy(val);
         return Local<String>(Data(isolate, stack_pos));
     }
 
     double Number::Value() const
     {
-        const JSValue val = (JSValue) *this;
-        double rval;
-        if (JS_ToFloat64(isolate_->ctx(), &rval, val) == -1)
-        {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
-        }
-        return rval;
+        return JSValueToNumber(isolate_->ctx(), (JSValueRef) *this, nullptr);
     }
 
     Local<Number> Number::New(Isolate* isolate, double value)
     {
-        const uint16_t stack_pos = isolate->push_steal(JS_NewFloat64(isolate->ctx(), value));
+        const JSValueRef val = JSValueMakeNumber(isolate->ctx(), value);
+        const uint16_t stack_pos = isolate->push_copy(val);
         return Local<String>(Data(isolate, stack_pos));
     }
 
-    // int64_t Integer::Value() const
-    // {
-    //     const JSValue val = (JSValue) *this;
-    //     int32_t rval;
-    //     if (JS_ToInt32(isolate_->ctx(), &rval, val))
-    //     {
-    //         isolate_->remove_exception_anyway();
-    //     }
-    //     return rval;
-    // }
-
     int32_t Int32::Value() const
     {
-        const JSValue val = (JSValue) *this;
-        int32_t rval;
-        if (JS_ToInt32(isolate_->ctx(), &rval, val) == -1)
-        {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
-        }
-        return rval;
+        return JSValueToInt32(isolate_->ctx(), (JSValueRef) *this, nullptr);
     }
 
     uint32_t Uint32::Value() const
     {
-        const JSValue val = (JSValue) *this;
-        uint32_t rval;
-        if (JS_ToUint32(isolate_->ctx(), &rval, val) == -1)
-        {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
-        }
-        return rval;
+        return JSValueToUInt32(isolate_->ctx(), (JSValueRef) *this, nullptr);
     }
 
     bool Boolean::Value() const
     {
-        const JSValue val = (JSValue) *this;
-        return !!JS_VALUE_GET_BOOL(val);
+        return JSValueToBoolean(isolate_->ctx(), (JSValueRef) *this);
     }
 
     Local<Boolean> Boolean::New(Isolate* isolate, bool value)
@@ -153,20 +138,14 @@ namespace v8
 
     int64_t BigInt::Int64Value(bool* lossless) const
     {
-        const JSValue val = (JSValue) *this;
-        int64_t rval;
-        if (JS_ToBigInt64(isolate_->ctx(), &rval, val) == -1)
-        {
-            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
-        }
-        return rval;
+        return JSValueToInt64(isolate_->ctx(), (JSValueRef) *this, nullptr);
     }
 
     Local<BigInt> BigInt::New(Isolate* isolate, int64_t value)
     {
-        const JSValue val = JS_NewBigInt64(isolate->ctx(), value);
-        jsb_check(!JS_IsException(val));
-        const uint16_t stack_pos = isolate->push_steal(val);
+        const JSValueRef val = JSBigIntCreateWithInt64(isolate->ctx(), value, nullptr);
+        jsb_check(val);
+        const uint16_t stack_pos = isolate->push_copy(val);
         return Local<String>(Data(isolate, stack_pos));
     }
 

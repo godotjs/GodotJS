@@ -1,12 +1,10 @@
-#ifndef GODOTJS_QUICKJS_TYPEDEF_H
-#define GODOTJS_QUICKJS_TYPEDEF_H
+#ifndef GODOTJS_JSC_TYPEDEF_H
+#define GODOTJS_JSC_TYPEDEF_H
 
 #include "jsb_jsc_pch.h"
-#if JSB_PREFER_QUICKJS_NG
-#   define JSB_IMPL_VERSION_STRING "quickjs-ng-"  JSB_STRINGIFY(QJS_VERSION_MAJOR) "." JSB_STRINGIFY(QJS_VERSION_MINOR) "." JSB_STRINGIFY(QJS_VERSION_PATCH) QJS_VERSION_SUFFIX
-#else
-#   define JSB_IMPL_VERSION_STRING "quickjs-" QUICKJS_CONFIG_VERSION
-#endif
+#define JSB_IMPL_VERSION_STRING "JavaScriptCore"
+
+typedef uint32_t JSAtom;
 
 namespace jsb::impl
 {
@@ -26,23 +24,27 @@ namespace jsb::impl
 
     enum
     {
-        __JS_ATOM_NULL = JS_ATOM_NULL,
-#pragma push_macro("DEF")
-#   undef DEF
-#   define DEF(name, str) JS_ATOM_ ## name,
-#   if JSB_PREFER_QUICKJS_NG
-#       include "../../quickjs-ng/quickjs-atom.h"
-#   else
-#       include "../../quickjs/quickjs-atom.h"
-#   endif
-#pragma pop_macro("DEF")
-        JS_ATOM_END,
-    };
+        JS_ATOM_prototype,
+        JS_ATOM_constructor,
+        JS_ATOM_message,
+        JS_ATOM_stack,
+        JS_ATOM_name,
+        JS_ATOM_configurable,
+        JS_ATOM_writable,
+        JS_ATOM_enumerable,
 
-    //TODO do not know whether it works properly or not
-    enum
-    {
-        JS_TAG_EXTERNAL = JS_TAG_FLOAT64 + 1,
+        // for quick access
+        JS_ATOM_Map,
+        JS_ATOM_Promise,
+        JS_ATOM_ArrayBuffer,
+
+        // the following ATOMs may be unnecessary
+        JS_ATOM_get,
+        JS_ATOM_set,
+        JS_ATOM_value,
+        JS_ATOM_length,
+
+        JS_ATOM_END,
     };
 }
 

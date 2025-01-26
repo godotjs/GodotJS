@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_ARRAY_H
-#define GODOTJS_QUICKJS_ARRAY_H
+#ifndef GODOTJS_JSC_ARRAY_H
+#define GODOTJS_JSC_ARRAY_H
 #include "jsb_jsc_object.h"
 
 namespace v8

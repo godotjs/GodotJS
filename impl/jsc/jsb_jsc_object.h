@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_OBJECT_H
-#define GODOTJS_QUICKJS_OBJECT_H
+#ifndef GODOTJS_JSC_OBJECT_H
+#define GODOTJS_JSC_OBJECT_H
 #include "jsb_jsc_pch.h"
 #include "jsb_jsc_typedef.h"
 #include "jsb_jsc_handle.h"
@@ -47,9 +47,6 @@ namespace v8
             AccessorNameGetterCallback getter);
 
         static Local<Object> New(Isolate* isolate);
-
-    private:
-        static JSValue _lazy(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
     };
 
     class Promise : public Object

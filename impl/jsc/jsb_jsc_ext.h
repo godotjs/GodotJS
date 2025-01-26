@@ -1,6 +1,7 @@
-#ifndef GODOTJS_QUICKJS_EXT_H
-#define GODOTJS_QUICKJS_EXT_H
+#ifndef GODOTJS_JSC_EXT_H
+#define GODOTJS_JSC_EXT_H
 #include "jsb_jsc_pch.h"
+#include "jsb_jsc_typedef.h"
 
 namespace v8
 {
@@ -9,91 +10,74 @@ namespace v8
 
 namespace jsb::impl
 {
-    class QuickJS
+    class JavaScriptCore
     {
     public:
-        struct Atom
+        // [unsafe] forcibly cast JSValueRef to JSObjectRef
+        static JSObjectRef AsObject(JSContextRef ctx, JSValueRef val)
         {
-        private:
-            JSContext* ctx_;
-            JSAtom atom_;
-
-        public:
-            Atom(JSContext* ctx, JSValueConst value)
-                : ctx_(ctx), atom_(JS_ValueToAtom(ctx, value))
-            {
-            }
-
-            ~Atom()
-            {
-                JS_FreeAtom(ctx_, atom_);
-            }
-
-            operator JSAtom() const { return atom_; }
-        };
-
-        static void MarkExceptionAsTrivial(JSContext* ctx)
-        {
-            const JSValue val = JS_GetException(ctx);
-#if JSB_DEBUG
-            if (!IsNotErrorThrown(val))
-            {
-                JSB_JSC_LOG(Verbose, "removed a trivial exception: %s", GetString(ctx, val));
-            }
-#endif
-            JS_FreeValue(ctx, val);
+            // return JSValueToObject(ctx, val, nullptr);
+            if (JSValueIsObject(ctx, val)) return (JSObjectRef) val;
+            return nullptr;
         }
 
-        static bool IsNotErrorThrown(JSValueConst value)
+        static void SetContextOpaque(JSContextRef ctx, void* data)
         {
-#if JSB_PREFER_QUICKJS_NG
-            return JS_IsNull(value) || JS_IsUninitialized(value);
-#else
-            return JS_IsNull(value);
-#endif
+            const JSObjectRef globalObject = JSContextGetGlobalObject(ctx);
+            JSObjectSetPrivate(globalObject, data);
         }
 
-        static bool IsNullish(JSValueConst value)
+        static void* GetContextOpaque(JSContextRef ctx)
         {
-            return JS_IsNull(value) || JS_IsUndefined(value);
+            const JSObjectRef globalObject = JSContextGetGlobalObject(ctx);
+            return JSObjectGetPrivate(globalObject);
         }
 
-        static String GetString(JSContext* ctx, JSValueConst value)
+        static void MarkExceptionAsTrivial(JSContextRef ctx, JSValueRef error)
         {
-            size_t len;
-            if (const char* str = JS_ToCStringLen(ctx, &len, value))
+            if (!error)
             {
-                const String rval = String::utf8(str, (int) len);
-                JS_FreeCString(ctx, str);
-                return rval;
+                return;
             }
+            if (const JSStringRef str = JSValueToStringCopy(ctx, error, nullptr))
+            {
+                const size_t cap = JSStringGetMaximumUTF8CStringSize(str);
+                char* buf = (char*) memalloc(cap);
+                const size_t len = JSStringGetUTF8CString(str, buf, cap);
+                jsb_unused(len);
+                JSB_JSC_LOG(Verbose, "ignoring trivial error: %s", buf);
+                JSStringRelease(str);
+            }
+        }
 
-            // silently ignore the error
-            const JSValue val = JS_GetException(ctx);
-            JS_FreeValue(ctx, val);
+        template<bool kProtected>
+        static JSValueRef MakeUTF8String(JSContextRef ctx, const char* p_str)
+        {
+            const JSStringRef str = JSStringCreateWithUTF8CString(p_str);
+            const JSValueRef val = JSValueMakeString(ctx, str);
+            JSStringRelease(str);
+            if constexpr (kProtected)
+            {
+                JSValueProtect(ctx, val);
+            }
+            return val;
+        }
+
+        static String GetString(JSContextRef ctx, JSValueRef value)
+        {
+            if (value)
+            {
+                if (const JSStringRef str = JSValueToStringCopy(ctx, value, nullptr))
+                {
+                    const size_t cap = JSStringGetMaximumUTF8CStringSize(str);
+                    char* buf = (char*) memalloc(cap);
+                    const size_t len = JSStringGetUTF8CString(str, buf, cap);
+                    JSStringRelease(str);
+                    jsb_check(len > 0 && (size_t)(int) len == len);
+                    return String(buf, (int) (len - 1));
+                }
+            }
             return String();
-        }
-
-        static bool Equals(JSValueConst a, JSValueConst b)
-        {
-            if (JS_VALUE_GET_TAG(a) != JS_VALUE_GET_TAG(b)) return false;
-
-            //TODO unsafe eq check
-            if (JS_VALUE_GET_PTR(a) != JS_VALUE_GET_PTR(b)) return false;
-            return true;
-        }
-
-        static int _RefCount(JSValueConst value)
-        {
-            if (!JS_VALUE_HAS_REF_COUNT(value)) return 0;
-#if JSB_PREFER_QUICKJS_NG
-            // unsafe
-            typedef struct JSRefCountHeader {
-                int ref_count;
-            } JSRefCountHeader;
-#endif
-            const JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(value);
-            return p ? p->ref_count : 0;
         }
     };
 }

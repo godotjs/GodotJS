@@ -85,7 +85,7 @@ void GodotJSScriptLanguage::finish()
     once_inited_ = false;
     environment_->dispose();
     environment_.reset();
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
     jsb::Worker::finish();
 #endif
     JSB_LOG(VeryVerbose, "jsb lang finish");
@@ -329,14 +329,14 @@ void GodotJSScriptLanguage::scan_external_changes()
 
 void GodotJSScriptLanguage::thread_enter()
 {
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
     jsb::Worker::on_thread_enter(Thread::get_caller_id());
 #endif
 }
 
 void GodotJSScriptLanguage::thread_exit()
 {
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
     jsb::Worker::on_thread_exit(Thread::get_caller_id());
 #endif
 }

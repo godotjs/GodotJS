@@ -4,89 +4,22 @@
 #include "jsb_jsc_handle.h"
 #include "jsb_jsc_context.h"
 
+#define JSB_JSC_DEFINE_ATOM_BEGIN() int _atom_index_gen_ = 0
+#define JSB_JSC_DEFINE_ATOM(AtomName) \
+    jsb_check(jsb::impl::JS_ATOM_##AtomName == _atom_index_gen_); \
+    atoms_[_atom_index_gen_++] = jsb::impl::JavaScriptCore::MakeUTF8String<true>(ctx_, #AtomName)
+#define JSB_JSC_DEFINE_ATOM_END() jsb_check(_atom_index_gen_ == jsb::impl::JS_ATOM_END)
+
+#define JSB_JSC_DEFINE_BRIDGE_CALL_BEGIN() int _bridge_call_index_gen_ = 0
+#define JSB_JSC_DEFINE_BRIDGE_CALL(CallName, CallBody) \
+    jsb_check(jsb::impl::JSBridgeCall::CallName == _bridge_call_index_gen_); \
+    JSValueRef _rval_##CallName = _compile_bridge_call(CallBody);\
+    JSValueProtect(ctx_, _rval_##CallName);\
+    bridge_calls_[_bridge_call_index_gen_++] = jsb::impl::JavaScriptCore::AsObject(ctx_, _rval_##CallName)
+#define JSB_JSC_DEFINE_BRIDGE_CALL_END() jsb_check(_bridge_call_index_gen_ == jsb::impl::JS_ATOM_END)
+
 namespace v8
 {
-    struct IsolateInternalFunctions
-    {
-        // crash val is an exception
-        jsb_force_inline static JSValue verified(const JSValue val)
-        {
-            jsb_check(JS_VALUE_GET_TAG(val) != JS_TAG_EXCEPTION);
-            return val;
-        }
-
-        jsb_force_inline static int verified(const int val)
-        {
-            jsb_check(val != -1);
-            return val;
-        }
-
-#if JSB_PREFER_QUICKJS_NG
-        static void* js_calloc(void* opaque, size_t count, size_t size)
-        {
-            return ::calloc(count, size);
-        }
-
-        static void* js_malloc(void* opaque, size_t size)
-        {
-            return ::malloc(size);
-        }
-
-        static void js_free(void* opaque, void* ptr)
-        {
-            // avoid error prints on nullptr
-            if (ptr)
-            {
-                ::free(ptr);
-
-                // it's dangerous, but, just haven't found a better solution
-                ((Isolate*) opaque)->_invalidate_phantom(ptr);
-            }
-        }
-
-        static void* js_realloc(void* opaque, void* ptr, size_t size)
-        {
-            //TODO JSObject would never be reallocated, true?
-            //     (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
-            // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
-            return ::realloc(ptr, size);
-        }
-
-        static size_t js_malloc_usable_size(const void* ptr)
-        {
-            return 0;
-        }
-#else
-        static void* js_malloc(JSMallocState* s, size_t size)
-        {
-            return memalloc(size);
-        }
-
-        static void js_free(JSMallocState* s, void* ptr)
-        {
-            // avoid error prints on nullptr
-            if (ptr)
-            {
-                memfree(ptr);
-
-                // it's dangerous, but, just haven't found a better solution
-                ((Isolate*) s->opaque)->_invalidate_phantom(ptr);
-            }
-        }
-
-        static void* js_realloc(JSMallocState* s, void* ptr, size_t size)
-        {
-            //TODO JSObject would never be reallocated, true?
-            //     (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
-            // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
-            return memrealloc(ptr, size);
-        }
-#endif
-
-    };
-
-    using details = IsolateInternalFunctions;
-
     Isolate *Isolate::New(const CreateParams &params)
     {
         Isolate* isolate = memnew(Isolate);
@@ -97,68 +30,101 @@ namespace v8
     {
         rt_ = JSContextGroupCreate();
         ctx_ = JSGlobalContextCreateInGroup(rt_, /*JSClassRef globalObjectClass*/ nullptr);
-        bridge_calls_[jsb::impl::JSBridgeCall::IsPromise] = quick_compile_protected("(function(p) { return p instanceof Promise; })");
 
+        JSB_JSC_DEFINE_BRIDGE_CALL_BEGIN();
         {
-            JSValueRef pack = quick_compile_protected(R"(
-(function (callback) {
-    let reg = new FinalizationRegistry();
-
-    return [
-        // add
-        function () {
-        }, 
-        // remove 
-        function () {
-        }, 
-        // clear
-        function () {
+            JSB_JSC_DEFINE_BRIDGE_CALL(DefineProperty, R"--((
+function(key, value, getter, setter) {
+    if (typeof value !== "undefined") {
+        Object.defineProperty(this, key, {
+            value: value,
+            writable: true,
+            configurable: true,
+            enumerable: true
+        });
+    } else {
+        Object.defineProperty(this, key, {
+            get: getter,
+            set: setter,
+            configurable: true,
+            enumerable: true
+        });
+    }
+}
+))--");
+            JSB_JSC_DEFINE_BRIDGE_CALL(GetOwnPropertyDescriptor, "(function(key){ Object.getOwnPropertyDescriptor(this, key); })");
+            JSB_JSC_DEFINE_BRIDGE_CALL(GetOwnPropertyNames, "(function(){ Object.getOwnPropertyNames(this); })");
+            JSB_JSC_DEFINE_BRIDGE_CALL(InstanceOf, "(function(parent){ return this instanceof parent; })");
         }
-    ];
-)
-)");
-            //TODO evaluate with native callback
-            ...
-            bridge_calls[jsb::impl::JSBridgeCall::GCCallbackRegister] = JSObjectGetPropertyAtIndex(ctx_, obj, 0, nullptr);
-            bridge_calls[jsb::impl::JSBridgeCall::GCCallbackUnregister] = JSObjectGetPropertyAtIndex(ctx_, obj, 1, nullptr);
-            bridge_calls[jsb::impl::JSBridgeCall::GCCallbackClear] = JSObjectGetPropertyAtIndex(ctx_, obj, 2, nullptr);
-            JSValueUnprotect(ctx_, pack);
+        JSB_JSC_DEFINE_BRIDGE_CALL_END();
+
+        // init all ATOM (preallocated string values)
+        JSB_JSC_DEFINE_ATOM_BEGIN();
+        {
+            JSB_JSC_DEFINE_ATOM(prototype);
+            JSB_JSC_DEFINE_ATOM(constructor);
+
+            JSB_JSC_DEFINE_ATOM(message);
+            JSB_JSC_DEFINE_ATOM(stack);
+            JSB_JSC_DEFINE_ATOM(name);
+            JSB_JSC_DEFINE_ATOM(configurable);
+            JSB_JSC_DEFINE_ATOM(writable);
+            JSB_JSC_DEFINE_ATOM(enumerable);
+
+            JSB_JSC_DEFINE_ATOM(Map);
+            JSB_JSC_DEFINE_ATOM(Promise);
+
+            // the following ATOMs may be unnecessary
+            JSB_JSC_DEFINE_ATOM(get);
+            JSB_JSC_DEFINE_ATOM(set);
+            JSB_JSC_DEFINE_ATOM(value);
+            JSB_JSC_DEFINE_ATOM(length);
+        }
+        JSB_JSC_DEFINE_ATOM_END();
+
+        // Class Definition for JSC.External
+        {
+            JSClassDefinition cd = kJSClassDefinitionEmpty;
+            cd.className = "External";
+            cd.attributes = kJSClassAttributeNoAutomaticPrototype;
+            classes_[jsb::impl::ClassID::External] = JSClassCreate(&cd);
+        }
+        // Class Definition for JSC.Instance (instance of constructed)
+        {
+            JSClassDefinition cd = kJSClassDefinitionEmpty;
+            cd.className = "BridgeInstance";
+            cd.attributes = kJSClassAttributeNoAutomaticPrototype;
+            cd.finalize = &_BridgeInstance_finalizer;
+            classes_[jsb::impl::ClassID::Instance] = JSClassCreate(&cd);
         }
 
-        class_id_.init(rt_);
-        static_assert(sizeof(stack_) == sizeof(JSValue) * jsb::impl::kMaxStackSize);
+        static_assert(sizeof(stack_) == sizeof(JSValueRef) * jsb::impl::kMaxStackSize);
 
         // should be fine to leave it uninitialized
         // memset(stack_, 0, sizeof(stack_));
 
-        const JSValue global = JS_GetGlobalObject(ctx_);
+        const JSObjectRef global = JSContextGetGlobalObject(ctx_);
 
-        JS_SetRuntimeOpaque(rt_, this);
-        JS_SetContextOpaque(ctx_, this);
-        JS_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
+        jsb::impl::JavaScriptCore::SetContextOpaque(ctx_, this);
+        // JS_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
+#if JSB_WITH_DEBUGGER
+        JSGlobalContextSetInspectable(ctx_, true);
+#endif
 
         //TODO dead loop checker
         // JS_SetInterruptHandler
 
-        jsb_ensure(emplace_(JS_UNDEFINED) == jsb::impl::StackPos::Undefined);
-        jsb_ensure(emplace_(JS_NULL) == jsb::impl::StackPos::Null);
-        jsb_ensure(emplace_(JS_TRUE) == jsb::impl::StackPos::True);
-        jsb_ensure(emplace_(JS_FALSE) == jsb::impl::StackPos::False);
-        jsb_ensure(emplace_(details::verified(JS_NewStringLen(ctx_, "", 0))) == jsb::impl::StackPos::EmptyString);
-        jsb_ensure(emplace_(details::verified(JS_GetProperty(ctx_, global, jsb::impl::JS_ATOM_Symbol))) == jsb::impl::StackPos::SymbolClass);
-        jsb_ensure(emplace_(details::verified(JS_GetProperty(ctx_, global, jsb::impl::JS_ATOM_Map))) == jsb::impl::StackPos::MapClass);
-        jsb_ensure(emplace_(JS_NULL) == jsb::impl::StackPos::Exception);
+        jsb_ensure(emplace_(JSValueMakeUndefined(ctx_)) == jsb::impl::StackPos::Undefined);
+        jsb_ensure(emplace_(JSValueMakeNull(ctx_)) == jsb::impl::StackPos::Null);
+        jsb_ensure(emplace_(JSValueMakeBoolean(ctx_, true)) == jsb::impl::StackPos::True);
+        jsb_ensure(emplace_(JSValueMakeBoolean(ctx_, false)) == jsb::impl::StackPos::False);
+        jsb_ensure(emplace_(jsb::impl::JavaScriptCore::MakeUTF8String<true>(ctx_, "")) == jsb::impl::StackPos::EmptyString);
+        jsb_ensure(emplace_(jsb::impl::JavaScriptCore::MakeUTF8String<true>(ctx_, "Calling constructor as function is not allowed")) == jsb::impl::StackPos::ConstructorCallError);
+        jsb_ensure(emplace_(_GetProperty(global, jsb::impl::JS_ATOM_Map)) == jsb::impl::StackPos::MapConstructor);
+        jsb_ensure(emplace_(_GetProperty(global, jsb::impl::JS_ATOM_Promise)) == jsb::impl::StackPos::PromiseConstructor);
+        jsb_ensure(emplace_(_GetProperty(global, jsb::impl::JS_ATOM_ArrayBuffer)) == jsb::impl::StackPos::ArrayBufferConstructor);
+        jsb_ensure(emplace_(JSValueMakeUndefined(ctx_)) == jsb::impl::StackPos::Exception);
         jsb_check(stack_pos_ == jsb::impl::StackPos::Num);
-
-        JSClassDef class_def;
-        class_def.class_name = "UniversalBridgeClass";
-        class_def.finalizer = _finalizer;
-        class_def.exotic = nullptr;
-        class_def.gc_mark = nullptr;
-        class_def.call = nullptr;
-
-        details::verified(JS_NewClass(rt_, get_class_id(), &class_def));
-        JS_FreeValue(ctx_, global);
     }
 
     Isolate::~Isolate()
@@ -170,7 +136,7 @@ namespace v8
     {
         JSB_JSC_LOG(VeryVerbose, "release quickjs runtime");
 
-        for (int i = 0; i < jsb::impl::BridgeCall::Num; ++i) 
+        for (int i = 0; i < jsb::impl::JSBridgeCall::Num; ++i)
         {
             JSValueUnprotect(ctx_, bridge_calls_[i]);
         }
@@ -180,32 +146,33 @@ namespace v8
 
         // cleanup
         jsb_check(!handle_scope_);
-        jsb_check(phantom_.is_empty());
         jsb_check(stack_pos_ == jsb::impl::StackPos::Num);
         for (int i = 0; i < jsb::impl::StackPos::Num; ++i)
         {
-            JS_FreeValue(ctx_, stack_[i]);
+            JSValueUnprotect(ctx_, stack_[i]);
         }
 
-        swap_free_queue();
-        swap_free_queue();
-        jsb_check(front_free_queue_.is_empty());
-        jsb_check(back_free_queue_.is_empty());
-
-#if !JSB_STRICT_DISPOSE
-        // make it behave like v8, not to trigger gc callback after the isolate disposed
-        internal_data_.clear();
-#endif
+        for (int i = 0; i < jsb::impl::ClassID::Num; ++i)
+        {
+            JSClassRelease(classes_[i]);
+        }
+        for (int i = 0; i < jsb::impl::JS_ATOM_END; ++i)
+        {
+            JSValueUnprotect(ctx_, atoms_[i]);
+        }
+        while (!captured_values_.is_empty())
+        {
+            const jsb::impl::CapturedValueID id = captured_values_.get_first_index();
+            const JSValueRef val = captured_values_.get_value(id);
+            JSValueUnprotect(ctx_, val);
+            captured_values_.remove_at(id);
+        }
 
         // dispose the runtime
         JSGlobalContextRelease(ctx_);
         ctx_ = nullptr;
         JSContextGroupRelease(rt_);
         rt_ = nullptr;
-
-#if JSB_STRICT_DISPOSE
-        jsb_check(internal_data_.is_empty());
-#endif
 
         memdelete(this);
     }
@@ -223,97 +190,58 @@ namespace v8
         embedder_data_ = data;
     }
 
-    JSValueRef Isolate::quick_compile_protected(const char* source)
+    JSValueRef Isolate::_compile_bridge_call(const char* source)
     {
-        JSStringRef code = JSStringCreateWithUTF8CString(source);
-        JSValueRef rval = JSEvaluateScript(ctx, code, nullptr, nullptr, 0, nullptr);
+        const JSStringRef code = JSStringCreateWithUTF8CString(source);
+        JSValueRef error = nullptr;
+        const JSValueRef rval = JSEvaluateScript(ctx_, code, nullptr, nullptr, 0, &error);
+        if (error)
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return nullptr;
+        }
+        jsb_check(rval);
         JSStringRelease(code);
-        JSValueProtect(rval);
         return rval;
     }
 
     uint16_t Isolate::push_map()
     {
-        const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::MapClass]), JS_UNDEFINED, 0, nullptr);
-        jsb_check(JS_IsMap(val));
-        return push_steal(details::verified(val));
-    }
-
-    uint16_t Isolate::push_symbol()
-    {
-        const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::SymbolClass]), JS_UNDEFINED, 0, nullptr);
-        jsb_check(JS_VALUE_GET_TAG(val) == JS_TAG_SYMBOL);
-        return push_steal(details::verified(val));
-    }
-
-    void Isolate::_finalizer(JSRuntime* rt, JSValue val)
-    {
-        Isolate* isolate = (Isolate*) JS_GetRuntimeOpaque(rt);
-        const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(val, isolate->get_class_id());
+        const JSObjectRef constructor = jsb::impl::JavaScriptCore::AsObject(ctx_, stack_[jsb::impl::StackPos::MapConstructor]);
+        JSValueRef error = nullptr;
+        const JSValueRef val = JSObjectCallAsConstructor(ctx_, constructor, 0, nullptr, &error);
+        jsb_check(val);
+        if (jsb_unlikely(error))
         {
-            jsb::impl::InternalData* data;
-            if (isolate->internal_data_.try_get_value_pointer(index, data))
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return jsb::impl::StackPos::Undefined;
+        }
+        return push_copy(val);
+    }
+
+    // no guarantee for main thread
+    void Isolate::_BridgeInstance_finalizer(JSObjectRef obj)
+    {
+        if (jsb::impl::InternalData* data = (jsb::impl::InternalData*) JSObjectGetPrivate(obj))
+        {
+            v8::Isolate* isolate = (v8::Isolate*) data->isolate;
+            if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
             {
-                if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
-                {
-                    const WeakCallbackInfo<void> info(isolate, data->weak.parameter, data->internal_fields);
-                    callback(info);
-                }
-                JSB_JSC_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) JS_VALUE_GET_PTR(val), index);
-                isolate->internal_data_.remove_at(index);
+                const WeakCallbackInfo<void> info(isolate, data->weak.parameter, data->internal_fields);
+                callback(info);
             }
+            JSB_JSC_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) obj, (uintptr_t) data);
+            memdelete(data);
         }
     }
 
     void Isolate::PerformMicrotaskCheckpoint()
     {
-        JSContext* ctx;
-        HandleScope handle_scope(this);
-
-        while (true)
-        {
-            const int err = JS_ExecutePendingJob(rt_, &ctx);
-            if (err >= 0)
-            {
-                if (JS_IsJobPending(rt_) == 0)
-                {
-                    break;
-                }
-            }
-            else
-            {
-                jsb::impl::TryCatch try_catch(this);
-                if (try_catch.has_caught())
-                {
-                    ::String message;
-                    ::String stacktrace;
-                    try_catch.get_message(&message, &stacktrace);
-                    JSB_JSC_LOG(Error, "uncaught exception in pending job: %s\n%s", message, stacktrace);
-                }
-            }
-        }
     }
 
     Local<Context> Isolate::GetCurrentContext()
     {
         return Local<Context>(Data(this, 0));
-    }
-
-    void Isolate::_promise_rejection_tracker(JSContext* ctx, JSValue promise, JSValue reason, int is_handled, void* user_data)
-    {
-        if (is_handled != 1)
-        {
-            Isolate* isolate = (Isolate*) user_data;
-            if (!isolate->promise_reject_) return;
-
-            HandleScope handle_scope(isolate);
-            const PromiseRejectMessage message(isolate,
-                kPromiseRejectWithNoHandler,
-                isolate->push_copy(promise),
-                isolate->push_copy(reason)
-            );
-            isolate->promise_reject_(message);
-        }
     }
 
     void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type)
@@ -324,6 +252,234 @@ namespace v8
     void Isolate::LowMemoryNotification()
     {
         JSGarbageCollect(ctx_);
+    }
+
+    bool Isolate::_IsPromise(JSValueRef val) const
+    {
+        const JSObjectRef obj = JSValueToObject(ctx_, stack_[jsb::impl::StackPos::PromiseConstructor], nullptr);
+        return obj && JSValueIsInstanceOfConstructor(ctx_, val, obj, nullptr);
+    }
+
+    bool Isolate::_IsMap(JSValueRef val) const
+    {
+        const JSObjectRef obj = JSValueToObject(ctx_, stack_[jsb::impl::StackPos::MapConstructor], nullptr);
+        return obj && JSValueIsInstanceOfConstructor(ctx_, val, obj, nullptr);
+    }
+
+    bool Isolate::_IsArrayBuffer(JSValueRef val) const
+    {
+        const JSObjectRef obj = JSValueToObject(ctx_, stack_[jsb::impl::StackPos::ArrayBufferConstructor], nullptr);
+        return obj && JSValueIsInstanceOfConstructor(ctx_, val, obj, nullptr);
+    }
+
+    bool Isolate::_IsExternal(JSValueRef val) const
+    {
+        return JSValueIsObjectOfClass(ctx_, val, classes_[jsb::impl::ClassID::External]);
+    }
+
+    JSObjectRef Isolate::_NewExternal(void* data)
+    {
+        return JSObjectMake(ctx_, classes_[jsb::impl::ClassID::External], data);
+    }
+
+    JSValueRef Isolate::_GetProperty(JSObjectRef obj, JSAtom atom)
+    {
+        JSValueRef error = nullptr;
+        const JSValueRef rval = JSObjectGetPropertyForKey(ctx_, obj, atoms_[atom], &error);
+        if (jsb_unlikely(error))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return nullptr;
+        }
+        return rval;
+    }
+
+    bool Isolate::_SetProperty(JSObjectRef obj, JSAtom atom, JSValueRef value)
+    {
+        JSValueRef error = nullptr;
+        JSObjectSetPropertyForKey(ctx_, obj, atoms_[atom], value, kJSPropertyAttributeNone, &error);
+        if (jsb_unlikely(error))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return false;
+        }
+        return true;
+    }
+
+    bool Isolate::_DefineProperty(JSObjectRef obj, JSValueRef key, JSValueRef value)
+    {
+        jsb_check(!JSValueIsUndefined(ctx_, obj));
+        jsb_check(JSValueIsString(ctx_, key));
+
+        const JSObjectRef call = bridge_calls_[jsb::impl::JSBridgeCall::DefineProperty];
+        const JSValueRef args[2] = { key, value };
+        JSValueRef error = nullptr;
+        JSObjectCallAsFunction(ctx_, call, obj, std::size(args), args, &error);
+        if (jsb_unlikely(error))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return false;
+        }
+        return !error;
+    }
+
+    bool Isolate::_DefineProperty(JSObjectRef obj, JSValueRef key, JSObjectRef getter, JSObjectRef setter)
+    {
+        jsb_check(!JSValueIsUndefined(ctx_, obj));
+        jsb_check(JSValueIsString(ctx_, key));
+
+        const JSObjectRef call = bridge_calls_[jsb::impl::JSBridgeCall::DefineProperty];
+        const JSValueRef args[4] = { key, stack_[jsb::impl::StackPos::Undefined], getter, setter };
+        JSValueRef error = nullptr;
+        JSObjectCallAsFunction(ctx_, call, obj, std::size(args), args, &error);
+        if (jsb_unlikely(error))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return false;
+        }
+        return !error;
+    }
+
+    JSValueRef Isolate::_CallAsConstructor(JSObjectRef func_obj, int argc, JSValueRef* arguments)
+    {
+        JSValueRef error = nullptr;
+        const JSValueRef rval = JSObjectCallAsConstructor(ctx_, func_obj, argc, arguments, &error);
+        if (jsb_unlikely(error))
+        {
+            _ThrowError(error);
+            return nullptr;
+        }
+        return rval;
+    }
+
+    JSValueRef Isolate::_GetError()
+    {
+        const JSValueRef last = stack_[jsb::impl::StackPos::Exception];
+        if (last)
+        {
+            const JSValueRef undefined = stack_[jsb::impl::StackPos::Undefined];
+            JSValueProtect(ctx_, undefined);
+            stack_[jsb::impl::StackPos::Exception] = undefined;
+            JSValueUnprotect(ctx_, last);
+        }
+        return last;
+    }
+
+    void Isolate::_ThrowError(JSValueRef error)
+    {
+        const JSValueRef last = stack_[jsb::impl::StackPos::Exception];
+        if (last)
+        {
+            JSB_JSC_LOG(Warning, "overwriting the previous exception");
+            JSValueUnprotect(ctx_, last);
+        }
+        JSValueProtect(ctx_, error);
+        stack_[jsb::impl::StackPos::Exception] = error;
+    }
+
+    JSValueRef Isolate::_GetOwnPropertyDescriptor(JSObjectRef obj, JSValueRef key)
+    {
+        const JSObjectRef call = bridge_calls_[jsb::impl::JSBridgeCall::GetOwnPropertyDescriptor];
+        JSValueRef error = nullptr;
+        const JSValueRef rval = JSObjectCallAsFunction(ctx_, call, obj, 1, &key, &error); // NOLINT(readability-suspicious-call-argument)
+        if (jsb_unlikely(error))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return nullptr;
+        }
+        return rval;
+    }
+
+    JSValueRef Isolate::_GetOwnPropertyNames(JSObjectRef obj)
+    {
+        const JSObjectRef call = bridge_calls_[jsb::impl::JSBridgeCall::GetOwnPropertyNames];
+        JSValueRef error = nullptr;
+        const JSValueRef rval = JSObjectCallAsFunction(ctx_, call, obj, 0, nullptr, &error);  // NOLINT(readability-suspicious-call-argument)
+        if (jsb_unlikely(error))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return nullptr;
+        }
+        return rval;
+    }
+
+    void _CFunction_finalize(JSObjectRef obj)
+    {
+        jsb::impl::CFunctionPayload* payload = (jsb::impl::CFunctionPayload*) JSObjectGetPrivate(obj);
+        jsb_check(payload);
+        payload->isolate->_delete_cfunction(payload->captured_value_id);
+        memdelete(payload);
+    }
+
+    JSValueRef _NotAllowedCallAsFunction(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
+    {
+        Isolate* isolate = (Isolate*) jsb::impl::JavaScriptCore::GetContextOpaque(ctx);
+        //TODO copy or steal?
+        *exception = isolate->stack_dup(jsb::impl::StackPos::ConstructorCallError);
+        return nullptr;
+    }
+
+    bool Isolate::_hasInstance_callback(JSContextRef ctx, JSObjectRef constructor, JSValueRef possibleInstance, JSValueRef* exception)
+    {
+        Isolate* isolate = (Isolate*) jsb::impl::JavaScriptCore::GetContextOpaque(ctx);
+        const JSObjectRef po1 = jsb::impl::JavaScriptCore::AsObject(ctx, JSObjectGetPrototype(ctx, (JSObjectRef) possibleInstance));
+        const JSValueRef po2 = isolate->_GetProperty(constructor, jsb::impl::JS_ATOM_prototype);
+        jsb_check(po1 && po2);
+        const JSObjectRef call = isolate->bridge_calls_[jsb::impl::JSBridgeCall::InstanceOf];
+        const JSValueRef rval = JSObjectCallAsFunction(ctx, call, po1, 1, &po2, exception);
+        return rval && JSValueToBoolean(ctx, rval);
+    }
+
+    JSObjectRef Isolate::_NewObjectProtoClass(JSValueRef prototype, void* data)
+    {
+        const JSObjectRef obj = JSObjectMake(ctx_, classes_[jsb::impl::ClassID::Instance], data);
+        jsb_check(obj);
+        JSObjectSetPrototype(ctx_, obj, prototype);
+        return obj;
+    }
+
+    JSObjectRef Isolate::_NewConstructor(JSObjectCallAsConstructorCallback func, const char* name, v8::FunctionCallback callback, uint32_t class_payload)
+    {
+        JSClassDefinition def = kJSClassDefinitionEmpty;
+        def.className = name;
+        def.attributes = kJSClassAttributeNoAutomaticPrototype;
+        def.callAsFunction = &_NotAllowedCallAsFunction;
+        def.callAsConstructor = func;
+        def.hasInstance = &_hasInstance_callback;
+        const JSClassRef cls = JSClassCreate(&def);
+        jsb::impl::CConstructorPayload* payload = memnew(jsb::impl::CConstructorPayload);
+        payload->isolate = this;
+        payload->callback = callback;
+        payload->class_payload = class_payload;
+        const JSObjectRef constructor = JSObjectMake(ctx_, cls, payload);
+        JSClassRelease(cls);
+        return constructor;
+    }
+
+    JSObjectRef Isolate::_NewFunction(JSObjectCallAsFunctionCallback func, const char* name, void* callback, JSValueRef captured_value)
+    {
+        JSClassDefinition def = kJSClassDefinitionEmpty;
+        def.className = name ? name : "CFunction";
+        def.attributes = kJSClassAttributeNoAutomaticPrototype;
+        def.finalize = &_CFunction_finalize;
+        def.callAsFunction = func;
+        const JSClassRef cls = JSClassCreate(&def);
+        jsb::impl::CFunctionPayload* payload = memnew(jsb::impl::CFunctionPayload);
+        JSValueProtect(ctx_, captured_value);
+        payload->captured_value_id = captured_values_.add(captured_value);
+        payload->isolate = this;
+        payload->callback = callback;
+        const JSObjectRef func_obj = JSObjectMake(ctx_, cls, payload);
+        jsb_check(payload == JSObjectGetPrivate(func_obj));
+        JSClassRelease(cls);
+        return func_obj;
+    }
+
+    void Isolate::_delete_cfunction(jsb::impl::CapturedValueID id)
+    {
+        //TODO delete FunctionData in a thread safe way
+        //TODO JSValueUnprotect(data.data);
+        jsb_checkf(false, "delete FunctionData in a thread safe way");
     }
 
 }

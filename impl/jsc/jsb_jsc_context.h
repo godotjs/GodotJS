@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_CONTEXT_H
-#define GODOTJS_QUICKJS_CONTEXT_H
+#ifndef GODOTJS_JSC_CONTEXT_H
+#define GODOTJS_JSC_CONTEXT_H
 
 #include "jsb_jsc_pch.h"
 #include "jsb_jsc_handle.h"

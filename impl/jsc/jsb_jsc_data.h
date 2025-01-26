@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_DATA_H
-#define GODOTJS_QUICKJS_DATA_H
+#ifndef GODOTJS_JSC_DATA_H
+#define GODOTJS_JSC_DATA_H
 #include "jsb_jsc_pch.h"
 
 namespace v8
@@ -15,7 +15,7 @@ namespace v8
         Isolate* isolate_ = nullptr;
         uint16_t stack_pos_ = 0;
 
-        explicit operator JSValue() const;
+        explicit operator JSValueRef() const;
 
         bool operator==(const Data& other) const
         {

@@ -1,5 +1,5 @@
-#ifndef GODOTJS_QUICKJS_HANDLE_SCOPE_H
-#define GODOTJS_QUICKJS_HANDLE_SCOPE_H
+#ifndef GODOTJS_JSC_HANDLE_SCOPE_H
+#define GODOTJS_JSC_HANDLE_SCOPE_H
 #include "jsb_jsc_pch.h"
 
 namespace v8

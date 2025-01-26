@@ -3,7 +3,7 @@
 #include "jsb_bridge_pch.h"
 #include "jsb_buffer.h"
 
-#if !JSB_WITH_WEB
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
 namespace jsb
 {
     typedef internal::Index32 WorkerID;
