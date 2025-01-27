@@ -1,6 +1,7 @@
 ﻿#include "jsb_repl.h"
 #include "jsb_editor_pch.h"
 #include "jsb_editor_plugin.h"
+#include "../weaver/jsb_weaver_compat.h"
 
 GodotJSREPL::GodotJSREPL()
 {
@@ -131,13 +132,13 @@ void GodotJSREPL::_notification(int p_what)
 
 void GodotJSREPL::_update_theme()
 {
-    gc_button_->set_icon(get_editor_theme_icon("CollapseTree"));
-    clear_button_->set_icon(get_editor_theme_icon("Clear"));
+    jsb::ButtonCompat::set_icon(gc_button_, get_editor_theme_icon("CollapseTree"));
+    jsb::ButtonCompat::set_icon(clear_button_, get_editor_theme_icon("Clear"));
     if (dts_button_)
     {
-        dts_button_->set_icon(get_editor_theme_icon("BoxMesh"));
+        jsb::ButtonCompat::set_icon(dts_button_, get_editor_theme_icon("BoxMesh"));
     }
-    preset_button_->set_icon(get_editor_theme_icon("Window"));
+    jsb::ButtonCompat::set_icon(preset_button_, get_editor_theme_icon("Window"));
     check_tsc();
 }
 
@@ -146,12 +147,12 @@ void GodotJSREPL::check_tsc()
 #if JSB_USE_TYPESCRIPT
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton(); editor_plugin && editor_plugin->is_tsc_watching())
     {
-        start_tsc_button_->set_icon(get_editor_theme_icon("Stop"));
+        jsb::ButtonCompat::set_icon(start_tsc_button_, get_editor_theme_icon("Stop"));
         start_tsc_button_->set_tooltip_text(TTR("Stop tsc"));
     }
     else
     {
-        start_tsc_button_->set_icon(get_editor_theme_icon("GodotJSRun"));
+        jsb::ButtonCompat::set_icon(start_tsc_button_, get_editor_theme_icon("GodotJSRun"));
         start_tsc_button_->set_tooltip_text(TTR("Start tsc (watch)"));
     }
 #endif

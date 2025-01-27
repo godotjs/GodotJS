@@ -86,6 +86,9 @@ public:
     virtual Error reload(bool p_keep_state = false) override;
 
 #ifdef TOOLS_ENABLED
+#if GODOT_4_4_OR_NEWER
+	virtual StringName get_doc_class_name() const override;
+#endif
     virtual Vector<DocData::ClassDoc> get_documentation() const override;
     virtual String get_class_icon_path() const override;
     virtual PropertyInfo get_class_category() const override;
@@ -125,7 +128,12 @@ public:
     {
     }
 
+#if GODOT_4_4_OR_NEWER
+    virtual Variant get_rpc_config() const override;
+#else
     virtual const Variant get_rpc_config() const override;
+#endif
+
 #pragma endregion // Script Interface Implementation
 
 protected:

@@ -202,6 +202,16 @@ Error GodotJSScript::reload(bool p_keep_state)
 }
 
 #ifdef TOOLS_ENABLED
+#if GODOT_4_4_OR_NEWER
+StringName GodotJSScript::get_doc_class_name() const
+{
+    //TODO not verified
+    Vector<DocData::ClassDoc> docs = get_documentation();
+    if (!docs.is_empty()) return docs[0].name;
+    return {};
+}
+#endif
+
 Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 {
     ensure_module_loaded();
@@ -368,7 +378,11 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
     return false;
 }
 
+#if GODOT_4_4_OR_NEWER
+Variant GodotJSScript::get_rpc_config() const
+#else
 const Variant GodotJSScript::get_rpc_config() const
+#endif
 {
     ensure_module_loaded();
     jsb_check(loaded_);

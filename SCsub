@@ -367,7 +367,11 @@ def add_natvis(natvis_local_path):
         print(f"add natvis: {natvis_filepath}")
         mspath = natvis_filepath.replace("/", "\\")
         env.Append(LINKFLAGS=[f"/NATVIS:{mspath}"])
-        env.vs_srcs += [natvis_filepath]
+        try:
+            # vs_srcs is removed since godot 4.4 
+            env.vs_srcs += [natvis_filepath]
+        except:
+            pass
 
 env_jsb = env_modules.Clone()
 module_obj = []
