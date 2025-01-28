@@ -61,9 +61,6 @@
 // log with C++ [source filename, line number, function name]
 #define JSB_LOG_WITH_SOURCE 0
 
-// use a pool allocator for creating variant instances
-#define JSB_WITH_VARIANT_POOL 1
-
 // construct a Variant with `Variant::construct` instead of `VariantUtilityFunctions::type_convert`
 #define JSB_CONSTRUCT_DEFAULT_VARIANT_SLOW 0
 
@@ -106,12 +103,10 @@
 #define JSB_MASTER_INITIAL_OBJECT_SLOTS (1024 * 64)
 #define JSB_MASTER_INITIAL_SCRIPT_SLOTS 1024
 #define JSB_MASTER_INITIAL_CLASS_EXTRA_SLOTS 0
-#define JSB_MASTER_VARIANT_DELETION_QUEUE_SIZE (1024 * 16)
 
 #define JSB_WORKER_INITIAL_OBJECT_SLOTS (1024 * 8)
 #define JSB_WORKER_INITIAL_SCRIPT_SLOTS 1024
 #define JSB_WORKER_INITIAL_CLASS_SLOTS 512
-#define JSB_WORKER_VARIANT_DELETION_QUEUE_SIZE (1024)
 
 #define JSB_DTS_EXT "d.ts"
 #define JSB_TYPESCRIPT_EXT "ts"

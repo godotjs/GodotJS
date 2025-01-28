@@ -164,10 +164,8 @@ namespace jsb
     }
 
     Environment::Environment(const CreateParams& p_params)
-    : pending_delete_(nearest_shift(p_params.deletion_queue_size))
     {
         JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
-        jsb_check(p_params.deletion_queue_size != 0);
         impl::GlobalInitialize::init();
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
@@ -269,8 +267,6 @@ namespace jsb
 
         isolate_->Dispose();
         isolate_ = nullptr;
-
-        exec_sync_delete();
     }
 
     void Environment::init()
@@ -320,23 +316,12 @@ namespace jsb
         {
             symbols_[index].Reset();
         }
-        exec_sync_delete();
 
 #if JSB_WITH_DEBUGGER
         debugger_.drop();
 #endif
         EnvironmentStore::get_shared().remove(this);
 
-    }
-
-    void Environment::exec_sync_delete()
-    {
-        while (pending_delete_.data_left())
-        {
-            Variant* variant = pending_delete_.read();
-            JSB_LOG(Verbose, "exec_sync_delete variant (%s:%d)", Variant::get_type_name(variant->get_type()), (uintptr_t) variant);
-            dealloc_variant(variant);
-        }
     }
 
     void Environment::update(uint64_t p_delta_msecs)
@@ -375,7 +360,7 @@ namespace jsb
 
         // quickjs delayed the free op after all HandleScope left, we need to swap the free op list manually explicitly.
         // otherwise, object may leak until next evacuation of HandleScope.
-#if JSB_WITH_QUICKJS || JSB_WITH_JAVASCRIPT
+#if JSB_WITH_QUICKJS || JSB_WITH_JAVASCRIPTCORE
         isolate_->PerformMicrotaskCheckpoint();
 #else
         if (microtasks_run_)
@@ -388,10 +373,6 @@ namespace jsb
 #if JSB_WITH_DEBUGGER
         debugger_.update();
 #endif
-        if (pending_delete_.data_left())
-        {
-            exec_sync_delete();
-        }
     }
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE

@@ -55,7 +55,6 @@ void GodotJSScriptLanguage::init()
     params.initial_class_slots = (int) ClassDB::classes.size() + JSB_MASTER_INITIAL_CLASS_EXTRA_SLOTS;
     params.initial_object_slots = JSB_MASTER_INITIAL_OBJECT_SLOTS;
     params.initial_script_slots = JSB_MASTER_INITIAL_SCRIPT_SLOTS;
-    params.deletion_queue_size = JSB_MASTER_VARIANT_DELETION_QUEUE_SIZE - 1;
     params.debugger_port = jsb::internal::Settings::get_debugger_port();
     params.thread_id = Thread::get_caller_id();
 
@@ -88,6 +87,7 @@ void GodotJSScriptLanguage::finish()
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
     jsb::Worker::finish();
 #endif
+    jsb::Environment::exec_sync_delete();
     JSB_LOG(VeryVerbose, "jsb lang finish");
 }
 
@@ -98,7 +98,7 @@ void GodotJSScriptLanguage::frame()
 
     last_ticks_ = base_ticks;
     environment_->update(elapsed_milli);
-    // environment_->gc();
+    jsb::Environment::exec_sync_delete();
 }
 
 void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const

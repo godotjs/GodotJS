@@ -76,10 +76,6 @@ namespace jsb
         // Vector<UnreferencingRequestCall> request_calls_;
         // volatile bool pending_request_calls_;
 
-        // SpinLock spin_lock_;
-        // Vector<Variant*> sync_delete_;
-        RingBuffer<Variant*> pending_delete_;
-
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         internal::DoubleBuffered<Message> inbox_;
 #endif
@@ -146,7 +142,6 @@ namespace jsb
             int initial_class_slots = 0;
             int initial_object_slots = 0;
             int initial_script_slots = 0;
-            int deletion_queue_size = 0;
 
             // Port for the debugger. Disable if zero.
             uint16_t debugger_port = 0;
@@ -476,6 +471,11 @@ namespace jsb
 
         static std::shared_ptr<Environment> _access(void* p_runtime);
 
+        static void exec_sync_delete()
+        {
+            variant_allocator_.drain();
+        }
+
     private:
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         void _on_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
@@ -484,8 +484,6 @@ namespace jsb
 
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,
             const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
-
-        void exec_sync_delete();
 
         // callback from v8 gc (not 100% guaranteed called)
         template<bool kShouldFree>
@@ -517,17 +515,11 @@ namespace jsb
             if (const Variant::Type type = variant->get_type();
                 type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
             {
-                // use ringbuffer here, because we reckon there is only one scavenger thread involved (or one active thread at most)
-                if (const std::shared_ptr<Environment> env = _access(deleter_data);
-                    env && env->pending_delete_.write(variant) == OK)
-                {
-                    JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) space:%d thread:%s",
-                        Variant::get_type_name(type), (uintptr_t) variant,
-                        env->pending_delete_.space_left(), uitos(Thread::get_caller_id()));
-                    return;
-                }
-                JSB_LOG(Verbose, "(fallback) deleting possibly reference-based variant (%s:%d)",
-                    Variant::get_type_name(type), (uintptr_t) variant);
+                Environment::variant_allocator_.free_safe(variant);
+                JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) thread:%s",
+                    Variant::get_type_name(type), (uintptr_t) variant,
+                    uitos(Thread::get_caller_id()));
+                return;
             }
             else
             {

@@ -127,7 +127,6 @@ namespace jsb
             params.initial_class_slots = JSB_WORKER_INITIAL_CLASS_SLOTS;
             params.initial_object_slots = JSB_WORKER_INITIAL_OBJECT_SLOTS;
             params.initial_script_slots = JSB_WORKER_INITIAL_SCRIPT_SLOTS;
-            params.deletion_queue_size = JSB_WORKER_VARIANT_DELETION_QUEUE_SIZE - 1;
             params.thread_id = thread_id;
 
             env_ = std::make_shared<Environment>(params);
