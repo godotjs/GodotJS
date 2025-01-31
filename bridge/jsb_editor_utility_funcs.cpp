@@ -368,7 +368,7 @@ namespace jsb
                 }
             }
 
-            // class: vmethods (DO NOT USE)
+            // class: gd virtual methods
             {
                 JSB_HANDLE_SCOPE(isolate);
                 v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, (int) class_info.virtual_methods_map.size());
@@ -378,8 +378,10 @@ namespace jsb
                 {
                     JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
-                    //TODO whether a virtual method has return value or not?
-                    build_method_info(isolate, context, pair.value, pair.value.return_val.type != Variant::NIL, method_info_obj);
+                    const bool has_return_value =
+                        pair.value.return_val.type != Variant::NIL
+                    || (pair.value.return_val.usage & PROPERTY_USAGE_NIL_IS_VARIANT);
+                    build_method_info(isolate, context, pair.value, has_return_value, method_info_obj);
                     methods_obj->Set(context, index++, method_info_obj).Check();
                 }
             }
