@@ -313,7 +313,7 @@ namespace jsb
 
             TSelf* ptr = memnew(TSelf);
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, ptr, self, EBindingPolicy::Managed);
+            runtime->bind_pointer(class_id, ptr, self, 0);
         }
 
         template<typename P0, typename P1, typename P2>
@@ -335,13 +335,13 @@ namespace jsb
             P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
             TSelf* ptr = memnew(TSelf(p0, p1, p2));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, ptr, self, EBindingPolicy::Managed);
+            runtime->bind_pointer(class_id, ptr, self, 0);
         }
 
-        static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
+        static void finalizer(Environment* runtime, void* pointer, FinalizationType p_finalize)
         {
             TSelf* self = (TSelf*) pointer;
-            if (!p_persistent)
+            if (p_finalize != FinalizationType::None)
             {
                 memdelete(self);
             }
@@ -429,21 +429,23 @@ namespace jsb
                 class_info->name, class_id));
         }
 
-        static void finalizer(Environment* runtime, void* pointer, bool p_persistent)
+        static void finalizer(Environment* runtime, void* pointer, FinalizationType p_finalize)
         {
             Object* self = (Object*) pointer;
             if (self->is_ref_counted())
             {
+                // ** because godot does not support removing object_bindings from Object **
+                // this `unreference` call will loop back to `InstanceBindingCallbacks::reference_callback`
+                // make sure the pointer has already been removed from the object_db_
                 if (((RefCounted*) self)->unreference())
                 {
-                    jsb_checkf(!p_persistent, "a persistent RefCounted object should never be deleted from GodotJS");
                     JSB_LOG(VeryVerbose, "delete gd ref_counted object %d", (uintptr_t) self);
                     memdelete(self);
                 }
             }
             else
             {
-                if (!p_persistent)
+                if (p_finalize != FinalizationType::None)
                 {
                     JSB_LOG(VeryVerbose, "delete gd object %d", (uintptr_t) self);
                     memdelete(self);

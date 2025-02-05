@@ -247,7 +247,7 @@ namespace jsb
             serializer.WriteHeader();
             serializer.WriteValue(context, info[0]);
             const std::pair<uint8_t*, size_t> data = serializer.Release();
-            master->post_message(Message(handle, Message::TYPE_MESSAGE, Buffer::steal(data.first, data.second)));
+            master->post_message(Message(Message::TYPE_MESSAGE, handle, Buffer::steal(data.first, data.second)));
         }
 
         // dispatch message to worker.onmessage
@@ -398,7 +398,7 @@ namespace jsb
         //TODO the error printed by Thread::~Thread() is not a real ERROR
     }
 
-    void Worker::finalizer(Environment*, void* pointer, bool /* p_persistent */)
+    void Worker::finalizer(Environment*, void* pointer, FinalizationType /* p_finalize */)
     {
         Worker* self = (Worker*) pointer;
         if (Worker::is_valid(self->id_))
@@ -425,7 +425,7 @@ namespace jsb
 
         Environment* master = Environment::wrap(isolate);
         Worker* ptr = memnew(Worker);
-        const NativeObjectID handle = master->bind_pointer(class_id, ptr, self, EBindingPolicy::Managed);
+        const NativeObjectID handle = master->bind_pointer(class_id, ptr, self, 0);
         jsb_check(handle);
         ptr->id_ = Worker::create(master, path, handle);
     }

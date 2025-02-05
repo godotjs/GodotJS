@@ -263,15 +263,13 @@ namespace jsb
         }
 
         //NOTE should never be called any more, since all valuetype bindings exist without a normal gc callback (object_gc_callback)
-        static void finalizer(Environment* environment, void* pointer, bool p_persistent)
+        static void finalizer(Environment* environment, void* pointer, FinalizationType p_finalize)
         {
             jsb_v8_check(false);
             Variant* self = (Variant*) pointer;
             jsb_checkf(Variant::can_convert(self->get_type(), TYPE), "variant type can't convert to %s from %s", Variant::get_type_name(TYPE), Variant::get_type_name(self->get_type()));
-            if (!p_persistent)
-            {
-                Environment::dealloc_variant(self);
-            }
+            jsb_check(p_finalize != FinalizationType::None);
+            Environment::dealloc_variant(self);
         }
 
         static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)

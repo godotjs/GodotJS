@@ -14,15 +14,6 @@ namespace jsb
         IF_ObjectFieldCount = 2,
     };
 
-    namespace EBindingPolicy
-    {
-        enum Type : uint8_t
-        {
-            External, // managed by c++ (the javascript counterpart will be strong-referenced)
-            Managed,  // managed by javascript gc (c++ waits gc to finalize the native object)
-        };
-    }
-
     // godot Object classes or c++ native wrapped classes are registered in an object registry in Environment.
     // godot Variant (valuetype) DO NOT have it's ObjectHandle.
     struct ObjectHandle
@@ -43,8 +34,6 @@ namespace jsb
         v8::Global<v8::Object> ref_;
     };
 
-    typedef internal::SArray<ObjectHandle, NativeObjectID>::Pointer ObjectHandlePtr;
-    typedef internal::SArray<ObjectHandle, NativeObjectID>::ConstPointer ObjectHandleConstPtr;
 }
 
 #endif

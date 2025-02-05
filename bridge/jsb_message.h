@@ -11,7 +11,11 @@ namespace jsb
         enum Type
         {
             TYPE_NONE = 0,
+
+            // worker message
             TYPE_MESSAGE,
+
+            // worker error
             TYPE_ERROR,
         };
 
@@ -24,8 +28,8 @@ namespace jsb
         Message(Message&&) noexcept = default;
         Message& operator=(Message&&) noexcept = default;
 
-        Message(NativeObjectID p_id, Type p_type, Buffer&& p_buffer)
-        : id_(p_id), type_(p_type), buffer_(std::move(p_buffer)) {}
+        Message(Type p_type, NativeObjectID p_id, Buffer&& p_buffer)
+        : type_(p_type), id_(p_id), buffer_(std::move(p_buffer)) {}
 
         // object id of worker object in master env
         NativeObjectID get_id() const { return id_; }
@@ -35,8 +39,8 @@ namespace jsb
         const Buffer& get_buffer() const { return buffer_; }
 
     private:
-        NativeObjectID id_;
         Type type_;
+        NativeObjectID id_;
         Buffer buffer_;
     };
 

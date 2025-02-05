@@ -103,22 +103,27 @@ namespace jsb
 
         static void free_callback(void* p_token, void* p_instance, void* p_binding)
         {
-            if (std::shared_ptr<Environment> environment = EnvironmentStore::get_shared().access(p_token))
+            if (const std::shared_ptr<Environment> env = EnvironmentStore::get_shared().access(p_token))
             {
                 // p_binding must equal to the return value of `create_callback`
                 jsb_check(p_instance == p_binding);
 
-                // no need to do additional finalization because `free_callback` is triggered by godot when an Object is being deleted
-                constexpr bool kMakeFinalization = false;
-                environment->free_object(p_binding, kMakeFinalization);
+                env->add_async_call(Environment::AsyncCall::TYPE_FREE, p_binding);
             }
         }
 
         static GDExtensionBool reference_callback(void* p_token, void* p_binding, GDExtensionBool p_reference)
         {
-            if (std::shared_ptr<Environment> environment = EnvironmentStore::get_shared().access(p_token))
+            if (const std::shared_ptr<Environment> env = EnvironmentStore::get_shared().access(p_token))
             {
-                return environment->reference_object(p_binding, !!p_reference);
+                if (env->add_async_call(
+                    p_reference ? Environment::AsyncCall::TYPE_REF : Environment::AsyncCall::TYPE_DEREF,
+                    p_binding))
+                {
+                    //NOTE Always return false to avoid `delete` in godot unreference() call,
+                    //     object_gc_callback would eventually delete the RefCounted Object.
+                    return false;
+                }
             }
             return true;
         }
@@ -164,18 +169,17 @@ namespace jsb
     }
 
     Environment::Environment(const CreateParams& p_params)
+        : thread_id_(p_params.thread_id)
+        , object_db_(p_params.initial_object_slots)
     {
         JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
         impl::GlobalInitialize::init();
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
-        // create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
-        thread_id_ = p_params.thread_id;
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
-        // SetBatterySaverMode
 #if JSB_PRINT_GC_TIME
         isolate_->AddGCPrologueCallback(&OnPreGCCallback);
         isolate_->AddGCEpilogueCallback(&OnPostGCCallback);
@@ -190,7 +194,6 @@ namespace jsb
 
         native_classes_.reserve(p_params.initial_class_slots);
         script_classes_.reserve(p_params.initial_script_slots);
-        objects_.reserve(p_params.initial_object_slots);
 
         module_loaders_.insert("godot", memnew(GodotModuleLoader));
         module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
@@ -249,16 +252,16 @@ namespace jsb
             pair.value = nullptr;
         }
 
+        exec_async_calls();
+
         // Cleanup weak callbacks not invoked by v8.
         // It's not 100% safe for all kinds of objects, because we don't know whether the target object has already been deleted or not.
-        jsb_check((uint32_t) objects_.size() == objects_index_.size());
-        JSB_LOG(VeryVerbose, "cleanup %d objects", objects_.size());
-        while (!objects_index_.is_empty())
+        JSB_LOG(VeryVerbose, "cleanup %d objects", object_db_.size());
+        while (void* pointer = object_db_.try_get_first_pointer())
         {
-            free_object(objects_index_.begin()->key, true);
+            free_object(pointer, /* do finalize */ FinalizationType::Default /* Force? */);
         }
-        jsb_check(objects_.size() == 0);
-        jsb_check(objects_index_.size() == 0);
+        jsb_check(object_db_.size() == 0);
 
         string_name_cache_.clear();
 
@@ -340,7 +343,6 @@ namespace jsb
         }
 
         // handle messages from workers
-#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         {
             std::vector<Message>& messages = inbox_.swap();
             if (!messages.empty())
@@ -351,12 +353,13 @@ namespace jsb
 
                 for (const Message& message : messages)
                 {
-                    _on_message(context, message);
+                    _on_worker_message(context, message);
                 }
                 messages.clear();
             }
         }
-#endif
+
+        exec_async_calls();
 
         // quickjs delayed the free op after all HandleScope left, we need to swap the free op list manually explicitly.
         // otherwise, object may leak until next evacuation of HandleScope.
@@ -375,21 +378,65 @@ namespace jsb
 #endif
     }
 
-#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
-    void Environment::_on_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
+    // handle async calls (from InstanceBindingCallbacks)
+    void Environment::exec_async_calls()
+    {
+#if JSB_THREADING
+        std::vector<AsyncCall>& calls = async_calls_.swap();
+        if (!calls.empty())
+        {
+            for (const AsyncCall& call : calls)
+            {
+                exec_async_call(call.type_, call.binding_);
+            }
+            calls.clear();
+        }
+#endif
+    }
+
+    void Environment::exec_async_call(AsyncCall::Type p_type, void* p_binding)
+    {
+        switch (p_type)
+        {
+        case AsyncCall::TYPE_REF:       reference_object(p_binding, true); break;
+        case AsyncCall::TYPE_DEREF:     reference_object(p_binding, false); break;
+        case AsyncCall::TYPE_FREE:      free_object(p_binding, FinalizationType::None); break;
+        case AsyncCall::TYPE_FINALIZE:  free_object(p_binding, FinalizationType::Default); break;
+        default: jsb_checkf(false, "unknown AsyncCall: %d", p_type); break;
+        }
+    }
+
+    bool Environment::add_async_call(AsyncCall::Type p_type, void* p_binding)
+    {
+        // must check before async, InstanceBindingCallback need to know whether the object should die or not if it's a ref-counted object.
+        if (!object_db_.has_object(p_binding))
+        {
+            return false;
+        }
+
+#if JSB_THREADING
+        if (Thread::get_caller_id() != thread_id_)
+        {
+            async_calls_.add(AsyncCall(p_type, p_binding));
+            return true;
+        }
+#endif
+        exec_async_call(p_type, p_binding);
+        return true;
+    }
+
+    void Environment::_on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
     {
         jsb_check(p_message.get_id());
-        v8::Local<v8::Object> obj;
-        if (ObjectHandle* handle; objects_.try_get_value_pointer(p_message.get_id(), handle))
-        {
-            obj = handle->ref_.Get(isolate_).As<v8::Object>();
-            jsb_check(!obj.IsEmpty());
-        }
-        else
+        ObjectHandleConstPtr handle = object_db_.try_get_object(p_message.get_id());
+        if (!handle)
         {
             JSB_LOG(Error, "invalid worker");
             return;
         }
+        const v8::Local<v8::Object> obj = handle->ref_.Get(isolate_).As<v8::Object>();
+        jsb_check(!obj.IsEmpty());
+        handle = nullptr;
 
         v8::Local<v8::Value> callback;
         switch (p_message.get_type())
@@ -434,7 +481,6 @@ namespace jsb
             JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
         }
     }
-#endif
 
     void Environment::gc()
     {
@@ -463,47 +509,49 @@ namespace jsb
     {
         // We need to increase the refcount because Godot Objects are bound as external pointer with a strong JS reference,
         // and unreference() will always be called on gc callbacks.
+        int external_rc = 1;
         if (p_pointer->is_ref_counted())
         {
-            if (!((RefCounted*) p_pointer)->init_ref())
+            RefCounted* ref_counted = (RefCounted*) p_pointer;
+            if (!ref_counted->init_ref())
             {
                 JSB_LOG(Error, "can not bind a dead object %d", (uintptr_t) p_pointer);
                 return {};
             }
+            external_rc = ref_counted->get_reference_count() - 1;
         }
-        const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, EBindingPolicy::External);
+        jsb_check(external_rc > 0);
+        const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, external_rc);
 
         p_pointer->get_instance_binding(this, gd_instance_binding_callbacks);
         return object_id;
     }
 
-    NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, EBindingPolicy::Type p_policy)
+    NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc)
     {
         jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet");
         jsb_checkf(native_classes_.is_valid_index(p_class_id), "bad class_id");
-        jsb_checkf(!objects_index_.has(p_pointer), "duplicated bindings");
 
-        const NativeObjectID object_id = objects_.add({});
-        ObjectHandle& handle = objects_.get_value(object_id);
-
-        objects_index_.insert(p_pointer, object_id);
+        ObjectHandlePtr handle;
+        const NativeObjectID object_id = object_db_.add_object(p_pointer, &handle);
         p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
 
-        handle.class_id = p_class_id;
+        handle->class_id = p_class_id;
 #if JSB_DEBUG
-        handle.pointer = p_pointer;
+        handle->pointer = p_pointer;
 #endif
 
         // must not be a valuetype object (v8 only)
         jsb_v8_check(native_classes_.get_value(p_class_id).type != NativeClassType::GodotPrimitive);
-        handle.ref_.Reset(isolate_, p_object);
-        if (p_policy == EBindingPolicy::Managed)
+        handle->ref_.Reset(isolate_, p_object);
+        if (p_external_rc == 0)
         {
-            handle.ref_.SetWeak(p_pointer, &object_gc_callback<true>, v8::WeakCallbackType::kInternalFields);
+            handle->ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
         }
         else
         {
-            handle.ref_count_ = 1;
+            jsb_check(p_external_rc > 0);
+            handle->ref_count_ = p_external_rc;
         }
         JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%d id:%d",
             (String) native_classes_.get_value(p_class_id).name, p_class_id,
@@ -513,32 +561,27 @@ namespace jsb
 
     void Environment::mark_as_persistent_object(void* p_pointer)
     {
-        if (const HashMap<void*, internal::Index64>::Iterator it = objects_index_.find(p_pointer); it != objects_index_.end())
+        if (!persistent_objects_.has(p_pointer))
         {
-            jsb_checkf(!persistent_objects_.has(p_pointer), "duplicate adding persistent object");
-            reference_object(p_pointer, true);
             persistent_objects_.insert(p_pointer);
+            reference_object(p_pointer, true);
             return;
         }
-        JSB_LOG(Error, "failed to mark as persistent due to invalid pointer");
+        JSB_LOG(Error, "duplicate adding persistent object: %d", (uintptr_t) p_pointer);
     }
 
     bool Environment::reference_object(void* p_pointer, bool p_is_inc)
     {
-        //TODO temp code
-        //TODO thread-safety issues on objects_* access
         jsb_check(Thread::get_caller_id() == thread_id_);
-
-        const internal::Index64* object_id = objects_index_.getptr(p_pointer);
-        if (!object_id)
+        const ObjectHandlePtr object_handle = object_db_.try_get_object(p_pointer);
+        if (jsb_unlikely(!object_handle))
         {
-            JSB_LOG(VeryVerbose, "bad pointer %d", (uintptr_t) p_pointer);
-            return true;
+            JSB_LOG(Verbose, "UNEXPECTED bad pointer %d", (uintptr_t) p_pointer);
+            return false;
         }
-        ObjectHandlePtr object_handle = objects_.get_value_scoped(*object_id);
 
         // must not be a valuetype object
-        jsb_check(native_classes_.get_value(object_handle->class_id).type != NativeClassType::GodotPrimitive);
+        // jsb_check(native_classes_.get_value(object_handle->class_id).type != NativeClassType::GodotPrimitive);
 
         // adding references
         if (p_is_inc)
@@ -550,7 +593,7 @@ namespace jsb
                 object_handle->ref_.ClearWeak();
             }
             ++object_handle->ref_count_;
-            return false;
+            return true;
         }
 
         // removing references
@@ -560,12 +603,9 @@ namespace jsb
         --object_handle->ref_count_;
         if (object_handle->ref_count_ == 0)
         {
-            object_handle.escape()->ref_.SetWeak(p_pointer, &object_gc_callback<true>, v8::WeakCallbackType::kInternalFields);
-
-            //NOTE Always return false to avoid `delete` in godot unreference() call, object_gc_callback would eventually delete the RefCounted Object.
-            return false;
+            object_handle->ref_.SetWeak(p_pointer, &object_gc_callback, v8::WeakCallbackType::kInternalFields);
         }
-        return false;
+        return true;
     }
 
     jsb_force_inline static void clear_internal_field(v8::Isolate* isolate, const v8::Global<v8::Object>& p_obj)
@@ -575,65 +615,57 @@ namespace jsb
         obj->SetAlignedPointerInInternalField(IF_Pointer, nullptr);
     }
 
-    void Environment::free_object(void* p_pointer, bool p_finalize)
+    // the only case `free_object` called from background threads is when it's called from InstanceBindingCallbacks::free_callback
+    // in this case, the only modified state is object_db_ (p_finalize is false)
+    // ---
+    // whether the ObjectHandlePtr lock satisfies the requirement of thread safety is still unknown
+    void Environment::free_object(void* p_pointer, FinalizationType p_finalize)
     {
         jsb_check(Thread::get_caller_id() == thread_id_);
-
-        const internal::Index64* object_id_ptr = objects_index_.getptr(p_pointer);
+        ObjectHandlePtr object_handle = object_db_.try_get_object(p_pointer);
 
         // avoid crash in the situation that `InstanceBindingCallbacks::free_callback` is called before JS object gc callback is called,
         // which makes the pointer already erased in `object_gc_callback`
-        if (jsb_unlikely(!object_id_ptr))
+        if (jsb_unlikely(!object_handle))
         {
             return;
         }
 
-        // save the value of object_id_ptr before using, it'll be erased immediately from `objects_index_`
-        const internal::Index64 object_id = *object_id_ptr;
-        NativeClassID class_id;
-        bool is_persistent;
-
-        {
-            ObjectHandle& object_handle = objects_.get_value(object_id);
 #if JSB_DEBUG
-            jsb_check(object_handle.pointer == p_pointer);
+        jsb_check(object_handle->pointer == p_pointer);
 #endif
-            class_id = object_handle.class_id;
+        const NativeClassID class_id = object_handle->class_id;
+        // hold it in a local variable to avoid gc too early
+        v8::Global<v8::Object> obj_ref = std::move(object_handle->ref_);
 
-            // remove index at first to make `free_object` safely reentrant
-            is_persistent = persistent_objects_.erase(p_pointer);
-            objects_index_.erase(p_pointer);
-            if (!p_finalize)
-            {
-                //NOTE if we clear the internal field here, only null check is required when reading this value later (like the usage in '_godot_object_method')
-                clear_internal_field(isolate_, object_handle.ref_);
-            }
-
-            v8::Global<v8::Object> obj_ref = std::move(object_handle.ref_);
-
-            //NOTE DO NOT USE `object_handle` after this statement since it becomes invalid after `remove_at`
-            // At this stage, the JS Object is being garbage collected, we'd better to break the link between JS Object & C++ Object before `finalizer` to avoid accessing the JS Object unexpectedly.
-            objects_.remove_at_checked(object_id);
-
-            obj_ref.Reset();
+        if (p_finalize != FinalizationType::None)
+        {
+            //NOTE if we clear the internal field here,
+            //     only null check is required when reading this value later
+            //     (like the usage in '_godot_object_method')
+            clear_internal_field(isolate_, obj_ref);
         }
 
-        if (p_finalize)
+        object_handle = nullptr;
+        object_db_.remove_object(p_pointer);
+        obj_ref.Reset();
+
+        if (p_finalize != FinalizationType::None)
         {
             const NativeClassInfo& class_info = native_classes_.get_value(class_id);
+            const bool is_persistent = persistent_objects_.erase(p_pointer);
 
-            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%d id:%d",
+            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%d",
                 (String) class_info.name, class_id,
-                (uintptr_t) p_pointer, object_id);
+                (uintptr_t) p_pointer);
 
             //NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
-            class_info.finalizer(this, p_pointer, is_persistent);
+            class_info.finalizer(this, p_pointer, is_persistent ? FinalizationType::None : p_finalize);
         }
         else
         {
-            JSB_LOG(VeryVerbose, "(skip) free_object class:%s(%d) addr:%d id:%d",
-                (String) native_classes_.get_value(class_id).name, class_id,
-                (uintptr_t) p_pointer, object_id);
+            jsb_check(!persistent_objects_.has(p_pointer));
+            JSB_LOG(VeryVerbose, "(skip) free_object class_id:%d addr:%d", class_id, (uintptr_t) p_pointer);
         }
     }
 
@@ -651,7 +683,7 @@ namespace jsb
     {
         impl::Helper::get_statistics(isolate_, r_stats.custom_fields);
 
-        r_stats.objects = objects_.size();
+        r_stats.objects = object_db_.size();
         r_stats.native_classes = native_classes_.size();
         r_stats.script_classes = script_classes_.size();
         r_stats.cached_string_names = string_name_cache_.size();
@@ -1102,12 +1134,13 @@ namespace jsb
     ObjectCacheID Environment::retain_function(NativeObjectID p_object_id, const StringName& p_method)
     {
         this->check_internal_state();
-        if (ObjectHandlePtr handle = this->objects_.try_get_value_scoped(p_object_id))
+        if (ObjectHandleConstPtr handle = this->object_db_.try_get_object(p_object_id))
         {
             v8::Isolate* isolate = this->isolate_;
             v8::HandleScope handle_scope(isolate);
             const v8::Local<v8::Context> context = context_.Get(isolate);
             const v8::Local<v8::Object> obj = handle->ref_.Get(isolate);
+
             // release the handle, because HandleScope may immediately trigger gc when using quickjs.
             handle = nullptr;
             if (v8::Local<v8::Value> find;
@@ -1262,7 +1295,7 @@ namespace jsb
         this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
-        if (!this->objects_.is_valid_index(p_object_id))
+        if (!this->object_db_.has_object(p_object_id))
         {
             return false;
         }
@@ -1289,7 +1322,7 @@ namespace jsb
         this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
-        if (!this->objects_.is_valid_index(p_object_id))
+        if (!this->object_db_.has_object(p_object_id))
         {
             return false;
         }
@@ -1400,7 +1433,7 @@ namespace jsb
         {
             // if object_id is nonzero but can't be found in `objects_` registry, it usually means that this invocation originally triggered by JS GC.
             // the JS Object is disposed before the Godot Object, but Godot will post notifications (like NOTIFICATION_PREDELETE) to script instances.
-            if (!this->objects_.is_valid_index(p_object_id))
+            if (!this->object_db_.has_object(p_object_id))
             {
                 JSB_LOG(Error, "invalid `this` for calling function");
                 r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;

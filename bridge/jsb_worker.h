@@ -6,6 +6,8 @@
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
 namespace jsb
 {
+    enum class FinalizationType : uint8_t;
+
     typedef internal::Index32 WorkerID;
     class Environment;
     class WorkerImpl;
@@ -32,7 +34,7 @@ namespace jsb
         static void on_thread_exit(Thread::ID p_thread_id);
 
     private:
-        static void finalizer(Environment*, void* pointer, bool /* p_persistent */);
+        static void finalizer(Environment*, void* pointer, FinalizationType /* p_finalize */);
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         static void terminate(const v8::FunctionCallbackInfo<v8::Value>& info);

@@ -4,6 +4,7 @@
 #include "jsb_bridge_pch.h"
 #include "jsb_module.h"
 #include "jsb_message.h"
+#include "jsb_object_db.h"
 #include "jsb_debugger.h"
 #include "jsb_class_info.h"
 #include "jsb_value_move.h"
@@ -53,6 +54,31 @@ namespace jsb
     class Environment : public std::enable_shared_from_this<Environment>
     {
     private:
+        struct AsyncCall
+        {
+            enum Type : uint8_t
+            {
+                TYPE_NONE,
+
+                // no finalization: no need to do additional finalization because `free_callback` is triggered by godot when an Object is being deleted
+                TYPE_FREE,
+                TYPE_FINALIZE,
+                TYPE_REF,
+                TYPE_DEREF,
+            };
+
+            Type type_;
+            void* binding_;
+
+            AsyncCall(Type p_type, void* p_binding)
+                : type_(p_type), binding_(p_binding)
+            {}
+            ~AsyncCall() = default;
+
+            AsyncCall(AsyncCall&&) noexcept = default;
+            AsyncCall& operator=(AsyncCall&&) noexcept = default;
+        };
+
         friend class Builtins;
         friend struct InstanceBindingCallbacks;
         friend struct ClassRegister;
@@ -71,13 +97,10 @@ namespace jsb
 
         ArrayBufferAllocator allocator_;
 
-        //TODO postpone the call of Global.Reset if calling from other threads
-        // typedef void(*UnreferencingRequestCall)(internal::Index64);
-        // Vector<UnreferencingRequestCall> request_calls_;
-        // volatile bool pending_request_calls_;
-
-#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         internal::DoubleBuffered<Message> inbox_;
+
+#if JSB_THREADING
+        internal::DoubleBuffered<AsyncCall> async_calls_;
 #endif
 
         // indirect lookup
@@ -93,12 +116,7 @@ namespace jsb
 
         StringNameCache string_name_cache_;
 
-        // cpp objects should be added here since the gc callback is not guaranteed by v8
-        // we need to delete them on finally releasing Environment
-        internal::SArray<ObjectHandle, NativeObjectID> objects_;
-
-        // (unsafe) mapping object pointer to object_id
-        HashMap<void*, NativeObjectID> objects_index_;
+        ObjectDB object_db_;
         HashSet<void*> persistent_objects_;
 
         static internal::VariantAllocator variant_allocator_;
@@ -295,7 +313,7 @@ namespace jsb
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
 
         // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
-        NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, EBindingPolicy::Type p_policy);
+        NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc);
 
         // An optimized binder for Variant. All variant values are not registered in `env`, and completely managed by JS.
         // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type).
@@ -308,19 +326,15 @@ namespace jsb
 
         // whether the pointer registered in the object binding map
         jsb_force_inline bool check_object(void* p_pointer) const { return !!get_object_id(p_pointer); }
-        jsb_force_inline NativeObjectID get_object_id(void* p_pointer) const
-        {
-            const NativeObjectID* it = objects_index_.getptr(p_pointer);
-            return it ? *it : NativeObjectID();
-        }
+        jsb_force_inline NativeObjectID get_object_id(void* p_pointer) const { return object_db_.try_get_object_id(p_pointer); }
 
         // whether the `p_pointer` registered in the object binding map
         // return true, and the corresponding JS value if `p_pointer` is valid
         jsb_force_inline bool try_get_object(void* p_pointer, v8::Local<v8::Object>& r_unwrap) const
         {
-            if (const NativeObjectID* entry = objects_index_.getptr(p_pointer))
+            if (const ObjectHandleConstPtr ptr = object_db_.try_get_object(p_pointer))
             {
-                r_unwrap = objects_.get_value(*entry).ref_.Get(isolate_);
+                r_unwrap = ptr->ref_.Get(isolate_);
                 return true;
             }
             return false;
@@ -329,24 +343,22 @@ namespace jsb
         // Get JS object, will crash if object_id is invalid
         jsb_force_inline v8::Local<v8::Object> get_object(const NativeObjectID& p_object_id) const
         {
-            const ObjectHandle& handle = objects_.get_value(p_object_id);
-            jsb_check(native_classes_.get_value(handle.class_id).type != NativeClassType::GodotPrimitive);
-            return handle.ref_.Get(isolate_);
+            const ObjectHandleConstPtr ptr = object_db_.get_object(p_object_id);
+            jsb_check(native_classes_.get_value(ptr->class_id).type != NativeClassType::GodotPrimitive);
+            return ptr->ref_.Get(isolate_);
         }
 
         jsb_force_inline const NativeClassInfo* find_object_class(void* p_pointer) const
         {
-            if (const NativeObjectID* it = objects_index_.getptr(p_pointer))
+            if (const ObjectHandleConstPtr ptr = object_db_.try_get_object(p_pointer))
             {
-                const ObjectHandle& handle = objects_.get_value(*it);
-                return &native_classes_.get_value(handle.class_id);
+                return &native_classes_.get_value(ptr->class_id);
             }
             return nullptr;
         }
 
         /**
-         * Check if the type of `p_pointer` is NativeClassType::GodotObject.
-         * \note the return value does not stand for an alive object.
+         * Check if `p_pointer` is a valid pointer to a godot object instance.
          * \note return true if the pointer is null, since null can be treated as any null Object.
          */
         jsb_force_inline static bool verify_godot_object(v8::Isolate* isolate, void* p_pointer)
@@ -354,17 +366,20 @@ namespace jsb
 #if JSB_VERIFY_GODOT_OBJECT
             if (jsb_likely(p_pointer))
             {
+                // find_object_class implies that the pointer itself is valid
                 if (const NativeClassInfo* class_info = wrap(isolate)->find_object_class(p_pointer);
                     !class_info || class_info->type != NativeClassType::GodotObject)
                 {
                     return false;
                 }
             }
-#endif
             return true;
+#else
+            return wrap(isolate)->object_db_.has_object(p_pointer);
+#endif
         }
 
-        // return true if can die
+        // return true if operation is successful
         bool reference_object(void* p_pointer, bool p_is_inc);
         void mark_as_persistent_object(void* p_pointer);
 
@@ -374,14 +389,12 @@ namespace jsb
 
         void update(uint64_t p_delta_msecs);
 
-#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         // [thread safe] it's OK to call this method before the evn inited.
         void post_message(Message&& p_message)
         {
             JSB_LOG(VeryVerbose, "inbox message %d: %d", p_message.get_id(), p_message.get_buffer().size());
             inbox_.add(std::move(p_message));
         }
-#endif
 
         class IModuleLoader* find_module_loader(const StringName& p_module_id) const
         {
@@ -477,24 +490,31 @@ namespace jsb
         }
 
     private:
-#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
-        void _on_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
-#endif
+        void exec_async_calls();
+        void exec_async_call(AsyncCall::Type p_type, void* p_binding);
+
+        /**
+         * @note execution order is not guaranteed
+         */
+        bool add_async_call(AsyncCall::Type p_type, void* p_binding);
+
+        void _on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
+
         void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
 
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,
             const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
 
         // callback from v8 gc (not 100% guaranteed called)
-        template<bool kShouldFree>
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
-            #if JSB_WITH_JAVASCRIPTCORE
-            //TODO may not call from main thread
-            #endif
+            Environment* env = wrap(info.GetIsolate());
 
-            Environment* environment = wrap(info.GetIsolate());
-            environment->free_object(info.GetParameter(), kShouldFree);
+#if JSB_WITH_JAVASCRIPTCORE
+            env->add_async_call(AsyncCall::TYPE_FINALIZE, info.GetParameter());
+#else
+            env->free_object(info.GetParameter(), /* do finalize */ FinalizationType::Default);
+#endif
         }
 
         // only for quickjs.impl
@@ -530,7 +550,7 @@ namespace jsb
             Environment::dealloc_variant(variant);
         }
 
-        void free_object(void* p_pointer, bool p_finalize);
+        void free_object(void* p_pointer, FinalizationType p_finalize);
     };
 }
 

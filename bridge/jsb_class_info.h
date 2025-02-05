@@ -6,8 +6,14 @@
 
 namespace jsb
 {
+    enum class FinalizationType : uint8_t
+    {
+        None,
+        Default,
+    };
+
     typedef void (*ConstructorFunc)(const v8::FunctionCallbackInfo<v8::Value>&);
-    typedef void (*FinalizerFunc)(Environment*, void*, bool /* p_persistent */);
+    typedef void (*FinalizerFunc)(Environment*, void*, FinalizationType);
 
     namespace NativeClassType
     {

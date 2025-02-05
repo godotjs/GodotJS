@@ -460,13 +460,11 @@ namespace jsb
                 const v8::Local<v8::Object> self = p_val.As<v8::Object>();
                 if (!TypeConvert::is_object(self)) return false;
 
-#if JSB_VERIFY_GODOT_OBJECT
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
                 if (!Environment::verify_godot_object(isolate, pointer))
                 {
                     return false;
                 }
-#endif
                 return true;
             }
 
