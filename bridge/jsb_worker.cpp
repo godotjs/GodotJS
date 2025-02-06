@@ -19,6 +19,7 @@ namespace jsb
 
         SafeFlag interrupt_requested_ = SafeFlag(false);
         Thread thread_;
+        // ::Semaphore finished_;
 
         // object id of this worker object in the master environment
         NativeObjectID handle_;
@@ -29,6 +30,11 @@ namespace jsb
         WorkerImpl(Environment* p_master, const String& p_path, NativeObjectID p_handle)
         : token_(p_master), path_(p_path), handle_(p_handle)
         {
+        }
+
+        ~WorkerImpl()
+        {
+            JSB_WORKER_LOG(VeryVerbose, "~WorkerImpl %d", id_);
         }
 
         jsb_force_inline WorkerID get_id() const { return id_; }
@@ -119,7 +125,8 @@ namespace jsb
                 impl->env_->dispose();
                 impl->env_.reset();
             }
-            JSB_WORKER_LOG(Verbose, "thread.run exited %d", impl->id_);
+            // impl->finished_.post();
+            JSB_WORKER_LOG(VeryVerbose, "thread.run exited %d", impl->id_);
         }
 
         // call from master thread
@@ -128,7 +135,7 @@ namespace jsb
             jsb_check(!id_);
             jsb_check(p_id);
             id_ = p_id;
-            JSB_WORKER_LOG(Verbose, "starting Worker %d", p_id);
+            JSB_WORKER_LOG(VeryVerbose, "starting Worker %d", p_id);
             Thread::Settings settings;
             settings.priority = Thread::PRIORITY_LOW;
             thread_.start(_run, this,  settings);
@@ -138,12 +145,13 @@ namespace jsb
         void join()
         {
             jsb_check(interrupt_requested_.is_set());
+            JSB_WORKER_LOG(VeryVerbose, "wait to finish %d", id_);
+            // finished_.wait();
             if (thread_.is_started())
             {
-                JSB_WORKER_LOG(Verbose, "wait to finish %d", id_);
                 thread_.wait_to_finish();
-                JSB_WORKER_LOG(Verbose, "finished %d", id_);
             }
+            JSB_WORKER_LOG(VeryVerbose, "finished %d", id_);
         }
 
         void finish()
@@ -159,7 +167,7 @@ namespace jsb
                 v8::Isolate* isolate = env->get_isolate();
                 if (isolate->IsExecutionTerminating())
                 {
-                    JSB_WORKER_LOG(Log, "worker is terminating");
+                    JSB_WORKER_LOG(Log, "worker is terminating %d", id_);
                     return;
                 }
                 isolate->TerminateExecution();
@@ -373,6 +381,8 @@ namespace jsb
                 lock_.unlock();
                 break;
             }
+            jsb_check(worker_list_.is_valid_index(id));
+            jsb_check(!worker_list_.is_empty());
             WorkerImplPtr impl;
             worker_list_.try_get_value(id, impl);
             lock_.unlock();
@@ -396,8 +406,9 @@ namespace jsb
         lock_.lock();
         if (const WorkerID* worker_id = workers_.getptr(p_thread_id))
         {
-            workers_.erase(p_thread_id);
             worker_list_.remove_at(*worker_id);
+            jsb_check(!worker_list_.is_valid_index(*worker_id));
+            workers_.erase(p_thread_id);
         }
         lock_.unlock();
 
@@ -411,9 +422,9 @@ namespace jsb
         Worker* self = (Worker*) pointer;
         if (Worker::is_valid(self->id_))
         {
-            JSB_WORKER_LOG(Warning, "worker is not explicitly terminated before garbage collected");
+            JSB_WORKER_LOG(Debug, "worker is not explicitly terminated before garbage collected");
         }
-        JSB_WORKER_LOG(Verbose, "deleting Worker %d", self->id_);
+        JSB_WORKER_LOG(VeryVerbose, "deleting Worker %d", self->id_);
         memdelete(self);
     }
 

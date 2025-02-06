@@ -225,8 +225,8 @@ namespace jsb
             JSB_OBJECT_DB_STATEMENT(lock_.write_lock());
             const NativeObjectID* entry = objects_index_.getptr(p_pointer);
             jsb_check(entry);
-            objects_index_.erase(p_pointer);
             objects_.remove_at_checked(*entry);
+            objects_index_.erase(p_pointer);
             JSB_OBJECT_DB_STATEMENT(lock_.write_unlock());
         }
     };
