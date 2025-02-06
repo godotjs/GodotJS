@@ -293,7 +293,7 @@ namespace jsb
         }
     };
 
-    BinaryMutex Worker::lock_;
+    WorkerLock Worker::lock_;
     internal::SArray<WorkerImplPtr, WorkerID> Worker::worker_list_;
     HashMap<Thread::ID, WorkerID> Worker::workers_;
 
@@ -366,27 +366,33 @@ namespace jsb
     {
         while (true)
         {
-            WorkerImplPtr impl;
             lock_.lock();
-            if (const WorkerID id = worker_list_.get_first_index())
+            const WorkerID id = worker_list_.get_first_index();
+            if (!id)
             {
-                impl = worker_list_.get_value(id);
-                worker_list_.remove_at(id);
+                lock_.unlock();
+                break;
             }
+            WorkerImplPtr impl;
+            worker_list_.try_get_value(id, impl);
             lock_.unlock();
-            if (!impl) break;
 
-            impl->finish();
-            impl->join();
+            if (impl)
+            {
+                impl->finish();
+                impl->join();
+            }
         }
     }
 
-    void Worker::on_thread_enter(Thread::ID p_thread_id)
+    void Worker::on_thread_enter()
     {
     }
 
-    void Worker::on_thread_exit(Thread::ID p_thread_id)
+    void Worker::on_thread_exit()
     {
+        const Thread::ID p_thread_id = Thread::get_caller_id();
+
         lock_.lock();
         if (const WorkerID* worker_id = workers_.getptr(p_thread_id))
         {
@@ -491,7 +497,6 @@ namespace jsb
         jsb_check(!class_info->clazz.IsEmpty());
         p_self->Set(p_context, jsb_name(env, Worker), class_info->clazz.Get(isolate));
     }
-
 }
 
 #endif

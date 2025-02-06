@@ -9,6 +9,8 @@ namespace jsb
     enum class FinalizationType : uint8_t;
 
     typedef internal::Index32 WorkerID;
+    // typedef BinaryMutex WorkerLock;
+    typedef Mutex WorkerLock;
     class Environment;
     class WorkerImpl;
     typedef std::shared_ptr<WorkerImpl> WorkerImplPtr;
@@ -20,7 +22,7 @@ namespace jsb
 
         WorkerID id_ = {};
 
-        static BinaryMutex lock_;
+        static WorkerLock lock_;
         static internal::SArray<WorkerImplPtr, WorkerID> worker_list_;
         static HashMap<Thread::ID, WorkerID> workers_;
 
@@ -30,8 +32,8 @@ namespace jsb
         // release all workers, call from main thread (GodotJSScriptLanguage::finish)
         static void finish();
 
-        static void on_thread_enter(Thread::ID p_thread_id);
-        static void on_thread_exit(Thread::ID p_thread_id);
+        static void on_thread_enter();
+        static void on_thread_exit();
 
     private:
         static void finalizer(Environment*, void* pointer, FinalizationType /* p_finalize */);

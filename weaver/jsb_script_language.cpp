@@ -330,13 +330,13 @@ void GodotJSScriptLanguage::scan_external_changes()
 void GodotJSScriptLanguage::thread_enter()
 {
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
-    jsb::Worker::on_thread_enter(Thread::get_caller_id());
+    jsb::Worker::on_thread_enter();
 #endif
 }
 
 void GodotJSScriptLanguage::thread_exit()
 {
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
-    jsb::Worker::on_thread_exit(Thread::get_caller_id());
+    jsb::Worker::on_thread_exit();
 #endif
 }
