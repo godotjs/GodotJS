@@ -29,6 +29,8 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     if (!jsb.TOOLS_ENABLED) {
         throw new Error("codegen is only allowed in editor mode");
     }
+    const tab = "    ";
+    const GodotAnyType = "GAny";
     const MockLines = [
         "type byte = number",
         "type int32 = number",
@@ -74,6 +76,8 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     const IgnoredTypes = new Set([
         "IPUnix",
         "ScriptEditorDebugger",
+        "Thread",
+        "Semaphore",
         //
         // "GodotNavigationServer2D",
         // "GodotPhysicsServer2D",
@@ -203,7 +207,6 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             this.line(`// ${text}`);
         }
     }
-    const tab = "    ";
     class Description {
         get text() { return this.result; }
         get length() { return this.result.length; }
@@ -389,7 +392,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                     return "class Callable implements AnyCallable";
                 }
                 else if (this._name == "GArray") {
-                    return "class GArray<T>";
+                    return `class GArray<T = any>`;
                 }
                 return `class ${this._name}`;
             }
@@ -481,16 +484,12 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                         return "AnySignal";
                     if (type_name == "Callable")
                         return "AnyCallable";
-                    if (type_name == "GArray")
-                        return "GArray<T>";
                     return type_name;
                 };
             }
             else {
                 // type name in the declaration scope of other types
                 return function (type_name) {
-                    if (type_name == "GArray")
-                        return "GArray<any>";
                     return type_name;
                 };
             }
@@ -930,6 +929,17 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             for (let line of MockLines) {
                 cg.line(line);
             }
+            if (GodotAnyType != "any") {
+                let gd_variant_alias = `type ${GodotAnyType} = `;
+                for (let i = godot_1.Variant.Type.TYPE_NIL + 1; i < godot_1.Variant.Type.TYPE_MAX; ++i) {
+                    const type_name = get_primitive_type_name(i);
+                    if (type_name == GodotAnyType || type_name == "any")
+                        continue;
+                    gd_variant_alias += type_name + " | ";
+                }
+                gd_variant_alias += "undefined";
+                cg.line(gd_variant_alias);
+            }
         }
         emit_singletons() {
             const cg = this.split();
@@ -937,7 +947,7 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                 const singleton = this._types.singletons[singleton_name];
                 const cls = this._types.classes[singleton.class_name];
                 if (typeof cls !== "undefined") {
-                    cg.line_comment_("// Singleton Class");
+                    cg.line_comment_(`_singleton_class_: ${singleton.class_name}`);
                     this.emit_godot_class(cg, cls, true);
                 }
                 else {

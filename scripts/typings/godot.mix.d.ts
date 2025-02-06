@@ -37,6 +37,39 @@ declare module "godot" {
          *  **Note:** [Callable]s with equal content will always produce identical hash values. However, the reverse is not true. Returning identical hash values does  *not*  imply the callables are equal, because different callables can have identical hash values due to hash collisions. The engine uses a 32-bit hash algorithm for [method hash].  
          */
         hash(): int64
+
+        /** Returns a copy of this [Callable] with one or more arguments bound. When called, the bound arguments are passed  *after*  the arguments supplied by [method call]. See also [method unbind].  
+         *      
+         *  **Note:** When this method is chained with other similar methods, the order in which the argument list is modified is read from right to left.  
+         */
+        bind(...vargargs: any[]): AnyCallable
+
+        /** Returns a copy of this [Callable] with one or more arguments bound, reading them from an array. When called, the bound arguments are passed  *after*  the arguments supplied by [method call]. See also [method unbind].  
+         *      
+         *  **Note:** When this method is chained with other similar methods, the order in which the argument list is modified is read from right to left.  
+         */
+        bindv(arguments_: GArray): AnyCallable
+
+        /** Returns a copy of this [Callable] with a number of arguments unbound. In other words, when the new callable is called the last few arguments supplied by the user are ignored, according to [param argcount]. The remaining arguments are passed to the callable. This allows to use the original callable in a context that attempts to pass more arguments than this callable can handle, e.g. a signal with a fixed number of arguments. See also [method bind].  
+         *      
+         *  **Note:** When this method is chained with other similar methods, the order in which the argument list is modified is read from right to left.  
+         *    
+         */
+        unbind(argcount: int64): AnyCallable
+        
+        /** Calls the method represented by this [Callable]. Arguments can be passed and should match the method's signature. */
+        call(...vargargs: any[]): any
+        
+        /** Calls the method represented by this [Callable]. Unlike [method call], this method expects all arguments to be contained inside the [param arguments] [Array]. */
+        callv(arguments_: GArray): any
+        
+        /** Calls the method represented by this [Callable] in deferred mode, i.e. at the end of the current frame. Arguments can be passed and should match the method's signature.  
+         *    
+         *      
+         *  **Note:** Deferred calls are processed at idle time. Idle time happens mainly at the end of process and physics frames. In it, deferred calls will be run until there are none left, which means you can defer calls from other deferred calls and they'll still be run in the current idle time cycle. This means you should not call a method deferred from itself (or from a method called by it), as this causes infinite recursion the same way as if you had called the method directly.  
+         *  See also [method Object.call_deferred].  
+         */
+        call_deferred(...vargargs: any[]): void
     }
 
     /** A built-in type representing a signal of an [Object].  

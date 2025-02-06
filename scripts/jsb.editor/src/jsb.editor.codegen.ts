@@ -6,6 +6,9 @@ if (!jsb.TOOLS_ENABLED) {
     throw new Error("codegen is only allowed in editor mode")
 }
 
+const tab = "    ";
+const GodotAnyType: string = "GAny";
+
 interface CodeWriter {
     get types(): TypeDB;
     get size(): number;
@@ -76,6 +79,8 @@ const RemapTypes: { [name: string]: string } = {
 const IgnoredTypes = new Set([
     "IPUnix",
     "ScriptEditorDebugger",
+    "Thread",
+    "Semaphore",
 
     //
     // "GodotNavigationServer2D",
@@ -225,8 +230,6 @@ abstract class AbstractWriter implements ScopeWriter {
         this.line(`// ${text}`);
     }
 }
-
-const tab = "    ";
 
 class Description {
     private result: string;
@@ -446,7 +449,7 @@ class ClassWriter extends IndentWriter {
             } else if (this._name == "Callable") {
                 return "class Callable implements AnyCallable";
             } else if (this._name == "GArray") {
-                return "class GArray<T>";
+                return `class GArray<T = any>`;
             }
             return `class ${this._name}`
         }
@@ -548,13 +551,11 @@ class ClassWriter extends IndentWriter {
             return function(type_name: string): string {
                 if (type_name == "Signal") return "AnySignal";
                 if (type_name == "Callable") return "AnyCallable";
-                if (type_name == "GArray") return "GArray<T>";
                 return type_name;
             }
         } else {
             // type name in the declaration scope of other types
             return function (type_name: string): string {
-                if (type_name == "GArray") return "GArray<any>";
                 return type_name;
             }
         }
@@ -1038,6 +1039,18 @@ export default class TSDCodeGen {
         for (let line of MockLines) {
             cg.line(line);
         }
+        
+        if (GodotAnyType != "any") {
+            let gd_variant_alias = `type ${GodotAnyType} = `;
+            for (let i = Variant.Type.TYPE_NIL + 1; i < Variant.Type.TYPE_MAX; ++i) {
+                const type_name = get_primitive_type_name(i);
+                if (type_name == GodotAnyType || type_name == "any" ) continue;
+                gd_variant_alias += type_name + " | ";
+            }
+            gd_variant_alias += "undefined";
+            cg.line(gd_variant_alias);
+        }
+
     }
 
     private emit_singletons() {
@@ -1047,7 +1060,7 @@ export default class TSDCodeGen {
 
             const cls = this._types.classes[singleton.class_name];
             if (typeof cls !== "undefined") {
-                cg.line_comment_("// Singleton Class")
+                cg.line_comment_(`_singleton_class_: ${singleton.class_name}`);
                 this.emit_godot_class(cg, cls, true);
             } else {
                 cg.line_comment_(`ERROR: singleton ${singleton.name} without class info ${singleton.class_name}`)
