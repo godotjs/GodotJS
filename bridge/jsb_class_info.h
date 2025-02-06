@@ -8,7 +8,10 @@ namespace jsb
 {
     enum class FinalizationType : uint8_t
     {
+        // break the binding, no delete
         None,
+
+        //
         Default,
     };
 

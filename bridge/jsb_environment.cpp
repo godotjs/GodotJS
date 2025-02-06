@@ -259,7 +259,7 @@ namespace jsb
         JSB_LOG(VeryVerbose, "cleanup %d objects", object_db_.size());
         while (void* pointer = object_db_.try_get_first_pointer())
         {
-            free_object(pointer, /* do finalize */ FinalizationType::Default /* Force? */);
+            free_object(pointer, FinalizationType::Default /* Force? */);
         }
         jsb_check(object_db_.size() == 0);
 
@@ -401,7 +401,7 @@ namespace jsb
         case AsyncCall::TYPE_REF:       reference_object(p_binding, true); break;
         case AsyncCall::TYPE_DEREF:     reference_object(p_binding, false); break;
         case AsyncCall::TYPE_FREE:      free_object(p_binding, FinalizationType::None); break;
-        case AsyncCall::TYPE_FINALIZE:  free_object(p_binding, FinalizationType::Default); break;
+        case AsyncCall::TYPE_GC:        free_object(p_binding, FinalizationType::Default); break;
         default: jsb_checkf(false, "unknown AsyncCall: %d", p_type); break;
         }
     }
@@ -610,12 +610,12 @@ namespace jsb
         return true;
     }
 
-    jsb_force_inline static void clear_internal_field(v8::Isolate* isolate, const v8::Global<v8::Object>& p_obj)
-    {
-        v8::HandleScope handle_scope(isolate);
-        const v8::Local<v8::Object> obj = p_obj.Get(isolate);
-        obj->SetAlignedPointerInInternalField(IF_Pointer, nullptr);
-    }
+    // jsb_force_inline static void clear_internal_field(v8::Isolate* isolate, const v8::Global<v8::Object>& p_obj)
+    // {
+    //     v8::HandleScope handle_scope(isolate);
+    //     const v8::Local<v8::Object> obj = p_obj.Get(isolate);
+    //     obj->SetAlignedPointerInInternalField(IF_Pointer, nullptr);
+    // }
 
     // the only case `free_object` called from background threads is when it's called from InstanceBindingCallbacks::free_callback
     // in this case, the only modified state is object_db_ (p_finalize is false)
@@ -640,13 +640,14 @@ namespace jsb
         // hold it in a local variable to avoid gc too early
         v8::Global<v8::Object> obj_ref = std::move(object_handle->ref_);
 
-        if (p_finalize != FinalizationType::None)
-        {
-            //NOTE if we clear the internal field here,
-            //     only null check is required when reading this value later
-            //     (like the usage in '_godot_object_method')
-            clear_internal_field(isolate_, obj_ref);
-        }
+        //TODO do not clear the internal field if calling from JS GC
+        // if (p_finalize != FinalizationType::None)
+        // {
+        //     //NOTE if we clear the internal field here,
+        //     //     only null check is required when reading this value later
+        //     //     (like the usage in '_godot_object_method')
+        //     clear_internal_field(isolate_, obj_ref);
+        // }
 
         object_handle = nullptr;
         object_db_.remove_object(p_pointer);

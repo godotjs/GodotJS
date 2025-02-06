@@ -7,7 +7,7 @@
 
 namespace jsb
 {
-#if JSB_OBJECT_DB_THREADING
+#if JSB_THREADING
 #   define JSB_OBJECT_DB_HANDLE(Type, Ptr) Type(&lock_, Ptr)
 #   define JSB_OBJECT_DB_STATEMENT(Statement) Statement
 
@@ -125,7 +125,7 @@ namespace jsb
         // (unsafe) mapping object pointer to object_id
         HashMap<void*, NativeObjectID> objects_index_;
 
-#if JSB_OBJECT_DB_THREADING
+#if JSB_THREADING
         RWLock lock_;
 #endif
 

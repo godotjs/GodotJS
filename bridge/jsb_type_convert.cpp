@@ -115,11 +115,7 @@ namespace jsb
                 }
 
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                if (!Environment::verify_godot_object(isolate, pointer))
-                {
-                    return false;
-                }
-                r_cvar = (Object*) pointer;
+                r_cvar = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
                 return true;
             }
         case Variant::BOOL:
@@ -410,11 +406,7 @@ namespace jsb
             case IF_ObjectFieldCount:
                 {
                     void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                    if (!Environment::verify_godot_object(isolate, pointer))
-                    {
-                        return false;
-                    }
-                    r_cvar = (Object*) pointer;
+                    r_cvar = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
                     return true;
                 }
             default: return false;
@@ -460,11 +452,7 @@ namespace jsb
                 const v8::Local<v8::Object> self = p_val.As<v8::Object>();
                 if (!TypeConvert::is_object(self)) return false;
 
-                void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                if (!Environment::verify_godot_object(isolate, pointer))
-                {
-                    return false;
-                }
+                //NOTE dead object is now treated as null, so we don't need to check it here anymore
                 return true;
             }
 
@@ -540,11 +528,7 @@ namespace jsb
         }
 
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-        if (!Environment::verify_godot_object(isolate, pointer))
-        {
-            return false;
-        }
-        r_godot_obj = (Object*) pointer;
+        r_godot_obj = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
         return true;
     }
 

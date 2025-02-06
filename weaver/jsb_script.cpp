@@ -484,7 +484,7 @@ void GodotJSScript::load_module_immediately()
                 RBSet<Object *>::Element *N = E->next();
                 Object* obj = E->get();
                 jsb_check(obj->get_script() == Ref(this));
-                jsb_check(env->check_object(obj));
+                jsb_check(env->verify_object(obj));
                 jsb_check(ClassDB::is_parent_class(env->get_script_class(module->script_class_id)->native_class_name, obj->get_class_name()));
                 env->rebind(obj, script_class_id_);
                 E = N;

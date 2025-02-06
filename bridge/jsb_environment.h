@@ -62,7 +62,10 @@ namespace jsb
 
                 // no finalization: no need to do additional finalization because `free_callback` is triggered by godot when an Object is being deleted
                 TYPE_FREE,
-                TYPE_FINALIZE,
+
+                // should only be used in gc callback
+                TYPE_GC,
+
                 TYPE_REF,
                 TYPE_DEREF,
             };
@@ -181,8 +184,18 @@ namespace jsb
         // Should avoid any script execution during this phase (after disposed before destructed).
         void dispose();
 
-        jsb_force_inline static Environment* wrap(v8::Isolate* p_isolate) { return (Environment*) p_isolate->GetData(kIsolateEmbedderData); }
-        jsb_force_inline static Environment* wrap(const v8::Local<v8::Context>& p_context) { return (Environment*) p_context->GetAlignedPointerFromEmbedderData(kContextEmbedderData); }
+        jsb_force_inline static Environment* wrap(v8::Isolate* p_isolate)
+        {
+            Environment* env = (Environment*) p_isolate->GetData(kIsolateEmbedderData);
+            jsb_check(env && env->thread_id_ == Thread::get_caller_id());
+            return env;
+        }
+        jsb_force_inline static Environment* wrap(const v8::Local<v8::Context>& p_context)
+        {
+            Environment* env = (Environment*) p_context->GetAlignedPointerFromEmbedderData(kContextEmbedderData);
+            jsb_check(env && env->thread_id_ == Thread::get_caller_id());
+            return env;
+        }
 
         jsb_force_inline v8::Isolate* get_isolate() const { return isolate_; }
         jsb_force_inline v8::Local<v8::Context> get_context() const { return context_.Get(isolate_); }
@@ -324,8 +337,6 @@ namespace jsb
             impl::Helper::SetDeleter(p_pointer, p_object, _valuetype_deleter, this);
         }
 
-        // whether the pointer registered in the object binding map
-        jsb_force_inline bool check_object(void* p_pointer) const { return !!get_object_id(p_pointer); }
         jsb_force_inline NativeObjectID get_object_id(void* p_pointer) const { return object_db_.try_get_object_id(p_pointer); }
 
         // whether the `p_pointer` registered in the object binding map
@@ -357,26 +368,10 @@ namespace jsb
             return nullptr;
         }
 
-        /**
-         * Check if `p_pointer` is a valid pointer to a godot object instance.
-         * \note return true if the pointer is null, since null can be treated as any null Object.
-         */
-        jsb_force_inline static bool verify_godot_object(v8::Isolate* isolate, void* p_pointer)
+        // whether the pointer registered in the object binding map
+        jsb_force_inline bool verify_object(void* p_pointer) const
         {
-#if JSB_VERIFY_GODOT_OBJECT
-            if (jsb_likely(p_pointer))
-            {
-                // find_object_class implies that the pointer itself is valid
-                if (const NativeClassInfo* class_info = wrap(isolate)->find_object_class(p_pointer);
-                    !class_info || class_info->type != NativeClassType::GodotObject)
-                {
-                    return false;
-                }
-            }
-            return true;
-#else
-            return wrap(isolate)->object_db_.has_object(p_pointer);
-#endif
+            return jsb_likely(p_pointer) && object_db_.has_object(p_pointer);
         }
 
         // return true if operation is successful
@@ -449,6 +444,7 @@ namespace jsb
          */
         NativeClassID add_native_class(const NativeClassType::Type p_type, const StringName& p_class_name)
         {
+            jsb_check(Thread::get_caller_id() == thread_id_);
             const NativeClassID class_id = native_classes_.add(NativeClassInfo());
             NativeClassInfo& class_info = native_classes_.get_value(class_id);
             class_info.type = p_type;
@@ -509,12 +505,7 @@ namespace jsb
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
             Environment* env = wrap(info.GetIsolate());
-
-#if JSB_WITH_JAVASCRIPTCORE
-            env->add_async_call(AsyncCall::TYPE_FINALIZE, info.GetParameter());
-#else
-            env->free_object(info.GetParameter(), /* do finalize */ FinalizationType::Default);
-#endif
+            env->add_async_call(AsyncCall::TYPE_GC, info.GetParameter());
         }
 
         // only for quickjs.impl

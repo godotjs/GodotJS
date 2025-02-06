@@ -40,9 +40,6 @@
 //NOTE this feature introduces side effects since it will try to evaluate the input string before you submit.
 #define JSB_REPL_AUTO_COMPLETE 1
 
-// Check if the type of `p_pointer` is really NativeClassType::GodotObject.
-#define JSB_VERIFY_GODOT_OBJECT 1
-
 // (only available when using v8)
 // enable `RequestGarbageCollectionForTesting` (not recommended)
 #define JSB_EXPOSE_GC_FOR_TESTING 0
@@ -100,9 +97,6 @@
 
 // [EXPERIMENTAL] DONT CHANGE IT
 #define JSB_THREADING 1
-
-// [EXPERIMENTAL] DONT CHANGE IT
-#define JSB_OBJECT_DB_THREADING 1
 
 // slots for object/script/class info is reallocated on heap (as a whole block of memory)
 // a suitable value can avoid unnecessary reallocation

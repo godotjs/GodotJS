@@ -439,7 +439,7 @@ namespace jsb
                 // make sure the pointer has already been removed from the object_db_
                 if (((RefCounted*) self)->unreference())
                 {
-                    JSB_LOG(VeryVerbose, "delete gd ref_counted object %d", (uintptr_t) self);
+                    JSB_LOG(VeryVerbose, "delete gd ref_counted object %d p_finalize %d", (uintptr_t) self, p_finalize);
                     memdelete(self);
                 }
             }

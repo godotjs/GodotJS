@@ -165,7 +165,7 @@ namespace jsb
             return;
         }
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-        if (!environment->check_object(pointer))
+        if (!environment->verify_object(pointer))
         {
             jsb_throw(isolate, "signal owner is a dead object");
             return;
