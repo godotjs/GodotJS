@@ -27,7 +27,7 @@ namespace jsb
     public:
         static void register_(const v8::Local<v8::Context>& p_context, const v8::Local<v8::Object>& p_self);
 
-        // release all workers
+        // release all workers, call from main thread (GodotJSScriptLanguage::finish)
         static void finish();
 
         static void on_thread_enter(Thread::ID p_thread_id);
