@@ -1,6 +1,7 @@
 #include "jsb_process.h"
 #include "jsb_path_util.h"
 #include "jsb_logger.h"
+#include "jsb_thread_util.h"
 
 #if defined(WINDOWS_ENABLED)
 #define WIN32_LEAN_AND_MEAN
@@ -135,7 +136,7 @@ namespace jsb::internal
             int start_state = 0;
             char buffer[4096];
 
-            Thread::set_name(impl->proc_name);
+            ThreadUtil::set_name(impl->proc_name);
             while (!impl->is_closing)
             {
                 // Read StdOut and StdErr from pipe.
@@ -278,7 +279,7 @@ namespace jsb::internal
             char buffer[4096];
             int start_state = 0;
 
-            Thread::set_name(impl->proc_name);
+            ThreadUtil::set_name(impl->proc_name);
             while (!impl->is_closing)
             {
                 ssize_t bytes_read = 0;

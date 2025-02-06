@@ -2,6 +2,7 @@
 #include "jsb_buffer.h"
 #include "jsb_environment.h"
 #include "../internal/jsb_sarray.h"
+#include "../internal/jsb_thread_util.h"
 #include "../internal/jsb_double_buffered.h"
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
@@ -49,6 +50,7 @@ namespace jsb
         {
             WorkerImpl* impl = (WorkerImpl*) data;
 
+            internal::ThreadUtil::set_name(jsb_format("JSWorker_%d", *impl->id_));
             const OS* os = OS::get_singleton();
             uint64_t last_ticks = os->get_ticks_msec();
 
