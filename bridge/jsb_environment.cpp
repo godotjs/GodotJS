@@ -518,9 +518,11 @@ namespace jsb
                 JSB_LOG(Error, "can not bind a dead object %d", (uintptr_t) p_pointer);
                 return {};
             }
+            // for a ref-counted object which instantiated by GodotJS, the external_rc will be 0.
+            // then, the object will behave like a managed JS object.
+            // otherwise, it will be strongly referenced in JS until all external references are released (unreference).
             external_rc = ref_counted->get_reference_count() - 1;
         }
-        jsb_check(external_rc > 0);
         const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, external_rc);
 
         p_pointer->get_instance_binding(this, gd_instance_binding_callbacks);
