@@ -9,6 +9,8 @@
 
 namespace jsb::internal
 {
+
+#ifdef WINDOWS_ENABLED
     namespace
     {
         typedef HRESULT (WINAPI *SetThreadDescriptionFunc)(HANDLE hThread, PCWSTR lpThreadDescription);
@@ -22,6 +24,7 @@ namespace jsb::internal
             return nullptr;
         }
     }
+#endif
 
     void ThreadUtil::set_name(const String& p_name)
     {
