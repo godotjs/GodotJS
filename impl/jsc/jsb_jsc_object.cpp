@@ -13,11 +13,25 @@ namespace v8
 
     void Object::SetAlignedPointerInInternalField(int slot, void* data)
     {
+        jsb_check((uintptr_t) data % 2 == 0);
         const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
         jsb::impl::InternalData* internal_data = (jsb::impl::InternalData*) JSObjectGetPrivate(self);
         jsb_check(internal_data);
         jsb_checkf(!data || !internal_data->internal_fields[slot], "overwriting the internal field is not allowed");
         internal_data->internal_fields[slot] = data;
+    }
+
+    void Object::SetAlignedPointerInInternalFields(int argc, int indices[], void* values[])
+    {
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        jsb::impl::InternalData* internal_data = (jsb::impl::InternalData*) JSObjectGetPrivate(self);
+        jsb_check(internal_data);
+        for (int i = 0; i < argc; i++)
+        {
+            jsb_check((uintptr_t) values[i] % 2 == 0);
+            jsb_checkf(!values[i] || !internal_data->internal_fields[indices[i]], "overwriting the internal field #%d is not allowed", indices[i]);
+            internal_data->internal_fields[indices[i]] = values[i];
+        }
     }
 
     void* Object::GetAlignedPointerFromInternalField(int slot) const

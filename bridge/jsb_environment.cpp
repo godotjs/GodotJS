@@ -539,15 +539,9 @@ namespace jsb
         jsb_check(p_object->InternalFieldCount() == IF_ObjectFieldCount);
         jsb_check((uintptr_t) p_type % 2 == 0); // fake 2-byte alignment
 
-        //TODO implement `SetAlignedPointerInInternalFields` in quickjs/jsc/web impl
-#if JSB_WITH_V8
         static int indices[]    = { IF_Pointer, IF_ClassType };
         void* internal_fields[] = { p_pointer,  (void*)(uintptr_t) p_type };
         p_object->SetAlignedPointerInInternalFields(IF_ObjectFieldCount, indices, internal_fields);
-#else
-        p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
-        p_object->SetAlignedPointerInInternalField(IF_ClassType, (void*)(uintptr_t) p_type);
-#endif
 
         handle->class_id = p_class_id;
 #if JSB_DEBUG

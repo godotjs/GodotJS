@@ -18,6 +18,7 @@ namespace v8
 
         int InternalFieldCount() const;
         void SetAlignedPointerInInternalField(int slot, void* data);
+        void SetAlignedPointerInInternalFields(int argc, int indices[], void* values[]);
         void* GetAlignedPointerFromInternalField(int slot) const;
 
         Maybe<bool> Set(Local<Context> context, Local<Value> key, Local<Value> value);
