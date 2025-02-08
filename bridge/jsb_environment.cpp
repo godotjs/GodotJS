@@ -523,28 +523,38 @@ namespace jsb
             // otherwise, it will be strongly referenced in JS until all external references are released (unreference).
             external_rc = ref_counted->get_reference_count() - 1;
         }
-        const NativeObjectID object_id = bind_pointer(p_class_id, (void*) p_pointer, p_object, external_rc);
+        const NativeObjectID object_id = bind_pointer(p_class_id, NativeClassType::GodotObject, (void*) p_pointer, p_object, external_rc);
 
         p_pointer->get_instance_binding(this, gd_instance_binding_callbacks);
         return object_id;
     }
 
-    NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc)
+    NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, NativeClassType::Type p_type, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc)
     {
         jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet");
         jsb_checkf(native_classes_.is_valid_index(p_class_id), "bad class_id");
 
         ObjectHandlePtr handle;
         const NativeObjectID object_id = object_db_.add_object(p_pointer, &handle);
+        jsb_check(p_object->InternalFieldCount() == IF_ObjectFieldCount);
+        jsb_check((uintptr_t) p_type % 2 == 0); // fake 2-byte alignment
+
+        //TODO implement `SetAlignedPointerInInternalFields` in quickjs/jsc/web impl
+#if JSB_WITH_V8
+        static int indices[]    = { IF_Pointer, IF_ClassType };
+        void* internal_fields[] = { p_pointer,  (void*)(uintptr_t) p_type };
+        p_object->SetAlignedPointerInInternalFields(IF_ObjectFieldCount, indices, internal_fields);
+#else
         p_object->SetAlignedPointerInInternalField(IF_Pointer, p_pointer);
+        p_object->SetAlignedPointerInInternalField(IF_ClassType, (void*)(uintptr_t) p_type);
+#endif
 
         handle->class_id = p_class_id;
 #if JSB_DEBUG
         handle->pointer = p_pointer;
 #endif
 
-        // must not be a valuetype object (v8 only)
-        jsb_v8_check(native_classes_.get_value(p_class_id).type != NativeClassType::GodotPrimitive);
+        jsb_v8_check(native_classes_.get_value(p_class_id).type == p_type);
         handle->ref_.Reset(isolate_, p_object);
         if (p_external_rc == 0)
         {
@@ -570,6 +580,16 @@ namespace jsb
             return;
         }
         JSB_LOG(Error, "duplicate adding persistent object: %d", (uintptr_t) p_pointer);
+    }
+
+    void* Environment::get_verified_object(const v8::Local<v8::Object>& p_obj, NativeClassType::Type p_type) const
+    {
+        if (!TypeConvert::is_object(p_obj, p_type)
+            || (NativeClassType::Type) (uintptr_t) p_obj->GetAlignedPointerFromInternalField(IF_ClassType) != p_type)
+        {
+            return nullptr;
+        }
+        return p_obj->GetAlignedPointerFromInternalField(IF_Pointer);
     }
 
     bool Environment::reference_object(void* p_pointer, bool p_is_inc)

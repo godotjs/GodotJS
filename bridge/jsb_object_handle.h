@@ -7,8 +7,8 @@ namespace jsb
 {
     enum EInternalFields
     {
-        IF_Pointer = 0, // pointer to object (used by object/variant both)
-        IF_ObjectT = 1, // placeholder for non-valuetype objects
+        IF_Pointer = 0,   // pointer to object (used by object/variant both)
+        IF_ClassType = 1, // class type for non-valuetype objects (not a Variant)
 
         IF_VariantFieldCount = 1,
         IF_ObjectFieldCount = 2,

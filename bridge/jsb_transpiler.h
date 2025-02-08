@@ -313,7 +313,7 @@ namespace jsb
 
             TSelf* ptr = memnew(TSelf);
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, ptr, self, 0);
+            runtime->bind_pointer(class_id, NativeClassType::Custom, ptr, self, 0);
         }
 
         template<typename P0, typename P1, typename P2>
@@ -335,7 +335,7 @@ namespace jsb
             P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
             TSelf* ptr = memnew(TSelf(p0, p1, p2));
             Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, ptr, self, 0);
+            runtime->bind_pointer(class_id, NativeClassType::Custom, ptr, self, 0);
         }
 
         static void finalizer(Environment* runtime, void* pointer, FinalizationType p_finalize)

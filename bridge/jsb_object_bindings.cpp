@@ -164,10 +164,11 @@ namespace jsb
         {
             return;
         }
-        void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-        if (!environment->verify_object(pointer))
+        // strict check for Godot Object
+        void* pointer = environment->get_verified_object(self, NativeClassType::GodotObject);
+        if (!pointer)
         {
-            jsb_throw(isolate, "signal owner is a dead object");
+            jsb_throw(isolate, "signal owner is undefined or dead");
             return;
         }
 

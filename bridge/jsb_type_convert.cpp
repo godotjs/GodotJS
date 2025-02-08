@@ -405,6 +405,10 @@ namespace jsb
             case IF_VariantFieldCount: { r_cvar = *(Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer); return true; }
             case IF_ObjectFieldCount:
                 {
+                    if ((NativeClassType::Type)(uintptr_t) self->GetAlignedPointerFromInternalField(IF_ClassType) != NativeClassType::GodotObject)
+                    {
+                        return false;
+                    }
                     void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
                     r_cvar = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
                     return true;
@@ -521,12 +525,16 @@ namespace jsb
         {
             return false;
         }
+
+        // return false if strict type check fails
         const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-        if (!TypeConvert::is_object(self))
+        if (!TypeConvert::is_object(self)
+            || (NativeClassType::Type)(uintptr_t) self->GetAlignedPointerFromInternalField(IF_ClassType) != NativeClassType::GodotObject)
         {
             return false;
         }
 
+        // dead objects return true with a nullptr
         void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
         r_godot_obj = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
         return true;

@@ -20,16 +20,27 @@ namespace jsb
 
     namespace NativeClassType
     {
+        //NOTE the enum value of Type must be a even number, since it's stored as AlignedPointerInternalField
         enum Type : uint8_t
         {
-            // Godot Object classes are registered with name in Environment,
-            // support retrieving ClassID by the class name from godot_classes_index_.
-            GodotObject = 2,
+            // never used
+            None = 0,
 
             // Godot Variant classes (valuetype).
             // Classes are anonymously registered in Environment, only support retrieving NativeClassInfo by ClassID.
-            GodotPrimitive = 4,
+            // Variant is a special case, it's fully managed by JS without an object mapping in object_db.
+            GodotPrimitive = 2,
 
+            // Godot Object classes are registered with name in Environment,
+            // support retrieving ClassID by the class name from godot_classes_index_.
+            // unnecessary but used to avoid class lookup.
+            GodotObject = 4,
+
+            // type for JSWorker.
+            // unnecessary but used to avoid class lookup.
+            Worker = 6,
+
+            // reserved for future use
             Custom = 8,
         };
     }

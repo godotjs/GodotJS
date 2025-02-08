@@ -187,13 +187,13 @@ namespace jsb
         jsb_force_inline static Environment* wrap(v8::Isolate* p_isolate)
         {
             Environment* env = (Environment*) p_isolate->GetData(kIsolateEmbedderData);
-            jsb_check(env && env->thread_id_ == Thread::get_caller_id());
+            // jsb_check(env && env->thread_id_ == Thread::get_caller_id());
             return env;
         }
         jsb_force_inline static Environment* wrap(const v8::Local<v8::Context>& p_context)
         {
             Environment* env = (Environment*) p_context->GetAlignedPointerFromEmbedderData(kContextEmbedderData);
-            jsb_check(env && env->thread_id_ == Thread::get_caller_id());
+            // jsb_check(env && env->thread_id_ == Thread::get_caller_id());
             return env;
         }
 
@@ -326,7 +326,9 @@ namespace jsb
         NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
 
         // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
-        NativeObjectID bind_pointer(NativeClassID p_class_id, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc);
+        // p_type is redundant (could retrieve from class registry with p_class_id), but it's faster to pass it directly
+        // p_pointer must be 2-byte aligned (v8 requirement)
+        NativeObjectID bind_pointer(NativeClassID p_class_id, NativeClassType::Type p_type, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc);
 
         // An optimized binder for Variant. All variant values are not registered in `env`, and completely managed by JS.
         // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type).
@@ -373,6 +375,8 @@ namespace jsb
         {
             return jsb_likely(p_pointer) && object_db_.has_object(p_pointer);
         }
+
+        void* get_verified_object(const v8::Local<v8::Object>& p_obj, NativeClassType::Type p_type) const;
 
         // return true if operation is successful
         bool reference_object(void* p_pointer, bool p_is_inc);

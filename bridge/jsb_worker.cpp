@@ -1,6 +1,7 @@
 #include "jsb_worker.h"
 #include "jsb_buffer.h"
 #include "jsb_environment.h"
+#include "jsb_type_convert.h"
 #include "../internal/jsb_sarray.h"
 #include "../internal/jsb_thread_util.h"
 #include "../internal/jsb_double_buffered.h"
@@ -447,7 +448,7 @@ namespace jsb
 
         Environment* master = Environment::wrap(isolate);
         Worker* ptr = memnew(Worker);
-        const NativeObjectID handle = master->bind_pointer(class_id, ptr, self, 0);
+        const NativeObjectID handle = master->bind_pointer(class_id, NativeClassType::Worker, ptr, self, 0);
         jsb_check(handle);
         ptr->id_ = Worker::create(master, path, handle);
     }
@@ -466,7 +467,11 @@ namespace jsb
         const v8::Local<v8::Context> context = isolate->GetCurrentContext();
         const v8::Local<v8::Object> self = info.This();
         Environment::wrap(isolate)->check_internal_state();
-        jsb_check(self->InternalFieldCount() == IF_ObjectFieldCount);
+        if (!TypeConvert::is_object(self, NativeClassType::Worker))
+        {
+            jsb_throw(isolate, "bad this");
+            return;
+        }
         const Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
 
         v8::ValueSerializer serializer(isolate);
@@ -482,7 +487,11 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Isolate::Scope isolate_scope(isolate);
         const v8::Local<v8::Object> self = info.This();
-        jsb_check(self->InternalFieldCount() == IF_ObjectFieldCount);
+        if (!TypeConvert::is_object(self, NativeClassType::Worker))
+        {
+            jsb_throw(isolate, "bad this");
+            return;
+        }
         const Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
         if (!Worker::terminate(worker->id_))
         {
@@ -495,7 +504,7 @@ namespace jsb
         Environment* env = Environment::wrap(p_context);
         v8::Isolate* isolate = p_context->GetIsolate();
         const StringName class_name = jsb_string_name(Worker);
-        const NativeClassID class_id = env->add_native_class(NativeClassType::Custom, class_name);
+        const NativeClassID class_id = env->add_native_class(NativeClassType::Worker, class_name);
         impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_name, &constructor, *class_id);
 
         class_builder.Instance().Method("postMessage", &post_message);
