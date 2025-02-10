@@ -26,24 +26,39 @@ namespace jsb
             // never used
             None = 0,
 
+            //TODO a FASTPATH implementation? avoid unnecessary Variant wrapping for special builtin primitives (from Vector2 to Color)
+            //     But a VALUE still can not be binded as VALUE itself, it seems impossible to avoid thread-safe TYPED pools. Is it worth to implement?
+            // [BEGIN] RESERVED FOR FUTURE USE
+            // Vector2 = 2,
+            // Vector3 = 10,
+            // Color = 32,
+            // [END  ] RESERVED FOR FUTURE USE
+            _RESERVED = 32,
+
             // Godot Variant classes (valuetype).
             // Classes are anonymously registered in Environment, only support retrieving NativeClassInfo by ClassID.
             // Variant is a special case, it's fully managed by JS without an object mapping in object_db.
-            GodotPrimitive = 2,
+            GodotPrimitive = 34,
 
             // Godot Object classes are registered with name in Environment,
             // support retrieving ClassID by the class name from godot_classes_index_.
             // unnecessary but used to avoid class lookup.
-            GodotObject = 4,
+            GodotObject = 36,
 
             // type for JSWorker.
             // unnecessary but used to avoid class lookup.
-            Worker = 6,
+            Worker = 38,
 
             // reserved for future use
-            Custom = 8,
+            Custom = 64,
         };
     }
+
+    struct NativeBindingInfo
+    {
+        void* ptr;
+        NativeClassType::Type type;
+    };
 
     struct NativeClassInfo
     {
