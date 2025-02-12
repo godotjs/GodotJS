@@ -162,28 +162,8 @@ namespace jsb
     #include "../internal/jsb_primitive_operators.def.h"
     #undef Number
 
-    template<typename T>
-    struct VariantBind
+    struct VariantBindFallbacks
     {
-        static constexpr Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
-
-        static void _get_constant_value_lazy(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const StringName constant = impl::Helper::to_string(isolate, name);
-            bool r_valid;
-            const Variant constant_value = Variant::get_constant_value(TYPE, constant, &r_valid);
-            jsb_check(r_valid);
-            v8::Local<v8::Value> rval;
-            if (!TypeConvert::gd_var_to_js(isolate, context, constant_value, rval))
-            {
-                jsb_throw(isolate, "bad translate");
-                return;
-            }
-            info.GetReturnValue().Set(rval);
-        }
-
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -260,6 +240,38 @@ namespace jsb
             }
 
             jsb_throw(isolate, "no suitable constructor");
+        }
+    };
+
+    template<typename T>
+    struct VariantConstructor
+    {
+        jsb_force_inline static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            VariantBindFallbacks::constructor(info);
+        }
+    };
+
+    template<typename T>
+    struct VariantBind
+    {
+        static constexpr Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
+
+        static void _get_constant_value_lazy(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const StringName constant = impl::Helper::to_string(isolate, name);
+            bool r_valid;
+            const Variant constant_value = Variant::get_constant_value(TYPE, constant, &r_valid);
+            jsb_check(r_valid);
+            v8::Local<v8::Value> rval;
+            if (!TypeConvert::gd_var_to_js(isolate, context, constant_value, rval))
+            {
+                jsb_throw(isolate, "bad translate");
+                return;
+            }
+            info.GetReturnValue().Set(rval);
         }
 
         //NOTE should never be called any more, since all valuetype bindings exist without a normal gc callback (object_gc_callback)
@@ -607,7 +619,10 @@ namespace jsb
                         variant_info.argument_types.write[arg_index] = Variant::get_constructor_argument_type(TYPE, index, arg_index);
                     }
                 }
-                return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, p_class_name, &constructor, constructor_index);
+                return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate,
+                    p_class_name,
+                    &VariantConstructor<T>::constructor,
+                    constructor_index);
             }
         }
 
