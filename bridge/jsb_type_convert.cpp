@@ -106,6 +106,12 @@ namespace jsb
             {
                 if (!p_jval->IsObject())
                 {
+                    //NOTE we return true because object is usually nullable in most situations
+                    if (p_jval->IsNullOrUndefined())
+                    {
+                        r_cvar = (Object*) nullptr;
+                        return true;
+                    }
                     return false;
                 }
                 const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
@@ -193,6 +199,7 @@ namespace jsb
                 FALLBACK_TO_VARIANT:
                 if (!p_jval->IsObject())
                 {
+                    //TODO should auto convert a null/undefined value to a default (variant) counterpart?
                     return false;
                 }
                 const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
@@ -501,6 +508,7 @@ namespace jsb
                 FALLBACK_TO_VARIANT:
                 if (!p_val->IsObject())
                 {
+                    //NOTE a null/undefined value is not considered convertible!
                     return false;
                 }
                 const v8::Local<v8::Object> self = p_val.As<v8::Object>();
