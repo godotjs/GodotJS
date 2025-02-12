@@ -446,7 +446,7 @@ namespace jsb
             }
 
             // prepare argv
-            const int known_argc = method_info.argument_types.size();
+            const int known_argc = (int) method_info.argument_types.size();
             const int allocated_argc = MAX(known_argc, argc);
             const Variant** argv = jsb_stackalloc(const Variant*, allocated_argc);
             Variant* args = jsb_stackalloc(Variant, allocated_argc);
