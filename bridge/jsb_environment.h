@@ -50,6 +50,11 @@ namespace jsb
         };
     }
 
+    struct TransferData
+    {
+        virtual ~TransferData() = default;
+    };
+
     // Environment it-self is NOT thread-safe.
     class Environment : public std::enable_shared_from_this<Environment>
     {
@@ -68,9 +73,12 @@ namespace jsb
 
                 TYPE_REF,
                 TYPE_DEREF,
+
+                TYPE_TRANSFER_,
             };
 
             Type type_;
+
             void* binding_;
 
             AsyncCall(Type p_type, void* p_binding)
@@ -239,6 +247,11 @@ namespace jsb
          */
         void call_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id);
 
+        // [EXPERIMENTAL] transfer object between environments.
+        // call this method on the target environment in the source environment thread.
+        // [worker] master->transfer_object(scene->instantiate());
+        void transfer_object(Object* p_object);
+
         // Get default property value of a script class.
         // Potential side effects: This procedure may construct a new CDO instance (in p_script_class_info).
         bool get_script_default_property_value(ScriptClassInfo& p_script_class_info, const StringName& p_name, Variant& r_val);
@@ -305,7 +318,8 @@ namespace jsb
 
         void start_debugger(uint16_t p_port);
 
-        jsb_force_inline void check_internal_state() const { jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet"); }
+        jsb_force_inline bool is_caller_thread() const { return Thread::get_caller_id() == thread_id_; }
+        jsb_force_inline void check_internal_state() const { jsb_checkf(is_caller_thread(), "multi-threaded call not supported yet"); }
 
         jsb_force_inline internal::SourceMapCache& get_source_map_cache() { return _source_map_cache; }
 
@@ -483,6 +497,9 @@ namespace jsb
         void get_statistics(Statistics& r_stats) const;
 
         static std::shared_ptr<Environment> _access(void* p_runtime);
+
+        // [unsafe] get the environment from the current thread
+        static std::shared_ptr<Environment> _access();
 
         static void exec_sync_delete()
         {

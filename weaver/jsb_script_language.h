@@ -33,10 +33,14 @@ private:
 public:
     jsb_force_inline static GodotJSScriptLanguage* get_singleton() { return singleton_; }
 
-    // main context
+    /**
+     * @brief Get the main JS environment.
+     * @note Can only be call from the main thread.
+     * @return The JS environment.
+     */
     jsb_force_inline std::shared_ptr<jsb::Environment> get_environment() const
     {
-        jsb_check(once_inited_ && environment_);
+        jsb_check(once_inited_ && environment_ && Thread::is_main_thread());
         return environment_;
     }
 

@@ -92,12 +92,18 @@ void GodotJSScriptInstance::notification(int p_notification, bool p_reversed)
     callp(jsb_string_name(_notification), argv, 1, error);
 }
 
-ScriptLanguage* GodotJSScriptInstance::get_language() { return GodotJSScriptLanguage::get_singleton(); }
+ScriptLanguage* GodotJSScriptInstance::get_language()
+{
+    jsb_check(script_.is_valid());
+    return script_->get_language();
+}
 
 GodotJSScriptInstance::~GodotJSScriptInstance()
 {
     JSB_BENCHMARK_SCOPE(GodotJSScriptInstance, Destruct);
-    MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
-    jsb_check(script_.is_valid() && owner_);
+    jsb_check(script_.is_valid() && owner_ && script_->get_language());
+
+    const GodotJSScriptLanguage* lang = (GodotJSScriptLanguage*) script_->get_language();
+    MutexLock lock(lang->mutex_);
     script_->instances_.erase(owner_);
 }

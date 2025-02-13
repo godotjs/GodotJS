@@ -61,16 +61,6 @@ void GodotJSScriptLanguage::init()
     environment_ = std::make_shared<jsb::Environment>(params);
     environment_->init();
 
-    // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
-    static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
-    jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
-        "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
-#ifdef TOOLS_ENABLED
-    static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
-    jsb_ensuref(jsb::AMDModuleLoader::load_source(environment_.get(), kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
-        "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
-#endif
-
     if (const String entry_script_path = jsb::internal::Settings::get_entry_script_path();
         !entry_script_path.is_empty())
     {
@@ -158,6 +148,7 @@ void GodotJSScriptLanguage::get_string_delimiters(List<String>* p_delimiters) co
     p_delimiters->push_back("` `");
 }
 
+//TODO this virtual method seems never used in godot?
 Script* GodotJSScriptLanguage::create_script() const
 {
     return memnew(GodotJSScript);

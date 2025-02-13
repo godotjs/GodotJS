@@ -13,6 +13,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
         SelfList<GodotJSScript> *elem = GodotJSScriptLanguage::singleton_->script_list_.first();
         while (elem)
         {
+            //TODO need to handle duplicate scripts if GodotJSScript is implemented as thread-wide (not implemented yet)
             if (elem->self()->get_path() == p_path)
             {
                 if (p_cache_mode == CACHE_MODE_IGNORE)

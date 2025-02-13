@@ -11,11 +11,13 @@
 #include "jsb_class_register.h"
 #include "jsb_worker.h"
 #include "jsb_essentials.h"
+#include "jsb_amd_module_loader.h"
 
 #include "../internal/jsb_path_util.h"
 #include "../internal/jsb_class_util.h"
 #include "../internal/jsb_variant_util.h"
 #include "../internal/jsb_settings.h"
+#include "../jsb_project_preset.h"
 
 #include "editor/editor_settings.h"
 #include "main/performance.h"
@@ -30,6 +32,19 @@
 
 namespace jsb
 {
+    struct TransferObjectData : TransferData
+    {
+        ObjectID object_id;
+        List<Pair<StringName, Variant>> state;
+
+        TransferObjectData(ObjectID p_object_id, List<Pair<StringName, Variant>> p_state)
+            : object_id(p_object_id), state(p_state)
+        {}
+
+        virtual ~TransferObjectData() = default;
+
+    };
+
     struct EnvironmentStore
     {
         // return an Environment shared pointer with an unknown pointer if it's a valid Environment instance.
@@ -42,6 +57,24 @@ namespace jsb
                 //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
                 Environment* env = (Environment*) p_runtime;
                 rval = env->shared_from_this();
+            }
+            lock_.unlock();
+            return rval;
+        }
+
+        std::shared_ptr<Environment> access()
+        {
+            std::shared_ptr<Environment> rval;
+            lock_.lock();
+            for (void* ptr : all_runtimes_)
+            {
+                //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
+                Environment* env = (Environment*) ptr;
+                if (env->is_caller_thread())
+                {
+                    rval = env->shared_from_this();
+                    break;
+                }
             }
             lock_.unlock();
             return rval;
@@ -284,6 +317,17 @@ namespace jsb
         {
             resolver.add_search_path(path);
         }
+
+        // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
+        static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
+        jsb_ensuref(AMDModuleLoader::load_source(this, kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
+            "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
+#ifdef TOOLS_ENABLED
+        static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
+        jsb_ensuref(AMDModuleLoader::load_source(this, kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
+            "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
+#endif
+
     }
 
     void Environment::dispose()
@@ -402,6 +446,29 @@ namespace jsb
         case AsyncCall::TYPE_DEREF:     reference_object(p_binding, false); break;
         case AsyncCall::TYPE_FREE:      free_object(p_binding, FinalizationType::None); break;
         case AsyncCall::TYPE_GC:        free_object(p_binding, FinalizationType::Default); break;
+        case AsyncCall::TYPE_TRANSFER_:
+            {
+                //TODO need a better way to control lifetime of TransferObjectData?
+                TransferObjectData* transfer_data = (TransferObjectData*) p_binding;
+
+                Object* instance = ::ObjectDB::get_instance(transfer_data->object_id);
+
+                //TODO 0. HOW TO HANDLE COMPLICATED SITUATIONS? SUCH AS NESTED OBJECTS?
+                //TODO 1. create a script and script instance
+                //TODO 2. attach the script & script instance to the object
+                //TODO 3. restore the object state
+                // instance->set_script_and_instance()
+                ScriptInstance* si = instance->get_script_instance();
+                for (const Pair<StringName, Variant>& pair : transfer_data->state)
+                {
+                    si->set(pair.first, pair.second);
+                }
+
+                // release the RC hold by the transfer data
+                if (instance->is_ref_counted()) ((RefCounted*) instance)->unreference();
+                memdelete(transfer_data);
+            }
+            break;
         default: jsb_checkf(false, "unknown AsyncCall: %d", p_type); break;
         }
     }
@@ -503,6 +570,11 @@ namespace jsb
     std::shared_ptr<Environment> Environment::_access(void* p_runtime)
     {
         return EnvironmentStore::get_shared().access(p_runtime);
+    }
+
+    std::shared_ptr<Environment> Environment::_access()
+    {
+        return EnvironmentStore::get_shared().access();
     }
 
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
@@ -1469,6 +1541,24 @@ namespace jsb
         const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
         jsb_check(js_func);
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
+    }
+
+    void Environment::transfer_object(Object* p_object)
+    {
+        jsb_check(p_object);
+        ScriptInstance* script_instance = p_object->get_script_instance();
+        jsb_check(script_instance);
+        List<Pair<StringName, Variant>> state;
+        script_instance->get_property_state(state);
+
+        // the transfer data need to hold a strong reference
+        if (p_object->is_ref_counted()) ((RefCounted*) p_object)->reference();
+
+        // break the link in the host environment
+        p_object->set_script_instance(nullptr);
+        free_object(p_object, FinalizationType::Default);
+
+        add_async_call(AsyncCall::TYPE_TRANSFER_, memnew(TransferObjectData(p_object->get_instance_id(), state)));
     }
 
 #pragma region Static Fields
