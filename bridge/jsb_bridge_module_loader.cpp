@@ -1,9 +1,7 @@
 #include "jsb_bridge_module_loader.h"
 #include "jsb_type_convert.h"
 #include "jsb_editor_utility_funcs.h"
-
-//TODO it breaks the isolation of 'bridge'
-#include "../weaver/jsb_callable_custom.h"
+#include "jsb_callable.h"
 
 namespace jsb
 {
@@ -69,10 +67,10 @@ namespace jsb
                 jsb_throw(isolate, "bad function");
                 return;
             }
-            EnvironmentID env_id = env->id();
-            v8::Local<v8::Function> js_func = info[func_arg_index].As<v8::Function>();
+            const EnvironmentID env_id = env->id();
+            const v8::Local<v8::Function> js_func = info[func_arg_index].As<v8::Function>();
             const ObjectCacheID callback_id = env->get_cached_function(js_func);
-            Variant callable = Callable(memnew(GodotJSCallableCustom(caller_id, env_id, callback_id)));
+            const Variant callable = Callable(memnew(JSCallable(caller_id, env_id, callback_id)));
             v8::Local<v8::Value> rval;
             if (!TypeConvert::gd_var_to_js(isolate, context, callable, rval))
             {
