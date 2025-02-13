@@ -1249,74 +1249,78 @@ namespace jsb
     bool Environment::get_script_default_property_value(ScriptClassInfo& p_script_class_info, const StringName& p_name, Variant& r_val)
     {
         this->check_internal_state();
+        const auto& it = p_script_class_info.properties.find(p_name);
+
+        if (!it)
+        {
+            // JSB_LOG(Warning, "unknown property %s", p_name);
+            return false;
+        }
+
+        const ScriptPropertyInfo& prop_info = it->value;
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = this->get_context();
+        const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
 
-        if (const auto& it = p_script_class_info.properties.find(p_name))
+        v8::Local<v8::Value> instance;
+        if (p_script_class_info.js_default_object.IsEmpty())
         {
-            v8::Local<v8::Value> instance;
-            if (p_script_class_info.js_default_object.IsEmpty())
+            v8::Local<v8::Value> identifier = jsb_symbol(this, CDO);
+            const v8::Local<v8::Object> class_obj = p_script_class_info.js_class.Get(isolate);
+            const impl::TryCatch try_catch_run(isolate);
+            const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
+            if (try_catch_run.has_caught())
             {
-                v8::Local<v8::Value> identifier = jsb_symbol(this, CDO);
-                const v8::Local<v8::Object> class_obj = p_script_class_info.js_class.Get(isolate);
-                const impl::TryCatch try_catch_run(isolate);
-                const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
-                if (try_catch_run.has_caught())
-                {
-                    JSB_LOG(Error, "something wrong when constructing '%s'\n%s",
-                        p_script_class_info.js_class_name,
-                        BridgeHelper::get_exception(try_catch_run));
-                    p_script_class_info.js_default_object.Reset(isolate, v8::Null(isolate));
-                    return false;
-                }
-                if (!constructed_value.ToLocal(&instance))
-                {
-                    JSB_LOG(Error, "bad instance '%s", p_script_class_info.js_class_name);
-                    p_script_class_info.js_default_object.Reset(isolate, v8::Null(isolate));
-                    return false;
-                }
-                p_script_class_info.js_default_object.Reset(isolate, instance);
-            }
-            else
-            {
-                instance = p_script_class_info.js_default_object.Get(isolate);
-            }
-
-            if (!instance->IsObject())
-            {
-                JSB_LOG(Error, "bad instance '%s", p_script_class_info.js_class_name);
+                JSB_LOG(Error, "something wrong when constructing '%s'\n%s",
+                    p_script_class_info.js_class_name,
+                    BridgeHelper::get_exception(try_catch_run));
+                p_script_class_info.js_default_object.Reset(isolate, v8::Null(isolate));
                 return false;
             }
-
-            // try read default value from CDO.
-            // pretend nothing's wrong if failed by constructing a default value in-place
-            v8::Local<v8::Object> cdo = instance.As<v8::Object>();
-            v8::Local<v8::Value> value;
-            if (!cdo->Get(context, this->get_string_value(p_name)).ToLocal(&value)
-                || !TypeConvert::js_to_gd_var(isolate, context, value, it->value.type, r_val))
+            if (!constructed_value.ToLocal(&instance))
             {
-                JSB_LOG(Warning, "failed to get/translate default value of '%s' from CDO", p_name);
-                ::jsb::internal::VariantUtil::construct_variant(r_val, it->value.type);
+                JSB_LOG(Error, "bad instance '%s", p_script_class_info.js_class_name);
+                p_script_class_info.js_default_object.Reset(isolate, v8::Null(isolate));
+                return false;
             }
-            return true;
+            p_script_class_info.js_default_object.Reset(isolate, instance);
         }
-        // JSB_LOG(Warning, "unknown property %s", p_name);
-        return false;
+        else
+        {
+            instance = p_script_class_info.js_default_object.Get(isolate);
+        }
+
+        if (!instance->IsObject())
+        {
+            JSB_LOG(Error, "bad instance '%s", p_script_class_info.js_class_name);
+            return false;
+        }
+
+        // try read default value from CDO.
+        // pretend nothing's wrong if failed by constructing a default value in-place
+        v8::Local<v8::Object> cdo = instance.As<v8::Object>();
+        v8::Local<v8::Value> value;
+        if (!cdo->Get(context, this->get_string_value(p_name)).ToLocal(&value)
+            || !TypeConvert::js_to_gd_var(isolate, context, value, prop_info.type, r_val))
+        {
+            JSB_LOG(Warning, "failed to get/translate default value of '%s' from CDO", p_name);
+            ::jsb::internal::VariantUtil::construct_variant(r_val, prop_info.type);
+        }
+        return true;
     }
 
     bool Environment::get_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, Variant& r_val)
     {
         this->check_internal_state();
-        v8::Isolate* isolate = get_isolate();
-        v8::HandleScope handle_scope(isolate);
         if (!this->object_db_.has_object(p_object_id))
         {
             return false;
         }
 
+        v8::Isolate* isolate = get_isolate();
+        v8::HandleScope handle_scope(isolate);
         const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
         const v8::Local<v8::Object> self = this->get_object(p_object_id);
@@ -1337,13 +1341,13 @@ namespace jsb
     bool Environment::set_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, const Variant& p_val)
     {
         this->check_internal_state();
-        v8::Isolate* isolate = get_isolate();
-        v8::HandleScope handle_scope(isolate);
         if (!this->object_db_.has_object(p_object_id))
         {
             return false;
         }
 
+        v8::Isolate* isolate = get_isolate();
+        v8::HandleScope handle_scope(isolate);
         const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
         const v8::Local<v8::Object> self = this->get_object(p_object_id);
