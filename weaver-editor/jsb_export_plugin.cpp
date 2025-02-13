@@ -27,6 +27,24 @@ void GodotJSExportPlugin::_export_begin(const HashSet<String>& p_features, bool 
 {
     JSB_EXPORTER_LOG(Verbose, "export_begin path: %s", p_path);
     exported_paths_.clear();
+
+    // add all explicitly included file paths in settings
+    const PackedStringArray file_paths = jsb::internal::Settings::get_packaging_include_files();
+    for (const String& file_path : file_paths)
+    {
+        // in this situation, we do not call `load module` to avoid unexpected side effects
+        // (for example, it's impossible to directly load worker scripts in main env).
+
+        if (file_path.ends_with("." JSB_TYPESCRIPT_EXT))
+        {
+            const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(p_path);
+            export_raw_file(compiled_script_path);
+        }
+        else
+        {
+            export_raw_file(file_path);
+        }
+    }
 }
 
 bool GodotJSExportPlugin::export_raw_file(const String& p_path)
@@ -91,7 +109,7 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
         v8::Isolate* isolate = env_->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = env_->get_context();
+        const v8::Local<v8::Context> context = env_->get_context();
         v8::Context::Scope context_scope(context);
 
         export_module_files(*module);
@@ -145,6 +163,12 @@ void GodotJSExportPlugin::_export_file(const String& p_path, const String& p_typ
             skip();
             JSB_EXPORTER_LOG(Verbose, "ignored: %s", p_path);
         }
+
+        //TODO handle module deps if it's a .js file ?
+        // if (p_path.ends_with("." JSB_JAVASCRIPT_EXT))
+        // {
+        //     export_compiled_script(p_path);
+        // }
     }
 }
 

@@ -13,8 +13,6 @@ namespace jsb::internal
         static uint16_t get_debugger_port();
         static bool get_sourcemap_enabled();
 
-        static bool is_packaging_with_source_map();
-
         /**
          * get the project relative path for `outDir` (it refers to `.godot/GodotJS` by default)
          */
@@ -38,7 +36,12 @@ namespace jsb::internal
 
         static String get_entry_script_path();
 
+        static bool is_packaging_with_source_map();
+
+        static PackedStringArray get_packaging_include_files();
+
 #ifdef TOOLS_ENABLED
+        // [EDITOR ONLY]
         static PackedStringArray get_ignored_classes();
 #endif
     };
