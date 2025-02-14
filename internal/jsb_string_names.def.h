@@ -49,7 +49,9 @@ DEF(default)
 
 // worker
 DEF(Worker)
+DEF(ontransfer)
 DEF(onmessage)
 DEF(onerror)
 DEF(postMessage)
+DEF(transfer)
 DEF(close)

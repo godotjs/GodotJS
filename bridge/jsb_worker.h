@@ -40,6 +40,7 @@ namespace jsb
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         static void terminate(const v8::FunctionCallbackInfo<v8::Value>& info);
+        static void ontransfer(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void onmessage(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void post_message(const v8::FunctionCallbackInfo<v8::Value>& info);
 

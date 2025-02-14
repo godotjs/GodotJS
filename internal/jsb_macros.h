@@ -16,6 +16,8 @@
 
 #define JSB_MODULE_NAME_STRING JSB_STRINGIFY(JSB_MODULE_NAME)
 
+#define jsb_nop() (void) 0
+
 #define JSB_LOG_FORMAT(CategoryName, Severity, Format) "[" #CategoryName "][" #Severity "] " Format
 #define JSB_LOG_SEVERITY(Severity) ::jsb::internal::ELogSeverity::Severity
 

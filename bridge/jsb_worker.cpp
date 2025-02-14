@@ -77,6 +77,11 @@ namespace jsb
 
                     impl::Helper::set_as_interruptible(isolate);
                     global->Set(context,
+                        jsb_name(env, transfer),
+                        v8::Function::New(context, &worker_transfer, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
+                        )
+                    .Check();
+                    global->Set(context,
                         jsb_name(env, postMessage),
                         v8::Function::New(context, &worker_post_message, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
                         )
@@ -229,6 +234,41 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             const WorkerID worker_id = (WorkerID) info.Data().As<v8::Uint32>()->Value();
             Worker::terminate(worker_id);
+        }
+
+        // worker -> master (run in worker env)
+        static void worker_transfer(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            Environment* env = Environment::wrap(isolate);
+            v8::HandleScope handle_scope(isolate);
+            v8::Isolate::Scope isolate_scope(isolate);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const WorkerID worker_id = (WorkerID) info.Data().As<v8::Uint32>()->Value();
+
+            NativeObjectID handle;
+            void* token_ptr = nullptr;
+            if (!Worker::try_get_worker(worker_id, handle, token_ptr))
+            {
+                jsb_throw(isolate, "invalid worker id");
+                return;
+            }
+
+            jsb_check(handle);
+            const std::shared_ptr<Environment> master = Environment::_access(token_ptr);
+            if (!master)
+            {
+                jsb_throw(isolate, "invalid environment");
+                return;
+            }
+
+            Object* instance;
+            if (!TypeConvert::js_to_gd_obj(isolate, context, info[0], instance) || !instance)
+            {
+                jsb_throw(isolate, "bad parameter");
+                return;
+            }
+            Environment::transfer_object(env, master.get(), handle, instance);
         }
 
         // worker -> master (run in worker env)
@@ -453,10 +493,11 @@ namespace jsb
         ptr->id_ = Worker::create(master, path, handle);
     }
 
+    // master.ontransfer
+    void Worker::ontransfer(const v8::FunctionCallbackInfo<v8::Value>& info) {}
+
     // master.onmessage
-    void Worker::onmessage(const v8::FunctionCallbackInfo<v8::Value>& info)
-    {
-    }
+    void Worker::onmessage(const v8::FunctionCallbackInfo<v8::Value>& info) {}
 
     // master.postMessage
     void Worker::post_message(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -509,6 +550,7 @@ namespace jsb
 
         class_builder.Instance().Method("postMessage", &post_message);
         class_builder.Instance().Method("onmessage", &onmessage);
+        class_builder.Instance().Method("ontransfer", &ontransfer);
         class_builder.Instance().Method("terminate", &terminate);
 
         const NativeClassInfoPtr class_info = env->get_native_class(class_id);

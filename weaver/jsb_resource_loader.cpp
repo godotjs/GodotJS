@@ -7,6 +7,8 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 {
     JSB_BENCHMARK_SCOPE(ResourceFormatLoaderGodotJSScript, load);
 
+    //TODO handle script cache issues (used by Worker)
+
     {
         //TODO a dirty but approaching solution for hot-reloading
         MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
@@ -16,11 +18,16 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
             //TODO need to handle duplicate scripts if GodotJSScript is implemented as thread-wide (not implemented yet)
             if (elem->self()->get_path() == p_path)
             {
-                if (p_cache_mode == CACHE_MODE_IGNORE)
+                if (p_cache_mode != CACHE_MODE_REUSE)
                 {
                     elem->self()->load_source_code_from_path();
                 }
-                return Ref(elem->self());
+
+                //TODO temporarily ignore it, we are trying to implement scripts in worker threads which may be better not to reuse an existing script reference
+                if (p_cache_mode == CACHE_MODE_REUSE)
+                {
+                    return Ref(elem->self());
+                }
             }
             elem = elem->next();
         }

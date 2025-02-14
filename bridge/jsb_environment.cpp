@@ -22,6 +22,9 @@
 #include "editor/editor_settings.h"
 #include "main/performance.h"
 
+//TODO remove this
+#include "../weaver/jsb_script.h"
+
 #if !JSB_WITH_STATIC_BINDINGS
 #include "jsb_primitive_bindings_reflect.h"
 #define register_primitive_bindings(param) register_primitive_bindings_reflect(param)
@@ -34,15 +37,23 @@ namespace jsb
 {
     struct TransferObjectData : TransferData
     {
+        NativeObjectID worker_id;
         ObjectID object_id;
+        String script_path;
         List<Pair<StringName, Variant>> state;
 
-        TransferObjectData(ObjectID p_object_id, List<Pair<StringName, Variant>> p_state)
-            : object_id(p_object_id), state(p_state)
+        TransferObjectData(NativeObjectID p_worker_id, ObjectID p_object_id, const String& p_script_path, const List<Pair<StringName, Variant>>& p_state)
+            : worker_id(p_worker_id), object_id(p_object_id), script_path(p_script_path), state(p_state)
         {}
 
-        virtual ~TransferObjectData() = default;
+        virtual ~TransferObjectData() override = default;
+    };
 
+    struct ScopedUnreference
+    {
+        RefCounted* object;
+        ScopedUnreference(Object* p_object) : object(p_object && p_object->is_ref_counted() ? (RefCounted*) p_object : nullptr) {}
+        ~ScopedUnreference() { if (object) object->unreference(); }
     };
 
     struct EnvironmentStore
@@ -141,7 +152,11 @@ namespace jsb
                 // p_binding must equal to the return value of `create_callback`
                 jsb_check(p_instance == p_binding);
 
-                env->add_async_call(Environment::AsyncCall::TYPE_FREE, p_binding);
+                // must check before async, InstanceBindingCallback need to know whether the object should die or not if it's a ref-counted object.
+                if (env->verify_object(p_binding))
+                {
+                    env->add_async_call(Environment::AsyncCall::TYPE_FREE, p_binding);
+                }
             }
         }
 
@@ -149,7 +164,7 @@ namespace jsb
         {
             if (const std::shared_ptr<Environment> env = EnvironmentStore::get_shared().access(p_token))
             {
-                if (env->add_async_call(
+                if (env->verify_object(p_binding) && env->add_async_call(
                     p_reference ? Environment::AsyncCall::TYPE_REF : Environment::AsyncCall::TYPE_DEREF,
                     p_binding))
                 {
@@ -450,22 +465,12 @@ namespace jsb
             {
                 //TODO need a better way to control lifetime of TransferObjectData?
                 TransferObjectData* transfer_data = (TransferObjectData*) p_binding;
-
-                Object* instance = ::ObjectDB::get_instance(transfer_data->object_id);
-
-                //TODO 0. HOW TO HANDLE COMPLICATED SITUATIONS? SUCH AS NESTED OBJECTS?
-                //TODO 1. create a script and script instance
-                //TODO 2. attach the script & script instance to the object
-                //TODO 3. restore the object state
-                // instance->set_script_and_instance()
-                ScriptInstance* si = instance->get_script_instance();
-                for (const Pair<StringName, Variant>& pair : transfer_data->state)
                 {
-                    si->set(pair.first, pair.second);
+                    v8::Isolate::Scope isolate_scope(isolate_);
+                    v8::HandleScope handle_scope(isolate_);
+                    const v8::Local<v8::Context> context = context_.Get(isolate_);
+                    _on_worker_transfer(context, transfer_data);
                 }
-
-                // release the RC hold by the transfer data
-                if (instance->is_ref_counted()) ((RefCounted*) instance)->unreference();
                 memdelete(transfer_data);
             }
             break;
@@ -475,12 +480,6 @@ namespace jsb
 
     bool Environment::add_async_call(AsyncCall::Type p_type, void* p_binding)
     {
-        // must check before async, InstanceBindingCallback need to know whether the object should die or not if it's a ref-counted object.
-        if (!object_db_.has_object(p_binding))
-        {
-            return false;
-        }
-
 #if JSB_THREADING
         if (Thread::get_caller_id() != thread_id_)
         {
@@ -490,6 +489,75 @@ namespace jsb
 #endif
         exec_async_call(p_type, p_binding);
         return true;
+    }
+
+    void Environment::_on_worker_transfer(const v8::Local<v8::Context>& p_context, const TransferObjectData* p_data)
+    {
+        Object* instance = ::ObjectDB::get_instance(p_data->object_id);
+        if (!instance)
+        {
+            JSB_LOG(Error, "transferred object not found: %d", (uint64_t) p_data->object_id);
+            return;
+        }
+
+        // release the RC hold by the transfer data
+        ScopedUnreference scoped_unref(instance);
+
+        jsb_check(p_data->worker_id);
+        if (!object_db_.has_object(p_data->worker_id))
+        {
+            JSB_LOG(Error, "invalid worker");
+            return;
+        }
+
+        //TODO 0. HOW TO HANDLE COMPLICATED SITUATIONS? SUCH AS NESTED OBJECTS?
+        jsb_nop();
+
+        // 1. create a script and script instance
+        // 2. attach the script & script instance to the object
+        const Ref<GodotJSScript> script = ResourceLoader::load(p_data->script_path, "", ResourceFormatLoader::CACHE_MODE_IGNORE_DEEP);
+        jsb_check(script.is_valid());
+        jsb_unused(script->can_instantiate());
+        ScriptInstance* script_instance = script->instance_create(instance);
+        jsb_check(script_instance);
+
+        // 3. restore the object state
+        for (const Pair<StringName, Variant>& pair : p_data->state)
+        {
+            script_instance->set(pair.first, pair.second);
+        }
+
+        // call 'ontransfer'
+        {
+            ObjectHandleConstPtr handle = object_db_.try_get_object(p_data->worker_id);
+            const v8::Local<v8::Object> worker = handle->ref_.Get(isolate_).As<v8::Object>();
+            jsb_check(!worker.IsEmpty());
+            handle = nullptr;
+
+            v8::Local<v8::Object> transferred_obj;
+            if (!TypeConvert::gd_obj_to_js(isolate_, p_context, instance, transferred_obj) || transferred_obj.IsEmpty())
+            {
+                JSB_LOG(Error, "failed to convert object to JS");
+                return;
+            }
+
+            v8::Local<v8::Value> callback;
+            if (!worker->Get(p_context, jsb_name(this, ontransfer)).ToLocal(&callback) || !callback->IsFunction())
+            {
+                JSB_LOG(Error, "ontransfer is not a function");
+                return;
+            }
+
+            const impl::TryCatch try_catch(isolate_);
+            const v8::Local<v8::Function> call = callback.As<v8::Function>();
+            v8::Local<v8::Value> args = transferred_obj;
+            const v8::MaybeLocal<v8::Value> rval = call->Call(p_context, v8::Undefined(isolate_), 1, &args);
+            jsb_unused(rval);
+            if (try_catch.has_caught())
+            {
+                JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
+            }
+        }
     }
 
     void Environment::_on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
@@ -1543,22 +1611,24 @@ namespace jsb
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
     }
 
-    void Environment::transfer_object(Object* p_object)
+    void Environment::transfer_object(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, Object* p_object)
     {
-        jsb_check(p_object);
+        jsb_check(p_object && p_from->object_db_.has_object(p_object));
         ScriptInstance* script_instance = p_object->get_script_instance();
         jsb_check(script_instance);
+        const Ref script = script_instance->get_script();
+        jsb_check(script.is_valid());
         List<Pair<StringName, Variant>> state;
         script_instance->get_property_state(state);
+        const String script_path = script->get_path();
 
         // the transfer data need to hold a strong reference
         if (p_object->is_ref_counted()) ((RefCounted*) p_object)->reference();
 
         // break the link in the host environment
         p_object->set_script_instance(nullptr);
-        free_object(p_object, FinalizationType::Default);
-
-        add_async_call(AsyncCall::TYPE_TRANSFER_, memnew(TransferObjectData(p_object->get_instance_id(), state)));
+        p_from->free_object(p_object, FinalizationType::None);
+        p_to->add_async_call(AsyncCall::TYPE_TRANSFER_, memnew(TransferObjectData(p_worker_handle_id, p_object->get_instance_id(), script_path, state)));
     }
 
 #pragma region Static Fields

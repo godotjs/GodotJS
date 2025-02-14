@@ -248,9 +248,9 @@ namespace jsb
         void call_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id);
 
         // [EXPERIMENTAL] transfer object between environments.
-        // call this method on the target environment in the source environment thread.
-        // [worker] master->transfer_object(scene->instantiate());
-        void transfer_object(Object* p_object);
+        // call this method of the source environment in the source environment thread.
+        // [pseudo] transfer_object(worker, master, worker_handle, scene->instantiate());
+        static void transfer_object(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, Object* p_object);
 
         // Get default property value of a script class.
         // Potential side effects: This procedure may construct a new CDO instance (in p_script_class_info).
@@ -515,6 +515,7 @@ namespace jsb
          */
         bool add_async_call(AsyncCall::Type p_type, void* p_binding);
 
+        void _on_worker_transfer(const v8::Local<v8::Context>& p_context, const struct TransferObjectData* p_data);
         void _on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
 
         void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
