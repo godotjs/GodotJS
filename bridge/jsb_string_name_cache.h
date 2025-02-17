@@ -19,7 +19,7 @@ namespace jsb
         HashMap<StringName, StringNameID> name_index;
 
         // JSValue => StringNameID
-        std::unordered_map<TWeakRef<v8::String>, StringNameID, TWeakRef<v8::String>::hasher, TWeakRef<v8::String>::equaler> value_index_; // backlink
+        internal::TypeGen<TWeakRef<v8::String>, StringNameID>::UnorderedMap value_index_; // backlink
 
         // List< StringName+JSValue >
         internal::SArray<Slot, StringNameID> values_;

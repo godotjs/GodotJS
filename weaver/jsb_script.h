@@ -17,7 +17,10 @@ private:
     // if the script invalid (or not actually loaded yet)
     bool valid_ = false;
     bool loaded_ = false;
+
+    String source_;
     bool source_changed_cache = false;
+
     Ref<GodotJSScript> base;
 
     HashSet<PlaceHolderScriptInstance*> placeholders;
@@ -31,16 +34,12 @@ private:
 
     //TODO improvement needed
     jsb::EnvironmentID env_id_;
-
-    String source_;
     jsb::ScriptClassID script_class_id_;
 
     //TODO we have realm_ shared pointer here. Thus, we can safely store GodotJSFunction here (v8 global handle)?
     HashMap<StringName, jsb::ObjectCacheID> cached_methods_;
 
 private:
-    // bool set_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, const Variant& p_value);
-    // bool get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const;
     Variant call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
     void release_cached_methods();
 

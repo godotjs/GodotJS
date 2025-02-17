@@ -104,6 +104,7 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     instance->owner_ = owner;
     instance->script_ = Ref(this); // must set before 'set_script_instance'
     instance->owner_->set_script_instance(instance);
+    // instance->env_ = get_environment();
 
     /* STEP 2, INITIALIZE AND CONSTRUCT */
     {
@@ -667,7 +668,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
 
             //TODO maybe this behaviour is not expected
             Variant default_value;
-            env->get_script_default_property_value(*class_info, pi.name, default_value);
+            env->get_default_property_value(*class_info, pi.name, default_value);
             member_default_values_cache[pi.name] = default_value;
             JSB_LOG(VeryVerbose, "GodotJS script default %s.%s = %s",
                 script_class_id_ ? (String) get_script_class()->js_class_name : "(unknown)",

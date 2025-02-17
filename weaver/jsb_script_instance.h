@@ -11,6 +11,11 @@ private:
 
     Object* owner_ = nullptr;
     Ref<GodotJSScript> script_;
+
+    //TODO directly use env here. remove the env ptr from GodotJSScript class.
+    // std::shared_ptr<jsb::Environment> env_;
+    // jsb::ScriptClassID class_id_;
+
     // object handle id
     jsb::NativeObjectID object_id_;
 

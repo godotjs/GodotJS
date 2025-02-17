@@ -5,9 +5,9 @@
 #include "../jsb_project_preset.h"
 #include "../internal/jsb_internal.h"
 #include "../bridge/jsb_worker.h"
-#include "../bridge/jsb_amd_module_loader.h"
 
 #include "jsb_script.h"
+
 #include "editor/editor_settings.h"
 
 #include "modules/regex/regex.h"

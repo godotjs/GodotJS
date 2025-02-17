@@ -1,5 +1,6 @@
 ﻿#include "jsb_class_info.h"
 #include "jsb_object_bindings.h"
+#include "jsb_type_convert.h"
 
 //TODO it breaks the isolation of 'bridge'
 #include "../weaver/jsb_script.h"
@@ -63,7 +64,7 @@ namespace jsb
 
         jsb_check(prototype->IsObject());
         // reset CDO of the legacy JS class
-        p_class_info->js_default_object.Reset();
+        // p_class_info->js_default_object.Reset();
 
         // update the latest script class info
         p_class_info->native_class_name = environment->get_native_class(p_class_info->native_class_id)->name;

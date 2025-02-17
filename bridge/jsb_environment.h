@@ -252,12 +252,14 @@ namespace jsb
         // [pseudo] transfer_object(worker, master, worker_handle, scene->instantiate());
         static void transfer_object(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, Object* p_object);
 
-        // Get default property value of a script class.
-        // Potential side effects: This procedure may construct a new CDO instance (in p_script_class_info).
-        bool get_script_default_property_value(ScriptClassInfo& p_script_class_info, const StringName& p_name, Variant& r_val);
-
         bool get_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, const Variant& p_val);
+
+        // Get default property value of a script class.
+        // Potential side effects: This procedure may construct a new CDO instance (the reason why an `Environment` is required).
+        bool get_default_property_value(ScriptClassInfo& p_class_info, const StringName& p_name, Variant& r_val);
+
+        void evaluate_default_values(ScriptClassInfo& p_class_info);
 
         jsb_force_inline const JavaScriptModuleCache& get_module_cache() const { return module_cache_; }
         jsb_force_inline JavaScriptModuleCache& get_module_cache() { return module_cache_; }

@@ -5,6 +5,20 @@
 
 namespace jsb::internal
 {
+    template <typename T>
+    struct Hasher
+    {
+        struct hasher  { jsb_force_inline size_t operator()(const T& obj) const noexcept      { return obj.hash(); } };
+        struct equaler { jsb_force_inline bool   operator()(const T& lhs, const T& rhs) const { return lhs == rhs; } };
+
+    };
+
+    template <typename K, typename V>
+    struct TypeGen
+    {
+        typedef std::unordered_map<K, V, typename Hasher<K>::hasher, typename Hasher<K>::equaler> UnorderedMap;
+    };
+
     struct VariantUtil
     {
         jsb_force_inline static StringName get_type_name(const Variant::Type p_type)

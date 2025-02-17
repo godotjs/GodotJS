@@ -124,12 +124,18 @@ namespace jsb
         };
     }
 
+    struct ScriptSignalInfo
+    {
+    };
+
     struct ScriptMethodInfo
     {
         // only valid with TOOLS_ENABLED
         ScriptMethodDoc doc;
 
         ScriptMethodFlags::Type flags = ScriptMethodFlags::None;
+
+        // v8::Global<v8::Function> cache_;
 
         jsb_force_inline bool is_static() const { return flags & ScriptMethodFlags::Static; }
 
@@ -149,7 +155,9 @@ namespace jsb
         String hint_string;
 
         ScriptPropertyDoc doc;
-        // Variant default_value;
+
+        // valid only if _Evaluated flag is set in ScriptClassInfo.flags
+        Variant default_value;
     };
 
     namespace ScriptClassFlags
@@ -161,6 +169,9 @@ namespace jsb
             //TODO we have no idea about it with javascript itself. maybe we can decorate the abstract class and check here?
             Abstract = 1 << 0,
             Tool = 1 << 1,
+
+            // (INTERNAL USE ONLY) whether the default value of properties are evaluated or not
+            _Evaluated = 1 << 2,
         };
     }
 
@@ -183,10 +194,6 @@ namespace jsb
         // for constructor/prototype access
         v8::Global<v8::Object> js_class;
 
-        // a default object instance for js_class (lazily created if there is a variable exported at least) with no crossbound object instance.
-        // it's null if failed to construct the CDO.
-        v8::Global<v8::Value> js_default_object;
-
         // a fastpath to read the name of native class (the GodotJS class inherits from).
         // it's a redundant field only for performance.
         StringName native_class_name;
@@ -199,16 +206,18 @@ namespace jsb
 
         ScriptClassFlags::Type flags = ScriptClassFlags::None;
 
-        String icon;
-
         // only valid with TOOLS_ENABLED
         ScriptClassDoc doc;
 
-        HashMap<StringName, ScriptMethodInfo> methods;
-        HashMap<StringName, ScriptMethodInfo> signals;
-        HashMap<StringName, ScriptPropertyInfo> properties;
+        String icon;
 
         Dictionary rpc_config;
+
+        HashMap<StringName, ScriptMethodInfo> methods;
+        // internal::TypeGen<StringName, ScriptMethodInfo>::UnorderedMap methods;
+
+        HashMap<StringName, ScriptSignalInfo> signals;
+        HashMap<StringName, ScriptPropertyInfo> properties;
 
         //TODO whether the internal class object alive or not
         jsb_force_inline bool is_valid() const { return true; }

@@ -5,6 +5,8 @@
 
 #include "core/object/script_language.h"
 
+class GodotJSScript;
+
 class GodotJSScriptLanguage : public ScriptLanguage
 {
 private:
@@ -15,7 +17,7 @@ private:
     static GodotJSScriptLanguage* singleton_;
 
     Mutex mutex_;
-    SelfList<class GodotJSScript>::List script_list_;
+    SelfList<GodotJSScript>::List script_list_;
 
     bool once_inited_ = false;
     uint64_t last_ticks_ = 0;
