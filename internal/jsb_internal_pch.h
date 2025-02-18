@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 #include "core/templates/hash_map.h"
 
