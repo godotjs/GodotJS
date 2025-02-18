@@ -561,22 +561,28 @@ namespace jsb
 
     void _invoke(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Function>& p_callback, const Message* p_message)
     {
-        v8::ValueDeserializer deserializer(p_isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size());
-        bool ok;
-        if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
+        v8::Local<v8::Value> value;
+        if (p_message)
         {
-            JSB_LOG(Error, "failed to parse message header");
-            return;
+            v8::ValueDeserializer deserializer(p_isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size());
+            bool ok;
+            if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
+            {
+                JSB_LOG(Error, "failed to parse message header");
+                return;
+            }
+
+            if (!deserializer.ReadValue(p_context).ToLocal(&value))
+            {
+                JSB_LOG(Error, "failed to parse message value");
+                return;
+            }
         }
 
-        v8::Local<v8::Value> value;
-        if (!deserializer.ReadValue(p_context).ToLocal(&value))
-        {
-            JSB_LOG(Error, "failed to parse message value");
-            return;
-        }
         const impl::TryCatch try_catch(p_isolate);
-        const v8::MaybeLocal<v8::Value> rval = p_callback->Call(p_context, v8::Undefined(p_isolate), 1, &value);
+        const v8::MaybeLocal<v8::Value> rval = p_message
+            ? p_callback->Call(p_context, v8::Undefined(p_isolate), 1, &value)
+            : p_callback->Call(p_context, v8::Undefined(p_isolate), 0, nullptr);
         jsb_unused(rval);
         if (try_catch.has_caught())
         {
