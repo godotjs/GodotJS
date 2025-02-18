@@ -81,6 +81,8 @@ namespace jsb
                     v8::Isolate::Scope isolate_scope(isolate);
                     v8::HandleScope handle_scope(isolate);
                     const v8::Local<v8::Context> context = env->get_context();
+                    v8::Context::Scope context_scope(context);
+
                     const v8::Local<v8::Object> context_obj = v8::Object::New(isolate);
                     const v8::Local<v8::Value> exports_val = module->exports.Get(isolate);
                     jsb_check(!exports_val.IsEmpty() && exports_val->IsObject() && !exports_val->IsNullOrUndefined());
@@ -221,7 +223,7 @@ namespace jsb
                 JSB_WORKER_LOG(Error, "onmessage is not a function");
                 return;
             }
-            
+
             v8::ValueDeserializer deserializer(isolate, p_message.ptr(), p_message.size());
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
