@@ -2,7 +2,7 @@
 # GodotJS 
 This project adds TypeScript/JavaScript Support for Godot 4.x by leveraging the high-performance capabilities of V8 to bring the delightful development experience of TypeScript into Godot. Meanwhile, it also supports switching to QuickJS, JavaScriptCore, or even directly run scripts on the host browser JS VM if porting to web.  
 
-See [Breaking Changes](https://github.com/godotjs/GodotJS/wiki/Misc-Breaking-Changes) if upgrading from old versions.
+See [Breaking Changes](https://github.com/godotjs/GodotJS/wiki/Breaking-Changes) if upgrading from old versions.
 
 [![windows](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_windows.yml)
 [![macos](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg)](https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml)
@@ -19,7 +19,7 @@ See [Breaking Changes](https://github.com/godotjs/GodotJS/wiki/Misc-Breaking-Cha
 * [x] REPL in Editor
 * [x] Hot-reloading
 * [x] Support for multiple javascript engines ([v8](https://github.com/v8/v8), [quickjs](https://github.com/bellard/quickjs), [quickjs-ng](https://github.com/quickjs-ng/quickjs), [JavaScriptCore](https://developer.apple.com/documentation/javascriptcore), the host Browser JS)
-* [x] Worker threads (limited support) (**experimental**)
+* [x] [Worker threads](https://github.com/godotjs/GodotJS/wiki/Worker) (limited support) (**experimental**)
 * [ ] Asynchronously loaded modules (limited support)
 
 ## Get Started
