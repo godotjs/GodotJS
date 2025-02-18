@@ -48,7 +48,7 @@ DEF(transfer_channel)
 DEF(default)
 
 // worker
-DEF(Worker)
+DEF(JSWorker)
 DEF(ontransfer)
 DEF(onmessage)
 DEF(onready)

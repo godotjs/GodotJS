@@ -15,7 +15,6 @@ namespace jsb
 
     private:
         v8::Local<v8::Object> _get_loader_proxy(Environment* p_env);
-        v8::Local<v8::Value> _type_post_process(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& p_type_name, const v8::Local<v8::Value>& p_val);
 
         v8::Global<v8::Object> loader_;
 

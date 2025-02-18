@@ -19,6 +19,7 @@ namespace jsb
     {
     private:
         friend class WorkerImpl;
+        friend class JSWorkerModuleLoader;
 
         WorkerID id_ = {};
 

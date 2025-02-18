@@ -8,6 +8,7 @@
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
 #define JSB_WORKER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSWorker, Severity, Format, ##__VA_ARGS__)
+#define JSB_WORKER_MODULE_NAME "godot.worker"
 
 namespace jsb
 {
@@ -67,31 +68,43 @@ namespace jsb
                 const std::shared_ptr<Environment> env = std::make_shared<Environment>(params);
                 impl->env_ = env;
                 env->init();
+
+                v8::Global<v8::Object> context_obj_handle;
                 {
-                    // setup global 'postMessage', 'onmessage' for worker
+                    // setup 'postMessage, onmessage, transfer etc.' for worker
+
+                    JavaScriptModule* module = nullptr;
+                    jsb_ensuref(env->load(JSB_WORKER_MODULE_NAME, &module) == OK,
+                        "failed to load '%s' module in worker thread %d", JSB_WORKER_MODULE_NAME, impl->get_id());
+
                     v8::Isolate* isolate = env->get_isolate();
                     v8::Isolate::Scope isolate_scope(isolate);
                     v8::HandleScope handle_scope(isolate);
                     const v8::Local<v8::Context> context = env->get_context();
-                    const v8::Local<v8::Object> global = context->Global();
+                    const v8::Local<v8::Object> context_obj = v8::Object::New(isolate);
+                    const v8::Local<v8::Value> exports_val = module->exports.Get(isolate);
+                    jsb_check(!exports_val.IsEmpty() && exports_val->IsObject() && !exports_val->IsNullOrUndefined());
+                    const v8::Local<v8::Object> exports = exports_val.As<v8::Object>();
+                    exports->Set(context, impl::Helper::new_string(isolate, "JSWorkerParent"), context_obj).Check();
+                    context_obj_handle.Reset(isolate, context_obj);
 
                     impl::Helper::set_as_interruptible(isolate);
-                    global->Set(context,
+                    context_obj->Set(context,
                         jsb_name(env, transfer),
                         v8::Function::New(context, &worker_transfer, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
                         )
                     .Check();
-                    global->Set(context,
+                    context_obj->Set(context,
                         jsb_name(env, postMessage),
                         v8::Function::New(context, &worker_post_message, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
                         )
                     .Check();
-                    global->Set(context,
+                    context_obj->Set(context,
                         jsb_name(env, close),
                         v8::Function::New(context, &worker_close, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
                         )
                     .Check();
-                    global->Set(context,
+                    context_obj->Set(context,
                         jsb_name(env, onmessage),
                         v8::Null(isolate)
                         )
@@ -114,11 +127,12 @@ namespace jsb
                                 v8::Isolate::Scope isolate_scope(isolate);
                                 v8::HandleScope handle_scope(isolate);
                                 const v8::Local<v8::Context> context = env->get_context();
+                                const v8::Local<v8::Object> context_obj = context_obj_handle.Get(isolate);
 
                                 for (const Buffer& message : messages)
                                 {
                                     if (impl->interrupt_requested_.is_set()) break;
-                                    impl->_on_message(env, context, message);
+                                    impl->_on_message(env, context, context_obj, message);
                                 }
                                 messages.clear();
                             }
@@ -131,6 +145,7 @@ namespace jsb
                         os->delay_usec(10 * 1000);
                     }
                 }
+                context_obj_handle.Reset();
 
                 impl->interrupt_requested_.set();
                 impl->env_->dispose();
@@ -196,16 +211,17 @@ namespace jsb
         }
 
     private:
-        void _on_message(const std::shared_ptr<Environment>& p_env, const v8::Local<v8::Context>& p_context, const Buffer& p_message)
+        // (worker) handle message from master
+        void _on_message(const std::shared_ptr<Environment>& p_env, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Object>& p_context_obj, const Buffer& p_message)
         {
-            const v8::Local<v8::Object> obj = p_context->Global();
+            v8::Isolate* isolate = p_env->get_isolate();
             v8::Local<v8::Value> callback;
-            if (!obj->Get(p_context, jsb_name(p_env, onmessage)).ToLocal(&callback) || !callback->IsFunction())
+            if (!p_context_obj->Get(p_context, jsb_name(p_env, onmessage)).ToLocal(&callback) || !callback->IsFunction())
             {
                 JSB_WORKER_LOG(Error, "onmessage is not a function");
                 return;
             }
-            v8::Isolate* isolate = p_env->get_isolate();
+            
             v8::ValueDeserializer deserializer(isolate, p_message.ptr(), p_message.size());
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
@@ -330,51 +346,50 @@ namespace jsb
             const std::pair<uint8_t*, size_t> data = serializer.Release();
             master->post_message(Message(Message::TYPE_MESSAGE, handle, Buffer::steal(data.first, data.second)));
         }
-
-        // dispatch message to worker.onmessage
-        void on_message(Environment* p_env, const Buffer& p_buffer)
-        {
-            v8::Isolate* isolate = p_env->get_isolate();
-            v8::HandleScope handle_scope(isolate);
-            const v8::Local<v8::Context> context = p_env->get_context();
-
-            const v8::Local<v8::Object> global = context->Global();
-            v8::Local<v8::Value> onmessage;
-            if (!global->Get(context, jsb_name(p_env, onmessage)).ToLocal(&onmessage)
-                || !onmessage->IsFunction())
-            {
-                JSB_WORKER_LOG(Error, "no 'onmessage'");
-                return;
-            }
-
-            v8::ValueDeserializer deserializer(isolate, p_buffer.ptr(), p_buffer.size());
-            bool ok;
-            if (!deserializer.ReadHeader(context).To(&ok) || !ok)
-            {
-                JSB_WORKER_LOG(Error, "failed to read message header");
-                return;
-            }
-            v8::Local<v8::Value> result;
-            if (!deserializer.ReadValue(context).ToLocal(&result))
-            {
-                JSB_WORKER_LOG(Error, "failed to read message value");
-                return;
-            }
-
-            const impl::TryCatch try_catch(isolate);
-            const v8::MaybeLocal<v8::Value> rval = onmessage.As<v8::Function>()
-                ->Call(context, v8::Undefined(isolate), 1, &result);
-            jsb_unused(rval);
-            if (try_catch.has_caught())
-            {
-                JSB_WORKER_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
-            }
-        }
     };
 
     WorkerLock Worker::lock_;
     internal::SArray<WorkerImplPtr, WorkerID> Worker::worker_list_;
     HashMap<Thread::ID, WorkerID> Worker::workers_;
+
+    class JSWorkerModuleLoader : public IModuleLoader
+    {
+    public:
+        virtual ~JSWorkerModuleLoader() override = default;
+
+        virtual bool load(Environment* p_env, JavaScriptModule& p_module) override
+        {
+            v8::Isolate* isolate = p_env->get_isolate();
+            v8::Isolate::Scope isolate_scope(isolate);
+            v8::HandleScope handle_scope(isolate);
+            const v8::Local<v8::Context> context = p_env->get_context();
+            v8::Context::Scope context_scope(context);
+
+            const v8::Local<v8::Object> exports = v8::Object::New(isolate);
+            p_module.exports.Reset(isolate, exports);
+
+            const StringName class_name = jsb_string_name(JSWorker);
+            const NativeClassID class_id = p_env->add_native_class(NativeClassType::Worker, class_name);
+            impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_name, &Worker::constructor, *class_id);
+
+            class_builder.Instance().Method("postMessage", &Worker::post_message);
+            class_builder.Instance().Method("onready", &Worker::_placeholder);
+            class_builder.Instance().Method("onerror", &Worker::_placeholder);
+            class_builder.Instance().Method("onmessage", &Worker::_placeholder);
+            class_builder.Instance().Method("ontransfer", &Worker::_placeholder);
+            class_builder.Instance().Method("terminate", &Worker::terminate);
+
+            const NativeClassInfoPtr class_info = p_env->get_native_class(class_id);
+            class_info->finalizer = &Worker::finalizer;
+            class_info->clazz = class_builder.Build();
+            jsb_check(!class_info->clazz.IsEmpty());
+            jsb_check(class_info->name == class_name);
+            jsb_check(!class_info->clazz.IsEmpty());
+            exports->Set(context, jsb_name(p_env, JSWorker), class_info->clazz.Get(isolate));
+            return true;
+        }
+
+    };
 
     // construct a Worker object (called from master thread)
     WorkerID Worker::create(Environment* p_master, const String& p_path, NativeObjectID p_handle)
@@ -567,26 +582,7 @@ namespace jsb
 
     void Worker::register_(const v8::Local<v8::Context>& p_context, const v8::Local<v8::Object>& p_self)
     {
-        Environment* env = Environment::wrap(p_context);
-        v8::Isolate* isolate = p_context->GetIsolate();
-        const StringName class_name = jsb_string_name(Worker);
-        const NativeClassID class_id = env->add_native_class(NativeClassType::Worker, class_name);
-        impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_name, &constructor, *class_id);
-
-        class_builder.Instance().Method("postMessage", &post_message);
-        class_builder.Instance().Method("onready", &_placeholder);
-        class_builder.Instance().Method("onerror", &_placeholder);
-        class_builder.Instance().Method("onmessage", &_placeholder);
-        class_builder.Instance().Method("ontransfer", &_placeholder);
-        class_builder.Instance().Method("terminate", &terminate);
-
-        const NativeClassInfoPtr class_info = env->get_native_class(class_id);
-        class_info->finalizer = &finalizer;
-        class_info->clazz = class_builder.Build();
-        jsb_check(!class_info->clazz.IsEmpty());
-        jsb_check(class_info->name == class_name);
-        jsb_check(!class_info->clazz.IsEmpty());
-        p_self->Set(p_context, jsb_name(env, Worker), class_info->clazz.Get(isolate));
+        Environment::wrap(p_context)->add_module_loader<JSWorkerModuleLoader>(JSB_WORKER_MODULE_NAME);
     }
 }
 
