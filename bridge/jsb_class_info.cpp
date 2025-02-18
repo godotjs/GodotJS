@@ -75,6 +75,7 @@ namespace jsb
         p_class_info->signals.clear();
         p_class_info->properties.clear();
         p_class_info->rpc_config.clear();
+        p_class_info->method_cache.clear();
         p_class_info->flags = ScriptClassFlags::None;
 
         JSB_LOG(VeryVerbose, "godot js class name %s (native: %s)", p_class_info->js_class_name, p_class_info->native_class_name);
@@ -308,7 +309,7 @@ namespace jsb
         }
 
         // trick: save godot class id for convenience of getting it in JS class constructor
-        class_obj->Set(p_context, jsb_symbol(environment, CrossBind), v8::Uint32::NewFromUnsigned(isolate, *p_module.script_class_id)).Check();
+        class_obj->Set(p_context, jsb_symbol(environment, CrossBind), environment->get_string_value(p_module.id)).Check();
 
         const v8::Local<v8::Object> dt_base_obj =
             class_obj
@@ -318,11 +319,11 @@ namespace jsb
         jsb_check(class_obj != dt_base_obj);
 
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
-        existed_class_info->base_script_class_id = ScriptClassID(dt_base_tag->IsUint32() ? dt_base_tag.As<v8::Uint32>()->Value() : 0);
-        JSB_LOG(Log, "%s script: %d inherits super: %d native: %d",
-            p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_class_id, *native_class_id);
+        existed_class_info->base_script_module_id = dt_base_tag->IsString() ? environment->get_string_name(dt_base_tag.As<v8::String>()) : StringName();
+        JSB_LOG(Log, "%s script %d inherits script module %s native: %d",
+            p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_module_id, *native_class_id);
 
-        jsb_check(existed_class_info->base_script_class_id != p_module.script_class_id);
+        jsb_check(existed_class_info->base_script_module_id != p_module.id);
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->native_class_id = native_class_id;
 

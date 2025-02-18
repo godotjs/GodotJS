@@ -412,14 +412,15 @@ namespace jsb
 
             // (case-1) new from scripts
             v8::Local<v8::Value> cross_bind_sym;
-            if (new_target->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym))
+            if (new_target->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym) && cross_bind_sym->IsString())
             {
-                const ScriptClassID script_class_id = (ScriptClassID) cross_bind_sym.As<v8::Uint32>()->Value();
-                ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
+                const StringName script_module_id = environment->get_string_name(cross_bind_sym.As<v8::String>());
+                jsb_check(environment->get_module_cache().find(script_module_id));
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
-                    script_class_info->js_class_name, script_class_info->module_id, class_info->name, class_id);
+                    environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id,
+                    class_info->name, class_id);
                 const v8::Local<v8::Object> self = info.This();
-                ScriptClassInfo::instantiate(script_class_info.escape()->module_id, self);
+                ScriptClassInfo::instantiate(script_module_id, self);
                 return;
             }
 

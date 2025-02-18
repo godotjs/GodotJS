@@ -232,20 +232,14 @@ namespace jsb
             return wrap(p_context)->function_pointers_[p_offset];
         }
 
-        //TODO temp, js function (cached in `function_bank_`)
-        ObjectCacheID retain_function(NativeObjectID p_object_id, const StringName& p_method);
+        ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
         bool release_function(ObjectCacheID p_func_id);
-
-        /**
-         * This method will not throw any exception.
-         */
         Variant call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
 
         /**
-         * Setup `onready` fields (this method must be called before `_ready`).
-         * This method will not throw any exception.
+         * This method will not throw any JS exception.
          */
-        void call_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id);
+        Variant call_script_method(ScriptClassID p_script_class_id, NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
 
         // [EXPERIMENTAL] transfer object between environments.
         // call this method of the source environment in the source environment thread.
@@ -316,8 +310,6 @@ namespace jsb
         // will reload until next load.
         EReloadResult::Type mark_as_reloading(const StringName& p_name);
 
-        ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
-
         void start_debugger(uint16_t p_port);
 
         jsb_force_inline bool is_caller_thread() const { return Thread::get_caller_id() == thread_id_; }
@@ -359,9 +351,10 @@ namespace jsb
 
         // whether the `p_pointer` registered in the object binding map
         // return true, and the corresponding JS value if `p_pointer` is valid
-        jsb_force_inline bool try_get_object(void* p_pointer, v8::Local<v8::Object>& r_unwrap) const
+        template <typename T>
+        jsb_force_inline bool try_get_object(T p_key, v8::Local<v8::Object>& r_unwrap) const
         {
-            if (const ObjectHandleConstPtr ptr = object_db_.try_get_object(p_pointer))
+            if (const ObjectHandleConstPtr ptr = object_db_.try_get_object(p_key))
             {
                 r_unwrap = ptr->ref_.Get(isolate_);
                 return true;
@@ -524,6 +517,12 @@ namespace jsb
 
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,
             const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
+
+        /**
+         * Setup `onready` fields (this method must be called before `_ready`).
+         * This method will not throw any JS exception.
+         */
+        void call_script_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id);
 
         // callback from v8 gc (not 100% guaranteed called)
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)

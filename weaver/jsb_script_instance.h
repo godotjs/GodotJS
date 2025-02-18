@@ -12,14 +12,21 @@ private:
     Object* owner_ = nullptr;
     Ref<GodotJSScript> script_;
 
-    //TODO directly use env here. remove the env ptr from GodotJSScript class.
-    // std::shared_ptr<jsb::Environment> env_;
-    // jsb::ScriptClassID class_id_;
+    std::shared_ptr<jsb::Environment> env_;
 
-    // object handle id
+    // script class handle
+    jsb::ScriptClassID class_id_;
+
+    // object handle
     jsb::NativeObjectID object_id_;
 
+private:
+    jsb::ScriptClassInfoPtr get_script_class() const;
+
 public:
+    // for Environment lifecycle control (avoid object leaks), detach all JS object bindings
+    // void _detach();
+
 #pragma region ScriptIntance Implementation
     virtual Object *get_owner() override { return owner_; }
 
@@ -42,10 +49,11 @@ public:
 
     virtual ScriptLanguage *get_language() override;
 
-    virtual const Variant get_rpc_config() const override { return script_->get_rpc_config(); }
+    virtual const Variant get_rpc_config() const override;
 #pragma endregion
 
     virtual ~GodotJSScriptInstance() override;
+
 private:
     GodotJSScriptInstance() {}
 };

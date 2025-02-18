@@ -300,17 +300,7 @@ namespace jsb
             pair.value = nullptr;
         }
 
-        exec_async_calls();
-
-        // Cleanup weak callbacks not invoked by v8.
-        // It's not 100% safe for all kinds of objects, because we don't know whether the target object has already been deleted or not.
-        JSB_LOG(VeryVerbose, "cleanup %d objects", object_db_.size());
-        while (void* pointer = object_db_.try_get_first_pointer())
-        {
-            free_object(pointer, FinalizationType::Default /* Force? */);
-        }
         jsb_check(object_db_.size() == 0);
-
         string_name_cache_.clear();
 
         // cleanup all class templates (must do after objects cleaned up)
@@ -361,6 +351,7 @@ namespace jsb
 
 #if JSB_WITH_DEBUGGER
             debugger_.on_context_destroyed(context);
+            debugger_.drop();
 #endif
             context->SetAlignedPointerInEmbedderData(kContextEmbedderData, nullptr);
 
@@ -379,9 +370,17 @@ namespace jsb
             symbols_[index].Reset();
         }
 
-#if JSB_WITH_DEBUGGER
-        debugger_.drop();
-#endif
+        exec_async_calls();
+        gc();
+
+        // Cleanup all objects by forcibly invoke all callbacks not invoked by v8.
+        JSB_LOG(Verbose, "cleanup %d objects", object_db_.size());
+        while (void* pointer = object_db_.try_get_first_pointer())
+        {
+            JSB_LOG(VeryVerbose, " - %s", (uintptr_t) pointer);
+            free_object(pointer, FinalizationType::Default /* Force? */);
+        }
+
         EnvironmentStore::get_shared().remove(this);
 
     }
@@ -866,6 +865,7 @@ namespace jsb
 
     void Environment::scan_external_changes()
     {
+        check_internal_state();
         Vector<StringName> requested_modules;
         for (const KeyValue<StringName, JavaScriptModule*>& kv : module_cache_.modules_)
         {
@@ -887,6 +887,7 @@ namespace jsb
 
     EReloadResult::Type Environment::mark_as_reloading(const StringName& p_name)
     {
+        check_internal_state();
         if (JavaScriptModule* module = module_cache_.find(p_name))
         {
             jsb_check(!module->source_info.source_filepath.is_empty());
@@ -1052,13 +1053,13 @@ namespace jsb
             return object_id;
         }
 
-        StringName class_name;
+        StringName js_class_name;
         NativeClassID native_class_id;
         v8::Local<v8::Object> class_obj;
 
         {
             const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
-            class_name = class_info->js_class_name;
+            js_class_name = class_info->js_class_name;
             native_class_id = class_info->native_class_id;
             class_obj = class_info->js_class.Get(isolate);
             JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %d", class_info->js_class_name, class_info->native_class_name, class_info->native_class_id, (uintptr_t) p_this);
@@ -1070,7 +1071,7 @@ namespace jsb
         const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
         if (try_catch_run.has_caught())
         {
-            JSB_LOG(Error, "something wrong when constructing '%s'\n%s", class_name, BridgeHelper::get_exception(try_catch_run));
+            JSB_LOG(Error, "something wrong when constructing '%s'\n%s", js_class_name, BridgeHelper::get_exception(try_catch_run));
             return {};
         }
 
@@ -1078,7 +1079,7 @@ namespace jsb
         v8::Local<v8::Value> instance;
         if (!constructed_value.ToLocal(&instance) || !instance->IsObject())
         {
-            JSB_LOG(Error, "bad instance '%s", class_name);
+            JSB_LOG(Error, "bad instance '%s", js_class_name);
             return {};
         }
         const NativeObjectID object_id = this->bind_godot_object(native_class_id, p_this, instance.As<v8::Object>());
@@ -1288,27 +1289,6 @@ namespace jsb
         return true;
     }
 
-    ObjectCacheID Environment::retain_function(NativeObjectID p_object_id, const StringName& p_method)
-    {
-        this->check_internal_state();
-        if (ObjectHandleConstPtr handle = this->object_db_.try_get_object(p_object_id))
-        {
-            v8::Isolate* isolate = this->isolate_;
-            v8::HandleScope handle_scope(isolate);
-            const v8::Local<v8::Context> context = context_.Get(isolate);
-            const v8::Local<v8::Object> obj = handle->ref_.Get(isolate);
-
-            // release the handle, because HandleScope may immediately trigger gc when using quickjs.
-            handle = nullptr;
-            if (v8::Local<v8::Value> find;
-                obj->Get(context, this->get_string_value(p_method)).ToLocal(&find) && find->IsFunction())
-            {
-                return get_cached_function(find.As<v8::Function>());
-            }
-        }
-        return {};
-    }
-
     bool Environment::release_function(ObjectCacheID p_func_id)
     {
         this->check_internal_state();
@@ -1504,7 +1484,7 @@ namespace jsb
         }
     }
 
-    void Environment::call_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id)
+    void Environment::call_script_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id)
     {
         this->check_internal_state();
         jsb_check(p_object_id);
@@ -1513,7 +1493,7 @@ namespace jsb
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = this->get_context();
+        const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
         const v8::Local<v8::Object> self = this->get_object(p_object_id);
 
@@ -1528,14 +1508,14 @@ namespace jsb
         v8::Local<v8::Value> val_test;
         if (self->Get(context, jsb_symbol(this, ClassImplicitReadyFuncs)).ToLocal(&val_test) && val_test->IsArray())
         {
-            v8::Local<v8::Array> collection = val_test.As<v8::Array>();
+            const v8::Local<v8::Array> collection = val_test.As<v8::Array>();
             const uint32_t len = collection->Length();
             const Node* node = (Node*)(Object*) unpacked;
 
             for (uint32_t index = 0; index < len; ++index)
             {
-                v8::Local<v8::Object> element = collection->Get(context, index).ToLocalChecked().As<v8::Object>();
-                v8::Local<v8::String> element_name = element->Get(context, jsb_name(this, name)).ToLocalChecked().As<v8::String>();
+                const v8::Local<v8::Object> element = collection->Get(context, index).ToLocalChecked().As<v8::Object>();
+                const v8::Local<v8::String> element_name = element->Get(context, jsb_name(this, name)).ToLocalChecked().As<v8::String>();
                 v8::Local<v8::Value> element_value = element->Get(context, jsb_name(this, evaluator)).ToLocalChecked();
 
                 if (element_value->IsString())
@@ -1575,6 +1555,65 @@ namespace jsb
                 }
             }
         }
+    }
+
+    Variant Environment::call_script_method(ScriptClassID p_script_class_id, NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
+    {
+        // static calls are not supported
+        if (!p_object_id) return {};
+
+        this->check_internal_state();
+        v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
+        v8::HandleScope handle_scope(isolate);
+        const v8::Local<v8::Context> context = this->get_context();
+        v8::Context::Scope context_scope(context);
+
+        ScriptClassInfoPtr script_class_info = script_classes_.get_value_scoped(p_script_class_id);
+        const internal::TypeGen<StringName, v8::Global<v8::Function>>::UnorderedMapIt it = script_class_info->method_cache.find(p_method);
+        v8::Local<v8::Function> method_func;
+        if (it == script_class_info->method_cache.end())
+        {
+            const v8::Local<v8::Object> class_obj = script_class_info->js_class.Get(isolate);
+            const v8::Local<v8::Value> prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
+            jsb_check(prototype->IsObject());
+            v8::Local<v8::Value> method;
+            if (prototype.As<v8::Object>()->Get(context, this->get_string_value(p_method)).ToLocal(&method) && method->IsFunction())
+            {
+                method_func = method.As<v8::Function>();
+                script_class_info->method_cache[p_method] = v8::Global<v8::Function>(isolate_, method_func);
+            }
+            else
+            {
+                script_class_info->method_cache[p_method] = v8::Global<v8::Function>();
+                JSB_LOG(Verbose, "method not found %s.%s (%s)", script_class_info->js_class_name, p_method, script_class_info->module_id);
+            }
+        }
+        else
+        {
+            method_func = it->second.Get(isolate);
+        }
+        script_class_info = nullptr;
+
+        v8::Local<v8::Object> self;
+        if (!this->try_get_object(p_object_id, self))
+        {
+            JSB_LOG(Error, "invalid `this` for calling function");
+            r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
+            return {};
+        }
+
+        if (p_method == SceneStringNames::get_singleton()->_ready)
+        {
+            call_script_prelude(p_script_class_id, p_object_id);
+        }
+
+        if (method_func.IsEmpty())
+        {
+            r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
+            return {};
+        }
+        return _call(isolate, context, method_func, self, p_argv, p_argc, r_error);
     }
 
     Variant Environment::call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError& r_error)

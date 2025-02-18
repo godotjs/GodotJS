@@ -10,6 +10,17 @@
 #include "editor/editor_help.h"
 #endif
 
+namespace
+{
+    // p_path_hint is only used for logging
+    std::shared_ptr<jsb::Environment> get_environment(const String& p_path_hint)
+    {
+        std::shared_ptr<jsb::Environment> env = jsb::Environment::_access();
+        jsb_checkf(env, "Environment is not available on the current thread %d for script %s", Thread::get_caller_id(), p_path_hint);
+        return env;
+    }
+}
+
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
     {
@@ -23,7 +34,6 @@ GodotJSScript::GodotJSScript(): script_list_(this)
 GodotJSScript::~GodotJSScript()
 {
     JSB_LOG(VeryVerbose, "delete GodotJSScript addr:%d", (uintptr_t) this);
-    release_cached_methods();
 
     {
         JSB_BENCHMARK_SCOPE(GodotJSScript, Destruct);
@@ -36,27 +46,26 @@ GodotJSScript::~GodotJSScript()
 // GDScript::can_instantiate()
 bool GodotJSScript::can_instantiate() const
 {
-    ensure_module_loaded();
 #ifdef TOOLS_ENABLED
-    return valid_ && (is_tool() || ScriptServer::is_scripting_enabled());
+    return is_valid() && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
-    return valid_;
+    return is_valid();
 #endif
-}
-
-bool GodotJSScript::is_tool() const
-{
-    if (valid_)
-    {
-        ensure_module_loaded();
-        return get_script_class()->is_tool();
-    }
-    return false;
 }
 
 void GodotJSScript::set_source_code(const String& p_code)
 {
+    if (source_ == p_code) return;
+
     source_ = p_code;
+#ifdef TOOLS_ENABLED
+    source_changed_cache = true;
+#endif
+}
+
+void GodotJSScript::set_path(const String& p_path, bool p_take_over)
+{
+    super::set_path(p_path, p_take_over);
 }
 
 Ref<Script> GodotJSScript::get_base_script() const
@@ -71,7 +80,7 @@ Ref<Script> GodotJSScript::get_base_script() const
 StringName GodotJSScript::get_global_name() const
 {
     ensure_module_loaded();
-    return valid_ ? get_script_class()->js_class_name : StringName();
+    return is_valid() ? script_class_info_.js_class_name : StringName();
 }
 
 bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
@@ -89,29 +98,36 @@ bool GodotJSScript::inherits_script(const Ref<Script>& p_script) const
 StringName GodotJSScript::get_instance_base_type() const
 {
     ensure_module_loaded();
-    return valid_ ? get_script_class()->native_class_name : StringName();
+    return is_valid() ? script_class_info_.native_class_name : StringName();
 }
 
 ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this)
 {
-    jsb_check(valid_);
+    jsb_check(is_valid());
     jsb_check(loaded_);
+
+    const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
+    jsb::JavaScriptModule* module = nullptr;
+    const Error err = env->load(script_class_info_.module_id, &module);
+    jsb_ensuref(module && err == OK, "JS Module not found: %s", script_class_info_.module_id);
+    const jsb::NativeClassID native_class_id = env->get_script_class(module->script_class_id)->native_class_id;
 
     /* STEP 1, CREATE */
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
-    Object* owner = ClassDB::instantiate(get_script_class()->native_class_name);
+    Object* owner = ClassDB::instantiate(script_class_info_.native_class_name);
 
     instance->owner_ = owner;
     instance->script_ = Ref(this); // must set before 'set_script_instance'
+    instance->env_ = env;
+    instance->class_id_ = module->script_class_id;
     instance->owner_->set_script_instance(instance);
-    // instance->env_ = get_environment();
 
     /* STEP 2, INITIALIZE AND CONSTRUCT */
     {
         MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
         instances_.insert(owner);
     }
-    instance->object_id_ = get_environment()->bind_godot_object(get_script_class()->native_class_id, owner, p_this);
+    instance->object_id_ = env->bind_godot_object(native_class_id, owner, p_this);
     if (!instance->object_id_)
     {
         instance->script_ = Ref<GodotJSScript>();
@@ -131,16 +147,23 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
 
 ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 {
-    //TODO multi-thread scripting not supported for now
+    jsb_check(is_valid());
     jsb_check(loaded_);
-    JSB_LOG(Verbose, "create instance %d of %s(%d)", (uintptr_t) p_this, get_script_class()->native_class_name, script_class_id_);
-    jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), get_script_class()->native_class_name));
+    JSB_LOG(Verbose, "create instance %d of %s(%s)", (uintptr_t) p_this, script_class_info_.native_class_name, script_class_info_.module_id);
+    jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name));
+
+    const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
+    jsb::JavaScriptModule* module = nullptr;
+    const Error err = env->load(script_class_info_.module_id, &module);
+    jsb_ensuref(module && err == OK, "JS Module not found: %s", script_class_info_.module_id);
 
     /* STEP 1, CREATE */
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
 
     instance->owner_ = p_this;
     instance->script_ = Ref(this); // must set before 'set_script_instance'
+    instance->env_ = env;
+    instance->class_id_ = module->script_class_id;
     instance->owner_->set_script_instance(instance);
 
     /* STEP 2, INITIALIZE AND CONSTRUCT */
@@ -148,7 +171,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
         MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
         instances_.insert(instance->owner_);
     }
-    instance->object_id_ = get_environment()->crossbind(p_this, script_class_id_);
+    instance->object_id_ = env->crossbind(p_this, instance->class_id_);
     if (!instance->object_id_)
     {
         instance->script_ = Ref<GodotJSScript>();
@@ -168,7 +191,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this)
 Error GodotJSScript::reload(bool p_keep_state)
 {
     if (!loaded_) return OK;
-    if (!valid_) return ERR_UNAVAILABLE;
+    if (!_is_valid()) return ERR_UNAVAILABLE;
 
     if (!p_keep_state)
     {
@@ -185,17 +208,20 @@ Error GodotJSScript::reload(bool p_keep_state)
     }
 
     // (common situation) preserve the object and change its prototype
-    const StringName& module_id = get_script_class()->module_id;
-    if (get_environment()->mark_as_reloading(module_id) == jsb::EReloadResult::Requested)
+    const StringName& module_id = script_class_info_.module_id;
+    const jsb::EReloadResult::Type result = get_environment(get_path())->mark_as_reloading(module_id);
+    if (result == jsb::EReloadResult::Requested)
     {
-        // discard all cached methods
-        release_cached_methods();
-
         //TODO `Callable` objects bound with this script should be invalidated somehow?
         // ...
 
         loaded_ = false;
     }
+    else if (result != jsb::EReloadResult::NoChanges)
+    {
+        JSB_LOG(Warning, "failed to mark module as reloading: %s (%d)", module_id, result);
+    }
+
     return OK;
 }
 
@@ -213,9 +239,8 @@ StringName GodotJSScript::get_doc_class_name() const
 Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 {
     ensure_module_loaded();
-    if (!loaded_ || !script_class_id_) return {};
+    if (!loaded_ || !_is_valid()) return {};
 
-    const jsb::ScriptClassInfoPtr class_info = get_script_class();
     String base_type;
     const String class_name = GodotJSScriptLanguage::get_singleton()->get_global_class_name(get_path(), &base_type);
     DocData::ClassDoc class_doc_data;
@@ -223,15 +248,15 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
     class_doc_data.name = class_name;
     class_doc_data.inherits = base_type.is_empty() ? "Object" : base_type;
     class_doc_data.is_script_doc = true;
-    class_doc_data.brief_description = class_info->doc.brief_description;
-    class_doc_data.is_deprecated = class_info->doc.is_deprecated;
-    class_doc_data.is_experimental = class_info->doc.is_experimental;
+    class_doc_data.brief_description = script_class_info_.doc.brief_description;
+    class_doc_data.is_deprecated = script_class_info_.doc.is_deprecated;
+    class_doc_data.is_experimental = script_class_info_.doc.is_experimental;
 #if GODOT_4_3_OR_NEWER
-    class_doc_data.deprecated_message = class_info->doc.deprecated_message;
-    class_doc_data.experimental_message = class_info->doc.experimental_message;
+    class_doc_data.deprecated_message = script_class_info_.doc.deprecated_message;
+    class_doc_data.experimental_message = script_class_info_.doc.experimental_message;
 #endif
     class_doc_data.script_path = get_path();
-    for (const auto& item : class_info->properties)
+    for (const auto& item : script_class_info_.properties)
     {
         DocData::PropertyDoc property_doc_data;
         property_doc_data.name = item.key;
@@ -252,7 +277,7 @@ String GodotJSScript::get_class_icon_path() const
 {
     ensure_module_loaded();
     jsb_check(loaded_);
-    return script_class_id_ ? get_script_class()->icon : String();
+    return script_class_info_.icon;
 }
 
 PropertyInfo GodotJSScript::get_class_category() const
@@ -273,7 +298,7 @@ bool GodotJSScript::has_method(const StringName& p_method) const
     {
         //TODO temp fix
         if (!current->loaded_) const_cast<GodotJSScript*>(current)->load_module_immediately();
-        if (current->is_valid() && current->get_script_class()->methods.has(p_method)) return true;
+        if (current->is_valid() && current->script_class_info_.methods.has(p_method)) return true;
         current = current->base.ptr();
     }
 
@@ -306,18 +331,16 @@ ScriptLanguage* GodotJSScript::get_language() const
 
 bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 {
-    return is_valid() ? get_script_class()->signals.has(p_signal) : false;
+    return is_valid() ? script_class_info_.signals.has(p_signal) : false;
 }
 
 void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 {
-    ensure_module_loaded();
-    jsb_check(loaded_);
-    if (!valid_) return;
+    if (!is_valid()) return;
 
     //TODO include items from base class
 
-    for (const auto& it : get_script_class()->signals)
+    for (const auto& it : script_class_info_.signals)
     {
         //TODO details?
         MethodInfo item = {};
@@ -331,7 +354,7 @@ void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
     ensure_module_loaded();
     jsb_check(loaded_);
 
-    for (const auto& it : get_script_class()->methods)
+    for (const auto& it : script_class_info_.methods)
     {
         //TODO details?
         MethodInfo item = {};
@@ -355,7 +378,7 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 #ifdef TOOLS_ENABLED
     p_list->push_back(get_class_category());
 #endif
-    for (const auto& it : get_script_class()->properties)
+    for (const auto& it : script_class_info_.properties)
     {
         //TODO details?
         PropertyInfo item = {};
@@ -368,7 +391,7 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 bool GodotJSScript::get_property_default_value(const StringName& p_property, Variant& r_value) const
 {
     ensure_module_loaded();
-    if (HashMap<StringName, Variant>::ConstIterator it = member_default_values_cache.find(p_property))
+    if (const HashMap<StringName, Variant>::ConstIterator it = member_default_values_cache.find(p_property))
     {
         r_value = it->value;
         return true;
@@ -385,7 +408,7 @@ const Variant GodotJSScript::get_rpc_config() const
     ensure_module_loaded();
     jsb_check(loaded_);
 
-    return get_script_class()->rpc_config;
+    return script_class_info_.rpc_config;
 }
 
 bool GodotJSScript::has_static_method(const StringName& p_method) const
@@ -403,34 +426,24 @@ bool GodotJSScript::instance_has(const Object* p_this) const
     return instances_.has(const_cast<Object*>(p_this));
 }
 
-void GodotJSScript::load_source_code_from_path()
+Error GodotJSScript::load_source_code(const String &p_path)
 {
     Error err;
-    const String path = get_path();
-    const String source_code = FileAccess::get_file_as_string(path, &err);
+    const String source_code = FileAccess::get_file_as_string(p_path, &err);
     if (err != OK)
     {
-        JSB_LOG(Warning, "can not read source from %s", path);
+        JSB_LOG(Warning, "can not read source from %s", p_path);
     }
     else
     {
         set_source_code(source_code);
     }
-}
-
-void GodotJSScript::attach_source(const String& p_path)
-{
-    set_path(p_path);
-
-#ifdef TOOLS_ENABLED
-    load_source_code_from_path();
-#endif
-    //TODO we can't immediately compile it here since it's loaded from resource loading threads, maybe we could do some string analysis/parsing thread independently
+    return err;
 }
 
 void GodotJSScript::load_module_if_missing()
 {
-    if (!loaded_ || !env_id_ || valid_) return;
+    if (!loaded_ || _is_valid()) return;
 
     JSB_LOG(Verbose, "force to load missing script %s", get_path());
     loaded_ = false;
@@ -439,22 +452,20 @@ void GodotJSScript::load_module_if_missing()
 
 void GodotJSScript::load_module_immediately()
 {
-    if (loaded_ && env_id_) return;
+    if (loaded_) return;
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
     const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
-    const std::shared_ptr<jsb::Environment> env = jsb::Environment::_access();
+    const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
     jsb_ensuref(env, "not JS environment available on thread %d for the script %s", Thread::get_caller_id(), path);
 
-    env_id_ = env->id();
     loaded_ = true;
     base.unref();
     source_changed_cache = true;
     jsb::JavaScriptModule* module;
     if (const Error err = env->load(path, &module); err != OK)
     {
-        script_class_id_ = {};
-        valid_ = false;
+        script_class_info_ = {};
 #ifdef TOOLS_ENABLED
         if (FileAccess::exists(get_path()) && !FileAccess::exists(path))
         {
@@ -470,13 +481,13 @@ void GodotJSScript::load_module_immediately()
         return;
     }
     jsb_check(module);
-    script_class_id_ = module->script_class_id;
-    valid_ = !!script_class_id_;
-    if (valid_)
+    script_class_info_ = (jsb::StatelessScriptClassInfo) *env->get_script_class(module->script_class_id);
+    if (_is_valid())
     {
         JSB_LOG(VeryVerbose, "GodotJSScript module loaded %s", path);
         {
             //TODO a dirty but approaching solution for hot-reloading
+            //TODO will crash if reloading script instances in worker threads
             MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_); // necessary?
             for (RBSet<Object *>::Element *E = instances_.front(); E;)
             {
@@ -485,7 +496,7 @@ void GodotJSScript::load_module_immediately()
                 jsb_check(obj->get_script() == Ref(this));
                 jsb_check(env->verify_object(obj));
                 jsb_check(ClassDB::is_parent_class(env->get_script_class(module->script_class_id)->native_class_name, obj->get_class_name()));
-                env->rebind(obj, script_class_id_);
+                env->rebind(obj, module->script_class_id);
                 E = N;
             }
         }
@@ -493,11 +504,11 @@ void GodotJSScript::load_module_immediately()
         // setup base script
         {
             //TODO do not rely on ResourceLoader
-            const jsb::ScriptClassInfoPtr script_class_info = env->get_script_class(module->script_class_id);
-            if (script_class_info->base_script_class_id)
+            if (script_class_info_.base_script_module_id)
             {
-                const jsb::ScriptClassInfoPtr base_script_class_info = env->get_script_class(script_class_info->base_script_class_id);
-                const jsb::JavaScriptModule* base_module = env->get_module_cache().find(base_script_class_info->module_id);
+                jsb::JavaScriptModule* base_module = nullptr;
+                const Error err = env->load(script_class_info_.base_script_module_id, &base_module);
+                jsb_ensuref(base_module && err == OK, "JS Module not found: %s", script_class_info_.base_script_module_id);
                 const Ref<Resource> base_res = ResourceLoader::load(jsb::internal::PathUtil::convert_javascript_path(base_module->source_info.source_filepath));
                 jsb_check(base_res->get_class() == jsb_typename(GodotJSScript));
                 base = base_res;
@@ -523,77 +534,10 @@ void GodotJSScript::load_module_immediately()
     JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class %s", path);
 }
 
-jsb::ScriptClassInfoPtr GodotJSScript::get_script_class() const
-{
-    jsb_check(loaded_);
-    jsb_checkf(script_class_id_, "avoid calling this method if class_id is invalid, check prior with 'valid_'");
-    jsb_check(env_id_);
-    return get_environment()->get_script_class(script_class_id_);
-}
-
-Variant GodotJSScript::call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error)
-{
-    ensure_module_loaded();
-    jsb_check(loaded_);
-    jsb::ObjectCacheID func_id;
-    if (const HashMap<StringName, jsb::ObjectCacheID>::Iterator& it = cached_methods_.find(p_method))
-    {
-        func_id = it->value;
-    }
-    else
-    {
-        if (p_method == SceneStringNames::get_singleton()->_ready)
-        {
-            call_prelude(p_object_id);
-
-            if (!has_method(p_method))
-            {
-                JSB_LOG(Verbose, "call_prelude for scripts that _ready function not defined (%s)", get_path());
-                return {};
-            }
-        }
-
-        func_id = get_environment()->retain_function(p_object_id, p_method);
-        cached_methods_.insert(p_method, func_id);
-    }
-    return get_environment()->call_function(p_object_id, func_id, p_argv, p_argc, r_error);
-}
-
-void GodotJSScript::release_cached_methods()
-{
-    if (const std::shared_ptr<jsb::Environment> env = get_environment())
-    {
-        for (const KeyValue<StringName, jsb::ObjectCacheID>& pair : cached_methods_)
-        {
-            env->release_function(pair.value);
-        }
-    }
-    cached_methods_.clear();
-}
-
-void GodotJSScript::call_prelude(jsb::NativeObjectID p_object_id)
-{
-    jsb_check(loaded_);
-    get_environment()->call_prelude(script_class_id_, p_object_id);
-}
-
-//
-// bool GodotJSScript::get_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, Variant& r_ret) const
-// {
-//     // realm_->get_
-//     return true;
-// }
-//
-// bool GodotJSScript::set_script_property(jsb::NativeObjectID p_object_id, const StringName& p_name, const Variant& p_value)
-// {
-//     return true;
-// }
-
 PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_this)
 {
-    jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
-    if (!valid_)
+    if (!is_valid())
     {
         JSB_LOG(Warning, "creating placeholder instance on invalid script (%s)", get_path());
     }
@@ -618,7 +562,7 @@ void GodotJSScript::update_exports()
     ensure_module_loaded();
     jsb_check(loaded_);
 #ifdef TOOLS_ENABLED
-    if (!valid_) return;
+    if (!is_valid()) return;
     _update_exports(nullptr);
 #endif
 }
@@ -629,6 +573,10 @@ void GodotJSScript::_update_exports_values(List<PropertyInfo>& r_props, HashMap<
     {
         r_values[E.key] = E.value;
     }
+
+#ifdef TOOLS_ENABLED
+    r_props.push_back(get_class_category());
+#endif
     for (const PropertyInfo &E : members_cache)
     {
         r_props.push_back(E);
@@ -653,27 +601,44 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
 
         members_cache.clear();
         member_default_values_cache.clear();
-        const std::shared_ptr<jsb::Environment> env = get_environment();
+
+        const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
         env->check_internal_state();
 
-#ifdef TOOLS_ENABLED
-        members_cache.push_back(get_class_category());
-#endif
-        const jsb::ScriptClassInfoPtr class_info = get_environment()->get_script_class(script_class_id_);
-        for (const KeyValue<StringName, jsb::ScriptPropertyInfo> &pair : class_info->properties)
-        {
-            const jsb::ScriptPropertyInfo &pi = pair.value;
-            members_cache.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
-            // values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
+        jsb::JavaScriptModule* module = nullptr;
+        const Error err = env->load(script_class_info_.module_id, &module);
+        jsb_ensuref(module && err == OK, "JS Module not found: %s", script_class_info_.module_id);
 
-            //TODO maybe this behaviour is not expected
-            Variant default_value;
-            env->get_default_property_value(*class_info, pi.name, default_value);
-            member_default_values_cache[pi.name] = default_value;
-            JSB_LOG(VeryVerbose, "GodotJS script default %s.%s = %s",
-                script_class_id_ ? (String) get_script_class()->js_class_name : "(unknown)",
-                pi.name,
-                (String) default_value);
+        if (const jsb::ScriptClassInfoPtr class_info = env->find_script_class(module->script_class_id))
+        {
+            for (const KeyValue<StringName, jsb::ScriptPropertyInfo> &pair : script_class_info_.properties)
+            {
+                const jsb::ScriptPropertyInfo &pi = pair.value;
+                members_cache.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
+                // values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
+
+                //TODO maybe this behaviour is not expected
+                Variant default_value;
+                env->get_default_property_value(*class_info, pi.name, default_value);
+                member_default_values_cache[pi.name] = default_value;
+                JSB_LOG(VeryVerbose, "GodotJS script default %s.%s = %s",
+                    _is_valid() ? script_class_info_.js_class_name : "(unknown)",
+                    pi.name,
+                    default_value);
+            }
+        }
+        else
+        {
+            JSB_LOG(Warning, "ScriptClassInfo is invalid, fallback to empty default values (script %s)", get_path());
+            for (const KeyValue<StringName, jsb::ScriptPropertyInfo> &pair : script_class_info_.properties)
+            {
+                const jsb::ScriptPropertyInfo &pi = pair.value;
+                members_cache.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
+
+                Variant default_value;
+                jsb::internal::VariantUtil::construct_variant(default_value, pi.type);
+                member_default_values_cache[pi.name] = default_value;
+            }
         }
     }
 

@@ -14,12 +14,10 @@ class GodotJSScript : public Script
     GDCLASS(GodotJSScript, Script)
 
 private:
-    // if the script invalid (or not actually loaded yet)
-    bool valid_ = false;
     bool loaded_ = false;
 
-    String source_;
     bool source_changed_cache = false;
+    String source_;
 
     Ref<GodotJSScript> base;
 
@@ -29,39 +27,36 @@ private:
     HashMap<StringName, Variant> member_default_values_cache;
     List<PropertyInfo> members_cache;
 
+    // [INTERNAL] a self linked list to all GodotJSScript (lock is required to access)
+    // 'script_class_info_' may be got from another environment,
+    // so, explicitly load the module again if you want to create a GodotJSScriptInstance (instead of finding from module cache)
     SelfList<GodotJSScript> script_list_;
+
     RBSet<Object*> instances_;
 
-    //TODO improvement needed
-    jsb::EnvironmentID env_id_;
-    jsb::ScriptClassID script_class_id_;
-
-    //TODO we have realm_ shared pointer here. Thus, we can safely store GodotJSFunction here (v8 global handle)?
-    HashMap<StringName, jsb::ObjectCacheID> cached_methods_;
+    /**
+     * 'StatelessScriptClassInfo' itself can be used without an environment,
+     * Because we want GodotJSScript can be shared between threads (with a few restrictions, still need to be loaded in a proper thread).
+     * So, you still need an environment to generate it (we do not implement a standalone script parser for simplicity).
+     * @note valid only if loaded_ is true
+     */
+    jsb::StatelessScriptClassInfo script_class_info_;
 
 private:
-    Variant call_script_method(jsb::NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
-    void release_cached_methods();
-
-    void call_prelude(jsb::NativeObjectID p_object_id);
-
     void load_module_immediately();
     jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately(); }
+    jsb_force_inline bool _is_valid() const { return jsb::internal::VariantUtil::is_valid_name(script_class_info_.module_id); }
 
     void _update_exports(PlaceHolderScriptInstance *p_instance_to_update, bool p_base_exports_changed = false);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
-
-    std::shared_ptr<jsb::Environment> get_environment() const { return jsb::Environment::_access(env_id_); }
 
 public:
     GodotJSScript();
     virtual ~GodotJSScript() override;
 
-    void attach_source(const String& p_path);
-    void load_source_code_from_path();
+    // Error attach_source(const String& p_path, bool p_take_over);
+    Error load_source_code(const String &p_path);
     void load_module_if_missing();
-
-    jsb::ScriptClassInfoPtr get_script_class() const;
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;
@@ -81,6 +76,7 @@ public:
     virtual bool has_source_code() const override { return !source_.is_empty(); }
     virtual String get_source_code() const override { return source_; }
     virtual void set_source_code(const String& p_code) override;
+    virtual void set_path(const String &p_path, bool p_take_over) override;
     virtual Error reload(bool p_keep_state = false) override;
 
 #ifdef TOOLS_ENABLED
@@ -99,16 +95,18 @@ public:
     virtual MethodInfo get_method_info(const StringName& p_method) const override;
 
     // we expect Godot calling this after loaded_?
-    virtual bool is_valid() const override { ensure_module_loaded(); return valid_; }
-    virtual bool is_tool() const override;
-    virtual bool is_abstract() const override { return valid_ && get_script_class()->is_abstract(); }
+    // is_valid() will ensure the module is loaded.
+    // [INTERNAL] if it's not expected, call `_is_valid` instead.
+    virtual bool is_valid() const override { ensure_module_loaded(); return _is_valid(); }
+    virtual bool is_tool() const override { return is_valid() && script_class_info_.is_tool(); }
+    virtual bool is_abstract() const override { return is_valid() && script_class_info_.is_abstract(); }
 
     virtual ScriptLanguage* get_language() const override;
 
     virtual bool has_script_signal(const StringName& p_signal) const override;
     virtual void get_script_signal_list(List<MethodInfo>* r_signals) const override;
 
-    virtual bool is_placeholder_fallback_enabled() const override { return loaded_ && !valid_; }
+    virtual bool is_placeholder_fallback_enabled() const override { return loaded_ && !is_valid(); }
     virtual bool get_property_default_value(const StringName& p_property, Variant& r_value) const override;
 
     virtual void update_exports() override;

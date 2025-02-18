@@ -175,55 +175,57 @@ namespace jsb
         };
     }
 
-    // exchanging internal javascript class (object) information with `JavaScript` class.
-    // DO NOT expose javascript runtime detail types with involved external classes,
-    // since these info structs will be replaced deps on the runtime used.
-    struct ScriptClassInfo
+    // exchange internal javascript class (object) information.
+    struct StatelessScriptClassInfo
     {
         // name of the owner module
         StringName module_id;
 
-        // js class name
+        // js class name (name of the exported default class in module)
         StringName js_class_name;
 
-        // SIDE NOTE:
-        //     js_class.prototype: prototype definition
-        //     js_class.prototype.__proto__: prototype of the base js_class (B.prototype.__proto__ === A.prototype, if B directly extends A)
-        //     js_class.constructor: the real function for constructing
-
-        // for constructor/prototype access
-        v8::Global<v8::Object> js_class;
-
         // a fastpath to read the name of native class (the GodotJS class inherits from).
-        // it's a redundant field only for performance.
+        //NOTE it's a redundant field only for performance. evaluated from 'native_class_id' and must be a godot object class.
         StringName native_class_name;
 
-        // the native class id the current class inherits from.
-        NativeClassID native_class_id;
+        // [EXPERIMENTAL] module fastpath for getting script class of base
+        StringName base_script_module_id;
 
-        // [EXPERIMENTAL] fastpath for getting script class id of base
-        ScriptClassID base_script_class_id;
-
-        ScriptClassFlags::Type flags = ScriptClassFlags::None;
+        // script icon path for showing in scene hierarchy
+        String icon;
 
         // only valid with TOOLS_ENABLED
         ScriptClassDoc doc;
 
-        String icon;
-
         Dictionary rpc_config;
 
         HashMap<StringName, ScriptMethodInfo> methods;
-        // internal::TypeGen<StringName, ScriptMethodInfo>::UnorderedMap methods;
-
         HashMap<StringName, ScriptSignalInfo> signals;
         HashMap<StringName, ScriptPropertyInfo> properties;
+
+        ScriptClassFlags::Type flags = ScriptClassFlags::None;
 
         //TODO whether the internal class object alive or not
         jsb_force_inline bool is_valid() const { return true; }
 
         jsb_force_inline bool is_tool() const { return flags & ScriptClassFlags::Tool; }
         jsb_force_inline bool is_abstract() const { return flags & ScriptClassFlags::Abstract; }
+    };
+
+    struct ScriptClassInfo : StatelessScriptClassInfo
+    {
+        // the native class id the current class inherits from.
+        NativeClassID native_class_id;
+
+        // SIDE NOTE:
+        //     js_class.prototype: prototype definition
+        //     js_class.prototype.__proto__: prototype of the base js_class (B.prototype.__proto__ === A.prototype, if B directly extends A)
+        //     js_class.constructor: the real function for constructing
+
+        // for constructor access
+        v8::Global<v8::Object> js_class;
+
+        internal::TypeGen<StringName, v8::Global<v8::Function>>::UnorderedMap method_cache;
 
         static void instantiate(const StringName& p_module_id, const v8::Local<v8::Object>& p_self);
 

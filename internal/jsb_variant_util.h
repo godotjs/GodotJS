@@ -17,6 +17,8 @@ namespace jsb::internal
     struct TypeGen
     {
         typedef std::unordered_map<K, V, typename Hasher<K>::hasher, typename Hasher<K>::equaler> UnorderedMap;
+        typedef typename UnorderedMap::iterator UnorderedMapIt;
+        typedef typename UnorderedMap::const_iterator UnorderedMapConstIt;
     };
 
     struct VariantUtil
