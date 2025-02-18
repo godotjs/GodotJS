@@ -1605,7 +1605,7 @@ namespace jsb
         }
         else
         {
-            method_func = it->second.Get(isolate);
+            if (!it->second.IsEmpty()) method_func = it->second.Get(isolate);
         }
         script_class_info = nullptr;
 
