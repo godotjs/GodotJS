@@ -100,6 +100,9 @@ namespace jsb
 
                 if (env->load(impl->path_) == OK)
                 {
+                    // notify master
+                    impl->_on_ready();
+
                     while (true)
                     {
                         // handle messages from master
@@ -224,6 +227,31 @@ namespace jsb
             {
                 JSB_WORKER_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
             }
+        }
+
+        void _on_ready()
+        {
+            v8::Isolate* isolate = env_->get_isolate();
+            v8::HandleScope handle_scope(isolate);
+            v8::Isolate::Scope isolate_scope(isolate);
+
+            NativeObjectID handle;
+            void* token_ptr = nullptr;
+            if (!Worker::try_get_worker(get_id(), handle, token_ptr))
+            {
+                jsb_throw(isolate, "invalid worker id");
+                return;
+            }
+
+            jsb_check(handle);
+            const std::shared_ptr<Environment> master = Environment::_access(token_ptr);
+            if (!master)
+            {
+                jsb_throw(isolate, "invalid environment");
+                return;
+            }
+
+            master->post_message(Message(Message::TYPE_READY, handle, Buffer()));
         }
 
         // worker.close()
@@ -493,11 +521,8 @@ namespace jsb
         ptr->id_ = Worker::create(master, path, handle);
     }
 
-    // master.ontransfer
-    void Worker::ontransfer(const v8::FunctionCallbackInfo<v8::Value>& info) {}
-
-    // master.onmessage
-    void Worker::onmessage(const v8::FunctionCallbackInfo<v8::Value>& info) {}
+    // placeholder func for ontransfer/onmessage/onready/onerror of worker (in master)
+    void Worker::_placeholder(const v8::FunctionCallbackInfo<v8::Value>& info) {}
 
     // master.postMessage
     void Worker::post_message(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -549,8 +574,10 @@ namespace jsb
         impl::ClassBuilder class_builder = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_name, &constructor, *class_id);
 
         class_builder.Instance().Method("postMessage", &post_message);
-        class_builder.Instance().Method("onmessage", &onmessage);
-        class_builder.Instance().Method("ontransfer", &ontransfer);
+        class_builder.Instance().Method("onready", &_placeholder);
+        class_builder.Instance().Method("onerror", &_placeholder);
+        class_builder.Instance().Method("onmessage", &_placeholder);
+        class_builder.Instance().Method("ontransfer", &_placeholder);
         class_builder.Instance().Method("terminate", &terminate);
 
         const NativeClassInfoPtr class_info = env->get_native_class(class_id);

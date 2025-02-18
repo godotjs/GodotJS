@@ -12,10 +12,13 @@ namespace jsb
         {
             TYPE_NONE = 0,
 
+            // worker ready
+            TYPE_READY,
+
             // worker message
             TYPE_MESSAGE,
 
-            // worker error
+            //TODO worker error (NOT IMPLEMENTED YET)
             TYPE_ERROR,
         };
 

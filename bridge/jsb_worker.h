@@ -40,10 +40,8 @@ namespace jsb
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         static void terminate(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void ontransfer(const v8::FunctionCallbackInfo<v8::Value>& info);
-        static void onmessage(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void post_message(const v8::FunctionCallbackInfo<v8::Value>& info);
-
+        static void _placeholder(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         static WorkerID create(Environment* p_master, const String& p_path, NativeObjectID p_handle);
 

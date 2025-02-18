@@ -559,6 +559,31 @@ namespace jsb
         }
     }
 
+    void _invoke(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Function>& p_callback, const Message* p_message)
+    {
+        v8::ValueDeserializer deserializer(p_isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size());
+        bool ok;
+        if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
+        {
+            JSB_LOG(Error, "failed to parse message header");
+            return;
+        }
+
+        v8::Local<v8::Value> value;
+        if (!deserializer.ReadValue(p_context).ToLocal(&value))
+        {
+            JSB_LOG(Error, "failed to parse message value");
+            return;
+        }
+        const impl::TryCatch try_catch(p_isolate);
+        const v8::MaybeLocal<v8::Value> rval = p_callback->Call(p_context, v8::Undefined(p_isolate), 1, &value);
+        jsb_unused(rval);
+        if (try_catch.has_caught())
+        {
+            JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
+        }
+    }
+
     void Environment::_on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
     {
         jsb_check(p_message.get_id());
@@ -581,6 +606,15 @@ namespace jsb
                 JSB_LOG(Error, "onmessage is not a function");
                 return;
             }
+            _invoke(isolate_, p_context, callback.As<v8::Function>(), &p_message);
+            break;
+        case Message::TYPE_READY:
+            if (!obj->Get(p_context, jsb_name(this, onready)).ToLocal(&callback) || !callback->IsFunction())
+            {
+                JSB_LOG(Error, "onready is not a function");
+                return;
+            }
+            _invoke(isolate_, p_context, callback.As<v8::Function>(), nullptr);
             break;
         case Message::TYPE_ERROR:
             if (!obj->Get(p_context, jsb_name(this, onerror)).ToLocal(&callback) || !callback->IsFunction())
@@ -588,31 +622,11 @@ namespace jsb
                 JSB_LOG(Error, "onerror is not a function");
                 return;
             }
+            _invoke(isolate_, p_context, callback.As<v8::Function>(), &p_message);
             break;
         default:
             JSB_LOG(Error, "unknown message type %d", p_message.get_type());
             return;
-        }
-        v8::ValueDeserializer deserializer(isolate_, p_message.get_buffer().ptr(), p_message.get_buffer().size());
-        bool ok;
-        if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
-        {
-            JSB_LOG(Error, "failed to parse message header");
-            return;
-        }
-        v8::Local<v8::Value> value;
-        if (!deserializer.ReadValue(p_context).ToLocal(&value))
-        {
-            JSB_LOG(Error, "failed to parse message value");
-            return;
-        }
-        const impl::TryCatch try_catch(isolate_);
-        const v8::Local<v8::Function> call = callback.As<v8::Function>();
-        const v8::MaybeLocal<v8::Value> rval = call->Call(p_context, v8::Undefined(isolate_), 1, &value);
-        jsb_unused(rval);
-        if (try_catch.has_caught())
-        {
-            JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
         }
     }
 
