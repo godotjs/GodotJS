@@ -502,6 +502,7 @@ generate_code([\
         
         PresetDefine("scripts/typings/godot.minimal.d.ts", ""),
         PresetDefine("scripts/typings/godot.mix.d.ts", ""),
+        PresetDefine("scripts/typings/godot.worker.d.ts", ""),
 
         PresetDefine("scripts/out/jsb.runtime.bundle.d.ts", ""),
         PresetDefine("scripts/out/jsb.runtime.bundle.js.map", ""),
