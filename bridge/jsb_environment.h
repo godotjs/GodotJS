@@ -308,7 +308,7 @@ namespace jsb
 
         // request to reload a module,
         // will reload until next load.
-        EReloadResult::Type mark_as_reloading(const StringName& p_name);
+        ModuleReloadResult::Type mark_as_reloading(const StringName& p_name);
 
         void start_debugger(uint16_t p_port);
 

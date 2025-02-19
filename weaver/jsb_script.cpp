@@ -209,15 +209,15 @@ Error GodotJSScript::reload(bool p_keep_state)
 
     // (common situation) preserve the object and change its prototype
     const StringName& module_id = script_class_info_.module_id;
-    const jsb::EReloadResult::Type result = get_environment(get_path())->mark_as_reloading(module_id);
-    if (result == jsb::EReloadResult::Requested)
+    const jsb::ModuleReloadResult::Type result = get_environment(get_path())->mark_as_reloading(module_id);
+    if (result == jsb::ModuleReloadResult::Requested)
     {
         //TODO `Callable` objects bound with this script should be invalidated somehow?
         // ...
 
         loaded_ = false;
     }
-    else if (result != jsb::EReloadResult::NoChanges)
+    else if (result != jsb::ModuleReloadResult::NoChanges)
     {
         JSB_LOG(Warning, "failed to mark module as reloading: %s (%d)", module_id, result);
     }

@@ -7,7 +7,7 @@ namespace jsb
 {
     class Environment;
 
-    namespace EReloadResult
+    namespace ModuleReloadResult
     {
         enum Type : uint8_t
         {
@@ -56,6 +56,7 @@ namespace jsb
 
         void on_load(v8::Isolate* isolate, const v8::Local<v8::Context>& context);
         bool mark_as_reloading();
+        void mark_as_reloaded();
 
     };
 

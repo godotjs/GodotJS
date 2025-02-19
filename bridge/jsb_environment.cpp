@@ -905,7 +905,7 @@ namespace jsb
         }
     }
 
-    EReloadResult::Type Environment::mark_as_reloading(const StringName& p_name)
+    ModuleReloadResult::Type Environment::mark_as_reloading(const StringName& p_name)
     {
         check_internal_state();
         if (JavaScriptModule* module = module_cache_.find(p_name))
@@ -913,11 +913,11 @@ namespace jsb
             jsb_check(!module->source_info.source_filepath.is_empty());
             if (!module->is_loaded() || module->mark_as_reloading())
             {
-                return EReloadResult::Requested;
+                return ModuleReloadResult::Requested;
             }
-            return EReloadResult::NoChanges;
+            return ModuleReloadResult::NoChanges;
         }
-        return EReloadResult::NoSuchModule;
+        return ModuleReloadResult::NoSuchModule;
     }
 
     JavaScriptModule* Environment::_load_module(const String& p_parent_id, const String& p_module_id)
@@ -985,9 +985,7 @@ namespace jsb
                 jsb_check(existing_module->source_info.source_filepath == source_info.source_filepath);
 
                 JSB_LOG(VeryVerbose, "reload module %s", module_id);
-#if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
-                existing_module->reload_requested = false;
-#endif
+                existing_module->mark_as_reloaded();
                 if (!resolver->load(this, source_info.source_filepath, *existing_module))
                 {
                     return nullptr;

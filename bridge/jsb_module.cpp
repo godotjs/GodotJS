@@ -39,6 +39,13 @@ namespace jsb
         return false;
     }
 
+    void JavaScriptModule::mark_as_reloaded()
+    {
+#if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
+        reload_requested = false;
+#endif
+    }
+
     JavaScriptModule& JavaScriptModuleCache::insert(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& p_name, bool p_main_candidate, bool p_init_loaded)
     {
         jsb_checkf(!((String) p_name).is_empty(), "empty module name is not allowed");
