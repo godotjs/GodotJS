@@ -149,7 +149,7 @@ namespace jsb
 
         JavaScriptModuleCache module_cache_;
 
-        std::unordered_map<TWeakRef<v8::Function>, internal::Index32, TWeakRef<v8::Function>::hasher, TWeakRef<v8::Function>::equaler> function_refs_; // backlink
+        internal::TypeGen<TWeakRef<v8::Function>, internal::Index32>::UnorderedMap function_refs_; // backlink
         internal::SArray<TStrongRef<v8::Function>, internal::Index32> function_bank_;
 
         struct DeferredClassRegister
