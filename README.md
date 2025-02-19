@@ -33,6 +33,11 @@ Before initiating, make sure to select the JavaScript runtime you prefer between
 
 See [Wiki](https://github.com/godotjs/GodotJS/wiki) for more details.
 
+
+> [!NOTE]
+> A prebuilt version of Godot Editor with GodotJS integrated can be downloaded from [GodotJS-Build](https://github.com/ialex32x/GodotJS-Build/releases).  
+> The GodotJS-Build workflow is currently run manually, it may not be built from the latest version of GodotJS.
+
 ## Examples 
 
 For more information on how to use `GodotJS` in a project, check out [GodotJSExample](https://github.com/ialex32x/GodotJSExample.git) for examples written in typescript.  
