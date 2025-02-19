@@ -3,8 +3,14 @@
 #include "jsb_editor_plugin.h"
 #include "../weaver/jsb_weaver_compat.h"
 
+void GodotJSREPL::_bind_methods()
+{
+    ClassDB::bind_method(D_METHOD("_backlog_flush"), &GodotJSREPL::_backlog_flush);
+}
+
 GodotJSREPL::GodotJSREPL()
 {
+    sn_backlog_flush_ = _scs_create("_backlog_flush");
     //TODO list all created realm instances in REPL, interact with the currently selected one.
 
     input_submitting_ = false;
@@ -204,19 +210,25 @@ String GodotJSREPL::encode_string(const String& p_text)
     return p_text.replace("'", "\\'");
 }
 
+static bool is_auto_complete_allowed(const String& p_text)
+{
+#if JSB_REPL_AUTO_COMPLETE
+    // a rough rule to allow auto-complete
+    return !p_text.is_empty() && !p_text.contains("(");
+#else
+    return false;
+#endif
+}
+
 void GodotJSREPL::_input_changed(const String &p_text)
 {
     // if (input_submitting_) return;
 
     //TODO we haven't implemented the js function invocation from outside of Realm, just temporarily call as source code eval
     const PackedStringArray results =
-#if JSB_REPL_AUTO_COMPLETE
-        !p_text.is_empty()
+        is_auto_complete_allowed(p_text)
             ? (PackedStringArray) eval_source(jsb_format("require('jsb.editor.main').auto_complete('%s')", encode_string(p_text))).to_variant()
             : PackedStringArray();
-#else
-        {};
-#endif
     _show_candidates(results);
 }
 
@@ -247,7 +259,7 @@ void GodotJSREPL::_input_focus_exit()
     candidate_list_->hide();
 }
 
-void GodotJSREPL::_input_gui_input(const Ref<InputEvent> &p_event)
+void GodotJSREPL::_input_gui_input(const Ref<InputEvent>& p_event)
 {
     Ref<InputEventKey> k = p_event;
     if (!k.is_valid()) return;
@@ -286,7 +298,7 @@ void GodotJSREPL::_input_gui_input(const Ref<InputEvent> &p_event)
     }
 }
 
-void GodotJSREPL::_input_submitted(const String &p_text)
+void GodotJSREPL::_input_submitted(const String& p_text)
 {
     if (p_text.is_empty()) return;
 
@@ -324,13 +336,20 @@ void GodotJSREPL::add_string(const String &p_str)
     }
 }
 
+void GodotJSREPL::_backlog_flush()
+{
+    std::vector<String>& backlog = output_backlog_.swap();
+    for (const String& str : backlog)
+    {
+        add_string(str);
+    }
+    backlog.clear();
+}
+
 void GodotJSREPL::write(jsb::internal::ELogSeverity::Type p_severity, const String& p_text)
 {
-    jsb_check(Thread::is_main_thread());
-    if (input_submitting_)
-    {
-        add_string(p_text);
-    }
+    output_backlog_.add(p_text);
+    call_deferred(sn_backlog_flush_);
 }
 
 void GodotJSREPL::add_history(const String &p_text)

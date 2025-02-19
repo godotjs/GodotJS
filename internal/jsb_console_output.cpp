@@ -1,30 +1,30 @@
 ﻿#include "jsb_console_output.h"
 #include "core/os/thread.h"
+#include "core/os/rw_lock.h"
 
 namespace jsb::internal
 {
-    //TODO thread-safety issue on outputs_
-    namespace { Vector<IConsoleOutput*> outputs_; }
+    namespace
+    {
+        RWLock lock_;
+        Vector<IConsoleOutput*> outputs_;
+    }
 
     IConsoleOutput::IConsoleOutput()
     {
-        // jsb_check(Thread::is_main_thread());
+        RWLockWrite lock(lock_);
         outputs_.append(this);
     }
 
     IConsoleOutput::~IConsoleOutput()
     {
-        // jsb_check(Thread::is_main_thread());
+        RWLockWrite lock(lock_);
         outputs_.erase(this);
     }
 
     void IConsoleOutput::internal_write(ELogSeverity::Type p_severity, const String &p_text)
     {
-        if (!Thread::is_main_thread())
-        {
-            return;
-        }
-
+        RWLockRead lock(lock_);
         for (IConsoleOutput* output: outputs_)
         {
             output->write(p_severity, p_text);

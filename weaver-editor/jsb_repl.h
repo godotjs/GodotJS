@@ -30,13 +30,18 @@ private:
     enum { kMaxHistoryCount = 10 };
     Vector<String> history_;
 
+    jsb::internal::DoubleBuffered<String> output_backlog_;
+    StringName sn_backlog_flush_;
+
 private:
     void _update_theme();
 
 protected:
+    static void _bind_methods();
+
     void _input_submitted(const String& p_text);
     void _input_changed(const String& p_text);
-    void _input_gui_input(const Ref<InputEvent> &p_event);
+    void _input_gui_input(const Ref<InputEvent>& p_event);
     void _input_focus_exit();
     void _clear_pressed();
     void _gc_pressed();
@@ -45,6 +50,7 @@ protected:
     void _start_tsc_pressed();
     void _notification(int p_what);
     void _show_candidates(const Vector<String>& p_items);
+    void _backlog_flush();
 
     void add_string(const String& p_str);
     void add_line(const String& p_line);
