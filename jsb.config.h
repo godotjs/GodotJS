@@ -108,6 +108,10 @@
 #define JSB_WORKER_INITIAL_SCRIPT_SLOTS 1024
 #define JSB_WORKER_INITIAL_CLASS_SLOTS 512
 
+// always exclude the worker scripts end with `.worker.js/ts` from ResourceLoader.
+// they should only be loaded by JSWorker.
+#define JSB_EXCLUDE_WORKER_RES_SCRIPTS 1
+
 #define JSB_DTS_EXT "d.ts"
 #define JSB_TYPESCRIPT_EXT "ts"
 #define JSB_JAVASCRIPT_EXT "js"

@@ -7,8 +7,6 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 {
     JSB_BENCHMARK_SCOPE(ResourceFormatLoaderGodotJSScript, load);
 
-    //TODO handle script cache issues (used by Worker)
-
     // {
     //     //TODO a dirty but approaching solution for hot-reloading
     //     MutexLock lock(GodotJSScriptLanguage::singleton_->mutex_);
@@ -52,8 +50,16 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
         if (r_error) *r_error = ERR_CANT_RESOLVE;
         return {};
     }
-    if (p_path.ends_with("." JSB_DTS_EXT))
+
+    // ignore DTS files, and worker scripts if they end with `.worker.js/ts`
+    if (p_path.ends_with("." JSB_DTS_EXT)
+#if JSB_EXCLUDE_WORKER_RES_SCRIPTS
+        || p_path.ends_with(".worker." JSB_TYPESCRIPT_EXT)
+        || p_path.ends_with(".worker." JSB_JAVASCRIPT_EXT)
+#endif
+        )
     {
+        JSB_LOG(VeryVerbose, "excluding script resource %s", p_path);
         if (r_error) *r_error = ERR_FILE_UNRECOGNIZED;
         return {};
     }
