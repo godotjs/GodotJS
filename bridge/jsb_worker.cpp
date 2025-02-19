@@ -308,13 +308,13 @@ namespace jsb
                 return;
             }
 
-            Object* instance;
-            if (!TypeConvert::js_to_gd_obj(isolate, context, info[0], instance) || !instance)
+            Variant target;
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], target))
             {
                 jsb_throw(isolate, "bad parameter");
                 return;
             }
-            Environment::transfer_object(env, master.get(), handle, instance);
+            Environment::transfer_object(env, master.get(), handle, target);
         }
 
         // worker -> master (run in worker env)

@@ -243,8 +243,11 @@ namespace jsb
 
         // [EXPERIMENTAL] transfer object between environments.
         // call this method of the source environment in the source environment thread.
+        // if the transferred object is RefCounted, the reference count will be increased by 1 during the operation.
+        // NOTE: !!! IT MAY CRASH THE ENGINE TO TRANSFER A DEEPLY NESTED OBJECT (such as a godot Array of Objects) !!!
+        //       !!! Ensure all transferred objects are ONLY exist in the source environment !!!
         // [pseudo] transfer_object(worker, master, worker_handle, scene->instantiate());
-        static void transfer_object(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, Object* p_object);
+        static void transfer_object(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, const Variant& p_target);
 
         bool get_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, const Variant& p_val);
