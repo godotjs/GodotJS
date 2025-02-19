@@ -1,6 +1,8 @@
 #ifndef GODOTJS_CONFIG_H
 #define GODOTJS_CONFIG_H
 
+#include "jsb.gen.h"
+
 #ifndef JSB_DEBUG
 #   if defined(DEBUG_ENABLED)
 #       define JSB_DEBUG 1
@@ -8,6 +10,8 @@
 #       define JSB_DEBUG 0
 #   endif
 #endif
+
+#define JSB_WITH_ESSENTIALS !JSB_WITH_WEB
 
 // Enable the debugger bridge.
 // For v8, use Chrome devtools with the following link by default:

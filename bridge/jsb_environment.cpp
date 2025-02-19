@@ -279,7 +279,10 @@ namespace jsb
     Environment::~Environment()
     {
         JSB_LOG(Verbose, "destructing Environment");
+#if JSB_WITH_ESSENTIALS
+        timer_tags_.tags.clear();
         timer_manager_.clear_all();
+#endif
 
         for (IModuleResolver* resolver : module_resolvers_)
         {
@@ -380,6 +383,7 @@ namespace jsb
 
     void Environment::update(uint64_t p_delta_msecs)
     {
+#if JSB_WITH_ESSENTIALS
         if (timer_manager_.tick(p_delta_msecs))
         {
             v8::Isolate::Scope isolate_scope(isolate_);
@@ -392,6 +396,7 @@ namespace jsb
                 microtasks_run_ = true;
             }
         }
+#endif
 
         // handle messages from workers
         {

@@ -9,13 +9,13 @@
 #include "jsb_class_info.h"
 #include "jsb_value_move.h"
 #include "jsb_statistics.h"
+#include "jsb_timer_tags.h"
 #include "jsb_timer_action.h"
 #include "jsb_object_handle.h"
 #include "jsb_module_loader.h"
 #include "jsb_module_resolver.h"
 #include "jsb_string_name_cache.h"
 #include "jsb_array_buffer_allocator.h"
-
 #include "../internal/jsb_internal.h"
 
 // get v8 string value from string name cache with the given name
@@ -136,7 +136,10 @@ namespace jsb
         HashMap<StringName, class IModuleLoader*> module_loaders_;
         Vector<IModuleResolver*> module_resolvers_;
 
+#if JSB_WITH_ESSENTIALS
+        JSTimerTags<uint64_t> timer_tags_;
         internal::TTimerManager<JavaScriptTimerAction> timer_manager_;
+#endif
         bool microtasks_run_ = false;
 
 #if JSB_WITH_DEBUGGER
@@ -326,7 +329,10 @@ namespace jsb
         static jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
         static jsb_force_inline void dealloc_variant(Variant* p_var) { variant_allocator_.free(p_var); }
 
+#if JSB_WITH_ESSENTIALS
         jsb_force_inline internal::TTimerManager<JavaScriptTimerAction>& get_timer_manager() { return timer_manager_; }
+        jsb_force_inline JSTimerTags<uint64_t>& get_timer_tags() { return timer_tags_; }
+#endif
 
         jsb_force_inline StringNameCache& get_string_name_cache() { return string_name_cache_; }
         jsb_force_inline v8::Local<v8::String> get_string_value(const StringName& p_name) { return string_name_cache_.get_string_value(isolate_, p_name); }

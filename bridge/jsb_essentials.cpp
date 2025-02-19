@@ -5,7 +5,7 @@
 
 namespace jsb
 {
-#if JSB_WITH_WEB
+#if !JSB_WITH_ESSENTIALS
     void Essentials::register_(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self)
     {
     }
@@ -122,9 +122,9 @@ namespace jsb
         }
     }
 
+    template<InternalTimerType::Type TimerType>
     void _set_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        jsb_check(info.Data()->IsInt32());
         v8::Isolate* isolate = info.GetIsolate();
         const int argc = info.Length();
         if (argc < 1 || !info[0]->IsFunction())
@@ -133,24 +133,20 @@ namespace jsb
             return;
         }
 
-        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        static constexpr int extra_arg_index = TimerType == InternalTimerType::Interval || TimerType == InternalTimerType::Timeout ? 2 : 1;
+        static constexpr bool loop = TimerType == InternalTimerType::Interval;
         int32_t rate = 1;
-        int extra_arg_index = 1;
-        bool loop = false;
-        switch ((InternalTimerType::Type) info.Data().As<v8::Int32>()->Value())
-        {
+
         // interval & timeout have 2 arguments (at least)
-        case InternalTimerType::Interval: loop = true;
-        case InternalTimerType::Timeout:  // NOLINT(clang-diagnostic-implicit-fallthrough)
+        // immediate has 1 argument (at least)
+        if constexpr (extra_arg_index == 2)
+        {
             if (!info[1]->IsUndefined() && !info[1]->Int32Value(context).To(&rate))
             {
                 jsb_throw(isolate, "bad time");
                 return;
             }
-            extra_arg_index = 2;
-            break;
-        // immediate has 1 argument (at least)
-        default: break;
         }
 
         const v8::Local<v8::Function> func = info[0].As<v8::Function>();
@@ -186,6 +182,50 @@ namespace jsb
         Environment::wrap(isolate)->get_timer_manager().clear_timer((internal::TimerHandle) handle);
     }
 
+    void _time(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        if (!info[0]->IsUndefined() && !info[0]->IsString())
+        {
+            jsb_throw(isolate, "bad argument");
+            return;
+        }
+        Environment* env = Environment::wrap(isolate);
+        const v8::Local<v8::String> label = info[0]->IsUndefined() ? jsb_name(env, default) : info[0].As<v8::String>();
+        JSTimerTags<uint64_t>& timer_tags = env->get_timer_tags();
+        const auto res = timer_tags.tags.emplace(TStrongRef(isolate, label), OS::get_singleton()->get_ticks_usec());
+        if (!res.second)
+        {
+            JSB_LOG(Warning, "timer tag '%s' already exists", impl::Helper::to_string(isolate, label));
+        }
+    }
+
+    void _time_end(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        if (!info[0]->IsUndefined() && !info[0]->IsString())
+        {
+            jsb_throw(isolate, "bad argument");
+            return;
+        }
+        const uint64_t now = OS::get_singleton()->get_ticks_usec();
+        Environment* env = Environment::wrap(isolate);
+        const v8::Local<v8::String> label = info[0]->IsUndefined() ? jsb_name(env, default) : info[0].As<v8::String>();
+        JSTimerTags<uint64_t>& timer_tags = env->get_timer_tags();
+        const auto it = timer_tags.tags.find(TStrongRef(isolate, label));
+        if (it != timer_tags.tags.end())
+        {
+            timer_tags.tags.erase(it);
+            JSB_LOG(Info, "%s: %dms - timer ended",
+                impl::Helper::to_string(isolate, label),
+                (now - it->second) / 1000UL);
+        }
+        else
+        {
+            JSB_LOG(Warning, "timer tag '%s' not found", impl::Helper::to_string(isolate, label));
+        }
+    }
+
     void Essentials::register_(const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& self)
     {
         v8::Isolate* isolate = context->GetIsolate();
@@ -202,6 +242,8 @@ namespace jsb
             console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "error"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Error>, {})).Check();
             console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "assert"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Assert>, {})).Check();
             console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "trace"), JSB_NEW_FUNCTION(context, _print<internal::ELogSeverity::Trace>, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "time"), JSB_NEW_FUNCTION(context, _time, {})).Check();
+            console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "timeEnd"), JSB_NEW_FUNCTION(context, _time_end, {})).Check();
         }
 
         //TODO the root 'import' function (async module loading?)
@@ -210,9 +252,9 @@ namespace jsb
 
         // essential timer support
         {
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setInterval"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Interval))).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setTimeout"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Timeout))).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setImmediate"), JSB_NEW_FUNCTION(context, _set_timer, v8::Int32::New(isolate, InternalTimerType::Immediate))).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "setInterval"), JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Interval>, {})).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "setTimeout"), JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Timeout>, {})).Check();
+            self->Set(context, impl::Helper::new_string_ascii(isolate, "setImmediate"), JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Immediate>, {})).Check();
             self->Set(context, impl::Helper::new_string_ascii(isolate, "clearInterval"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
             self->Set(context, impl::Helper::new_string_ascii(isolate, "clearTimeout"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
             self->Set(context, impl::Helper::new_string_ascii(isolate, "clearImmediate"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
