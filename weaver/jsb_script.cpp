@@ -481,7 +481,10 @@ void GodotJSScript::load_module_immediately()
         return;
     }
     jsb_check(module);
-    script_class_info_ = (jsb::StatelessScriptClassInfo) *env->get_script_class(module->script_class_id);
+    {
+        const jsb::ScriptClassInfoPtr class_info_ptr = env->find_script_class(module->script_class_id);
+        script_class_info_ = class_info_ptr ? (jsb::StatelessScriptClassInfo) *class_info_ptr : jsb::StatelessScriptClassInfo();
+    }
     if (_is_valid())
     {
         JSB_LOG(VeryVerbose, "GodotJSScript module loaded %s", path);
