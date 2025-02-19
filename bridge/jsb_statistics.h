@@ -26,6 +26,17 @@ namespace jsb
         // impl-specific fields
         Vector<impl::CustomField> custom_fields;
 
+        impl::CustomField get_custom_field(const String &name) const
+        {
+            for (const impl::CustomField& it : custom_fields)
+            {
+                if (it.name == name)
+                {
+                    return it;
+                }
+            }
+            return {};
+        }
     };
 }
 #endif

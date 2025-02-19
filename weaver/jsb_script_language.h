@@ -6,6 +6,7 @@
 #include "core/object/script_language.h"
 
 class GodotJSScript;
+class GodotJSMonitor;
 
 class GodotJSScriptLanguage : public ScriptLanguage
 {
@@ -22,6 +23,10 @@ private:
     bool once_inited_ = false;
     uint64_t last_ticks_ = 0;
     std::shared_ptr<jsb::Environment> environment_;
+
+#if JSB_DEBUG
+    GodotJSMonitor* monitor_;
+#endif
 
     // [TS] matches 'export default class ClassName extends BaseName {'
     Ref<RegEx> ts_class_name_matcher_;

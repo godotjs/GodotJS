@@ -859,6 +859,7 @@ namespace jsb
 
     void Environment::get_statistics(Statistics& r_stats) const
     {
+        check_internal_state();
         impl::Helper::get_statistics(isolate_, r_stats.custom_fields);
 
         r_stats.objects = object_db_.size();

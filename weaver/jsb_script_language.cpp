@@ -2,6 +2,7 @@
 
 #include <iterator>
 
+#include "jsb_monitor.h"
 #include "../jsb_project_preset.h"
 #include "../internal/jsb_internal.h"
 #include "../bridge/jsb_worker.h"
@@ -9,6 +10,7 @@
 #include "jsb_script.h"
 
 #include "editor/editor_settings.h"
+#include "main/performance.h"
 
 #include "modules/regex/regex.h"
 
@@ -66,11 +68,18 @@ void GodotJSScriptLanguage::init()
     {
         environment_->load(entry_script_path);
     }
+
+#if JSB_DEBUG
+    monitor_ = memnew(GodotJSMonitor);
+#endif
 }
 
 void GodotJSScriptLanguage::finish()
 {
     jsb_check(once_inited_);
+#if JSB_DEBUG
+    memdelete(monitor_);
+#endif
     once_inited_ = false;
     environment_->dispose();
     environment_.reset();
