@@ -1129,10 +1129,15 @@ export default class TSDCodeGen {
         if (cls.enums) {
             for (let enum_info of cls.enums) {
                 const enum_cg = class_ns_cg.enum_(enum_info.name);
+                let previousValue = -1;
                 for (let enumeration_name of enum_info.literals) {
-                    const value = cls.constants!.find(v => v.name == enumeration_name)!.value;
+                    const constant = cls.constants!.find(v => v.name == enumeration_name);
+                    const value = constant?.value ?? previousValue + 1;
                     enum_cg.element_(enumeration_name, value);
-                    ignored_consts.add(enumeration_name);
+                    if (constant) {
+                        ignored_consts.add(enumeration_name);
+                    }
+                    previousValue = value;
                 }
                 enum_cg.finish();
             }
