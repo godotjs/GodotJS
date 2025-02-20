@@ -30,6 +30,7 @@ private:
 
     // [TS] matches 'export default class ClassName extends BaseName {'
     Ref<RegEx> ts_class_name_matcher_;
+    Ref<RegEx> ts_class_name_tool_matcher_;
 
     // [JS] export & declare in two lines, matches 'class ClassName extends BaseName' + 'exports.default = ClassName'
     Ref<RegEx> js_class_name_matcher2_;

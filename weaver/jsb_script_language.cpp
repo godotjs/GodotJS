@@ -27,6 +27,7 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
     js_class_name_matcher1_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*class\s*(\w+)\s*extends\s*(\w+)\s*\{?)");
     js_class_name_matcher2_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*(\w+)\s*;?)");
     ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
+    ts_class_name_tool_matcher_ = RegEx::create_from_string(R"(\s*@tool\s*\(\s*\)\s*\n*\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
     jsb::internal::StringNames::create();
 }
 
@@ -249,6 +250,9 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
     //     * .ts files: `export default class ClassName extends BaseClassName`
     //     * .js files: `class ClassName extends BaseClassName` and `exports.default = ClassName` (with or without `;`)
 
+    // And, we do not support `r_is_abstract` here, please define all abstract class by not exporting it as `default`.
+    // It should be equivalent and enough for TS/JS since we do not rely on GodotJSScript to use abstract classes in TS/JS sources.
+
     Error err;
     const Ref<FileAccess> file_access = FileAccess::open(p_path, FileAccess::READ, &err);
     if (err)
@@ -259,6 +263,7 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
     const String source = file_access->get_as_utf8_string();
     if (jsb::internal::PathUtil::is_recognized_javascript_extension(p_path))
     {
+        // check if the class id defined in a single line (export default class ClassName extends BaseClassName)
         jsb_check(!js_class_name_matcher1_.is_null());
         const Ref<RegExMatch> match1 = js_class_name_matcher1_->search(source);
         if (match1.is_valid() && match1->get_group_count() == 2)
@@ -268,6 +273,7 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
             return class_name;
         }
 
+        // otherwise, it probably defined in separated lines (firstly, check 'class ClassName extends BaseClassName')
         jsb_check(!js_class_name_matcher2_.is_null());
         const Ref<RegExMatch> match2 = js_class_name_matcher2_->search(source);
         if (match2.is_valid() && match2->get_group_count() == 1)
@@ -275,6 +281,7 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
             const String class_name = match2->get_string(1);
             if (r_base_type)
             {
+                // then, check 'exports.default = ClassName'
                 const Ref<RegEx> base_matcher = RegEx::create_from_string(jsb::internal::format(R"(\s*class\s*%s\s*extends\s*(\w+)\s*\{?)", class_name));
                 const Ref<RegExMatch> base_match = base_matcher->search(source);
                 if (base_match.is_valid() && base_match->get_group_count() == 1)
@@ -287,14 +294,31 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
     }
     else
     {
+        // hope it's a typescript file
         jsb_check(!ts_class_name_matcher_.is_null());
-        const Ref<RegExMatch> match = ts_class_name_matcher_->search(source);
+        jsb_check(!ts_class_name_tool_matcher_.is_null());
+
+        // check if it's a tool script (`@tool \n export default class ClassName extends BaseName { `)
+        Ref<RegExMatch> match =  ts_class_name_tool_matcher_->search(source);
         if (match.is_valid() && match->get_group_count() == 2)
         {
-            const String class_name = match->get_string(1);
-            if (r_base_type) *r_base_type = match->get_string(2);
-            return class_name;
+#if GODOT_4_4_OR_NEWER
+            if (r_is_tool) *r_is_tool = true;
+#endif
         }
+        else
+        {
+            // check if it's a normal script (without `@tool`)
+            match = ts_class_name_matcher_->search(source);
+            if (!match.is_valid() || match->get_group_count() != 2)
+            {
+                return {};
+            }
+        }
+
+        const String class_name = match->get_string(1);
+        if (r_base_type) *r_base_type = match->get_string(2);
+        return class_name;
     }
     return {};
 }
