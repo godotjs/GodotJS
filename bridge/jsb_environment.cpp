@@ -1065,7 +1065,7 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         // In Editor, the script can be attached to an Object after it created in JS (e.g. 'enter_tree' as a child node of a script attached parent node)
-        if (const NativeObjectID object_id = this->get_object_id(p_this))
+        if (const NativeObjectID object_id = this->try_get_object_id(p_this))
         {
             JSB_LOG(Verbose, "crossbinding on a binded object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
 
@@ -1637,7 +1637,7 @@ namespace jsb
         return _call(isolate, context, method_func, self, p_argv, p_argc, r_error);
     }
 
-    Variant Environment::call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
+    Variant Environment::call_function(void* p_pointer, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
     {
         this->check_internal_state();
         if (!function_bank_.is_valid_index(p_func_id))
@@ -1649,14 +1649,16 @@ namespace jsb
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        v8::Local<v8::Context> context = this->get_context();
+        const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
 
-        if (p_object_id)
+        if (p_pointer)
         {
+            v8::Local<v8::Object> self;
+
             // if object_id is nonzero but can't be found in `objects_` registry, it usually means that this invocation originally triggered by JS GC.
             // the JS Object is disposed before the Godot Object, but Godot will post notifications (like NOTIFICATION_PREDELETE) to script instances.
-            if (!this->object_db_.has_object(p_object_id))
+            if (!this->try_get_object(p_pointer, self))
             {
                 JSB_LOG(Error, "invalid `this` for calling function");
                 r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
@@ -1664,10 +1666,11 @@ namespace jsb
             }
             const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
             jsb_check(js_func);
-            const v8::Local<v8::Object> self = this->get_object(p_object_id);
             return _call(isolate, context, js_func.object_.Get(isolate), self, p_args, p_argcount, r_error);
         }
 
+        // if pointer is nullptr, we just call the func with `this` as undefined (a dead object),
+        // let JS throw an error if the function is actually not expected to be called without `this`
         const TStrongRef<v8::Function>& js_func = function_bank_.get_value(p_func_id);
         jsb_check(js_func);
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);

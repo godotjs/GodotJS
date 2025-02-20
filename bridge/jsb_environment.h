@@ -237,7 +237,7 @@ namespace jsb
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
         bool release_function(ObjectCacheID p_func_id);
-        Variant call_function(NativeObjectID p_object_id, ObjectCacheID p_func_id, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
+        Variant call_function(void* p_pointer, ObjectCacheID p_func_id, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
 
         /**
          * This method will not throw any JS exception.
@@ -356,7 +356,7 @@ namespace jsb
             impl::Helper::SetDeleter(p_pointer, p_object, _valuetype_deleter, this);
         }
 
-        jsb_force_inline NativeObjectID get_object_id(void* p_pointer) const { return object_db_.try_get_object_id(p_pointer); }
+        jsb_force_inline NativeObjectID try_get_object_id(void* p_pointer) const { return object_db_.try_get_object_id(p_pointer); }
 
         // whether the `p_pointer` registered in the object binding map
         // return true, and the corresponding JS value if `p_pointer` is valid

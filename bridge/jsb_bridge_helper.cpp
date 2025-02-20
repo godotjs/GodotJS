@@ -29,7 +29,7 @@ namespace jsb
                 }
                 const StringName class_name = class_info->name;
                 jsb_check(class_info->type == NativeClassType::GodotObject);
-                const NativeObjectID object_id = environment->get_object_id(pointer);
+                const NativeObjectID object_id = environment->try_get_object_id(pointer);
 
                 // case for script classes
                 do
