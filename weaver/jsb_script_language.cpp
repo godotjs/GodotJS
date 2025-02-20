@@ -235,7 +235,12 @@ void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions
     p_extensions->push_back(JSB_JAVASCRIPT_EXT);
 }
 
+
+#if GODOT_4_4_OR_NEWER
+String GodotJSScriptLanguage::get_global_class_name(const String &p_path, String *r_base_type, String *r_icon_path, bool *r_is_abstract, bool *r_is_tool) const
+#else
 String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path) const
+#endif
 {
     // GodotJSScript implementation do not really support threaded access for now.
     // So, we can not load the script module in-place because `get_global_class_name` could be called from EditorFileSystem (background) scan.

@@ -160,7 +160,13 @@ public:
     virtual int profiling_get_frame_data(ProfilingInfo* p_info_arr, int p_info_max) override { return 0; }
 
     virtual bool handles_global_class_type(const String& p_type) const override;
+
+#if GODOT_4_4_OR_NEWER
+    virtual String get_global_class_name(const String &p_path, String *r_base_type = nullptr, String *r_icon_path = nullptr, bool *r_is_abstract = nullptr, bool *r_is_tool = nullptr) const override;
+#else
     virtual String get_global_class_name(const String& p_path, String* r_base_type = nullptr, String* r_icon_path = nullptr) const override;
+#endif
+
 #pragma endregion
 
 };
