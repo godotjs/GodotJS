@@ -38,6 +38,9 @@ DEF(deprecated)
 DEF(experimental)
 DEF(help)
 
+// special identifier for the convenience to get Variant::Type in scripts
+DEF(__builtin_type__)
+
 // godot rpc config fields
 DEF(mode)
 DEF(sync)

@@ -380,11 +380,7 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
 #endif
     for (const auto& it : script_class_info_.properties)
     {
-        //TODO details?
-        PropertyInfo item = {};
-        item.name = it.value.name;
-        item.type = it.value.type;
-        p_list->push_back(item);
+        p_list->push_back((PropertyInfo) it.value);
     }
 }
 
@@ -617,7 +613,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
             for (const KeyValue<StringName, jsb::ScriptPropertyInfo> &pair : script_class_info_.properties)
             {
                 const jsb::ScriptPropertyInfo &pi = pair.value;
-                members_cache.push_back({ pi.type, pi.name, pi.hint, pi.hint_string, pi.usage, pi.class_name });
+                members_cache.push_back((PropertyInfo) pi);
                 // values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
 
                 //TODO maybe this behaviour is not expected

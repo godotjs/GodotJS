@@ -158,6 +158,11 @@ namespace jsb
 
         // valid only if _Evaluated flag is set in ScriptClassInfo.flags
         Variant default_value;
+
+        explicit operator PropertyInfo() const
+        {
+            return { type, name, hint, hint_string, usage, class_name };
+        }
     };
 
     namespace ScriptClassFlags

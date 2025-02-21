@@ -2,6 +2,22 @@
 import { PropertyHint, PropertyUsageFlags, Variant, MultiplayerAPI, MultiplayerPeer } from "godot";
 import * as jsb from "godot-jsb";
 
+function guess_type_name(type: any) {
+    if (typeof type === "function") {
+        return type.name;
+    } 
+    if (typeof type === "object") {
+        if (typeof type.constructor === "function") {
+            return type.constructor.name;
+        }
+        let proto = Object.getPrototypeOf(type);
+        if (typeof proto === "object") {
+            return guess_type_name(proto);
+        }
+    }
+    return type;
+}
+
 /**
  *
  */
@@ -55,11 +71,49 @@ export function export_exp_easing(hint?: "" | "attenuation" | "positive_only" | 
 export function export_(type: Variant.Type, details?: { class_?: Function, hint?: PropertyHint, hint_string?: string, usage?: PropertyUsageFlags }) {
     return function (target: any, key: string) {
         let ebd = { name: key, type: type, hint: PropertyHint.PROPERTY_HINT_NONE, hint_string: "", usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
+
         if (typeof details === "object") {
             if (typeof details.hint === "number") ebd.hint = details.hint;
-            if (typeof details.hint_string === "string") ebd.hint_string = details.hint_string;
             if (typeof details.usage === "number") ebd.usage = details.usage;
-        }
+            if (typeof details.hint_string === "string") ebd.hint_string = details.hint_string;
+
+            // overwrite hint if class_ is provided
+            if (typeof details.class_ === "function" && typeof details.class_.prototype !== "undefined") {
+                let gd = require("godot");
+                if (details.class_.prototype instanceof gd.Resource) {
+                    ebd.hint = PropertyHint.PROPERTY_HINT_TYPE_STRING;
+                    ebd.hint_string = `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_RESOURCE_TYPE}:${details.class_.name}`;
+                    ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
+                } else if (details.class_.prototype instanceof gd.Node) {
+                    ebd.hint = PropertyHint.PROPERTY_HINT_TYPE_STRING;
+                    ebd.hint_string = `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_NODE_TYPE}:${details.class_.name}`;
+                    ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
+                } else {
+                    // other than Resource and Node, only primitive types and enum types are supported in gdscript
+                    //TODO but we barely know anything about the enum types and int/float/StringName/... in JS
+
+                    if (details.class_ === Boolean) {
+                        ebd.hint = PropertyHint.PROPERTY_HINT_TYPE_STRING;
+                        ebd.hint_string = Variant.Type.TYPE_BOOL + ":";
+                    } else if (details.class_ === Number) {
+                        // we can only guess the type is float
+                        ebd.hint = PropertyHint.PROPERTY_HINT_TYPE_STRING;
+                        ebd.hint_string = Variant.Type.TYPE_FLOAT + ":";
+                    } else if (details.class_ === String) {
+                        ebd.hint = PropertyHint.PROPERTY_HINT_TYPE_STRING;
+                        ebd.hint_string = Variant.Type.TYPE_STRING + ":";
+                    } else {
+                        if (typeof (<any>details.class_).__builtin_type__ === "number") {
+                            ebd.hint = PropertyHint.PROPERTY_HINT_TYPE_STRING;
+                            ebd.hint_string = (<any>details.class_).__builtin_type__ + ":";
+                        } else {
+                            console.warn("the given parameters are not supported or not implemented (you need to give hint/hint_string/usage manually)",
+                                `class:${guess_type_name(Object.getPrototypeOf(target))} prop:${key} type:${type} class_:${guess_type_name(details.class_)}`);
+                        }
+                    }
+                }
+            }
+        } 
         jsb.internal.add_script_property(target, ebd);
     }
 }

@@ -799,6 +799,12 @@ namespace jsb
                 }
             }
 
+            // special identifier for the convenience to get Variant::Type in scripts
+            {
+                jsb_check(TYPE >= 0);
+                class_builder.Static().Value(jsb_name(p_env, __builtin_type__), (int32_t) TYPE);
+            }
+
             {
                 if (r_class_id) *r_class_id = class_id;
 
