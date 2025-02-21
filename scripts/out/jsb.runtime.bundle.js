@@ -127,7 +127,7 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
      * A Shortcut for `export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] })`
      */
     function export_dictionary(key_class, value_class) {
-        return export_(godot_1.Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] });
+        return export_(godot_1.Variant.Type.TYPE_DICTIONARY, { class_: TypePair(key_class, value_class) });
     }
     function get_hint_string_for_enum(enum_type) {
         let enum_vs = [];

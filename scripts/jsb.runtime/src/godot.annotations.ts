@@ -103,7 +103,7 @@ export function export_array(clazz: ClassDescriptor) {
  * A Shortcut for `export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] })`
  */
 export function export_dictionary(key_class: ClassDescriptor, value_class: ClassDescriptor) {
-    return export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] });
+    return export_(Variant.Type.TYPE_DICTIONARY, { class_: TypePair(key_class, value_class) });
 }
 
 function get_hint_string_for_enum(enum_type: any): string {
