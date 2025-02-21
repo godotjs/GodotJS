@@ -14,8 +14,20 @@ declare module "godot.annotations" {
     export function export_global_file(filter: string): (target: any, key: string) => void;
     export function export_global_dir(filter: string): (target: any, key: string) => void;
     export function export_exp_easing(hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only"): (target: any, key: string) => void;
+    /**
+     * A Shortcut for `export_(Variant.Type.TYPE_ARRAY, { class_: clazz })`
+     */
+    export function export_array(clazz: Function): (target: any, key: string) => void;
+    /**
+     * A Shortcut for `export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] })`
+     */
+    export function export_dictionary(key_class: Function, value_class: Function): (target: any, key: string) => void;
+    export type ClassDescriptor = Function | Symbol | Array<any>;
+    /**
+     * [low level export]
+     */
     export function export_(type: Variant.Type, details?: {
-        class_?: Function;
+        class_?: ClassDescriptor;
         hint?: PropertyHint;
         hint_string?: string;
         usage?: PropertyUsageFlags;
@@ -27,7 +39,7 @@ declare module "godot.annotations" {
      * Exporting is done by using the `@export_var` (or `@export_`) annotation.
      */
     export function export_var(type: Variant.Type, details?: {
-        class_?: Function;
+        class_?: ClassDescriptor;
         hint?: PropertyHint;
         hint_string?: string;
         usage?: PropertyUsageFlags;

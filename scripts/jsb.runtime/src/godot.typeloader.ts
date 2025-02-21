@@ -67,6 +67,12 @@ export function on_type_loaded(type_name: string | string[], callback: TypeLoade
     }
 }
 
+const jsb_builtin_extras: { [key: string]: any } = {
+    "IntegerType": Symbol("IntegerType"), 
+    "FloatType": Symbol("FloatType"), 
+    "EnumType": Symbol("EnumType"), 
+}
+
 // callback on a godot type loaded by jsb_godot_module_loader
 exports._mod_proxy_ = function (type_loader_func: (type_name: string) => any): any {
     return new Proxy(type_db, {
@@ -83,7 +89,10 @@ exports._mod_proxy_ = function (type_loader_func: (type_name: string) => any): a
         get: function (target: any , prop_name) {
             let o = target[prop_name];
             if (typeof o === 'undefined' && typeof prop_name === 'string') {
-                o = target[prop_name] = type_loader_func(prop_name);
+                o = target[prop_name] =
+                    typeof jsb_builtin_extras[prop_name] !== "undefined"
+                        ? jsb_builtin_extras[prop_name]
+                        : type_loader_func(prop_name);
             }
             return o;
         }

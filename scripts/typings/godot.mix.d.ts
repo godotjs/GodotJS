@@ -1,5 +1,9 @@
 /// <reference no-default-lib="true"/>
 declare module "godot" {
+    export const IntegerType: unique symbol;
+    export const FloatType: unique symbol;
+    export const EnumType: unique symbol;
+
     /** A built-in type representing a method or a standalone function.  
      *  	  
      *  @link https://docs.godotengine.org/en/4.2/classes/class_callable.html  

@@ -34,6 +34,8 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
     exports.export_global_file = export_global_file;
     exports.export_global_dir = export_global_dir;
     exports.export_exp_easing = export_exp_easing;
+    exports.export_array = export_array;
+    exports.export_dictionary = export_dictionary;
     exports.export_ = export_;
     exports.export_var = export_var;
     exports.export_enum = export_enum;
@@ -101,6 +103,100 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
     function export_exp_easing(hint) {
         return export_(godot_1.Variant.Type.TYPE_FLOAT, { hint: godot_1.PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
     }
+    /**
+     * A Shortcut for `export_(Variant.Type.TYPE_ARRAY, { class_: clazz })`
+     */
+    function export_array(clazz) {
+        return export_(godot_1.Variant.Type.TYPE_ARRAY, { class_: clazz });
+    }
+    /**
+     * A Shortcut for `export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] })`
+     */
+    function export_dictionary(key_class, value_class) {
+        return export_(godot_1.Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] });
+    }
+    function get_hint_string_for_enum(enum_type) {
+        let enum_vs = [];
+        for (let c in enum_type) {
+            const v = enum_type[c];
+            if (typeof v === "string") {
+                enum_vs.push(v + ":" + c);
+            }
+        }
+        return enum_vs.join(",");
+    }
+    function is_array_of_pair(clazz) {
+        return typeof clazz === "object" && typeof clazz.length === "number" && clazz.length == 2;
+    }
+    function get_hint_string(clazz) {
+        let gd = require("godot");
+        if (typeof clazz === "symbol") {
+            if (clazz === gd.IntegerType) {
+                return godot_1.Variant.Type.TYPE_INT + ":";
+            }
+            if (clazz === gd.FloatType) {
+                return godot_1.Variant.Type.TYPE_FLOAT + ":";
+            }
+        }
+        if (typeof clazz === "function" && typeof clazz.prototype !== "undefined") {
+            if (clazz.prototype instanceof gd.Resource) {
+                return `${godot_1.Variant.Type.TYPE_OBJECT}/${godot_1.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE}:${clazz.name}`;
+            }
+            else if (clazz.prototype instanceof gd.Node) {
+                return `${godot_1.Variant.Type.TYPE_OBJECT}/${godot_1.PropertyHint.PROPERTY_HINT_NODE_TYPE}:${clazz.name}`;
+            }
+            else {
+                // other than Resource and Node, only primitive types and enum types are supported in gdscript
+                //TODO but we barely know anything about the enum types and int/float/StringName/... in JS
+                if (clazz === Boolean) {
+                    return godot_1.Variant.Type.TYPE_BOOL + ":";
+                }
+                else if (clazz === Number) {
+                    // we can only guess the type is float
+                    return godot_1.Variant.Type.TYPE_FLOAT + ":";
+                }
+                else if (clazz === String) {
+                    return godot_1.Variant.Type.TYPE_STRING + ":";
+                }
+                else {
+                    if (typeof clazz.__builtin_type__ === "number") {
+                        return clazz.__builtin_type__ + ":";
+                    }
+                    else {
+                        throw new Error("the given parameters are not supported or not implemented");
+                    }
+                }
+            }
+        }
+        if (typeof clazz === "object") {
+            // probably an Array (as key-value type descriptor for a Dictionary)
+            if (typeof clazz.length === "number" && clazz.length == 2) {
+                let key_type;
+                let value_type;
+                if (is_array_of_pair(clazz[0]) && clazz[0][0] === gd.EnumType) {
+                    key_type = `${godot_1.Variant.Type.TYPE_INT}/${godot_1.Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz[0][1])}`;
+                }
+                else {
+                    // special case for dictionary, int is preferred for key type of a dictionary
+                    key_type = clazz[0] === Number ? godot_1.Variant.Type.TYPE_INT + ":" : get_hint_string(clazz[0]);
+                }
+                if (is_array_of_pair(clazz[1]) && clazz[1][0] === gd.EnumType) {
+                    value_type = `${godot_1.Variant.Type.TYPE_INT}/${godot_1.Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz[1][1])}`;
+                }
+                else {
+                    value_type = get_hint_string(clazz[1]);
+                }
+                if (key_type.length === 0 || value_type.length === 0) {
+                    throw new Error("the given parameters are not supported or not implemented");
+                }
+                return key_type + ';' + value_type;
+            }
+        }
+        return "";
+    }
+    /**
+     * [low level export]
+     */
     function export_(type, details) {
         return function (target, key) {
             let ebd = { name: key, type: type, hint: godot_1.PropertyHint.PROPERTY_HINT_NONE, hint_string: "", usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
@@ -112,43 +208,17 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
                 if (typeof details.hint_string === "string")
                     ebd.hint_string = details.hint_string;
                 // overwrite hint if class_ is provided
-                if (typeof details.class_ === "function" && typeof details.class_.prototype !== "undefined") {
-                    let gd = require("godot");
-                    if (details.class_.prototype instanceof gd.Resource) {
+                try {
+                    let hint_string = get_hint_string(details.class_);
+                    if (hint_string.length > 0) {
                         ebd.hint = godot_1.PropertyHint.PROPERTY_HINT_TYPE_STRING;
-                        ebd.hint_string = `${godot_1.Variant.Type.TYPE_OBJECT}/${godot_1.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE}:${details.class_.name}`;
+                        ebd.hint_string = hint_string;
                         ebd.usage |= godot_1.PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
                     }
-                    else if (details.class_.prototype instanceof gd.Node) {
-                        ebd.hint = godot_1.PropertyHint.PROPERTY_HINT_TYPE_STRING;
-                        ebd.hint_string = `${godot_1.Variant.Type.TYPE_OBJECT}/${godot_1.PropertyHint.PROPERTY_HINT_NODE_TYPE}:${details.class_.name}`;
-                        ebd.usage |= godot_1.PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
-                    }
-                    else {
-                        // other than Resource and Node, only primitive types and enum types are supported in gdscript
-                        //TODO but we barely know anything about the enum types and int/float/StringName/... in JS
-                        if (details.class_ === Boolean) {
-                            ebd.hint = godot_1.PropertyHint.PROPERTY_HINT_TYPE_STRING;
-                            ebd.hint_string = godot_1.Variant.Type.TYPE_BOOL + ":";
-                        }
-                        else if (details.class_ === Number) {
-                            // we can only guess the type is float
-                            ebd.hint = godot_1.PropertyHint.PROPERTY_HINT_TYPE_STRING;
-                            ebd.hint_string = godot_1.Variant.Type.TYPE_FLOAT + ":";
-                        }
-                        else if (details.class_ === String) {
-                            ebd.hint = godot_1.PropertyHint.PROPERTY_HINT_TYPE_STRING;
-                            ebd.hint_string = godot_1.Variant.Type.TYPE_STRING + ":";
-                        }
-                        else {
-                            if (typeof details.class_.__builtin_type__ === "number") {
-                                ebd.hint = godot_1.PropertyHint.PROPERTY_HINT_TYPE_STRING;
-                                ebd.hint_string = details.class_.__builtin_type__ + ":";
-                            }
-                            else {
-                                console.warn("the given parameters are not supported or not implemented (you need to give hint/hint_string/usage manually)", `class:${guess_type_name(Object.getPrototypeOf(target))} prop:${key} type:${type} class_:${guess_type_name(details.class_)}`);
-                            }
-                        }
+                }
+                catch (e) {
+                    if (ebd.hint === godot_1.PropertyHint.PROPERTY_HINT_NONE) {
+                        console.warn("the given parameters are not supported or not implemented (you need to give hint/hint_string/usage manually)", `class:${guess_type_name(Object.getPrototypeOf(target))} prop:${key} type:${type} class_:${guess_type_name(details.class_)}`);
                     }
                 }
             }
@@ -169,14 +239,8 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
      */
     function export_enum(enum_type) {
         return function (target, key) {
-            let enum_vs = [];
-            for (let c in enum_type) {
-                const v = enum_type[c];
-                if (typeof v === "string") {
-                    enum_vs.push(v + ":" + c);
-                }
-            }
-            let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: enum_vs.join(","), usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
+            let hint_string = get_hint_string_for_enum(enum_type);
+            let ebd = { name: key, type: godot_1.Variant.Type.TYPE_INT, hint: godot_1.PropertyHint.PROPERTY_HINT_ENUM, hint_string: hint_string, usage: godot_1.PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
             jsb.internal.add_script_property(target, ebd);
         };
     }
@@ -334,6 +398,11 @@ define("godot.typeloader", ["require", "exports"], function (require, exports) {
             throw new Error('type_name must be a string or an array of strings');
         }
     }
+    const jsb_builtin_extras = {
+        "IntegerType": Symbol("IntegerType"),
+        "FloatType": Symbol("FloatType"),
+        "EnumType": Symbol("EnumType"),
+    };
     // callback on a godot type loaded by jsb_godot_module_loader
     exports._mod_proxy_ = function (type_loader_func) {
         return new Proxy(type_db, {
@@ -350,7 +419,10 @@ define("godot.typeloader", ["require", "exports"], function (require, exports) {
             get: function (target, prop_name) {
                 let o = target[prop_name];
                 if (typeof o === 'undefined' && typeof prop_name === 'string') {
-                    o = target[prop_name] = type_loader_func(prop_name);
+                    o = target[prop_name] =
+                        typeof jsb_builtin_extras[prop_name] !== "undefined"
+                            ? jsb_builtin_extras[prop_name]
+                            : type_loader_func(prop_name);
                 }
                 return o;
             }
