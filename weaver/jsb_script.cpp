@@ -12,13 +12,60 @@
 
 namespace
 {
-    // p_path_hint is only used for logging
-    std::shared_ptr<jsb::Environment> get_environment(const String& p_path_hint)
+    struct JSEnvironment
     {
-        std::shared_ptr<jsb::Environment> env = jsb::Environment::_access();
-        jsb_checkf(env, "Environment is not available on the current thread %d for script %s", Thread::get_caller_id(), p_path_hint);
-        return env;
-    }
+    private:
+        bool is_temp_;
+        std::shared_ptr<jsb::Environment> target_;
+
+    public:
+        // p_path_hint is only used for logging
+        JSEnvironment(const String& p_path_hint, bool p_is_temp_allowed)
+        {
+            target_ = jsb::Environment::_access();
+            if (target_)
+            {
+                is_temp_ = false;
+            }
+            else
+            {
+                jsb_checkf(p_is_temp_allowed, "no available Environment on thread %d for %s: %s", Thread::get_caller_id(), jsb_typename(GodotJSScript), p_path_hint);
+                is_temp_ = true;
+
+                //TODO let GodotJSLanguage manage all temporary Environment (possible to reuse if still alive with delayed dispose call somehow)?
+                //     PITFALL: race condition issue if do so (e.g. dispose() called after an Env is reacquired in background threads)
+
+                JSB_LOG(Log, "creating a temporary Environment on thread %d for %s: %s", Thread::get_caller_id(), jsb_typename(GodotJSScript), p_path_hint);
+                jsb::Environment::CreateParams params;
+                params.initial_class_slots = 128;
+                params.initial_object_slots = 512;
+                params.initial_script_slots = 32;
+                params.thread_id = Thread::get_caller_id();
+
+                target_ = std::make_shared<jsb::Environment>(params);
+                target_->init();
+            }
+        }
+
+        ~JSEnvironment()
+        {
+            if (is_temp_ && target_) target_->dispose();
+        }
+
+        JSEnvironment(const JSEnvironment&) = delete;
+        JSEnvironment& operator=(const JSEnvironment&) = delete;
+
+        JSEnvironment(JSEnvironment&& p_other) noexcept = delete;
+        JSEnvironment& operator=(JSEnvironment&& p_other) noexcept = delete;
+
+        bool is_temp() const { return is_temp_; }
+
+        jsb::Environment* operator->() { return target_.get(); }
+        const jsb::Environment* operator->() const { return target_.get(); }
+
+        explicit operator bool() const { return !!target_; }
+        operator std::shared_ptr<jsb::Environment>() { return target_; }
+    };
 }
 
 GodotJSScript::GodotJSScript(): script_list_(this)
@@ -106,7 +153,21 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     jsb_check(is_valid());
     jsb_check(loaded_);
 
-    const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
+    Object* owner = ClassDB::instantiate(script_class_info_.native_class_name);
+    ScriptInstance* instance = instance_create(p_this, owner);
+    if (!instance)
+    {
+        memdelete(owner);
+    }
+    return instance;
+}
+
+ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner)
+{
+    jsb_check(is_valid());
+    jsb_check(loaded_);
+
+    JSEnvironment env(get_path(), false);
     jsb::JavaScriptModule* module = nullptr;
     const Error err = env->load(script_class_info_.module_id, &module);
     jsb_ensuref(module && err == OK, "JS Module not found: %s", script_class_info_.module_id);
@@ -114,9 +175,8 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
 
     /* STEP 1, CREATE */
     GodotJSScriptInstance* instance = memnew(GodotJSScriptInstance);
-    Object* owner = ClassDB::instantiate(script_class_info_.native_class_name);
 
-    instance->owner_ = owner;
+    instance->owner_ = p_owner;
     instance->script_ = Ref(this); // must set before 'set_script_instance'
     instance->env_ = env;
     instance->class_id_ = module->script_class_id;
@@ -125,9 +185,9 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     /* STEP 2, INITIALIZE AND CONSTRUCT */
     {
         MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
-        instances_.insert(owner);
+        instances_.insert(p_owner);
     }
-    instance->object_id_ = env->bind_godot_object(native_class_id, owner, p_this);
+    instance->object_id_ = env->bind_godot_object(native_class_id, p_owner, p_this);
     if (!instance->object_id_)
     {
         instance->script_ = Ref<GodotJSScript>();
@@ -135,9 +195,8 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
         //NOTE `instance` becomes an invalid pointer since it's deleted in `set_script_instance`
         {
             MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
-            instances_.erase(owner);
+            instances_.erase(p_owner);
         }
-        memdelete(owner);
         JSB_LOG(Error, "Error constructing a GodotJSScriptInstance");
         return nullptr;
     }
@@ -145,14 +204,23 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     return instance;
 }
 
-ScriptInstance* GodotJSScript::instance_create(Object* p_this)
+// this should only be called from godot internal
+ScriptInstance* GodotJSScript::instance_create(Object* p_this, bool p_is_temp_allowed)
 {
     jsb_check(is_valid());
     jsb_check(loaded_);
     JSB_LOG(Verbose, "create instance %d of %s(%s)", (uintptr_t) p_this, script_class_info_.native_class_name, script_class_info_.module_id);
     jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name));
 
-    const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
+    JSEnvironment env(get_path(), p_is_temp_allowed);
+    if (env.is_temp())
+    {
+        GodotJSScriptTempInstance* temp_instance = memnew(GodotJSScriptTempInstance);
+        temp_instance->owner_ = p_this;
+        temp_instance->script_ = Ref(this);
+        return temp_instance;
+    }
+
     jsb::JavaScriptModule* module = nullptr;
     const Error err = env->load(script_class_info_.module_id, &module);
     jsb_ensuref(module && err == OK, "JS Module not found: %s", script_class_info_.module_id);
@@ -209,7 +277,10 @@ Error GodotJSScript::reload(bool p_keep_state)
 
     // (common situation) preserve the object and change its prototype
     const StringName& module_id = script_class_info_.module_id;
-    const jsb::ModuleReloadResult::Type result = get_environment(get_path())->mark_as_reloading(module_id);
+    JSEnvironment env(get_path(), true);
+
+    //TODO different env has different module state, we need to refresh the state in all envs when marking a module as dirty somewhere
+    const jsb::ModuleReloadResult::Type result = env->mark_as_reloading(module_id);
     if (result == jsb::ModuleReloadResult::Requested)
     {
         //TODO `Callable` objects bound with this script should be invalidated somehow?
@@ -452,7 +523,7 @@ void GodotJSScript::load_module_immediately()
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
     const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
-    const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
+    JSEnvironment env(get_path(), true);
     jsb_ensuref(env, "not JS environment available on thread %d for the script %s", Thread::get_caller_id(), path);
 
     loaded_ = true;
@@ -601,7 +672,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
         members_cache.clear();
         member_default_values_cache.clear();
 
-        const std::shared_ptr<jsb::Environment> env = get_environment(get_path());
+        JSEnvironment env(get_path(), true);
         env->check_internal_state();
 
         jsb::JavaScriptModule* module = nullptr;

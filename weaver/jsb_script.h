@@ -9,6 +9,7 @@
 class GodotJSScript : public Script
 {
     friend class GodotJSScriptInstance;
+    friend class GodotJSScriptTempInstance;
     typedef Script super;
 
     GDCLASS(GodotJSScript, Script)
@@ -57,6 +58,9 @@ public:
     // Error attach_source(const String& p_path, bool p_take_over);
     Error load_source_code(const String &p_path);
     void load_module_if_missing();
+    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner);
+    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this);
+    ScriptInstance* instance_create(Object* p_this, bool p_is_temp_allowed);
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;
@@ -66,9 +70,7 @@ public:
     virtual bool inherits_script(const Ref<Script>& p_script) const override;
 
     virtual StringName get_instance_base_type() const override; // this may not work in all scripts, will return empty if so
-    virtual ScriptInstance* instance_create(Object* p_this) override;
-    //TODO
-    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this);
+    virtual ScriptInstance* instance_create(Object* p_this) override { return instance_create(p_this, true); }
 
     virtual PlaceHolderScriptInstance* placeholder_instance_create(Object* p_this) override;
     virtual bool instance_has(const Object* p_this) const override;

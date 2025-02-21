@@ -24,6 +24,8 @@
 
 //TODO remove this
 #include "../weaver/jsb_script.h"
+#include "modules/GodotJS/weaver/jsb_script_instance.h"
+#include "modules/GodotJS/weaver/jsb_script_language.h"
 
 #if !JSB_WITH_STATIC_BINDINGS
 #include "jsb_primitive_bindings_reflect.h"
@@ -93,6 +95,14 @@ namespace jsb
             {
                 rval = (Environment*) p_runtime;
             }
+            lock_.unlock();
+            return rval;
+        }
+
+        bool exists(void* p_runtime) const
+        {
+            lock_.lock();
+            const bool rval = all_runtimes_.has(p_runtime);
             lock_.unlock();
             return rval;
         }
@@ -278,6 +288,14 @@ namespace jsb
 
     Environment::~Environment()
     {
+        //TODO not always safe
+        if (EnvironmentStore::get_shared().exists(this))
+        {
+            jsb_check(is_caller_thread());
+            JSB_LOG(Debug, "ensure Environment is disposed before destructed");
+            dispose();
+        }
+
         JSB_LOG(Verbose, "destructing Environment");
 #if JSB_WITH_ESSENTIALS
         timer_tags_.tags.clear();
@@ -518,7 +536,7 @@ namespace jsb
                 const Ref<GodotJSScript> script = ResourceLoader::load(p_data->script_path, "", ResourceFormatLoader::CACHE_MODE_IGNORE_DEEP);
                 jsb_check(script.is_valid());
                 jsb_unused(script->can_instantiate());
-                ScriptInstance* script_instance = script->instance_create(instance);
+                ScriptInstance* script_instance = script->instance_create(instance, false);
                 jsb_check(script_instance);
 
                 // 3. restore the object state
@@ -668,6 +686,35 @@ namespace jsb
 
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {
+        {
+            //TODO stupid way to handle the temp instance created by asynchronous ResourceLoader
+            if (ScriptInstance* si = p_pointer->get_script_instance())
+            {
+                if (GodotJSScriptTempInstance* temp_script_instance = dynamic_cast<GodotJSScriptTempInstance*>(si))
+                {
+                    // need to strongly reference the owner object if it's RefCounted. we use Variant for simplicity
+                    const Variant holder = p_pointer;
+
+                    jsb_check(si->get_language() == GodotJSScriptLanguage::get_singleton());
+                    const Ref<GodotJSScript> script = temp_script_instance->get_script();
+                    jsb_check(script.is_valid());
+                    List<Pair<StringName, Variant>> state;
+                    temp_script_instance->get_property_state(state);
+                    p_pointer->set_script_instance(nullptr);
+                    ScriptInstance* new_script_instance = script->instance_create(p_object, p_pointer);
+                    jsb_check(new_script_instance);
+                    jsb_unused(new_script_instance);
+                    for (const Pair<StringName, Variant>& pair : state)
+                    {
+                        new_script_instance->set(pair.first, pair.second);
+                    }
+                    const NativeObjectID new_id = try_get_object_id(p_pointer);
+                    jsb_check(new_id);
+                    return new_id;
+                }
+            }
+        }
+
         // We need to increase the refcount because Godot Objects are bound as external pointer with a strong JS reference,
         // and unreference() will always be called on gc callbacks.
         int external_rc = 1;
