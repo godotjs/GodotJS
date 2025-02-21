@@ -69,8 +69,7 @@ export function on_type_loaded(type_name: string | string[], callback: TypeLoade
 
 const jsb_builtin_extras: { [key: string]: any } = {
     "IntegerType": Symbol("IntegerType"), 
-    "FloatType": Symbol("FloatType"), 
-    "EnumType": Symbol("EnumType"), 
+    "FloatType":   Symbol("FloatType"), 
 }
 
 // callback on a godot type loaded by jsb_godot_module_loader

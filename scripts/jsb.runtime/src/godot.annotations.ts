@@ -18,6 +18,30 @@ function guess_type_name(type: any) {
     return type;
 }
 
+export interface EnumPlaceholder { }
+export interface TypePairPlaceholder { }
+
+class EnumPlaceholderImpl implements EnumPlaceholder {
+    target: any;
+    constructor(target: any) { this.target = target; }
+}
+
+class TypePairPlaceholderImpl implements TypePairPlaceholder {
+    key: any;
+    value: any;
+    constructor(key: any, value: any) { this.key = key; this.value = value; }
+}
+
+export function EnumType(type: any): EnumPlaceholder {
+    return new EnumPlaceholderImpl(type);
+}
+
+export function TypePair(key: ClassDescriptor, value: ClassDescriptor): TypePairPlaceholder {
+    return new EnumPlaceholderImpl([key, value]);
+}
+
+export type ClassDescriptor = Function | Symbol | EnumPlaceholder | TypePairPlaceholder;
+
 /**
  *
  */
@@ -71,14 +95,14 @@ export function export_exp_easing(hint?: "" | "attenuation" | "positive_only" | 
 /**
  * A Shortcut for `export_(Variant.Type.TYPE_ARRAY, { class_: clazz })`
  */
-export function export_array(clazz: Function) {
+export function export_array(clazz: ClassDescriptor) {
     return export_(Variant.Type.TYPE_ARRAY, { class_: clazz });
 }
 
 /**
  * A Shortcut for `export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] })`
  */
-export function export_dictionary(key_class: Function, value_class: Function) {
+export function export_dictionary(key_class: ClassDescriptor, value_class: ClassDescriptor) {
     return export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] });
 }
 
@@ -91,12 +115,6 @@ function get_hint_string_for_enum(enum_type: any): string {
         }
     }
     return enum_vs.join(",");
-}
-
-export type ClassDescriptor = Function | Symbol | Array<any>;
-
-function is_array_of_pair(clazz: any): boolean {
-    return typeof clazz === "object" && typeof clazz.length === "number" && clazz.length == 2;
 }
 
 function get_hint_string(clazz: any): string {
@@ -137,23 +155,15 @@ function get_hint_string(clazz: any): string {
     }
     
     if (typeof clazz === "object") {
+        if (clazz instanceof EnumPlaceholderImpl) {
+            return `${Variant.Type.TYPE_INT}/${Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz.target)}`;
+        }
+        
         // probably an Array (as key-value type descriptor for a Dictionary)
-        if (typeof clazz.length === "number" && clazz.length == 2) {
-            let key_type: string;
-            let value_type: string;
-
-            if (is_array_of_pair(clazz[0]) && clazz[0][0] === gd.EnumType) {
-                key_type = `${Variant.Type.TYPE_INT}/${Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz[0][1])}`;
-            } else {
-                // special case for dictionary, int is preferred for key type of a dictionary
-                key_type = clazz[0] === Number ? Variant.Type.TYPE_INT + ":" : get_hint_string(clazz[0]);
-            }
-            
-            if (is_array_of_pair(clazz[1]) && clazz[1][0] === gd.EnumType) {
-                value_type = `${Variant.Type.TYPE_INT}/${Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz[1][1])}`;
-            } else {
-                value_type = get_hint_string(clazz[1]);
-            }
+        if (clazz instanceof TypePairPlaceholderImpl) {
+            // special case for dictionary, int is preferred for key type of a dictionary
+            const key_type = clazz.key === Number ? Variant.Type.TYPE_INT + ":" : get_hint_string(clazz.key);
+            const value_type = get_hint_string(clazz.value);
 
             if (key_type.length === 0 || value_type.length === 0) {
                 throw new Error("the given parameters are not supported or not implemented");

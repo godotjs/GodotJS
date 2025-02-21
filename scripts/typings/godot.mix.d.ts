@@ -2,7 +2,6 @@
 declare module "godot" {
     export const IntegerType: unique symbol;
     export const FloatType: unique symbol;
-    export const EnumType: unique symbol;
 
     /** A built-in type representing a method or a standalone function.  
      *  	  

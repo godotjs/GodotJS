@@ -1,6 +1,13 @@
 declare module "godot.annotations" {
     import { PropertyHint, PropertyUsageFlags, Variant, MultiplayerAPI, MultiplayerPeer } from "godot";
     import * as jsb from "godot-jsb";
+    export interface EnumPlaceholder {
+    }
+    export interface TypePairPlaceholder {
+    }
+    export function EnumType(type: any): EnumPlaceholder;
+    export function TypePair(key: ClassDescriptor, value: ClassDescriptor): TypePairPlaceholder;
+    export type ClassDescriptor = Function | Symbol | EnumPlaceholder | TypePairPlaceholder;
     /**
      *
      */
@@ -17,12 +24,11 @@ declare module "godot.annotations" {
     /**
      * A Shortcut for `export_(Variant.Type.TYPE_ARRAY, { class_: clazz })`
      */
-    export function export_array(clazz: Function): (target: any, key: string) => void;
+    export function export_array(clazz: ClassDescriptor): (target: any, key: string) => void;
     /**
      * A Shortcut for `export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] })`
      */
-    export function export_dictionary(key_class: Function, value_class: Function): (target: any, key: string) => void;
-    export type ClassDescriptor = Function | Symbol | Array<any>;
+    export function export_dictionary(key_class: ClassDescriptor, value_class: ClassDescriptor): (target: any, key: string) => void;
     /**
      * [low level export]
      */

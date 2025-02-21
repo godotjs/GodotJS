@@ -25,6 +25,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_1, jsb) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    exports.EnumType = EnumType;
+    exports.TypePair = TypePair;
     exports.signal = signal;
     exports.export_multiline = export_multiline;
     exports.export_range = export_range;
@@ -62,6 +64,18 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
             }
         }
         return type;
+    }
+    class EnumPlaceholderImpl {
+        constructor(target) { this.target = target; }
+    }
+    class TypePairPlaceholderImpl {
+        constructor(key, value) { this.key = key; this.value = value; }
+    }
+    function EnumType(type) {
+        return new EnumPlaceholderImpl(type);
+    }
+    function TypePair(key, value) {
+        return new EnumPlaceholderImpl([key, value]);
     }
     /**
      *
@@ -125,9 +139,6 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
         }
         return enum_vs.join(",");
     }
-    function is_array_of_pair(clazz) {
-        return typeof clazz === "object" && typeof clazz.length === "number" && clazz.length == 2;
-    }
     function get_hint_string(clazz) {
         let gd = require("godot");
         if (typeof clazz === "symbol") {
@@ -169,23 +180,14 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
             }
         }
         if (typeof clazz === "object") {
+            if (clazz instanceof EnumPlaceholderImpl) {
+                return `${godot_1.Variant.Type.TYPE_INT}/${godot_1.Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz.target)}`;
+            }
             // probably an Array (as key-value type descriptor for a Dictionary)
-            if (typeof clazz.length === "number" && clazz.length == 2) {
-                let key_type;
-                let value_type;
-                if (is_array_of_pair(clazz[0]) && clazz[0][0] === gd.EnumType) {
-                    key_type = `${godot_1.Variant.Type.TYPE_INT}/${godot_1.Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz[0][1])}`;
-                }
-                else {
-                    // special case for dictionary, int is preferred for key type of a dictionary
-                    key_type = clazz[0] === Number ? godot_1.Variant.Type.TYPE_INT + ":" : get_hint_string(clazz[0]);
-                }
-                if (is_array_of_pair(clazz[1]) && clazz[1][0] === gd.EnumType) {
-                    value_type = `${godot_1.Variant.Type.TYPE_INT}/${godot_1.Variant.Type.TYPE_INT}:${get_hint_string_for_enum(clazz[1][1])}`;
-                }
-                else {
-                    value_type = get_hint_string(clazz[1]);
-                }
+            if (clazz instanceof TypePairPlaceholderImpl) {
+                // special case for dictionary, int is preferred for key type of a dictionary
+                const key_type = clazz.key === Number ? godot_1.Variant.Type.TYPE_INT + ":" : get_hint_string(clazz.key);
+                const value_type = get_hint_string(clazz.value);
                 if (key_type.length === 0 || value_type.length === 0) {
                     throw new Error("the given parameters are not supported or not implemented");
                 }
@@ -401,7 +403,6 @@ define("godot.typeloader", ["require", "exports"], function (require, exports) {
     const jsb_builtin_extras = {
         "IntegerType": Symbol("IntegerType"),
         "FloatType": Symbol("FloatType"),
-        "EnumType": Symbol("EnumType"),
     };
     // callback on a godot type loaded by jsb_godot_module_loader
     exports._mod_proxy_ = function (type_loader_func) {
