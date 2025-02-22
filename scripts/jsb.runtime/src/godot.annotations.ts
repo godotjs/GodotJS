@@ -188,6 +188,26 @@ export function export_(type: Variant.Type, details?: { class_?: ClassDescriptor
 
             // overwrite hint if class_ is provided
             try {
+                //TODO more general and unified way to handle all types
+
+                if (type === Variant.Type.TYPE_OBJECT) {
+                    const clazz = details.class_;
+                    const gd = require("godot");
+                    if (typeof clazz === "function" && typeof clazz.prototype !== "undefined") {
+                        if (clazz.prototype instanceof gd.Resource) {
+                            ebd.hint = PropertyHint.PROPERTY_HINT_RESOURCE_TYPE;
+                            ebd.hint_string = clazz.name;
+                            ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
+                        } else if (clazz.prototype instanceof gd.Node) {
+                            ebd.hint = PropertyHint.PROPERTY_HINT_NODE_TYPE;
+                            ebd.hint_string = clazz.name;
+                            ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
+                        } 
+                    }
+                    
+                    jsb.internal.add_script_property(target, ebd);
+                    return;
+                }
                 let hint_string = get_hint_string(details.class_);
                 if (hint_string.length > 0) {
                     ebd.hint = PropertyHint.PROPERTY_HINT_TYPE_STRING;
