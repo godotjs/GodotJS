@@ -29,6 +29,7 @@ declare module "godot.annotations" {
      * A Shortcut for `export_(Variant.Type.TYPE_DICTIONARY, { class_: [key_class, value_class] })`
      */
     export function export_dictionary(key_class: ClassDescriptor, value_class: ClassDescriptor): (target: any, key: string) => void;
+    export function export_object(class_: ClassDescriptor): (target: any, key: string) => void;
     /**
      * [low level export]
      */

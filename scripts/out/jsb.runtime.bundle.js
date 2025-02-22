@@ -38,6 +38,7 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
     exports.export_exp_easing = export_exp_easing;
     exports.export_array = export_array;
     exports.export_dictionary = export_dictionary;
+    exports.export_object = export_object;
     exports.export_ = export_;
     exports.export_var = export_var;
     exports.export_enum = export_enum;
@@ -195,6 +196,9 @@ define("godot.annotations", ["require", "exports", "godot", "godot-jsb"], functi
             }
         }
         return "";
+    }
+    function export_object(class_) {
+        return export_(godot_1.Variant.Type.TYPE_OBJECT, { class_: class_ });
     }
     /**
      * [low level export]

@@ -174,6 +174,10 @@ function get_hint_string(clazz: any): string {
     return "";
 }
 
+export function export_object(class_: ClassDescriptor) {
+    return export_(Variant.Type.TYPE_OBJECT, { class_: class_ });
+}
+
 /**
  * [low level export]
  */
