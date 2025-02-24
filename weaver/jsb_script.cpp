@@ -15,27 +15,16 @@ namespace
     struct JSEnvironment
     {
     private:
-        bool is_temp_;
+        bool is_shadow_;
         std::shared_ptr<jsb::Environment> target_;
 
-    public:
-        // p_path_hint is only used for logging
-        JSEnvironment(const String& p_path_hint, bool p_is_temp_allowed)
+        void init()
         {
-            target_ = jsb::Environment::_access();
-            if (target_)
+            if (is_shadow_ && !target_)
             {
-                is_temp_ = false;
-            }
-            else
-            {
-                jsb_checkf(p_is_temp_allowed, "no available Environment on thread %d for %s: %s", Thread::get_caller_id(), jsb_typename(GodotJSScript), p_path_hint);
-                is_temp_ = true;
-
                 //TODO let GodotJSLanguage manage all temporary Environment (possible to reuse if still alive with delayed dispose call somehow)?
                 //     PITFALL: race condition issue if do so (e.g. dispose() called after an Env is reacquired in background threads)
 
-                JSB_LOG(Log, "creating a temporary Environment on thread %d for %s: %s", Thread::get_caller_id(), jsb_typename(GodotJSScript), p_path_hint);
                 jsb::Environment::CreateParams params;
                 params.initial_class_slots = 128;
                 params.initial_object_slots = 512;
@@ -43,13 +32,33 @@ namespace
                 params.thread_id = Thread::get_caller_id();
 
                 target_ = std::make_shared<jsb::Environment>(params);
+                JSB_LOG(Log, "creating a temporary Environment on thread %d for %s [env %s]",
+                    Thread::get_caller_id(),
+                    jsb_typename(GodotJSScript),
+                    (uintptr_t) target_->id());
                 target_->init();
+            }
+        }
+
+    public:
+        // p_path_hint is only used for logging
+        JSEnvironment(const String& p_path_hint, bool p_is_shadow_allowed)
+        {
+            target_ = jsb::Environment::_access();
+            if (target_)
+            {
+                is_shadow_ = false;
+            }
+            else
+            {
+                jsb_ensuref(p_is_shadow_allowed, "no available Environment on thread %d for %s: %s", Thread::get_caller_id(), jsb_typename(GodotJSScript), p_path_hint);
+                is_shadow_ = true;
             }
         }
 
         ~JSEnvironment()
         {
-            if (is_temp_ && target_) target_->dispose();
+            if (is_shadow_ && target_) target_->dispose();
         }
 
         JSEnvironment(const JSEnvironment&) = delete;
@@ -58,13 +67,11 @@ namespace
         JSEnvironment(JSEnvironment&& p_other) noexcept = delete;
         JSEnvironment& operator=(JSEnvironment&& p_other) noexcept = delete;
 
-        bool is_temp() const { return is_temp_; }
+        jsb_no_discard bool is_shadow() const { return is_shadow_; }
 
-        jsb::Environment* operator->() { return target_.get(); }
-        const jsb::Environment* operator->() const { return target_.get(); }
+        jsb::Environment* operator->() { init(); return target_.get(); }
 
-        explicit operator bool() const { return !!target_; }
-        operator std::shared_ptr<jsb::Environment>() { return target_; }
+        operator std::shared_ptr<jsb::Environment>() { init(); return target_; }
     };
 }
 
@@ -213,12 +220,18 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this, bool p_is_temp_al
     jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name));
 
     JSEnvironment env(get_path(), p_is_temp_allowed);
-    if (env.is_temp())
+    if (env.is_shadow())
     {
-        GodotJSScriptTempInstance* temp_instance = memnew(GodotJSScriptTempInstance);
-        temp_instance->owner_ = p_this;
-        temp_instance->script_ = Ref(this);
-        return temp_instance;
+        GodotJSShadowScriptInstance* shadow_instance = memnew(GodotJSShadowScriptInstance);
+        shadow_instance->owner_ = p_this;
+        shadow_instance->script_ = Ref(this);
+
+        // ensure `GodotJSScript::instance_has(obj)` works properly even if a shadow instance is used.
+        {
+            MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
+            instances_.insert(shadow_instance->owner_);
+        }
+        return shadow_instance;
     }
 
     jsb::JavaScriptModule* module = nullptr;
@@ -524,7 +537,6 @@ void GodotJSScript::load_module_immediately()
 
     const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
     JSEnvironment env(get_path(), true);
-    jsb_ensuref(env, "not JS environment available on thread %d for the script %s", Thread::get_caller_id(), path);
 
     loaded_ = true;
     base.unref();

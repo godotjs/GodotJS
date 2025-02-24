@@ -9,7 +9,8 @@
 class GodotJSScript : public Script
 {
     friend class GodotJSScriptInstance;
-    friend class GodotJSScriptTempInstance;
+    friend class GodotJSScriptInstanceBase;
+    friend class GodotJSShadowScriptInstance;
     typedef Script super;
 
     GDCLASS(GodotJSScript, Script)

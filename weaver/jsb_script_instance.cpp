@@ -1,6 +1,15 @@
 #include "jsb_script_instance.h"
 #include "jsb_script_language.h"
 
+GodotJSScriptInstanceBase::~GodotJSScriptInstanceBase()
+{
+    jsb_check(script_.is_valid() && owner_ && script_->get_language());
+
+    const GodotJSScriptLanguage* lang = (GodotJSScriptLanguage*) script_->get_language();
+    MutexLock lock(lang->mutex_);
+    script_->instances_.erase(owner_);
+}
+
 jsb::ScriptClassInfoPtr GodotJSScriptInstance::get_script_class() const
 {
     return env_->get_script_class(class_id_);
@@ -100,20 +109,4 @@ void GodotJSScriptInstance::notification(int p_notification, bool p_reversed)
     const Variant* argv[] = {&value};
     Callable::CallError error;
     callp(jsb_string_name(_notification), argv, 1, error);
-}
-
-ScriptLanguage* GodotJSScriptInstance::get_language()
-{
-    jsb_check(script_.is_valid());
-    return script_->get_language();
-}
-
-GodotJSScriptInstance::~GodotJSScriptInstance()
-{
-    JSB_BENCHMARK_SCOPE(GodotJSScriptInstance, Destruct);
-    jsb_check(script_.is_valid() && owner_ && script_->get_language());
-
-    const GodotJSScriptLanguage* lang = (GodotJSScriptLanguage*) script_->get_language();
-    MutexLock lock(lang->mutex_);
-    script_->instances_.erase(owner_);
 }

@@ -292,11 +292,11 @@ namespace jsb
         if (EnvironmentStore::get_shared().exists(this))
         {
             jsb_check(is_caller_thread());
-            JSB_LOG(Debug, "ensure Environment is disposed before destructed");
+            JSB_LOG(Debug, "ensure Environment is disposed before destructed %s", (uintptr_t) id());;
             dispose();
         }
 
-        JSB_LOG(Verbose, "destructing Environment");
+        JSB_LOG(Verbose, "destructing Environment %s", (uintptr_t) id());
 #if JSB_WITH_ESSENTIALS
         timer_tags_.tags.clear();
         timer_manager_.clear_all();
@@ -351,7 +351,7 @@ namespace jsb
 
     void Environment::dispose()
     {
-        JSB_LOG(Verbose, "disposing Environment");
+        JSB_LOG(Verbose, "disposing Environment %s", (uintptr_t) id());
         // destroy context
         {
             v8::Isolate* isolate = this->isolate_;
@@ -686,20 +686,22 @@ namespace jsb
 
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {
+        // handle the shadow instance created by asynchronous ResourceLoader
+        //TODO refactor
+        if (ScriptInstance* si = p_pointer->get_script_instance())
         {
-            //TODO stupid way to handle the temp instance created by asynchronous ResourceLoader
-            if (ScriptInstance* si = p_pointer->get_script_instance())
+            // to ensure the type of the script instance is GodotJSScriptInstanceBase
+            if (si->get_language() == GodotJSScriptLanguage::get_singleton())
             {
-                if (GodotJSScriptTempInstance* temp_script_instance = dynamic_cast<GodotJSScriptTempInstance*>(si))
+                GodotJSScriptInstanceBase* script_instance = (GodotJSScriptInstanceBase*) si;
+                if (script_instance->is_shadow())
                 {
                     // need to strongly reference the owner object if it's RefCounted. we use Variant for simplicity
                     const Variant holder = p_pointer;
-
-                    jsb_check(si->get_language() == GodotJSScriptLanguage::get_singleton());
-                    const Ref<GodotJSScript> script = temp_script_instance->get_script();
+                    const Ref<GodotJSScript> script = script_instance->get_script();
                     jsb_check(script.is_valid());
                     List<Pair<StringName, Variant>> state;
-                    temp_script_instance->get_property_state(state);
+                    script_instance->get_property_state(state);
                     p_pointer->set_script_instance(nullptr);
                     ScriptInstance* new_script_instance = script->instance_create(p_object, p_pointer);
                     jsb_check(new_script_instance);
