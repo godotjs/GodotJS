@@ -581,6 +581,7 @@ namespace jsb
 
     void _invoke(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Function>& p_callback, const Message* p_message)
     {
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         v8::Local<v8::Value> value;
         if (p_message)
         {
@@ -608,6 +609,9 @@ namespace jsb
         {
             JSB_LOG(Error, "%s", BridgeHelper::get_exception(try_catch));
         }
+#else
+        JSB_LOG(Error, "worker message deserializer has not been implemented yet");
+#endif
     }
 
     void Environment::_on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message)
