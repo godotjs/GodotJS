@@ -128,6 +128,7 @@ void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const
         "while", "void", "null", "super", "this", "new", "in", "await", "async", "extends", "static",
         "package", "implements", "interface", "continue", "yield", "const", "export", "finally", "for",
         "import", "byte", "delete", "goto",
+        "default",
     };
     for (int i = 0, n = std::size(keywords); i < n; ++i)
     {
