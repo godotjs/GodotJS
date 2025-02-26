@@ -299,7 +299,10 @@ namespace jsb
         case Variant::PACKED_VECTOR3_ARRAY:
         case Variant::PACKED_COLOR_ARRAY:
             {
-                jsb_checkf(Variant::can_convert(p_cvar.get_type(), p_type), "variant type can't convert to %s from %s", Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
+                // nil var is considered as acceptable here (in the case of set_script_property_value called from godot scene state restoring)
+                jsb_checkf(p_cvar.get_type() == Variant::NIL || Variant::can_convert(p_cvar.get_type(), p_type),
+                    "variant type can't convert to %s from %s",
+                    Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
                 Environment* env = Environment::wrap(isolate);
                 NativeClassID class_id;
                 if (const NativeClassInfoPtr class_info = env->expose_godot_primitive_class(p_type, &class_id))
