@@ -50,6 +50,18 @@ namespace jsb
         };
     }
 
+    namespace EnvironmentFlags
+    {
+        enum Type : uint8_t
+        {
+            None = 0,
+            MicrotaskCheckpoint = 1 << 0,
+
+            PreDispose = 1 << 1,
+            PostDispose = 1 << 2,
+        };
+    }
+
     struct TransferData
     {
         virtual ~TransferData() = default;
@@ -66,15 +78,17 @@ namespace jsb
                 TYPE_NONE,
 
                 // no finalization: no need to do additional finalization because `free_callback` is triggered by godot when an Object is being deleted
-                TYPE_FREE,
+                TYPE_UNLINK,
 
-                // should only be used in gc callback
-                TYPE_GC,
+                // should only be used in gc callback.
+                // break the binding. free the managed native object.
+                TYPE_GC_FREE,
 
                 TYPE_REF,
                 TYPE_DEREF,
 
                 TYPE_TRANSFER_,
+                TYPE_GC_REQUEST,
             };
 
             Type type_;
@@ -140,13 +154,15 @@ namespace jsb
         JSTimerTags<uint64_t> timer_tags_;
         internal::TTimerManager<JavaScriptTimerAction> timer_manager_;
 #endif
-        bool microtasks_run_ = false;
+
+        // EnvironmentFlags
+        uint32_t flags_ = EnvironmentFlags::None;
 
 #if JSB_WITH_DEBUGGER
         JavaScriptDebugger debugger_;
 #endif
 
-        internal::SourceMapCache _source_map_cache;
+        internal::SourceMapCache source_map_cache_;
 
         internal::CFunctionPointers function_pointers_;
 
@@ -321,9 +337,9 @@ namespace jsb
         jsb_force_inline bool is_caller_thread() const { return Thread::get_caller_id() == thread_id_; }
         jsb_force_inline void check_internal_state() const { jsb_checkf(is_caller_thread(), "multi-threaded call not supported yet"); }
 
-        jsb_force_inline internal::SourceMapCache& get_source_map_cache() { return _source_map_cache; }
+        jsb_force_inline internal::SourceMapCache& get_source_map_cache() { return source_map_cache_; }
 
-        jsb_force_inline void notify_microtasks_run() { microtasks_run_ = true; }
+        jsb_force_inline void notify_microtasks_run() { flags_ |= EnvironmentFlags::MicrotaskCheckpoint; }
 
         static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { jsb_check(p_templet.get_type() != Variant::OBJECT); return variant_allocator_.alloc(p_templet); }
         static jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
@@ -401,8 +417,8 @@ namespace jsb
         void mark_as_persistent_object(void* p_pointer);
 
         // request a full garbage collection
-        void gc();
-        void set_battery_save_mode(bool p_enabled);
+        static void gc();
+        void set_battery_save_mode(bool p_enabled) { isolate_->SetBatterySaverMode(p_enabled); }
 
         void update(uint64_t p_delta_msecs);
 
@@ -466,7 +482,7 @@ namespace jsb
          */
         NativeClassID add_native_class(const NativeClassType::Type p_type, const StringName& p_class_name)
         {
-            jsb_check(Thread::get_caller_id() == thread_id_);
+            check_internal_state();
             const NativeClassID class_id = native_classes_.add(NativeClassInfo());
             NativeClassInfo& class_info = native_classes_.get_value(class_id);
             class_info.type = p_type;
@@ -514,6 +530,8 @@ namespace jsb
         void exec_async_calls();
         void exec_async_call(AsyncCall::Type p_type, void* p_binding);
 
+        void _on_gc_request();
+
         /**
          * @note execution order is not guaranteed
          */
@@ -537,7 +555,7 @@ namespace jsb
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
             Environment* env = wrap(info.GetIsolate());
-            env->add_async_call(AsyncCall::TYPE_GC, info.GetParameter());
+            env->add_async_call(AsyncCall::TYPE_GC_FREE, info.GetParameter());
         }
 
         // only for quickjs.impl

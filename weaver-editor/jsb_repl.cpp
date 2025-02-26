@@ -181,9 +181,7 @@ void GodotJSREPL::check_install()
 
 void GodotJSREPL::_gc_pressed()
 {
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
-    jsb_check(lang);
-    lang->get_environment()->gc();
+    jsb::Environment::gc();
     add_line("Explicit GC requested");
 }
 

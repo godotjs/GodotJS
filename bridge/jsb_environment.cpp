@@ -53,6 +53,20 @@ namespace jsb
 
     struct EnvironmentStore
     {
+        std::vector<std::shared_ptr<Environment>> get_list()
+        {
+            std::vector<std::shared_ptr<Environment>> rval;
+            lock_.lock();
+            for (void* ptr : all_runtimes_)
+            {
+                //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
+                Environment* env = (Environment*) ptr;
+                rval.push_back(env->shared_from_this());
+            }
+            lock_.unlock();
+            return rval;
+        }
+
         // return an Environment shared pointer with an unknown pointer if it's a valid Environment instance.
         std::shared_ptr<Environment> access(void* p_runtime)
         {
@@ -68,6 +82,7 @@ namespace jsb
             return rval;
         }
 
+        // return existing Environment on the caller thread
         std::shared_ptr<Environment> access()
         {
             std::shared_ptr<Environment> rval;
@@ -158,7 +173,7 @@ namespace jsb
                 // must check before async, InstanceBindingCallback need to know whether the object should die or not if it's a ref-counted object.
                 if (env->verify_object(p_binding))
                 {
-                    env->add_async_call(Environment::AsyncCall::TYPE_FREE, p_binding);
+                    env->add_async_call(Environment::AsyncCall::TYPE_UNLINK, p_binding);
                 }
             }
         }
@@ -291,8 +306,8 @@ namespace jsb
         //TODO not always safe
         if (EnvironmentStore::get_shared().exists(this))
         {
-            jsb_check(is_caller_thread());
-            JSB_LOG(Debug, "ensure Environment is disposed before destructed %s", (uintptr_t) id());;
+            JSB_LOG(Warning, "Environment is not disposed before destructing it %s", (uintptr_t) id());;
+            check_internal_state();
             dispose();
         }
 
@@ -352,6 +367,8 @@ namespace jsb
     void Environment::dispose()
     {
         JSB_LOG(Verbose, "disposing Environment %s", (uintptr_t) id());
+
+        flags_ |= EnvironmentFlags::PreDispose;
         // destroy context
         {
             v8::Isolate* isolate = this->isolate_;
@@ -385,7 +402,7 @@ namespace jsb
         }
 
         exec_async_calls();
-        gc();
+        _on_gc_request();
 
         // Cleanup all objects by forcibly invoke all callbacks not invoked by v8.
         JSB_LOG(Verbose, "cleanup %d objects", object_db_.size());
@@ -395,8 +412,8 @@ namespace jsb
             free_object(pointer, FinalizationType::Default /* Force? */);
         }
 
+        flags_ |= EnvironmentFlags::PostDispose;
         EnvironmentStore::get_shared().remove(this);
-
     }
 
     void Environment::update(uint64_t p_delta_msecs)
@@ -411,7 +428,7 @@ namespace jsb
             //     we need to forward it to onerror (if the current env is the master of a worker)
             if (timer_manager_.invoke_timers(isolate_))
             {
-                microtasks_run_ = true;
+                notify_microtasks_run();
             }
         }
 #endif
@@ -440,9 +457,9 @@ namespace jsb
 #if JSB_WITH_QUICKJS || JSB_WITH_JAVASCRIPTCORE
         isolate_->PerformMicrotaskCheckpoint();
 #else
-        if (microtasks_run_)
+        if (flags_ & EnvironmentFlags::MicrotaskCheckpoint)
         {
-            microtasks_run_ = false;
+            flags_ &= ~EnvironmentFlags::MicrotaskCheckpoint;
             isolate_->PerformMicrotaskCheckpoint();
         }
 #endif
@@ -474,8 +491,8 @@ namespace jsb
         {
         case AsyncCall::TYPE_REF:       reference_object(p_binding, true); break;
         case AsyncCall::TYPE_DEREF:     reference_object(p_binding, false); break;
-        case AsyncCall::TYPE_FREE:      free_object(p_binding, FinalizationType::None); break;
-        case AsyncCall::TYPE_GC:        free_object(p_binding, FinalizationType::Default); break;
+        case AsyncCall::TYPE_UNLINK:    free_object(p_binding, FinalizationType::None); break;
+        case AsyncCall::TYPE_GC_FREE:   free_object(p_binding, FinalizationType::Default); break;
         case AsyncCall::TYPE_TRANSFER_:
             {
                 //TODO need a better way to control lifetime of TransferObjectData?
@@ -489,6 +506,7 @@ namespace jsb
                 memdelete(transfer_data);
             }
             break;
+        case AsyncCall::TYPE_GC_REQUEST: _on_gc_request(); break;
         default: jsb_checkf(false, "unknown AsyncCall: %d", p_type); break;
         }
     }
@@ -660,24 +678,6 @@ namespace jsb
         }
     }
 
-    void Environment::gc()
-    {
-        check_internal_state();
-        string_name_cache_.clear();
-        _source_map_cache.clear();
-
-#if JSB_EXPOSE_GC_FOR_TESTING
-        isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
-#else
-        isolate_->LowMemoryNotification();
-#endif
-    }
-
-    void Environment::set_battery_save_mode(bool p_enabled)
-    {
-        isolate_->SetBatterySaverMode(p_enabled);
-    }
-
     std::shared_ptr<Environment> Environment::_access(void* p_runtime)
     {
         return EnvironmentStore::get_shared().access(p_runtime);
@@ -745,7 +745,7 @@ namespace jsb
 
     NativeObjectID Environment::bind_pointer(NativeClassID p_class_id, NativeClassType::Type p_type, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc)
     {
-        jsb_checkf(Thread::get_caller_id() == thread_id_, "multi-threaded call not supported yet");
+        check_internal_state();
         jsb_checkf(native_classes_.is_valid_index(p_class_id), "bad class_id");
 
         ObjectHandlePtr handle;
@@ -802,7 +802,7 @@ namespace jsb
 
     bool Environment::reference_object(void* p_pointer, bool p_is_inc)
     {
-        jsb_check(Thread::get_caller_id() == thread_id_);
+        check_internal_state();
         const ObjectHandlePtr object_handle = object_db_.try_get_object(p_pointer);
         if (jsb_unlikely(!object_handle))
         {
@@ -851,7 +851,7 @@ namespace jsb
     // whether the ObjectHandlePtr lock satisfies the requirement of thread safety is still unknown
     void Environment::free_object(void* p_pointer, FinalizationType p_finalize)
     {
-        jsb_check(Thread::get_caller_id() == thread_id_);
+        check_internal_state();
         ObjectHandlePtr object_handle = object_db_.try_get_object(p_pointer);
 
         // avoid crash in the situation that `InstanceBindingCallbacks::free_callback` is called before JS object gc callback is called,
@@ -1635,8 +1635,13 @@ namespace jsb
     {
         // static calls are not supported
         if (!p_object_id) return {};
+        if (!is_caller_thread())
+        {
+            JSB_LOG(Error, "can not call script method from a different thread");
+            r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
+            return {};
+        }
 
-        this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
@@ -1757,6 +1762,30 @@ namespace jsb
         else
         {
             p_to->add_async_call(AsyncCall::TYPE_TRANSFER_, memnew(TransferObjectData(p_worker_handle_id, p_target, {}, {})));
+        }
+    }
+
+    void Environment::_on_gc_request()
+    {
+        string_name_cache_.clear();
+        source_map_cache_.clear();
+
+#if JSB_EXPOSE_GC_FOR_TESTING
+        isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
+#else
+        isolate_->LowMemoryNotification();
+#endif
+    }
+
+    void Environment::gc()
+    {
+        const auto list = EnvironmentStore::get_shared().get_list();
+        for (auto& it : list)
+        {
+            // skip environments that are about to be disposed or already disposed
+            if (it->flags_ & EnvironmentFlags::PreDispose) continue;
+
+            it->add_async_call(AsyncCall::TYPE_GC_REQUEST, nullptr);
         }
     }
 
