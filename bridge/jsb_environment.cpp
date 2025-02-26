@@ -305,7 +305,7 @@ namespace jsb
     Environment::~Environment()
     {
         //TODO not always safe
-        if (EnvironmentStore::get_shared().exists(this))
+        if ((flags_ & EnvironmentFlags::PreDispose) == 0)
         {
             JSB_LOG(Warning, "Environment is not disposed before destructing it %s", (uintptr_t) id());;
             check_internal_state();
