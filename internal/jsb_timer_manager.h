@@ -28,25 +28,22 @@ namespace jsb::internal
     private:
         Index32 id;
 
-        template<typename TFunction>
+        template<typename, uint8_t, uint8_t>
         friend class TTimerManager;
     };
 
     //NOTE Do not use std::function as TFunction, because SArray does not support `move`.
-    template<typename TFunction>
+    template<typename TFunction, uint8_t kWheelNum = 12, uint8_t kWheelSlotNum = 16>
     class TTimerManager
     {
     public:
         typedef uint64_t Span;
 
     private:
-        static constexpr uint8_t kWheelSlotNum = 16;
-        static constexpr uint8_t kWheelNum = 12;
         static constexpr uint64_t kJiffies = 10;
 
         struct TimerData
         {
-            Index32 id;
             bool loop;
 
             uint64_t rate;
@@ -182,7 +179,6 @@ namespace jsb::internal
             timer.rate = p_rate;
             timer.expires = delay + _elapsed;
             timer.action = std::forward<TFunction>(p_fn);
-            timer.id = index;
             timer.loop = p_is_loop;
 
             if (delay == 0)
@@ -190,7 +186,7 @@ namespace jsb::internal
                 JSB_LOG(Warning, "timer with no delay will initially be processed after a single tick");
             }
 
-            rearrange_timer(timer.id, delay);
+            rearrange_timer(index, delay);
             inout_handle = TimerHandle(index);
         }
 
@@ -264,11 +260,11 @@ namespace jsb::internal
                         {
                             if (timer->expires > _elapsed)
                             {
-                                rearrange_timer(timer->id, timer->expires - _elapsed);
+                                rearrange_timer(index, timer->expires - _elapsed);
                             }
                             else
                             {
-                                _activated_timers.emplace_back(timer->id);
+                                _activated_timers.emplace_back(index);
                             }
                         }
                     }
@@ -299,7 +295,7 @@ namespace jsb::internal
                 {
                     // update the next tick time
                     timer->expires = timer->rate + _elapsed;
-                    rearrange_timer(timer->id, timer->rate);
+                    rearrange_timer(index, timer->rate);
                 }
                 else
                 {
