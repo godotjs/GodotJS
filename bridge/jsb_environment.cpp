@@ -692,7 +692,7 @@ namespace jsb
     {
         // handle the shadow instance created by asynchronous ResourceLoader
         //TODO refactor
-        if (ScriptInstance* si = p_pointer->get_script_instance())
+        if (ScriptInstance* si = p_pointer->get_script_instance(); si && !si->is_placeholder())
         {
             // to ensure the type of the script instance is GodotJSScriptInstanceBase
             if (si->get_language() == GodotJSScriptLanguage::get_singleton())
