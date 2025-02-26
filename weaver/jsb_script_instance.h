@@ -8,8 +8,28 @@
 class GodotJSScriptInstanceBase : public ScriptInstance
 {
 protected:
+    struct ScriptProfilingInfo
+    {
+        String path_;
+        StringName class_;
+    };
+
+    struct ScriptCallProfilingScope
+    {
+        const ScriptProfilingInfo& info_;
+        StringName method_;
+        uint64_t start_time_;
+
+        ScriptCallProfilingScope(const ScriptProfilingInfo& p_info, const StringName& p_method);
+        ~ScriptCallProfilingScope();
+    };
+
+protected:
     Object* owner_ = nullptr;
     Ref<GodotJSScript> script_;
+#if JSB_DEBUG
+    ScriptProfilingInfo profiling_info_;
+#endif
 
 public:
     virtual ~GodotJSScriptInstanceBase() override;

@@ -16,6 +16,30 @@ private:
     friend class GodotJSScriptInstanceBase;
     friend class ResourceFormatLoaderGodotJSScript;
 
+#if JSB_DEBUG
+    struct ScriptCallProfileInfo
+    {
+        uint64_t total_time = 0;
+        uint64_t total_calls = 0;
+        uint64_t frame_time = 0;
+        uint64_t frame_calls = 0;
+        uint64_t last_frame_time = 0;
+        uint64_t last_frame_calls = 0;
+    };
+
+    struct ScriptClassProfileInfo
+    {
+        String path;
+        HashMap<StringName, ScriptCallProfileInfo> methods;
+    };
+
+    struct ScriptCallProfileInfoMap
+    {
+        bool enabled = false;
+        HashMap<StringName, ScriptClassProfileInfo> classes;
+    };
+#endif
+
     static GodotJSScriptLanguage* singleton_;
 
     Mutex mutex_;
@@ -27,6 +51,7 @@ private:
 
 #if JSB_DEBUG
     GodotJSMonitor* monitor_;
+    ScriptCallProfileInfoMap profile_info_map_;
 #endif
 
     // [TS] matches 'export default class ClassName extends BaseName {'
@@ -54,6 +79,8 @@ public:
     }
 
     void scan_external_changes();
+
+    void add_script_call_profile_info(const String& p_path, const StringName& p_class, const StringName& p_method, uint64_t p_time);
 
     template<size_t N>
     jsb::JSValueMove eval_source(const char (&p_code)[N], Error& r_err)
@@ -151,15 +178,11 @@ public:
     {
     }
 
-    virtual void profiling_start() override
-    {
-    }
-    virtual void profiling_stop() override
-    {
-    }
+    virtual void profiling_start() override;
+    virtual void profiling_stop() override;
 
-    virtual int profiling_get_accumulated_data(ProfilingInfo* p_info_arr, int p_info_max) override { return 0; }
-    virtual int profiling_get_frame_data(ProfilingInfo* p_info_arr, int p_info_max) override { return 0; }
+    virtual int profiling_get_accumulated_data(ProfilingInfo* p_info_arr, int p_info_max) override;
+    virtual int profiling_get_frame_data(ProfilingInfo* p_info_arr, int p_info_max) override;
 
     virtual bool handles_global_class_type(const String& p_type) const override;
 

@@ -99,6 +99,25 @@ void GodotJSScriptLanguage::frame()
     last_ticks_ = base_ticks;
     environment_->update(elapsed_milli);
     jsb::Environment::exec_sync_delete();
+
+#if JSB_DEBUG
+    {
+        MutexLock lock(mutex_);
+        if (profile_info_map_.enabled)
+        {
+            for (auto& class_kv : profile_info_map_.classes)
+            {
+                for (auto& method_kv : class_kv.value.methods)
+                {
+                    method_kv.value.last_frame_calls = method_kv.value.frame_calls;
+                    method_kv.value.last_frame_time = method_kv.value.frame_time;
+                    method_kv.value.frame_calls = 0;
+                    method_kv.value.frame_time = 0;
+                }
+            }
+        }
+    }
+#endif
 }
 
 void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const
@@ -367,5 +386,104 @@ void GodotJSScriptLanguage::thread_exit()
 {
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
     jsb::Worker::on_thread_exit();
+#endif
+}
+
+void GodotJSScriptLanguage::profiling_start()
+{
+#if JSB_DEBUG
+    MutexLock lock(mutex_);
+    profile_info_map_.enabled = true;
+#endif
+}
+
+void GodotJSScriptLanguage::profiling_stop()
+{
+#if JSB_DEBUG
+    MutexLock lock(mutex_);
+    profile_info_map_.enabled = false;
+#endif
+}
+
+void GodotJSScriptLanguage::add_script_call_profile_info(const String& p_path, const StringName& p_class, const StringName& p_method, uint64_t p_time)
+{
+    // we only collect GodotJSScriptInstance function profiling data instead of the deep profiling data from JS runtime.
+    // please use Chrome DevTools for deep JS profiling.
+
+#if JSB_DEBUG
+    MutexLock lock(mutex_);
+    if (!profile_info_map_.enabled) return;
+
+    ScriptClassProfileInfo& prof = profile_info_map_.classes[p_class];
+    prof.path = p_path;
+    prof.methods[p_method].frame_calls++;
+    prof.methods[p_method].frame_time += p_time;
+    prof.methods[p_method].total_calls++;
+    prof.methods[p_method].total_time += p_time;
+#endif
+}
+
+namespace
+{
+    String to_signature(const String& p_path, const StringName& p_class, const StringName& p_method)
+    {
+        // path :: line :: class :: method
+        return jsb_format("%s::0::%s::%s", p_path, p_class, p_method);
+    }
+}
+
+int GodotJSScriptLanguage::profiling_get_accumulated_data(ProfilingInfo* p_info_arr, int p_info_max)
+{
+#if JSB_DEBUG
+    MutexLock lock(mutex_);
+    if (!profile_info_map_.enabled) return 0;
+
+    int current = 0;
+    for (const auto& class_kv : profile_info_map_.classes)
+    {
+        for (const auto& method_kv : class_kv.value.methods)
+        {
+            if (current >= p_info_max)
+            {
+                return current;
+            }
+            p_info_arr[current].signature = to_signature(class_kv.value.path, class_kv.key, method_kv.key);
+            p_info_arr[current].self_time = method_kv.value.total_time;
+            p_info_arr[current].total_time = method_kv.value.total_time;
+            p_info_arr[current].call_count = method_kv.value.total_calls;
+            current++;
+        }
+    }
+    return current;
+#else
+    return 0;
+#endif
+}
+
+int GodotJSScriptLanguage::profiling_get_frame_data(ProfilingInfo* p_info_arr, int p_info_max)
+{
+#if JSB_DEBUG
+    MutexLock lock(mutex_);
+    if (!profile_info_map_.enabled) return 0;
+
+    int current = 0;
+    for (const auto& class_kv : profile_info_map_.classes)
+    {
+        for (const auto& method_kv : class_kv.value.methods)
+        {
+            if (current >= p_info_max)
+            {
+                return current;
+            }
+            p_info_arr[current].signature = to_signature(class_kv.value.path, class_kv.key, method_kv.key);
+            p_info_arr[current].self_time = method_kv.value.last_frame_time;
+            p_info_arr[current].total_time = method_kv.value.last_frame_time;
+            p_info_arr[current].call_count = method_kv.value.last_frame_calls;
+            current++;
+        }
+    }
+    return current;
+#else
+    return 0;
 #endif
 }

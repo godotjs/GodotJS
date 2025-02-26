@@ -1,6 +1,21 @@
 #include "jsb_script_instance.h"
 #include "jsb_script_language.h"
 
+GodotJSScriptInstanceBase::ScriptCallProfilingScope::ScriptCallProfilingScope(const ScriptProfilingInfo& p_info, const StringName& p_method)
+            : info_(p_info), method_(p_method)
+{
+    start_time_ = OS::get_singleton()->get_ticks_usec();
+}
+
+GodotJSScriptInstanceBase::ScriptCallProfilingScope::~ScriptCallProfilingScope()
+{
+    GodotJSScriptLanguage::get_singleton()->add_script_call_profile_info(
+        info_.path_,
+        info_.class_,
+        method_,
+        OS::get_singleton()->get_ticks_usec() - start_time_);
+}
+
 GodotJSScriptInstanceBase::~GodotJSScriptInstanceBase()
 {
     jsb_check(script_.is_valid() && owner_ && script_->get_language());
@@ -86,6 +101,14 @@ bool GodotJSScriptInstance::has_method(const StringName& p_method) const
 
 Variant GodotJSScriptInstance::callp(const StringName& p_method, const Variant** p_args, int p_argcount, Callable::CallError& r_error)
 {
+#if JSB_DEBUG
+    if (profiling_info_.path_.is_empty())
+    {
+        profiling_info_.path_ = script_->get_path();
+        profiling_info_.class_ = get_script_class()->js_class_name;
+    }
+    ScriptCallProfilingScope profiling_scope(profiling_info_, p_method);
+#endif
     return env_->call_script_method(class_id_, object_id_, p_method, p_args, p_argcount, r_error);
 }
 
