@@ -59,6 +59,7 @@ namespace jsb
 
             PreDispose = 1 << 1,
             PostDispose = 1 << 2,
+            Worker = 1 << 3,
         };
     }
 
@@ -195,6 +196,7 @@ namespace jsb
             uint16_t debugger_port = 0;
 
             Thread::ID thread_id = 0;
+            bool is_worker = false;
         };
 
         Environment(const CreateParams& p_params);

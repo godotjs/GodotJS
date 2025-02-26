@@ -243,6 +243,7 @@ namespace jsb
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
 
+        if (p_params.is_worker) flags_ |= EnvironmentFlags::Worker;
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
