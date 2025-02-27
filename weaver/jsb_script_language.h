@@ -50,7 +50,7 @@ private:
     std::shared_ptr<jsb::Environment> environment_;
 
 #if JSB_DEBUG
-    GodotJSMonitor* monitor_;
+    GodotJSMonitor* monitor_ = nullptr;
     ScriptCallProfileInfoMap profile_info_map_;
 #endif
 

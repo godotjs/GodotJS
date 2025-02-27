@@ -71,7 +71,7 @@ void GodotJSScriptLanguage::init()
     }
 
 #if JSB_DEBUG
-    monitor_ = memnew(GodotJSMonitor);
+    if (::Performance::get_singleton()) monitor_ = memnew(GodotJSMonitor);
 #endif
 }
 
@@ -79,7 +79,7 @@ void GodotJSScriptLanguage::finish()
 {
     jsb_check(once_inited_);
 #if JSB_DEBUG
-    memdelete(monitor_);
+    if (monitor_) memdelete(monitor_);
 #endif
     once_inited_ = false;
     environment_->dispose();
