@@ -74,7 +74,10 @@ namespace jsb::tests
 
     TEST_CASE("[jsb] timer manager - simple")
     {
-        internal::TTimerManager<TimerFunction> tm;
+        typedef internal::TTimerManager<TimerFunction, 12, 6> JSTimerManager;
+        JSTimerManager tm;
+        static constexpr size_t kSize = sizeof(JSTimerManager);
+        static constexpr double kMaxRange = (double) JSTimerManager::get_max_range() / (1000 /*sec*/ * 60 /*min*/ * 60 /*hour*/ * 24 /*day*/ * 365 /*year*/);
 
         TimerContext ctx;
         internal::TimerHandle t100 = tm.add_timer(TimerFunction(), 100, true);

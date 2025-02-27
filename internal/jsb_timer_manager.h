@@ -28,20 +28,25 @@ namespace jsb::internal
     private:
         Index32 id;
 
-        template<typename, uint8_t, uint8_t>
+        template<typename, uint8_t, uint8_t, uint64_t>
         friend class TTimerManager;
     };
 
-    //NOTE Do not use std::function as TFunction, because SArray does not support `move`.
-    template<typename TFunction, uint8_t kWheelNum = 12, uint8_t kWheelSlotNum = 16>
+    /**
+     * time unit used: milliseconds
+     * @note Do not use std::function as TFunction, because SArray does not support `move`.
+     * @tparam TFunction type of callback
+     * @tparam kWheelNum number of wheels
+     * @tparam kWheelSlotNum number of slots in each wheel
+     * @tparam kJiffies the minimum time resolution (in milliseconds)
+     */
+    template<typename TFunction, uint8_t kWheelNum = 12, uint8_t kWheelSlotNum = 6, uint64_t kJiffies = 10>
     class TTimerManager
     {
     public:
         typedef uint64_t Span;
 
     private:
-        static constexpr uint64_t kJiffies = 10;
-
         struct TimerData
         {
             bool loop;
@@ -148,12 +153,17 @@ namespace jsb::internal
             for (uint8_t i = 0; i < kWheelNum; ++i)
             {
                 uint32_t interval = 1;
-                for (uint8_t j = 0; j < i; j++)
-                {
-                    interval *= kWheelSlotNum;
-                }
+                for (uint8_t j = 0; j < i; j++) interval *= kWheelSlotNum;
                 _wheels[i].init(i, (uint64_t)kJiffies * interval);
             }
+        }
+
+        // the maximum range of this timer manager type (in milliseconds)
+        static constexpr uint64_t get_max_range()
+        {
+            uint64_t interval = 1;
+            for (uint8_t j = 0; j < kWheelNum - 1; j++) interval *= kWheelSlotNum;
+            return kJiffies * interval * kWheelSlotNum;
         }
 
         jsb_force_inline uint64_t now() const { return _elapsed; }
@@ -284,7 +294,9 @@ namespace jsb::internal
                 TimerData* timer;
                 if (!_used_timers.try_get_value_pointer(index, timer))
                 {
-                    JSB_LOG(Warning, "timer active (invalid) %d", index);
+                    // remnant of timer index won't be removed from wheel slots immediately when the timer is cleared.
+                    // it's usually safe to ignore them.
+                    JSB_LOG(Debug, "timer active (invalid) %d", index);
                     continue;
                 }
                 timer->action(ctx);
@@ -329,7 +341,6 @@ namespace jsb::internal
             _wheels[kWheelNum - 1].add(p_delay, p_timer_id);
         }
     };
-
 }
 
 #endif
