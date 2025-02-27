@@ -552,7 +552,7 @@ namespace jsb
             {
                 // 1. create a script and script instance
                 // 2. attach the script & script instance to the object
-                const Ref<GodotJSScript> script = ResourceLoader::load(p_data->script_path, "", ResourceFormatLoader::CACHE_MODE_IGNORE_DEEP);
+                const Ref<GodotJSScript> script = ResourceLoader::load(p_data->script_path);
                 jsb_check(script.is_valid());
                 jsb_unused(script->can_instantiate());
                 ScriptInstance* script_instance = script->instance_create(instance, false);
@@ -692,7 +692,6 @@ namespace jsb
     NativeObjectID Environment::bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object)
     {
         // handle the shadow instance created by asynchronous ResourceLoader
-        //TODO refactor
         if (ScriptInstance* si = p_pointer->get_script_instance(); si && !si->is_placeholder())
         {
             // to ensure the type of the script instance is GodotJSScriptInstanceBase
@@ -705,6 +704,7 @@ namespace jsb
                     const Variant holder = p_pointer;
                     const Ref<GodotJSScript> script = script_instance->get_script();
                     jsb_check(script.is_valid());
+                    JSB_LOG(Verbose, "displace a shadow script instance %s (%s)", (uintptr_t) p_pointer, script->get_path());
                     List<Pair<StringName, Variant>> state;
                     script_instance->get_property_state(state);
                     p_pointer->set_script_instance(nullptr);
