@@ -18,7 +18,9 @@ namespace jsb::internal
 #if JSB_WITH_V8 || JSB_WITH_JAVASCRIPTCORE
         PagedAllocator<Variant, true> paged_allocator_;
 #else
-        PagedAllocator<Variant, false> paged_allocator_;
+        //TODO not to share VariantAllocator between environments?
+        // (because VariantAllocator is currently shared between all environments, we still need thread-safe version)
+        PagedAllocator<Variant, true> paged_allocator_;
 #endif
 
     public:
