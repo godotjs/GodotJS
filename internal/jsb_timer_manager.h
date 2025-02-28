@@ -191,11 +191,6 @@ namespace jsb::internal
             timer.action = std::forward<TFunction>(p_fn);
             timer.loop = p_is_loop;
 
-            if (delay == 0)
-            {
-                JSB_LOG(Warning, "timer with no delay will initially be processed after a single tick");
-            }
-
             rearrange_timer(index, delay);
             inout_handle = TimerHandle(index);
         }
