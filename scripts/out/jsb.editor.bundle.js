@@ -21,6 +21,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], function (require, exports, godot_1, jsb) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -31,6 +40,51 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
     }
     const tab = "    ";
     const GodotAnyType = "GAny";
+    function frame_step() {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                resolve();
+            }, 0);
+        });
+    }
+    function toast(msg) {
+        let helper = require("godot").GodotJSEditorHelper;
+        helper.show_toast(msg, 0); // 0: info, 1: warning, 2: error
+    }
+    class CodegenTasks {
+        constructor() {
+            this.tasks = [];
+        }
+        add_task(name, func) {
+            this.tasks.push({ name: name, execute: func });
+        }
+        submit() {
+            return __awaiter(this, void 0, void 0, function* () {
+                const EditorProgress = require("godot").GodotJSEditorProgress;
+                const progress = new EditorProgress();
+                let force_wait = 24;
+                progress.init("codegen", "Generating godot.d.ts", this.tasks.length);
+                for (let i = 0; i < this.tasks.length; ++i) {
+                    const task = this.tasks[i];
+                    const result = task.execute();
+                    if (typeof result === "object" && result instanceof Promise) {
+                        progress.set_state_name(task.name);
+                        progress.set_current(i);
+                        yield result;
+                    }
+                    else {
+                        if (!(i % force_wait)) {
+                            progress.set_state_name(task.name);
+                            progress.set_current(i);
+                            yield frame_step();
+                        }
+                    }
+                }
+                progress.finish();
+                toast("godot.d.ts generated successfully");
+            });
+        }
+    }
     const MockLines = [
         "type byte = number",
         "type int32 = number",
@@ -89,6 +143,8 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
         "GodotJSExportPlugin",
         "GodotJSREPL",
         "GodotJSScript",
+        "GodotJSEditorHelper",
+        "GodotJSEditorProgress",
         // GDScript related classes
         "GDScript",
         "GDScriptEditorTranslationParserPlugin",
@@ -915,14 +971,75 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
             return typeof name === "string" && typeof this._types.classes[name] !== "undefined";
         }
         emit() {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield frame_step();
+                const tasks = new CodegenTasks();
+                // predefined lines
+                tasks.add_task("Predefined Lines", () => this.emit_mock());
+                // all singletons
+                for (let singleton_name in this._types.singletons) {
+                    tasks.add_task("Singletons", () => this.emit_singleton(this._types.singletons[singleton_name]));
+                }
+                // godot classes
+                for (let class_name in this._types.classes) {
+                    const cls = this._types.classes[class_name];
+                    if (IgnoredTypes.has(class_name)) {
+                        continue;
+                    }
+                    if (typeof this._types.singletons[class_name] !== "undefined") {
+                        // ignore the class if it's already defined as Singleton
+                        continue;
+                    }
+                    tasks.add_task("Classes", () => this.emit_godot_class(this.split(), cls, false));
+                }
+                // godot primitive types
+                for (let class_name in this._types.primitive_types) {
+                    const cls = this._types.primitive_types[class_name];
+                    tasks.add_task("Primitives", () => this.emit_godot_primitive(this.split(), cls));
+                }
+                // godot global scope
+                for (let global_name in this._types.globals) {
+                    tasks.add_task("Globals", () => this.emit_global(this._types.globals[global_name]));
+                }
+                // global utility functions
+                for (let utility_name in this._types.utilities) {
+                    tasks.add_task("Utility Functions", () => this.emit_utility(this._types.utilities[utility_name]));
+                }
+                // jsb utility functions
+                for (let mi of GlobalUtilityFuncs) {
+                    tasks.add_task("jsb.utility_functions", () => {
+                        const cg = this.split();
+                        DocCommentHelper.write(cg, mi.description, true);
+                        cg.line(mi.method);
+                    });
+                }
+                tasks.add_task("Cleanup", () => {
+                    var _a;
+                    (_a = this._splitter) === null || _a === void 0 ? void 0 : _a.close();
+                    this.cleanup();
+                });
+                return tasks.submit();
+            });
+        }
+        emit_utility(utility_func) {
             var _a;
-            this.emit_mock();
-            this.emit_singletons();
-            this.emit_godot();
-            this.emit_globals();
-            this.emit_utilities();
-            (_a = this._splitter) === null || _a === void 0 ? void 0 : _a.close();
-            this.cleanup();
+            const global_doc = this._types.find_doc("@GlobalScope");
+            const cg = this.split();
+            DocCommentHelper.write(cg, (_a = global_doc === null || global_doc === void 0 ? void 0 : global_doc.methods[utility_func.name]) === null || _a === void 0 ? void 0 : _a.description, true);
+            cg.utility_(utility_func);
+        }
+        emit_global(global_obj) {
+            var _a;
+            const cg = this.split();
+            const doc = this._types.find_doc("@GlobalScope");
+            const ns = cg.enum_(global_obj.name);
+            let separator_line = false;
+            for (let name in global_obj.values) {
+                DocCommentHelper.write(ns, (_a = doc === null || doc === void 0 ? void 0 : doc.constants[name]) === null || _a === void 0 ? void 0 : _a.description, separator_line);
+                separator_line = true;
+                ns.element_(name, global_obj.values[name]);
+            }
+            ns.finish();
         }
         emit_mock() {
             const cg = this.split();
@@ -941,69 +1058,15 @@ define("jsb.editor.codegen", ["require", "exports", "godot", "godot-jsb"], funct
                 cg.line(gd_variant_alias);
             }
         }
-        emit_singletons() {
+        emit_singleton(singleton) {
             const cg = this.split();
-            for (let singleton_name in this._types.singletons) {
-                const singleton = this._types.singletons[singleton_name];
-                const cls = this._types.classes[singleton.class_name];
-                if (typeof cls !== "undefined") {
-                    cg.line_comment_(`_singleton_class_: ${singleton.class_name}`);
-                    this.emit_godot_class(cg, cls, true);
-                }
-                else {
-                    cg.line_comment_(`ERROR: singleton ${singleton.name} without class info ${singleton.class_name}`);
-                }
+            const cls = this._types.classes[singleton.class_name];
+            if (typeof cls !== "undefined") {
+                cg.line_comment_(`_singleton_class_: ${singleton.class_name}`);
+                this.emit_godot_class(cg, cls, true);
             }
-        }
-        emit_utilities() {
-            var _a;
-            const doc = this._types.find_doc("@GlobalScope");
-            let separator_line = false;
-            for (let utility_name in this._types.utilities) {
-                const utility_func = this._types.utilities[utility_name];
-                const cg = this.split();
-                DocCommentHelper.write(cg, (_a = doc === null || doc === void 0 ? void 0 : doc.methods[utility_func.name]) === null || _a === void 0 ? void 0 : _a.description, separator_line);
-                separator_line = true;
-                cg.utility_(utility_func);
-            }
-            for (let mi of GlobalUtilityFuncs) {
-                const cg = this.split();
-                DocCommentHelper.write(cg, mi.description, separator_line);
-                separator_line = true;
-                cg.line(mi.method);
-            }
-        }
-        emit_globals() {
-            var _a;
-            for (let global_name in this._types.globals) {
-                const global_obj = this._types.globals[global_name];
-                const cg = this.split();
-                const doc = this._types.find_doc("@GlobalScope");
-                const ns = cg.enum_(global_obj.name);
-                let separator_line = false;
-                for (let name in global_obj.values) {
-                    DocCommentHelper.write(ns, (_a = doc === null || doc === void 0 ? void 0 : doc.constants[name]) === null || _a === void 0 ? void 0 : _a.description, separator_line);
-                    separator_line = true;
-                    ns.element_(name, global_obj.values[name]);
-                }
-                ns.finish();
-            }
-        }
-        emit_godot() {
-            for (let class_name in this._types.classes) {
-                const cls = this._types.classes[class_name];
-                if (IgnoredTypes.has(class_name)) {
-                    continue;
-                }
-                if (typeof this._types.singletons[class_name] !== "undefined") {
-                    // ignore the class if it's already defined as Singleton
-                    continue;
-                }
-                this.emit_godot_class(this.split(), cls, false);
-            }
-            for (let class_name in this._types.primitive_types) {
-                const cls = this._types.primitive_types[class_name];
-                this.emit_godot_primitive(this.split(), cls);
+            else {
+                cg.line_comment_(`ERROR: singleton ${singleton.name} without class info ${singleton.class_name}`);
             }
         }
         emit_godot_primitive(cg, cls) {

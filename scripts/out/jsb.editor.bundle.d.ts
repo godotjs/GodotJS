@@ -47,12 +47,11 @@ declare module "jsb.editor.codegen" {
         private split;
         private cleanup;
         has_class(name?: string): boolean;
-        emit(): void;
+        emit(): Promise<void>;
+        private emit_utility;
+        private emit_global;
         private emit_mock;
-        private emit_singletons;
-        private emit_utilities;
-        private emit_globals;
-        private emit_godot;
+        private emit_singleton;
         private emit_godot_primitive;
         private emit_godot_class;
     }

@@ -375,9 +375,6 @@ void GodotJSEditorPlugin::generate_godot_dts()
     const String code = jsb_format(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.default("%s")).emit();})())--", "./" JSB_TYPE_ROOT);
     lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
-
-    const String toast_message = TTR("godot.d.ts generated successfully");
-    EditorToaster::get_singleton()->popup_str(toast_message, EditorToaster::SEVERITY_INFO);
 }
 
 void GodotJSEditorPlugin::load_editor_entry_module()

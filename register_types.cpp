@@ -8,8 +8,11 @@
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
 #include "editor/export/editor_export.h"
+
 #include "weaver-editor/jsb_editor_plugin.h"
 #include "weaver-editor/jsb_export_plugin.h"
+#include "weaver-editor/jsb_editor_progress.h"
+#include "weaver-editor/jsb_editor_helper.h"
 #endif
 
 static Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
@@ -20,6 +23,10 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
     if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS)
     {
         GDREGISTER_CLASS(GodotJSScript);
+#ifdef TOOLS_ENABLED
+        GDREGISTER_CLASS(GodotJSEditorHelper);
+        GDREGISTER_CLASS(GodotJSEditorProgress);
+#endif
 
         jsb::impl::GlobalInitialize::init();
 
