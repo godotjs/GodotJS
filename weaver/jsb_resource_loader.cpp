@@ -3,6 +3,33 @@
 #include "jsb_script_language.h"
 #include "jsb_script.h"
 
+namespace
+{
+    constexpr bool is_worker_script(const String& p_path)
+    {
+        return false
+#if JSB_EXCLUDE_WORKER_RES_SCRIPTS
+#   if JSB_USE_TYPESCRIPT
+        || p_path.ends_with(".worker." JSB_TYPESCRIPT_EXT)
+#   endif
+        || p_path.ends_with(".worker." JSB_JAVASCRIPT_EXT)
+#endif
+        ;
+    }
+
+    constexpr bool is_test_script(const String& p_path)
+    {
+        return false
+#if JSB_EXCLUDE_TEST_RES_SCRIPTS
+#   if JSB_USE_TYPESCRIPT
+        || p_path.ends_with(".test." JSB_TYPESCRIPT_EXT)
+#   endif
+        || p_path.ends_with(".test." JSB_JAVASCRIPT_EXT)
+#endif
+        ;
+    }
+}
+
 Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, const String& p_original_path, Error* r_error, bool p_use_sub_threads, float* r_progress, CacheMode p_cache_mode)
 {
     JSB_BENCHMARK_SCOPE(ResourceFormatLoaderGodotJSScript, load);
@@ -52,12 +79,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
     }
 
     // ignore DTS files, and worker scripts if they end with `.worker.js/ts`
-    if (p_path.ends_with("." JSB_DTS_EXT)
-#if JSB_EXCLUDE_WORKER_RES_SCRIPTS
-        || p_path.ends_with(".worker." JSB_TYPESCRIPT_EXT)
-        || p_path.ends_with(".worker." JSB_JAVASCRIPT_EXT)
-#endif
-        )
+    if (p_path.ends_with("." JSB_DTS_EXT) || is_worker_script(p_path) || is_test_script(p_path))
     {
         JSB_LOG(VeryVerbose, "excluding script resource %s", p_path);
         if (r_error) *r_error = ERR_FILE_UNRECOGNIZED;
@@ -73,9 +95,6 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
             // the ResourceCache warning is really annoying,
             // we just ignore it here and let it behave like REUSE.
             // seems safe because GodotJSScript is stateless now (but must get script class info in a proper thread).
-
-            // spt->set_path(p_path, false);
-            // break;
         case CACHE_MODE_REUSE:
             {
                 if (const Ref<Resource> existing = ResourceCache::get_ref(p_path);
