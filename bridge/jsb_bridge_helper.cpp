@@ -34,7 +34,7 @@ namespace jsb
                 // case for script classes
                 do
                 {
-                    v8::Local<v8::Value> cross_bind;
+                    v8::Local<v8::Value> cross_bind_sym;
                     const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                     const v8::Local<v8::Value> prototype_val = self->GetPrototype();
                     if (prototype_val.IsEmpty() || !prototype_val->IsObject()) break;
@@ -42,12 +42,18 @@ namespace jsb
                     // read script class id from the javascript Class object (the constructor object)
                     const v8::Local<v8::Object> prototype = prototype_val.As<v8::Object>();
                     const v8::Local<v8::Object> dt_base_obj = prototype->Get(context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
-                    if (dt_base_obj->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind) && cross_bind->IsUint32())
+                    if (!dt_base_obj->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym) || !cross_bind_sym->IsString())
                     {
-                        const ScriptClassID script_class_id = (ScriptClassID) cross_bind.As<v8::Uint32>()->Value();
-                        const ScriptClassInfoPtr script_class_info = environment->get_script_class(script_class_id);
-                        return jsb_format("[Script:%s #%d @%s]", script_class_info->js_class_name, object_id, uitos((uint64_t) pointer));
+                        break;
                     }
+                    const StringName script_module_id = environment->get_string_name(cross_bind_sym.As<v8::String>());
+                    const JavaScriptModule* module = environment->get_module_cache().find(script_module_id);
+                    if (!module)
+                    {
+                        break;
+                    }
+                    const ScriptClassInfoPtr script_class_info = environment->get_script_class(module->script_class_id);
+                    return jsb_format("[Script:%s #%d @%s]", script_class_info->js_class_name, object_id, uitos((uint64_t) pointer));
                 } while (false);
 
                 // fallback to C++ classes
