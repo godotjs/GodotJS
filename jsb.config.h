@@ -102,6 +102,9 @@
 // [EXPERIMENTAL] DONT CHANGE IT
 #define JSB_THREADING 1
 
+#define JSB_SHADOW_ENVIRONMENT_AS_PARSER 1
+#define JSB_MAX_CACHED_SHADOW_ENVIRONMENTS 2
+
 // slots for object/script/class info is reallocated on heap (as a whole block of memory)
 // a suitable value can avoid unnecessary reallocation
 #define JSB_MASTER_INITIAL_OBJECT_SLOTS (1024 * 64)

@@ -10,71 +10,6 @@
 #include "editor/editor_help.h"
 #endif
 
-namespace
-{
-    struct JSEnvironment
-    {
-    private:
-        bool is_shadow_;
-        std::shared_ptr<jsb::Environment> target_;
-
-        void init()
-        {
-            if (is_shadow_ && !target_)
-            {
-                //TODO let GodotJSLanguage manage all temporary Environment (possible to reuse if still alive with delayed dispose call somehow)?
-                //     PITFALL: race condition issue if do so (e.g. dispose() called after an Env is reacquired in background threads)
-
-                jsb::Environment::CreateParams params;
-                params.initial_class_slots = 128;
-                params.initial_object_slots = 512;
-                params.initial_script_slots = 32;
-                params.thread_id = Thread::get_caller_id();
-
-                target_ = std::make_shared<jsb::Environment>(params);
-                JSB_LOG(Log, "creating a temporary Environment on thread %d for %s [env %s]",
-                    Thread::get_caller_id(),
-                    jsb_typename(GodotJSScript),
-                    (uintptr_t) target_->id());
-                target_->init();
-            }
-        }
-
-    public:
-        // p_path_hint is only used for logging
-        JSEnvironment(const String& p_path_hint, bool p_is_shadow_allowed)
-        {
-            target_ = jsb::Environment::_access();
-            if (target_)
-            {
-                is_shadow_ = false;
-            }
-            else
-            {
-                jsb_ensuref(p_is_shadow_allowed, "no available Environment on thread %d for %s: %s", Thread::get_caller_id(), jsb_typename(GodotJSScript), p_path_hint);
-                is_shadow_ = true;
-            }
-        }
-
-        ~JSEnvironment()
-        {
-            if (is_shadow_ && target_) target_->dispose();
-        }
-
-        JSEnvironment(const JSEnvironment&) = delete;
-        JSEnvironment& operator=(const JSEnvironment&) = delete;
-
-        JSEnvironment(JSEnvironment&& p_other) noexcept = delete;
-        JSEnvironment& operator=(JSEnvironment&& p_other) noexcept = delete;
-
-        jsb_no_discard bool is_shadow() const { return is_shadow_; }
-
-        jsb::Environment* operator->() { init(); return target_.get(); }
-
-        operator std::shared_ptr<jsb::Environment>() { init(); return target_; }
-    };
-}
-
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
     {
@@ -174,7 +109,7 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     jsb_check(is_valid());
     jsb_check(loaded_);
 
-    JSEnvironment env(get_path(), false);
+    jsb::JSEnvironment env(get_path(), false);
     jsb::JavaScriptModule* module = nullptr;
     const Error err = env->load(script_class_info_.module_id, &module);
     jsb_ensuref(module && err == OK, "JS Module not found: %s", script_class_info_.module_id);
@@ -219,7 +154,7 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this, bool p_is_temp_al
     JSB_LOG(Verbose, "create instance %d of %s(%s)", (uintptr_t) p_this, script_class_info_.native_class_name, script_class_info_.module_id);
     jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name));
 
-    JSEnvironment env(get_path(), p_is_temp_allowed);
+    jsb::JSEnvironment env(get_path(), p_is_temp_allowed);
     if (env.is_shadow())
     {
         GodotJSShadowScriptInstance* shadow_instance = memnew(GodotJSShadowScriptInstance);
@@ -290,7 +225,7 @@ Error GodotJSScript::reload(bool p_keep_state)
 
     // (common situation) preserve the object and change its prototype
     const StringName& module_id = script_class_info_.module_id;
-    JSEnvironment env(get_path(), true);
+    jsb::JSEnvironment env(get_path(), true);
 
     //TODO different env has different module state, we need to refresh the state in all envs when marking a module as dirty somewhere
     const jsb::ModuleReloadResult::Type result = env->mark_as_reloading(module_id);
@@ -536,7 +471,7 @@ void GodotJSScript::load_module_immediately()
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
     const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
-    JSEnvironment env(get_path(), true);
+    jsb::JSEnvironment env(get_path(), true);
 
     loaded_ = true;
     base.unref();
@@ -684,7 +619,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
         members_cache.clear();
         member_default_values_cache.clear();
 
-        JSEnvironment env(get_path(), true);
+        jsb::JSEnvironment env(get_path(), true);
         env->check_internal_state();
 
         jsb::JavaScriptModule* module = nullptr;

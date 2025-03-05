@@ -50,19 +50,6 @@ namespace jsb
         };
     }
 
-    namespace EnvironmentFlags
-    {
-        enum Type : uint8_t
-        {
-            None = 0,
-            MicrotaskCheckpoint = 1 << 0,
-
-            PreDispose = 1 << 1,
-            PostDispose = 1 << 2,
-            Worker = 1 << 3,
-        };
-    }
-
     struct TransferData
     {
         virtual ~TransferData() = default;
@@ -105,9 +92,19 @@ namespace jsb
             AsyncCall& operator=(AsyncCall&&) noexcept = default;
         };
 
+        enum EnvironmentFlags : uint8_t
+        {
+            EF_None = 0,
+            EF_MicrotaskCheckpoint = 1 << 0,
+            EF_PreDispose = 1 << 1,
+            EF_PostDispose = 1 << 2,
+            EF_Worker = 1 << 3,
+        };
+
         friend class Builtins;
         friend struct InstanceBindingCallbacks;
         friend struct ClassRegister;
+        friend struct EnvironmentStore;
 
         //TODO remove this later
         friend struct ScriptClassInfo;
@@ -157,7 +154,7 @@ namespace jsb
 #endif
 
         // EnvironmentFlags
-        uint32_t flags_ = EnvironmentFlags::None;
+        uint32_t flags_ = EF_None;
 
 #if JSB_WITH_DEBUGGER
         JavaScriptDebugger debugger_;
@@ -186,6 +183,17 @@ namespace jsb
         internal::VariantInfoCollection variant_info_collection_;
 
     public:
+        enum class Type : uint8_t
+        {
+            Default,
+
+            // [reserved] for future use
+            Worker,
+
+            // [reserved] for future use
+            Shadow,
+        };
+
         struct CreateParams
         {
             int initial_class_slots = 0;
@@ -196,7 +204,7 @@ namespace jsb
             uint16_t debugger_port = 0;
 
             Thread::ID thread_id = 0;
-            bool is_worker = false;
+            Type type = Type::Default;
         };
 
         Environment(const CreateParams& p_params);
@@ -336,12 +344,18 @@ namespace jsb
 
         void start_debugger(uint16_t p_port);
 
-        jsb_force_inline bool is_caller_thread() const { return Thread::get_caller_id() == thread_id_; }
-        jsb_force_inline void check_internal_state() const { jsb_checkf(is_caller_thread(), "multi-threaded call not supported yet"); }
+        // whether it's called from the same thread as the environment spawned
+        jsb_force_inline bool is_caller_thread() const { return thread_id_ == Thread::UNASSIGNED_ID || Thread::get_caller_id() == thread_id_; }
+
+        // ensure it's called from the same thread as the environment spawned
+        jsb_force_inline void check_internal_state() const
+        {
+            jsb_checkf(is_caller_thread(), "multi-threaded call not supported yet");
+        }
 
         jsb_force_inline internal::SourceMapCache& get_source_map_cache() { return source_map_cache_; }
 
-        jsb_force_inline void notify_microtasks_run() { flags_ |= EnvironmentFlags::MicrotaskCheckpoint; }
+        jsb_force_inline void notify_microtasks_run() { flags_ |= EF_MicrotaskCheckpoint; }
 
         static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { jsb_check(p_templet.get_type() != Variant::OBJECT); return variant_allocator_.alloc(p_templet); }
         static jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
@@ -521,6 +535,7 @@ namespace jsb
         static std::shared_ptr<Environment> _access(void* p_runtime);
 
         // [unsafe] get the environment from the current thread
+        // NOTE: you can't get a shadow environment with this method
         static std::shared_ptr<Environment> _access();
 
         static void exec_sync_delete()

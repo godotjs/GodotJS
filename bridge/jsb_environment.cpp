@@ -91,7 +91,7 @@ namespace jsb
             {
                 //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
                 Environment* env = (Environment*) ptr;
-                if (env->is_caller_thread())
+                if (env->thread_id_ != Thread::UNASSIGNED_ID && env->is_caller_thread())
                 {
                     rval = env->shared_from_this();
                     break;
@@ -243,7 +243,8 @@ namespace jsb
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
 
-        if (p_params.is_worker) flags_ |= EnvironmentFlags::Worker;
+        if (p_params.type == Type::Worker) flags_ |= EF_Worker;
+
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
@@ -305,7 +306,7 @@ namespace jsb
     Environment::~Environment()
     {
         //TODO not always safe
-        if ((flags_ & EnvironmentFlags::PreDispose) == 0)
+        if ((flags_ & EF_PreDispose) == 0)
         {
             JSB_LOG(Warning, "Environment is not disposed before destructing it %s", (uintptr_t) id());;
             check_internal_state();
@@ -369,7 +370,7 @@ namespace jsb
     {
         JSB_LOG(Verbose, "disposing Environment %s", (uintptr_t) id());
 
-        flags_ |= EnvironmentFlags::PreDispose;
+        flags_ |= EF_PreDispose;
         // destroy context
         {
             v8::Isolate* isolate = this->isolate_;
@@ -413,7 +414,7 @@ namespace jsb
             free_object(pointer, FinalizationType::Default /* Force? */);
         }
 
-        flags_ |= EnvironmentFlags::PostDispose;
+        flags_ |= EF_PostDispose;
         EnvironmentStore::get_shared().remove(this);
     }
 
@@ -458,9 +459,9 @@ namespace jsb
 #if JSB_WITH_QUICKJS || JSB_WITH_JAVASCRIPTCORE
         isolate_->PerformMicrotaskCheckpoint();
 #else
-        if (flags_ & EnvironmentFlags::MicrotaskCheckpoint)
+        if (flags_ & EF_MicrotaskCheckpoint)
         {
-            flags_ &= ~EnvironmentFlags::MicrotaskCheckpoint;
+            flags_ &= ~EF_MicrotaskCheckpoint;
             isolate_->PerformMicrotaskCheckpoint();
         }
 #endif
@@ -1784,7 +1785,7 @@ namespace jsb
         for (auto& it : list)
         {
             // skip environments that are about to be disposed or already disposed
-            if (it->flags_ & EnvironmentFlags::PreDispose) continue;
+            if (it->flags_ & EF_PreDispose) continue;
 
             it->add_async_call(AsyncCall::TYPE_GC_REQUEST, nullptr);
         }

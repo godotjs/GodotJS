@@ -17,7 +17,41 @@
 #ifdef TOOLS_ENABLED
 #include "../weaver-editor/templates/templates.gen.h"
 #endif
+
 GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;
+
+namespace jsb
+{
+    void JSEnvironment::init()
+    {
+        if (is_shadow_ && !target_)
+        {
+            target_ = GodotJSScriptLanguage::get_singleton()->create_shadow_environment();
+        }
+    }
+
+    JSEnvironment::JSEnvironment(const String& p_path_hint, bool p_is_shadow_allowed)
+    {
+        target_ = jsb::Environment::_access();
+        if (target_)
+        {
+            is_shadow_ = false;
+        }
+        else
+        {
+            jsb_ensuref(p_is_shadow_allowed, "no available Environment on thread %d for %s: %s", Thread::get_caller_id(), jsb_typename(GodotJSScript), p_path_hint);
+            is_shadow_ = true;
+        }
+    }
+
+    JSEnvironment::~JSEnvironment()
+    {
+        if (is_shadow_ && target_)
+        {
+            GodotJSScriptLanguage::get_singleton()->destroy_shadow_environment(target_);
+        }
+    }
+}
 
 GodotJSScriptLanguage::GodotJSScriptLanguage()
 {
@@ -61,6 +95,7 @@ void GodotJSScriptLanguage::init()
     params.debugger_port = jsb::internal::Settings::get_debugger_port();
     params.thread_id = Thread::get_caller_id();
 
+    // main environment
     environment_ = std::make_shared<jsb::Environment>(params);
     environment_->init();
 
@@ -87,6 +122,18 @@ void GodotJSScriptLanguage::finish()
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
     jsb::Worker::finish();
 #endif
+    {
+        std::vector<std::shared_ptr<jsb::Environment>> shadow_environments;
+        {
+            MutexLock shadow_lock(shadow_mutex_);
+            shadow_environments = shadow_environments_;
+            shadow_environments_.clear();
+        }
+        for (const std::shared_ptr<jsb::Environment>& env : shadow_environments)
+        {
+            env->dispose();
+        }
+    }
     jsb::Environment::exec_sync_delete();
     JSB_LOG(VeryVerbose, "jsb lang finish");
 }
@@ -487,4 +534,45 @@ int GodotJSScriptLanguage::profiling_get_frame_data(ProfilingInfo* p_info_arr, i
 #else
     return 0;
 #endif
+}
+
+std::shared_ptr<jsb::Environment> GodotJSScriptLanguage::create_shadow_environment()
+{
+    do
+    {
+        MutexLock shadow_lock(shadow_mutex_);
+
+        if (shadow_environments_.empty()) break;
+        std::shared_ptr<jsb::Environment> last = shadow_environments_.back();
+        shadow_environments_.pop_back();
+        return last;
+    } while (false);
+
+    jsb::Environment::CreateParams params;
+    params.initial_class_slots = 128;
+    params.initial_object_slots = 512;
+    params.initial_script_slots = 32;
+    params.type = jsb::Environment::Type::Shadow;
+    params.thread_id = Thread::UNASSIGNED_ID;
+
+    std::shared_ptr<jsb::Environment> env = std::make_shared<jsb::Environment>(params);
+    JSB_LOG(Log, "creating a temporary Environment on thread %d for %s [env %s]",
+        Thread::get_caller_id(),
+        jsb_typename(GodotJSScript),
+        (uintptr_t) env->id());
+    env->init();
+    return env;
+}
+
+void GodotJSScriptLanguage::destroy_shadow_environment(const std::shared_ptr<jsb::Environment>& p_env)
+{
+    do
+    {
+        MutexLock shadow_lock(shadow_mutex_);
+        if (shadow_environments_.size() >= JSB_MAX_CACHED_SHADOW_ENVIRONMENTS) break;
+        shadow_environments_.push_back(p_env);
+        return;
+    } while (false);
+
+    p_env->dispose();
 }

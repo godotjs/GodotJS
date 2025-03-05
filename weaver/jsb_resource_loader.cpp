@@ -5,7 +5,7 @@
 
 namespace
 {
-    constexpr bool is_worker_script(const String& p_path)
+    bool is_worker_script(const String& p_path)
     {
         return false
 #if JSB_EXCLUDE_WORKER_RES_SCRIPTS
@@ -17,7 +17,7 @@ namespace
         ;
     }
 
-    constexpr bool is_test_script(const String& p_path)
+    bool is_test_script(const String& p_path)
     {
         return false
 #if JSB_EXCLUDE_TEST_RES_SCRIPTS
@@ -28,6 +28,7 @@ namespace
 #endif
         ;
     }
+
 }
 
 Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, const String& p_original_path, Error* r_error, bool p_use_sub_threads, float* r_progress, CacheMode p_cache_mode)

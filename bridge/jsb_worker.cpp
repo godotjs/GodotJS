@@ -64,7 +64,7 @@ namespace jsb
                 params.initial_object_slots = JSB_WORKER_INITIAL_OBJECT_SLOTS;
                 params.initial_script_slots = JSB_WORKER_INITIAL_SCRIPT_SLOTS;
                 params.thread_id = Thread::get_caller_id();
-                params.is_worker = true;
+                params.type = Environment::Type::Worker;
 
                 const std::shared_ptr<Environment> env = std::make_shared<Environment>(params);
                 impl->env_ = env;

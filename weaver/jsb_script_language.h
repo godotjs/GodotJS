@@ -8,6 +8,48 @@
 class GodotJSScript;
 class GodotJSMonitor;
 
+namespace jsb
+{
+    struct JSEnvironment
+    {
+    private:
+        bool is_shadow_;
+        std::shared_ptr<jsb::Environment> target_;
+
+        void init();
+
+    public:
+        // p_path_hint is only used for logging
+        JSEnvironment(const String& p_path_hint, bool p_is_shadow_allowed);
+
+        ~JSEnvironment();
+
+        JSEnvironment(const JSEnvironment&) = delete;
+        JSEnvironment& operator=(const JSEnvironment&) = delete;
+
+        JSEnvironment(JSEnvironment&& p_other) noexcept
+        {
+            is_shadow_ = p_other.is_shadow_;
+            target_ = std::move(p_other.target_);
+        }
+        JSEnvironment& operator=(JSEnvironment&& p_other) noexcept
+        {
+            if (this != &p_other)
+            {
+                is_shadow_ = p_other.is_shadow_;
+                target_ = std::move(p_other.target_);
+            }
+            return *this;
+        }
+
+        jsb_no_discard bool is_shadow() const { return is_shadow_; }
+
+        jsb::Environment* operator->() { init(); return target_.get(); }
+
+        operator std::shared_ptr<jsb::Environment>() { init(); return target_; }
+    };
+}
+
 class GodotJSScriptLanguage : public ScriptLanguage
 {
 private:
@@ -15,6 +57,7 @@ private:
     friend class GodotJSScriptInstance;
     friend class GodotJSScriptInstanceBase;
     friend class ResourceFormatLoaderGodotJSScript;
+    friend struct jsb::JSEnvironment;
 
 #if JSB_DEBUG
     struct ScriptCallProfileInfo
@@ -48,6 +91,9 @@ private:
     bool once_inited_ = false;
     uint64_t last_ticks_ = 0;
     std::shared_ptr<jsb::Environment> environment_;
+
+    Mutex shadow_mutex_;
+    std::vector<std::shared_ptr<jsb::Environment>> shadow_environments_;
 
 #if JSB_DEBUG
     GodotJSMonitor* monitor_ = nullptr;
@@ -194,6 +240,9 @@ public:
 
 #pragma endregion
 
+private:
+    std::shared_ptr<jsb::Environment> create_shadow_environment();
+    void destroy_shadow_environment(const std::shared_ptr<jsb::Environment>& p_env);
 };
 
 #endif
