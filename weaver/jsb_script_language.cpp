@@ -123,15 +123,15 @@ void GodotJSScriptLanguage::finish()
     jsb::Worker::finish();
 #endif
     {
-        std::vector<std::shared_ptr<jsb::Environment>> shadow_environments;
+        std::vector<ShadowEnvironment> shadow_environments;
         {
             MutexLock shadow_lock(shadow_mutex_);
             shadow_environments = shadow_environments_;
             shadow_environments_.clear();
         }
-        for (const std::shared_ptr<jsb::Environment>& env : shadow_environments)
+        for (const ShadowEnvironment& env : shadow_environments)
         {
-            env->dispose();
+            env.holder->dispose();
         }
     }
     jsb::Environment::exec_sync_delete();
@@ -538,15 +538,19 @@ int GodotJSScriptLanguage::profiling_get_frame_data(ProfilingInfo* p_info_arr, i
 
 std::shared_ptr<jsb::Environment> GodotJSScriptLanguage::create_shadow_environment()
 {
-    do
+    const Thread::ID caller_id = Thread::get_caller_id();
     {
         MutexLock shadow_lock(shadow_mutex_);
 
-        if (shadow_environments_.empty()) break;
-        std::shared_ptr<jsb::Environment> last = shadow_environments_.back();
-        shadow_environments_.pop_back();
-        return last;
-    } while (false);
+        for (ShadowEnvironment& shadow : shadow_environments_)
+        {
+            if (shadow.rc == 0 || shadow.thread_id == caller_id)
+            {
+                shadow.rc++;
+                return shadow.holder;
+            }
+        }
+    }
 
     jsb::Environment::CreateParams params;
     params.initial_class_slots = 128;
@@ -556,23 +560,41 @@ std::shared_ptr<jsb::Environment> GodotJSScriptLanguage::create_shadow_environme
     params.thread_id = Thread::UNASSIGNED_ID;
 
     std::shared_ptr<jsb::Environment> env = std::make_shared<jsb::Environment>(params);
-    JSB_LOG(Log, "creating a temporary Environment on thread %d for %s [env %s]",
+    JSB_LOG(Log, "creating a shadow Environment on thread %d for %s [env %s]",
         Thread::get_caller_id(),
         jsb_typename(GodotJSScript),
         (uintptr_t) env->id());
     env->init();
+    {
+        MutexLock shadow_lock(shadow_mutex_);
+        shadow_environments_.push_back({caller_id, env, 1});
+    }
     return env;
 }
 
 void GodotJSScriptLanguage::destroy_shadow_environment(const std::shared_ptr<jsb::Environment>& p_env)
 {
-    do
+    bool found = false;
+    bool should_dispose = false;
     {
         MutexLock shadow_lock(shadow_mutex_);
-        if (shadow_environments_.size() >= JSB_MAX_CACHED_SHADOW_ENVIRONMENTS) break;
-        shadow_environments_.push_back(p_env);
-        return;
-    } while (false);
-
-    p_env->dispose();
+        const size_t num = shadow_environments_.size();
+        for (auto it = shadow_environments_.begin();
+            it != shadow_environments_.end();
+            ++it)
+        {
+            if (it->holder == p_env)
+            {
+                found = true;
+                if (--it->rc == 0 && num > JSB_MAX_CACHED_SHADOW_ENVIRONMENTS)
+                {
+                    should_dispose = true;
+                    shadow_environments_.erase(it);
+                }
+                break;
+            }
+        }
+    }
+    jsb_checkf(found, "not a registered shadow environment");
+    if (should_dispose) p_env->dispose();
 }

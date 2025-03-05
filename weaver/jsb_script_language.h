@@ -59,6 +59,13 @@ private:
     friend class ResourceFormatLoaderGodotJSScript;
     friend struct jsb::JSEnvironment;
 
+    struct ShadowEnvironment
+    {
+        Thread::ID thread_id = Thread::UNASSIGNED_ID;
+        std::shared_ptr<jsb::Environment> holder;
+        int rc = 0;
+    };
+
 #if JSB_DEBUG
     struct ScriptCallProfileInfo
     {
@@ -93,7 +100,7 @@ private:
     std::shared_ptr<jsb::Environment> environment_;
 
     Mutex shadow_mutex_;
-    std::vector<std::shared_ptr<jsb::Environment>> shadow_environments_;
+    std::vector<ShadowEnvironment> shadow_environments_;
 
 #if JSB_DEBUG
     GodotJSMonitor* monitor_ = nullptr;
