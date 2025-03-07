@@ -97,6 +97,18 @@ namespace jsb::impl
             return new_string(isolate, p_str);
         }
 
+        static v8::MaybeLocal<v8::Value> parse_json(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const uint8_t* p_ptr, size_t p_len)
+        {
+            jsb_check(p_ptr[p_len] == '\0');
+            const JSValue rval = JS_ParseJSON(isolate->ctx(), (const char*) p_ptr, p_len, "<string>");
+            if (JS_IsException(rval))
+            {
+                // intentionally keep the exception
+                return v8::MaybeLocal<v8::Value>();
+            }
+            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, isolate->push_steal(rval)));
+        }
+
         // with side effects (may trigger value evaluation).
         // any decoding error will be ignored.
         jsb_force_inline static String to_string_opt(v8::Isolate* isolate, const v8::MaybeLocal<v8::Value>& p_val)

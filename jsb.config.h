@@ -121,10 +121,11 @@
 
 #define JSB_EXCLUDE_TEST_RES_SCRIPTS 1
 
-#define JSB_DTS_EXT "d.ts"
+#define JSB_DTS_EXT        "d.ts"
 #define JSB_TYPESCRIPT_EXT "ts"
 #define JSB_JAVASCRIPT_EXT "js"
 #define JSB_COMMONJS_EXT   "cjs"
+#define JSB_JSON_EXT       "json"
 
 // A helper version tag for the jsb.*.bundle.js scripts (which is embedded in .cpp source).
 // It could ensure your engine built with the expected version of the jsb bundle scripts.

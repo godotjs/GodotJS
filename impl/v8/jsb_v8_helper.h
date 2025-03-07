@@ -106,6 +106,13 @@ namespace jsb::impl
             return v8::String::NewFromOneByte(isolate, (const uint8_t*) str8.get_data(), v8::NewStringType::kNormal, str8.length()).ToLocalChecked();
         }
 
+        static v8::MaybeLocal<v8::Value> parse_json(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const uint8_t* p_ptr, size_t p_len)
+        {
+            jsb_check((size_t)(int) p_len == p_len);
+            const v8::Local<v8::String> json_string = v8::String::NewFromUtf8(isolate, (const char*) p_ptr, v8::NewStringType::kNormal, (int) p_len).ToLocalChecked();
+            return v8::JSON::Parse(context, json_string);
+        }
+
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
         {
             if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }

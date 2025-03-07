@@ -21,7 +21,7 @@ namespace jsb
 
         // `p_filename_abs` the absolute file path accessible for debugger
         static bool load_from_evaluator(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const v8::Local<v8::Function>& p_elevator);
-
+        static bool load_as_json(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const Vector<uint8_t>& p_bytes, size_t p_len);
     };
 
     // the default module resolver finds source files directly with `FileAccess` with `search_paths`
@@ -39,9 +39,9 @@ namespace jsb
         bool check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info);
 
         // read the source buffer (transformed into commonjs)
-        static size_t read_all_bytes(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes);
+        static size_t read_all_bytes_with_shebang(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes);
 
-        static bool check_source_path(const String& p_path, String& o_path);
+        static bool check_implicit_source_path(const String& p_module_id, String& o_path);
 
         Vector<String> search_paths_;
     };

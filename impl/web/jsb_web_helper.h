@@ -73,12 +73,24 @@ namespace jsb::impl
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const String& p_str)
         {
             const CharString str8 = p_str.utf8();
-            return v8::Local<v8::String>(v8::Data(isolate, jsbi_NewString(isolate->rt(), str8.get_data(), str8.length())));
+            return v8::Local<v8::String>(v8::Data(isolate, jsbi_NewString(isolate->rt(), str8.get_data(), (int) str8.length())));
         }
 
         jsb_force_inline static v8::Local<v8::String> new_string_ascii(v8::Isolate* isolate, const String& p_str)
         {
             return new_string(isolate, p_str);
+        }
+
+        static v8::MaybeLocal<v8::Value> parse_json(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const uint8_t* p_ptr, size_t p_len)
+        {
+            jsb_check(p_ptr[p_len] == '\0');
+            const jsb::impl::StackPosition rval_sp = jsbi_ParseJSON(isolate->rt(), (const char*) p_ptr, p_len);
+            if (rval_sp == jsb::impl::StackBase::Error)
+            {
+                // intentionally keep the exception
+                return v8::MaybeLocal<v8::Value>();
+            }
+            return v8::MaybeLocal<v8::Value>(v8::Data(isolate, rval_sp));
         }
 
         // with side effects (may trigger value evaluation).

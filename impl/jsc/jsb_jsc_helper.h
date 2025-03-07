@@ -88,6 +88,23 @@ namespace jsb::impl
             return new_string(isolate, p_str);
         }
 
+        static v8::MaybeLocal<v8::Value> parse_json(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const uint8_t* p_ptr, size_t p_len)
+        {
+            jsb_check((size_t)(int) p_len == p_len);
+            jsb_check(p_ptr[p_len] == '\0');
+            const JSStringRef str_ref = JSStringCreateWithUTF8CString(p_ptr);
+            const JSValueRef val_ref = JSValueMakeString(isolate->ctx(), str_ref);
+            JSStringRelease(str_ref);
+            const JSValueRef rval = JSValueMakeFromJSONString(isolate->ctx(), val_ref);
+            if (rval == nullptr)
+            {
+                throw_error(isolate, "JSON parse error");
+                return v8::MaybeLocal<v8::Value>();
+            }
+            const uint16_t stack_pos = isolate->push_copy(rval);
+            return v8::Local<v8::String>(v8::Data(isolate, stack_pos));
+        }
+
         // with side effects (may trigger value evaluation).
         // any decoding error will be ignored.
         jsb_force_inline static String to_string_opt(v8::Isolate* isolate, const v8::MaybeLocal<v8::Value>& p_val)

@@ -969,6 +969,24 @@ class jsbb_Engine {
         }
     }
 
+    ParseJSON(cstr_ptr: CString, len: number): StackPosition {
+        if (len === 0) {
+            this._throw(new Error("invalid input"));
+            return jsbb_StackPos.Error;
+        }
+        let str = _jsbb_.wasmop.UTF8ToString(cstr_ptr);
+        if (typeof str !== "string") {
+            this._throw(new Error("invalid input"));
+            return jsbb_StackPos.Error;
+        }
+        try {
+            return this._stack.Push(JSON.parse(str));
+        } catch (err) {
+            this._throw(err);
+            return jsbb_StackPos.Error;
+        }
+    }
+
     // push `obj.__proto__` to stack
     GetPrototypeOf(obj_sp: StackPosition): StackPosition {
         try {

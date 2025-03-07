@@ -20,6 +20,7 @@ const GodotJSBrowserInterface = {
     jsbi_Eval: function (engine_id, filename, src) { return _jsbb_.GetEngine(engine_id).Eval(filename, src); }, 
     jsbi_Call: function (engine_id, this_sp, func_sp, argc, argv) { return _jsbb_.GetEngine(engine_id).Call(this_sp, func_sp, argc, argv); }, 
     jsbi_CallAsConstructor: function (engine_id, func_sp, argc, argv) { return _jsbb_.GetEngine(engine_id).CallAsConstructor(func_sp, argc, argv); }, 
+    jsbi_ParseJSON: function (engine_id, data, len) { return _jsbb_.GetEngine(engine_id).ParseJSON(data, len); },
     jsbi_ThrowError: function (engine_id, message_ptr) { return _jsbb_.GetEngine(engine_id).ThrowError(message_ptr); },
     jsbi_HasError: function (engine_id) { return _jsbb_.GetEngine(engine_id).HasError(); },
 

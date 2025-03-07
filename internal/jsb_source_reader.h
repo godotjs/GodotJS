@@ -22,6 +22,7 @@ namespace jsb::internal
     {
     private:
         Ref<FileAccess> file_;
+        size_t cached_length_;
 
     public:
         FileAccessSourceReader(const String& p_file_name);
@@ -29,7 +30,7 @@ namespace jsb::internal
 
         virtual bool is_null() const override { return file_.is_null(); }
         virtual String get_path_absolute() const override { return file_->get_path_absolute(); }
-        virtual uint64_t get_length() const override { return file_->get_length(); }
+        virtual uint64_t get_length() const override { return cached_length_; }
         virtual uint64_t get_buffer(uint8_t *p_dst, uint64_t p_length) const override { return file_->get_buffer(p_dst, p_length); }
 
 #if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
