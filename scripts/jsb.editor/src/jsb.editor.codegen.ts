@@ -10,6 +10,7 @@ import {
     MethodFlags, GodotJSEditorHelper as helper,
 } from 'godot';
 import * as jsb from "godot-jsb";
+import { ClassInfo } from 'godot-jsb';
 
 if (!jsb.TOOLS_ENABLED) {
     throw new Error("codegen is only allowed in editor mode")
@@ -23,12 +24,58 @@ interface GenericParameter {
     default?: string;
 }
 
+type PropertyOverrides = Record<string, string[] | ((line: string) => string)>;
+
 interface TypeMutation {
     generic_parameters?: Record<string, GenericParameter>;
     super?: string;
     super_generic_arguments?: string[];
     intro?: string[];
-    property_overrides?: Record<string, string[]>;
+    property_overrides?: PropertyOverrides;
+}
+
+const CallableBind = {
+    description: "Create a callable object with a bound object `self`",
+    methods: [
+        "static create<R = void>(self: Object, fn: () => R): Callable0<R>",
+        "static create<T1, R = void>(self: Object, fn: (v1: T1) => R): Callable1<T1, R>",
+        "static create<T1, T2, R = void>(self: Object, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
+        "static create<T1, T2, T3, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
+        "static create<T1, T2, T3, T4, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
+        "static create<T1, T2, T3, T4, T5, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
+    ]
+};
+const CallableFuncBind = {
+    description: "Create godot Callable without a bound object",
+    methods: [
+        "static create<R = void>(fn: () => R): Callable0<R>",
+        "static create<T1, R = void>(fn: (v1: T1) => R): Callable1<T1, R>",
+        "static create<T1, T2, R = void>(fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
+        "static create<T1, T2, T3, R = void>(fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
+        "static create<T1, T2, T3, T4, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
+        "static create<T1, T2, T3, T4, T5, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
+    ]
+};
+
+function chain_mutators(...mutators: Array<(line: string) => string>) {
+    return function(line: string) {
+        return mutators.reduce((line, mutator) => mutator(line), line);
+    };
+}
+function mutate_parameter_type(name: string, type: string) {
+    return function(line: string) {
+        return line.replace(new RegExp(`[,(] *${name}: .+?([,)])/`, 'g'), `$1${name}: ${type}$2`);
+    };
+}
+function mutate_return_type(type: string) {
+    return function(line: string) {
+        return line.replace(/: [^:]+$/g, `: ${type}`);
+    };
+}
+function mutate_template(template: string) {
+    return function(line: string) {
+        return line.replace(/([^(]+)(<[^>]+> *)?\(/, `$1$2<${template}>(`);
+    };
 }
 
 const TypeMutations: Record<string, TypeMutation> = {
@@ -37,6 +84,22 @@ const TypeMutations: Record<string, TypeMutation> = {
     },
     Callable: {
         super: "AnyCallable",
+        intro: [
+            ...CallableBind.methods.reduce((lines: string[], method: string) => {
+                return [
+                    ...lines,
+                    `/** ${CallableBind.description} */`,
+                    method,
+                ];
+            }, []),
+            ...CallableFuncBind.methods.reduce((lines: string[], method: string) => {
+                return [
+                    ...lines,
+                    `/** ${CallableBind.description} */`,
+                    method,
+                ];
+            }, []),
+        ],
     },
     GArray: {
         generic_parameters: {
@@ -44,6 +107,73 @@ const TypeMutations: Record<string, TypeMutation> = {
                 default: "Any",
             },
         },
+        intro: [
+            "[Symbol.iterator](): IteratorObject<T>",
+            "/** Returns a Proxy that targets this GArray but behaves similar to a JavaScript array. */",
+            `proxy(): { [Symbol.iterator](): IteratorObject<T>, [n: number]: T } & Pick<Array<T>, "length" | "push" | "pop" | "indexOf" | "includes">`,
+            "",
+            "set_indexed(index: number, value: T): void",
+            "get_indexed(index: number): T",
+        ],
+        property_overrides: {
+            set: mutate_parameter_type("value", "T"),
+            push_back: mutate_parameter_type("value", "T"),
+            push_front: mutate_parameter_type("value", "T"),
+            append: mutate_parameter_type("value", "T"),
+            insert: mutate_parameter_type("value", "T"),
+            fill: mutate_parameter_type("value", "T"),
+            erase: mutate_parameter_type("value", "T"),
+            count: mutate_parameter_type("value", "T"),
+            has: mutate_parameter_type("value", "T"),
+            bsearch: mutate_parameter_type("value", "T"),
+            bsearch_custom: chain_mutators(mutate_parameter_type("value", "T"), mutate_parameter_type("func", "func: Callable2<T, T, boolean>")),
+            find: mutate_parameter_type('what', 'T'),
+            rfind: mutate_parameter_type("what", "T"),
+            get: mutate_return_type("T"),
+            front: mutate_return_type("T"),
+            back: mutate_return_type("T"),
+            pick_random: mutate_return_type("T"),
+            pop_back: mutate_return_type("T"),
+            pop_front: mutate_return_type("T"),
+            pop_at: mutate_return_type("T"),
+            min: mutate_return_type("T"),
+            max: mutate_return_type("T"),
+            sort_custom: mutate_parameter_type("func", "func: Callable2<T, T, boolean>"),
+            all: mutate_parameter_type("method", "Callable1<T, boolean>"),
+            any: mutate_parameter_type("method", "Callable1<T, boolean>"),
+            filter: mutate_parameter_type("method", "Callable1<T, boolean>"),
+            map: chain_mutators(mutate_parameter_type("method", "Callable1<T, U>"), mutate_return_type("GArray<U>"), mutate_template("U")),
+        },
+    },
+    GDictionary: {
+        generic_parameters: {
+            T: {
+                default: "Record<any, any>",
+            },
+        },
+        intro: [
+            "[Symbol.iterator](): IteratorObject<{ key: any, value: any }>",
+            "/** Returns a Proxy that targets this GDictionary but behaves similar to a regular JavaScript object. Values are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work. */",
+            "proxy(): { [K in keyof T & string]: T[K] }",
+            "",
+            "set_keyed<K extends keyof T>(key: K, value: T[K]): void",
+            "get_keyed<K extends keyof T>(key: K): T[K]",
+        ],
+        property_overrides: {
+            assign: mutate_parameter_type("dictionary", "T"),
+            merge: mutate_parameter_type("dictionary", "T"),
+            merged: chain_mutators(mutate_parameter_type("dictionary", "GDictionary<U>"), mutate_return_type("GDictionary<T & U>"), mutate_template("U")),
+            has: mutate_parameter_type("key", "keyof T"),
+            has_all: mutate_parameter_type("keys", "GArray<keyof T>"),
+            find_key: chain_mutators(mutate_parameter_type("value", "T[keyof T]"), mutate_return_type("keyof T")), // This can be typed more accurately with a mapped type, but it seems excessive.
+            erase: mutate_parameter_type("key", "keyof T"),
+            keys: mutate_return_type("Array<keyof T>"),
+            values: mutate_return_type("GArray<T[keyof T]>"),
+            duplicate: mutate_return_type("GDictionary<T>"),
+            get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("T[K]"), mutate_template("K extends keyof T")),
+            get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("default", "T[K]"), mutate_parameter_type("default", "T[K]"), mutate_template("K extends keyof T")),
+            set: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("value", "T[K]"), mutate_template("K extends keyof T")),
+        }
     },
     Node: {
         generic_parameters: {
@@ -70,6 +200,12 @@ const TypeMutations: Record<string, TypeMutation> = {
             ],
         },
     },
+    PackedByteArray: {
+        intro: [
+            "/** [jsb utility method] Converts a PackedByteArray to a JavaScript ArrayBuffer. */",
+            "to_array_buffer(): ArrayBuffer"
+        ],
+    },
 };
 
 const InheritedTypeMutations: Record<string, TypeMutation> = {
@@ -84,19 +220,50 @@ const InheritedTypeMutations: Record<string, TypeMutation> = {
     },
 };
 
-function get_type_mutation(name: string, classes: { [name: string]: jsb.editor.ClassInfo }): TypeMutation {
-    const type_mutation: TypeMutation = {};
-    let super_name = classes[name].super;
+function class_type_mutation(cls: ClassInfo): TypeMutation {
+    const intro: string[] = []
+
+    if (typeof cls.element_type !== "undefined") {
+        const element_type_name = get_primitive_type_name(cls.element_type);
+        intro.push(`set_indexed(index: number, value: ${element_type_name}): void`);
+        intro.push(`get_indexed(index: number): ${element_type_name}`);
+    }
+
+    if (cls.is_keyed) {
+        intro.push("set_keyed(index: any, value: any): void");
+        intro.push("get_keyed(index: any): any");
+    }
+
+    return {
+        intro,
+    };
+}
+
+function merge_type_mutations(base: TypeMutation, overrides: TypeMutation) {
+    return {
+        ...base,
+        ...overrides,
+        property_overrides: {
+            ...base.property_overrides,
+            ...overrides.property_overrides,
+        },
+    };
+}
+
+function get_type_mutation(name: string, classes: { [Name in string]?: jsb.editor.ClassInfo } = {}): TypeMutation {
+    const class_info = classes[name];
+    let type_mutation = class_info ? class_type_mutation(class_info) : {};
+    let super_name = class_info?.super;
 
     while (super_name) {
         if (InheritedTypeMutations[super_name]) {
-            Object.assign(type_mutation, InheritedTypeMutations[super_name]);
+            type_mutation = merge_type_mutations(type_mutation, InheritedTypeMutations[super_name]);
         }
-        super_name = classes[super_name].super;
+        super_name = classes[super_name]?.super;
     }
 
     if (TypeMutations[name]) {
-        Object.assign(type_mutation, TypeMutations[name]);
+        type_mutation = merge_type_mutations(type_mutation, TypeMutations[name]);
     }
 
     return type_mutation;
@@ -117,22 +284,21 @@ interface CodeWriter {
       super_?: undefined | string,
       super_generic_arguments?: undefined | string[],
       intro?: undefined | string[],
-      property_overrides?: undefined | Record<string, string[]>
+      property_overrides?: undefined | PropertyOverrides
     ): InterfaceWriter;
     class_(
       name: string,
       generic_parameters: undefined | Record<string, GenericParameter>,
       super_: undefined | string,
       super_generic_arguments: undefined | string[],
-      property_overrides: undefined | Record<string, string[]>,
+      property_overrides: undefined | PropertyOverrides,
       intro: undefined | string[],
       singleton_mode: boolean,
       class_doc?: jsb.editor.ClassDoc
     ): ClassWriter;
-    valuetype_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter;
     generic_(name: string): GenericWriter;
     property_(name: string): PropertyWriter;
-    object_(intro?: undefined | string[], property_overrides?: undefined | Record<string, string[]>): ObjectWriter;
+    object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter;
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
 }
@@ -279,28 +445,6 @@ const IgnoredTypes = new Set([
     "GDScriptNativeClass",
     "GDScriptSyntaxHighlighter",
 ])
-const CallableBind = {
-    description: "Create a callable object with a bound object `self`",
-    methods: [
-        "static create<R = void>(self: Object, fn: () => R): Callable0<R>",
-        "static create<T1, R = void>(self: Object, fn: (v1: T1) => R): Callable1<T1, R>",
-        "static create<T1, T2, R = void>(self: Object, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
-        "static create<T1, T2, T3, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
-        "static create<T1, T2, T3, T4, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
-        "static create<T1, T2, T3, T4, T5, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
-    ]
-}
-const CallableFuncBind = {
-    description: "Create godot Callable without a bound object",
-    methods: [
-        "static create<R = void>(fn: () => R): Callable0<R>",
-        "static create<T1, R = void>(fn: (v1: T1) => R): Callable1<T1, R>",
-        "static create<T1, T2, R = void>(fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
-        "static create<T1, T2, T3, R = void>(fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
-        "static create<T1, T2, T3, T4, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
-        "static create<T1, T2, T3, T4, T5, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
-    ]
-}
 const GlobalUtilityFuncs = [
     {
         description: "shorthand for getting project settings",
@@ -401,7 +545,7 @@ abstract class AbstractWriter implements ScopeWriter {
       super_?: undefined | string,
       super_generic_arguments?: undefined | string[],
       intro?: undefined | string[],
-      property_overrides?: undefined | Record<string, string[]>,
+      property_overrides?: undefined | PropertyOverrides,
     ): InterfaceWriter {
         return new InterfaceWriter(this, name, generic_parameters, super_, super_generic_arguments, intro, property_overrides);
     }
@@ -410,15 +554,12 @@ abstract class AbstractWriter implements ScopeWriter {
       generic_parameters: undefined | Record<string, GenericParameter>,
       super_: string,
       super_generic_arguments: undefined | string[],
-      property_overrides: undefined | Record<string, string[]>,
+      property_overrides: undefined | PropertyOverrides,
       intro: undefined | string[],
       singleton_mode: boolean,
       class_doc?: jsb.editor.ClassDoc
     ): ClassWriter {
         return new ClassWriter(this, name, generic_parameters, super_, super_generic_arguments, intro, property_overrides, singleton_mode, class_doc);
-    }
-    valuetype_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter {
-        return new ClassWriter(this, name, undefined, super_, undefined, undefined, undefined, singleton_mode, class_doc);
     }
     generic_(name: string): GenericWriter {
       return new GenericWriter(this, name);
@@ -426,7 +567,7 @@ abstract class AbstractWriter implements ScopeWriter {
     property_(name: string): PropertyWriter {
         return new PropertyWriter(this, name);
     }
-    object_(intro?: undefined | string[], property_overrides?: undefined | Record<string, string[]>): ObjectWriter {
+    object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter {
         return new ObjectWriter(this, intro, property_overrides);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
@@ -637,7 +778,7 @@ class ClassWriter extends IndentWriter {
     protected _super?: string;
     protected _super_generic_arguments?: string[];
     protected _intro?: string[];
-    protected _property_overrides?: Record<string, string[]>;
+    protected _property_overrides?: Record<string, string[] | ((line: string) => string)>;
     protected _singleton_mode: boolean;
     protected _doc?: jsb.editor.ClassDoc;
     protected _separator_line = false;
@@ -651,7 +792,7 @@ class ClassWriter extends IndentWriter {
         super_: undefined | string,
         super_generic_arguments: undefined | string[],
         intro: undefined | string[],
-        property_overrides: undefined | Record<string, string[]>,
+        property_overrides: undefined | PropertyOverrides,
         singleton_mode: boolean,
         class_doc?: jsb.editor.ClassDoc
     ) {
@@ -733,12 +874,13 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
 
         const property_override = this._property_overrides?.[getset_info.name];
-        if (property_override) {
+        if (Array.isArray(property_override)) {
             for (const line of property_override) {
                 this.line(line);
             }
             return;
         }
+        const line = (line: string) => this.line(property_override?.(line) ?? line);
 
         // Handle properties with forward slashes e.g. `AnimatedTexture.frame_0/texture`
         const name = getset_info.name.indexOf("/") >= 0
@@ -750,9 +892,9 @@ class ClassWriter extends IndentWriter {
         //
         // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
 
-        this.line(`get ${name}(): ${this.types.make_typename(getset_info.info, false)}`);
+        line(`get ${name}(): ${this.types.make_typename(getset_info.info, false)}`);
         if (getset_info.setter.length != 0) {
-            this.line(`set ${name}(value: ${this.types.make_typename(getset_info.info, true)})`);
+            line(`set ${name}(value: ${this.types.make_typename(getset_info.info, true)})`);
         }
     }
 
@@ -818,12 +960,13 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
 
         const property_override = this._property_overrides?.[method_info.name];
-        if (property_override) {
+        if (Array.isArray(property_override)) {
             for (const line of property_override) {
                 this.line(line);
             }
             return;
         }
+        const line = (line: string) => this.line(property_override?.(line) ?? line);
 
         let args = this.types.make_args(method_info, this.get_scoped_type_replacer());
         let rval = this.types.make_return(method_info, this.get_scoped_type_replacer());
@@ -835,54 +978,8 @@ class ClassWriter extends IndentWriter {
             this.line(`${category}${prefix}["${method_info.name}"]: (${args}) => ${rval}`);
             return;
         }
-        //TODO a better way to specialize
-        if (this._name === "GArray") {
-            switch (method_info.name) {
-                case "push_back":
-                case "push_front":
-                case "append":
-                case "insert":
-                case "fill":
-                case "erase":
-                case "count":
-                case "has":
-                case "bsearch":
-                case "bsearch_custom":
-                    args = args.replace("value: any", "value: T");
-                    break;
-                case "find":
-                case "rfind":
-                    args = args.replace("what: any", "what: T");
-                    break;
-                case "front":
-                case "back":
-                case "pick_random":
-                case "pop_back":
-                case "pop_front":
-                case "pop_at":
-                case "min":
-                case "max":
-                    rval = "T";
-                    break;
-                case "sort_custom":
-                case "bsearch_custom":
-                    args = args.replace("func: AnyCallable", "func: Callable2<T, T, boolean>");
-                    break;
-                case "all":
-                case "any":
-                case "filter":
-                    args = args.replace("method: AnyCallable", "func: Callable1<T, boolean>");
-                    break;
-                case "map":
-                    template = "<U>";
-                    rval = `GArray<U>`;
-                    args = args.replace("method: AnyCallable", "func: Callable1<T, U>");
-                    break;
-                default:
-                    break;
-            }
-        }
-        this.line(`${category}${prefix}${method_info.name}${template}(${args}): ${rval}`);
+
+        line(`${category}${prefix}${method_info.name}${template}(${args}): ${rval}`);
     }
 
     signal_(signal_info: jsb.editor.SignalInfo) {
@@ -941,7 +1038,7 @@ class InterfaceWriter extends IndentWriter {
     protected _super?: string;
     protected _super_generic_arguments?: string[];
     protected _intro?: string[];
-    protected _property_overrides?: Record<string, string[]>;
+    protected _property_overrides?: PropertyOverrides;
 
     constructor(
         base: ScopeWriter,
@@ -950,7 +1047,7 @@ class InterfaceWriter extends IndentWriter {
         super_?: undefined | string,
         super_generic_arguments?: undefined | string[],
         intro?: undefined | string[],
-        property_overrides?: undefined | Record<string, string[]>,
+        property_overrides?: undefined | PropertyOverrides,
     ) {
         super(base);
         this._name = name;
@@ -1002,13 +1099,15 @@ class InterfaceWriter extends IndentWriter {
         }
 
         const property_override = this._property_overrides?.[key];
-        if (property_override) {
+        if (Array.isArray(property_override)) {
             for (const line of property_override) {
                 this.line(line);
             }
             return;
         }
-        this.line(`${key}: ${type};`);
+        const line = (line: string) => this.line(property_override?.(line) ?? line);
+
+        line(`${key}: ${type};`);
     }
 }
 
@@ -1053,12 +1152,12 @@ class GenericWriter extends AbstractWriter {
 
 class ObjectWriter extends IndentWriter {
     protected _intro?: string[];
-    protected _property_overrides?: Record<string, string[]>;
+    protected _property_overrides?: PropertyOverrides;
 
     constructor(
         base: ScopeWriter,
         intro?: undefined | string[],
-        property_overrides?: undefined | Record<string, string[]>,
+        property_overrides?: undefined | PropertyOverrides,
     ) {
         super(base);
         this._intro = intro;
@@ -1095,13 +1194,15 @@ class ObjectWriter extends IndentWriter {
         }
 
         const property_override = this._property_overrides?.[key];
-        if (property_override) {
+        if (Array.isArray(property_override)) {
             for (const line of property_override) {
                 this.line(line);
             }
             return;
         }
-        this.line(`${key}: ${type};`);
+        const line = (line: string) => this.line(property_override?.(line) ?? line);
+
+        line(`${key}: ${type};`);
     }
 }
 
@@ -1629,7 +1730,10 @@ export class TSDCodeGen {
         }
         class_ns_cg.finish();
 
-        const class_cg = cg.valuetype_(jsb.internal.get_type_name(cls.type), "", false, class_doc);
+        const type_name = jsb.internal.get_type_name(cls.type);
+        const type_mutation = get_type_mutation(type_name);
+        const super_ = type_mutation.super ?? undefined;
+        const class_cg = cg.class_(type_name, type_mutation.generic_parameters, super_, type_mutation.super_generic_arguments, type_mutation.property_overrides, type_mutation.intro, false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name)) {
@@ -1640,43 +1744,6 @@ export class TSDCodeGen {
         for (let constructor_info of cls.constructors) {
             class_cg.constructor_(constructor_info);
         }
-
-        //TODO [BEGIN] make all these messy hardcoded methods more flexible and readable
-
-        //
-        if (cls.type == Variant.Type.TYPE_ARRAY) {
-            class_cg.line(`set_indexed(index: number, value: T)`)
-            class_cg.line(`get_indexed(index: number): T`)
-        } else if (typeof cls.element_type !== "undefined") {
-            const element_type_name = get_primitive_type_name(cls.element_type);
-            class_cg.line(`set_indexed(index: number, value: ${element_type_name})`)
-            class_cg.line(`get_indexed(index: number): ${element_type_name}`)
-        }
-        //
-        if (cls.is_keyed) {
-            class_cg.line(`set_keyed(index: any, value: any)`)
-            class_cg.line(`get_keyed(index: any): any`)
-        }
-        // special iterator methods injected in jsb.core
-        if (cls.type == Variant.Type.TYPE_DICTIONARY) {
-            class_cg.line("[Symbol.iterator](): IteratorObject<{ key: any, value: any}>");
-        } else if (cls.type == Variant.Type.TYPE_ARRAY) {
-            class_cg.line("[Symbol.iterator](): IteratorObject<T>");
-        } else if (cls.type == Variant.Type.TYPE_PACKED_BYTE_ARRAY) {
-            class_cg.line("/** [jsb utility method] Converts a PackedByteArray to a JavaScript ArrayBuffer. */");
-            class_cg.line("to_array_buffer(): ArrayBuffer");
-        } else if (cls.type == Variant.Type.TYPE_CALLABLE) {
-            CallableBind.methods.forEach(method => {
-                class_cg.line(`/** ${CallableBind.description} */`);
-                class_cg.line(method);
-            });
-            CallableFuncBind.methods.forEach(method => {
-                class_cg.line(`/** ${CallableFuncBind.description} */`);
-                class_cg.line(method);
-            });
-        }
-
-        //TODO [END] make all these messy hardcoded methods more flexible and readable
 
         for (let method_info of cls.methods) {
             class_cg.ordinary_method_(method_info);
@@ -1748,7 +1815,6 @@ interface NodeHierarchy {
     children: Record<string, NodeHierarchy>;
 }
 
-
 export class SceneTSDCodeGen {
   private _out_dir: string;
   private _scene_paths: string[];
@@ -1790,53 +1856,53 @@ export class SceneTSDCodeGen {
     return tasks.submit();
   }
 
-  private emit_children_node_types(writer: ScopeWriter, children: GDictionary) {
+  private emit_children_node_types(writer: ScopeWriter, children: Record<string, NodeHierarchy>) {
       const child_writer = writer.object_();
-      for (const { key, value } of children) {
-          const property = child_writer.property_(key);
-          const generic = property.generic_(value.get('class'));
-          this.emit_children_node_types(generic, value.get('children'));
-          generic.finish();
-          property.finish();
+      for (const [key, value] of Object.entries(children)) {
+        const property = child_writer.property_(key);
+        const generic = property.generic_(value.class);
+        this.emit_children_node_types(generic, value.children);
+        generic.finish();
+        property.finish();
       }
       child_writer.finish();
   }
 
   private emit_scene_node_types(scene_path: string) {
     try {
-        const helper = require("godot").GodotJSEditorHelper;
-        const result = helper.get_scene_nodes(scene_path);
+      const helper = require('godot').GodotJSEditorHelper;
+      const result = helper.get_scene_nodes(scene_path)?.proxy();
 
-        if (!result) {
-            throw new Error(`root node children unavailable: ${scene_path}`);
-        }
+      if (!result) {
+        throw new Error(`root node children unavailable: ${scene_path}`);
+      }
 
-        const dir_path = this.make_path(scene_path, false);
-        const dir_error = DirAccess.make_dir_recursive_absolute(dir_path);
+      const dir_path = this.make_path(scene_path, false);
+      const dir_error = DirAccess.make_dir_recursive_absolute(dir_path);
 
-        if (dir_error !== 0) {
-            console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
-        }
+      if (dir_error !== 0) {
+        console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
+      }
 
-        const file = FileAccess.open(this.make_path(scene_path), FileAccess.ModeFlags.WRITE);
+      const file = FileAccess.open(this.make_path(scene_path), FileAccess.ModeFlags.WRITE);
 
-        if (!file) {
-            throw new Error(`failed to open file for writing: ${dir_path}`);
-        }
+      if (!file) {
+        throw new Error(`failed to open file for writing: ${dir_path}`);
+      }
 
-    try {
-      const file_writer = new FileWriter(this._types, file);
-      const module = new ModuleWriter(file_writer, 'godot');
-      const scene_nodes_interface = new InterfaceWriter(module, "SceneNodes");
-      const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ''));
-      this.emit_children_node_types(scene_property, result.get('children'));
-      scene_property.finish();
-      scene_nodes_interface.finish();
-      module.finish();
-      file_writer.finish();
-    } finally {
-      file.close();
-    }
+      try {
+        const file_writer = new FileWriter(this._types, file);
+        const module = new ModuleWriter(file_writer, 'godot');
+        const scene_nodes_interface = new InterfaceWriter(module, 'SceneNodes');
+        const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ''));
+        this.emit_children_node_types(scene_property, result.children);
+        scene_property.finish();
+        scene_nodes_interface.finish();
+        module.finish();
+        file_writer.finish();
+      } finally {
+        file.close();
+      }
     } catch (error) {
       console.error(`failed to generate scene node types: ${scene_path}`);
       throw error;
