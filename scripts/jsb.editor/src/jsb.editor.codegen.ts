@@ -1,5 +1,14 @@
 
-import { FileAccess, PropertyHint, Variant, str as gd_to_string, type_string, MethodFlags } from "godot";
+import {
+    DirAccess,
+    FileAccess,
+    GDictionary,
+    PropertyHint,
+    Variant,
+    str as gd_to_string,
+    type_string,
+    MethodFlags, GodotJSEditorHelper as helper,
+} from 'godot';
 import * as jsb from "godot-jsb";
 
 if (!jsb.TOOLS_ENABLED) {
@@ -8,6 +17,90 @@ if (!jsb.TOOLS_ENABLED) {
 
 const tab = "    ";
 const GodotAnyType: string = "GAny";
+
+interface GenericParameter {
+    extends?: string;
+    default?: string;
+}
+
+interface TypeMutation {
+    generic_parameters?: Record<string, GenericParameter>;
+    super?: string;
+    super_generic_arguments?: string[];
+    intro?: string[];
+    property_overrides?: Record<string, string[]>;
+}
+
+const TypeMutations: Record<string, TypeMutation> = {
+    Signal: {
+        super: "AnySignal",
+    },
+    Callable: {
+        super: "AnyCallable",
+    },
+    GArray: {
+        generic_parameters: {
+            T: {
+                default: "Any",
+            },
+        },
+    },
+    Node: {
+        generic_parameters: {
+            Map: {
+                extends: "Record<string, Node>",
+                default: "{}",
+            },
+        },
+        intro: [
+            "// TypeScript's inference won't directly match against a generic parameter. The generic parameter has to",
+            "// appear somewhere in the type definition. Consequently, we insert a dummy direct usage of the parameter.",
+            // To observe this in practice, visit the following and comment out line 20:
+            // https://www.typescriptlang.org/play/?ts=5.8.2#code/C4TwDgpgBAcg9gEwgBQIbABYFlVigXigG8oBtAaSgEsA7KAZ2ACdaBzAXQH4AuWRCAMwARKAF8AsACgpoSFADKwdFQDG8JGkwAeHHggAPYBBoJ6fDemy4AfASgAKANYQQcAGZRdUAGQNmbAEooAB9iKSgySlooZ1cPL19GFhoOXl0KdigDIxMzdUEhLVo3CCYoAGEMKgAbBF1rcIioTigAAwASInJRADpOxWU1fk0MLUqauptRVsaI3hoIADdSqVFSWPdPXB8-ZI4AbikZcGgAJQh6OGrl-JGdbezjU3MUS10AGigRrMMnsyS2J8hBA3KgAK7VYB2BbLJi2QjfR65GIuTa6RotdIjdiNXiI37IjpEYqlKDkFw-HLPDbxbaJfwpXqdElleRggBGI2ms2aWzAFBcmSRz3ywiKNBKZXGtXqPIiLXOl2uEFuljGVRluE+bM5liBIPBkIakiaTV4wNBEOAPPNBqth2kkiQKmqqCY0BUcBojCgAH1fQg4BcaHAjPoqIxffldLwwTQqABHMHQeggAC27Ku+ygR0kLtQ9Dy-DFWEpfxeIy8hFVmHqYRNUGdrvdUDALEW6GgpH9geDoYMEeAUf4unYaQdEkd+cLCkgKioblUosKpeFRYste21eGbxsZeRy50tiIk+OciwIAAKu7oIQiI03HA4Lx5HOF0vi4V7w2IuzUKgXzfRchiQMVv1NCJMDYXhlwdU1RGsOCxEQ1YHSkT1vShMBLBfJRgA-DdRgva8IAgeEoAAckfOAKIdDCfWwzAACZcMGGsiKvG9yKop8ej-VBaPQr0GMsARWPwkDXm0YiuLsHi4D4-8eiglJBMkAB6TSoAAAWAegAFoDDnYBDKYJg4CYITMOoGgO2qKgEBGABGcSCKkjiSLIuSQ0wUoIDUzT1J0vTDP0YzTPMyy82EqFaDshyRhYhQ8Lcu4ZNI7jqJ6HyMD8gKtN0gyjIgFQTNKSKrJ9OLUHsxzRNcyS0s4jK5Ky-jstDXL3TUyqoWo3hFSuG4d2k5qIE+eSKPIk8oALWaaBAOiYqgaiACF-wGi4hpVEaPJvCa2v-Ka7BmubUAWh1AuCoqwpKsqzIs3qVqfeBgAACT8gBJegYCWUpNqVYbCJ0MaDt4nK8um0RZrMc7Fqetb-0vKoUgB7b2JBzywYU9qVNYY672hs6LqkK7CtC8Lyse6LrMR1BXo+91vt+2E0eVDH0vGyjDtQDrfO6qGYfm+HHSAA
+            "private __doesnotexist_NodeMap: Map"
+        ],
+        property_overrides: {
+            get_node: [
+                "get_node<Path extends StaticNodePath<Map>>(path: Path): ResolveNodePath<Map, Path>",
+                "get_node(path: NodePath | string): Node",
+            ],
+            get_node_or_null: [
+                "get_node_or_null<Path extends StaticNodePath<Map>>(path: Path): null | ResolveNodePath<Map, Path>",
+                "get_node_or_null(path: NodePath | string): null | Node",
+            ],
+        },
+    },
+};
+
+const InheritedTypeMutations: Record<string, TypeMutation> = {
+    Node: {
+        generic_parameters: {
+            Map: {
+                extends: "Record<string, Node>",
+                default: "Record<string, Node>",
+            },
+        },
+        super_generic_arguments: ["Map"],
+    },
+};
+
+function get_type_mutation(name: string, classes: { [name: string]: jsb.editor.ClassInfo }): TypeMutation {
+    const type_mutation: TypeMutation = {};
+    let super_name = classes[name].super;
+
+    while (super_name) {
+        if (InheritedTypeMutations[super_name]) {
+            Object.assign(type_mutation, InheritedTypeMutations[super_name]);
+        }
+        super_name = classes[super_name].super;
+    }
+
+    if (TypeMutations[name]) {
+        Object.assign(type_mutation, TypeMutations[name]);
+    }
+
+    return type_mutation;
+}
 
 interface CodeWriter {
     get types(): TypeDB;
@@ -18,8 +111,28 @@ interface CodeWriter {
 
     enum_(name: string): EnumWriter;
     namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter;
-    gd_class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter;
+    interface_(
+      name: string,
+      generic_parameters?: undefined | Record<string, GenericParameter>,
+      super_?: undefined | string,
+      super_generic_arguments?: undefined | string[],
+      intro?: undefined | string[],
+      property_overrides?: undefined | Record<string, string[]>
+    ): InterfaceWriter;
+    class_(
+      name: string,
+      generic_parameters: undefined | Record<string, GenericParameter>,
+      super_: undefined | string,
+      super_generic_arguments: undefined | string[],
+      property_overrides: undefined | Record<string, string[]>,
+      intro: undefined | string[],
+      singleton_mode: boolean,
+      class_doc?: jsb.editor.ClassDoc
+    ): ClassWriter;
     valuetype_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter;
+    generic_(name: string): GenericWriter;
+    property_(name: string): PropertyWriter;
+    object_(intro?: undefined | string[], property_overrides?: undefined | Record<string, string[]>): ObjectWriter;
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
 }
@@ -49,7 +162,12 @@ interface CodegenTaskInfo {
 }
 
 class CodegenTasks {
+    private _name: string;
     private tasks: Array<CodegenTaskInfo> = [];
+
+    constructor(name: string) {
+      this._name = name;
+    }
 
     add_task(name: string, func: () => (void | Promise<void>) ){
         this.tasks.push({ name: name, execute: func });
@@ -59,27 +177,32 @@ class CodegenTasks {
         const EditorProgress = require("godot").GodotJSEditorProgress;
         const progress = new EditorProgress();
         let force_wait = 24;
-        progress.init("codegen", "Generating godot.d.ts", this.tasks.length);
+        progress.init(`codegen-${this._name}`, `Generating ${this._name}`, this.tasks.length);
 
-        for (let i = 0; i < this.tasks.length; ++i) {
-            const task = this.tasks[i];
-            const result = task.execute();
+        try {
+            for (let i = 0; i < this.tasks.length; ++i) {
+                const task = this.tasks[i];
+                const result = task.execute();
 
-            if (typeof result === "object" && result instanceof Promise) {
-                progress.set_state_name(task.name);
-                progress.set_current(i);
-                await result;
-            } else {
-                if (!(i % force_wait)) {
+                if (typeof result === "object" && result instanceof Promise) {
                     progress.set_state_name(task.name);
                     progress.set_current(i);
-                    await frame_step();
+                    await result;
+                } else {
+                    if (!(i % force_wait)) {
+                        progress.set_state_name(task.name);
+                        progress.set_current(i);
+                        await frame_step();
+                    }
                 }
             }
-        }
 
-        progress.finish();
-        toast("godot.d.ts generated successfully");
+            progress.finish();
+            toast(`${this._name} generated successfully`);
+        } catch (e) {
+            toast(`${this._name} failed!`);
+            progress.finish();
+        }
     }
 }
 
@@ -147,7 +270,7 @@ const IgnoredTypes = new Set([
     "GodotJSExportPlugin",
     "GodotJSREPL",
     "GodotJSScript",
-    "GodotJSEditorHelper", 
+    "GodotJSEditorHelper",
     "GodotJSEditorProgress",
 
     // GDScript related classes
@@ -196,7 +319,7 @@ const GlobalUtilityFuncs = [
 const PrimitiveTypesSet = (function (): Set<string> {
     let set = new Set<string>();
     for (let name in Variant.Type) {
-        // use the original type name of Variant.Type, 
+        // use the original type name of Variant.Type,
         // because this set is used with type name from the original godot class info (PropertyInfo)
         let str = type_string(<any>Variant.Type[name]);
         if (str.length != 0) {
@@ -272,11 +395,39 @@ abstract class AbstractWriter implements ScopeWriter {
     namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter {
         return new NamespaceWriter(this, name, class_doc)
     }
-    gd_class_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter {
-        return new ClassWriter(this, name, super_, singleton_mode, class_doc);
+    interface_(
+      name: string,
+      generic_parameters?: undefined | Record<string, GenericParameter>,
+      super_?: undefined | string,
+      super_generic_arguments?: undefined | string[],
+      intro?: undefined | string[],
+      property_overrides?: undefined | Record<string, string[]>,
+    ): InterfaceWriter {
+        return new InterfaceWriter(this, name, generic_parameters, super_, super_generic_arguments, intro, property_overrides);
+    }
+    class_(
+      name: string,
+      generic_parameters: undefined | Record<string, GenericParameter>,
+      super_: string,
+      super_generic_arguments: undefined | string[],
+      property_overrides: undefined | Record<string, string[]>,
+      intro: undefined | string[],
+      singleton_mode: boolean,
+      class_doc?: jsb.editor.ClassDoc
+    ): ClassWriter {
+        return new ClassWriter(this, name, generic_parameters, super_, super_generic_arguments, intro, property_overrides, singleton_mode, class_doc);
     }
     valuetype_(name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc): ClassWriter {
-        return new ClassWriter(this, name, super_, singleton_mode, class_doc);
+        return new ClassWriter(this, name, undefined, super_, undefined, undefined, undefined, singleton_mode, class_doc);
+    }
+    generic_(name: string): GenericWriter {
+      return new GenericWriter(this, name);
+    }
+    property_(name: string): PropertyWriter {
+        return new PropertyWriter(this, name);
+    }
+    object_(intro?: undefined | string[], property_overrides?: undefined | Record<string, string[]>): ObjectWriter {
+        return new ObjectWriter(this, intro, property_overrides);
     }
     // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
     //     return new SingletonWriter(this, info);
@@ -444,7 +595,7 @@ class ModuleWriter extends IndentWriter {
         this._base.line('}');
     }
 
-    // godot utility functions must be in global scope 
+    // godot utility functions must be in global scope
     utility_(method_info: jsb.editor.MethodBind) {
         const args = this.types.make_args(method_info);
         const rval = this.types.make_return(method_info);
@@ -482,42 +633,72 @@ class NamespaceWriter extends IndentWriter {
 
 class ClassWriter extends IndentWriter {
     protected _name: string;
-    protected _super: string;
+    protected _generic_parameters?: Record<string, GenericParameter>;
+    protected _super?: string;
+    protected _super_generic_arguments?: string[];
+    protected _intro?: string[];
+    protected _property_overrides?: Record<string, string[]>;
     protected _singleton_mode: boolean;
     protected _doc?: jsb.editor.ClassDoc;
     protected _separator_line = false;
 
     get class_doc(): jsb.editor.ClassDoc | undefined { return this._doc; }
 
-    constructor(base: ScopeWriter, name: string, super_: string, singleton_mode: boolean, class_doc?: jsb.editor.ClassDoc) {
+    constructor(
+        base: ScopeWriter,
+        name: string,
+        generic_parameters: undefined | Record<string, GenericParameter>,
+        super_: undefined | string,
+        super_generic_arguments: undefined | string[],
+        intro: undefined | string[],
+        property_overrides: undefined | Record<string, string[]>,
+        singleton_mode: boolean,
+        class_doc?: jsb.editor.ClassDoc
+    ) {
         super(base);
         this._name = name;
+        this._generic_parameters = generic_parameters;
         this._super = super_;
+        this._super_generic_arguments = super_generic_arguments;
+        this._intro = intro;
+        this._property_overrides = property_overrides;
         this._singleton_mode = singleton_mode;
         this._doc = class_doc;
     }
 
     protected head() {
+        const params = this._generic_parameters
+            ? `<${Object.entries(this._generic_parameters).map(([name, p]) =>
+                `${name}${p.extends ? ` extends ${p.extends}` : ""}${p.default ? ` = ${p.default}` : ""}`
+            ).join(", ")}>`
+            : "";
         if (typeof this._super !== "string" || this._super.length == 0) {
-            if (this._name == "Signal") {
-                return "class Signal implements AnySignal";
-            } else if (this._name == "Callable") {
-                return "class Callable implements AnyCallable";
-            } else if (this._name == "GArray") {
-                return `class GArray<T = any>`;
-            }
-            return `class ${this._name}`
+            return `class ${this._name}${params}`;
         }
-        return `class ${this._name} extends ${this._super}`
+        const args = this._super_generic_arguments && this._super_generic_arguments.length > 0
+            ? `<${this._super_generic_arguments.join(", ")}>`
+            : "";
+        return `class ${this._name}${params} extends ${this._super}${args}`;
     }
 
     protected make_method_prefix(method_info: jsb.editor.MethodBind): string {
         return this._singleton_mode || method_info.is_static ? "static " : "";
     }
 
+    intro() {
+        if (!this._intro) {
+            return
+        }
+
+        for (const line of this._intro) {
+            this._base.line(tab + line);
+        }
+    }
+
     finish() {
         DocCommentHelper.write(this._base, Description.forClass(this.types, this._name), false);
         this._base.line(`${this.head()} {`)
+        this.intro()
         super.finish()
         this._base.line('}')
     }
@@ -539,23 +720,39 @@ class ClassWriter extends IndentWriter {
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
 
-    property_(getset_info: jsb.editor.PropertySetGetInfo) {
-        // ignore properties which can't be directly represented with javascript (such as `AnimatedTexture.frame_0/texture`)
-        if (getset_info.name.indexOf("/") >= 0) {
-            return;
+    property_(name: string): PropertyWriter;
+    property_(getset_info: jsb.editor.PropertySetGetInfo): void;
+    property_(name_or_getset_info: string | jsb.editor.PropertySetGetInfo): void | PropertyWriter {
+        if (typeof name_or_getset_info === "string") {
+            return super.property_(name_or_getset_info);
         }
+
+        const getset_info = name_or_getset_info;
         console.assert(getset_info.getter.length != 0);
         DocCommentHelper.write(this, this._doc?.properties[getset_info.name]?.description, this._separator_line);
         this._separator_line = true;
 
-        // declare as get/set to avoid the pitfalls of modifying a value type return value 
+        const property_override = this._property_overrides?.[getset_info.name];
+        if (property_override) {
+            for (const line of property_override) {
+                this.line(line);
+            }
+            return;
+        }
+
+        // Handle properties with forward slashes e.g. `AnimatedTexture.frame_0/texture`
+        const name = getset_info.name.indexOf("/") >= 0
+            ? `"${getset_info.name}"`
+            : getset_info.name;
+
+        // declare as get/set to avoid the pitfalls of modifying a value type return value
         // `node.position.x = 0;` (Although, it works in GDScript)
         //
         // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
 
-        this.line(`get ${getset_info.name}(): ${this.types.make_typename(getset_info.info, false)}`);
+        this.line(`get ${name}(): ${this.types.make_typename(getset_info.info, false)}`);
         if (getset_info.setter.length != 0) {
-            this.line(`set ${getset_info.name}(value: ${this.types.make_typename(getset_info.info, true)})`);
+            this.line(`set ${name}(value: ${this.types.make_typename(getset_info.info, true)})`);
         }
     }
 
@@ -619,6 +816,15 @@ class ClassWriter extends IndentWriter {
     method_(method_info: jsb.editor.MethodBind, category: string) {
         DocCommentHelper.write(this, this._doc?.methods[method_info.name]?.description, this._separator_line);
         this._separator_line = true;
+
+        const property_override = this._property_overrides?.[method_info.name];
+        if (property_override) {
+            for (const line of property_override) {
+                this.line(line);
+            }
+            return;
+        }
+
         let args = this.types.make_args(method_info, this.get_scoped_type_replacer());
         let rval = this.types.make_return(method_info, this.get_scoped_type_replacer());
         const prefix = this.make_method_prefix(method_info);
@@ -726,6 +932,219 @@ class EnumWriter extends IndentWriter {
         DocCommentHelper.write(this, this._base.class_doc?.constants[name]?.description, this._separator_line);
         this._separator_line = true;
         this.line(`${name} = ${value},`);
+    }
+}
+
+class InterfaceWriter extends IndentWriter {
+    protected _name: string;
+    protected _generic_parameters?: Record<string, GenericParameter>;
+    protected _super?: string;
+    protected _super_generic_arguments?: string[];
+    protected _intro?: string[];
+    protected _property_overrides?: Record<string, string[]>;
+
+    constructor(
+        base: ScopeWriter,
+        name: string,
+        generic_parameters?: undefined | Record<string, GenericParameter>,
+        super_?: undefined | string,
+        super_generic_arguments?: undefined | string[],
+        intro?: undefined | string[],
+        property_overrides?: undefined | Record<string, string[]>,
+    ) {
+        super(base);
+        this._name = name;
+        this._generic_parameters = generic_parameters;
+        this._super = super_;
+        this._super_generic_arguments = super_generic_arguments;
+        this._intro = intro;
+        this._property_overrides = property_overrides;
+    }
+
+    protected head() {
+        const params = this._generic_parameters
+            ? `<${Object.entries(this._generic_parameters).map(([name, p]) => {
+
+                return `${name}${p.extends ? ` extends ${p.extends}` : ""}${p.default ? ` = ${p.default}` : ""}`;
+            }).join(", ")}>`
+            : "";
+        if (typeof this._super !== "string" || this._super.length == 0) {
+            return `interface ${this._name}${params}`;
+        }
+        const args = this._super_generic_arguments && this._super_generic_arguments.length > 0
+            ? `<${this._super_generic_arguments.join(", ")}>`
+            : "";
+        return `interface ${this._name}${params} extends ${this._super}${args}`;
+    }
+
+    intro() {
+        if (!this._intro) {
+            return
+        }
+
+        for (const line of this._intro) {
+            this._base.line(tab + line);
+        }
+    }
+
+    finish() {
+        this._base.line(`${this.head()} {`)
+        this.intro()
+        super.finish()
+        this._base.line('}')
+    }
+
+    property_(key: string): PropertyWriter;
+    property_(key: string, type: string): void;
+    property_(key: string, type?: string): void | PropertyWriter {
+        if (type === undefined) {
+            return super.property_(key);
+        }
+
+        const property_override = this._property_overrides?.[key];
+        if (property_override) {
+            for (const line of property_override) {
+                this.line(line);
+            }
+            return;
+        }
+        this.line(`${key}: ${type};`);
+    }
+}
+
+class GenericWriter extends AbstractWriter {
+    private _name: string;
+    private _base: ScopeWriter;
+    private _lines: string[];
+    private _size: number;
+
+    constructor(base: AbstractWriter, name: string) {
+        super();
+        this._base = base;
+        this._name = name;
+        this._lines = [];
+        this._size = name.length + 2;
+    }
+
+    get size() { return this._size; }
+    get lineno() { return this._lines.length; }
+    get types() { return this._base.types; }
+
+    finish(): void {
+        if (this._lines.length < 2) {
+            this._base.line(`${this._name}<${this._lines[0] ?? ""}>`);
+            return;
+        }
+
+        this._base.line(`${this._name}<`);
+        const indented = new IndentWriter(this._base);
+        for (const line of this._lines) {
+            indented.line(line);
+        }
+        indented.finish();
+        this._base.line(">");
+    }
+
+    line(text: string): void {
+        this._lines.push(text);
+        this._size += text.length + 1; // + 1 due to the line break, tabs?
+    }
+}
+
+class ObjectWriter extends IndentWriter {
+    protected _intro?: string[];
+    protected _property_overrides?: Record<string, string[]>;
+
+    constructor(
+        base: ScopeWriter,
+        intro?: undefined | string[],
+        property_overrides?: undefined | Record<string, string[]>,
+    ) {
+        super(base);
+        this._intro = intro;
+        this._property_overrides = property_overrides;
+    }
+
+    intro() {
+        if (!this._intro) {
+            return
+        }
+
+        for (const line of this._intro) {
+            this._base.line(tab + line);
+        }
+    }
+
+    finish() {
+        if (this._lines.length === 0 && !this._intro) {
+            this._base.line('{}')
+            return;
+        }
+
+        this._base.line(`{`)
+        this.intro()
+        super.finish()
+        this._base.line('}')
+    }
+
+    property_(key: string): PropertyWriter;
+    property_(key: string, type: string): void;
+    property_(key: string, type?: string): void | PropertyWriter {
+        if (type === undefined) {
+            return super.property_(key);
+        }
+
+        const property_override = this._property_overrides?.[key];
+        if (property_override) {
+            for (const line of property_override) {
+                this.line(line);
+            }
+            return;
+        }
+        this.line(`${key}: ${type};`);
+    }
+}
+
+class PropertyWriter extends AbstractWriter {
+    private _name: string;
+    private _base: ScopeWriter;
+    private _lines: string[];
+    private _size: number = 0;
+
+    constructor(base: AbstractWriter, name: string) {
+        super();
+        this._base = base;
+        this._name = name;
+        this._lines = [];
+    }
+
+    get size() { return this._size; }
+    get lineno() { return this._lines.length; }
+    get types() { return this._base.types; }
+
+    finish(): void {
+        if (this._lines.length === 0) {
+            return;
+        }
+
+        this._lines[this._lines.length - 1] += ",";
+
+        for (const line of this._lines) {
+            this._base.line(line);
+        }
+    }
+
+    line(text: string): void {
+        if (this._lines.length === 0) {
+            const key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(this._name)
+                ? this._name
+                : `"${this._name.replace("\"", "\\\"")}"`;
+            text = `${key}: ${text}`;
+            this._size = 1; // trailing comma
+        }
+
+        this._lines.push(text);
+        this._size += text.length;
     }
 }
 
@@ -1015,7 +1434,7 @@ export class TypeDB {
 }
 
 // d.ts generator
-export default class TSDCodeGen {
+export class TSDCodeGen {
     private _split_index: number;
     private _outDir: string;
     private _splitter: FileSplitter | undefined;
@@ -1082,7 +1501,7 @@ export default class TSDCodeGen {
     async emit() {
         await frame_step();
 
-        const tasks = new CodegenTasks();
+        const tasks = new CodegenTasks("godot.d.ts");
 
         // predefined lines
         tasks.add_task("Predefined Lines", () => this.emit_mock());
@@ -1224,7 +1643,7 @@ export default class TSDCodeGen {
 
         //TODO [BEGIN] make all these messy hardcoded methods more flexible and readable
 
-        // 
+        //
         if (cls.type == Variant.Type.TYPE_ARRAY) {
             class_cg.line(`set_indexed(index: number, value: T)`)
             class_cg.line(`get_indexed(index: number): T`)
@@ -1289,7 +1708,9 @@ export default class TSDCodeGen {
             }
             class_ns_cg.finish();
 
-            const class_cg = cg.gd_class_(cls.name, this.has_class(cls.super) ? cls.super! : "", singleton_mode, class_doc);
+            const type_mutation = get_type_mutation(cls.name, this._types.classes);
+            const super_ = type_mutation.super ?? (this.has_class(cls.super) ? cls.super : undefined);
+            const class_cg = cg.class_(cls.name, type_mutation.generic_parameters, super_, type_mutation.super_generic_arguments, type_mutation.property_overrides, type_mutation.intro, singleton_mode, class_doc);
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {
@@ -1322,3 +1743,103 @@ export default class TSDCodeGen {
     }
 }
 
+interface NodeHierarchy {
+    class: string;
+    children: Record<string, NodeHierarchy>;
+}
+
+
+export class SceneTSDCodeGen {
+  private _out_dir: string;
+  private _scene_paths: string[];
+  private _types: TypeDB;
+
+  constructor(out_dir: string, scene_paths: string[]) {
+    console.log("SceneTSDCodeGen constructor");
+    this._out_dir = out_dir;
+    this._scene_paths = scene_paths;
+
+    this._types = new TypeDB();
+  }
+
+  private make_path(scene_path: string, include_filename = true) {
+    const relative_path = (
+        include_filename
+          ? scene_path.replace(/\.t?scn$/i, '.nodes.gen.d.ts')
+          : scene_path.replace(/\/[^\/]+$/, '')
+    ).replace(/^res:\/\//, '');
+
+    if (typeof this._out_dir !== "string" || this._out_dir.length == 0) {
+      return relative_path;
+    }
+
+    return this._out_dir.endsWith("/")
+      ? this._out_dir + relative_path
+      : this._out_dir + "/" + relative_path;
+  }
+
+  async emit() {
+    await frame_step();
+
+    const tasks = new CodegenTasks("Generating scene node types");
+
+    for (const scene_path of this._scene_paths) {
+        tasks.add_task(`Generating scene node types: ${scene_path}`, () => this.emit_scene_node_types(scene_path));
+    }
+
+    return tasks.submit();
+  }
+
+  private emit_children_node_types(writer: ScopeWriter, children: GDictionary) {
+      const child_writer = writer.object_();
+      for (const { key, value } of children) {
+          const property = child_writer.property_(key);
+          const generic = property.generic_(value.get('class'));
+          this.emit_children_node_types(generic, value.get('children'));
+          generic.finish();
+          property.finish();
+      }
+      child_writer.finish();
+  }
+
+  private emit_scene_node_types(scene_path: string) {
+    try {
+        const helper = require("godot").GodotJSEditorHelper;
+        const result = helper.get_scene_nodes(scene_path);
+
+        if (!result) {
+            throw new Error(`root node children unavailable: ${scene_path}`);
+        }
+
+        const dir_path = this.make_path(scene_path, false);
+        const dir_error = DirAccess.make_dir_recursive_absolute(dir_path);
+
+        if (dir_error !== 0) {
+            console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
+        }
+
+        const file = FileAccess.open(this.make_path(scene_path), FileAccess.ModeFlags.WRITE);
+
+        if (!file) {
+            throw new Error(`failed to open file for writing: ${dir_path}`);
+        }
+
+    try {
+      const file_writer = new FileWriter(this._types, file);
+      const module = new ModuleWriter(file_writer, 'godot');
+      const scene_nodes_interface = new InterfaceWriter(module, "SceneNodes");
+      const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ''));
+      this.emit_children_node_types(scene_property, result.get('children'));
+      scene_property.finish();
+      scene_nodes_interface.finish();
+      module.finish();
+      file_writer.finish();
+    } finally {
+      file.close();
+    }
+    } catch (error) {
+      console.error(`failed to generate scene node types: ${scene_path}`);
+      throw error;
+    }
+  }
+}

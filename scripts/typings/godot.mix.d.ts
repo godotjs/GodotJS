@@ -186,4 +186,19 @@ declare module "godot" {
         as_promise(): Promise<T1>;
     }
 
+    type NodePathMap = { [K in string]?: Node };
+
+    type StaticNodePath<Map extends NodePathMap> = (keyof Map & string) | {
+        [K in keyof Map & string]: Map[K] extends Node<infer ChildMap>
+            ? `${K}/${StaticNodePath<ChildMap>}`
+            : never
+    }[keyof Map & string];
+
+    type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never> = Path extends keyof Map
+        ? Map[Path]
+        : Path extends `${infer Key extends keyof Map & string}/${infer SubPath}`
+            ? Map[Key] extends Node<infer ChildMap>
+                ? ResolveNodePath<ChildMap, SubPath, Default>
+                : Default
+            : Default;
 }

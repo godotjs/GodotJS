@@ -2,9 +2,11 @@
 #include "jsb_docked_panel.h"
 
 #include "editor/editor_file_system.h"
+#include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "scene/gui/popup_menu.h"
 #include "editor/gui/editor_toaster.h"
+#include "editor/project_settings_editor.h"
+#include "scene/gui/popup_menu.h"
 
 #define JSB_TYPE_ROOT "typings"
 
@@ -45,6 +47,9 @@ void GodotJSEditorPlugin::_notification(int p_what)
         {
             lang->scan_external_changes();
         }
+        break;
+    case NOTIFICATION_READY:
+        EditorNode::get_singleton()->connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
         break;
     default: break;
     }
@@ -362,6 +367,12 @@ void GodotJSEditorPlugin::cleanup_invalid_files()
     JSB_LOG(Log, "%d files are deleted", deleted_num);
 }
 
+void GodotJSEditorPlugin::_generate_edited_scene_dts(const String &p_path)
+{
+    Vector<String> paths = { p_path };
+    generate_scenes_dts(paths);
+}
+
 void GodotJSEditorPlugin::generate_godot_dts()
 {
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
@@ -372,9 +383,55 @@ void GodotJSEditorPlugin::generate_godot_dts()
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
-    const String code = jsb_format(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.default("%s")).emit();})())--", "./" JSB_TYPE_ROOT);
+    const String code = jsb_format(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s")).emit();})())--", "./" JSB_TYPE_ROOT);
     lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
+
+    generate_all_scene_godot_dts();
+}
+
+void GodotJSEditorPlugin::get_all_scenes(EditorFileSystemDirectory *p_dir, Vector<String> &r_list)
+{
+    for (int i = 0; i < p_dir->get_file_count(); i++)
+    {
+        if (p_dir->get_file_type(i) == SNAME("PackedScene"))
+        {
+            r_list.push_back(p_dir->get_file_path(i));
+        }
+    }
+
+    for (int i = 0; i < p_dir->get_subdir_count(); i++)
+    {
+        get_all_scenes(p_dir->get_subdir(i), r_list);
+    }
+}
+
+void GodotJSEditorPlugin::generate_scenes_dts(const Vector<String>& p_paths)
+{
+    if (p_paths.size() == 0)
+    {
+        JSB_LOG(Warning, "generate_scenes_dts: No scenes detected");
+        return;
+    }
+
+    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    jsb_check(lang);
+    Error err;
+
+    const String code = jsb_format(
+        R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.SceneTSDCodeGen("%s", ["%s"])).emit();})())--",
+        "./" JSB_TYPE_ROOT,
+        String("\", \"").join(p_paths)
+    );
+    lang->eval_source(code, err).ignore();
+    ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
+}
+
+void GodotJSEditorPlugin::generate_all_scene_godot_dts()
+{
+    Vector<String> paths;
+    get_all_scenes(EditorFileSystem::get_singleton()->get_filesystem(), paths);
+    generate_scenes_dts(paths);
 }
 
 void GodotJSEditorPlugin::load_editor_entry_module()
