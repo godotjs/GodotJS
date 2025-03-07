@@ -469,7 +469,10 @@ if quickjs_support is not None:
             env_quickjs.Append(CCFLAGS=["/experimental:c11atomics", "/std:c11"])
             # remove std:c++ flag due to conflict with std:c11
             # ! it's added in `godot/SConstruct`.
-            env_quickjs["CCFLAGS"].remove("/std:c++17")
+            try:
+                env_quickjs["CCFLAGS"].remove("/std:c++17")
+            except:
+                pass
 
     env.modules_sources += quickjs_obj
     env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
