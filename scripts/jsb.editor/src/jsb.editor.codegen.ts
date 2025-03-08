@@ -110,7 +110,7 @@ const TypeMutations: Record<string, TypeMutation> = {
         intro: [
             "[Symbol.iterator](): IteratorObject<T>",
             "/** Returns a Proxy that targets this GArray but behaves similar to a JavaScript array. */",
-            `proxy(): { [Symbol.iterator](): IteratorObject<T>, [n: number]: T } & Pick<Array<T>, "length" | "push" | "pop" | "indexOf" | "includes">`,
+            `proxy(): GArrayProxy<T>`,
             "",
             "set_indexed(index: number, value: T): void",
             "get_indexed(index: number): T",
@@ -154,7 +154,7 @@ const TypeMutations: Record<string, TypeMutation> = {
         intro: [
             "[Symbol.iterator](): IteratorObject<{ key: any, value: any }>",
             "/** Returns a Proxy that targets this GDictionary but behaves similar to a regular JavaScript object. Values are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work. */",
-            "proxy(): { [K in keyof T & string]: T[K] }",
+            "proxy(): GDictionaryProxy<T>",
             "",
             "set_keyed<K extends keyof T>(key: K, value: T[K]): void",
             "get_keyed<K extends keyof T>(key: K): T[K]",

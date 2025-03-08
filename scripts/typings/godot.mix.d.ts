@@ -201,4 +201,57 @@ declare module "godot" {
                 ? ResolveNodePath<ChildMap, SubPath, Default>
                 : Default
             : Default;
+
+    /**
+     * GArray elements are exposed with a subset of JavaScript's standard Array API. Array indexes are exposed as
+     * enumerable properties, thus if you want to perform more complex operations you can convert to a regular
+     * JavaScript array with [...g_array.proxy()].
+     */
+    class GArrayProxy<T> {
+        [Symbol.iterator](): IteratorObject<GProxyValueWrap<T>>;
+        /**
+         * Gets the length of the array. This is a number one higher than the highest index in the array.
+         */
+        get length(): number;
+        /**
+         * Removes the last element from an array and returns it.
+         * If the array is empty, undefined is returned and the array is not modified.
+         */
+        pop(): T | undefined;
+        /**
+         * Appends new elements to the end of an array, and returns the new length of the array.
+         * @param items New elements to add to the array.
+         */
+        push(...items: Array<T | GProxyValueWrap<T>>): number;
+        /**
+         * Returns the index of the first occurrence of a value in an array, or -1 if it is not present.
+         * @param searchElement The value to locate in the array.
+         * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the search starts at index 0.
+         */
+        indexOf(searchElement: T, fromIndex?: number): number;
+        /**
+         * Determines whether an array includes a certain element, returning true or false as appropriate.
+         * @param searchElement The element to search for.
+         */
+        includes(searchElement: T): boolean;
+        toJSON(key?: any): any;
+        toString(): string;
+        [n: number]: T | GProxyValueWrap<T>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
+    }
+
+    // Ideally this would be a class, but TS currently doesn't provide a way to type a class with mapped properties.
+    /**
+     * GObject entries are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work.
+     */
+    type GDictionaryProxy<T> = {
+        [K in keyof T & string]: T[K] | GProxyValueWrap<T[K]>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
+    } & ('toString' extends keyof T ? {} : {
+        toString(): string;
+    });
+
+    type GProxyValueWrap<V> = V extends GArray<infer E>
+        ? GArrayProxy<E>
+        : V extends GDictionary<infer T>
+            ? GDictionaryProxy<T>
+            : V;
 }
