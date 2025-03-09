@@ -237,7 +237,7 @@ def write_file(filename, ostream):
 def generate_method_code(output, methodname, indent, preset_defines):
     output.write(f"const char* GodotJSProjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
     output.write("{\n")
-    output.write(indent+"static const char data[] = {\n")
+    output.write(indent+"static const unsigned char data[] = {\n")
     positions = {}
     cursor = 0
     for preset_define in preset_defines:
@@ -274,7 +274,7 @@ def generate_method_code(output, methodname, indent, preset_defines):
     for targetname in positions:
         start = positions[targetname][0]
         size = positions[targetname][1]
-        output.write(indent+f"if (p_filename == \"{targetname}\") {{ r_len = {size}; return data+{start}; }}\n")
+        output.write(indent+f"if (p_filename == \"{targetname}\") {{ r_len = {size}; return (const char *) data+{start}; }}\n")
     output.write(indent+"r_len = 0;\n")
     output.write(indent+"return nullptr;\n")
     output.write("}\n")
