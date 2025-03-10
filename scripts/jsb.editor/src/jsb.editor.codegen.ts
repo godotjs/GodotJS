@@ -64,7 +64,7 @@ function chain_mutators(...mutators: Array<(line: string) => string>) {
 }
 function mutate_parameter_type(name: string, type: string) {
     return function(line: string) {
-        return line.replace(new RegExp(`[,(] *${name}: .+?([,)])/`, 'g'), `$1${name}: ${type}$2`);
+        return line.replace(new RegExp(`([,(] *)${name}: .+?([,)])`, 'g'), `$1${name}: ${type}$2`);
     };
 }
 function mutate_return_type(type: string) {
@@ -126,7 +126,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             count: mutate_parameter_type("value", "T"),
             has: mutate_parameter_type("value", "T"),
             bsearch: mutate_parameter_type("value", "T"),
-            bsearch_custom: chain_mutators(mutate_parameter_type("value", "T"), mutate_parameter_type("func", "func: Callable2<T, T, boolean>")),
+            bsearch_custom: chain_mutators(mutate_parameter_type("value", "T"), mutate_parameter_type("func", "Callable2<T, T, boolean>")),
             find: mutate_parameter_type('what', 'T'),
             rfind: mutate_parameter_type("what", "T"),
             get: mutate_return_type("T"),
@@ -138,11 +138,14 @@ const TypeMutations: Record<string, TypeMutation> = {
             pop_at: mutate_return_type("T"),
             min: mutate_return_type("T"),
             max: mutate_return_type("T"),
-            sort_custom: mutate_parameter_type("func", "func: Callable2<T, T, boolean>"),
+            sort_custom: mutate_parameter_type("func", "Callable2<T, T, boolean>"),
             all: mutate_parameter_type("method", "Callable1<T, boolean>"),
             any: mutate_parameter_type("method", "Callable1<T, boolean>"),
-            filter: mutate_parameter_type("method", "Callable1<T, boolean>"),
+            filter: chain_mutators(mutate_parameter_type("method", "Callable1<T, boolean>"), mutate_return_type("GArray<T>")),
             map: chain_mutators(mutate_parameter_type("method", "Callable1<T, U>"), mutate_return_type("GArray<U>"), mutate_template("U")),
+            append_array: mutate_parameter_type("array", "GArray<T>"),
+            duplicate: mutate_return_type("GArray<T>"),
+            slice: mutate_return_type("GArray<T>"),
         },
     },
     GDictionary: {
