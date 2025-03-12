@@ -13,9 +13,20 @@ namespace jsb::impl
     {
     public:
         // deleter for valuetype optimization (no ObjectHandle needed)
-        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Value> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
+        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
         {
-            //TODO needed?
+            //TODO [web.impl] SetDeleter: not tested
+            v8::Isolate* isolate = value->GetIsolate();
+            const jsb::impl::StackPosition sp = value->stack_pos_;
+            const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) jsbi_GetOpaque(isolate->rt(), sp);
+            const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
+            JSB_WEB_LOG(VeryVerbose, "update internal data JSObject:%d id:%d pc:%d,%d (last:%d,%d)",
+                sp, index,
+                (uintptr_t) deleter_data, (uintptr_t) callback,
+                (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
+            jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
+            data->weak.parameter = (void*) deleter_data;
+            data->weak.callback = (void*) callback;
         }
 
         static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
