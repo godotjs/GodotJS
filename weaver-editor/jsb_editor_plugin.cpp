@@ -369,6 +369,8 @@ void GodotJSEditorPlugin::cleanup_invalid_files()
 
 void GodotJSEditorPlugin::_generate_edited_scene_dts(const String &p_path)
 {
+    if (!jsb::internal::Settings::get_autogen_scene_dts_on_save()) return;
+
     Vector<String> paths = { p_path };
     generate_scenes_dts(paths);
 }
@@ -408,7 +410,8 @@ void GodotJSEditorPlugin::get_all_scenes(EditorFileSystemDirectory *p_dir, Vecto
 
 void GodotJSEditorPlugin::generate_scenes_dts(const Vector<String>& p_paths)
 {
-    if (!jsb::internal::Settings::get_autogen_scene_dts()) return;
+    if (!jsb::internal::Settings::get_gen_scene_dts()) return;
+
     if (p_paths.size() == 0)
     {
         JSB_LOG(Log, "generate_scenes_dts: No scenes detected");

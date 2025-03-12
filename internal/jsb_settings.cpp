@@ -14,7 +14,8 @@ namespace jsb::internal
 #ifdef TOOLS_ENABLED
     static constexpr char kEdDebuggerPort[] =     JSB_MODULE_NAME_STRING "/debugger/editor_port";
     static constexpr char kEdIgnoredClasses[] =     JSB_MODULE_NAME_STRING "/codegen/ignored_classes";
-    static constexpr char kEdAutogenSceneDTS[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_scene_dts";
+    static constexpr char kEdAutogenSceneDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_scene_dts_on_save";
+    static constexpr char kEdGenSceneDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_scene_dts";
 #endif
 
     // use unnecessary first category layer (runtime and editor) to make the second layer shown as sections in project settings
@@ -59,7 +60,8 @@ namespace jsb::internal
             {
                 _EDITOR_DEF(kEdDebuggerPort, 9230, true);
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
-                _EDITOR_DEF(kEdAutogenSceneDTS, true, false);
+                _EDITOR_DEF(kEdGenSceneDTS, true, false);
+                _EDITOR_DEF(kEdAutogenSceneDTSOnSave, true, false);
             }
 #endif
             _GLOBAL_DEF(kRtDebuggerPort, 9229, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
@@ -94,10 +96,16 @@ namespace jsb::internal
         return EDITOR_GET(kEdIgnoredClasses);
     }
 
-    bool Settings::get_autogen_scene_dts()
+	bool Settings::get_autogen_scene_dts_on_save()
     {
-        init_settings();
-        return EDITOR_GET(kEdAutogenSceneDTS);
+    	init_settings();
+    	return EDITOR_GET(kEdAutogenSceneDTSOnSave);
+    }
+
+	bool Settings::get_gen_scene_dts()
+    {
+    	init_settings();
+    	return EDITOR_GET(kEdGenSceneDTS);
     }
 
 #endif
