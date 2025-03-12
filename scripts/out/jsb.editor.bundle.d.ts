@@ -36,7 +36,7 @@ declare module "jsb.editor.codegen" {
         make_return(method_info: jsb.editor.MethodBind, type_replacer?: (name: string) => string): string;
         make_signal_type(method_info: jsb.editor.MethodBind): string;
     }
-    export default class TSDCodeGen {
+    export class TSDCodeGen {
         private _split_index;
         private _outDir;
         private _splitter;
@@ -54,6 +54,16 @@ declare module "jsb.editor.codegen" {
         private emit_singleton;
         private emit_godot_primitive;
         private emit_godot_class;
+    }
+    export class SceneTSDCodeGen {
+        private _out_dir;
+        private _scene_paths;
+        private _types;
+        constructor(out_dir: string, scene_paths: string[]);
+        private make_path;
+        emit(): Promise<void>;
+        private emit_children_node_types;
+        private emit_scene_node_types;
     }
 }
 declare module "jsb.editor.main" {

@@ -749,15 +749,151 @@ define("jsb.core", ["require", "exports", "godot", "godot-jsb"], function (requi
         return require("godot").EditorInterface.get_editor_settings().get(entry_path);
     };
 });
+const ProxyTarget = Symbol("proxy_target");
+const proxy_unwrap = function (value) {
+    var _a;
+    if (typeof value !== "object" || value === null) {
+        return value;
+    }
+    return (_a = value[ProxyTarget]) !== null && _a !== void 0 ? _a : value;
+};
+const proxyable_prototypes = [];
+const proxy_wrap = function (value) {
+    if (typeof value !== "object" || value === null) {
+        return value;
+    }
+    const proto = Object.getPrototypeOf(value);
+    return proto && proxyable_prototypes.includes(proto)
+        ? value.proxy()
+        : value;
+};
 require("godot.typeloader").on_type_loaded("Array", function (type) {
+    proxyable_prototypes.push(type.prototype);
     type.prototype[Symbol.iterator] = function* () {
-        let self = this;
-        for (let i = 0; i < self.size(); ++i) {
-            yield self.get_indexed(i);
+        for (let i = 0; i < this.size(); ++i) {
+            yield this.get_indexed(i);
         }
+    };
+    // We're not going to try expose the whole Array API, we'll just be super minimalistic. If the user is after
+    // something more complex, it'll likely be more performant to spread the GArray into a JS array anyway.
+    const method_mapping = {
+        pop: "pop_back",
+        indexOf: "find",
+        includes: "has",
+    };
+    const iterator = function* () {
+        for (let i = 0; i < this.length; ++i) {
+            yield this[i];
+        }
+    };
+    const push = function (...values) {
+        const target = this[ProxyTarget];
+        for (const value of values) {
+            target.push_back(proxy_unwrap(value));
+        }
+        return target.size();
+    };
+    const toJSON = function (key = "") {
+        return [...this];
+    };
+    const toString = function (index) {
+        return [...this].map(v => { var _a, _b; return (_b = (_a = v === null || v === void 0 ? void 0 : v.toString) === null || _a === void 0 ? void 0 : _a.call(v)) !== null && _b !== void 0 ? _b : v; }).join(",");
+    };
+    const handler = {
+        get(target, p, receiver) {
+            if (typeof p !== "string") {
+                return p === ProxyTarget
+                    ? target
+                    : p === Symbol.iterator
+                        ? iterator
+                        : undefined;
+            }
+            const num = Number.parseInt(p);
+            if (!Number.isFinite(num)) {
+                switch (p) {
+                    case "length":
+                        return target.size();
+                    case "push":
+                        return push;
+                    case "toJSON":
+                        return toJSON;
+                    case "toString":
+                        return toString;
+                }
+                const mapped = method_mapping[p];
+                return mapped && Reflect.get(target, mapped).bind(target);
+            }
+            if (num < 0 || num >= target.size()) {
+                return undefined;
+            }
+            return proxy_wrap(target.get(num));
+        },
+        getOwnPropertyDescriptor(target, p) {
+            if (typeof p !== "string") {
+                return undefined;
+            }
+            const num = Number.parseInt(p);
+            if (!(num >= 0) || num >= target.size()) {
+                return undefined;
+            }
+            return {
+                configurable: true,
+                enumerable: true,
+                value: proxy_wrap(target.get(num)),
+                writable: true,
+            };
+        },
+        has(target, p) {
+            if (typeof p !== "string") {
+                return p === Symbol.iterator;
+            }
+            const num = Number.parseInt(p);
+            if (!(num >= 0)) {
+                switch (p) {
+                    case "length":
+                    case "push":
+                    case "toJSON":
+                    case "toString":
+                        return true;
+                }
+                return !!method_mapping[p];
+            }
+            return num >= 0 && num < target.size();
+        },
+        isExtensible(target) {
+            return true;
+        },
+        ownKeys(target) {
+            const keys = [];
+            for (let i = 0; i < target.size(); i++) {
+                keys.push(i.toString());
+            }
+            return keys;
+        },
+        preventExtensions(target) {
+            return true;
+        },
+        set(target, p, newValue, receiver) {
+            if (typeof p !== "string") {
+                return false;
+            }
+            const num = Number.parseInt(p);
+            if (!(num >= 0) || num >= target.size()) {
+                return false;
+            }
+            target.set(num, proxy_unwrap(newValue));
+            return true;
+        },
+        setPrototypeOf(target, v) {
+            return false;
+        },
+    };
+    type.prototype.proxy = function () {
+        return new Proxy(this, handler);
     };
 });
 require("godot.typeloader").on_type_loaded("Dictionary", function (type) {
+    proxyable_prototypes.push(type.prototype);
     type.prototype[Symbol.iterator] = function* () {
         let self = this;
         let keys = self.keys();
@@ -765,6 +901,74 @@ require("godot.typeloader").on_type_loaded("Dictionary", function (type) {
             const key = keys.get_indexed(i);
             yield { key: key, value: self.get_keyed(key) };
         }
+    };
+    const handler = {
+        defineProperty(target, property, attributes) {
+            return false;
+        },
+        deleteProperty(target, p) {
+            return target.erase(p);
+        },
+        get(target, p, receiver) {
+            if (typeof p !== "string") {
+                return p === ProxyTarget
+                    ? target
+                    : undefined;
+            }
+            const value = target.get(p);
+            return value !== null
+                ? proxy_wrap(value)
+                : target.has(p)
+                    ? value
+                    : p === "toString"
+                        ? Object.prototype.toString
+                        : undefined;
+        },
+        getOwnPropertyDescriptor(target, p) {
+            if (typeof p !== "string") {
+                return undefined;
+            }
+            return {
+                configurable: true,
+                enumerable: true,
+                value: proxy_wrap(target.get(p)),
+                writable: true,
+            };
+        },
+        has(target, p) {
+            if (typeof p !== "string") {
+                return false;
+            }
+            return target.has(p) || p === "toString";
+        },
+        isExtensible(target) {
+            return true;
+        },
+        ownKeys(target) {
+            const keys = [];
+            for (const key of target.keys()) {
+                if (typeof key === "string") {
+                    keys.push(key);
+                }
+            }
+            return keys;
+        },
+        preventExtensions(target) {
+            return false;
+        },
+        set(target, p, newValue, receiver) {
+            if (typeof p !== "string") {
+                return false;
+            }
+            target.set(p, proxy_unwrap(newValue));
+            return true;
+        },
+        setPrototypeOf(target, v) {
+            return false;
+        },
+    };
+    type.prototype.proxy = function () {
+        return new Proxy(this, handler);
     };
 });
 require("godot.typeloader").on_type_loaded("Callable", function (type) {
@@ -803,7 +1007,7 @@ require("godot.typeloader").on_type_loaded("Signal", function (type) {
                     resolve(arguments[0]);
                     return;
                 }
-                // return as javascript array if more than one 
+                // return as javascript array if more than one
                 resolve(Array.from(arguments));
                 require("godot-jsb").internal.notify_microtasks_run();
             });

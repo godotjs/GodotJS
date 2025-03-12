@@ -369,6 +369,7 @@ class CodegenTasks {
             progress.finish();
             toast(`${this._name} generated successfully`);
         } catch (e) {
+            console.error("CodegenTasks error:", e);
             toast(`${this._name} failed!`);
             progress.finish();
         }
@@ -466,6 +467,9 @@ const GlobalUtilityFuncs = [
 const PrimitiveTypesSet = (function (): Set<string> {
     let set = new Set<string>();
     for (let name in Variant.Type) {
+        // avoid babbling error messages in `type_string` call
+        if (<any>Variant.Type[name] === Variant.Type.TYPE_MAX) continue;
+
         // use the original type name of Variant.Type,
         // because this set is used with type name from the original godot class info (PropertyInfo)
         let str = type_string(<any>Variant.Type[name]);

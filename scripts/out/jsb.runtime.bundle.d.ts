@@ -85,3 +85,7 @@ declare module "godot.typeloader" {
     export function on_type_loaded(type_name: string | string[], callback: TypeLoadedCallback): void;
 }
 declare module "jsb.core" { }
+declare const ProxyTarget: unique symbol;
+declare const proxy_unwrap: (value: any) => any;
+declare const proxyable_prototypes: any[];
+declare const proxy_wrap: (value: any) => any;
