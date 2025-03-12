@@ -87,7 +87,9 @@ Dictionary GodotJSEditorHelper::get_scene_nodes(const String& p_path)
         return Dictionary();
     }
 
-    return _build_node_path_map(instantiated_scene);
+    const Dictionary rval = _build_node_path_map(instantiated_scene);
+    instantiated_scene->queue_free();
+    return rval;
 }
 
 void GodotJSEditorHelper::show_toast(const String& p_text, int p_severity)
