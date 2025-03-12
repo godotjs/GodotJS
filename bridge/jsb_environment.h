@@ -578,6 +578,7 @@ namespace jsb
             _valuetype_deleter(info.GetInternalField(IF_Pointer), sizeof(Variant), info.GetParameter());
         }
 
+        //TODO since the deleter is not guaranteed to be called in v8 if Isolate disposed early, we need to trace all valuetype objects anyway (performance impact)?
         static void _valuetype_deleter(void* data, size_t length, void* deleter_data)
         {
             Variant* variant = (Variant*) data;

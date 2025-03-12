@@ -303,6 +303,7 @@ namespace jsb
         start_debugger(p_params.debugger_port);
     }
 
+    // no JS code should be executed in the destructor.
     Environment::~Environment()
     {
         //TODO not always safe
@@ -414,6 +415,7 @@ namespace jsb
             free_object(pointer, FinalizationType::Default /* Force? */);
         }
 
+        variant_allocator_.drain();
         flags_ |= EF_PostDispose;
         EnvironmentStore::get_shared().remove(this);
     }
