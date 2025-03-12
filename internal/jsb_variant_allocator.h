@@ -32,6 +32,16 @@ namespace jsb::internal
         jsb_force_inline uint32_t get_allocated_num() const { return 0; }
 #endif
 
+#if JSB_DEBUG
+        ~VariantAllocator()
+        {
+            spin_lock_.lock();
+            jsb_notice(front_.is_empty() && back_.is_empty(), "the pending queue is not empty");
+            spin_lock_.unlock();
+            jsb_notice(get_allocated_num() == 0, "variant pool leaked");
+        }
+#endif
+
         jsb_force_inline Variant* alloc(const Variant& p_templet)
         {
             Variant* rval = alloc();
