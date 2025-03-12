@@ -340,6 +340,8 @@ namespace jsb
 
         isolate_->Dispose();
         isolate_ = nullptr;
+
+        variant_allocator_.drain();
     }
 
     void Environment::init()

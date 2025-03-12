@@ -65,7 +65,7 @@ namespace jsb
         // update `exports`, because its value may be covered during the execution process of the elevator script.
         const v8::Local<v8::Value> updated_exports = module_obj->Get(context, jsb_name(p_env, exports)).ToLocalChecked();
         jsb_unused(kIndexExports);
-        // jsb_notice(updated_exports != argv[kIndexExports], "`exports` is overwritten in module: %s", filename);
+        // jsb_notice(updated_exports == argv[kIndexExports], "`exports` is overwritten in module: %s", filename);
 
         p_module.exports.Reset(isolate, updated_exports);
         return true;
