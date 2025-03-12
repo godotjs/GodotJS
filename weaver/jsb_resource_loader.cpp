@@ -128,19 +128,32 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 
 void ResourceFormatLoaderGodotJSScript::get_recognized_extensions(List<String>* p_extensions) const
 {
+#if JSB_USE_TYPESCRIPT
     p_extensions->push_back(JSB_TYPESCRIPT_EXT);
+#endif
     p_extensions->push_back(JSB_JAVASCRIPT_EXT);
 }
 
 bool ResourceFormatLoaderGodotJSScript::handles_type(const String& p_type) const
 {
-    return (p_type == "Script" || p_type == jsb_typename(GodotJSScript));
+    return p_type == "Script" || p_type == jsb_typename(GodotJSScript);
 }
 
 String ResourceFormatLoaderGodotJSScript::get_resource_type(const String& p_path) const
 {
     const String el = p_path.get_extension().to_lower();
-    return (el == JSB_TYPESCRIPT_EXT || el == JSB_JAVASCRIPT_EXT) ? jsb_typename(GodotJSScript) : "";
+
+#if JSB_USE_TYPESCRIPT
+    if (el == JSB_TYPESCRIPT_EXT || el == JSB_JAVASCRIPT_EXT)
+#else
+    if (el == JSB_JAVASCRIPT_EXT)
+#endif // JSB_USE_TYPESCRIPT
+    {
+        return !is_worker_script(p_path) && !is_test_script(p_path)
+            ? jsb_typename(GodotJSScript)
+            : "";
+    }
+    return "";
 }
 
 void ResourceFormatLoaderGodotJSScript::get_dependencies(const String& p_path, List<String>* p_dependencies, bool p_add_types)

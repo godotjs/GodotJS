@@ -299,7 +299,9 @@ void GodotJSScriptLanguage::reload_tool_script(const Ref<Script>& p_script, bool
 
 void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions) const
 {
+#if JSB_USE_TYPESCRIPT
     p_extensions->push_back(JSB_TYPESCRIPT_EXT);
+#endif
     p_extensions->push_back(JSB_JAVASCRIPT_EXT);
 }
 
