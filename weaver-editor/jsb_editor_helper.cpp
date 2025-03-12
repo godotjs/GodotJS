@@ -68,7 +68,7 @@ void GodotJSEditorHelper::_bind_methods()
     ClassDB::bind_static_method(jsb_typename(GodotJSEditorHelper), D_METHOD("get_scene_nodes", "scene_path"), &GodotJSEditorHelper::get_scene_nodes);
 }
 
-Dictionary GodotJSEditorHelper::get_scene_nodes(const String &p_path)
+Dictionary GodotJSEditorHelper::get_scene_nodes(const String& p_path)
 {
     Error err;
     Ref<PackedScene> scene_data = ResourceLoader::load(p_path, "", ResourceFormatLoader::CACHE_MODE_REPLACE, &err);
@@ -79,7 +79,7 @@ Dictionary GodotJSEditorHelper::get_scene_nodes(const String &p_path)
         return Dictionary();
     }
 
-    Node *instantiated_scene = scene_data->instantiate(PackedScene::GEN_EDIT_STATE_INSTANCE);
+    Node* instantiated_scene = scene_data->instantiate(PackedScene::GEN_EDIT_STATE_INSTANCE);
 
     if (!instantiated_scene)
     {
