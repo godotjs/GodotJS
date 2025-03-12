@@ -13,7 +13,7 @@ namespace jsb::impl
     {
     public:
         // deleter for valuetype optimization (no ObjectHandle needed)
-        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Value> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
+        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
         {
             JSObjectRef obj = JavaScriptCore::AsObject(value.data_.isolate_->ctx(), (JSValueRef) value);
             Broker::SetWeak(value.data_.isolate_, obj, deleter_data, (void*) callback);

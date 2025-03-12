@@ -16,21 +16,15 @@ namespace jsb::internal
 #endif
 
 #if JSB_WITH_V8 || JSB_WITH_JAVASCRIPTCORE
+        // v8 and jsc implementation of deleter are probably called from JS gc threads
+        // so we need thread-safe version
         PagedAllocator<Variant, true> paged_allocator_;
 #else
-        //TODO not to share VariantAllocator between environments?
-        // (because VariantAllocator is currently shared between all environments, we still need thread-safe version)
-        PagedAllocator<Variant, true> paged_allocator_;
+        // web and quickjs implementation of deleter are called from owner thread only
+        PagedAllocator<Variant, false> paged_allocator_;
 #endif
 
     public:
-        jsb_force_inline Variant* alloc(const Variant& p_templet)
-        {
-            Variant* rval = alloc();
-            *rval = p_templet;
-            return rval;
-        }
-
 #if JSB_DEBUG
         jsb_force_inline uint32_t get_allocated_num() const { return alive_variants_num_.get(); }
 #else
@@ -38,9 +32,16 @@ namespace jsb::internal
         jsb_force_inline uint32_t get_allocated_num() const { return 0; }
 #endif
 
+        jsb_force_inline Variant* alloc(const Variant& p_templet)
+        {
+            Variant* rval = alloc();
+            *rval = p_templet;
+            return rval;
+        }
+
         jsb_force_inline Variant* alloc() { increment(); return paged_allocator_.alloc(); }
 
-        //NOTE safe to call only if p_var is not reference-based type
+        //NOTE safe to call from other threads only if p_var is not reference-based type
         jsb_force_inline void free(Variant* p_var) { decrement(); paged_allocator_.free(p_var); }
 
         // gc thread
@@ -52,7 +53,7 @@ namespace jsb::internal
             spin_lock_.unlock();
         }
 
-        // main thread
+        // should only be called on owner thread
         void drain()
         {
             spin_lock_.lock();

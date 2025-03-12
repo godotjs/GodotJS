@@ -134,7 +134,6 @@ void GodotJSScriptLanguage::finish()
             env.holder->dispose();
         }
     }
-    jsb::Environment::exec_sync_delete();
     JSB_LOG(VeryVerbose, "jsb lang finish");
 }
 
@@ -145,7 +144,6 @@ void GodotJSScriptLanguage::frame()
 
     last_ticks_ = base_ticks;
     environment_->update(elapsed_milli);
-    jsb::Environment::exec_sync_delete();
 
 #if JSB_DEBUG
     {

@@ -76,6 +76,8 @@ namespace jsb
                 TYPE_DEREF,
 
                 TYPE_TRANSFER_,
+
+                // request a full gc from other threads
                 TYPE_GC_REQUEST,
             };
 
@@ -142,7 +144,7 @@ namespace jsb
         ObjectDB object_db_;
         HashSet<void*> persistent_objects_;
 
-        static internal::VariantAllocator variant_allocator_;
+        internal::VariantAllocator variant_allocator_;
 
         // module_id => loader
         HashMap<StringName, class IModuleLoader*> module_loaders_;
@@ -357,9 +359,9 @@ namespace jsb
 
         jsb_force_inline void notify_microtasks_run() { flags_ |= EF_MicrotaskCheckpoint; }
 
-        static jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { jsb_check(p_templet.get_type() != Variant::OBJECT); return variant_allocator_.alloc(p_templet); }
-        static jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
-        static jsb_force_inline void dealloc_variant(Variant* p_var) { variant_allocator_.free(p_var); }
+        jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { jsb_check(p_templet.get_type() != Variant::OBJECT); return variant_allocator_.alloc(p_templet); }
+        jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
+        jsb_force_inline void dealloc_variant(Variant* p_var) { variant_allocator_.free(p_var); }
 
 #if JSB_WITH_ESSENTIALS
         jsb_force_inline internal::TTimerManager<JavaScriptTimerAction>& get_timer_manager() { return timer_manager_; }
@@ -538,11 +540,6 @@ namespace jsb
         // NOTE: you can't get a shadow environment with this method
         static std::shared_ptr<Environment> _access();
 
-        static void exec_sync_delete()
-        {
-            variant_allocator_.drain();
-        }
-
     private:
         void exec_async_calls();
         void exec_async_call(AsyncCall::Type p_type, void* p_binding);
@@ -575,7 +572,7 @@ namespace jsb
             env->add_async_call(AsyncCall::TYPE_GC_FREE, info.GetParameter());
         }
 
-        // only for quickjs.impl
+        // a forward method for non-v8 implementations
         static void _valuetype_deleter(const v8::WeakCallbackInfo<void>& info)
         {
             _valuetype_deleter(info.GetInternalField(IF_Pointer), sizeof(Variant), info.GetParameter());
@@ -585,6 +582,10 @@ namespace jsb
         {
             Variant* variant = (Variant*) data;
 
+            // we directly use the bare pointer without check it from EnvironmentStore
+            // because of an assumption that the deleter is never called if a JS runtime is already released (~Environment)
+            Environment* env = (Environment*) deleter_data;
+
             // valuetype deleter is run in a background thread in v8.impl and jsc.impl
 #if JSB_WITH_V8 || JSB_WITH_JAVASCRIPTCORE
             // `Callable/Array/Dictionary` may contain reference-based objects.
@@ -593,7 +594,7 @@ namespace jsb
             if (const Variant::Type type = variant->get_type();
                 type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
             {
-                Environment::variant_allocator_.free_safe(variant);
+                env->variant_allocator_.free_safe(variant);
                 JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) thread:%s",
                     Variant::get_type_name(type), (uintptr_t) variant,
                     uitos(Thread::get_caller_id()));
@@ -605,7 +606,7 @@ namespace jsb
                 jsb_check(type != Variant::OBJECT);
             }
 #endif
-            Environment::dealloc_variant(variant);
+            env->dealloc_variant(variant);
         }
 
         void free_object(void* p_pointer, FinalizationType p_finalize);

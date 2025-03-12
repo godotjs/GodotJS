@@ -226,7 +226,7 @@ namespace jsb
 
                 // we only need to alloc a dummy instance here because the validated constructor will cast it to the expected type by itself
                 // BE CAUTIOUS: DON'T FORGET TO call `Environment::dealloc_variant(instance)` if `bind_valuetype` is not eventually called
-                Variant* instance = Environment::alloc_variant();
+                Variant* instance = env->alloc_variant();
                 constructor_variant.ctor_func(instance, argv);
 
                 // don't forget to destruct all stack allocated variants
@@ -277,11 +277,11 @@ namespace jsb
         //NOTE should never be called any more, since all valuetype bindings exist without a normal gc callback (object_gc_callback)
         static void finalizer(Environment* environment, void* pointer, FinalizationType p_finalize)
         {
-            jsb_v8_check(false);
+            jsb_check(false);
             Variant* self = (Variant*) pointer;
             jsb_checkf(Variant::can_convert(self->get_type(), TYPE), "variant type can't convert to %s from %s", Variant::get_type_name(TYPE), Variant::get_type_name(self->get_type()));
             jsb_check(p_finalize != FinalizationType::None);
-            Environment::dealloc_variant(self);
+            environment->dealloc_variant(self);
         }
 
         static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)

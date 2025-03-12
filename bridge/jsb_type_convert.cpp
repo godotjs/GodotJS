@@ -311,7 +311,7 @@ namespace jsb
                     r_jval = class_info->clazz.NewInstance(context);
                     jsb_check(TypeConvert::is_variant(r_jval.As<v8::Object>()));
 
-                    env->bind_valuetype(Environment::alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                    env->bind_valuetype(env->alloc_variant(p_cvar), r_jval.As<v8::Object>());
                     return true;
                 }
                 return false;

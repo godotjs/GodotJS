@@ -469,6 +469,7 @@ namespace jsb
 #if JSB_WITH_DEBUGGER
         debugger_.update();
 #endif
+        variant_allocator_.drain();
     }
 
     // handle async calls (from InstanceBindingCallbacks)
@@ -1790,8 +1791,4 @@ namespace jsb
             it->add_async_call(AsyncCall::TYPE_GC_REQUEST, nullptr);
         }
     }
-
-#pragma region Static Fields
-    internal::VariantAllocator Environment::variant_allocator_;
-#pragma endregion
 }

@@ -232,17 +232,19 @@ namespace jsb
         jsb_force_inline static void bind_valuetype(v8::Isolate* isolate, const v8::Local<v8::Object>& p_object, const TStruct& p_value)
         {
             static_assert(GetTypeInfo<TStruct>::VARIANT_TYPE != Variant::VARIANT_MAX);
-            Variant* pointer = Environment::alloc_variant();
+            Environment* env = Environment::wrap(isolate);
+            Variant* pointer = env->alloc_variant();
             *pointer = p_value;
-            Environment::wrap(isolate)->bind_valuetype(pointer, p_object);
+            env->bind_valuetype(pointer, p_object);
         }
 
         jsb_force_inline static void bind_valuetype(v8::Isolate* isolate, const v8::Local<v8::Object>& p_object, const TStruct& p_value, const NativeClassID p_class_id)
         {
             static_assert(GetTypeInfo<TStruct>::VARIANT_TYPE != Variant::VARIANT_MAX);
-            Variant* pointer = Environment::alloc_variant();
+            Environment* env = Environment::wrap(isolate);
+            Variant* pointer = env->alloc_variant();
             *pointer = p_value;
-            Environment::wrap(isolate)->bind_valuetype(pointer, p_object);
+            env->bind_valuetype(pointer, p_object);
         }
     };
 
