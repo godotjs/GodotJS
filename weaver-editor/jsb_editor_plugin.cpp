@@ -408,9 +408,10 @@ void GodotJSEditorPlugin::get_all_scenes(EditorFileSystemDirectory *p_dir, Vecto
 
 void GodotJSEditorPlugin::generate_scenes_dts(const Vector<String>& p_paths)
 {
+    if (!jsb::internal::Settings::get_autogen_scene_dts()) return;
     if (p_paths.size() == 0)
     {
-        JSB_LOG(Warning, "generate_scenes_dts: No scenes detected");
+        JSB_LOG(Log, "generate_scenes_dts: No scenes detected");
         return;
     }
 
