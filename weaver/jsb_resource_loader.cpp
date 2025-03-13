@@ -69,9 +69,6 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
 #endif
     jsb_check(p_path.ends_with(JSB_TYPESCRIPT_EXT) || p_path.ends_with(JSB_JAVASCRIPT_EXT));
 
-    //TODO check worker scripts, they can't be loaded as GodotJSScript
-    jsb_nop();
-
     // in case `node_modules` is not ignored (which is not expected though), we do not want any GodotJSScript to be generated from it.
     if (p_path.begins_with("res://node_modules"))
     {
