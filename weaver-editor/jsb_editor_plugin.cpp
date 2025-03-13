@@ -1,6 +1,6 @@
 #include "jsb_editor_plugin.h"
 #include "jsb_docked_panel.h"
-
+#include "jsb_export_plugin.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
@@ -18,6 +18,11 @@ enum
     MENU_ID_GENERATE_GODOT_DTS,
     MENU_ID_CLEANUP_INVALID_FILES,
 };
+
+namespace
+{
+    GodotJSEditorPlugin* singleton_ = nullptr;
+}
 
 void GodotJSEditorPlugin::_bind_methods()
 {
@@ -50,8 +55,17 @@ void GodotJSEditorPlugin::_notification(int p_what)
             lang->scan_external_changes();
         }
         break;
+    case NOTIFICATION_PREDELETE:
+        {
+            jsb_check(singleton_ == this);
+            singleton_ = nullptr;
+        }
+        break;
     case NOTIFICATION_READY:
-        EditorNode::get_singleton()->connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
+        singleton_ = this;
+        // stupid self watching, but there is no other way which work both in module and gdextension
+    	// EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
+        connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
         break;
     default: break;
     }
@@ -70,6 +84,9 @@ void GodotJSEditorPlugin::_on_menu_pressed(int p_what)
 
 GodotJSEditorPlugin::GodotJSEditorPlugin()
 {
+    //NOTE EditorPlugin::add_export_plugin() is the only available API to add ExportPlugin in gdextension
+    add_export_plugin(memnew(GodotJSExportPlugin));
+
     // jsb::internal::Settings::on_editor_init();
     PopupMenu *menu = memnew(PopupMenu);
     add_tool_submenu_item(TTR("GodotJS"), menu);
@@ -509,11 +526,8 @@ void GodotJSEditorPlugin::kill_tsc()
 
 GodotJSEditorPlugin* GodotJSEditorPlugin::get_singleton()
 {
-    if (EditorNode* editor_node = EditorNode::get_singleton())
-    {
-        return reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
-    }
-    return nullptr;
+    // we'd better not rely on EditorNode for better compat (e.g. gdextension build)
+    return singleton_;
 }
 
 void GodotJSEditorPlugin::ensure_tsc_installed()

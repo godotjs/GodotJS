@@ -32,17 +32,7 @@ void jsb_initialize_module(ModuleInitializationLevel p_level)
         ResourceSaver::add_resource_format_saver(resource_saver_js);
 
 #ifdef TOOLS_ENABLED
-        EditorNode::add_init_callback([]
-        {
-            GodotJSEditorPlugin* plugin = memnew(GodotJSEditorPlugin);
-            EditorNode::add_editor_plugin(plugin);
-
-            Ref<GodotJSExportPlugin> exporter;
-            exporter.instantiate();
-            EditorExport::get_singleton()->add_export_plugin(exporter);
-
-            plugin->set_name(jsb_typename(GodotJSEditorPlugin));
-        });
+        EditorPlugins::add_by_type<GodotJSEditorPlugin>();
 #endif
     }
 }

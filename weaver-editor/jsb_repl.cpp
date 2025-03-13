@@ -168,9 +168,7 @@ void GodotJSREPL::check_install()
 {
     do
     {
-        EditorNode* editor_node = EditorNode::get_singleton();
-        if (!editor_node) break;
-        GodotJSEditorPlugin* editor_plugin = reinterpret_cast<GodotJSEditorPlugin*>(editor_node->get_node(NodePath(jsb_typename(GodotJSEditorPlugin))));
+        GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton();
         if (!editor_plugin) break;
         if (!editor_plugin->verify_ts_project()) break;
         preset_hint_label_->set_visible(false);
