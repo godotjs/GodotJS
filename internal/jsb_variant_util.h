@@ -91,7 +91,7 @@ namespace jsb::internal
             Variant::construct(p_type, r_value, nullptr, 0, err);
 #else
             static Variant dummy = {};
-            r_value = VariantUtilityFunctions::type_convert(dummy, p_type);
+            r_value = jsb_ext_type_convert(dummy, p_type);
 #endif
         }
 

@@ -1,7 +1,6 @@
 ﻿#ifndef GODOTJS_INLINE_ALLOCATOR_H
 #define GODOTJS_INLINE_ALLOCATOR_H
 
-#include "core/os/memory.h"
 #include "jsb_macros.h"
 #include "jsb_format.h"
 

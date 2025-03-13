@@ -546,7 +546,7 @@ namespace jsb
         if (p_data->target.get_type() == Variant::Type::OBJECT)
         {
             const ObjectID target_id = p_data->target;
-            Object* instance = ::ObjectDB::get_instance(target_id);
+            Object* instance = jsb::compat::ObjectDB::get_instance(target_id);
             if (!instance)
             {
                 JSB_LOG(Error, "transferred object not found: %d", (uint64_t) target_id);
@@ -1746,7 +1746,7 @@ namespace jsb
         if (p_target.get_type() == Variant::OBJECT)
         {
             Object* obj = p_target;
-            jsb_check(obj && p_from->object_db_.has_object(obj) && ::ObjectDB::get_instance(p_target));
+            jsb_check(obj && p_from->object_db_.has_object(obj) && jsb::compat::ObjectDB::get_instance(p_target));
 
             String script_path;
             List<Pair<StringName, Variant>> state;

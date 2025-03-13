@@ -1,7 +1,7 @@
 #ifndef GODOTJS_PROJECT_PRESET_H
 #define GODOTJS_PROJECT_PRESET_H
 
-#include "core/string/ustring.h"
+#include "compat/jsb_compat.h"
 
 struct GodotJSProjectPreset
 {

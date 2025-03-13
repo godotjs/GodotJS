@@ -2,7 +2,7 @@
 #define GODOTJS_FUNCTION_POINTER_H
 
 #include <cinttypes>
-#include "core/templates/vector.h"
+#include "../compat/jsb_compat.h"
 
 namespace jsb::internal
 {

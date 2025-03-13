@@ -3,7 +3,7 @@
 #include "jsb_logger.h"
 #include "jsb_thread_util.h"
 
-#if defined(WINDOWS_ENABLED)
+#if defined(WINDOWS_ENABLED) || (JSB_GDEXTENSION && defined(WIN32))
 #define WIN32_LEAN_AND_MEAN
 #include <dwrite.h>
 #include <dwrite_2.h>
@@ -46,10 +46,13 @@ namespace jsb::internal
         {
         }
 
-        String _quote_command_line_argument(const String &p_text) const {
-            for (int i = 0; i < p_text.size(); i++) {
-                char32_t c = p_text[i];
-                if (c == ' ' || c == '&' || c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' || c == '^' || c == '=' || c == ';' || c == '!' || c == '\'' || c == '+' || c == ',' || c == '`' || c == '~') {
+        String _quote_command_line_argument(const String& p_text) const
+        {
+            for (int i = 0; i < p_text.length(); ++i)
+            {
+                const char32_t c = p_text[i];
+                if (c == ' ' || c == '&' || c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' || c == '^' || c == '=' || c == ';' || c == '!' || c == '\'' || c == '+' || c == ',' || c == '`' || c == '~')
+                {
                     return "\"" + p_text + "\"";
                 }
             }
@@ -65,14 +68,19 @@ namespace jsb::internal
             const int num = MultiByteToWideChar(CP_ACP, 0, rd_line.ptr(), rd_line.size(), nullptr, 0);
             if (num > 0)
             {
-                buffer.resize(num);
+                // let windows api put a zero-terminator at the end (we need it for gdextension build)
+                buffer.resize(num + 1);
                 if (MultiByteToWideChar(CP_ACP, 0, rd_line.ptr(), rd_line.size(), buffer.ptr(), num) == 0)
                 {
                     buffer.clear();
                 }
             }
 
+#if JSB_GDEXTENSION
+            const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr());
+#else
             const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr(), num);
+#endif
             if (!output.is_empty())
             {
                 JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, output);

@@ -1,7 +1,7 @@
 ﻿#include "jsb_repl.h"
 #include "jsb_editor_pch.h"
 #include "jsb_editor_plugin.h"
-#include "../weaver/jsb_weaver_compat.h"
+#include "../compat/jsb_compat.h"
 
 void GodotJSREPL::_bind_methods()
 {

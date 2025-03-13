@@ -1,7 +1,7 @@
 #ifndef GODOTJS_FORMAT_H
 #define GODOTJS_FORMAT_H
 
-#include "core/variant/variant.h"
+#include "../compat/jsb_compat.h"
 #include "jsb_sindex.h"
 
 namespace jsb::internal

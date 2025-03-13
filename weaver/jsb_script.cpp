@@ -632,7 +632,7 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
             {
                 const jsb::ScriptPropertyInfo &pi = pair.value;
                 members_cache.push_back((PropertyInfo) pi);
-                // values[pair.key] = VariantUtilityFunctions::type_convert({}, pi.type);
+                // values[pair.key] = jsb_ext_type_convert({}, pi.type);
 
                 //TODO maybe this behaviour is not expected
                 Variant default_value;

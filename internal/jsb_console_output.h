@@ -1,7 +1,7 @@
 ﻿#ifndef GODOTJS_CONSOLE_OUTPUT_H
 #define GODOTJS_CONSOLE_OUTPUT_H
 
-#include "core/string/ustring.h"
+#include "../compat/jsb_compat.h"
 #include "jsb_log_severity.h"
 
 namespace jsb

@@ -1,8 +1,8 @@
 #ifndef GODOTJS_RESOURCE_CACHE_H
 #define GODOTJS_RESOURCE_CACHE_H
 
+#if 0
 #include "jsb_internal_pch.h"
-#include "scene/resources/packed_scene.h"
 
 namespace jsb::internal
 {
@@ -17,5 +17,6 @@ namespace jsb::internal
         Ref<PackedScene> get_packed_scene(const String &p_path, Error &r_error);
     };
 }
+#endif
 
 #endif

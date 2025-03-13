@@ -2,6 +2,7 @@
 #include "jsb_macros.h"
 #include "jsb_logger.h"
 
+#if 0
 namespace jsb::internal
 {
     Ref<PackedScene> ResourceCache::get_packed_scene(const String& p_path, Error& r_error)
@@ -14,7 +15,7 @@ namespace jsb::internal
 
         if (ObjectID* object_id = packed_scenes.getptr(path))
         {
-            if (Object* obj = ObjectDB::get_instance(*object_id))
+            if (Object* obj = jsb::compat::ObjectDB::get_instance(*object_id))
             {
                 PackedScene* scene = Object::cast_to<PackedScene>(obj);
                 jsb_check(scene);
@@ -48,3 +49,5 @@ namespace jsb::internal
     }
 
 }
+
+#endif

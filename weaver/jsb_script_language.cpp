@@ -106,7 +106,7 @@ void GodotJSScriptLanguage::init()
     }
 
 #if JSB_DEBUG
-    if (::Performance::get_singleton()) monitor_ = memnew(GodotJSMonitor);
+    if (jsb::compat::Performance::get_singleton()) monitor_ = memnew(GodotJSMonitor);
 #endif
 }
 

@@ -8,6 +8,8 @@
 #include "editor/project_settings_editor.h"
 #include "scene/gui/popup_menu.h"
 
+#include "../compat/jsb_compat.h"
+
 #define JSB_TYPE_ROOT "typings"
 
 enum
@@ -287,7 +289,7 @@ bool GodotJSEditorPlugin::install_files(const Vector<jsb::weaver::InstallFileInf
     {
         if (const Error err = apply_file(info); err != OK)
         {
-            JSB_LOG(Warning, "failed to write file '%s' to '%s': %s", info.source_name, info.target_dir, VariantUtilityFunctions::error_string(err));
+            JSB_LOG(Warning, "failed to write file '%s' to '%s': %s", info.source_name, info.target_dir, jsb_ext_error_string(err));
             if ((info.hint & jsb::weaver::CH_OPTIONAL) == 0)
             {
                 return false;

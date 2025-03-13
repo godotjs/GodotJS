@@ -1,7 +1,7 @@
 #ifndef GODOTJS_ANSI_ALLOCATOR_H
 #define GODOTJS_ANSI_ALLOCATOR_H
 
-#include "core/os/memory.h"
+#include "../compat/jsb_compat.h"
 #include "jsb_macros.h"
 
 namespace jsb::internal

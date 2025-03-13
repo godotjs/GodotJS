@@ -1,8 +1,8 @@
 #ifndef GODOTJS_OBJECT_DB_H
 #define GODOTJS_OBJECT_DB_H
 
+#include "../compat/jsb_compat.h"
 #include "jsb_bridge_pch.h"
-#include "core/os/rw_lock.h"
 #include "jsb_object_handle.h"
 
 namespace jsb

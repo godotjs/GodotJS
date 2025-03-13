@@ -1,6 +1,4 @@
 ﻿#include "jsb_console_output.h"
-#include "core/os/thread.h"
-#include "core/os/rw_lock.h"
 
 namespace jsb::internal
 {

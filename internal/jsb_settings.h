@@ -2,8 +2,7 @@
 #define GODOTJS_SETTINGS_H
 
 #include <cstdint>
-#include "core/string/ustring.h"
-#include "core/variant/variant.h"
+#include "../compat/jsb_compat.h"
 
 namespace jsb::internal
 {

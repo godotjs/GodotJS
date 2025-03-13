@@ -3,6 +3,12 @@
 
 #include "jsb.gen.h"
 
+#if __has_include(<gdextension_interface.h>)
+#define JSB_GDEXTENSION 1
+#else
+#define JSB_GDEXTENSION 0
+#endif
+
 #ifndef JSB_DEBUG
 #   if defined(DEBUG_ENABLED)
 #       define JSB_DEBUG 1

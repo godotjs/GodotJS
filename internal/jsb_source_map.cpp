@@ -1,7 +1,5 @@
 #include "jsb_source_map.h"
 
-#include "core/io/json.h"
-
 namespace jsb::internal
 {
     namespace

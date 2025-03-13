@@ -1,12 +1,11 @@
 #include "jsb_monitor.h"
 
 #include "jsb_script_language.h"
-#include "main/performance.h"
 #include "../internal/jsb_internal.h"
 
 #define JSB_NEW_MONITOR(MonitorName) \
     monitor_names_.push_back(JSB_MODULE_NAME_STRING "/" # MonitorName);\
-    ::Performance::get_singleton()->add_custom_monitor(monitor_names_[monitor_names_.size() - 1], callable_mp(this, &GodotJSMonitor::get_value_## MonitorName), {})
+    jsb::compat::Performance::get_singleton()->add_custom_monitor(monitor_names_[monitor_names_.size() - 1], callable_mp(this, &GodotJSMonitor::get_value_## MonitorName), {})
 
 #define JSB_BIND_MONITOR(MonitorName) \
     ClassDB::bind_method(D_METHOD("get_value_" #MonitorName), &GodotJSMonitor::get_value_ ## MonitorName)
@@ -72,7 +71,7 @@ GodotJSMonitor::~GodotJSMonitor()
 {
     for (const StringName& it : monitor_names_)
     {
-        ::Performance::get_singleton()->remove_custom_monitor(it);
+        jsb::compat::Performance::get_singleton()->remove_custom_monitor(it);
     }
 }
 

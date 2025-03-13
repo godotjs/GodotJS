@@ -1,18 +1,9 @@
 #include "register_types.h"
 
-#include "weaver/jsb_script_language.h"
-#include "weaver/jsb_script.h"
-#include "weaver/jsb_resource_loader.h"
-#include "weaver/jsb_resource_saver.h"
+#include "weaver/jsb_weaver.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_node.h"
-#include "editor/export/editor_export.h"
-
-#include "weaver-editor/jsb_editor_plugin.h"
-#include "weaver-editor/jsb_export_plugin.h"
-#include "weaver-editor/jsb_editor_progress.h"
-#include "weaver-editor/jsb_editor_helper.h"
+#include "weaver-editor/jsb_weaver_editor.h"
 #endif
 
 static Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
@@ -72,3 +63,19 @@ void jsb_uninitialize_module(ModuleInitializationLevel p_level)
         memdelete(script_language_js);
     }
 }
+
+#if JSB_GDEXTENSION
+extern "C"
+{
+    GDExtensionBool GDE_EXPORT jsb_gdextension_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization* r_initialization)
+    {
+        GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
+
+        init_obj.register_initializer(jsb_initialize_module);
+        init_obj.register_terminator(jsb_uninitialize_module);
+        init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_CORE);
+
+        return init_obj.init();
+    }
+}
+#endif

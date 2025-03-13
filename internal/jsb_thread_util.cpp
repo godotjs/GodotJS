@@ -1,6 +1,5 @@
 #include "jsb_thread_util.h"
 #include "jsb_macros.h"
-#include "core/os/thread.h"
 
 #ifdef WINDOWS_ENABLED
 #   define WIN32_LEAN_AND_MEAN

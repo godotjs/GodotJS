@@ -1,5 +1,7 @@
 ﻿#ifndef GODOTJS_VARIANT_ALLOCATOR_H
 #define GODOTJS_VARIANT_ALLOCATOR_H
+
+#include "jsb_internal_pch.h"
 #include "jsb_macros.h"
 
 namespace jsb::internal

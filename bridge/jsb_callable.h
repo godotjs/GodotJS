@@ -40,7 +40,7 @@ namespace jsb
          * it's a free callable object if object_id_ is explicitly assigned as zero.
          * otherwise, do the same thing in CallableCustom::is_valid().
          */
-        virtual bool is_valid() const override { return object_id_.is_null() || ::ObjectDB::get_instance(object_id_); }
+        virtual bool is_valid() const override { return object_id_.is_null() || jsb::compat::ObjectDB::get_instance(object_id_); }
 
         virtual String get_as_text() const override;
         virtual ObjectID get_object() const override { return object_id_; }

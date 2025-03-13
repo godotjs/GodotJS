@@ -29,22 +29,15 @@ namespace jsb::internal
     static constexpr char kRtPackagingWithSourceMap[] = JSB_MODULE_NAME_STRING "/editor/packaging/source_map_included";
     static constexpr char kRtPackagingIncludeFiles[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_files";
 
-    void init_settings()
+#ifdef TOOLS_ENABLED
+    bool init_editor_settings()
     {
         static bool inited = false;
         if (!inited)
         {
-            inited = true;
-            static constexpr char filter[] = "*." JSB_JAVASCRIPT_EXT
-#if JSB_USE_TYPESCRIPT
-                                            ",*." JSB_TYPESCRIPT_EXT
-#endif
-            ;
-
-#ifdef TOOLS_ENABLED
             if (!EditorSettings::get_singleton())
             {
-                if (Engine::get_singleton()->is_editor_hint() || Engine::get_singleton()->is_project_manager_hint() || Main::is_cmdline_tool())
+                if (Engine::get_singleton()->is_editor_hint() || Engine::get_singleton()->is_project_manager_hint() || jsb_ext_is_cmdline_tool())
                 {
                     EditorSettings::create();
                     jsb_check(EditorSettings::get_singleton());
@@ -58,12 +51,29 @@ namespace jsb::internal
             // check before read to avoid redundant warnings
             if (EditorSettings::get_singleton())
             {
+                inited = true;
                 _EDITOR_DEF(kEdDebuggerPort, 9230, true);
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
                 _EDITOR_DEF(kEdGenSceneDTS, true, false);
                 _EDITOR_DEF(kEdAutogenSceneDTSOnSave, true, false);
             }
+        }
+        return inited;
+    }
 #endif
+
+    void init_settings()
+    {
+        static bool inited = false;
+        if (!inited)
+        {
+            inited = true;
+            static constexpr char filter[] = "*." JSB_JAVASCRIPT_EXT
+#if JSB_USE_TYPESCRIPT
+                                            ",*." JSB_TYPESCRIPT_EXT
+#endif
+            ;
+
             _GLOBAL_DEF(kRtDebuggerPort, 9229, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtSourceMapEnabled, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtAdditionalSearchPaths, PackedStringArray(), JSB_SET_RESTART(true),  JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
@@ -92,22 +102,21 @@ namespace jsb::internal
 #ifdef TOOLS_ENABLED
     PackedStringArray Settings::get_ignored_classes()
     {
-        init_settings();
+        init_editor_settings();
         return EDITOR_GET(kEdIgnoredClasses);
     }
 
-	bool Settings::get_autogen_scene_dts_on_save()
+    bool Settings::get_autogen_scene_dts_on_save()
     {
-    	init_settings();
-    	return EDITOR_GET(kEdAutogenSceneDTSOnSave);
+        init_editor_settings();
+        return EDITOR_GET(kEdAutogenSceneDTSOnSave);
     }
 
-	bool Settings::get_gen_scene_dts()
+    bool Settings::get_gen_scene_dts()
     {
-    	init_settings();
-    	return EDITOR_GET(kEdGenSceneDTS);
+        init_editor_settings();
+        return EDITOR_GET(kEdGenSceneDTS);
     }
-
 #endif
 
     bool Settings::is_packaging_with_source_map()
@@ -125,13 +134,14 @@ namespace jsb::internal
 
     uint16_t Settings::get_debugger_port()
     {
-        init_settings();
 #ifdef TOOLS_ENABLED
         if (Engine::get_singleton()->is_editor_hint())
         {
+            init_editor_settings();
             return EDITOR_GET(kEdDebuggerPort);
         }
 #endif
+        init_settings();
         return GLOBAL_GET(kRtDebuggerPort);
     }
 

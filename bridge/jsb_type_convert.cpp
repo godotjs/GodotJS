@@ -1,7 +1,6 @@
 ﻿#include "jsb_type_convert.h"
 #include "jsb_environment.h"
 
-
 namespace jsb
 {
     template<typename T>

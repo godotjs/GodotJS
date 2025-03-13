@@ -1,8 +1,6 @@
 #ifndef GODOTJS_INTERNAL_MACROS_H
 #define GODOTJS_INTERNAL_MACROS_H
 
-#include "jsb_engine_version_comparison.h"
-
 #include "../jsb.config.h"
 #include "../jsb.gen.h"
 #include "../jsb_version.h"
@@ -88,14 +86,6 @@
 #define jsb_methodbind(TypeName, MemberName) &TypeName::MemberName, #MemberName
 #define jsb_not_implemented(Condition, Format, ...) CRASH_COND_MSG((Condition), jsb_format(Format, ##__VA_ARGS__))
 
-#if defined(__GNUC__) || defined(__clang__)
-#   define jsb_force_inline  __attribute__((always_inline))
-#elif defined(_MSC_VER)
-#   define jsb_force_inline  __forceinline
-#else
-#   define jsb_force_inline
-#endif
-
 #define jsb_deprecated(...)
 #define jsb_experimental(...)
 #define jsb_no_discard [[nodiscard]]
@@ -121,13 +111,5 @@
 
 // helper macros to create a handle scope with a unique name
 #define JSB_HANDLE_SCOPE(isolate) v8::HandleScope JSB_CONCAT(unique_, __COUNTER__)(isolate)
-
-#if GODOT_4_3_OR_NEWER
-#    define ConstStringRefCompat const String&
-#    define ConstStringNameRefCompat const StringName&
-#else
-#    define ConstStringRefCompat String
-#    define ConstStringNameRefCompat StringName
-#endif
 
 #endif

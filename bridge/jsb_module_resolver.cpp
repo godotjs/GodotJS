@@ -239,7 +239,7 @@ namespace jsb
         String normalized;
         const Error err = internal::PathUtil::extract(p_path, normalized);
         jsb_unused(err);
-        jsb_checkf(err == OK, "failed to extract path when adding search path %s (%s)", p_path, VariantUtilityFunctions::error_string(err));
+        jsb_checkf(err == OK, "failed to extract path when adding search path %s (%s)", p_path, jsb_ext_error_string(err));
         search_paths_.append(normalized);
         JSB_LOG(Verbose, "add search path: %s", normalized);
         return *this;
