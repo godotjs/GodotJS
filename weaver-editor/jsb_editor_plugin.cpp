@@ -1,14 +1,6 @@
 #include "jsb_editor_plugin.h"
 #include "jsb_docked_panel.h"
 #include "jsb_export_plugin.h"
-#include "editor/editor_file_system.h"
-#include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#include "editor/gui/editor_toaster.h"
-#include "editor/project_settings_editor.h"
-#include "scene/gui/popup_menu.h"
-
-#include "../compat/jsb_compat.h"
 
 #define JSB_TYPE_ROOT "typings"
 

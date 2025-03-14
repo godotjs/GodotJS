@@ -2,8 +2,7 @@
 #define GODOTJS_SCRIPT_LANGUAGE_H
 
 #include "../bridge/jsb_bridge.h"
-
-#include "core/object/script_language.h"
+#include "../compat/jsb_compat.h"
 
 class GodotJSScript;
 class GodotJSMonitor;

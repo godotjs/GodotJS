@@ -1,6 +1,7 @@
 #ifndef GODOTJS_STATISTICS_VIEWER_H
 #define GODOTJS_STATISTICS_VIEWER_H
-#include "scene/gui/box_container.h"
+
+#include "../compat/jsb_compat.h"
 #include "../impl/shared/jsb_custom_field.h"
 
 class Tree;

@@ -3,13 +3,6 @@
 #include "jsb_script_instance.h"
 #include "../internal/jsb_path_util.h"
 
-#include "scene/scene_string_names.h"
-
-#ifdef TOOLS_ENABLED
-#include "editor/editor_node.h"
-#include "editor/editor_help.h"
-#endif
-
 GodotJSScript::GodotJSScript(): script_list_(this)
 {
     {

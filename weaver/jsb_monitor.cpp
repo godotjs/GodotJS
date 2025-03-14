@@ -1,5 +1,4 @@
 #include "jsb_monitor.h"
-
 #include "jsb_script_language.h"
 #include "../internal/jsb_internal.h"
 

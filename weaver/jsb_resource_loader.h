@@ -1,7 +1,7 @@
 #ifndef GODOTJS_RESOURCE_LOADER_H
 #define GODOTJS_RESOURCE_LOADER_H
 
-#include "core/io/resource_loader.h"
+#include "../compat/jsb_compat.h"
 
 class ResourceFormatLoaderGodotJSScript : public ResourceFormatLoader
 {

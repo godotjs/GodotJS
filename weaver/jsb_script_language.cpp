@@ -9,11 +9,6 @@
 
 #include "jsb_script.h"
 
-#include "editor/editor_settings.h"
-#include "main/performance.h"
-
-#include "modules/regex/regex.h"
-
 #ifdef TOOLS_ENABLED
 #include "../weaver-editor/templates/templates.gen.h"
 #endif

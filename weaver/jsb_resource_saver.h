@@ -1,7 +1,7 @@
 #ifndef GODOTJS_RESOURCE_SAVER_H
 #define GODOTJS_RESOURCE_SAVER_H
 
-#include "core/io/resource_saver.h"
+#include "../compat/jsb_compat.h"
 
 class ResourceFormatSaverGodotJSScript : public ResourceFormatSaver
 {

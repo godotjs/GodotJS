@@ -1,8 +1,5 @@
 #include "jsb_editor_helper.h"
 
-#include "editor/gui/editor_toaster.h"
-#include "scene/resources/packed_scene.h"
-
 Dictionary GodotJSEditorHelper::_build_node_path_map(Node *node)
 {
     Dictionary map;

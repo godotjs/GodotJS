@@ -1,7 +1,6 @@
 #include "jsb_resource_saver.h"
 #include "jsb_script.h"
 #include "jsb_script_language.h"
-#include "core/error/error_list.h"
 
 // @seealso: gdscript.cpp ResourceFormatSaverGDScript::save
 Error ResourceFormatSaverGodotJSScript::save(const Ref<Resource>& p_resource, const String& p_path, uint32_t p_flags)

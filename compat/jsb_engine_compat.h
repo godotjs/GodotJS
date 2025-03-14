@@ -47,8 +47,10 @@
 #include <godot_cpp/templates/spin_lock.hpp>
 #include <godot_cpp/templates/vector.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/rb_set.hpp>
 #include <godot_cpp/core/memory.hpp>
 #include <godot_cpp/core/object.hpp>
+
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/thread.hpp>
@@ -61,6 +63,7 @@
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/performance.hpp>
+#include <godot_cpp/classes/reg_ex.hpp>
 
 using namespace godot;
 
@@ -87,6 +90,10 @@ Variant EDITOR_GET(const String &p_setting)
 #define GLOBAL_GET(m_var) ProjectSettings::get_singleton()->get_setting_with_override(m_var)
 #endif
 
+#ifndef EDSCALE
+#define EDSCALE EditorInterface::get_singleton()->get_editor_scale()
+#endif
+
 template<size_t N>
 jsb_force_inline StringName _scs_create(const char (&literal)[N], bool p_static)
 {
@@ -96,37 +103,68 @@ jsb_force_inline StringName _scs_create(const char (&literal)[N], bool p_static)
 #else // MODULE
 
 #include "core/variant/variant.h"
-#include "core/string/ustring.h"
+#include "core/variant/variant_utility.h"
 #include "core/os/spin_lock.h"
 #include "core/os/memory.h"
+#include "core/os/os.h"
+#include "core/os/thread.h"
+#include "core/io/json.h"
 #include "core/io/file_access.h"
 #include "core/io/dir_access.h"
-#include "core/os/thread.h"
+#include "core/io/resource_saver.h"
+#include "core/io/resource_loader.h"
 #include "core/config/engine.h"
-#include "core/os/os.h"
 #include "core/config/project_settings.h"
 #include "core/object/object.h"
+#include "core/object/class_db.h"
+#include "core/object/script_language.h"
 #include "core/templates/vector.h"
 #include "core/templates/hash_map.h"
-#include "core/variant/variant_utility.h"
-#include "scene/gui/button.h"
-#include "core/io/json.h"
-
+#include "core/templates/rb_set.h"
+#include "core/string/ustring.h"
+#include "core/string/print_string.h"
 #include "core/core_constants.h"
 #include "core/version.h"
 #include "core/string/string_builder.h"
-#include "scene/main/node.h"
-#include "scene/resources/packed_scene.h"
+#include "core/error/error_list.h"
 
 #include "main/main.h"
 #include "main/performance.h"
 
-#ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
-#include "editor/editor_help.h"
-#endif
+#include "modules/regex/regex.h"
 
-#include "core/string/print_string.h"
+#include "scene/main/node.h"
+#include "scene/resources/packed_scene.h"
+#include "scene/scene_string_names.h"
+#include "scene/gui/dialogs.h"
+#include "scene/gui/tree.h"
+#include "scene/gui/tab_container.h"
+#include "scene/gui/box_container.h"
+#include "scene/gui/button.h"
+#include "scene/gui/item_list.h"
+#include "scene/gui/line_edit.h"
+#include "scene/gui/rich_text_label.h"
+#include "scene/gui/popup_menu.h"
+
+#ifdef TOOLS_ENABLED
+#   include "editor/editor_file_system.h"
+#   include "editor/editor_interface.h"
+#   include "editor/project_settings_editor.h"
+#   include "editor/editor_settings.h"
+#   include "editor/editor_help.h"
+#   include "editor/editor_node.h"
+#   include "editor/editor_string_names.h"
+#   include "editor/export/editor_export.h"
+#   include "editor/export/editor_export_plugin.h"
+#   include "editor/gui/editor_toaster.h"
+#   if GODOT_4_3_OR_NEWER
+#       include "editor/plugins/editor_plugin.h"
+#       include "editor/themes/editor_scale.h"
+#   else
+#       include "editor/editor_plugin.h"
+#       include "editor/editor_scale.h"
+#   endif
+#endif
 
 namespace jsb::compat
 {

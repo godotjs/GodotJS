@@ -1,9 +1,7 @@
 #ifndef GODOTJS_SCRIPT_H
 #define GODOTJS_SCRIPT_H
 
-#include "core/object/script_language.h"
-#include "core/templates/rb_set.h"
-
+#include "../compat/jsb_compat.h"
 #include "../bridge/jsb_bridge.h"
 
 class GodotJSScript : public Script

@@ -1,7 +1,6 @@
 #ifndef GODOTJS_MONITOR_H
 #define GODOTJS_MONITOR_H
-#include "core/object/class_db.h"
-#include "core/object/object.h"
+#include "../compat/jsb_compat.h"
 #include "../bridge/jsb_statistics.h"
 
 #define JSB_DECLARE_MONITOR(MonitorName) Variant get_value_## MonitorName()
