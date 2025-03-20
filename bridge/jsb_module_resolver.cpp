@@ -5,6 +5,20 @@
 
 namespace jsb
 {
+    namespace
+    {
+        // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood 
+        PackedStringArray get_dynamic_search_paths()
+        {
+#ifdef TOOLS_ENABLED
+            return jsb::internal::Settings::get_additional_search_paths();
+#else
+            static PackedStringArray dynamic_search_paths = jsb::internal::Settings::get_additional_search_paths();
+            return dynamic_search_paths;
+#endif
+        }
+    }
+    
     bool IModuleResolver::load_as_json(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const Vector<uint8_t>& p_bytes, size_t p_len)
     {
         v8::Isolate* isolate = p_env->get_isolate();
@@ -197,7 +211,6 @@ namespace jsb
         return false;
     }
 
-
     // early and simple validation: check source file existence
     bool DefaultModuleResolver::get_source_info(const String &p_module_id, ModuleSourceInfo& r_source_info)
     {
@@ -221,16 +234,36 @@ namespace jsb
         //   3. implicit-file (path.js, path.cjs, path/index.js, path/index.cjs)
         //   X. iterate in all search paths
 
+        // search the statically configured paths
         for (const String& search_path : search_paths_)
         {
-            const String filename = internal::PathUtil::combine(search_path, p_module_id);
-            if (check_file_path(filename, r_source_info))
+            if (check_search_path(search_path, p_module_id, r_source_info))
             {
                 return true;
             }
-            JSB_LOG(Verbose, "failed to check out module (search_path: %s) %s", search_path, p_module_id);
         }
+
+        // search the paths from settings
+        for (const String& search_path : get_dynamic_search_paths())
+        {
+            if (check_search_path(search_path, p_module_id, r_source_info))
+            {
+                return true;
+            }
+        }
+
         r_source_info = {};
+        return false;
+    }
+
+    bool DefaultModuleResolver::check_search_path(const String& p_search_path, const String& p_module_id, ModuleSourceInfo& o_source_info)
+    {
+        const String filename = internal::PathUtil::combine(p_search_path, p_module_id);
+        if (check_file_path(filename, o_source_info))
+        {
+            return true;
+        }
+        JSB_LOG(Verbose, "failed to check out module (search_path: %s) %s", p_search_path, p_module_id);
         return false;
     }
 

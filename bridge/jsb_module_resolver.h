@@ -37,6 +37,7 @@ namespace jsb
 
     protected:
         bool check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info);
+        bool check_search_path(const String& p_search_path, const String& p_module_id, ModuleSourceInfo& o_source_info);
 
         // read the source buffer (transformed into commonjs)
         static size_t read_all_bytes_with_shebang(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes);

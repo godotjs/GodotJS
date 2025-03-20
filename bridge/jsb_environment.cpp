@@ -351,12 +351,7 @@ namespace jsb
             .add_search_path("res://") // use the root directory as custom lib path by default
             .add_search_path("res://node_modules") // so far, it's the only supported path for node_modules in GodotJS
         ;
-
-        for (const String& path : jsb::internal::Settings::get_additional_search_paths())
-        {
-            resolver.add_search_path(path);
-        }
-
+        
         // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
         static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
         jsb_ensuref(AMDModuleLoader::load_source(this, kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
