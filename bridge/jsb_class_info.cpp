@@ -320,7 +320,7 @@ namespace jsb
 
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
         existed_class_info->base_script_module_id = dt_base_tag->IsString() ? environment->get_string_name(dt_base_tag.As<v8::String>()) : StringName();
-        JSB_LOG(Log, "%s script %d inherits script module %s native: %d",
+        JSB_LOG(Verbose, "%s script %d inherits script module %s native: %d",
             p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_module_id, *native_class_id);
 
         jsb_check(existed_class_info->base_script_module_id != p_module.id);
