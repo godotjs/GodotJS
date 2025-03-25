@@ -37,6 +37,17 @@
 
 namespace jsb
 {
+#if JSB_V8_CPPGC
+    // for cppgc wrapper descriptor
+    enum
+    {
+        kWrapperTypeIndex,
+        kWrapperInstanceIndex,
+        kWrapperFieldCount,
+    };
+    namespace { const uint16_t kWrapperID = 1; }
+#endif
+
     struct TransferObjectData : TransferData
     {
         NativeObjectID worker_id;
@@ -242,6 +253,14 @@ namespace jsb
         impl::GlobalInitialize::init();
         v8::Isolate::CreateParams create_params;
         create_params.array_buffer_allocator = &allocator_;
+#if JSB_V8_CPPGC
+        // old version:
+        cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(),
+            v8::CppHeapCreateParams({}, v8::WrapperDescriptor(kWrapperTypeIndex, kWrapperInstanceIndex, kWrapperID)));
+        // new version:
+        // cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(), v8::CppHeapCreateParams({}));
+        create_params.cpp_heap = cpp_heap_.get();
+#endif
 
         if (p_params.type == Type::Worker) flags_ |= EF_Worker;
 

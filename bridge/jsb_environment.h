@@ -127,7 +127,11 @@ namespace jsb
 #if JSB_THREADING
         internal::DoubleBuffered<AsyncCall> async_calls_;
 #endif
-
+        
+#if JSB_V8_CPPGC
+        std::unique_ptr<v8::CppHeap> cpp_heap_;
+#endif
+        
         // indirect lookup
         // only godot object classes are mapped
         HashMap<StringName, NativeClassID> godot_classes_index_;
