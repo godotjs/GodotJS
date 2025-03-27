@@ -1,4 +1,3 @@
-
 // NOT IMPLEMENTED
 // JS implementation of essential primitive types with least binding code
 
@@ -169,8 +168,8 @@ export class Vector3 {
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    /** Returns the squared distance between this vector and [param to].  
-     *  This method runs faster than [method distance_to], so prefer it if you need to compare vectors or need the squared distance for some formula.  
+    /** Returns the squared distance between this vector and [param to].
+     *  This method runs faster than [method distance_to], so prefer it if you need to compare vectors or need the squared distance for some formula.
      */
     distance_squared_to(to: Vector3): number {
         const dx = to.x - this.x;
@@ -187,8 +186,8 @@ export class Vector3 {
         return Math.sqrt(x * x + y * y + z * z);
     }
 
-    /** Returns the squared length (squared magnitude) of this vector.  
-     *  This method runs faster than [method length], so prefer it if you need to compare vectors or need the squared distance for some formula.  
+    /** Returns the squared length (squared magnitude) of this vector.
+     *  This method runs faster than [method length], so prefer it if you need to compare vectors or need the squared distance for some formula.
      */
     length_squared(): number {
         const x = this.x;
@@ -212,9 +211,9 @@ export class Vector3 {
         return v;
     }
 
-    /** Returns the result of scaling the vector to unit length. Equivalent to `v / v.length()`. Returns `(0, 0, 0)` if `v.length() == 0`. See also [method is_normalized].  
-     *      
-     *  **Note:** This function may return incorrect values if the input vector length is near zero.  
+    /** Returns the result of scaling the vector to unit length. Equivalent to `v / v.length()`. Returns `(0, 0, 0)` if `v.length() == 0`. See also [method is_normalized].
+     *
+     *  **Note:** This function may return incorrect values if the input vector length is near zero.
      */
     normalized(): Vector3 {
         let v = new Vector3(this);
@@ -246,8 +245,8 @@ export class Vector3 {
         return is_equal_approx(this.x, to.x) && is_equal_approx(this.y, to.y) && is_equal_approx(this.z, to.z);
     }
 
-    /** Returns `true` if this vector's values are approximately zero, by running [method @GlobalScope.is_zero_approx] on each component.  
-     *  This method is faster than using [method is_equal_approx] with one value as a zero vector.  
+    /** Returns `true` if this vector's values are approximately zero, by running [method @GlobalScope.is_zero_approx] on each component.
+     *  This method is faster than using [method is_equal_approx] with one value as a zero vector.
      */
     is_zero_approx(): boolean {
         return is_zero_approx(this.x) && is_zero_approx(this.y) && is_zero_approx(this.z);
@@ -311,16 +310,16 @@ export class Vector3 {
         return new Vector3(lerp(this.x, to.x, weight), lerp(this.y, to.y, weight), lerp(this.z, to.z, weight));
     }
 
-    // /** Returns the result of spherical linear interpolation between this vector and [param to], by amount [param weight]. [param weight] is on the range of 0.0 to 1.0, representing the amount of interpolation.  
-    //  *  This method also handles interpolating the lengths if the input vectors have different lengths. For the special case of one or both input vectors having zero length, this method behaves like [method lerp].  
+    // /** Returns the result of spherical linear interpolation between this vector and [param to], by amount [param weight]. [param weight] is on the range of 0.0 to 1.0, representing the amount of interpolation.
+    //  *  This method also handles interpolating the lengths if the input vectors have different lengths. For the special case of one or both input vectors having zero length, this method behaves like [method lerp].
     //  */
     // slerp(to: Vector3, weight: number): Vector3
 
     // /** Performs a cubic interpolation between this vector and [param b] using [param pre_a] and [param post_b] as handles, and returns the result at position [param weight]. [param weight] is on the range of 0.0 to 1.0, representing the amount of interpolation. */
     // cubic_interpolate(b: Vector3, pre_a: Vector3, post_b: Vector3, weight: number): Vector3
 
-    // /** Performs a cubic interpolation between this vector and [param b] using [param pre_a] and [param post_b] as handles, and returns the result at position [param weight]. [param weight] is on the range of 0.0 to 1.0, representing the amount of interpolation.  
-    //  *  It can perform smoother interpolation than [method cubic_interpolate] by the time values.  
+    // /** Performs a cubic interpolation between this vector and [param b] using [param pre_a] and [param post_b] as handles, and returns the result at position [param weight]. [param weight] is on the range of 0.0 to 1.0, representing the amount of interpolation.
+    //  *  It can perform smoother interpolation than [method cubic_interpolate] by the time values.
     //  */
     // cubic_interpolate_in_time(b: Vector3, pre_a: Vector3, post_b: Vector3, weight: number, b_t: number, pre_a_t: number, post_b_t: number): Vector3
 
@@ -333,18 +332,18 @@ export class Vector3 {
     // /** Returns a new vector moved toward [param to] by the fixed [param delta] amount. Will not go past the final value. */
     // move_toward(to: Vector3, delta: number): Vector3
 
-    /** Returns the dot product of this vector and [param with]. This can be used to compare the angle between two vectors. For example, this can be used to determine whether an enemy is facing the player.  
-     *  The dot product will be `0` for a right angle (90 degrees), greater than 0 for angles narrower than 90 degrees and lower than 0 for angles wider than 90 degrees.  
-     *  When using unit (normalized) vectors, the result will always be between `-1.0` (180 degree angle) when the vectors are facing opposite directions, and `1.0` (0 degree angle) when the vectors are aligned.  
-     *      
-     *  **Note:** `a.dot(b)` is equivalent to `b.dot(a)`.  
+    /** Returns the dot product of this vector and [param with]. This can be used to compare the angle between two vectors. For example, this can be used to determine whether an enemy is facing the player.
+     *  The dot product will be `0` for a right angle (90 degrees), greater than 0 for angles narrower than 90 degrees and lower than 0 for angles wider than 90 degrees.
+     *  When using unit (normalized) vectors, the result will always be between `-1.0` (180 degree angle) when the vectors are facing opposite directions, and `1.0` (0 degree angle) when the vectors are aligned.
+     *
+     *  **Note:** `a.dot(b)` is equivalent to `b.dot(a)`.
      */
     dot(with_: Vector3): number {
         return this.x * with_.x + this.y * with_.y + this.z * with_.z;;
     }
 
-    /** Returns the cross product of this vector and [param with].  
-     *  This returns a vector perpendicular to both this and [param with], which would be the normal vector of the plane defined by the two vectors. As there are two such vectors, in opposite directions, this method returns the vector defined by a right-handed coordinate system. If the two vectors are parallel this returns an empty vector, making it useful for testing if two vectors are parallel.  
+    /** Returns the cross product of this vector and [param with].
+     *  This returns a vector perpendicular to both this and [param with], which would be the normal vector of the plane defined by the two vectors. As there are two such vectors, in opposite directions, this method returns the vector defined by a right-handed coordinate system. If the two vectors are parallel this returns an empty vector, making it useful for testing if two vectors are parallel.
      */
     cross(with_: Vector3): Vector3 {
         return new Vector3(
@@ -354,7 +353,7 @@ export class Vector3 {
     }
 
     /** Returns the outer product with [param with]. */
-    outer(with_: Vector3): Basis {
+    outer(with_: Vector3): never {
         throw new Error("NOT IMPLEMENTED");
         // let basis = new Basis();
 	    // basis.rows[0] = new Vector3(this.x * with_.x, this.x * with_.y, this.x * with_.z);
@@ -385,33 +384,33 @@ export class Vector3 {
         return new Vector3(fposmod(this.x, p_mod.x), fposmod(this.y, p_mod.y), fposmod(this.z, p_mod.z));
     }
 
-    /** Returns a new vector resulting from projecting this vector onto the given vector [param b]. The resulting new vector is parallel to [param b]. See also [method slide].  
-     *      
-     *  **Note:** If the vector [param b] is a zero vector, the components of the resulting new vector will be [constant @GDScript.NAN].  
+    /** Returns a new vector resulting from projecting this vector onto the given vector [param b]. The resulting new vector is parallel to [param b]. See also [method slide].
+     *
+     *  **Note:** If the vector [param b] is a zero vector, the components of the resulting new vector will be [constant @GDScript.NAN].
      */
     project(p_to: Vector3): Vector3 {
         return Vector3.MULTIPLY(p_to, (this.dot(p_to) / p_to.length_squared()));
     }
 
-    /** Returns a new vector resulting from sliding this vector along a plane with normal [param n]. The resulting new vector is perpendicular to [param n], and is equivalent to this vector minus its projection on [param n]. See also [method project].  
-     *      
-     *  **Note:** The vector [param n] must be normalized. See also [method normalized].  
+    /** Returns a new vector resulting from sliding this vector along a plane with normal [param n]. The resulting new vector is perpendicular to [param n], and is equivalent to this vector minus its projection on [param n]. See also [method project].
+     *
+     *  **Note:** The vector [param n] must be normalized. See also [method normalized].
      */
     slide(p_normal: Vector3): Vector3 {
         return Vector3.SUBTRACT(this, Vector3.MULTIPLY(p_normal, this.dot(p_normal)));
     }
 
-    /** Returns the vector "bounced off" from a plane defined by the given normal [param n].  
-     *      
-     *  **Note:** [method bounce] performs the operation that most engines and frameworks call [code skip-lint]reflect()`.  
+    /** Returns the vector "bounced off" from a plane defined by the given normal [param n].
+     *
+     *  **Note:** [method bounce] performs the operation that most engines and frameworks call [code skip-lint]reflect()`.
      */
     bounce(n: Vector3): Vector3 {
         return Vector3.NEGATE(this.reflect(n));
     }
 
-    /** Returns the result of reflecting the vector through a plane defined by the given normal vector [param n].  
-     *      
-     *  **Note:** [method reflect] differs from what other engines and frameworks call [code skip-lint]reflect()`. In other engines, [code skip-lint]reflect()` returns the result of the vector reflected by the given plane. The reflection thus passes through the given normal. While in Godot the reflection passes through the plane and can be thought of as bouncing off the normal. See also [method bounce] which does what most engines call [code skip-lint]reflect()`.  
+    /** Returns the result of reflecting the vector through a plane defined by the given normal vector [param n].
+     *
+     *  **Note:** [method reflect] differs from what other engines and frameworks call [code skip-lint]reflect()`. In other engines, [code skip-lint]reflect()` returns the result of the vector reflected by the given plane. The reflection thus passes through the given normal. While in Godot the reflection passes through the plane and can be thought of as bouncing off the normal. See also [method bounce] which does what most engines call [code skip-lint]reflect()`.
      */
     reflect(p_normal: Vector3): Vector3 {
         return Vector3.SUBTRACT(Vector3.MULTIPLY(Vector3.MULTIPLY(2.0, p_normal), this.dot(p_normal)), new Vector3(this));
@@ -420,11 +419,11 @@ export class Vector3 {
     /** Returns a new vector with each component set to `1.0` if it's positive, `-1.0` if it's negative, and `0.0` if it's zero. The result is identical to calling [method @GlobalScope.sign] on each component. */
     sign(): Vector3 { return new Vector3(Math.sign(this.x), Math.sign(this.y), Math.sign(this.z)); }
 
-    /** Returns the octahedral-encoded (oct32) form of this [Vector3] as a [Vector2]. Since a [Vector2] occupies 1/3 less memory compared to [Vector3], this form of compression can be used to pass greater amounts of [method normalized] [Vector3]s without increasing storage or memory requirements. See also [method octahedron_decode].  
-     *      
-     *  **Note:** [method octahedron_encode] can only be used for [method normalized] vectors. [method octahedron_encode] does  *not*  check whether this [Vector3] is normalized, and will return a value that does not decompress to the original value if the [Vector3] is not normalized.  
-     *      
-     *  **Note:** Octahedral compression is  *lossy* , although visual differences are rarely perceptible in real world scenarios.  
+    /** Returns the octahedral-encoded (oct32) form of this [Vector3] as a [Vector2]. Since a [Vector2] occupies 1/3 less memory compared to [Vector3], this form of compression can be used to pass greater amounts of [method normalized] [Vector3]s without increasing storage or memory requirements. See also [method octahedron_decode].
+     *
+     *  **Note:** [method octahedron_encode] can only be used for [method normalized] vectors. [method octahedron_encode] does  *not*  check whether this [Vector3] is normalized, and will return a value that does not decompress to the original value if the [Vector3] is not normalized.
+     *
+     *  **Note:** Octahedral compression is  *lossy* , although visual differences are rarely perceptible in real world scenarios.
      */
     octahedron_encode(): Vector2 {
         let n = Vector3.DIVIDE(this, Math.abs(this.x) + Math.abs(this.y) + Math.abs(this.z));
@@ -473,7 +472,7 @@ export class Vector3 {
     static MULTIPLY(left: Vector3, right: number): Vector3
     static MULTIPLY(left: Vector3 | number, right: number | Vector3): Vector3 {
         if (typeof left === "number") {
-            return new Vector3(left * right.x, left * right.y, left * right.z);
+            return new Vector3(left * (right as Vector3).x, left * (right as Vector3).y, left * (right as Vector3).z);
         } else if (typeof right === "number") {
             return new Vector3(right * left.x, right * left.y, right * left.z);
         }

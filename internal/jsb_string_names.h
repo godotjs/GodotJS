@@ -34,8 +34,6 @@ namespace jsb::internal
 
         StringNames();
 
-        void add_replacement(const StringName& name, const StringName& replacement);
-
     public:
         jsb_force_inline static StringNames& get_singleton() { return *singleton_; }
 
@@ -53,6 +51,12 @@ namespace jsb::internal
         {
             if (const StringName* ptr = replacements_inv_.getptr(p_name)) return *ptr;
             return p_name;
+        }
+
+        void add_replacement(const StringName& name, const StringName& replacement)
+        {
+            replacements_.insert(name, replacement);
+            replacements_inv_.insert(replacement, name);
         }
 
         StringName sn_godot_typeloader;

@@ -456,6 +456,7 @@ namespace jsb
 #else
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "DEBUG_ENABLED"), v8::Boolean::New(isolate, false)).Check();
 #endif
+            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "CAMEL_CASE_BINDINGS_ENABLED"), v8::Boolean::New(isolate, internal::Settings::get_camel_case_bindings_enabled())).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "version"), impl::Helper::new_string(isolate, JSB_STRINGIFY(JSB_MAJOR_VERSION) "." JSB_STRINGIFY(JSB_MINOR_VERSION) "." JSB_STRINGIFY(JSB_PATCH_VERSION))).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "impl"), impl::Helper::new_string(isolate, JSB_IMPL_VERSION_STRING)).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "callable"), JSB_NEW_FUNCTION(context, _new_callable, {})).Check();

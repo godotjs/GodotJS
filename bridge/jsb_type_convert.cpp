@@ -107,6 +107,14 @@ namespace jsb
         {
             return "string";
         }
+        if (p_jval->IsArray())
+        {
+            return "array";
+        }
+        if (p_jval->IsFunction())
+        {
+            return "function";
+        }
         if (p_jval->IsObject())
         {
             v8::Local<v8::Object> object = p_jval.As<v8::Object>();
@@ -125,14 +133,6 @@ namespace jsb
             }
 
             return jsb_format("object (%s)", impl::Helper::to_string(isolate, constructor_name));
-        }
-        if (p_jval->IsFunction())
-        {
-            return "function";
-        }
-        if (p_jval->IsArray())
-        {
-            return "array";
         }
 
         return "<unknown>";

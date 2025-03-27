@@ -97,6 +97,18 @@ namespace jsb::impl
                 else builder_->template_->Set(key, value);
             }
 
+            void Method(const String& name, const v8::FunctionCallback callback)
+            {
+                jsb_check(builder_->state_ == State::Building);
+                v8::HandleScope handle_scope(builder_->isolate_);
+
+                const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
+                const v8::Local<v8::FunctionTemplate> value = v8::FunctionTemplate::New(builder_->isolate_, callback);
+
+                if (is_instance_method) builder_->prototype_template_->Set(key, value);
+                else builder_->template_->Set(key, value);
+            }
+
             template<typename T>
             void Method(const String& name, const v8::FunctionCallback callback, T data)
             {

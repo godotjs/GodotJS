@@ -59,3 +59,9 @@ DEF(onerror)
 DEF(postMessage)
 DEF(transfer)
 DEF(close)
+
+// editor
+DEF(arguments)
+DEF(codegen)
+DEF(node)
+DEF(properties)

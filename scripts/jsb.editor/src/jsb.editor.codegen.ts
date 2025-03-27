@@ -1,16 +1,78 @@
-
 import {
     DirAccess,
     FileAccess,
+    GArray,
     GDictionary,
+    GReadProxyValueWrap,
+    MethodFlags,
+    Node,
     PropertyHint,
+    PropertyInfo,
     Variant,
     str as gd_to_string,
     type_string,
-    MethodFlags, GodotJSEditorHelper as helper,
 } from 'godot';
 import * as jsb from "godot-jsb";
-import { ClassInfo } from 'godot-jsb';
+
+type UpperSnakeToPascalCase<S extends string> =
+    S extends `${infer T}_${infer U}`
+        ? `${Capitalize<Lowercase<T>>}${UpperSnakeToPascalCase<Capitalize<Lowercase<U>>>}`
+        : Capitalize<Lowercase<S>>;
+
+function upper_snake_to_pascal_case<T extends string>(input: T): UpperSnakeToPascalCase<T> {
+    return input
+        .toLowerCase()
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join('') as UpperSnakeToPascalCase<T>;
+}
+
+type SnakeToCamelCase<S extends string> =
+    S extends `${infer T}_${infer U}${infer Rest}`
+        ? `${T}${Capitalize<U>}${SnakeToCamelCase<Rest>}`
+        : S;
+
+function snake_to_camel_case<T extends string>(input: T): SnakeToCamelCase<T> {
+    return input
+        .toLowerCase()
+        .split('_')
+        .map((word, index) => index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1))
+        .join('') as SnakeToCamelCase<T>;
+}
+
+function camel_property_overrides(overrides: undefined | Record<string, string[] | ((line: string) => string)>) {
+    return overrides && Object.fromEntries(
+        Object.entries(overrides).map(([name, value]) => {
+            const camel_case_name = snake_to_camel_case(name);
+            return [
+                camel_case_name,
+                Array.isArray(value)
+                    ? value.map(line => line.replace(new RegExp(`${name}( *[<(:])`), `${camel_case_name}$1`))
+                    : value
+            ];
+        })
+    )
+}
+
+const member_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
+    ? snake_to_camel_case
+    : (name: string) => name;
+
+const enum_value_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
+  ? upper_snake_to_pascal_case
+  : (name: string) => name;
+
+// Godot's runtime can be toggled between snake case and camel case naming schemes. In this script we use upper camel
+// case value names. If the camel-case naming scheme is enabled, then we must convert to pascal case.
+function enum_value<E, N extends keyof E & string>(enum_map: E, name: N): E[N] {
+    return enum_map[enum_value_name(name) as keyof E] as E[N];
+}
+
+// Godot's runtime can be toggled between snake case and camel case naming schemes. In this script we use lower snake
+// case method names. If the camel-case naming scheme is enabled, then we must convert to camel case.
+function gd_method<O, N extends keyof O & string>(obj: O, name: N): O[N] {
+    return (obj[member_name(name) as keyof O] as Function).bind(obj) as O[N];
+}
 
 if (!jsb.TOOLS_ENABLED) {
     throw new Error("codegen is only allowed in editor mode")
@@ -24,38 +86,16 @@ interface GenericParameter {
     default?: string;
 }
 
+type Intro = string[] | ((types: TypeDB) => string[]);
 type PropertyOverrides = Record<string, string[] | ((line: string) => string)>;
 
 interface TypeMutation {
     generic_parameters?: Record<string, GenericParameter>;
     super?: string;
     super_generic_arguments?: string[];
-    intro?: string[];
+    intro?: Intro;
     property_overrides?: PropertyOverrides;
 }
-
-const CallableBind = {
-    description: "Create a callable object with a bound object `self`",
-    methods: [
-        "static create<R = void>(self: Object, fn: () => R): Callable0<R>",
-        "static create<T1, R = void>(self: Object, fn: (v1: T1) => R): Callable1<T1, R>",
-        "static create<T1, T2, R = void>(self: Object, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
-        "static create<T1, T2, T3, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
-        "static create<T1, T2, T3, T4, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
-        "static create<T1, T2, T3, T4, T5, R = void>(self: Object, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
-    ]
-};
-const CallableFuncBind = {
-    description: "Create godot Callable without a bound object",
-    methods: [
-        "static create<R = void>(fn: () => R): Callable0<R>",
-        "static create<T1, R = void>(fn: (v1: T1) => R): Callable1<T1, R>",
-        "static create<T1, T2, R = void>(fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>",
-        "static create<T1, T2, T3, R = void>(fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>",
-        "static create<T1, T2, T3, T4, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>",
-        "static create<T1, T2, T3, T4, T5, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>",
-    ]
-};
 
 function chain_mutators(...mutators: Array<(line: string) => string>) {
     return function(line: string) {
@@ -64,42 +104,70 @@ function chain_mutators(...mutators: Array<(line: string) => string>) {
 }
 function mutate_parameter_type(name: string, type: string) {
     return function(line: string) {
-        return line.replace(new RegExp(`([,(] *)${name}: .+?([,)])`, 'g'), `$1${name}: ${type}$2`);
+        const replaced = line.replace(new RegExp(`([,(] *)${name.replace(/\./g, "\\.")}: .+?( ?[,)=])`, 'g'), `$1${name}: ${type}$2`);
+        if (replaced === line) {
+            throw new Error(`Failed to mutate "${name}" parameter's type: ${line}`);
+        }
+        return replaced;
     };
 }
 function mutate_return_type(type: string) {
     return function(line: string) {
-        return line.replace(/: [^:]+$/g, `: ${type}`);
+        const replaced = line.replace(/: [^:]+$/g, `: ${type}`);
+        if (replaced === line) {
+            throw new Error(`Failed to mutate return type: ${line}`);
+        }
+        return replaced;
     };
 }
 function mutate_template(template: string) {
     return function(line: string) {
-        return line.replace(/([^(]+)(<[^>]+> *)?\(/, `$1$2<${template}>(`);
+        const replaced = line.replace(/([^(]+)(<[^>]+> *)?\(/, `$1$2<${template}>(`);
+        if (replaced === line) {
+            throw new Error(`Failed to mutate template: ${line}`);
+        }
+        return replaced;
     };
 }
 
 const TypeMutations: Record<string, TypeMutation> = {
     Signal: {
-        super: "AnySignal",
+        generic_parameters: {
+            T: {
+                extends: "(...args: any[]) => void",
+                default: "(...args: any[]) => void",
+            },
+        },
+        property_overrides: {
+            connect: mutate_parameter_type("callable", "Callable<T>"),
+            disconnect: mutate_parameter_type("callable", "Callable<T>"),
+            is_connected: mutate_parameter_type("callable", "Callable<T>"),
+            emit: ["emit: T"],
+        }
     },
     Callable: {
-        super: "AnyCallable",
         intro: [
-            ...CallableBind.methods.reduce((lines: string[], method: string) => {
-                return [
-                    ...lines,
-                    `/** ${CallableBind.description} */`,
-                    method,
-                ];
-            }, []),
-            ...CallableFuncBind.methods.reduce((lines: string[], method: string) => {
-                return [
-                    ...lines,
-                    `/** ${CallableBind.description} */`,
-                    method,
-                ];
-            }, []),
+            "/**",
+            " * Create godot Callable without a bound object.",
+            " */",
+            "static create<F extends Function>(fn: F): Callable<F>",
+            "/**",
+            " * Create godot Callable with a bound object `self`.",
+            " */",
+            "static create<S extends GDObject, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>",
+            "",
+            `${member_name("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
         ],
+        generic_parameters: {
+            T: {
+                extends: "Function",
+                default: "Function",
+            },
+        },
+        property_overrides: {
+            bind: chain_mutators(mutate_template("A extends any[]"), mutate_parameter_type("...varargs", "A"), mutate_return_type("Callable<BindRight<T, A>>")),
+            call: ["call: T"],
+        },
     },
     GArray: {
         generic_parameters: {
@@ -108,12 +176,14 @@ const TypeMutations: Record<string, TypeMutation> = {
             },
         },
         intro: [
+            "/** Builder function that returns a GArray populated with elements from a JS array. */",
+            "static create<T>(elements: [T] extends [GArray<infer E>] ? Array<E | GProxyValueWrap<E>> : Array<T | GProxyValueWrap<T>>): [T] extends [GArray<infer E>] ? GArray<E> : GArray<T>",
             "[Symbol.iterator](): IteratorObject<T>",
             "/** Returns a Proxy that targets this GArray but behaves similar to a JavaScript array. */",
-            `proxy(): GArrayProxy<T>`,
+            "proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>",
             "",
-            "set_indexed(index: number, value: T): void",
-            "get_indexed(index: number): T",
+            `${member_name("set_indexed")}(index: number, value: T): void`,
+            `${member_name("get_indexed")}(index: number): T`,
         ],
         property_overrides: {
             set: mutate_parameter_type("value", "T"),
@@ -155,12 +225,14 @@ const TypeMutations: Record<string, TypeMutation> = {
             },
         },
         intro: [
+            "/** Builder function that returns a GDictionary with properties populated from a source JS object. */",
+            "static create<T>(properties: T extends GDictionary<infer S> ? GDictionaryProxy<S> : GDictionaryProxy<T>): T extends GDictionary<infer S> ? GDictionary<S> : GDictionary<T>",
             "[Symbol.iterator](): IteratorObject<{ key: any, value: any }>",
             "/** Returns a Proxy that targets this GDictionary but behaves similar to a regular JavaScript object. Values are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work. */",
-            "proxy(): GDictionaryProxy<T>",
+            "proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>",
             "",
-            "set_keyed<K extends keyof T>(key: K, value: T[K]): void",
-            "get_keyed<K extends keyof T>(key: K): T[K]",
+            `${member_name("set_keyed")}<K extends keyof T>(key: K, value: T[K]): void`,
+            `${member_name("get_keyed")}<K extends keyof T>(key: K): T[K]`,
         ],
         property_overrides: {
             assign: mutate_parameter_type("dictionary", "T"),
@@ -174,7 +246,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             values: mutate_return_type("GArray<T[keyof T]>"),
             duplicate: mutate_return_type("GDictionary<T>"),
             get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("T[K]"), mutate_template("K extends keyof T")),
-            get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("default", "T[K]"), mutate_parameter_type("default", "T[K]"), mutate_template("K extends keyof T")),
+            get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("default_", "T[K]"), mutate_template("K extends keyof T")),
             set: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("value", "T[K]"), mutate_template("K extends keyof T")),
         }
     },
@@ -194,19 +266,20 @@ const TypeMutations: Record<string, TypeMutation> = {
         ],
         property_overrides: {
             get_node: [
-                "get_node<Path extends StaticNodePath<Map>>(path: Path): ResolveNodePath<Map, Path>",
+                "get_node<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>",
                 "get_node(path: NodePath | string): Node",
             ],
             get_node_or_null: [
-                "get_node_or_null<Path extends StaticNodePath<Map>>(path: Path): null | ResolveNodePath<Map, Path>",
+                "get_node_or_null<Path extends StaticNodePath<Map>, Default = never>(path: Path): null | ResolveNodePath<Map, Path, Default>",
                 "get_node_or_null(path: NodePath | string): null | Node",
             ],
+            validate_property: mutate_parameter_type("property", "GDictionary<PropertyInfo>"),
         },
     },
     PackedByteArray: {
         intro: [
             "/** [jsb utility method] Converts a PackedByteArray to a JavaScript ArrayBuffer. */",
-            "to_array_buffer(): ArrayBuffer"
+            `${member_name("to_array_buffer")}(): ArrayBuffer`,
         ],
     },
 };
@@ -216,23 +289,27 @@ const InheritedTypeMutations: Record<string, TypeMutation> = {
         generic_parameters: {
             Map: {
                 extends: "Record<string, Node>",
-                default: "Record<string, Node>",
+                default: "{}",
             },
         },
         super_generic_arguments: ["Map"],
     },
 };
 
-function class_type_mutation(cls: ClassInfo): TypeMutation {
+function is_primitive_class_info(cls: jsb.editor.BasicClassInfo): cls is jsb.editor.PrimitiveClassInfo {
+    return 'type' in cls;
+}
+
+function class_type_mutation(cls: jsb.editor.BasicClassInfo): TypeMutation {
     const intro: string[] = []
 
-    if (typeof cls.element_type !== "undefined") {
+    if (is_primitive_class_info(cls) && typeof cls.element_type !== "undefined") {
         const element_type_name = get_primitive_type_name(cls.element_type);
         intro.push(`set_indexed(index: number, value: ${element_type_name}): void`);
         intro.push(`get_indexed(index: number): ${element_type_name}`);
     }
 
-    if (cls.is_keyed) {
+    if (is_primitive_class_info(cls) && cls.is_keyed) {
         intro.push("set_keyed(index: any, value: any): void");
         intro.push("get_keyed(index: any): any");
     }
@@ -277,27 +354,33 @@ interface CodeWriter {
     get size(): number;
     get lineno(): number;
 
+    add_import(name: string, script_resource: string, export_name?: string): void;
+    get_imports(): Record<string, Record<string, string>>; // Record<script_resource, Record<export_name, preferred_import>>
+    resolve_import(script_resource: string): string;
+
     line(text: string): void;
+    concatenate(text: string): void;
+	append(newLine: boolean, text: string): void;
 
     enum_(name: string): EnumWriter;
     namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter;
     interface_(
-      name: string,
-      generic_parameters?: undefined | Record<string, GenericParameter>,
-      super_?: undefined | string,
-      super_generic_arguments?: undefined | string[],
-      intro?: undefined | string[],
-      property_overrides?: undefined | PropertyOverrides
+        name: string,
+        generic_parameters?: undefined | Record<string, GenericParameter>,
+        super_?: undefined | string,
+        super_generic_arguments?: undefined | string[],
+        intro?: undefined | string[],
+        property_overrides?: undefined | PropertyOverrides
     ): InterfaceWriter;
     class_(
-      name: string,
-      generic_parameters: undefined | Record<string, GenericParameter>,
-      super_: undefined | string,
-      super_generic_arguments: undefined | string[],
-      property_overrides: undefined | PropertyOverrides,
-      intro: undefined | string[],
-      singleton_mode: boolean,
-      class_doc?: jsb.editor.ClassDoc
+        name: string,
+        generic_parameters: undefined | Record<string, GenericParameter>,
+        super_: undefined | string,
+        super_generic_arguments: undefined | string[],
+        property_overrides: undefined | PropertyOverrides,
+        intro: undefined | Intro,
+        singleton_mode: boolean,
+        class_doc?: jsb.editor.ClassDoc
     ): ClassWriter;
     generic_(name: string): GenericWriter;
     property_(name: string): PropertyWriter;
@@ -322,7 +405,7 @@ function frame_step() {
 
 function toast(msg: string) {
     let helper = require("godot").GodotJSEditorHelper;
-    helper.show_toast(msg, 0); // 0: info, 1: warning, 2: error
+    gd_method(helper, 'show_toast')(msg, 0); // 0: info, 1: warning, 2: error
 }
 
 interface CodegenTaskInfo {
@@ -346,7 +429,7 @@ class CodegenTasks {
         const EditorProgress = require("godot").GodotJSEditorProgress;
         const progress = new EditorProgress();
         let force_wait = 24;
-        progress.init(`codegen-${this._name}`, `Generating ${this._name}`, this.tasks.length);
+        gd_method(progress, 'init')(`codegen-${this._name}`, `Generating ${this._name}`, this.tasks.length);
 
         try {
             for (let i = 0; i < this.tasks.length; ++i) {
@@ -354,24 +437,25 @@ class CodegenTasks {
                 const result = task.execute();
 
                 if (typeof result === "object" && result instanceof Promise) {
-                    progress.set_state_name(task.name);
-                    progress.set_current(i);
+                    gd_method(progress, 'set_state_name')(task.name);
+                    gd_method(progress, 'set_current')(i);
                     await result;
                 } else {
                     if (!(i % force_wait)) {
-                        progress.set_state_name(task.name);
-                        progress.set_current(i);
+                        gd_method(progress, 'set_state_name')(task.name);
+                        gd_method(progress, 'set_current')(i);
                         await frame_step();
                     }
                 }
             }
 
-            progress.finish();
+            gd_method(progress, 'finish')();
             toast(`${this._name} generated successfully`);
         } catch (e) {
             console.error("CodegenTasks error:", e);
             toast(`${this._name} failed!`);
-            progress.finish();
+            console.error(`${this._name} failed!`, e);
+            gd_method(progress, 'finish')();
         }
     }
 }
@@ -407,15 +491,15 @@ const KeywordReplacement: { [name: string]: string } = {
     ["function"]: "function_",
 
     // a special item which used as the name of variadic arguments placement
-    ["vargargs"]: "vargargs_",
+    ["varargs"]: "varargs_",
 }
 
 const PrimitiveTypeNames: { [type: number]: string } = {
-    [Variant.Type.TYPE_NIL]: "any",
-    [Variant.Type.TYPE_BOOL]: "boolean",
-    [Variant.Type.TYPE_INT]: "int64",
-    [Variant.Type.TYPE_FLOAT]: "float64",
-    [Variant.Type.TYPE_STRING]: "string",
+    [enum_value(Variant.Type, "TYPE_NIL")]: "any",
+    [enum_value(Variant.Type, "TYPE_BOOL")]: "boolean",
+    [enum_value(Variant.Type, "TYPE_INT")]: "int64",
+    [enum_value(Variant.Type, "TYPE_FLOAT")]: "float64",
+    [enum_value(Variant.Type, "TYPE_STRING")]: "string",
 }
 
 const RemapTypes: { [name: string]: string } = {
@@ -506,16 +590,16 @@ function get_primitive_type_name_as_input(type: Variant.Type): string | undefine
     const primitive_name = get_primitive_type_name(type);
 
     switch (type) {
-        case Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_COLOR)));
-        case Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_VECTOR2)));
-        case Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(Variant.Type.TYPE_VECTOR3)));
-        case Variant.Type.TYPE_PACKED_STRING_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("string"));
-        case Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float32"));
-        case Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float64"));
-        case Variant.Type.TYPE_PACKED_INT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int32"));
-        case Variant.Type.TYPE_PACKED_INT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int64"));
-        case Variant.Type.TYPE_PACKED_BYTE_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
-        case Variant.Type.TYPE_NODE_PATH: return join_type_name(primitive_name, "string");
+        case enum_value(Variant.Type, "TYPE_PACKED_COLOR_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(enum_value(Variant.Type, "TYPE_COLOR"))));
+        case enum_value(Variant.Type, "TYPE_PACKED_VECTOR2_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(enum_value(Variant.Type, "TYPE_VECTOR2"))));
+        case enum_value(Variant.Type, "TYPE_PACKED_VECTOR3_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(enum_value(Variant.Type, "TYPE_VECTOR3"))));
+        case enum_value(Variant.Type, "TYPE_PACKED_STRING_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("string"));
+        case enum_value(Variant.Type, "TYPE_PACKED_FLOAT32_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("float32"));
+        case enum_value(Variant.Type, "TYPE_PACKED_FLOAT64_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("float64"));
+        case enum_value(Variant.Type, "TYPE_PACKED_INT32_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("int32"));
+        case enum_value(Variant.Type, "TYPE_PACKED_INT64_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("int64"));
+        case enum_value(Variant.Type, "TYPE_PACKED_BYTE_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
+        case enum_value(Variant.Type, "TYPE_NODE_PATH"): return join_type_name(primitive_name, "string");
         default: return primitive_name;
     }
 }
@@ -527,10 +611,15 @@ function replace_var_name(name: string) {
 
 abstract class AbstractWriter implements ScopeWriter {
     abstract line(text: string): void;
+    abstract concatenate(text: string): void;
     abstract get size(): number;
     abstract get lineno(): number;
     abstract finish(): void;
     abstract get types(): TypeDB;
+    abstract add_import(preferred_name: string, script_resource: string, export_name?: string): void;
+    abstract get_imports(): Record<string, Record<string, string>>;
+    abstract resolve_import(script_resource: string): string;
+
     get class_doc(): jsb.editor.ClassDoc | undefined { return undefined; }
 
     constructor() { }
@@ -562,7 +651,7 @@ abstract class AbstractWriter implements ScopeWriter {
       super_: string,
       super_generic_arguments: undefined | string[],
       property_overrides: undefined | PropertyOverrides,
-      intro: undefined | string[],
+      intro: undefined | Intro,
       singleton_mode: boolean,
       class_doc?: jsb.editor.ClassDoc
     ): ClassWriter {
@@ -582,6 +671,13 @@ abstract class AbstractWriter implements ScopeWriter {
     // }
     line_comment_(text: string) {
         this.line(`// ${text}`);
+    }
+    append(newLine: boolean, text: string) {
+        if (newLine) {
+            this.line(text);
+        } else {
+            this.concatenate(text);
+        }
     }
 }
 
@@ -702,30 +798,526 @@ class DocCommentHelper {
 
 }
 
-class IndentWriter extends AbstractWriter {
-    protected _base: ScopeWriter;
-    protected _lines: string[];
-    protected _size: number = 0;
+abstract class BufferingWriter extends AbstractWriter {
+	protected _base: ScopeWriter;
+	protected _lines: string[];
+	protected _size: number = 0;
+	protected _concatenate_first_line = false;
 
-    constructor(base: ScopeWriter) {
-        super();
-        this._base = base;
-        this._lines = [];
-    }
+	constructor(base: ScopeWriter, concatenate_first_line = false) {
+		super();
+		this._base = base;
+		this._lines = [];
+		this._concatenate_first_line = concatenate_first_line;
+	}
 
-    get size() { return this._size; }
-    get lineno() { return this._lines.length; }
-    get types() { return this._base.types; }
+	get size() { return this._size; }
+	get lineno() { return this._lines.length; }
+	get types() { return this._base.types; }
 
+	add_import(preferred_name: string, script_resource: string, export_name: string = "default") {
+		this._base.add_import(preferred_name, script_resource, export_name);
+	}
+
+	get_imports(): Record<string, Record<string, string>> {
+		return this._base.get_imports();
+	}
+
+	resolve_import(script_resource: string): string {
+		return this._base.resolve_import(script_resource);
+	}
+
+	abstract bufferedSize(text: string, newLine: boolean): number;
+
+	line(text: string): void {
+		this._lines.push(text);
+		this._size += this.bufferedSize(text, this._lines.length > 1 || !this._concatenate_first_line);
+	}
+
+	concatenate(text: string): void {
+		if (this._lines.length > 0) {
+			this._lines[this._lines.length - 1] += text;
+			this._size += this.bufferedSize(text, false);
+		} else {
+			this.line(text);
+		}
+	}
+}
+
+class IndentWriter extends BufferingWriter {
     finish() {
-        for (var line of this._lines) {
-            this._base.line(tab + line);
+        const lines = this._lines;
+        for (let i = 0, l = lines.length; i < l; i++) {
+            if (i === 0 && this._concatenate_first_line) {
+                this._base.concatenate(lines[i]);
+            } else {
+                this._base.line(tab + lines[i]);
+            }
         }
     }
 
-    line(text: string): void {
-        this._lines.push(text);
-        this._size += tab.length + text.length;
+	bufferedSize(text: string, newLine: boolean): number {
+		return text.length + (newLine ? tab.length + 1 : 0);
+	}
+}
+
+export enum DescriptorType {
+    Godot,
+    User,
+    FunctionLiteral,
+    ObjectLiteral,
+    StringLiteral,
+    NumericLiteral,
+    BooleanLiteral,
+    Union,
+    Intersection,
+    Conditional,
+    Tuple,
+    Infer,
+    Mapped,
+}
+
+/**
+ * Reference to a built-in type, either declared in the 'godot' namespace, or available as part of the standard library.
+ */
+export type GodotTypeDescriptor = GDictionary<{
+    type: DescriptorType.Godot;
+    name: string;
+    /**
+     * Generic arguments.
+     */
+    arguments?: GArray<TypeDescriptor>;
+}>;
+
+/**
+ * Reference to a user defined type. A path must be specified so that the generated code is able to import the file
+ * where the type is declared/exported.
+ */
+export type UserTypeDescriptor = GDictionary<{
+    type: DescriptorType.User;
+    /**
+     * res:// style path to the TypeScript module where this type is exported.
+     */
+    resource: string;
+    /**
+     * Preferred type name to use when importing.
+     */
+    name: string;
+    /**
+     * Named module export that is being imported. When omitted, the default export is imported.
+     */
+    export?: string;
+    /**
+     * Generic arguments.
+     */
+    arguments?: GArray<TypeDescriptor>;
+}>;
+
+export type GenericParameterDescriptor = GDictionary<{
+    name: string;
+    extends?: TypeDescriptor;
+    default?: TypeDescriptor;
+}>;
+
+export type ParameterDescriptor = GDictionary<{
+    name: string;
+    type: TypeDescriptor;
+    default?: TypeDescriptor;
+}>;
+
+export type FunctionLiteralTypeDescriptor = GDictionary<{
+    type: DescriptorType.FunctionLiteral;
+    generics?: GArray<GenericParameterDescriptor>;
+    parameters?: GArray<ParameterDescriptor>;
+    returns?: TypeDescriptor;
+}>;
+
+export type ObjectLiteralTypeDescriptor = GDictionary<{
+    type: DescriptorType.ObjectLiteral;
+    properties: GDictionary<Partial<Record<string, TypeDescriptor>>>;
+    index?: GDictionary<{
+        key: TypeDescriptor;
+        value: TypeDescriptor;
+    }>;
+}>;
+
+export type StringLiteralTypeDescriptor = GDictionary<{
+    type: DescriptorType.StringLiteral;
+    value: string;
+    template: boolean; // Indicates whether the literal represents a template literal denoted by backticks.
+}>;
+
+export type NumberLiteralTypeDescriptor = GDictionary<{
+    type: DescriptorType.NumericLiteral;
+    value: number;
+}>;
+
+export type BooleanLiteralTypeDescriptor = GDictionary<{
+    type: DescriptorType.BooleanLiteral;
+    value: boolean;
+}>;
+
+export type TupleElementDescriptor = GDictionary<{
+    name?: string; // Optional name for the tuple element.
+    type: TypeDescriptor;
+}>;
+
+export type TupleTypeDescriptor = GDictionary<{
+    type: DescriptorType.Tuple;
+    elements: GArray<TupleElementDescriptor>; // Represents the types and optional names of each element in the tuple.
+}>;
+
+export type UnionTypeDescriptor = GDictionary<{
+    type: DescriptorType.Union;
+    types: GArray<TypeDescriptor>;
+}>;
+
+export type IntersectionTypeDescriptor = GDictionary<{
+    type: DescriptorType.Intersection;
+    types: GArray<TypeDescriptor>;
+}>;
+
+export type InferTypeDescriptor = GDictionary<{
+    type: DescriptorType.Infer;
+    name: string; // The name of the inferred type (e.g., `U` in `infer U`).
+}>;
+
+export type ConditionalTypeDescriptor = GDictionary<{
+    type: DescriptorType.Conditional;
+    check: TypeDescriptor;
+    extends: TypeDescriptor;
+    true: TypeDescriptor;
+    false: TypeDescriptor;
+}>;
+
+export type MappedTypeDescriptor = GDictionary<{
+    type: DescriptorType.Mapped;
+    key: string;
+    in: TypeDescriptor;
+    as?: TypeDescriptor;
+    value: TypeDescriptor;
+}>;
+
+export type TypeDescriptor =
+    | GodotTypeDescriptor
+    | UserTypeDescriptor
+    | FunctionLiteralTypeDescriptor
+    | ObjectLiteralTypeDescriptor
+    | StringLiteralTypeDescriptor
+    | NumberLiteralTypeDescriptor
+    | BooleanLiteralTypeDescriptor
+    | TupleTypeDescriptor
+    | UnionTypeDescriptor
+    | IntersectionTypeDescriptor
+    | InferTypeDescriptor
+    | ConditionalTypeDescriptor
+    | MappedTypeDescriptor;
+
+/**
+ * Codegen analogue of NodePathMap.
+ */
+export type NodeTypeDescriptorPathMap = GDictionary<Partial<Record<string, TypeDescriptor>>>;
+
+export enum CodeGenType {
+    ScriptNodeTypeDescriptor,
+}
+
+/**
+ * Handle a NodeTypeDescriptorCodeGenRequest to overwrite the generated type for node's using this script.
+ */
+export type ScriptNodeTypeDescriptorCodeGenRequest = GDictionary<{
+    type: CodeGenType.ScriptNodeTypeDescriptor;
+    node: Node;
+    children: NodeTypeDescriptorPathMap;
+}>;
+
+export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest;
+
+/**
+ * You can manipulate GodotJS' codegen by exporting a function from your script/module called `codegen`.
+ */
+export type CodeGenHandler = (request: CodeGenRequest) => undefined | TypeDescriptor;
+
+class TypeDescriptorWriter extends BufferingWriter {
+	bufferedSize(text: string, newLine: boolean): number {
+		return text.length + (newLine ? 1 : 0);
+	}
+
+	finish() {
+		const lines = this._lines;
+		for (let i = 0, l = lines.length; i < l; i++) {
+			if (i === 0 && this._concatenate_first_line) {
+				this._base.concatenate(lines[i]);
+			} else {
+				this._base.line(lines[i]);
+			}
+		}
+	}
+
+	serialize_type_descriptor(descriptor: GReadProxyValueWrap<TypeDescriptor>): void {
+        switch (descriptor.type) {
+            case DescriptorType.Godot: {
+                if (descriptor.arguments) {
+                    this.line(`${descriptor.name}<`);
+					const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
+                    const args = new TypeDescriptorWriter(indent ?? this, descriptor.arguments.length === 1);
+                    descriptor.arguments.forEach((arg, index) => {
+                        if (index > 0) {
+                            args.concatenate(", ");
+                        }
+
+                        args.serialize_type_descriptor(arg);
+                    });
+                    args.finish();
+					indent?.finish();
+                    this.append(descriptor.arguments.length !== 1, `>`);
+                } else {
+                    this.line(descriptor.name);
+                }
+                break;
+            }
+            case DescriptorType.User: {
+                if (descriptor.arguments) {
+                    this.line(`${descriptor.name}<`);
+					const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
+					const args = new TypeDescriptorWriter(indent ?? this, descriptor.arguments.length === 1);
+					descriptor.arguments.forEach((arg, index) => {
+						if (index > 0) {
+							args.concatenate(", ");
+						}
+
+						args.serialize_type_descriptor(arg);
+					});
+					args.finish();
+					indent?.finish();
+                    this.append(descriptor.arguments.length !== 1, `>`);
+                } else {
+                    this.line(descriptor.name);
+                }
+
+                this.add_import(descriptor.name, descriptor.resource, descriptor.export);
+                break;
+            }
+
+            case DescriptorType.FunctionLiteral: {
+                const generic_count = descriptor.generics ? Object.entries(descriptor.generics).length : 0;
+
+                if (generic_count > 0) {
+                    descriptor.generics!.forEach((generic, index) => {
+                        if (index > 0) {
+                            this.concatenate(", ");
+                            this.line(generic.name);
+                        } else {
+                            this.append(generic_count === 1, generic.name);
+                        }
+
+                        if (generic.extends) {
+                            this.concatenate(" extends ");
+                            const extends_writer = new TypeDescriptorWriter(this, true);
+                            extends_writer.serialize_type_descriptor(generic.extends);
+                            extends_writer.finish();
+                        }
+
+                        if (generic.default) {
+                            this.concatenate(" = ");
+                            const default_writer = new TypeDescriptorWriter(this, true);
+                            default_writer.serialize_type_descriptor(generic.default);
+                            default_writer.finish();
+                        }
+                    });
+                }
+
+                this.append(generic_count == 0, `(`);
+
+                const multiline = (descriptor.parameters?.length ?? 0) > 1;
+
+                if (descriptor.parameters) {
+                    descriptor.parameters.forEach((param, index) => {
+                        if (index > 0) {
+                            this.concatenate(", ");
+                        }
+
+                        this.line(`${param.name}: `);
+
+                        const param_writer = new TypeDescriptorWriter(this, !multiline);
+                        param_writer.serialize_type_descriptor(param.type);
+                        param_writer.finish();
+
+                        if (param.default) {
+                            this.concatenate(` = `);
+                            const default_writer = new TypeDescriptorWriter(this, true);
+                            default_writer.serialize_type_descriptor(param.default);
+                            default_writer.finish();
+                        }
+                    });
+                }
+
+                this.append(multiline, ") => ");
+
+                if (descriptor.returns) {
+                    const return_writer = new TypeDescriptorWriter(this, true);
+                    return_writer.serialize_type_descriptor(descriptor.returns);
+                    return_writer.finish();
+                } else {
+                    this.concatenate("void");
+                }
+
+                break;
+            }
+
+            case DescriptorType.ObjectLiteral: {
+                const properties = Object.entries(descriptor.properties);
+
+                if (properties.length === 0 && !descriptor.index) {
+                    this.line("{}");
+                    break;
+                }
+
+                this.line("{");
+				const indent = new IndentWriter(this);
+                properties.forEach(([key, value]) => {
+                    if (!value) {
+                        return;
+                    }
+
+					indent.line(`${key}: `);
+                    const prop_writer = new TypeDescriptorWriter(indent, true);
+                    prop_writer.serialize_type_descriptor(value);
+                    prop_writer.finish();
+					indent.concatenate(";");
+                });
+
+                if (descriptor.index) {
+					indent.line("[key: ");
+                    const key_writer = new TypeDescriptorWriter(indent, true);
+                    key_writer.serialize_type_descriptor(descriptor.index.key);
+                    key_writer.finish();
+					indent.concatenate("]: ");
+                    const value_writer = new TypeDescriptorWriter(indent, true);
+                    value_writer.serialize_type_descriptor(descriptor.index.value);
+                    value_writer.finish();
+					indent.concatenate(";");
+                }
+
+				indent.finish();
+                this.line("}");
+                break;
+            }
+
+            case DescriptorType.StringLiteral: {
+                this.line(descriptor.template
+                    ? `\`${descriptor.value.replace(/`/g, "\\`")}\``
+                    : `"${descriptor.value.replace(/"/g, '\\"')}"`);
+                break;
+            }
+
+            case DescriptorType.NumericLiteral: {
+                this.line(`${descriptor.value}`);
+                break;
+            }
+
+            case DescriptorType.BooleanLiteral: {
+                this.line(`${descriptor.value}`);
+                break;
+            }
+
+            case DescriptorType.Tuple: {
+                this.line(`[`);
+                const multiline = descriptor.elements.length > 1;
+                descriptor.elements.forEach((element, index) => {
+                    if (index > 0) {
+                        this.line(", ");
+                    }
+
+                    if (element.name) {
+                        this.append(multiline, `${element.name}: `);
+                    }
+
+                    const tuple_writer = new TypeDescriptorWriter(this, !multiline || !!element.name);
+                    tuple_writer.serialize_type_descriptor(element.type);
+                    tuple_writer.finish();
+                });
+                this.append(multiline, "]");
+                break;
+            }
+
+            case DescriptorType.Union: {
+                descriptor.types.forEach((type, index) => {
+                    if (index > 0) {
+                        this.line(" | ");
+                    }
+
+                    const union_writer = new TypeDescriptorWriter(this, index > 0);
+                    union_writer.serialize_type_descriptor(type);
+                    union_writer.finish();
+                });
+                break;
+            }
+
+            case DescriptorType.Intersection: {
+                descriptor.types.forEach((type, index) => {
+                    if (index > 0) {
+                        this.line(" & ");
+                    }
+
+                    const intersection_writer = new TypeDescriptorWriter(this, index > 0);
+                    intersection_writer.serialize_type_descriptor(type);
+                    intersection_writer.finish();
+                });
+                break;
+            }
+
+            case DescriptorType.Infer: {
+                this.line(`infer ${descriptor.name}`);
+                break;
+            }
+
+            case DescriptorType.Conditional: {
+                const check_writer = new TypeDescriptorWriter(this);
+                check_writer.serialize_type_descriptor(descriptor.check);
+                check_writer.finish();
+
+                this.line("extends ");
+                const extends_writer = new TypeDescriptorWriter(this, true);
+                extends_writer.serialize_type_descriptor(descriptor.extends);
+                extends_writer.finish();
+
+                this.line("? ");
+                const true_writer = new TypeDescriptorWriter(this, true);
+                true_writer.serialize_type_descriptor(descriptor.true);
+                true_writer.finish();
+
+                this.line(": ");
+                const false_writer = new TypeDescriptorWriter(this, true);
+                false_writer.serialize_type_descriptor(descriptor.false);
+                false_writer.finish();
+
+                break;
+            }
+
+            case DescriptorType.Mapped: {
+                this.line(`{ [${descriptor.key} in `);
+                const in_writer = new TypeDescriptorWriter(this, true);
+                in_writer.serialize_type_descriptor(descriptor.in);
+                in_writer.finish();
+
+                if (descriptor.as) {
+                    const as_writer = new TypeDescriptorWriter(this, true);
+                    as_writer.serialize_type_descriptor(descriptor.as);
+                    as_writer.finish();
+                }
+
+                this.concatenate(`]: `);
+
+                const value_start_line = this.lineno;
+                const value_writer = new TypeDescriptorWriter(this, true);
+                value_writer.serialize_type_descriptor(descriptor.value);
+                value_writer.finish();
+                this.append(this.lineno === value_start_line, "}");
+
+                break;
+            }
+        }
     }
 }
 
@@ -738,6 +1330,35 @@ class ModuleWriter extends IndentWriter {
     }
 
     finish() {
+        for (const [script_resource, script_import_map] of Object.entries(this.get_imports())) {
+            const script_imports = Object.entries(script_import_map);
+            const default_import = script_import_map["default"];
+            const resolved_path = this.resolve_import(script_resource).replace(/"/g, '"');
+            const explicit_imports = script_imports.length > (default_import ? 1 : 0);
+
+            if (default_import) {
+                if (explicit_imports) {
+                    this._base.line(`import ${default_import}, {`);
+                } else {
+                    this._base.line(`import ${default_import} from "${resolved_path}";`);
+                }
+            } else {
+                this._base.line(`import ${default_import}, {`);
+            }
+
+            if (explicit_imports) {
+                for (const [name, as] of script_imports) {
+                    if (name === as) {
+                        this._base.line(`${tab}${name},`);
+                    } else {
+                        this._base.line(`${tab}${name} as ${as},`);
+                    }
+                }
+
+                this._base.line(`} from "${resolved_path}";`);
+            }
+        }
+
         this._base.line(`declare module "${this._name}" {`);
         super.finish();
         this._base.line('}');
@@ -784,7 +1405,7 @@ class ClassWriter extends IndentWriter {
     protected _generic_parameters?: Record<string, GenericParameter>;
     protected _super?: string;
     protected _super_generic_arguments?: string[];
-    protected _intro?: string[];
+    protected _intro?: Intro;
     protected _property_overrides?: Record<string, string[] | ((line: string) => string)>;
     protected _singleton_mode: boolean;
     protected _doc?: jsb.editor.ClassDoc;
@@ -798,7 +1419,7 @@ class ClassWriter extends IndentWriter {
         generic_parameters: undefined | Record<string, GenericParameter>,
         super_: undefined | string,
         super_generic_arguments: undefined | string[],
-        intro: undefined | string[],
+        intro: undefined | Intro,
         property_overrides: undefined | PropertyOverrides,
         singleton_mode: boolean,
         class_doc?: jsb.editor.ClassDoc
@@ -809,7 +1430,7 @@ class ClassWriter extends IndentWriter {
         this._super = super_;
         this._super_generic_arguments = super_generic_arguments;
         this._intro = intro;
-        this._property_overrides = property_overrides;
+        this._property_overrides = jsb.CAMEL_CASE_BINDINGS_ENABLED ? camel_property_overrides(property_overrides) : property_overrides;
         this._singleton_mode = singleton_mode;
         this._doc = class_doc;
     }
@@ -838,7 +1459,11 @@ class ClassWriter extends IndentWriter {
             return
         }
 
-        for (const line of this._intro) {
+        const lines = Array.isArray(this._intro)
+            ? this._intro
+            : this._intro(this.types);
+
+        for (const line of lines) {
             this._base.line(tab + line);
         }
     }
@@ -915,7 +1540,7 @@ class ClassWriter extends IndentWriter {
     constructor_(constructor_info: jsb.editor.ConstructorInfo) {
         this._separator_line = true;
         const args = constructor_info.arguments.map(it =>
-            `${replace_var_name(it.name)}: ${this.types.replace_type_inplace(get_primitive_type_name_as_input(it.type), this.get_scoped_type_replacer())}`
+            `${replace_var_name(it.name)}: ${this.types.replace_type_inplace(get_primitive_type_name_as_input(it.type))}`
         ).join(", ");
         this.line(`constructor(${args})`);
     }
@@ -926,12 +1551,12 @@ class ClassWriter extends IndentWriter {
 
     operator_(operator_info: jsb.editor.OperatorInfo) {
         this._separator_line = true;
-        const return_type_name = this.types.replace_type_inplace(get_primitive_type_name(operator_info.return_type), this.get_scoped_type_replacer());
-        const left_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.left_type), this.get_scoped_type_replacer());
-        if (operator_info.right_type == Variant.Type.TYPE_NIL) {
+        const return_type_name = this.types.replace_type_inplace(get_primitive_type_name(operator_info.return_type));
+        const left_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.left_type));
+        if (operator_info.right_type == enum_value(Variant.Type, "TYPE_NIL")) {
             this.line(`static ${operator_info.name}(left: ${left_type_name}): ${return_type_name}`);
         } else {
-            const right_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.right_type), this.get_scoped_type_replacer());
+            const right_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.right_type));
             this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
         }
     }
@@ -942,24 +1567,6 @@ class ClassWriter extends IndentWriter {
 
     ordinary_method_(method_info: jsb.editor.MethodBind) {
         this.method_(method_info, "");
-    }
-
-    //TODO gtPlaceholder (Optional) Generic type argument placeholder, return the generic typed version if in a generic type context.
-    private get_scoped_type_replacer(gtPlaceholder?: string) {
-        const replaceClasses = ["Signal", "Callable", "GArray"];
-        if (replaceClasses.includes(this._name)) {
-            // specialized type name in the declaration scope of this type itself
-            return function (type_name: string): string {
-                if (type_name == "Signal") return "AnySignal";
-                if (type_name == "Callable") return "AnyCallable";
-                return type_name;
-            }
-        } else {
-            // type name in the declaration scope of other types
-            return function (type_name: string): string {
-                return type_name;
-            }
-        }
     }
 
     method_(method_info: jsb.editor.MethodBind, category: string) {
@@ -975,8 +1582,8 @@ class ClassWriter extends IndentWriter {
         }
         const line = (line: string) => this.line(property_override?.(line) ?? line);
 
-        let args = this.types.make_args(method_info, this.get_scoped_type_replacer());
-        let rval = this.types.make_return(method_info, this.get_scoped_type_replacer());
+        let args = this.types.make_args(method_info);
+        let rval = this.types.make_return(method_info);
         const prefix = this.make_method_prefix(method_info);
         let template = "";
 
@@ -1062,7 +1669,7 @@ class InterfaceWriter extends IndentWriter {
         this._super = super_;
         this._super_generic_arguments = super_generic_arguments;
         this._intro = intro;
-        this._property_overrides = property_overrides;
+        this._property_overrides = jsb.CAMEL_CASE_BINDINGS_ENABLED ? camel_property_overrides(property_overrides) : property_overrides;
     }
 
     protected head() {
@@ -1118,23 +1725,14 @@ class InterfaceWriter extends IndentWriter {
     }
 }
 
-class GenericWriter extends AbstractWriter {
-    private _name: string;
-    private _base: ScopeWriter;
-    private _lines: string[];
-    private _size: number;
+class GenericWriter extends IndentWriter {
+	private _name: string;
 
     constructor(base: AbstractWriter, name: string) {
-        super();
-        this._base = base;
-        this._name = name;
-        this._lines = [];
-        this._size = name.length + 2;
+        super(base);
+		this._name = name;
+        this._size += name.length + 2;
     }
-
-    get size() { return this._size; }
-    get lineno() { return this._lines.length; }
-    get types() { return this._base.types; }
 
     finish(): void {
         if (this._lines.length < 2) {
@@ -1143,17 +1741,8 @@ class GenericWriter extends AbstractWriter {
         }
 
         this._base.line(`${this._name}<`);
-        const indented = new IndentWriter(this._base);
-        for (const line of this._lines) {
-            indented.line(line);
-        }
-        indented.finish();
+        super.finish();
         this._base.line(">");
-    }
-
-    line(text: string): void {
-        this._lines.push(text);
-        this._size += text.length + 1; // + 1 due to the line break, tabs?
     }
 }
 
@@ -1168,7 +1757,7 @@ class ObjectWriter extends IndentWriter {
     ) {
         super(base);
         this._intro = intro;
-        this._property_overrides = property_overrides;
+        this._property_overrides = jsb.CAMEL_CASE_BINDINGS_ENABLED ? camel_property_overrides(property_overrides) : property_overrides;
     }
 
     intro() {
@@ -1213,47 +1802,35 @@ class ObjectWriter extends IndentWriter {
     }
 }
 
-class PropertyWriter extends AbstractWriter {
-    private _name: string;
-    private _base: ScopeWriter;
-    private _lines: string[];
-    private _size: number = 0;
+class PropertyWriter extends BufferingWriter {
+    private _key: string;
 
-    constructor(base: AbstractWriter, name: string) {
-        super();
-        this._base = base;
-        this._name = name;
-        this._lines = [];
+    constructor(base: ScopeWriter, name: string, concatenate_first_line = false) {
+        super(base, concatenate_first_line);
+        this._key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
+			? name
+			: `"${name.replace("\"", "\\\"")}"`;
+		this._size += this._key.length + 3;
     }
 
-    get size() { return this._size; }
-    get lineno() { return this._lines.length; }
-    get types() { return this._base.types; }
+	finish() {
+		if (this._lines.length === 0) {
+			return;
+		}
 
-    finish(): void {
-        if (this._lines.length === 0) {
-            return;
-        }
+		this._base.append(!this._concatenate_first_line, `${this._key}: `);
 
-        this._lines[this._lines.length - 1] += ",";
+		const lines = this._lines;
+		for (let i = 0, l = lines.length; i < l; i++) {
+			this._base.append(i > 0, lines[i]);
+		}
 
-        for (const line of this._lines) {
-            this._base.line(line);
-        }
-    }
+		this._base.concatenate(";");
+	}
 
-    line(text: string): void {
-        if (this._lines.length === 0) {
-            const key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(this._name)
-                ? this._name
-                : `"${this._name.replace("\"", "\\\"")}"`;
-            text = `${key}: ${text}`;
-            this._size = 1; // trailing comma
-        }
-
-        this._lines.push(text);
-        this._size += text.length;
-    }
+	bufferedSize(text: string, newLine: boolean): number {
+		return text.length + (newLine ? 1 : 0);
+	}
 }
 
 class FileWriter extends AbstractWriter {
@@ -1261,11 +1838,60 @@ class FileWriter extends AbstractWriter {
     private _size = 0;
     private _lineno = 0;
     private _types: TypeDB;
+    private _path: string;
+    private _import_map: Record<string, Record<string, string>> = {};
+    private _import_names = new Set<string>();
 
-    constructor(types: TypeDB, file: FileAccess) {
+    private get_import_name(preferred_name: string): string {
+        if (!preferred_name) {
+            return this.get_import_name("MyType");
+        }
+
+        if (this._import_names.has(preferred_name)) {
+            return this.get_import_name(preferred_name + "_");
+        }
+
+        this._import_names.add(preferred_name);
+        return preferred_name;
+    }
+
+    constructor(path: string, types: TypeDB, file: FileAccess) {
         super();
+        this._path = path;
         this._types = types;
         this._file = file;
+    }
+
+    add_import(preferred_name: string, script_resource: string, export_name = 'default'): void {
+        const resource_imports = this._import_map[script_resource] ??= {};
+        resource_imports[export_name] ??= this.get_import_name(preferred_name);
+    }
+
+    get_imports(): Record<string, Record<string, string>> {
+        return this._import_map;
+    }
+
+    resolve_import(destination: string): string {
+        const source = this._path.replace(/^\.?\/?/, "res://");
+        const source_length = source.length;
+        const destination_length = destination.length;
+
+        let last_slash_index = -1;
+
+        for (let i = 0; i < source_length && i < destination_length && source[i] === destination[i]; i++) {
+            if (source[i] === '/') {
+                last_slash_index = i;
+            }
+        }
+
+        let up = '';
+        for (let i = last_slash_index + 1; i < source_length; i++) {
+            if (source[i] === '/') {
+                up += '../';
+            }
+        }
+
+        return (up || './') + destination.slice(last_slash_index + 1).replace(/\.[jt]sx?$/, "");
     }
 
     get size() { return this._size; }
@@ -1273,13 +1899,18 @@ class FileWriter extends AbstractWriter {
     get types() { return this._types; }
 
     line(text: string): void {
-        this._file.store_line(text);
-        this._size += text.length;
+        gd_method(this._file, 'store_line')(text);
+        this._size += text.length + 1;
         this._lineno += 1;
     }
 
+    concatenate(text: string): void {
+        gd_method(this._file, 'store_string')(text);
+        this._size += text.length;
+    }
+
     finish(): void {
-        this._file.flush();
+        gd_method(this._file, 'flush')();
     }
 }
 
@@ -1288,19 +1919,19 @@ class FileSplitter {
     private _toplevel: ModuleWriter;
     private _types: TypeDB;
 
-    constructor(types: TypeDB, filePath: string) {
+    constructor(types: TypeDB, path: string) {
         this._types = types;
-        this._file = FileAccess.open(filePath, FileAccess.ModeFlags.WRITE);
-        this._toplevel = new ModuleWriter(new FileWriter(this._types, this._file), "godot");
+        this._file = gd_method(FileAccess, 'open')(path, enum_value(FileAccess.ModeFlags, "WRITE"));
+        this._toplevel = new ModuleWriter(new FileWriter(path, this._types, this._file), "godot");
 
-        this._file.store_line("// AUTO-GENERATED");
-        this._file.store_line('/// <reference no-default-lib="true"/>');
+        gd_method(this._file, 'store_line')("// AUTO-GENERATED");
+        gd_method(this._file, 'store_line')('/// <reference no-default-lib="true"/>');
     }
 
     close() {
         this._toplevel.finish();
-        this._file.flush();
-        this._file.close();
+        gd_method(this._file, 'flush')();
+        gd_method(this._file, 'close')();
     }
 
     get_writer() {
@@ -1318,6 +1949,7 @@ export class TypeDB {
     primitive_type_names: { [type: number /* Variant.Type */]: string } = {};
     globals: { [name: string]: jsb.editor.GlobalConstantInfo } = {};
     utilities: { [name: string]: jsb.editor.MethodBind } = {};
+    internal_class_name_map: { [name: string]: string } = {};
 
     // `class_doc` is loaded lazily once used, and be cached in `class_docs`
     class_docs: { [name: string]: jsb.editor.ClassDoc | false } = {};
@@ -1330,6 +1962,7 @@ export class TypeDB {
         const utilities = jsb.editor.get_utility_functions();
         for (let cls of classes) {
             this.classes[cls.name] = cls;
+            this.internal_class_name_map[cls.internal_name] = cls.name;
         }
         for (let cls of primitive_types) {
             this.primitive_types[cls.name] = cls;
@@ -1409,8 +2042,8 @@ export class TypeDB {
         }
     }
 
-    make_typename(info: jsb.editor.PropertyInfo, used_as_input: boolean): string {
-        if (info.hint == PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
+    make_typename(info: PropertyInfo, used_as_input: boolean): string {
+        if (info.hint == enum_value(PropertyHint, "PROPERTY_HINT_RESOURCE_TYPE")) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
             return info.hint_string.split(",").map(class_name => this.make_classname(class_name, used_as_input)).join(" | ")
         }
@@ -1427,7 +2060,7 @@ export class TypeDB {
         return this.make_classname(info.class_name, used_as_input);
     }
 
-    make_arg(info: jsb.editor.PropertyInfo, type_replacer?: (name: string) => string): string {
+    make_arg(info: PropertyInfo, type_replacer?: (name: string) => string): string {
         return `${replace_var_name(info.name)}: ${this.replace_type_inplace(this.make_typename(info, true), type_replacer)}`
     }
 
@@ -1435,21 +2068,21 @@ export class TypeDB {
         // plain types
         const type_name = get_primitive_type_name(value.type);
         switch (value.type) {
-            case Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
-            case Variant.Type.TYPE_FLOAT:
-            case Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
-            case Variant.Type.TYPE_STRING:
-            case Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
-            case Variant.Type.TYPE_NODE_PATH: return value.value == null ? "''" : `'${gd_to_string(value.value)}'`;
-            case Variant.Type.TYPE_ARRAY: return value.value == null || value.value.is_empty() ? "[]" : `${gd_to_string(value.value)}`;
-            case Variant.Type.TYPE_OBJECT: return value.value == null ? "undefined" : "<any> {}";
-            case Variant.Type.TYPE_NIL: return "<any> {}";
-            case Variant.Type.TYPE_CALLABLE:
-            case Variant.Type.TYPE_RID: return `new ${type_name}()`;
+            case enum_value(Variant.Type, "TYPE_BOOL"): return value.value == null ? "false" : `${value.value}`;
+            case enum_value(Variant.Type, "TYPE_FLOAT"):
+            case enum_value(Variant.Type, "TYPE_INT"): return value.value == null ? "0" : `${value.value}`;
+            case enum_value(Variant.Type, "TYPE_STRING"):
+            case enum_value(Variant.Type, "TYPE_STRING_NAME"): return value.value == null ? "''" : `'${value.value}'`;
+            case enum_value(Variant.Type, "TYPE_NODE_PATH"): return value.value == null ? "''" : `'${gd_to_string(value.value)}'`;
+            case enum_value(Variant.Type, "TYPE_ARRAY"): return value.value == null || gd_method(value.value, 'is_empty')() ? "[]" : `${gd_to_string(value.value)}`;
+            case enum_value(Variant.Type, "TYPE_OBJECT"): return value.value == null ? "undefined" : "<any> {}";
+            case enum_value(Variant.Type, "TYPE_NIL"): return "<any> {}";
+            case enum_value(Variant.Type, "TYPE_CALLABLE"):
+            case enum_value(Variant.Type, "TYPE_RID"): return `new ${type_name}()`;
             default: break;
         }
         // make them more readable?
-        if (value.type == Variant.Type.TYPE_VECTOR2 || value.type == Variant.Type.TYPE_VECTOR2I) {
+        if (value.type == enum_value(Variant.Type, "TYPE_VECTOR2") || value.type == enum_value(Variant.Type, "TYPE_VECTOR2I")) {
             if (value == null) return `new ${type_name}()`;
             if (value.value.x == value.value.y) {
                 if (value.value.x == 0) return `${type_name}.ZERO`;
@@ -1457,7 +2090,7 @@ export class TypeDB {
             }
             return `new ${type_name}(${value.value.x}, ${value.value.y})`;
         }
-        if (value.type == Variant.Type.TYPE_VECTOR3 || value.type == Variant.Type.TYPE_VECTOR3I) {
+        if (value.type == enum_value(Variant.Type, "TYPE_VECTOR3") || value.type == enum_value(Variant.Type, "TYPE_VECTOR3I")) {
             if (value == null) return `new ${type_name}()`;
             if (value.value.x == value.value.y == value.value.z) {
                 if (value.value.x == 0) return `${type_name}.ZERO`;
@@ -1465,25 +2098,25 @@ export class TypeDB {
             }
             return `new ${type_name}(${value.value.x}, ${value.value.y}, ${value.value.z})`;
         }
-        if (value.type == Variant.Type.TYPE_COLOR) {
+        if (value.type == enum_value(Variant.Type, "TYPE_COLOR")) {
             if (value == null) return `new ${type_name}()`;
             return `new ${type_name}(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
         }
-        if (value.type == Variant.Type.TYPE_RECT2 || value.type == Variant.Type.TYPE_RECT2I) {
+        if (value.type == enum_value(Variant.Type, "TYPE_RECT2") || value.type == enum_value(Variant.Type, "TYPE_RECT2I")) {
             if (value.value == null) return `new ${type_name}()`;
             return `new ${type_name}(${value.value.position.x}, ${value.value.position.y}, ${value.value.size.x}, ${value.value.size.y})`
         }
         // it's tedious to repeat all types :(
-        if ((value.type >= Variant.Type.TYPE_PACKED_BYTE_ARRAY && value.type <= Variant.Type.TYPE_PACKED_COLOR_ARRAY)) {
-            if (value.value == null || value.value.is_empty()) {
+        if ((value.type >= enum_value(Variant.Type, "TYPE_PACKED_BYTE_ARRAY") && value.type <= enum_value(Variant.Type, "TYPE_PACKED_COLOR_ARRAY"))) {
+            if (value.value == null || gd_method(value.value, 'is_empty')()) {
                 return "[]";
             }
         }
-        if (value.type == Variant.Type.TYPE_DICTIONARY) {
-            if (value.value == null || value.value.is_empty()) return `new ${type_name}()`;
+        if (value.type == enum_value(Variant.Type, "TYPE_DICTIONARY")) {
+            if (value.value == null || gd_method(value.value, 'is_empty')()) return `new ${type_name}()`;
         }
         //NOTE hope all default value for Transform2D/Transform3D is IDENTITY
-        if (value.type == Variant.Type.TYPE_TRANSFORM2D || value.type == Variant.Type.TYPE_TRANSFORM3D) {
+        if (value.type == enum_value(Variant.Type, "TYPE_TRANSFORM2D") || value.type == enum_value(Variant.Type, "TYPE_TRANSFORM3D")) {
             return `new ${type_name}()`;
         }
 
@@ -1504,8 +2137,8 @@ export class TypeDB {
 
     make_args(method_info: jsb.editor.MethodBind, type_replacer?: (name: string) => string): string {
         //TODO consider default arguments
-        const varargs = "...vargargs: any[]";
-        const is_vararg = !!(method_info.hint_flags & MethodFlags.METHOD_FLAG_VARARG);
+        const varargs = "...varargs: any[]";
+        const is_vararg = !!(method_info.hint_flags & enum_value(MethodFlags, "METHOD_FLAG_VARARG"));
         if (method_info.args_.length == 0) {
             return is_vararg ? varargs : "";
         }
@@ -1525,20 +2158,12 @@ export class TypeDB {
     }
 
     make_signal_type(method_info: jsb.editor.MethodBind): string {
-        const is_vararg = !!(method_info.hint_flags & MethodFlags.METHOD_FLAG_VARARG);
-        if (is_vararg || method_info.args_.length > 5) {
-            // too difficult to declare as strongly typed, just fallback to raw signal type
-            return "Signal";
+        const args = method_info.args_.map((arg => `${arg.name}: ${this.make_typename(arg, true)}`));
+        if (method_info.hint_flags & enum_value(MethodFlags, "METHOD_FLAG_VARARG")) {
+            args.push("...varargs: any[]");
         }
-
-        const base_name = "Signal" + method_info.args_.length;
-        if (method_info.args_.length == 0) {
-            return base_name;
-        }
-        const args = method_info.args_.map((it, index) => this.make_typename(method_info.args_[index], true)).join(", ");
-        return `${base_name}<${args}>`;
+        return `Signal<(${args.join(", ")}) => void>`;
     }
-
 }
 
 // d.ts generator
@@ -1594,7 +2219,7 @@ export class TSDCodeGen {
     private cleanup() {
         while (true) {
             const path = this.make_path(this._split_index++);
-            if (!FileAccess.file_exists(path)) {
+            if (!gd_method(FileAccess, 'file_exists')(path)) {
                 break;
             }
             console.log("delete file", path);
@@ -1693,7 +2318,7 @@ export class TSDCodeGen {
 
         if (GodotAnyType != "any") {
             let gd_variant_alias = `type ${GodotAnyType} = `;
-            for (let i = Variant.Type.TYPE_NIL + 1; i < Variant.Type.TYPE_MAX; ++i) {
+            for (let i = enum_value(Variant.Type, "TYPE_NIL") + 1; i < enum_value(Variant.Type, "TYPE_MAX"); ++i) {
                 const type_name = get_primitive_type_name(i);
                 if (type_name == GodotAnyType || type_name == "any") continue;
                 gd_variant_alias += type_name + " | ";
@@ -1722,15 +2347,12 @@ export class TSDCodeGen {
         if (cls.enums) {
             for (let enum_info of cls.enums) {
                 const enum_cg = class_ns_cg.enum_(enum_info.name);
-                let previousValue = -1;
-                for (let enumeration_name of enum_info.literals) {
-                    const constant = cls.constants!.find(v => v.name == enumeration_name);
-                    const value = constant?.value ?? previousValue + 1;
-                    enum_cg.element_(enumeration_name, value);
+                for (let [name, value] of Object.entries(enum_info.literals)) {
+                    const constant = cls.constants!.find(v => v.name == name);
+                    enum_cg.element_(name, value);
                     if (constant) {
-                        ignored_consts.add(enumeration_name);
+                        ignored_consts.add(name);
                     }
-                    previousValue = value;
                 }
                 enum_cg.finish();
             }
@@ -1743,7 +2365,7 @@ export class TSDCodeGen {
         const class_cg = cg.class_(type_name, type_mutation.generic_parameters, super_, type_mutation.super_generic_arguments, type_mutation.property_overrides, type_mutation.intro, false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
-                if (!ignored_consts.has(constant.name)) {
+                if (!ignored_consts.has(constant.name) && !ignored_consts.has(upper_snake_to_pascal_case(constant.name))) {
                     class_cg.primitive_constant_(constant);
                 }
             }
@@ -1772,10 +2394,9 @@ export class TSDCodeGen {
             if (cls.enums) {
                 for (let enum_info of cls.enums) {
                     const enum_cg = class_ns_cg.enum_(enum_info.name);
-                    for (let enumeration_name of enum_info.literals) {
-                        const value = cls.constants!.find(v => v.name == enumeration_name)!.value;
-                        enum_cg.element_(enumeration_name, value)
-                        ignored_consts.add(enumeration_name);
+                    for (let [name, value] of Object.entries(enum_info.literals)) {
+                        enum_cg.element_(name, value)
+                        ignored_consts.add(name);
                     }
                     enum_cg.finish();
                 }
@@ -1863,13 +2484,17 @@ export class SceneTSDCodeGen {
     return tasks.submit();
   }
 
-  private emit_children_node_types(writer: ScopeWriter, children: Record<string, NodeHierarchy>) {
+  private emit_children_node_types(writer: ScopeWriter, children: GReadProxyValueWrap<NodeTypeDescriptorPathMap>) {
       const child_writer = writer.object_();
       for (const [key, value] of Object.entries(children)) {
+        if (!value) {
+          continue;
+        }
+
         const property = child_writer.property_(key);
-        const generic = property.generic_(value.class);
-        this.emit_children_node_types(generic, value.children);
-        generic.finish();
+        const descriptor = new TypeDescriptorWriter(property, true);
+        descriptor.serialize_type_descriptor(value);
+        descriptor.finish();
         property.finish();
       }
       child_writer.finish();
@@ -1878,31 +2503,32 @@ export class SceneTSDCodeGen {
   private emit_scene_node_types(scene_path: string) {
     try {
       const helper = require('godot').GodotJSEditorHelper;
-      const result = helper.get_scene_nodes(scene_path)?.proxy();
+      const children = (gd_method(helper, 'get_scene_nodes')(scene_path) as undefined | NodeTypeDescriptorPathMap)?.proxy();
 
-      if (!result) {
+      if (typeof children !== 'object') {
         throw new Error(`root node children unavailable: ${scene_path}`);
       }
 
       const dir_path = this.make_path(scene_path, false);
-      const dir_error = DirAccess.make_dir_recursive_absolute(dir_path);
+      const dir_error = gd_method(DirAccess, 'make_dir_recursive_absolute')(dir_path);
 
       if (dir_error !== 0) {
         console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
       }
 
-      const file = FileAccess.open(this.make_path(scene_path), FileAccess.ModeFlags.WRITE);
+      const file_path = this.make_path(scene_path);
+      const file = gd_method(FileAccess, 'open')(file_path, enum_value(FileAccess.ModeFlags, "WRITE"));
 
       if (!file) {
         throw new Error(`failed to open file for writing: ${dir_path}`);
       }
 
       try {
-        const file_writer = new FileWriter(this._types, file);
+        const file_writer = new FileWriter(file_path, this._types, file);
         const module = new ModuleWriter(file_writer, 'godot');
         const scene_nodes_interface = new InterfaceWriter(module, 'SceneNodes');
         const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ''));
-        this.emit_children_node_types(scene_property, result.children);
+        this.emit_children_node_types(scene_property, children);
         scene_property.finish();
         scene_nodes_interface.finish();
         module.finish();
