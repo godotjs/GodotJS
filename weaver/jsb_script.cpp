@@ -350,14 +350,17 @@ void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
 {
     if (!is_valid()) return;
 
-    //TODO include items from base class
-
     for (const auto& it : script_class_info_.signals)
     {
         //TODO details?
         MethodInfo item = {};
         item.name = it.key;
         r_signals->push_back(item);
+    }
+
+    if (base.is_valid())
+    {
+        base->get_script_signal_list(r_signals);
     }
 }
 
@@ -374,7 +377,7 @@ void GodotJSScript::get_script_method_list(List<MethodInfo>* p_list) const
         p_list->push_back(item);
     }
 
-    if (base.is_valid())
+    if (base.is_valid() && base->is_valid())
     {
         base->get_script_method_list(p_list);
     }
@@ -385,14 +388,17 @@ void GodotJSScript::get_script_property_list(List<PropertyInfo>* p_list) const
     ensure_module_loaded();
     jsb_check(loaded_);
 
-    //TODO include items from base class
-
 #ifdef TOOLS_ENABLED
     p_list->push_back(get_class_category());
 #endif
     for (const auto& it : script_class_info_.properties)
     {
         p_list->push_back((PropertyInfo) it.value);
+    }
+
+    if (base.is_valid() && base->is_valid())
+    {
+        base->get_script_property_list(p_list);
     }
 }
 
@@ -404,7 +410,10 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
         r_value = it->value;
         return true;
     }
-    return false;
+
+    return base.is_valid() && base->is_valid()
+        ? base->get_property_default_value(p_property, r_value)
+        : false;
 }
 
 #if GODOT_4_4_OR_NEWER
@@ -591,18 +600,23 @@ void GodotJSScript::_update_exports_values(List<PropertyInfo>& r_props, HashMap<
     {
         r_props.push_back(E);
     }
+
+    if (base.is_valid() && base->is_valid())
+    {
+        base->_update_exports_values(r_props, r_values);
+    }
 }
 
-void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_update, bool p_base_exports_changed)
+bool GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_update)
 {
     // do not crash the engine if the script not loaded successfully
     if (!is_valid())
     {
         JSB_LOG(Error, "the script not properly loaded (%s)", get_path());
-        return;
+        return false;
     }
 
-    bool changed = p_base_exports_changed;
+    bool changed = false;
 
     if (source_changed_cache)
     {
@@ -652,6 +666,11 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
         }
     }
 
+    if (base.is_valid() && base->_update_exports(p_instance_to_update))
+    {
+        changed = true;
+    }
+
     if ((changed || p_instance_to_update) && placeholders.size())
     {
         List<PropertyInfo> props;
@@ -670,6 +689,8 @@ void GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
             p_instance_to_update->update(props, values);
         }
     }
+
+    return changed;
 }
 
 void GodotJSScript::reload_from_file()
