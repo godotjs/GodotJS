@@ -81,6 +81,63 @@ namespace jsb
 #endif
     }
 
+    String TypeConvert::js_debug_typeof(v8::Isolate* isolate, const v8::Local<v8::Value>& p_jval)
+    {
+        if (p_jval.IsEmpty())
+        {
+            return "<empty>";
+        }
+        if (p_jval->IsUndefined())
+        {
+            return "undefined";
+        }
+        if (p_jval->IsNull())
+        {
+            return "null";
+        }
+        if (p_jval->IsBoolean())
+        {
+            return "boolean";
+        }
+        if (p_jval->IsNumber())
+        {
+            return "number";
+        }
+        if (p_jval->IsString())
+        {
+            return "string";
+        }
+        if (p_jval->IsObject())
+        {
+            v8::Local<v8::Object> object = p_jval.As<v8::Object>();
+
+            if (is_variant(object))
+            {
+                const Variant* variant = (Variant*) object->GetAlignedPointerFromInternalField(IF_Pointer);
+                return jsb_format("variant (%s)", Variant::get_type_name(variant->get_type()));
+            }
+
+            v8::Local<v8::String> constructor_name = object->GetConstructorName();
+
+            if (constructor_name.IsEmpty())
+            {
+                return "object";
+            }
+
+            return jsb_format("object (%s)", impl::Helper::to_string(isolate, constructor_name));
+        }
+        if (p_jval->IsFunction())
+        {
+            return "function";
+        }
+        if (p_jval->IsArray())
+        {
+            return "array";
+        }
+
+        return "<unknown>";
+    }
+
     // translate js val into gd variant with an expected type
     bool TypeConvert::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar)
     {
@@ -92,7 +149,7 @@ namespace jsb
                 r_cvar = p_jval.As<v8::Number>()->Value();
                 return true;
             }
-            return false;
+            break;
         case Variant::INT:
             // strict?
             if (int64_t val; impl::Helper::to_int64(p_jval, val))
@@ -100,7 +157,7 @@ namespace jsb
                 r_cvar = val;
                 return true;
             }
-            return false;
+            break;
         case Variant::OBJECT:
             {
                 if (!p_jval->IsObject())
@@ -111,12 +168,13 @@ namespace jsb
                         r_cvar = (Object*) nullptr;
                         return true;
                     }
-                    return false;
+                    break;
                 }
                 const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+
                 if (!TypeConvert::is_object(self))
                 {
-                    return false;
+                    break;
                 }
 
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -125,8 +183,12 @@ namespace jsb
             }
         case Variant::BOOL:
             // strict?
-            if (p_jval->IsBoolean()) { r_cvar = p_jval->BooleanValue(isolate); return true; }
-            return false;
+            if (p_jval->IsBoolean())
+            {
+                r_cvar = p_jval->BooleanValue(isolate);
+                return true;
+            }
+            break;
         case Variant::STRING:
             if (p_jval->IsString())
             {
@@ -139,7 +201,7 @@ namespace jsb
                 r_cvar = impl::Helper::to_string(isolate, p_jval);
                 return true;
             }
-            return false;
+            break;
         case Variant::STRING_NAME:
             // cache the JSValue and StringName pair because the expected type is StringName
             if (p_jval->IsString())
@@ -199,12 +261,12 @@ namespace jsb
                 if (!p_jval->IsObject())
                 {
                     //TODO should auto convert a null/undefined value to a default (variant) counterpart?
-                    return false;
+                    break;
                 }
                 const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
                 if (!is_variant(self))
                 {
-                    return false;
+                    break;
                 }
 
                 void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
@@ -216,6 +278,9 @@ namespace jsb
             return js_to_gd_var(isolate, context, p_jval, r_cvar);
         default: return false;
         }
+
+        JSB_LOG(Warning, "Failed to convert JS variable to Variant. Expected: %s. Found: %s", Variant::get_type_name(p_type), js_debug_typeof(isolate, p_jval));
+        return false;
     }
 
     bool TypeConvert::gd_var_to_js(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const Variant& p_cvar, Variant::Type p_type, v8::Local<v8::Value>& r_jval)
