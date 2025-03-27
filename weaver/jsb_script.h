@@ -54,6 +54,8 @@ public:
     GodotJSScript();
     virtual ~GodotJSScript() override;
 
+    StringName get_module_id() const { return script_class_info_.module_id; };
+
     // Error attach_source(const String& p_path, bool p_take_over);
     Error load_source_code(const String &p_path);
     void load_module_if_missing();

@@ -35,6 +35,8 @@ namespace jsb::internal
 
         static String get_entry_script_path();
 
+        static bool get_camel_case_bindings_enabled();
+
         static bool is_packaging_with_source_map();
 
         static PackedStringArray get_packaging_include_files();

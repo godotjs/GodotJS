@@ -1,21 +1,112 @@
 #include "jsb_editor_helper.h"
 
-Dictionary GodotJSEditorHelper::_build_node_path_map(Node *node)
+#include "../../bridge/jsb_callable.h"
+#include "../../bridge/jsb_type_convert.h"
+#include "../../weaver/jsb_script.h"
+
+#include "editor/gui/editor_toaster.h"
+#include "scene/resources/packed_scene.h"
+
+// The following enums must be kept in sync with jsb.editor.codegen.ts
+enum class CodeGenType {
+    ScriptNodeTypeDescriptor,
+};
+enum class DescriptorType {
+    Godot,
+    User,
+    FunctionLiteral,
+    ObjectLiteral,
+    StringLiteral,
+    NumericLiteral,
+    BooleanLiteral,
+    Union,
+    Intersection,
+    Conditional,
+    Tuple,
+    Infer,
+    Mapped
+};
+
+Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& p_env, Node *node)
 {
-    Dictionary map;
     Dictionary children;
-    map["class"] = node->get_class_name();
-    map["children"] = children;
+    int child_count = node->get_child_count(true);
 
-    int cc = node->get_child_count(true);
-
-    for (int i = 0; i < cc; i++)
+    for (int i = 0; i < child_count; i++)
     {
-        Node *child = node->get_child(i, true);
-        children[child->get_name()] = _build_node_path_map(child);
+        Node* child = node->get_child(i, true);
+        children[child->get_name()] = _build_node_type_descriptor(p_env, child);
     }
 
-    return map;
+    ScriptInstance* script_instance = node->get_script_instance();
+    GodotJSScript* script = script_instance ? Object::cast_to<GodotJSScript>(*script_instance->get_script()) : nullptr;
+
+    if (script)
+    {
+        v8::Isolate* isolate = p_env->get_isolate();
+        v8::Local<v8::Context> context = p_env->get_context();
+
+        script->load_module_if_missing();
+        String module_id = script->get_module_id();
+        jsb::JavaScriptModule* module = p_env->get_module_cache().find(module_id);
+
+        if (module == nullptr)
+        {
+            JSB_LOG(Warning, "Codegen failed to load module '%s'.", module_id);
+        }
+
+        v8::Local<v8::Value> module_exports;
+
+        if (module != nullptr && !module->exports.IsEmpty())
+        {
+            module_exports = module->exports.Get(isolate);
+        }
+
+        if (!module_exports.IsEmpty() && module_exports->IsObject())
+        {
+            const v8::Local<v8::Value> codegen_func_val = module_exports.As<v8::Object>()->Get(context, jsb_name(p_env, codegen)).ToLocalChecked();
+
+            if (!codegen_func_val.IsEmpty() && codegen_func_val->IsFunction())
+            {
+                const v8::Local<v8::Function> codegen_func = codegen_func_val.As<v8::Function>();
+
+                Dictionary codegen_request;
+                codegen_request[jsb_string_name(type)] = (int32_t) CodeGenType::ScriptNodeTypeDescriptor;
+                codegen_request[jsb_string_name(node)] = node;
+                codegen_request[jsb_string_name(children)] = children;
+
+                v8::Local<v8::Value> codegen_request_val;
+
+                if (jsb::TypeConvert::gd_var_to_js(isolate, context, codegen_request, codegen_request_val))
+                {
+                    v8::Local<v8::Value> argv[] = { codegen_request_val };
+
+                    const v8::MaybeLocal<v8::Value> maybe_result = codegen_func->Call(context, v8::Undefined(isolate), std::size(argv), argv);
+                    v8::Local<v8::Value> result_val;
+                    Variant result;
+
+                    if (maybe_result.ToLocal(&result_val) && jsb::TypeConvert::js_to_gd_var(isolate, context, result_val, Variant::Type::DICTIONARY, result))
+                    {
+                        return result;
+                    }
+                }
+            }
+        }
+    }
+
+    Dictionary object_literal;
+    object_literal[jsb_string_name(type)] = (int32_t) DescriptorType::ObjectLiteral;
+    object_literal[jsb_string_name(properties)] = children;
+
+    Array generic_arguments;
+    generic_arguments.push_back(object_literal);
+
+    Dictionary default_descriptor;
+    default_descriptor[jsb_string_name(name)] = node->get_class_name();
+    default_descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
+    default_descriptor[jsb_string_name(arguments)] = generic_arguments;
+
+    return default_descriptor;
 }
 
 // Similar logic to EditorNode::_dialog_display_load_error.
@@ -84,9 +175,22 @@ Dictionary GodotJSEditorHelper::get_scene_nodes(const String& p_path)
         return Dictionary();
     }
 
-    const Dictionary rval = _build_node_path_map(instantiated_scene);
+    jsb::JSEnvironment env(instantiated_scene->get_scene_file_path(), true);
+    v8::Isolate* isolate = env->get_isolate();
+    v8::HandleScope handle_scope(isolate);
+
+    Dictionary nodes;
+    int child_count = instantiated_scene->get_child_count(true);
+
+    for (int i = 0; i < child_count; i++)
+    {
+        Node *child = instantiated_scene->get_child(i, true);
+        nodes[child->get_name()] = _build_node_type_descriptor(env, child);
+    }
+
     instantiated_scene->queue_free();
-    return rval;
+
+    return nodes;
 }
 
 void GodotJSEditorHelper::show_toast(const String& p_text, int p_severity)

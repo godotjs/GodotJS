@@ -30,16 +30,16 @@ namespace jsb
                 "please use replaced name '%s' for '%s' in scripts (regenerate d.ts files)",
                 p_type_name, internal::StringNames::get_singleton().get_replaced_name(p_type_name));
         }
-        const StringName type_name = internal::StringNames::get_singleton().get_original_name(p_type_name);
+        const StringName original_name = internal::StringNames::get_singleton().get_original_name(p_type_name);
 
         //NOTE do not break the order in `GDScriptLanguage::init()`
 
         // (1) singletons have the top priority (in GDScriptLanguage::init, singletons will overwrite the globals slot even if a type/const has the same name)
         //     check before getting to avoid error prints in `get_singleton_object`
-        if (Engine::get_singleton()->has_singleton(type_name))
-        if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(type_name))
+        if (Engine::get_singleton()->has_singleton(original_name))
+        if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(original_name))
         {
-            JSB_LOG(VeryVerbose, "exposing singleton object %s", (String) type_name);
+            JSB_LOG(VeryVerbose, "exposing singleton object %s", (String) original_name);
             if (v8::Local<v8::Object> rval;
                 TypeConvert::gd_obj_to_js(isolate, context, gd_singleton, rval) && !rval.IsEmpty())
             {
@@ -52,7 +52,7 @@ namespace jsb
         }
 
         // (2) (global) utility functions.
-        if (Variant::has_utility_function(type_name))
+        if (Variant::has_utility_function(original_name))
         {
             //TODO check static bindings at first, and dynamic bindings as a fallback
 
@@ -62,19 +62,19 @@ namespace jsb
             env->get_variant_info_collection().utility_funcs.append({});
             internal::FUtilityMethodInfo& method_info = env->get_variant_info_collection().utility_funcs.write[utility_func_index];
 
-            const int argument_count = Variant::get_utility_function_argument_count(type_name);
+            const int argument_count = Variant::get_utility_function_argument_count(original_name);
             method_info.argument_types.resize(argument_count);
             for (int index = 0, num = argument_count; index < num; ++index)
             {
-                method_info.argument_types.write[index] = Variant::get_utility_function_argument_type(type_name, index);
+                method_info.argument_types.write[index] = Variant::get_utility_function_argument_type(original_name, index);
             }
             //NOTE currently, utility functions have no default argument.
             // method_info.default_arguments = ...
-            method_info.return_type = Variant::get_utility_function_return_type(type_name);
-            method_info.is_vararg = Variant::is_utility_function_vararg(type_name);
-            method_info.set_debug_name(type_name);
-            method_info.utility_func = Variant::get_validated_utility_function(type_name);
-            JSB_LOG(VeryVerbose, "expose godot utility function %s (%d)", type_name, utility_func_index);
+            method_info.return_type = Variant::get_utility_function_return_type(original_name);
+            method_info.is_vararg = Variant::is_utility_function_vararg(original_name);
+            method_info.set_debug_name(internal::NamingUtil::get_member_name(original_name));
+            method_info.utility_func = Variant::get_validated_utility_function(original_name);
+            JSB_LOG(VeryVerbose, "expose godot utility function %s (%d)", original_name, utility_func_index);
             jsb_check(method_info.utility_func);
 
             info.GetReturnValue().Set(JSB_NEW_FUNCTION(context, ObjectReflectBindingUtil::_godot_utility_func, v8::Int32::New(isolate, utility_func_index)));
@@ -82,9 +82,9 @@ namespace jsb
         }
 
         // (3) global_constants
-        if (CoreConstants::is_global_constant(type_name))
+        if (CoreConstants::is_global_constant(original_name))
         {
-            const int constant_index = CoreConstants::get_global_constant_index(type_name);
+            const int constant_index = CoreConstants::get_global_constant_index(original_name);
             const int64_t constant_value = CoreConstants::get_global_constant_value(constant_index);
             info.GetReturnValue().Set(impl::Helper::new_integer(isolate, constant_value));
             return;
@@ -92,18 +92,18 @@ namespace jsb
 
         // (4) classes in ClassDB/PrimitiveTypes
         {
-            if (const NativeClassInfoPtr class_info = env->expose_class(type_name))
+            if (const NativeClassInfoPtr class_info = env->expose_class(p_type_name))
             {
-                jsb_check(class_info->name == type_name);
+                jsb_check(class_info->name == p_type_name);
                 jsb_check(!class_info->clazz.IsEmpty());
                 info.GetReturnValue().Set(class_info->clazz.Get(isolate));
                 return;
             }
 
             // dynamic binding: godot class types
-            if (const NativeClassInfoPtr class_info = env->expose_godot_object_class(ClassDB::classes.getptr(type_name)))
+            if (const NativeClassInfoPtr class_info = env->expose_godot_object_class(ClassDB::classes.getptr(original_name)))
             {
-                jsb_check(class_info->name == type_name);
+                jsb_check(class_info->name == original_name);
                 jsb_check(!class_info->clazz.IsEmpty());
                 info.GetReturnValue().Set(class_info->clazz.Get(isolate));
                 return;
@@ -111,10 +111,10 @@ namespace jsb
         }
 
         // (5) global_enums
-        if (CoreConstants::is_global_enum(type_name))
+        if (CoreConstants::is_global_enum(original_name))
         {
             HashMap<StringName, int64_t> enum_values;
-            CoreConstants::get_enum_values(type_name, &enum_values);
+            CoreConstants::get_enum_values(original_name, &enum_values);
             info.GetReturnValue().Set(BridgeHelper::to_global_enum(isolate, context, enum_values));
             return;
         }
@@ -124,7 +124,7 @@ namespace jsb
         //          VARIANT_ENUM_CAST(Variant::Type);
         //          VARIANT_ENUM_CAST(Variant::Operator);
         // they are exposed as `Variant.Type` in global constants in godot
-        if (type_name == jsb_string_name(Variant))
+        if (original_name == jsb_string_name(Variant))
         {
             const v8::Local<v8::Object> obj = v8::Object::New(isolate);
             obj->Set(context, impl::Helper::new_string(isolate, "Type"), BridgeHelper::to_global_enum(isolate, context, "Variant.Type")).Check();
@@ -133,7 +133,7 @@ namespace jsb
             return;
         }
 
-        impl::Helper::throw_error(isolate, jsb_format("godot class not found '%s'", type_name));
+        impl::Helper::throw_error(isolate, jsb_format("godot class not found '%s'", original_name));
     }
 
     v8::Local<v8::Object> GodotModuleLoader::_get_loader_proxy(Environment* p_env)

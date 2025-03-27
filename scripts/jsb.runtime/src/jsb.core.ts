@@ -23,7 +23,7 @@ exports.$wait = function (signal: any) {
                 resolve(arguments[0]);
                 return;
             }
-            // return as javascript array if more than one 
+            // return as javascript array if more than one
             resolve(Array.from(arguments));
             jsb.internal.notify_microtasks_run();
         });
@@ -210,7 +210,7 @@ exports.rpc = function (config?: RPCConfig) {
     return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
         if (typeof propertyKey !== "string") {
             throw new Error("only string is allowed as propertyKey for rpc config");
-            return; 
+            return;
         }
 
         if (typeof config !== "undefined") {

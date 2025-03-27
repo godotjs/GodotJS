@@ -11,8 +11,9 @@ namespace jsb
 
         jsb_check(p_class_info);
 
-        const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotObject, p_class_info->name);
-        JSB_LOG(VeryVerbose, "expose godot type %s(%d)", p_class_info->name, class_id);
+        String class_name = internal::NamingUtil::get_class_name(p_class_info->name);
+        const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotObject, class_name);
+        JSB_LOG(VeryVerbose, "expose godot type %s(%d) as %s", p_class_info->name, class_id, class_name);
 
         // construct type template
         {
@@ -31,7 +32,7 @@ namespace jsb
             {
                 if (internal::StringNames::get_singleton().is_ignored(pair.key)) continue;
 
-                const StringName& property_name = pair.key;
+                const StringName& property_name = internal::NamingUtil::get_member_name(pair.key);
                 const ::ClassDB::PropertySetGet& getset_info = pair.value;
 
                 if (pair.value.index >= 0)
@@ -68,7 +69,7 @@ namespace jsb
 #if JSB_EXCLUDE_GETSET_METHODS
                 if (omitted_methods.has(pair.key)) continue;
 #endif
-                const StringName& method_name = pair.key;
+                const StringName& method_name = internal::NamingUtil::get_member_name(pair.key);
                 const MethodBind* method_bind = pair.value;
 
                 if (method_bind->is_static())
@@ -90,9 +91,9 @@ namespace jsb
              // class: signals
              for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
              {
-                 const StringName& name_str = pair.key;
-                 const StringNameID string_id = p_env->get_string_name_cache().get_string_id(name_str);
-                 class_builder.Instance().Property(pair.key, _godot_object_signal, *string_id);
+                 const StringName& signal_name = internal::NamingUtil::get_member_name(pair.key);
+                 const StringNameID string_id = p_env->get_string_name_cache().get_string_id(pair.key);
+                 class_builder.Instance().Property(signal_name, _godot_object_signal, *string_id);
              }
 
              HashSet<StringName> enum_consts;
@@ -101,15 +102,15 @@ namespace jsb
              for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
              {
                  v8::HandleScope handle_scope_for_enum(isolate);
-                 impl::ClassBuilder::EnumDeclaration enumeration = static_builder.Enum(pair.key);
-                 for (const StringName& enum_name : pair.value.constants)
+                 impl::ClassBuilder::EnumDeclaration enumeration = static_builder.Enum(internal::NamingUtil::get_enum_name(pair.key));
+                 for (const StringName& enum_value_name : pair.value.constants)
                  {
-                     const String& enum_name_str = (String) enum_name;
-                     jsb_not_implemented(enum_name_str.contains("."), "hierarchically nested definition is currently not supported");
-                     const auto& const_it = p_class_info->constant_map.find(enum_name);
+                     const String& js_enum_name = internal::NamingUtil::get_enum_value_name(enum_value_name);
+                     jsb_not_implemented(js_enum_name.contains("."), "hierarchically nested definition is currently not supported");
+                     const auto& const_it = p_class_info->constant_map.find(enum_value_name);
                      jsb_check(const_it);
-                     enumeration.Value(enum_name_str, const_it->value);
-                     enum_consts.insert(enum_name);
+                     enumeration.Value(js_enum_name, const_it->value);
+                     enum_consts.insert(enum_value_name);
                  }
              }
 
@@ -117,8 +118,8 @@ namespace jsb
              for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
              {
                  if (enum_consts.has(pair.key)) continue;
-                 const String& const_name_str = (String) pair.key;
-                 jsb_not_implemented(const_name_str.contains("."), "hierarchically nested definition is currently not supported");
+                 const String& js_const_name = (String) internal::NamingUtil::get_constant_name(pair.key);
+                 jsb_not_implemented(js_const_name.contains("."), "hierarchically nested definition is currently not supported");
 
                  static_builder.Value(pair.key, pair.value);
              }
@@ -142,8 +143,8 @@ namespace jsb
 
                 class_info->clazz = class_builder.Build();
                 jsb_check(!class_info->clazz.IsEmpty());
-                jsb_check(class_info->name == p_class_info->name);
-                JSB_LOG(VeryVerbose, "build class info %s (%d) addr: %s", class_info->name, class_id, class_info.ptr());
+                jsb_check(class_info->name == internal::NamingUtil::get_class_name(p_class_info->name));
+                JSB_LOG(VeryVerbose, "build class info %s (%d) exposed as %s, addr: %s", p_class_info->name, class_id, class_info->name, class_info.ptr());
                 if (r_class_id) *r_class_id = class_id;
                 return class_info;
             }
@@ -156,7 +157,7 @@ namespace jsb
         const v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         Environment* environment = Environment::wrap(isolate);
-        const StringName name = environment->get_string_name_cache().get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
+        const StringName gd_signal_name = environment->get_string_name_cache().get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
 
         const v8::Local<v8::Object> self = info.This();
         // (assume) debugger may trigger the property getter of signal without an instance
@@ -168,18 +169,20 @@ namespace jsb
         void* pointer = environment->get_verified_object(self, NativeClassType::GodotObject);
         if (!pointer)
         {
-            jsb_throw(isolate, "signal owner is undefined or dead");
+            const String error_message = jsb_errorf("failure obtaining signal: %s. signal owner is undefined or dead", gd_signal_name);
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
 
         // signal must be instance-owned
         const Object* gd_object = (Object*) pointer;
-        if (v8::Local<v8::Value> rval; TypeConvert::gd_var_to_js(isolate, context, Signal(gd_object, name), rval))
+        if (v8::Local<v8::Value> rval; TypeConvert::gd_var_to_js(isolate, context, Signal(gd_object, gd_signal_name), rval))
         {
             info.GetReturnValue().Set(rval);
             return;
         }
-        jsb_throw(isolate, "bad signal");
+        const String error_message = jsb_errorf("failure obtaining signal: %s. bad signal", gd_signal_name);
+        impl::Helper::throw_error(isolate, error_message);
     }
 
     void ObjectReflectBindingUtil::_godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -213,7 +216,8 @@ namespace jsb
         // prepare argv
         if (!method_info.check_argc(argc))
         {
-            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            const String error_message = jsb_errorf("%d arguments are required", method_info.argument_types.size());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
         const Variant** argv = jsb_stackalloc(const Variant*, argc);
@@ -272,7 +276,8 @@ namespace jsb
         {
             if (!TypeConvert::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object)
             {
-                jsb_throw(isolate, "bad this");
+                const String error_message = jsb_errorf("Failed to call: %s. Bad this", method_bind->get_name());
+                impl::Helper::throw_error(isolate, error_message);
                 return;
             }
         }
@@ -282,7 +287,8 @@ namespace jsb
         const bool method_is_vararg = method_bind->is_vararg();
         if (!internal::VariantUtil::check_argc(method_is_vararg, argc, method_bind->get_default_argument_count(), method_argc))
         {
-            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            const String error_message = jsb_errorf("Failed to call: %s. %d arguments are required", method_bind->get_name(), method_argc - method_bind->get_default_argument_count());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
         const Variant** argv = jsb_stackalloc(const Variant*, argc);
@@ -316,7 +322,8 @@ namespace jsb
 
         if (error.error != Callable::CallError::CALL_OK)
         {
-            jsb_throw(isolate, "failed to call");
+            const String error_message = jsb_errorf("Failed to call: %s", method_bind->get_name());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
         v8::Local<v8::Value> jrval;
@@ -342,14 +349,16 @@ namespace jsb
         // prepare argv
         if (info.Length() != 0)
         {
-            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            const String error_message = jsb_errorf("Failed to get property: %s. Arguments unexpectedly provided", property_info.getter_func->get_name());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
 
         Object* gd_object = nullptr;
         if (!property_info.getter_func->is_static() && (!TypeConvert::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
         {
-            jsb_throw(isolate, "bad this");
+            const String error_message = jsb_errorf("Failed to get property: %s. Bad this", property_info.getter_func->get_name());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
 
@@ -362,7 +371,8 @@ namespace jsb
 
         if (error.error != Callable::CallError::CALL_OK)
         {
-            jsb_throw(isolate, "failed to call");
+            const String error_message = jsb_errorf("Failed to get property: %s. Execution failed", property_info.getter_func->get_name());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
         v8::Local<v8::Value> jrval;
@@ -374,7 +384,7 @@ namespace jsb
             return;
         }
         const String error_message = jsb_errorf("Failed to get property: %s. Failed to translate returned Godot %s to a JS value",
-            property_info.getter_func->get_name(), index, Variant::get_type_name(crval.get_type()));
+            property_info.getter_func->get_name(), Variant::get_type_name(crval.get_type()));
         impl::Helper::throw_error(isolate, error_message);
     }
 
@@ -389,21 +399,26 @@ namespace jsb
         // prepare argv
         if (info.Length() != 1)
         {
-            jsb_throw(isolate, "num of arguments does not meet the requirement");
+            const String error_message = jsb_errorf("Failed to set property: %s. 1 argument is required", property_info.setter_func->get_name());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
 
         Object* gd_object = nullptr;
         if (!property_info.setter_func->is_static() && (!TypeConvert::js_to_gd_obj(isolate, context, info.This(), gd_object) || !gd_object))
         {
-            jsb_throw(isolate, "bad this");
+            const String error_message = jsb_errorf("Failed to set property: %s. Bad this", property_info.setter_func->get_name());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
 
         Variant cvar;
         if (!TypeConvert::js_to_gd_var(isolate, context, info[0], property_info.setter_func->get_argument_type(1), cvar))
         {
-            jsb_throw(isolate, "bad argument");
+            const String error_message = jsb_errorf("Failed to set property: %s. Unable to convert provided JS %s to Godot %s",
+                property_info.setter_func->get_name(), TypeConvert::js_debug_typeof(isolate, info[0]),
+                Variant::get_type_name(property_info.setter_func->get_argument_type(1)));
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
 
@@ -416,7 +431,8 @@ namespace jsb
 
         if (error.error != Callable::CallError::CALL_OK)
         {
-            jsb_throw(isolate, "failed to call");
+            const String error_message = jsb_errorf("Failed to set property: %s. Execution failed", property_info.setter_func->get_name());
+            impl::Helper::throw_error(isolate, error_message);
             return;
         }
     }
