@@ -180,7 +180,6 @@ namespace jsb
         // signals (@signal_)
         {
             v8::Local<v8::Value> val_test;
-            //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
             if (prototype->Get(p_context, jsb_symbol(environment, ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
@@ -205,9 +204,7 @@ namespace jsb
         // detect all exported properties (which annotated with @export_)
         {
             v8::Local<v8::Value> val_test;
-            //TODO does prototype chain introduce unexpected behaviour if signal is decalred in super class?
             if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
-            // if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
             {
                 const v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();

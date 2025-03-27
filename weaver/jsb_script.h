@@ -47,7 +47,7 @@ private:
     jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately(); }
     jsb_force_inline bool _is_valid() const { return jsb::internal::VariantUtil::is_valid_name(script_class_info_.module_id); }
 
-    void _update_exports(PlaceHolderScriptInstance *p_instance_to_update, bool p_base_exports_changed = false);
+    bool _update_exports(PlaceHolderScriptInstance *p_instance_to_update);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
 
 public:

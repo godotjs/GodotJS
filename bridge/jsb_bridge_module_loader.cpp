@@ -305,23 +305,26 @@ namespace jsb
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
             v8::Local<v8::Object> details = info[1].As<v8::Object>();
 
+            jsb_check(target->IsObject());
+            jsb_check(details->IsObject());
+
             Environment* environment = Environment::wrap(isolate);
             v8::Local<v8::Symbol> symbol = jsb_symbol(environment, ClassProperties);
             v8::Local<v8::Array> collection;
-            v8::Local<v8::Value> val_test;
             uint32_t index;
-            if (v8::MaybeLocal<v8::Value> maybe = target->Get(context, symbol); !maybe.ToLocal(&val_test) || val_test->IsUndefined())
+            if (target->HasOwnProperty(context, symbol).ToChecked())
+            {
+                v8::Local<v8::Value> collection_val = target->Get(context, symbol).ToLocalChecked();
+                jsb_check(collection_val->IsArray());
+                collection = collection_val.As<v8::Array>();
+                index = collection->Length();
+            }
+            else
             {
                 index = 0;
                 collection = v8::Array::New(isolate);
                 jsb_quickjs_check(collection->IsArray());
                 target->Set(context, symbol, collection).Check();
-            }
-            else
-            {
-                jsb_check(val_test->IsArray());
-                collection = val_test.As<v8::Array>();
-                index = collection->Length();
             }
 
             collection->Set(context, index, details).Check();
@@ -403,19 +406,20 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
             v8::Local<v8::Symbol> symbol = jsb_symbol(environment, ClassSignals);
             v8::Local<v8::Array> collection;
-            v8::Local<v8::Value> val_test;
             uint32_t index;
-            if (v8::MaybeLocal<v8::Value> maybe = target->Get(context, symbol); !maybe.ToLocal(&val_test) || val_test->IsUndefined())
+            if (target->HasOwnProperty(context, symbol).ToChecked())
             {
-                index = 0;
-                collection = v8::Array::New(isolate);
-                target->Set(context, symbol, collection).Check();
+                v8::Local<v8::Value> collection_val = target->Get(context, symbol).ToLocalChecked();
+                jsb_check(collection_val->IsArray());
+                collection = collection_val.As<v8::Array>();
+                index = collection->Length();
             }
             else
             {
-                jsb_check(val_test->IsArray());
-                collection = val_test.As<v8::Array>();
-                index = collection->Length();
+                index = 0;
+                collection = v8::Array::New(isolate);
+                jsb_quickjs_check(collection->IsArray());
+                target->Set(context, symbol, collection).Check();
             }
 
             collection->Set(context, index, signal).Check();
