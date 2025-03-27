@@ -53,10 +53,10 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
     JSB_BENCHMARK_SCOPE(GodotJSScriptLanguage, Construct);
     jsb_check(!singleton_);
     singleton_ = this;
-    js_class_name_matcher1_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*class\s*(\w+)\s*extends\s*(\w+)\s*\{?)");
+    js_class_name_matcher1_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*class\s*(\w+)\s+extends\s+(\w+))");
     js_class_name_matcher2_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*(\w+)\s*;?)");
-    ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
-    ts_class_name_tool_matcher_ = RegEx::create_from_string(R"(\s*@tool\s*\(\s*\)\s*\n*\s*export\s+default\s+class\s+(\w+)\s+extends\s+(\w+))");
+    ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)[^\n]*(?:>|\s+)extends\s+(\w+))");
+    ts_class_name_tool_matcher_ = RegEx::create_from_string(R"(\s*@tool\s*\(\s*\)\s*\n*\s*export\s+default\s+class\s+(\w+)[^\n]*(?:>|\s+)extends\s+(\w+))");
     jsb::internal::StringNames::create();
 }
 
