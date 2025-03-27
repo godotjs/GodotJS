@@ -228,7 +228,9 @@ namespace jsb
                 : !TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
             {
                 // revert all constructors
-                const String error_message = jsb_errorf("bad argument: %d", index);
+                const String error_message = index < known_argc
+                    ? jsb_errorf("Bad argument: %d. Unable to convert JS %s to Godot %s", index, TypeConvert::js_debug_typeof(isolate, info[index]), Variant::get_type_name(method_info.argument_types[index]))
+                    : jsb_errorf("Bad argument: %d. Unable to convert JS %s", index, TypeConvert::js_debug_typeof(isolate, info[index]));
                 while (index >= 0) { args[index--].~Variant(); }
                 impl::Helper::throw_error(isolate, error_message);
                 return;
@@ -251,7 +253,8 @@ namespace jsb
             info.GetReturnValue().Set(jrval);
             return;
         }
-        jsb_throw(isolate, "failed to translate godot variant to v8 value");
+        const String error_message = jsb_errorf("Failed to translate returned Godot %s to a JS value", Variant::get_type_name(crval.get_type()));
+        impl::Helper::throw_error(isolate, error_message);
     }
 
     void ObjectReflectBindingUtil::_godot_object_method(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -294,7 +297,7 @@ namespace jsb
             if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
             {
                 // revert all constructors
-                const String error_message = jsb_errorf("bad argument: %d", index);
+                const String error_message = jsb_errorf("Failed to call: %s. Bad argument: %d. Unable to convert JS %s to Godot %s", method_bind->get_name(), index, TypeConvert::js_debug_typeof(isolate, info[index]), Variant::get_type_name(type));
                 while (index >= 0) { args[index--].~Variant(); }
                 impl::Helper::throw_error(isolate, error_message);
                 return;
@@ -324,7 +327,8 @@ namespace jsb
             info.GetReturnValue().Set(jrval);
             return;
         }
-        jsb_throw(isolate, "failed to translate godot variant to v8 value");
+        const String error_message = jsb_errorf("Failed to return from call: %s. Failed to translate returned Godot %s to a JS value", method_bind->get_name(), index, Variant::get_type_name(crval.get_type()));
+        impl::Helper::throw_error(isolate, error_message);
     }
 
     void ObjectReflectBindingUtil::_godot_object_get2(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -369,7 +373,9 @@ namespace jsb
             info.GetReturnValue().Set(jrval);
             return;
         }
-        jsb_throw(isolate, "failed to translate godot variant to v8 value");
+        const String error_message = jsb_errorf("Failed to get property: %s. Failed to translate returned Godot %s to a JS value",
+            property_info.getter_func->get_name(), index, Variant::get_type_name(crval.get_type()));
+        impl::Helper::throw_error(isolate, error_message);
     }
 
     void ObjectReflectBindingUtil::_godot_object_set2(const v8::FunctionCallbackInfo<v8::Value>& info)
