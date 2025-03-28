@@ -373,11 +373,11 @@ namespace jsb
         
         // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
         static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
-        jsb_ensuref(AMDModuleLoader::load_source(this, kRuntimeBundleFile, GodotJSProjectPreset::get_source_rt) == OK,
+        jsb_ensuref(AMDModuleLoader::load_source(this, GodotJSProjectPreset::get_source_rt(kRuntimeBundleFile)) == OK,
             "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
 #ifdef TOOLS_ENABLED
         static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
-        jsb_ensuref(AMDModuleLoader::load_source(this, kEditorBundleFile, GodotJSProjectPreset::get_source_ed) == OK,
+        jsb_ensuref(AMDModuleLoader::load_source(this, GodotJSProjectPreset::get_source_ed(kEditorBundleFile)) == OK,
             "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
 #endif
 

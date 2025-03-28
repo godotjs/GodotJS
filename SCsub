@@ -3,6 +3,7 @@ import os
 import io
 import time
 import re
+import zlib
 # from typing import TypedDict, Callable
 
 Import("env")
@@ -196,18 +197,33 @@ class PresetDefine:
     def __init__(self, sourcename, targetname, zero_terminated = False, transformer = None):
         self.sourcename = sourcename
         self.targetname = targetname
-        self.transformer = transformer
+        self.transformers = []
         self.zero_terminated = zero_terminated
+        if transformer is not None:
+            self.transformers.append(transformer)
+        if zero_terminated:
+            self.transformers.append(ZeroTerminatedTransformer())
+
+    def transform(self, transformer):
+        self.transformers.append(transformer)
+        return self
 
     def read_source(self):
         with open(self.sourcename, "rb") as input:
             data = input.read()
-            return data if self.transformer is None else self.transformer.transform(data)
+            for transformer in self.transformers:
+                data = transformer.transform(data)
+            return data
 
 class AMDSourceTransformer(PresetTransformer):
     # def transform(self, data: bytes):
     def transform(self, data):
         return b"(function(define){"+data+b"\n})"
+
+class ZeroTerminatedTransformer(PresetTransformer):
+    # def transform(self, data: bytes):
+    def transform(self, data):
+        return data+b"\0"
 
 def set_defined(name, value):
     for t in jsb_defines:
@@ -233,28 +249,41 @@ def write_file(filename, ostream):
         print(f"generating {filename}")
         output.write(content)
 
+def try_compress(bytes):
+    result = bytes
+    if len(bytes) > 512:
+        result = zlib.compress(bytes, zlib.Z_BEST_SPEED)
+    return result if len(result) < len(bytes) else bytes
+
 # def generate_method_code(output, methodname, indent, preset_defines: list[PresetDefine]):
 def generate_method_code(output, methodname, indent, preset_defines):
-    output.write(f"const char* GodotJSProjectPreset::{methodname}(const String& p_filename, size_t& r_len)\n")
+    output.write(f"jsb::internal::PresetSource GodotJSProjectPreset::{methodname}(const String& p_filename)\n")
     output.write("{\n")
     output.write(indent+"static const unsigned char data[] = {\n")
-    positions = {}
+    generated_sources = {}
     cursor = 0
     for preset_define in preset_defines:
         sourcename = preset_define.sourcename
         targetname = preset_define.targetname
         if len(targetname) == 0:
             targetname = os.path.basename(sourcename)
-        targetstart = cursor
         newline = 0
         mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(sourcename)))
 
         bytes = preset_define.read_source()
-        length = len(bytes)
-        output.write(indent+indent+f"// target: {targetname} length: {length} modified: {mtime}\n")
-        output.write(indent+indent)
-        cursor += length
-        positions[targetname] = (targetstart, cursor - targetstart)            
+        original_length = len(bytes)
+        compressed_bytes = try_compress(bytes)
+        if compressed_bytes != bytes:
+            bytes = compressed_bytes
+            output.write(indent+indent+f"// target: {targetname} length: {len(bytes)} ({original_length}) modified: {mtime}\n")
+            output.write(indent+indent)
+            generated_sources[targetname] = (cursor, len(bytes), original_length, preset_define.zero_terminated)
+        else:
+            output.write(indent+indent+f"// target: {targetname} length: {len(bytes)} modified: {mtime}\n")
+            output.write(indent+indent)
+            generated_sources[targetname] = (cursor, len(bytes), 0, preset_define.zero_terminated)
+
+        cursor += len(bytes)
         for byte in bytes:
             output.write(f"0x{byte:02x}, ")
             newline += 1
@@ -262,21 +291,19 @@ def generate_method_code(output, methodname, indent, preset_defines):
                 newline = 0
                 output.write("\n")
                 output.write(indent+indent)
-        if preset_define.zero_terminated:
-            cursor += 1
-            output.write(f"0x00, ")
                 
         if newline != 0:
             newline = 0
             output.write("\n")
     output.write("\n")
     output.write(indent+"};\n")
-    for targetname in positions:
-        start = positions[targetname][0]
-        size = positions[targetname][1]
-        output.write(indent+f"if (p_filename == \"{targetname}\") {{ r_len = {size}; return (const char *) data+{start}; }}\n")
-    output.write(indent+"r_len = 0;\n")
-    output.write(indent+"return nullptr;\n")
+    for targetname in generated_sources:
+        start = generated_sources[targetname][0]
+        size = generated_sources[targetname][1]
+        osize = generated_sources[targetname][2] # original size
+        zero_terminated = "true" if generated_sources[targetname][3] else "false"
+        output.write(indent+f"if (p_filename == \"{targetname}\") {{ return jsb::internal::PresetSource(p_filename, (const char *) data+{start}, {size}, {osize}, {zero_terminated}); }}\n")
+    output.write(indent+"return jsb::internal::PresetSource();\n")
     output.write("}\n")
 
 def generate_code(rt_preset_defines, ed_preset_defines):

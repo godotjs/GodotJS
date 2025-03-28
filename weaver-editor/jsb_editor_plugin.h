@@ -97,8 +97,8 @@ public:
     static void collect_invalid_files(Vector<String>& r_invalid_files);
     static void collect_invalid_files(const String& p_path, Vector<String>& r_invalid_files);
     static void install_ts_project(const Vector<jsb::weaver::InstallFileInfo>& p_files);
-    static bool is_preset_source_valid(const String& p_filename);
-    static const char* get_preset_source(const String& p_filename, size_t& r_len);
+    static bool is_preset_source_valid(const String& p_filename) { return get_preset_source(p_filename).is_valid(); }
+    static jsb::internal::PresetSource get_preset_source(const String& p_filename);
 
     static void ensure_tsc_installed();
 

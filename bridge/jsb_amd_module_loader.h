@@ -2,6 +2,7 @@
 #define GODOTJS_AMD_MODULE_LOADER_H
 #include "jsb_bridge_pch.h"
 #include "jsb_module_loader.h"
+#include "../internal/jsb_preset_source.h"
 
 namespace jsb
 {
@@ -22,8 +23,7 @@ namespace jsb
 
         virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
 
-        typedef const char* (*SourceLoader)(const String& p_filename, size_t& r_len);
-        static Error load_source(Environment* p_env, const char* p_filename, SourceLoader p_loader);
+        static Error load_source(Environment* p_env, const internal::PresetSource& p_source);
 
     private:
         static void _load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name);

@@ -65,14 +65,13 @@ namespace jsb
         return succeeded;
     }
 
-    Error AMDModuleLoader::load_source(Environment* p_env, const char* p_filename, SourceLoader p_loader)
+    Error AMDModuleLoader::load_source(Environment* p_env, const internal::PresetSource& p_source)
     {
         size_t len;
-        const String filename = p_filename;
-        const char* str = p_loader(filename, len);
+        const char* str = p_source.get_data(len);
         if (!str) return ERR_FILE_NOT_FOUND;
         jsb_check(len == (size_t)(int) len);
-        _load_source(p_env, str, (int) len, filename);
+        _load_source(p_env, str, (int) len, p_source.get_filename());
         return OK;
     }
 
