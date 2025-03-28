@@ -629,7 +629,13 @@ namespace jsb
         // called in Environment::expose_class
         static NativeClassInfoPtr reflect_bind(const ClassRegister& p_env, NativeClassID* r_class_id = nullptr)
         {
-            const StringName& class_name = p_env.type_name;
+            const StringName& class_name = internal::NamingUtil::get_class_name(p_env.type_name);
+
+            if (class_name != p_env.type_name)
+            {
+                internal::StringNames::get_singleton().add_replacement(p_env.type_name, class_name);
+            }
+
             const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotPrimitive, class_name);
             impl::ClassBuilder class_builder = get_class_builder(p_env, class_id, class_name);
 
@@ -651,22 +657,22 @@ namespace jsb
                        Variant::get_member_validated_getter(TYPE, name),
                        member_type});
 
-                    class_builder.Instance().Property(name, _getter, _setter, collection_index);
+                    class_builder.Instance().Property(internal::NamingUtil::get_member_name(name), _getter, _setter, collection_index);
                 }
             }
 
             // indexed accessor
             if (Variant::has_indexing(TYPE))
             {
-                class_builder.Instance().Method("set_indexed", _set_indexed);
-                class_builder.Instance().Method("get_indexed", _get_indexed);
+                class_builder.Instance().Method(internal::NamingUtil::get_member_name("set_indexed"), _set_indexed);
+                class_builder.Instance().Method(internal::NamingUtil::get_member_name("get_indexed"), _get_indexed);
             }
 
             // keyed accessor
             if (Variant::is_keyed(TYPE))
             {
-                class_builder.Instance().Method("set_keyed", _set_keyed);
-                class_builder.Instance().Method("get_keyed", _get_keyed);
+                class_builder.Instance().Method(internal::NamingUtil::get_member_name("set_keyed"), _set_keyed);
+                class_builder.Instance().Method(internal::NamingUtil::get_member_name("get_keyed"), _get_keyed);
             }
 
             // methods
@@ -678,6 +684,7 @@ namespace jsb
                     const int argument_count = Variant::get_builtin_method_argument_count(TYPE, name);
                     const bool has_return_value = Variant::has_builtin_method_return_value(TYPE, name);
                     const Variant::Type return_type = Variant::get_builtin_method_return_type(TYPE, name);
+                    const String member_name = internal::NamingUtil::get_member_name(name);
 
 #if JSB_FAST_REFLECTION
                     if (!Variant::is_builtin_method_vararg(TYPE, name))
@@ -690,11 +697,11 @@ namespace jsb
                                 {
                                     if (Variant::is_builtin_method_static(TYPE, name))
                                     {
-                                        class_builder.Static().Method(name, ReflectBuiltinMethodPointerCall<real_t>::_call<false>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                        class_builder.Static().Method(member_name, ReflectBuiltinMethodPointerCall<real_t>::_call<false>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
                                     }
                                     else
                                     {
-                                        class_builder.Instance().Method(name, ReflectBuiltinMethodPointerCall<real_t>::_call<true>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                        class_builder.Instance().Method(member_name, ReflectBuiltinMethodPointerCall<real_t>::_call<true>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
                                     }
                                     continue;
                                 }
@@ -706,11 +713,11 @@ namespace jsb
                             {
                                 if (Variant::is_builtin_method_static(TYPE, name))
                                 {
-                                    class_builder.Static().Method(name, ReflectBuiltinMethodPointerCall<void>::_call<false>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                    class_builder.Static().Method(member_name, ReflectBuiltinMethodPointerCall<void>::_call<false>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
                                 }
                                 else
                                 {
-                                    class_builder.Instance().Method(name, ReflectBuiltinMethodPointerCall<void>::_call<true>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                    class_builder.Instance().Method(member_name, ReflectBuiltinMethodPointerCall<void>::_call<true>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
                                 }
                                 continue;
                             }
@@ -723,7 +730,7 @@ namespace jsb
                     const int collection_index = (int) GetVariantInfoCollection(p_env.env).methods.size();
                     GetVariantInfoCollection(p_env.env).methods.append({});
                     internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.env).methods.write[collection_index];
-                    method_info.set_debug_name(name);
+                    method_info.set_debug_name(member_name);
                     method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, name);
                     method_info.return_type = return_type;
                     method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
@@ -740,22 +747,22 @@ namespace jsb
                     {
                         if (Variant::is_builtin_method_static(TYPE, name))
                         {
-                            class_builder.Static().Method(name, _static_method<true>, collection_index);
+                            class_builder.Static().Method(member_name, _static_method<true>, collection_index);
                         }
                         else
                         {
-                            class_builder.Instance().Method(name, _instance_method<true>, collection_index);
+                            class_builder.Instance().Method(member_name, _instance_method<true>, collection_index);
                         }
                     }
                     else
                     {
                         if (Variant::is_builtin_method_static(TYPE, name))
                         {
-                            class_builder.Static().Method(name, _static_method<false>, collection_index);
+                            class_builder.Static().Method(member_name, _static_method<false>, collection_index);
                         }
                         else
                         {
-                            class_builder.Instance().Method(name, _instance_method<false>, collection_index);
+                            class_builder.Instance().Method(member_name, _instance_method<false>, collection_index);
                         }
                     }
                 }
@@ -773,15 +780,16 @@ namespace jsb
                 Variant::get_enums_for_type(TYPE, &enums);
                 for (const StringName& enum_name : enums)
                 {
+                    String exposed_enum_name = internal::NamingUtil::get_enum_name(enum_name);
+                    auto enum_decl = class_builder.Static().Enum(exposed_enum_name);
                     List<StringName> enumerations;
-                    auto enum_decl = class_builder.Static().Enum(enum_name);
                     Variant::get_enumerations_for_enum(TYPE, enum_name, &enumerations);
                     for (const StringName& enumeration : enumerations)
                     {
                         bool r_valid;
                         const int enum_value = Variant::get_enum_value(TYPE, enum_name, enumeration, &r_valid);
                         jsb_check(r_valid);
-                        enum_decl.Value(enumeration, enum_value);
+                        enum_decl.Value(internal::NamingUtil::get_enum_value_name(enumeration), enum_value);
                         enum_constants.insert(enumeration);
                     }
                 }
@@ -795,7 +803,7 @@ namespace jsb
                 {
                     // exclude all enum constants
                     if (enum_constants.has(constant)) continue;
-                    class_builder.Static().LazyProperty(constant, _get_constant_value_lazy);
+                    class_builder.Static().LazyProperty(internal::NamingUtil::get_constant_name(constant), _get_constant_value_lazy);
                 }
             }
 

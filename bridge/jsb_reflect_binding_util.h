@@ -21,7 +21,7 @@ namespace jsb
     {
         static void register_(impl::ClassBuilder& class_builder)
         {
-            class_builder.Instance().Method("to_array_buffer", &_to_array_buffer);
+            class_builder.Instance().Method(internal::NamingUtil::get_member_name("to_array_buffer"), &_to_array_buffer);
         }
 
         static void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)

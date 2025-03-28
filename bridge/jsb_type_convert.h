@@ -10,6 +10,13 @@ namespace jsb
     struct TypeConvert
     {
         /**
+         * Returns a string representation of a JavaScript type. For primitives, equivalent to the typeof operator in
+         * JS. For JS objects, we perform additional inspections and display if the object is an array, the Godot
+         * variant type, or the constructor name, when available.
+         */
+        static String js_debug_typeof(v8::Isolate* isolate, const v8::Local<v8::Value>& p_jval);
+
+        /**
          * Translate a Godot object into a javascript object. The type of `p_object_obj` will be automatically exposed to the context if not existed.
          * @param p_godot_obj non-null godot object pointer
          */

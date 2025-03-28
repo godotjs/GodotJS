@@ -311,6 +311,21 @@ namespace jsb
                 module_cache_.init(isolate_, cache_obj);
             }
 
+            // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
+            {
+                List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_class_list();
+
+                for (auto it = exposed_class_list.begin(); it != exposed_class_list.end(); ++it)
+                {
+                    String exposed_name = internal::NamingUtil::get_class_name(*it);
+
+                    if (exposed_name != *it)
+                    {
+                        internal::StringNames::get_singleton().add_replacement(*it, exposed_name);
+                    }
+                }
+            }
+
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
             Worker::register_(context, global);
 #endif
@@ -1308,12 +1323,14 @@ namespace jsb
             return nullptr;
         }
 
-        if (const NativeClassID* it = godot_classes_index_.getptr(p_class_info->name))
+        String class_name = internal::NamingUtil::get_class_name(p_class_info->name);
+
+        if (const NativeClassID* it = godot_classes_index_.getptr(class_name))
         {
             if (r_class_id) *r_class_id = *it;
             NativeClassInfoPtr class_info = native_classes_.get_value_scoped(*it);
             JSB_LOG(VeryVerbose, "return cached native class %s (%d) addr:%s", class_info->name, *it, class_info.ptr());
-            jsb_check(class_info->name == p_class_info->name);
+            jsb_check(internal::NamingUtil::get_class_name(class_info->name) == class_name);
             jsb_check(!class_info->clazz.IsEmpty());
             return class_info;
         }

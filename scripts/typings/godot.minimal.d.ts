@@ -1,6 +1,18 @@
-
+///<reference path="godot.generated.d.ts" />
 declare module "godot-jsb" {
-    import { Object as GDObject, PackedByteArray, PropertyUsageFlags, PropertyHint, MethodFlags, Variant, Callable0, Callable1, Callable2, Callable3, Callable4, Callable5, StringName, MultiplayerAPI, MultiplayerPeer } from "godot";
+    import {
+        Callable,
+        MethodFlags,
+        MultiplayerAPI,
+        MultiplayerPeer,
+        Object as GDObject,
+        PackedByteArray,
+        PropertyInfo,
+        StringName,
+        Variant,
+    } from "godot";
+
+    const CAMEL_CASE_BINDINGS_ENABLED: boolean;
 
     const DEV_ENABLED: boolean;
     const TOOLS_ENABLED: boolean;
@@ -12,70 +24,20 @@ declare module "godot-jsb" {
     const impl: string;
 
     /**
-     * Create godot Callable with a bound object `self`. 
+     * Create godot Callable without a bound object.
      * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
      */
-    function callable<R = void>(self: GDObject, fn: () => R): Callable0<R>;
-    /**
-     * Create godot Callable with a bound object `self`. 
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, R = void>(self: GDObject, fn: (v1: T1) => R): Callable1<T1, R>;
-    /**
-     * Create godot Callable with a bound object `self`. 
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, R = void>(self: GDObject, fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>;
-    /**
-     * Create godot Callable with a bound object `self`. 
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, T3, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>;
-    /**
-     * Create godot Callable with a bound object `self`. 
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, T3, T4, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>;
-    /**
-     * Create godot Callable with a bound object `self`. 
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, T3, T4, T5, R = void>(self: GDObject, fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>;
+    function callable<F extends Function>(fn: F): Callable<F>;
 
     /**
-     * Create godot Callable without a bound object.
+     * Create godot Callable with a bound object `self`.
      * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
      */
-    function callable<R = void>(fn: () => R): Callable0<R>;
-    /**
-     * Create godot Callable without a bound object.
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, R = void>(fn: (v1: T1) => R): Callable1<T1, R>;
-    /**
-     * Create godot Callable without a bound object.
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, R = void>(fn: (v1: T1, v2: T2) => R): Callable2<T1, T2, R>;
-    /**
-     * Create godot Callable without a bound object.
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, T3, R = void>(fn: (v1: T1, v2: T2, v3: T3) => R): Callable3<T1, T2, T3, R>;
-    /**
-     * Create godot Callable without a bound object.
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, T3, T4, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4) => R): Callable4<T1, T2, T3, T4, R>;
-    /**
-     * Create godot Callable without a bound object.
-     * @deprecated [WARNING] avoid using this function directly, use `Callable.create` instead.
-     */
-    function callable<T1, T2, T3, T4, T5, R = void>(fn: (v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R): Callable5<T1, T2, T3, T4, T5, R>;
+    function callable<S extends GDObject, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>;
 
     /**
-     * Explicitly convert a `PackedByteArray`(aka `Vector<uint8_t>`) into a javascript `ArrayBuffer` 
-     * @deprecated [WARNING] This free function '_to_array_buffer' is deprecated and will be removed in a future version, use 'PackedByteArray.to_array_buffer()' instead. 
+     * Explicitly convert a `PackedByteArray`(aka `Vector<uint8_t>`) into a javascript `ArrayBuffer`
+     * @deprecated [WARNING] This free function '_to_array_buffer' is deprecated and will be removed in a future version, use 'PackedByteArray.to_array_buffer()' instead.
      */
     function to_array_buffer(packed: PackedByteArray): ArrayBuffer;
 
@@ -92,10 +54,10 @@ declare module "godot-jsb" {
         type OnReadyEvaluatorFunc = (self: any) => any;
 
         interface RPCConfig {
-            mode?: MultiplayerAPI.RPCMode, 
-            sync?: boolean, 
-            transfer_mode?: MultiplayerPeer.TransferMode, 
-            transfer_channel?: number, 
+            mode?: MultiplayerAPI.RPCMode,
+            sync?: boolean,
+            transfer_mode?: MultiplayerPeer.TransferMode,
+            transfer_channel?: number,
         }
 
         function add_script_signal(target: any, name: string): void;
@@ -106,7 +68,7 @@ declare module "godot-jsb" {
         function add_script_rpc(target: any, propertyKey: string, config: RPCConfig): void;
 
         // 0: deprecated, 1: experimental, 2: help
-        function set_script_doc(target: any, propertyKey?: string, field: 0 | 1 | 2, message: string): void;
+        function set_script_doc(target: any, propertyKey: undefined | string, field: 0 | 1 | 2, message: string): void;
 
         function add_module(id: string, obj: any): void;
         function find_module(id: string): any;
@@ -132,8 +94,7 @@ declare module "godot-jsb" {
 
         interface EnumInfo {
             name: string;
-
-            literals: Array<string>;
+            literals: Record<string, number>;
             is_bitfield: boolean;
         }
 
@@ -157,15 +118,6 @@ declare module "godot-jsb" {
             args_: Array<PropertyInfo>;
             default_arguments?: Array<DefaultArgumentInfo>;
             return_: PropertyInfo | undefined;
-        }
-
-        interface PropertyInfo {
-            name: string;
-            type: Variant.Type;
-            class_name: string;
-            hint: PropertyHint;
-            hint_string: string;
-            usage: PropertyUsageFlags;
         }
 
         interface PropertySetGetInfo {
@@ -213,6 +165,7 @@ declare module "godot-jsb" {
 
         // godot class
         interface ClassInfo extends BasicClassInfo {
+            internal_name: string;
             super: string;
 
             properties: Array<PropertySetGetInfo>;

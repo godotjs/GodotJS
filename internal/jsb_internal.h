@@ -7,6 +7,7 @@
 #include "jsb_double_buffered.h"
 #include "jsb_format.h"
 #include "jsb_logger.h"
+#include "jsb_naming_util.h"
 #include "jsb_string_names.h"
 #include "jsb_source_reader.h"
 #include "jsb_source_map.h"

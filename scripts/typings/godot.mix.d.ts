@@ -1,190 +1,91 @@
-/// <reference no-default-lib="true"/>
+///<reference path="godot.generated.d.ts" />
 declare module "godot" {
     export const IntegerType: unique symbol;
     export const FloatType: unique symbol;
 
-    /** A built-in type representing a method or a standalone function.  
-     *  	  
-     *  @link https://docs.godotengine.org/en/4.2/classes/class_callable.html  
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Callable/Callable<T>.
      */
-    interface AnyCallable {
-        /** Returns `true` if this [Callable] has no target to call the method on. */
-        is_null(): boolean
+    type AnyCallable = Callable;
 
-        /** Returns `true` if this [Callable] is a custom callable. Custom callables are created from [method bind] or [method unbind]. In GDScript, lambda functions are also custom callables. */
-        is_custom(): boolean
-
-        /** Returns `true` if this [Callable] is a standard callable. This method is the opposite of [method is_custom]. Returns `false` if this callable is a lambda function. */
-        is_standard(): boolean
-
-        /** Returns `true` if the callable's object exists and has a valid method name assigned, or is a custom callable. */
-        is_valid(): boolean
-
-        /** Returns the object on which this [Callable] is called. */
-        get_object(): Object
-
-        /** Returns the ID of this [Callable]'s object (see [method Object.get_instance_id]). */
-        get_object_id(): int64
-
-        /** Returns the name of the method represented by this [Callable]. If the callable is a GDScript lambda function, returns the function's name or `"<anonymous lambda>"`. */
-        get_method(): StringName
-
-        /** Returns the total amount of arguments bound (or unbound) via successive [method bind] or [method unbind] calls. If the amount of arguments unbound is greater than the ones bound, this function returns a value less than zero. */
-        get_bound_arguments_count(): int64
-
-        /** Return the bound arguments (as long as [method get_bound_arguments_count] is greater than zero), or empty (if [method get_bound_arguments_count] is less than or equal to zero). */
-        get_bound_arguments(): Array
-
-        /** Returns the 32-bit hash value of this [Callable]'s object.  
-         *      
-         *  **Note:** [Callable]s with equal content will always produce identical hash values. However, the reverse is not true. Returning identical hash values does  *not*  imply the callables are equal, because different callables can have identical hash values due to hash collisions. The engine uses a 32-bit hash algorithm for [method hash].  
-         */
-        hash(): int64
-
-        /** Returns a copy of this [Callable] with one or more arguments bound. When called, the bound arguments are passed  *after*  the arguments supplied by [method call]. See also [method unbind].  
-         *      
-         *  **Note:** When this method is chained with other similar methods, the order in which the argument list is modified is read from right to left.  
-         */
-        bind(...vargargs: any[]): AnyCallable
-
-        /** Returns a copy of this [Callable] with one or more arguments bound, reading them from an array. When called, the bound arguments are passed  *after*  the arguments supplied by [method call]. See also [method unbind].  
-         *      
-         *  **Note:** When this method is chained with other similar methods, the order in which the argument list is modified is read from right to left.  
-         */
-        bindv(arguments_: GArray): AnyCallable
-
-        /** Returns a copy of this [Callable] with a number of arguments unbound. In other words, when the new callable is called the last few arguments supplied by the user are ignored, according to [param argcount]. The remaining arguments are passed to the callable. This allows to use the original callable in a context that attempts to pass more arguments than this callable can handle, e.g. a signal with a fixed number of arguments. See also [method bind].  
-         *      
-         *  **Note:** When this method is chained with other similar methods, the order in which the argument list is modified is read from right to left.  
-         *    
-         */
-        unbind(argcount: int64): AnyCallable
-        
-        /** Calls the method represented by this [Callable]. Arguments can be passed and should match the method's signature. */
-        call(...vargargs: any[]): any
-        
-        /** Calls the method represented by this [Callable]. Unlike [method call], this method expects all arguments to be contained inside the [param arguments] [Array]. */
-        callv(arguments_: GArray): any
-        
-        /** Calls the method represented by this [Callable] in deferred mode, i.e. at the end of the current frame. Arguments can be passed and should match the method's signature.  
-         *    
-         *      
-         *  **Note:** Deferred calls are processed at idle time. Idle time happens mainly at the end of process and physics frames. In it, deferred calls will be run until there are none left, which means you can defer calls from other deferred calls and they'll still be run in the current idle time cycle. This means you should not call a method deferred from itself (or from a method called by it), as this causes infinite recursion the same way as if you had called the method directly.  
-         *  See also [method Object.call_deferred].  
-         */
-        call_deferred(...vargargs: any[]): void
-    }
-
-    /** A built-in type representing a signal of an [Object].  
-     *  	  
-     *  @link https://docs.godotengine.org/en/4.2/classes/class_signal.html  
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Signal/Signal<T>.
      */
-    interface AnySignal {
-        /** Returns `true` if the signal's name does not exist in its object, or the object is not valid. */
-        is_null(): boolean
+    type AnySignal = Signal;
 
-        /** Returns the object emitting this signal. */
-        get_object(): Object
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Callable<T>.
+     */
+    type Callable0<R = void> = Callable<() => R>;
 
-        /** Returns the ID of the object emitting this signal (see [method Object.get_instance_id]). */
-        get_object_id(): int64
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Callable<T>.
+     */
+    type Callable1<T1, R = void> = Callable<(v1: T1) => R>;
 
-        /** Returns the name of this signal. */
-        get_name(): StringName
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Callable<T>.
+     */
+    type Callable2<T1, T2, R = void> = Callable<(v1: T1, v2, T2) => R>;
 
-        /** Returns `true` if the specified [Callable] is connected to this signal. */
-        is_connected(callable: AnyCallable): boolean
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Callable<T>.
+     */
+    type Callable3<T1, T2, T3, R = void> = Callable<(v1: T1, v2: T2, v3: T3) => R>;
 
-        /** Returns an [Array] of connections for this signal. Each connection is represented as a [Dictionary] that contains three entries:  
-         *  - `signal` is a reference to this signal;  
-         *  - `callable` is a reference to the connected [Callable];  
-         *  - `flags` is a combination of [enum Object.ConnectFlags].  
-         */
-        get_connections(): Array
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Callable<T>.
+     */
+    type Callable4<T1, T2, T3, T4, R = void> = Callable<(v1: T1, v2: T2, v3: T3, v4: T4) => R>;
 
-    interface Callable0<R = void> extends AnyCallable {
-        call(): R;
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Callable<T>.
+     */
+    type Callable5<T1, T2, T3, T4, T5, R = void> = Callable<(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => R>;
 
-    interface Callable1<T1, R = void> extends AnyCallable {
-        call(v1: T1): R;
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Signal<T>.
+     */
+    type Signal0 = Signal<() => void>;
 
-    interface Callable2<T1, T2, R = void> extends AnyCallable {
-        call(v1: T1, v2, T2): R;
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Signal<T>.
+     */
+    type Signal1<T1> = Signal<(v1: T1) => void>;
 
-    interface Callable3<T1, T2, T3, R = void> extends AnyCallable {
-        call(v1: T1, v2: T2, v3: T3): R;
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Signal<T>.
+     */
+    type Signal2<T1, T2> = Signal<(v1: T1, v2, T2) => void>;
 
-    interface Callable4<T1, T2, T3, T4, R = void> extends AnyCallable {
-        call(v1: T1, v2: T2, v3: T3, v4: T4): R;
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Signal<T>.
+     */
+    type Signal3<T1, T2, T3> = Signal<(v1: T1, v2: T2, v3: T3) => void>;
 
-    interface Callable5<T1, T2, T3, T4, T5, R = void> extends AnyCallable {
-        call(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5): R;
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Signal<T>.
+     */
+    type Signal4<T1, T2, T3, T4> = Signal<(v1: T1, v2: T2, v3: T3, v4: T4) => void>;
 
-    interface Signal0 extends AnySignal {
-        connect(callable: Callable0, flags: int64 = 0): void;
-        disconnect(callable: Callable0): void;
-        is_connected(callable: Callable0): boolean;
-        emit(): void;
-
-        as_promise(): Promise<void>;
-    }
-
-    interface Signal1<T1> extends AnySignal {
-        connect(callable: Callable1<T1>, flags: int64 = 0): void;
-        disconnect(callable: Callable1<T1>): void;
-        is_connected(callable: Callable1<T1>): boolean;
-        emit(v1: T1): void;
-
-        // the first argument is used as the resolved value
-        as_promise(): Promise<T1>;
-    }
-
-    interface Signal2<T1, T2> extends AnySignal {
-        connect(callable: Callable2<T1, T2>, flags: int64 = 0): void;
-        disconnect(callable: Callable2<T1, T2>): void;
-        is_connected(callable: Callable2<T1, T2>): boolean;
-        emit(v1: T1, v2: T2): void;
-
-        // the first argument is used as the resolved value
-        as_promise(): Promise<T1>;
-    }
-
-    interface Signal3<T1, T2, T3> extends AnySignal {
-        connect(callable: Callable3<T1, T2, T3>, flags: int64 = 0): void;
-        disconnect(callable: Callable3<T1, T2, T3>): void;
-        is_connected(callable: Callable3<T1, T2, T3>): boolean;
-        emit(v1: T1, v2: T2, v3: T3): void;
-
-        // the first argument is used as the resolved value
-        as_promise(): Promise<T1>;
-    }
-
-    interface Signal4<T1, T2, T3, T4> extends AnySignal {
-        connect(callable: Callable4<T1, T2, T3, T4>, flags: int64 = 0): void;
-        disconnect(callable: Callable4<T1, T2, T3, T4>): void;
-        is_connected(callable: Callable4<T1, T2, T3, T4>): boolean;
-        emit(v1: T1, v2: T2, v3: T3, v4: T4): void;
-
-        // the first argument is used as the resolved value
-        as_promise(): Promise<T1>;
-    }
-
-    interface Signal5<T1, T2, T3, T4, T5> extends AnySignal {
-        connect(callable: Callable5<T1, T2, T3, T4, T5>, flags: int64 = 0): void;
-        disconnect(callable: Callable5<T1, T2, T3, T4, T5>): void;
-        is_connected(callable: Callable5<T1, T2, T3, T4, T5>): boolean;
-        emit(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5): void;
-
-        // the first argument is used as the resolved value
-        as_promise(): Promise<T1>;
-    }
+    /**
+     * FOR BACKWARD COMPATIBILITY ONLY
+     * @deprecated [WARNING] Use Signal<T>.
+     */
+    type Signal5<T1, T2, T3, T4, T5> = Signal<(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => void>;
 
     type NodePathMap = { [K in string]?: Node };
 
@@ -214,26 +115,33 @@ declare module "godot" {
          */
         get length(): number;
         /**
+         * Performs the specified action for each element in an array.
+         * @param callback A function that accepts up to three arguments. forEach calls the callback function one time for each element in the array.
+         * @param thisArg An object to which the this keyword can refer in the callback function. If thisArg is omitted, undefined is used as the this value.
+         */
+        forEach<S = GArrayProxy<T>>(callback: (this: GArrayProxy<T>, value: GProxyValueWrap<T>, index: number) => void, thisArg?: S): void;
+        /**
          * Removes the last element from an array and returns it.
          * If the array is empty, undefined is returned and the array is not modified.
          */
-        pop(): T | undefined;
+        pop(): GProxyValueWrap<T> | undefined;
         /**
          * Appends new elements to the end of an array, and returns the new length of the array.
-         * @param items New elements to add to the array.
+         * @param item New element to add to the array.
+		 * @param additionalItems Additional new elements to add to the array.
          */
-        push(...items: Array<T | GProxyValueWrap<T>>): number;
+        push(item: T | GProxyValueWrap<T>, ...additionalItems: Array<T | GProxyValueWrap<T>>): number;
         /**
          * Returns the index of the first occurrence of a value in an array, or -1 if it is not present.
          * @param searchElement The value to locate in the array.
          * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the search starts at index 0.
          */
-        indexOf(searchElement: T, fromIndex?: number): number;
+        indexOf(searchElement: T | GProxyValueWrap<T>, fromIndex?: number): number;
         /**
          * Determines whether an array includes a certain element, returning true or false as appropriate.
          * @param searchElement The element to search for.
          */
-        includes(searchElement: T): boolean;
+        includes(searchElement: T | GProxyValueWrap<T>): boolean;
         toJSON(key?: any): any;
         toString(): string;
         [n: number]: T | GProxyValueWrap<T>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
@@ -244,14 +152,60 @@ declare module "godot" {
      * GObject entries are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work.
      */
     type GDictionaryProxy<T> = {
-        [K in keyof T & string]: T[K] | GProxyValueWrap<T[K]>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
-    } & ('toString' extends keyof T ? {} : {
-        toString(): string;
-    });
+        [K in keyof T]: T[K] | GProxyValueWrap<T[K]>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
+    };
 
     type GProxyValueWrap<V> = V extends GArray<infer E>
         ? GArrayProxy<E>
         : V extends GDictionary<infer T>
             ? GDictionaryProxy<T>
             : V;
+
+    type GProxyValueUnwrap<V> = V extends GArray<infer E>
+      ? E
+      : V extends GDictionary<infer T>
+        ? T
+        : V;
+
+    /**
+     * Semi-workaround for https://github.com/microsoft/TypeScript/issues/43826.
+     * @see GReadProxyValueWrap
+     */
+    type GArrayReadProxy<T> = Omit<GArrayProxy<T>, 'forEach'> & {
+        [Symbol.iterator](): IteratorObject<GReadProxyValueWrap<T>>;
+        forEach<S = GArrayReadProxy<T>>(callback: (this: GArrayReadProxy<T>, value: GReadProxyValueWrap<T>, index: number) => void, thisArg?: S): void;
+        [n: number]: GReadProxyValueWrap<T>;
+    }
+
+    /**
+     * Semi-workaround for https://github.com/microsoft/TypeScript/issues/43826.
+     * @see GReadProxyValueWrap
+     */
+    type GDictionaryReadProxy<T> = {
+        [K in keyof T]: GReadProxyValueWrap<T[K]>;
+    };
+
+    // At runtime we only have the one kind of dictionary proxy and one kind of array proxy. The read interfaces have
+    // indexers typed correctly for access i.e. return proxied types. The non-read interfaces have indexers accurate for
+    // assignment and will accept both GArray/GDictionary and proxies. The read interfaces exist for convenience only,
+    // you can safely cast between the two interfaces types as desired.
+    type GReadProxyValueWrap<V> = V extends GArray<infer E>
+        ? GArrayReadProxy<E>
+        : V extends GDictionary<infer T>
+            ? GDictionaryReadProxy<T>
+            : V;
+
+    interface PropertyInfo {
+        name: string;
+        type: Variant.Type;
+        class_name: string;
+        hint: PropertyHint;
+        hint_string: string;
+        usage: PropertyUsageFlags;
+    }
+
+  type BindRight<F extends (this: any, ...args: any[]) => any, B extends any[]> =
+    F extends (this: infer T, ...args: [...(infer A), ...B]) => infer R
+      ? (this: T, ...args: A) => R
+      : never;
 }

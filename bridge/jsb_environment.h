@@ -249,16 +249,24 @@ namespace jsb
         void add_class_register(const Variant::Type p_type, const ClassRegisterFunc p_func)
         {
             jsb_check(!internal::VariantUtil::is_valid_name(godot_primitive_map_[p_type]));
-            const StringName type_name = Variant::get_type_name(p_type);
+            const String original_name = Variant::get_type_name(p_type);
+            const StringName type_name = internal::NamingUtil::get_class_name(original_name);
+
+            if (type_name != original_name)
+            {
+                internal::StringNames::get_singleton().add_replacement(original_name, type_name);
+            }
+
             godot_primitive_map_[p_type] = type_name;
             add_class_register(type_name, p_func);
         }
 
         void add_class_register(const StringName& p_type_name, const ClassRegisterFunc p_func)
         {
-            jsb_check(internal::VariantUtil::is_valid_name(p_type_name));
-            jsb_check(!class_register_map_.has(p_type_name));
-            class_register_map_.insert(p_type_name, { {}, p_func });
+            String name = internal::NamingUtil::get_class_name(p_type_name);
+            jsb_check(internal::VariantUtil::is_valid_name(name));
+            jsb_check(!class_register_map_.has(name));
+            class_register_map_.insert(name, { {}, p_func });
         }
 
         //TODO temp, get C++ function pointer (include class methods)

@@ -35,7 +35,7 @@ namespace jsb
             const v8::Local<v8::Object> enumeration = v8::Object::New(isolate);
             for (const KeyValue<StringName, int64_t>& kv : enum_values)
             {
-                const v8::Local<v8::String> name = impl::Helper::new_string(isolate, kv.key);
+                const v8::Local<v8::String> name = impl::Helper::new_string(isolate, internal::NamingUtil::get_enum_value_name(kv.key));
                 const v8::Local<v8::Value> value = impl::Helper::new_integer(isolate, kv.value);
                 enumeration->Set(context, name, value).Check();
                 // represents the value back to string for convenient uses, such as MyColor[MyColor.White] => 'White'

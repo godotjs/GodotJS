@@ -142,6 +142,7 @@ namespace jsb::internal
             {
                 if (this != &p_other)
                 {
+                    if (container_) container_->unlock_address();
                     container_ = p_other.container_;
                     ptr_ = p_other.ptr_;
                     p_other.container_ = nullptr;
