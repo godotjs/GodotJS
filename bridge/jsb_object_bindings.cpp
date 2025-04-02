@@ -334,7 +334,11 @@ namespace jsb
             info.GetReturnValue().Set(jrval);
             return;
         }
-        const String error_message = jsb_errorf("Failed to return from call: %s. Failed to translate returned Godot %s to a JS value", method_bind->get_name(), index, Variant::get_type_name(crval.get_type()));
+        const String error_message = jsb_errorf(
+            "Failed to return from call: %s. "
+            "Failed to translate returned Godot %s to a JS value",
+            method_bind->get_name(),
+            Variant::get_type_name(crval.get_type()));
         impl::Helper::throw_error(isolate, error_message);
     }
 
