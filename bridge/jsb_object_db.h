@@ -52,6 +52,7 @@ namespace jsb
         {
             if (this != &p_other)
             {
+                if (lock_) lock_->write_unlock();
                 lock_ = p_other.lock_;
                 ptr_ = std::move(p_other.ptr_);
                 p_other.lock_ = nullptr;
@@ -100,6 +101,7 @@ namespace jsb
         {
             if (this != &p_other)
             {
+                if (lock_) lock_->read_unlock();
                 lock_ = p_other.lock_;
                 ptr_ = std::move(p_other.ptr_);
                 p_other.lock_ = nullptr;
