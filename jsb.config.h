@@ -118,6 +118,11 @@
 #define JSB_SHADOW_ENVIRONMENT_AS_PARSER 1
 #define JSB_MAX_CACHED_SHADOW_ENVIRONMENTS 2
 
+// size limitation for string name cache.
+// all least recently used item will be removed if the cache size exceeds this value.
+// 0 or negative values means unlimited cache size. 
+#define JSB_STRING_NAME_CACHE_SIZE 512
+
 // slots for object/script/class info is reallocated on heap (as a whole block of memory)
 // a suitable value can avoid unnecessary reallocation
 #define JSB_MASTER_INITIAL_OBJECT_SLOTS (1024 * 64)

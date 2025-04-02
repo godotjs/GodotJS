@@ -186,16 +186,17 @@ namespace jsb
                 const uint32_t len = collection->Length();
                 for (uint32_t index = 0; index < len; ++index)
                 {
-                    v8::Local<v8::Value> element = collection->Get(p_context, index).ToLocalChecked();
-                    jsb_check(element->IsString());
-                    const StringName signal = impl::Helper::to_string(isolate, element);
-                    p_class_info->signals.insert(signal, {});
+                    v8::Local<v8::Value> signal_name_js = collection->Get(p_context, index).ToLocalChecked();
+                    jsb_check(signal_name_js->IsString());
+                    const StringName signal_name = environment->get_string_name_cache().get_string_name(isolate, signal_name_js.As<v8::String>());
+                    p_class_info->signals.insert(signal_name, {});
 
                     // instantiate a fake Signal property
-                    const StringNameID string_id = environment->get_string_name_cache().get_string_id(signal);
-                    v8::Local<v8::Function> signal_func = JSB_NEW_FUNCTION(p_context, ObjectReflectBindingUtil::_godot_object_signal, v8::Uint32::NewFromUnsigned(isolate, *string_id));
-                    prototype->SetAccessorProperty(element.As<v8::Name>(), signal_func);
-                    JSB_LOG(VeryVerbose, "... signal %s (%d)", signal, string_id);
+                    //NOTE: we use JS string representation of signal name for info.Data() to avoid persistent StringNameID requirement.
+                    //      therefore any cached string name could be cleaned up on demand (e.g. on memory low) without additional lifetime control. 
+                    v8::Local<v8::Function> signal_func = JSB_NEW_FUNCTION(p_context, ObjectReflectBindingUtil::_godot_object_signal, signal_name_js);
+                    prototype->SetAccessorProperty(signal_name_js.As<v8::Name>(), signal_func);
+                    JSB_LOG(VeryVerbose, "... signal %s", signal_name);
                 }
             }
         }

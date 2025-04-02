@@ -91,9 +91,10 @@ namespace jsb
              // class: signals
              for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
              {
+                 v8::HandleScope handle_scope_for_signal(isolate);
                  const StringName& signal_name = internal::NamingUtil::get_member_name(pair.key);
-                 const StringNameID string_id = p_env->get_string_name_cache().get_string_id(pair.key);
-                 class_builder.Instance().Property(signal_name, _godot_object_signal, *string_id);
+                 const v8::Local<v8::String> signal_name_js = p_env->get_string_name_cache().get_string_value(isolate, signal_name);
+                 class_builder.Instance().Property(signal_name, _godot_object_signal, signal_name_js.As<v8::Value>());
              }
 
              HashSet<StringName> enum_consts;
@@ -157,7 +158,8 @@ namespace jsb
         const v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         Environment* environment = Environment::wrap(isolate);
-        const StringName gd_signal_name = environment->get_string_name_cache().get_string_name((const StringNameID) info.Data().As<v8::Uint32>()->Value());
+        jsb_check(info.Data()->IsString());
+        const StringName gd_signal_name = environment->get_string_name_cache().get_string_name(isolate, info.Data().As<v8::String>());
 
         const v8::Local<v8::Object> self = info.This();
         // (assume) debugger may trigger the property getter of signal without an instance

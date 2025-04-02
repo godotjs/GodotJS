@@ -385,6 +385,62 @@ namespace jsb::internal
             return IndexType(new_index, slot.revision);
         }
 
+        void move_to_front(const IndexType& p_index)
+        {
+            jsb_check(is_valid_index(p_index));
+            if (_first_index == p_index.get_index())
+            {
+                return;
+            }
+
+            Slot& slot = get_data()[p_index.get_index()];
+            if (slot.previous != INDEX_NONE)
+            {
+                get_data()[slot.previous].next = slot.next;
+            }
+            if (slot.next != INDEX_NONE)
+            {
+                get_data()[slot.next].previous = slot.previous;
+            }
+            if (_last_index == p_index.get_index())
+            {
+                _last_index = slot.previous;
+            }
+            slot.previous = INDEX_NONE;
+            slot.next = _first_index;
+            _first_index = p_index.get_index();
+            ++_version;
+            jsb_check(is_consistent());
+        }
+
+        void move_to_back(const IndexType& p_index)
+        {
+            jsb_check(is_valid_index(p_index));
+            if (_last_index == p_index.get_index())
+            {
+                return;
+            }
+
+            Slot& slot = get_data()[p_index.get_index()];
+            if (slot.previous != INDEX_NONE)
+            {
+                get_data()[slot.previous].next = slot.next;
+            }
+            if (slot.next != INDEX_NONE)
+            {
+                get_data()[slot.next].previous = slot.previous;
+            }
+            if (_first_index == p_index.get_index())
+            {
+                _first_index = slot.next;
+            }
+            slot.next = INDEX_NONE;
+            slot.previous = _last_index;
+            _last_index = p_index.get_index();
+            ++_version;
+            jsb_check(is_consistent());
+        }
+
         IndexType insert(const IndexType& p_index, T&& p_item)
         {
             jsb_check(is_consistent());
@@ -477,11 +533,24 @@ namespace jsb::internal
             return item;
         }
 
-        void remove_last()
+        /** equivalent to remove_at(get_first_index()) */
+        IndexType remove_first()
+        {
+            jsb_check(_first_index != INDEX_NONE);
+            const Slot& slot = get_data()[_first_index];
+            const IndexType index = {_first_index, slot.revision};
+            remove_at(index);
+            return index;
+        }
+
+        /** equivalent to remove_at(get_last_index()) */
+        IndexType remove_last()
         {
             jsb_check(_last_index != INDEX_NONE);
             const Slot& slot = get_data()[_last_index];
-            remove_at({_last_index, slot.revision});
+            const IndexType index = {_last_index, slot.revision};
+            remove_at(index);
+            return index;
         }
 
         T& get_first_value()

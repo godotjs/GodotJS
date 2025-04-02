@@ -1805,7 +1805,7 @@ namespace jsb
 
     void Environment::_on_gc_request()
     {
-        string_name_cache_.clear();
+        string_name_cache_.shrink();
         source_map_cache_.clear();
 
 #if JSB_EXPOSE_GC_FOR_TESTING
