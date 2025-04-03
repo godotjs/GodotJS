@@ -272,6 +272,7 @@ namespace jsb::internal
 
 	List<StringName> NamingUtil::get_exposed_class_list()
 	{
+#ifdef TOOLS_ENABLED
 		const PackedStringArray ignored_classes = internal::Settings::get_ignored_classes();
 		const int ignored_classes_num = (int) ignored_classes.size();
 		HashSet<StringName> ignored_classes_set(ignored_classes_num);
@@ -280,6 +281,7 @@ namespace jsb::internal
 		{
 			ignored_classes_set.insert(ignored_classes[i]);
 		}
+#endif
 
 		List<StringName> all_class_names;
 		ClassDB::get_class_list(&all_class_names);
@@ -290,11 +292,13 @@ namespace jsb::internal
 		{
 			StringName class_name = *it;
 
+#ifdef TOOLS_ENABLED
 			if (ignored_classes_set.has(class_name))
 			{
 				JSB_LOG(Verbose, "Ignoring class '%s' because it's in the ignored classes list", class_name);
 				continue;
 			}
+#endif
 
 			ClassDB::APIType api_type = ClassDB::get_api_type(class_name);
 
