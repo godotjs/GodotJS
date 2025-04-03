@@ -132,6 +132,9 @@ function mutate_template(template: string) {
 
 const TypeMutations: Record<string, TypeMutation> = {
     Signal: {
+        intro: [
+            `${member_name("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
+        ],
         generic_parameters: {
             T: {
                 extends: "(...args: any[]) => void",
@@ -155,8 +158,6 @@ const TypeMutations: Record<string, TypeMutation> = {
             " * Create godot Callable with a bound object `self`.",
             " */",
             "static create<S extends GDObject, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>",
-            "",
-            `${member_name("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
         ],
         generic_parameters: {
             T: {
