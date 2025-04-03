@@ -16,6 +16,11 @@ namespace jsb::internal
 
     IConsoleOutput::~IConsoleOutput()
     {
+        remove_from_output_list();
+    }
+
+    void IConsoleOutput::remove_from_output_list()
+    {
         RWLockWrite lock(lock_);
         outputs_.erase(this);
     }

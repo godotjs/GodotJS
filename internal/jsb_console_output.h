@@ -17,6 +17,9 @@ namespace jsb
 
             IConsoleOutput();
             virtual ~IConsoleOutput();
+
+        protected:
+            void remove_from_output_list();
         };
     }
 }

@@ -113,6 +113,11 @@ GodotJSREPL::GodotJSREPL()
 
 GodotJSREPL::~GodotJSREPL()
 {
+    // ensure self removed before any member destruction to avoid deadlock
+    remove_from_output_list();
+
+    // avoid warning due to unhandled strings
+    output_backlog_.swap().clear();
 }
 
 void GodotJSREPL::_notification(int p_what)
