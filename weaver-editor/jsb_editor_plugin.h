@@ -53,7 +53,8 @@ private:
 
     std::shared_ptr<jsb::internal::Process> tsc_;
 
-    void _generate_edited_scene_dts(const String &p_path);
+    void _generate_edited_scene_dts(const String& p_path);
+    void _generate_edited_resource_dts(const Ref<Resource>& p_resource);
 
 protected:
     static void _bind_methods();
@@ -70,8 +71,10 @@ protected:
     static bool install_files(const Vector<jsb::weaver::InstallFileInfo>& p_files);
     static Vector<jsb::weaver::InstallFileInfo> filter_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, int p_hint);
     static bool delete_file(const String& p_file);
-    static void get_all_scenes(EditorFileSystemDirectory *p_dir, Vector<String> &r_list);
-    static void generate_scenes_dts(const Vector<String>& p_paths);
+    static void get_all_scenes(EditorFileSystemDirectory* p_dir, Vector<String>& r_list);
+    static void get_all_resources(EditorFileSystemDirectory* p_dir, Vector<String>& r_list);
+    static void generate_scene_nodes_dts(const Vector<String>& p_paths);
+    static void generate_resource_dts(const Vector<String>& p_paths);
 
 public:
     GodotJSEditorPlugin();
@@ -92,7 +95,8 @@ public:
     static GodotJSEditorPlugin* get_singleton();
 
     static void generate_godot_dts();
-    static void generate_all_scene_godot_dts();
+    static void generate_all_scene_nodes_dts();
+    static void generate_all_resource_dts();
     static void ignore_node_modules();
     static void collect_invalid_files(Vector<String>& r_invalid_files);
     static void collect_invalid_files(const String& p_path, Vector<String>& r_invalid_files);

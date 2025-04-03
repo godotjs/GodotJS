@@ -2,8 +2,10 @@
 // godot.xxx.d.ts files will be generated in a target project.
 
 ///<reference path="godot.mix.d.ts" />
+
 declare module "godot" {
     class Node<Map extends Record<string, Node> = {}> extends Object { }
+    class Resource { }
     class GArray<T = any> {
         proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>;
         get_indexed(index: number): T

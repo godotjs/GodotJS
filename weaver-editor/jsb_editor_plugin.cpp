@@ -53,6 +53,7 @@ void GodotJSEditorPlugin::_notification(int p_what)
         // stupid self watching, but there is no other way which work both in module and gdextension
     	// EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
         connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
+        connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_resource_dts));
         break;
     default: break;
     }
@@ -373,12 +374,20 @@ void GodotJSEditorPlugin::cleanup_invalid_files()
     JSB_LOG(Log, "%d files are deleted", deleted_num);
 }
 
-void GodotJSEditorPlugin::_generate_edited_scene_dts(const String &p_path)
+void GodotJSEditorPlugin::_generate_edited_scene_dts(const String& p_path)
 {
     if (!jsb::internal::Settings::get_autogen_scene_dts_on_save()) return;
 
     Vector<String> paths = { p_path };
-    generate_scenes_dts(paths);
+    generate_scene_nodes_dts(paths);
+}
+
+void GodotJSEditorPlugin::_generate_edited_resource_dts(const Ref<Resource>& p_resource)
+{
+    if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
+
+    Vector<String> paths = { p_resource->get_path() };
+    generate_resource_dts(paths);
 }
 
 void GodotJSEditorPlugin::generate_godot_dts()
@@ -395,10 +404,11 @@ void GodotJSEditorPlugin::generate_godot_dts()
     lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 
-    generate_all_scene_godot_dts();
+    generate_all_scene_nodes_dts();
+    generate_all_resource_dts();
 }
 
-void GodotJSEditorPlugin::get_all_scenes(EditorFileSystemDirectory *p_dir, Vector<String> &r_list)
+void GodotJSEditorPlugin::get_all_scenes(EditorFileSystemDirectory* p_dir, Vector<String>& r_list)
 {
     for (int i = 0; i < p_dir->get_file_count(); i++)
     {
@@ -414,13 +424,31 @@ void GodotJSEditorPlugin::get_all_scenes(EditorFileSystemDirectory *p_dir, Vecto
     }
 }
 
-void GodotJSEditorPlugin::generate_scenes_dts(const Vector<String>& p_paths)
+void GodotJSEditorPlugin::get_all_resources(EditorFileSystemDirectory* p_dir, Vector<String>& r_list)
+{
+    for (int i = 0; i < p_dir->get_file_count(); i++)
+    {
+        String path = p_dir->get_file_path(i);
+
+        if (!ResourceLoader::get_resource_type(path).is_empty() && !GodotJSExportPlugin::get_ignored_paths().has(path))
+        {
+            r_list.push_back(p_dir->get_file_path(i));
+        }
+    }
+
+    for (int i = 0; i < p_dir->get_subdir_count(); i++)
+    {
+        get_all_resources(p_dir->get_subdir(i), r_list);
+    }
+}
+
+void GodotJSEditorPlugin::generate_scene_nodes_dts(const Vector<String>& p_paths)
 {
     if (!jsb::internal::Settings::get_gen_scene_dts()) return;
 
     if (p_paths.size() == 0)
     {
-        JSB_LOG(Log, "generate_scenes_dts: No scenes detected");
+        JSB_LOG(Log, "generate_scene_nodes_dts: No scenes detected");
         return;
     }
 
@@ -437,11 +465,41 @@ void GodotJSEditorPlugin::generate_scenes_dts(const Vector<String>& p_paths)
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 }
 
-void GodotJSEditorPlugin::generate_all_scene_godot_dts()
+void GodotJSEditorPlugin::generate_resource_dts(const Vector<String>& p_paths)
+{
+    if (!jsb::internal::Settings::get_gen_resource_dts()) return;
+
+    if (p_paths.size() == 0)
+    {
+        JSB_LOG(Log, "generate_resource_dts: No resources detected");
+        return;
+    }
+
+    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+    jsb_check(lang);
+    Error err;
+
+    const String code = jsb_format(
+        R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.ResourceTSDCodeGen("%s", ["%s"])).emit();})())--",
+        "./" JSB_TYPE_ROOT,
+        String("\", \"").join(p_paths)
+    );
+    lang->eval_source(code, err).ignore();
+    ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
+}
+
+void GodotJSEditorPlugin::generate_all_scene_nodes_dts()
 {
     Vector<String> paths;
     get_all_scenes(EditorFileSystem::get_singleton()->get_filesystem(), paths);
-    generate_scenes_dts(paths);
+    generate_scene_nodes_dts(paths);
+}
+
+void GodotJSEditorPlugin::generate_all_resource_dts()
+{
+    Vector<String> paths;
+    get_all_resources(EditorFileSystem::get_singleton()->get_filesystem(), paths);
+    generate_resource_dts(paths);
 }
 
 void GodotJSEditorPlugin::load_editor_entry_module()

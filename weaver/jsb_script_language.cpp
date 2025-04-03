@@ -55,8 +55,7 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
     singleton_ = this;
     js_class_name_matcher1_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*class\s*(\w+)\s+extends\s+(\w+))");
     js_class_name_matcher2_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*(\w+)\s*;?)");
-    ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*export\s+default\s+class\s+(\w+)[^\n]*(?:>|\s+)extends\s+(\w+))");
-    ts_class_name_tool_matcher_ = RegEx::create_from_string(R"(\s*@tool\s*\(\s*\)\s*\n*\s*export\s+default\s+class\s+(\w+)[^\n]*(?:>|\s+)extends\s+(\w+))");
+    ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*(@[tT]ool\s*\(\s*\)\s*\n*\s*)?export\s+default\s+class\s+(\w+)(\s*<)?[^\n]*(?:>|\s+)extends\s+(\w+))");
     jsb::internal::StringNames::create();
 }
 
@@ -358,29 +357,18 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
     {
         // hope it's a typescript file
         jsb_check(!ts_class_name_matcher_.is_null());
-        jsb_check(!ts_class_name_tool_matcher_.is_null());
 
-        // check if it's a tool script (`@tool \n export default class ClassName extends BaseName { `)
-        Ref<RegExMatch> match =  ts_class_name_tool_matcher_->search(source);
-        if (match.is_valid() && match->get_group_count() == 2)
+        Ref<RegExMatch> match =  ts_class_name_matcher_->search(source);
+        if (match.is_valid() && match->get_group_count() == 4)
         {
 #if GODOT_4_4_OR_NEWER
-            if (r_is_tool) *r_is_tool = true;
+            if (r_is_tool) *r_is_tool = match->get_string(1).size() > 0;
 #endif
-        }
-        else
-        {
-            // check if it's a normal script (without `@tool`)
-            match = ts_class_name_matcher_->search(source);
-            if (!match.is_valid() || match->get_group_count() != 2)
-            {
-                return {};
-            }
-        }
 
-        const String class_name = match->get_string(1);
-        if (r_base_type) *r_base_type = match->get_string(2);
-        return class_name;
+            const String class_name = match->get_string(2);
+            if (r_base_type) *r_base_type = match->get_string(4);
+            return class_name;
+        }
     }
     return {};
 }
@@ -464,6 +452,28 @@ void GodotJSScriptLanguage::add_script_call_profile_info(const String& p_path, c
     prof.methods[p_method].total_calls++;
     prof.methods[p_method].total_time += p_time;
 #endif
+}
+
+bool GodotJSScriptLanguage::is_global_class_generic(const String &p_path) const
+{
+    Error err;
+    const Ref<FileAccess> file_access = FileAccess::open(p_path, FileAccess::READ, &err);
+    if (err)
+    {
+        return false;
+    }
+
+    const String source = file_access->get_as_utf8_string();
+
+    if (jsb::internal::PathUtil::is_recognized_javascript_extension(p_path))
+    {
+        return false;
+    }
+
+    jsb_check(!ts_class_name_matcher_.is_null());
+
+    Ref<RegExMatch> match =  ts_class_name_matcher_->search(source);
+    return match.is_valid() && match->get_group_count() == 4 && match->get_string(3).length() > 0;
 }
 
 namespace

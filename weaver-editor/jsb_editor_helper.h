@@ -8,8 +8,9 @@ class GodotJSEditorHelper : public Object
 
 private:
 
-    static Dictionary _build_node_type_descriptor(jsb::JSEnvironment& p_env, Node *node);
-    static void _log_scene_load_error(const String& p_file, Error p_error);
+    static bool _request_codegen(jsb::JSEnvironment& p_env, GodotJSScript* p_script, const Dictionary& p_request, Dictionary& p_result);
+    static Dictionary _build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, const String& scene_resource_path = String());
+    static void _log_load_error(const String &p_file, const String &p_type, Error p_error);
 
 protected:
     static void _bind_methods();
@@ -17,6 +18,7 @@ protected:
 public:
     virtual ~GodotJSEditorHelper() override = default;
 
+    static Dictionary get_resource_type_descriptor(const String &p_path);
     static Dictionary get_scene_nodes(const String &p_path);
     static void show_toast(const String& p_text, int p_severity);
 };
