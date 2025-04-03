@@ -11,6 +11,26 @@
 namespace jsb
 {
     template<typename ForType>
+    struct TransitionNumber;
+
+    /**
+     * Godot represents int32_t with int64_t in pointer function calls 
+     * see variant_setget.h
+     * SETGET_NUMBER_STRUCT(Vector2i, int64_t, x)
+     */
+    template<> struct TransitionNumber<int32_t> { using Type = int64_t; };
+    
+    /**
+     * Godot represents float with double in pointer function calls
+     * see variant_setget.h
+     * SETGET_NUMBER_STRUCT(Vector2, double, x)
+     */
+    template<> struct TransitionNumber<float> { using Type = double; };
+
+    template<typename T>
+    using GDTransitionNumber = typename TransitionNumber<T>::Type;
+    
+    template<typename ForType>
     struct ReflectAdditionalMethodRegister
     {
         static void register_(impl::ClassBuilder& class_builder) {}
@@ -39,103 +59,190 @@ namespace jsb
         }
     };
 
-    template<bool IsInstancedT = false>
-    struct ReflectThis
-    {
-        static void* from(const v8::FunctionCallbackInfo<v8::Value>& info) { return nullptr; }
-    };
-
-    template<>
-    struct ReflectThis<true>
+    // fallback version of get_opaque_pointer for any Variant
+    template<typename OwnerT>
+    struct TVariantOpaquePointer
     {
         static void* from(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
-            // jsb_check(info.This()->InternalFieldCount() == IF_VariantFieldCount);
             return VariantInternal::get_opaque_pointer((Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer));
         }
     };
 
-    template<typename ReturnT>
+#define JSB_DEFINE_VARIANT_OPAQUE_POINTER(OwnerT, FuncName) \
+    template<>\
+    struct TVariantOpaquePointer<OwnerT>\
+    {\
+        jsb_force_inline static void* from(const v8::FunctionCallbackInfo<v8::Value>& info)\
+        {\
+            return VariantInternal::FuncName((Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer));\
+        }\
+    };
+
+    // all specialized versions of get_opaque_pointer (no variant.get_type() check)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Vector2, get_vector2)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Vector2i, get_vector2i)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Rect2, get_rect2)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Rect2i, get_rect2i)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Vector3, get_vector3)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Vector3i, get_vector3i)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Vector4, get_vector4)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Vector4i, get_vector4i)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Transform2D, get_transform2d)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Plane, get_plane)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Quaternion, get_quaternion)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(::AABB, get_aabb)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Basis, get_basis)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Transform3D, get_transform)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Projection, get_projection)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Color, get_color)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(StringName, get_string_name)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(NodePath, get_node_path)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(RID, get_rid)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Callable, get_callable)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Signal, get_signal)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Dictionary, get_dictionary)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(Array, get_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedByteArray, get_byte_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedInt32Array, get_int32_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedInt64Array, get_int64_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedFloat32Array, get_float32_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedFloat64Array, get_float64_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedStringArray, get_string_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedVector2Array, get_vector2_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedVector3Array, get_vector3_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedColorArray, get_color_array)
+    JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedVector4Array, get_vector4_array)
+
+    // not supported
+    template<typename OwnerT, typename ReturnT, typename... Ts>
     struct ReflectBuiltinMethodPointerCall
     {
         static constexpr bool is_supported(Variant::Type return_type) { return false; }
 
-        template<bool, Variant::Type... Ts>
-        static void _call(const v8::FunctionCallbackInfo<v8::Value>& info);
+        template<bool IsInstanceCallT>
+        static void call(const v8::FunctionCallbackInfo<v8::Value>& info);
     };
 
-    template<>
-    struct ReflectBuiltinMethodPointerCall<void>
+    // specialized for: void call();
+    template<typename OwnerT>
+    struct ReflectBuiltinMethodPointerCall<OwnerT, void>
     {
-        typedef double GDTransitionNumber;
         static constexpr bool is_supported(Variant::Type return_type) { return true; }
 
-        // no arg
         template<bool IsInstanceCallT>
-        static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
-            func(ReflectThis<IsInstanceCallT>::from(info), nullptr, nullptr, 0);
+            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, nullptr, 0);
+            else func(nullptr, nullptr, nullptr, 0);
         }
     };
 
-    template<>
-    struct ReflectBuiltinMethodPointerCall<real_t>
+    // specialized for: void call(real_t);
+    template<typename OwnerT>
+    struct ReflectBuiltinMethodPointerCall<OwnerT, void, real_t>
     {
-        typedef double GDTransitionNumber;
+        static constexpr bool is_supported(Variant::Type return_type) { return true; }
+        
+        template<bool IsInstanceCallT>
+        static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            real_t loc_0;
+            if (!StaticBindingUtil<real_t>::get(isolate, isolate->GetCurrentContext(), info[0], loc_0))
+            {
+                jsb_throw(isolate, "bad param at 0");
+                return;
+            }
+            const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
+            const void* args[] = { &loc_0 };
+            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), args, nullptr, 0);
+            else func(nullptr, args, nullptr, 0);
+        }
+    };
+
+    // specialized for: real_t call();
+    template<typename OwnerT>
+    struct ReflectBuiltinMethodPointerCall<OwnerT, real_t>
+    {
         static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::FLOAT == return_type; }
 
-        // no arg
         template<bool IsInstanceCallT>
-        static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
-            GDTransitionNumber value = 0;
-            func(ReflectThis<IsInstanceCallT>::from(info), nullptr, &value, 0);
+            GDTransitionNumber<real_t> value = 0;
+            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
+            else func(nullptr, nullptr, &value, 0);
             info.GetReturnValue().Set(v8::Number::New(isolate, value));
         }
-
-        // template<bool IsInstanceCallT, Variant::Type A1>
-        // static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
-        // {
-        //     v8::Isolate* isolate = info.GetIsolate();
-        //     v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        //     const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
-        //     GDTransitionNumber value = 0;
-        //     Variant args[] = { {} };
-        //     if (!Realm::js_to_gd_var(isolate, context, info[0], A1, args[0]))
-        //     {
-        //         jsb_throw(isolate, "bad param");
-        //         return;
-        //     }
-        //     const void* argv[] = { VariantInternal::get_opaque_pointer(&args[0]) };
-        //     func(ReflectThis<IsInstanceCallT>::from(info), &argv[0], &value, 1);
-        //     info.GetReturnValue().Set(v8::Number::New(isolate, value));
-        // }
-        //
-        // template<bool IsInstanceCallT, Variant::Type A1, Variant::Type A2>
-        // static void _call(const v8::FunctionCallbackInfo<v8::Value>& info)
-        // {
-        //     v8::Isolate* isolate = info.GetIsolate();
-        //     v8::Local<v8::Context> context = isolate->GetCurrentContext();
-        //     const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
-        //     GDTransitionNumber value = 0;
-        //     Variant args[] = { {}, {} };
-        //     if (!Realm::js_to_gd_var(isolate, context, info[0], A1, args[0])
-        //         || !Realm::js_to_gd_var(isolate, context, info[1], A2, args[1]))
-        //     {
-        //         jsb_throw(isolate, "bad param");
-        //         return;
-        //     }
-        //     const void* argv[] = { VariantInternal::get_opaque_pointer(&args[0]), VariantInternal::get_opaque_pointer(&args[1]) };
-        //     func(ReflectThis<IsInstanceCallT>::from(info), &argv[0], &value, 2);
-        //     info.GetReturnValue().Set(v8::Number::New(isolate, value));
-        // }
     };
 
-    template<typename>
-    struct ReflectGetSetPointerCall
+    // specialized for: int32_t call();
+    template<typename OwnerT>
+    struct ReflectBuiltinMethodPointerCall<OwnerT, int32_t>
+    {
+        static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::INT == return_type; }
+
+        template<bool IsInstanceCallT>
+        static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
+            GDTransitionNumber<int32_t> value = 0;
+            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
+            else func(nullptr, nullptr, &value, 0);
+            info.GetReturnValue().Set(impl::Helper::new_integer(isolate, value));
+        }
+    };
+
+    // specialized for: bool call();
+    template<typename OwnerT>
+    struct ReflectBuiltinMethodPointerCall<OwnerT, bool>
+    {
+        static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::BOOL == return_type; }
+
+        template<bool IsInstanceCallT>
+        static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
+            bool value = false;
+            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
+            else func(nullptr, nullptr, &value, 0);
+            info.GetReturnValue().Set(v8::Boolean::New(isolate, value));
+        }
+    };
+
+    // specialized for: real_t call(real_t);
+    template<typename OwnerT>
+    struct ReflectBuiltinMethodPointerCall<OwnerT, real_t, real_t>
+    {
+        static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::FLOAT == return_type; }
+
+        template<bool IsInstanceCallT>
+        static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            real_t loc_0;
+            if (!StaticBindingUtil<real_t>::get(isolate, isolate->GetCurrentContext(), info[0], loc_0))
+            {
+                jsb_throw(isolate, "bad param at 0");
+                return;
+            }
+            const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
+            const void* args[] = { &loc_0 };
+            GDTransitionNumber<real_t> value = 0;
+            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), args, &value, 0);
+            else func(nullptr, args, &value, 0);
+            info.GetReturnValue().Set(v8::Number::New(isolate, value));
+        }
+    };
+
+    template<typename OwnerT, typename PropertyT>
+    struct TReflectGetSetPointerCall
     {
         static constexpr bool is_supported(Variant::Type member_type) { return false; }
 
@@ -143,17 +250,10 @@ namespace jsb
         static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info);  // no use
     };
 
-    template<>
-    struct ReflectGetSetPointerCall<real_t>
+    template<typename OwnerT>
+    struct TReflectGetSetPointerCall<OwnerT, real_t>
     {
         static constexpr bool is_supported(Variant::Type member_type) { return Variant::Type::FLOAT == member_type; }
-
-        /**
-         * Godot uses double in pointer function calls
-         * see variant_setget.h
-         * SETGET_NUMBER_STRUCT(Vector2, double, x)
-         */
-        typedef double GDTransitionNumber;
 
         // approx. 30% faster than plain reflection version of _getter/_setter
         static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -161,60 +261,52 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRGetter getter_func = (const Variant::PTRGetter) info.Data().As<v8::External>()->Value();
 
-            GDTransitionNumber value[] = { 0 };
-            getter_func(ReflectThis<true>::from(info), &value);
+            GDTransitionNumber<real_t> value[] = { 0 };
+            getter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
             info.GetReturnValue().Set(v8::Number::New(isolate, value[0]));
         }
 
         static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            if (!info[0]->IsNumber())
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const Variant::PTRSetter setter_func = (const Variant::PTRSetter) info.Data().As<v8::External>()->Value();
+            GDTransitionNumber<real_t> value;
+            if (!StaticBindingUtil<GDTransitionNumber<real_t>>::get(isolate, context, info[0], value))
             {
                 jsb_throw(isolate, "bad param");
                 return;
             }
-            const Variant::PTRSetter setter_func = (const Variant::PTRSetter) info.Data().As<v8::External>()->Value();
-            const GDTransitionNumber value = (const GDTransitionNumber) info[0]->NumberValue(context).ToChecked();
-            setter_func(ReflectThis<true>::from(info), &value);
+            setter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
         }
 
     };
 
-    template<>
-    struct ReflectGetSetPointerCall<int32_t>
+    template<typename OwnerT>
+    struct TReflectGetSetPointerCall<OwnerT, int32_t>
     {
         static constexpr bool is_supported(Variant::Type member_type) { return member_type == Variant::Type::INT; }
-
-        /**
-         * Godot uses int64_t in pointer function calls
-         * see variant_setget.h
-         * SETGET_NUMBER_STRUCT(Vector2i, int64_t, x)
-         */
-        typedef int64_t GDTransitionNumber;
 
         static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRGetter getter_func = (const Variant::PTRGetter) info.Data().As<v8::External>()->Value();
 
-            GDTransitionNumber value[] = { 0 };
-            getter_func(ReflectThis<true>::from(info), &value);
+            GDTransitionNumber<int32_t> value[] = { 0 };
+            getter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
             info.GetReturnValue().Set(impl::Helper::new_integer(isolate, value[0]));
         }
 
         static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
-            // loose int32 check
-            if (!info[0]->IsNumber())
+            GDTransitionNumber<int32_t> value;
+            if (!StaticBindingUtil<GDTransitionNumber<int32_t>>::get(info[0], value))
             {
                 jsb_throw(info.GetIsolate(), "bad param");
                 return;
             }
             const Variant::PTRSetter setter_func = (const Variant::PTRSetter) info.Data().As<v8::External>()->Value();
-            const GDTransitionNumber value = (const GDTransitionNumber) info[0].As<v8::Int32>()->Value();
-            setter_func(ReflectThis<true>::from(info), &value);
+            setter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
         }
 
     };
@@ -298,15 +390,14 @@ namespace jsb
             }
             else if (v8_argc == 2)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 real_t loc_0;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<real_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 real_t loc_1;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<real_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
@@ -365,15 +456,14 @@ namespace jsb
             }
             else if (v8_argc == 2)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 int32_t loc_0;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<int32_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 int32_t loc_1;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<int32_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
@@ -432,21 +522,20 @@ namespace jsb
             }
             else if (v8_argc == 3)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 real_t loc_0;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<real_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 real_t loc_1;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<real_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
                 real_t loc_2;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[2], loc_2))
+                if (!StaticBindingUtil<real_t>::get(info[2], loc_2))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
@@ -505,21 +594,20 @@ namespace jsb
             }
             else if (v8_argc == 3)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 int32_t loc_0;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<int32_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 int32_t loc_1;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<int32_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
                 int32_t loc_2;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[2], loc_2))
+                if (!StaticBindingUtil<int32_t>::get(info[2], loc_2))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
@@ -578,27 +666,26 @@ namespace jsb
             }
             else if (v8_argc == 4)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 real_t loc_0;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<real_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 real_t loc_1;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<real_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
                 real_t loc_2;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[2], loc_2))
+                if (!StaticBindingUtil<real_t>::get(info[2], loc_2))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
                 real_t loc_3;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[3], loc_3))
+                if (!StaticBindingUtil<real_t>::get(info[3], loc_3))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
@@ -657,27 +744,26 @@ namespace jsb
             }
             else if (v8_argc == 4)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 int32_t loc_0;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<int32_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 int32_t loc_1;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<int32_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
                 int32_t loc_2;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[2], loc_2))
+                if (!StaticBindingUtil<int32_t>::get(info[2], loc_2))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
                 int32_t loc_3;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[3], loc_3))
+                if (!StaticBindingUtil<int32_t>::get(info[3], loc_3))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
@@ -754,27 +840,26 @@ namespace jsb
             }
             else if (v8_argc == 4)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 real_t loc_0;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<real_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 real_t loc_1;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<real_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
                 real_t loc_2;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[2], loc_2))
+                if (!StaticBindingUtil<real_t>::get(info[2], loc_2))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
                 real_t loc_3;
-                if (!StaticBindingUtil<real_t>::get(isolate, context, info[3], loc_3))
+                if (!StaticBindingUtil<real_t>::get(info[3], loc_3))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
@@ -851,27 +936,26 @@ namespace jsb
             }
             else if (v8_argc == 4)
             {
-                const v8::Local<v8::Context> context = isolate->GetCurrentContext();
                 int32_t loc_0;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[0], loc_0))
+                if (!StaticBindingUtil<int32_t>::get(info[0], loc_0))
                 {
                     jsb_throw(isolate, "bad param at 0");
                     return;
                 }
                 int32_t loc_1;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[1], loc_1))
+                if (!StaticBindingUtil<int32_t>::get(info[1], loc_1))
                 {
                     jsb_throw(isolate, "bad param at 1");
                     return;
                 }
                 int32_t loc_2;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[2], loc_2))
+                if (!StaticBindingUtil<int32_t>::get(info[2], loc_2))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;
                 }
                 int32_t loc_3;
-                if (!StaticBindingUtil<int32_t>::get(isolate, context, info[3], loc_3))
+                if (!StaticBindingUtil<int32_t>::get(info[3], loc_3))
                 {
                     jsb_throw(isolate, "bad param at 2");
                     return;

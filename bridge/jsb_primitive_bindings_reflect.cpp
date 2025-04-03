@@ -18,23 +18,23 @@
     JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
 #if JSB_FAST_REFLECTION
-#define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) \
-    if (ReflectGetSetPointerCall<ForType>::is_supported(ForMemberType))\
+#define JSB_DEFINE_FAST_GETSET(ForMemberVariantType, ForMemberCppType, PropName) \
+    if (TReflectGetSetPointerCall<T, ForMemberCppType>::is_supported(ForMemberVariantType))\
     {\
         class_builder.Instance().Property(PropName,\
-            ReflectGetSetPointerCall<ForType>::_getter, (void*) Variant::get_member_ptr_getter(TYPE, PropName),\
-            ReflectGetSetPointerCall<ForType>::_setter, (void*) Variant::get_member_ptr_setter(TYPE, PropName)\
+            TReflectGetSetPointerCall<T, ForMemberCppType>::_getter, (void*) Variant::get_member_ptr_getter(TYPE, PropName),\
+            TReflectGetSetPointerCall<T, ForMemberCppType>::_setter, (void*) Variant::get_member_ptr_setter(TYPE, PropName)\
         );\
         continue;\
     } (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID, ClassName) \
-    if constexpr (ReflectConstructorCall<ForType>::is_supported(TYPE))\
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForCppType, ClassID, ClassName) \
+    if constexpr (ReflectConstructorCall<ForCppType>::is_supported(TYPE))\
     {\
-        return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, (ClassName), &ReflectConstructorCall<ForType>::constructor, *(ClassID));\
+        return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, (ClassName), &ReflectConstructorCall<ForCppType>::constructor, *(ClassID));\
     } (void) 0
 #else
-#define JSB_DEFINE_FAST_GETSET(ForMemberType, ForType, PropName) (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForType, ClassID, ClassName) (void) 0
+#define JSB_DEFINE_FAST_GETSET(ForMemberVariantType, ForMemberCppType, PropName) (void) 0
+#define JSB_DEFINE_FAST_CONSTRUCTOR(ForCppType, ClassID, ClassName) (void) 0
 #endif
 
 #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
@@ -563,33 +563,6 @@ namespace jsb
             call_builtin_function<HasReturnValueT>(nullptr, method_info, info, isolate, context);
         }
 
-        // template<typename ReturnTypeT>
-        // static constexpr bool bind_fast_method(const FBindingEnv& p_env, Variant::Type return_type, const StringName& name,
-        //     v8::Local<v8::FunctionTemplate> function_template,
-        //     v8::Local<v8::ObjectTemplate> prototype_template)
-        // {
-        //     // if (argument_count == 0)
-        //     {
-        //         if (ReflectBuiltinMethodPointerCall<ReturnTypeT>::is_supported && return_type == ReflectBuiltinMethodPointerCall<ReturnTypeT>::return_type)
-        //         {
-        //             if (Variant::is_builtin_method_static(TYPE, name))
-        //             {
-        //                 function_template->Set(BridgeHelper::to_string(p_env.isolate, name),
-        //                     v8::FunctionTemplate::New(p_env.isolate, &ReflectBuiltinMethodPointerCall<ReturnTypeT>::_call<false>,
-        //                         v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
-        //             }
-        //             else
-        //             {
-        //                 prototype_template->Set(BridgeHelper::to_string(p_env.isolate, name),
-        //                     v8::FunctionTemplate::New(p_env.isolate, &ReflectBuiltinMethodPointerCall<ReturnTypeT>::_call<true>,
-        //                         v8::External::New(p_env.isolate, (void*) Variant::get_ptr_builtin_method(TYPE, name))));
-        //             }
-        //             return true;
-        //         }
-        //     }
-        //     return false;
-        // }
-
         static impl::ClassBuilder get_class_builder(const ClassRegister& p_env, const NativeClassID p_class_id, const StringName& p_class_name)
         {
             JSB_DEFINE_FAST_CONSTRUCTOR(Vector2, p_class_id, p_class_name);
@@ -689,37 +662,124 @@ namespace jsb
 #if JSB_FAST_REFLECTION
                     if (!Variant::is_builtin_method_vararg(TYPE, name))
                     {
+                        //TODO hardcoded branches for fast method reflection wrapper
                         if (has_return_value)
                         {
-                            if (ReflectBuiltinMethodPointerCall<real_t>::is_supported(return_type))
+                            if (ReflectBuiltinMethodPointerCall<T, real_t>::is_supported(return_type))
                             {
                                 if (argument_count == 0)
                                 {
+                                    // func: float ();
+                                    void* func_ptr = (void*) Variant::get_ptr_builtin_method(TYPE, name);
                                     if (Variant::is_builtin_method_static(TYPE, name))
                                     {
-                                        class_builder.Static().Method(member_name, ReflectBuiltinMethodPointerCall<real_t>::_call<false>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                        class_builder.Static().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, real_t>::template call<false>, func_ptr);
                                     }
                                     else
                                     {
-                                        class_builder.Instance().Method(member_name, ReflectBuiltinMethodPointerCall<real_t>::_call<true>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                        class_builder.Instance().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, real_t>::template call<true>, func_ptr);
+                                    }
+                                    continue;
+                                }
+                                if (argument_count == 1)
+                                {
+                                    const Variant::Type arg_type_0 = Variant::get_builtin_method_argument_type(TYPE, name, 0);
+                                    if (arg_type_0 == Variant::FLOAT)
+                                    {
+                                        // func: float (float);
+                                        void* func_ptr = (void*) Variant::get_ptr_builtin_method(TYPE, name);
+                                        if (Variant::is_builtin_method_static(TYPE, name))
+                                        {
+                                            class_builder.Static().Method(member_name,
+                                                ReflectBuiltinMethodPointerCall<T, real_t, real_t>::template call<false>, func_ptr);
+                                        }
+                                        else
+                                        {
+                                            class_builder.Instance().Method(member_name,
+                                                ReflectBuiltinMethodPointerCall<T, real_t, real_t>::template call<true>, func_ptr);
+                                        }
+                                        continue;
+                                    }
+                                }
+                            }
+                            else if (ReflectBuiltinMethodPointerCall<T, int32_t>::is_supported(return_type))
+                            {
+                                if (argument_count == 0)
+                                {
+                                    // func: int32 ();
+                                    void* func_ptr = (void*) Variant::get_ptr_builtin_method(TYPE, name);
+                                    if (Variant::is_builtin_method_static(TYPE, name))
+                                    {
+                                        class_builder.Static().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, int32_t>::template call<false>, func_ptr);
+                                    }
+                                    else
+                                    {
+                                        class_builder.Instance().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, int32_t>::template call<true>, func_ptr);
+                                    }
+                                    continue;
+                                }
+                            }
+                            else if (ReflectBuiltinMethodPointerCall<T, bool>::is_supported(return_type))
+                            {
+                                if (argument_count == 0)
+                                {
+                                    // func: bool ();
+                                    void* func_ptr = (void*) Variant::get_ptr_builtin_method(TYPE, name);
+                                    if (Variant::is_builtin_method_static(TYPE, name))
+                                    {
+                                        class_builder.Static().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, bool>::template call<false>, func_ptr);
+                                    }
+                                    else
+                                    {
+                                        class_builder.Instance().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, bool>::template call<true>, func_ptr);
                                     }
                                     continue;
                                 }
                             }
                         }
-                        else if (ReflectBuiltinMethodPointerCall<void>::is_supported(return_type))
+                        else if (ReflectBuiltinMethodPointerCall<T, void>::is_supported(return_type))
                         {
                             if (argument_count == 0)
                             {
+                                // func: void ();
+                                void* func_ptr = (void*) Variant::get_ptr_builtin_method(TYPE, name);
                                 if (Variant::is_builtin_method_static(TYPE, name))
                                 {
-                                    class_builder.Static().Method(member_name, ReflectBuiltinMethodPointerCall<void>::_call<false>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                    class_builder.Static().Method(member_name,
+                                        ReflectBuiltinMethodPointerCall<T, void>::template call<false>, func_ptr);
                                 }
                                 else
                                 {
-                                    class_builder.Instance().Method(member_name, ReflectBuiltinMethodPointerCall<void>::_call<true>, (void*) Variant::get_ptr_builtin_method(TYPE, name));
+                                    class_builder.Instance().Method(member_name,
+                                        ReflectBuiltinMethodPointerCall<T, void>::template call<true>, func_ptr);
                                 }
                                 continue;
+                            }
+                            if (argument_count == 1)
+                            {
+                                const Variant::Type arg_type_0 = Variant::get_builtin_method_argument_type(TYPE, name, 0);
+                                if (arg_type_0 == Variant::FLOAT)
+                                {
+                                    // func: void (float);
+                                    void* func_ptr = (void*) Variant::get_ptr_builtin_method(TYPE, name);
+                                    if (Variant::is_builtin_method_static(TYPE, name))
+                                    {
+                                        class_builder.Static().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, void, real_t>::template call<false>, func_ptr);
+                                    }
+                                    else
+                                    {
+                                        class_builder.Instance().Method(member_name,
+                                            ReflectBuiltinMethodPointerCall<T, void, real_t>::template call<true>, func_ptr);
+                                    }
+                                    continue;
+                                }
                             }
                         }
                     }

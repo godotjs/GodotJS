@@ -123,6 +123,16 @@ namespace jsb
     template<>
     struct StaticBindingUtil<float>
     {
+        static bool get(const v8::Local<v8::Value>& p_input, float& r_value)
+        {
+            if (p_input->IsNumber())
+            {
+                r_value = (float) p_input.As<v8::Number>()->Value();
+                return true;
+            }
+            return false;
+        }
+
         static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, float& r_value)
         {
             if (p_input->IsNumber())
@@ -143,6 +153,16 @@ namespace jsb
     template<>
     struct StaticBindingUtil<double>
     {
+        static bool get(const v8::Local<v8::Value>& p_input, double& r_value)
+        {
+            if (p_input->IsNumber())
+            {
+                r_value = (double) p_input.As<v8::Number>()->Value();
+                return true;
+            }
+            return false;
+        }
+
         static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, double& r_value)
         {
             if (p_input->IsNumber())
@@ -163,6 +183,13 @@ namespace jsb
     template<>
     struct StaticBindingUtil<int64_t>
     {
+        // for hardcoded call
+        static bool get(const v8::Local<v8::Value>& p_input, int64_t& r_value)
+        {
+            return impl::Helper::to_int64(p_input, r_value);
+        }
+
+        // for template-based call
         static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, int64_t& r_value)
         {
             return impl::Helper::to_int64(p_input, r_value);
@@ -178,6 +205,16 @@ namespace jsb
     template<>
     struct StaticBindingUtil<int32_t>
     {
+        static bool get(const v8::Local<v8::Value>& p_input, int32_t& r_value)
+        {
+            if (p_input->IsNumber())
+            {
+                r_value = (int32_t) p_input.As<v8::Int32>()->Value();
+                return true;
+            }
+            return false;
+        }
+
         static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, int32_t& r_value)
         {
             if (p_input->IsNumber())
