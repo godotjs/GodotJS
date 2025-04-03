@@ -68,7 +68,17 @@ namespace jsb::internal
             AddressScope& operator=(const AddressScope&) = delete;
 
             AddressScope(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; }
-            AddressScope& operator=(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; return *this; }
+
+            AddressScope& operator=(AddressScope&& p_other) noexcept
+            {
+                if (this != &p_other)
+                {
+                    if (container_) container_->unlock_address();
+                    container_ = p_other.container_;
+                    p_other.container_ = nullptr;
+                }
+                return *this;
+            }
         };
 
         template<typename S>
