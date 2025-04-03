@@ -2,13 +2,15 @@
 
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 
+HashSet<String> GodotJSExportPlugin::ignored_paths_ {
+    String("res://jsconfig.json"),
+    String("res://tsconfig.json"),
+    String("res://package.json"),
+    String("res://package-lock.json"),
+};
+
 GodotJSExportPlugin::GodotJSExportPlugin() : super()
 {
-    // explicitly ignored files (not used by runtime)
-    ignored_paths_.insert("res://jsconfig.json");
-    ignored_paths_.insert("res://tsconfig.json");
-    ignored_paths_.insert("res://package.json");
-    ignored_paths_.insert("res://package-lock.json");
     env_ = GodotJSScriptLanguage::get_singleton()->get_environment();
     jsb_check(env_);
 }

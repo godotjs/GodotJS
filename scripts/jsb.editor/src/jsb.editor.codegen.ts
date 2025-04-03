@@ -8,6 +8,7 @@ import {
     Node,
     PropertyHint,
     PropertyInfo,
+    Resource,
     Variant,
     str as gd_to_string,
     type_string,
@@ -58,9 +59,13 @@ const member_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
     ? snake_to_camel_case
     : (name: string) => name;
 
+const parameter_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
+    ? snake_to_camel_case
+    : (name: string) => name;
+
 const enum_value_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
-  ? upper_snake_to_pascal_case
-  : (name: string) => name;
+    ? upper_snake_to_pascal_case
+    : (name: string) => name;
 
 // Godot's runtime can be toggled between snake case and camel case naming schemes. In this script we use upper camel
 // case value names. If the camel-case naming scheme is enabled, then we must convert to pascal case.
@@ -282,6 +287,30 @@ const TypeMutations: Record<string, TypeMutation> = {
             `${member_name("to_array_buffer")}(): ArrayBuffer`,
         ],
     },
+    PackedScene: {
+        generic_parameters: {
+            T: {
+                extends: "Node",
+                default: "Node",
+            },
+        },
+        property_overrides: {
+            pack: mutate_parameter_type("path", "T"),
+            instantiate: mutate_return_type("T"),
+        },
+    },
+    ResourceLoader: {
+        property_overrides: {
+            load: [
+                `static load<Path extends keyof ResourceTypes>(path: Path, ${parameter_name("type_hint")}: string = '', ${parameter_name("cache_mode")}: ResourceLoader.CacheMode = 1): ResourceTypes[Path]`,
+                "static load(path: string): Resource",
+            ],
+            load_threaded_get: [
+                `static load_threaded_get<Path extends keyof ResourceTypes>(path: Path): ResourceTypes[Path]`,
+                "static load_threaded_get(path: string): Resource",
+            ],
+        },
+    },
 };
 
 const InheritedTypeMutations: Record<string, TypeMutation> = {
@@ -360,7 +389,7 @@ interface CodeWriter {
 
     line(text: string): void;
     concatenate(text: string): void;
-	append(newLine: boolean, text: string): void;
+    append(newLine: boolean, text: string): void;
 
     enum_(name: string): EnumWriter;
     namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter;
@@ -799,49 +828,49 @@ class DocCommentHelper {
 }
 
 abstract class BufferingWriter extends AbstractWriter {
-	protected _base: ScopeWriter;
-	protected _lines: string[];
-	protected _size: number = 0;
-	protected _concatenate_first_line = false;
+    protected _base: ScopeWriter;
+    protected _lines: string[];
+    protected _size: number = 0;
+    protected _concatenate_first_line = false;
 
-	constructor(base: ScopeWriter, concatenate_first_line = false) {
-		super();
-		this._base = base;
-		this._lines = [];
-		this._concatenate_first_line = concatenate_first_line;
-	}
+    constructor(base: ScopeWriter, concatenate_first_line = false) {
+        super();
+        this._base = base;
+        this._lines = [];
+        this._concatenate_first_line = concatenate_first_line;
+    }
 
-	get size() { return this._size; }
-	get lineno() { return this._lines.length; }
-	get types() { return this._base.types; }
+    get size() { return this._size; }
+    get lineno() { return this._lines.length; }
+    get types() { return this._base.types; }
 
-	add_import(preferred_name: string, script_resource: string, export_name: string = "default") {
-		this._base.add_import(preferred_name, script_resource, export_name);
-	}
+    add_import(preferred_name: string, script_resource: string, export_name: string = "default") {
+        this._base.add_import(preferred_name, script_resource, export_name);
+    }
 
-	get_imports(): Record<string, Record<string, string>> {
-		return this._base.get_imports();
-	}
+    get_imports(): Record<string, Record<string, string>> {
+        return this._base.get_imports();
+    }
 
-	resolve_import(script_resource: string): string {
-		return this._base.resolve_import(script_resource);
-	}
+    resolve_import(script_resource: string): string {
+        return this._base.resolve_import(script_resource);
+    }
 
-	abstract bufferedSize(text: string, newLine: boolean): number;
+    abstract bufferedSize(text: string, newLine: boolean): number;
 
-	line(text: string): void {
-		this._lines.push(text);
-		this._size += this.bufferedSize(text, this._lines.length > 1 || !this._concatenate_first_line);
-	}
+    line(text: string): void {
+        this._lines.push(text);
+        this._size += this.bufferedSize(text, this._lines.length > 1 || !this._concatenate_first_line);
+    }
 
-	concatenate(text: string): void {
-		if (this._lines.length > 0) {
-			this._lines[this._lines.length - 1] += text;
-			this._size += this.bufferedSize(text, false);
-		} else {
-			this.line(text);
-		}
-	}
+    concatenate(text: string): void {
+        if (this._lines.length > 0) {
+            this._lines[this._lines.length - 1] += text;
+            this._size += this.bufferedSize(text, false);
+        } else {
+            this.line(text);
+        }
+    }
 }
 
 class IndentWriter extends BufferingWriter {
@@ -856,9 +885,9 @@ class IndentWriter extends BufferingWriter {
         }
     }
 
-	bufferedSize(text: string, newLine: boolean): number {
-		return text.length + (newLine ? tab.length + 1 : 0);
-	}
+    bufferedSize(text: string, newLine: boolean): number {
+        return text.length + (newLine ? tab.length + 1 : 0);
+    }
 }
 
 export enum DescriptorType {
@@ -875,6 +904,7 @@ export enum DescriptorType {
     Tuple,
     Infer,
     Mapped,
+    Indexed,
 }
 
 /**
@@ -944,7 +974,7 @@ export type ObjectLiteralTypeDescriptor = GDictionary<{
 export type StringLiteralTypeDescriptor = GDictionary<{
     type: DescriptorType.StringLiteral;
     value: string;
-    template: boolean; // Indicates whether the literal represents a template literal denoted by backticks.
+    template?: boolean; // Indicates whether the literal represents a template literal denoted by backticks.
 }>;
 
 export type NumberLiteralTypeDescriptor = GDictionary<{
@@ -998,6 +1028,12 @@ export type MappedTypeDescriptor = GDictionary<{
     value: TypeDescriptor;
 }>;
 
+export type IndexedTypeDescriptor = GDictionary<{
+    type: DescriptorType.Indexed;
+    base: TypeDescriptor;
+    index: TypeDescriptor;
+}>;
+
 export type TypeDescriptor =
     | GodotTypeDescriptor
     | UserTypeDescriptor
@@ -1011,7 +1047,8 @@ export type TypeDescriptor =
     | IntersectionTypeDescriptor
     | InferTypeDescriptor
     | ConditionalTypeDescriptor
-    | MappedTypeDescriptor;
+    | MappedTypeDescriptor
+    | IndexedTypeDescriptor;
 
 /**
  * Codegen analogue of NodePathMap.
@@ -1020,10 +1057,11 @@ export type NodeTypeDescriptorPathMap = GDictionary<Partial<Record<string, TypeD
 
 export enum CodeGenType {
     ScriptNodeTypeDescriptor,
+    ScriptResourceTypeDescriptor,
 }
 
 /**
- * Handle a NodeTypeDescriptorCodeGenRequest to overwrite the generated type for node's using this script.
+ * Handle a NodeTypeDescriptorCodeGenRequest to overwrite the generated type for nodes using this script.
  */
 export type ScriptNodeTypeDescriptorCodeGenRequest = GDictionary<{
     type: CodeGenType.ScriptNodeTypeDescriptor;
@@ -1031,7 +1069,15 @@ export type ScriptNodeTypeDescriptorCodeGenRequest = GDictionary<{
     children: NodeTypeDescriptorPathMap;
 }>;
 
-export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest;
+/**
+ * Handle a ScriptResourceTypeDescriptorCodeGenRequest to overwrite the generated type for resources using this script.
+ */
+export type ScriptResourceTypeDescriptorCodeGenRequest = GDictionary<{
+    type: CodeGenType.ScriptResourceTypeDescriptor;
+    resource: Resource;
+}>;
+
+export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest | ScriptResourceTypeDescriptorCodeGenRequest;
 
 /**
  * You can manipulate GodotJS' codegen by exporting a function from your script/module called `codegen`.
@@ -1039,27 +1085,27 @@ export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest;
 export type CodeGenHandler = (request: CodeGenRequest) => undefined | TypeDescriptor;
 
 class TypeDescriptorWriter extends BufferingWriter {
-	bufferedSize(text: string, newLine: boolean): number {
-		return text.length + (newLine ? 1 : 0);
-	}
+    bufferedSize(text: string, newLine: boolean): number {
+        return text.length + (newLine ? 1 : 0);
+    }
 
-	finish() {
-		const lines = this._lines;
-		for (let i = 0, l = lines.length; i < l; i++) {
-			if (i === 0 && this._concatenate_first_line) {
-				this._base.concatenate(lines[i]);
-			} else {
-				this._base.line(lines[i]);
-			}
-		}
-	}
+    finish() {
+        const lines = this._lines;
+        for (let i = 0, l = lines.length; i < l; i++) {
+            if (i === 0 && this._concatenate_first_line) {
+                this._base.concatenate(lines[i]);
+            } else {
+                this._base.line(lines[i]);
+            }
+        }
+    }
 
-	serialize_type_descriptor(descriptor: GReadProxyValueWrap<TypeDescriptor>): void {
+    serialize_type_descriptor(descriptor: GReadProxyValueWrap<TypeDescriptor>): void {
         switch (descriptor.type) {
             case DescriptorType.Godot: {
                 if (descriptor.arguments) {
                     this.line(`${descriptor.name}<`);
-					const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
+                    const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
                     const args = new TypeDescriptorWriter(indent ?? this, descriptor.arguments.length === 1);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
@@ -1069,7 +1115,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                         args.serialize_type_descriptor(arg);
                     });
                     args.finish();
-					indent?.finish();
+                    indent?.finish();
                     this.append(descriptor.arguments.length !== 1, `>`);
                 } else {
                     this.line(descriptor.name);
@@ -1079,17 +1125,17 @@ class TypeDescriptorWriter extends BufferingWriter {
             case DescriptorType.User: {
                 if (descriptor.arguments) {
                     this.line(`${descriptor.name}<`);
-					const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
-					const args = new TypeDescriptorWriter(indent ?? this, descriptor.arguments.length === 1);
-					descriptor.arguments.forEach((arg, index) => {
-						if (index > 0) {
-							args.concatenate(", ");
-						}
+                    const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
+                    const args = new TypeDescriptorWriter(indent ?? this, descriptor.arguments.length === 1);
+                    descriptor.arguments.forEach((arg, index) => {
+                        if (index > 0) {
+                            args.concatenate(", ");
+                        }
 
-						args.serialize_type_descriptor(arg);
-					});
-					args.finish();
-					indent?.finish();
+                        args.serialize_type_descriptor(arg);
+                    });
+                    args.finish();
+                    indent?.finish();
                     this.append(descriptor.arguments.length !== 1, `>`);
                 } else {
                     this.line(descriptor.name);
@@ -1174,32 +1220,32 @@ class TypeDescriptorWriter extends BufferingWriter {
                 }
 
                 this.line("{");
-				const indent = new IndentWriter(this);
+                const indent = new IndentWriter(this);
                 properties.forEach(([key, value]) => {
                     if (!value) {
                         return;
                     }
 
-					indent.line(`${key}: `);
+                    indent.line(`${key}: `);
                     const prop_writer = new TypeDescriptorWriter(indent, true);
                     prop_writer.serialize_type_descriptor(value);
                     prop_writer.finish();
-					indent.concatenate(";");
+                    indent.concatenate(";");
                 });
 
                 if (descriptor.index) {
-					indent.line("[key: ");
+                    indent.line("[key: ");
                     const key_writer = new TypeDescriptorWriter(indent, true);
                     key_writer.serialize_type_descriptor(descriptor.index.key);
                     key_writer.finish();
-					indent.concatenate("]: ");
+                    indent.concatenate("]: ");
                     const value_writer = new TypeDescriptorWriter(indent, true);
                     value_writer.serialize_type_descriptor(descriptor.index.value);
                     value_writer.finish();
-					indent.concatenate(";");
+                    indent.concatenate(";");
                 }
 
-				indent.finish();
+                indent.finish();
                 this.line("}");
                 break;
             }
@@ -1315,6 +1361,19 @@ class TypeDescriptorWriter extends BufferingWriter {
                 value_writer.finish();
                 this.append(this.lineno === value_start_line, "}");
 
+                break;
+            }
+
+            case DescriptorType.Indexed: {
+                const base_writer = new TypeDescriptorWriter(this);
+                base_writer.serialize_type_descriptor(descriptor.base);
+                base_writer.finish();
+
+                this.concatenate(`[`);
+                const index_writer = new TypeDescriptorWriter(this, true);
+                index_writer.serialize_type_descriptor(descriptor.index);
+                index_writer.finish();
+                this.concatenate("]");
                 break;
             }
         }
@@ -1726,11 +1785,11 @@ class InterfaceWriter extends IndentWriter {
 }
 
 class GenericWriter extends IndentWriter {
-	private _name: string;
+    private _name: string;
 
     constructor(base: AbstractWriter, name: string) {
         super(base);
-		this._name = name;
+        this._name = name;
         this._size += name.length + 2;
     }
 
@@ -1808,29 +1867,29 @@ class PropertyWriter extends BufferingWriter {
     constructor(base: ScopeWriter, name: string, concatenate_first_line = false) {
         super(base, concatenate_first_line);
         this._key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
-			? name
-			: `"${name.replace("\"", "\\\"")}"`;
-		this._size += this._key.length + 3;
+            ? name
+            : `"${name.replace("\"", "\\\"")}"`;
+        this._size += this._key.length + 3;
     }
 
-	finish() {
-		if (this._lines.length === 0) {
-			return;
-		}
+    finish() {
+        if (this._lines.length === 0) {
+            return;
+        }
 
-		this._base.append(!this._concatenate_first_line, `${this._key}: `);
+        this._base.append(!this._concatenate_first_line, `${this._key}: `);
 
-		const lines = this._lines;
-		for (let i = 0, l = lines.length; i < l; i++) {
-			this._base.append(i > 0, lines[i]);
-		}
+        const lines = this._lines;
+        for (let i = 0, l = lines.length; i < l; i++) {
+            this._base.append(i > 0, lines[i]);
+        }
 
-		this._base.concatenate(";");
-	}
+        this._base.concatenate(";");
+    }
 
-	bufferedSize(text: string, newLine: boolean): number {
-		return text.length + (newLine ? 1 : 0);
-	}
+    bufferedSize(text: string, newLine: boolean): number {
+        return text.length + (newLine ? 1 : 0);
+    }
 }
 
 class FileWriter extends AbstractWriter {
@@ -2444,101 +2503,187 @@ interface NodeHierarchy {
 }
 
 export class SceneTSDCodeGen {
-  private _out_dir: string;
-  private _scene_paths: string[];
-  private _types: TypeDB;
+    private _out_dir: string;
+    private _scene_paths: string[];
+    private _types: TypeDB;
 
-  constructor(out_dir: string, scene_paths: string[]) {
-    console.log("SceneTSDCodeGen constructor");
-    this._out_dir = out_dir;
-    this._scene_paths = scene_paths;
+    constructor(out_dir: string, scene_paths: string[]) {
+        console.log('SceneTSDCodeGen constructor');
+        this._out_dir = out_dir;
+        this._scene_paths = scene_paths;
 
-    this._types = new TypeDB();
-  }
-
-  private make_path(scene_path: string, include_filename = true) {
-    const relative_path = (
-        include_filename
-          ? scene_path.replace(/\.t?scn$/i, '.nodes.gen.d.ts')
-          : scene_path.replace(/\/[^\/]+$/, '')
-    ).replace(/^res:\/\//, '');
-
-    if (typeof this._out_dir !== "string" || this._out_dir.length == 0) {
-      return relative_path;
+        this._types = new TypeDB();
     }
 
-    return this._out_dir.endsWith("/")
-      ? this._out_dir + relative_path
-      : this._out_dir + "/" + relative_path;
-  }
+    private make_scene_path(scene_path: string, include_filename = true) {
+        const relative_path = (
+            include_filename
+                ? scene_path.replace(/\.t?scn$/i, '.nodes.gen.d.ts')
+                : scene_path.replace(/\/[^\/]+$/, '')
+        ).replace(/^res:\/\/?/, '');
 
-  async emit() {
-    await frame_step();
-
-    const tasks = new CodegenTasks("Generating scene node types");
-
-    for (const scene_path of this._scene_paths) {
-        tasks.add_task(`Generating scene node types: ${scene_path}`, () => this.emit_scene_node_types(scene_path));
-    }
-
-    return tasks.submit();
-  }
-
-  private emit_children_node_types(writer: ScopeWriter, children: GReadProxyValueWrap<NodeTypeDescriptorPathMap>) {
-      const child_writer = writer.object_();
-      for (const [key, value] of Object.entries(children)) {
-        if (!value) {
-          continue;
+        if (typeof this._out_dir !== 'string' || this._out_dir.length == 0) {
+            return relative_path;
         }
 
-        const property = child_writer.property_(key);
-        const descriptor = new TypeDescriptorWriter(property, true);
-        descriptor.serialize_type_descriptor(value);
-        descriptor.finish();
-        property.finish();
-      }
-      child_writer.finish();
-  }
-
-  private emit_scene_node_types(scene_path: string) {
-    try {
-      const helper = require('godot').GodotJSEditorHelper;
-      const children = (gd_method(helper, 'get_scene_nodes')(scene_path) as undefined | NodeTypeDescriptorPathMap)?.proxy();
-
-      if (typeof children !== 'object') {
-        throw new Error(`root node children unavailable: ${scene_path}`);
-      }
-
-      const dir_path = this.make_path(scene_path, false);
-      const dir_error = gd_method(DirAccess, 'make_dir_recursive_absolute')(dir_path);
-
-      if (dir_error !== 0) {
-        console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
-      }
-
-      const file_path = this.make_path(scene_path);
-      const file = gd_method(FileAccess, 'open')(file_path, enum_value(FileAccess.ModeFlags, "WRITE"));
-
-      if (!file) {
-        throw new Error(`failed to open file for writing: ${dir_path}`);
-      }
-
-      try {
-        const file_writer = new FileWriter(file_path, this._types, file);
-        const module = new ModuleWriter(file_writer, 'godot');
-        const scene_nodes_interface = new InterfaceWriter(module, 'SceneNodes');
-        const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ''));
-        this.emit_children_node_types(scene_property, children);
-        scene_property.finish();
-        scene_nodes_interface.finish();
-        module.finish();
-        file_writer.finish();
-      } finally {
-        file.close();
-      }
-    } catch (error) {
-      console.error(`failed to generate scene node types: ${scene_path}`);
-      throw error;
+        return this._out_dir.endsWith('/')
+            ? this._out_dir + relative_path
+            : this._out_dir + '/' + relative_path;
     }
-  }
+
+    async emit() {
+        await frame_step();
+
+        const tasks = new CodegenTasks('Generating scene node types');
+
+        for (const scene_path of this._scene_paths) {
+            tasks.add_task(`Generating scene node types: ${scene_path}`, () => this.emit_scene_node_types(scene_path));
+        }
+
+        return tasks.submit();
+    }
+
+    private emit_children_node_types(writer: ScopeWriter, children: GReadProxyValueWrap<NodeTypeDescriptorPathMap>) {
+        const child_writer = writer.object_();
+        for (const [key, value] of Object.entries(children)) {
+            if (!value) {
+                continue;
+            }
+
+            const property = child_writer.property_(key);
+            const descriptor = new TypeDescriptorWriter(property, true);
+            descriptor.serialize_type_descriptor(value);
+            descriptor.finish();
+            property.finish();
+        }
+        child_writer.finish();
+    }
+
+    private emit_scene_node_types(scene_path: string) {
+        try {
+            const helper = require('godot').GodotJSEditorHelper;
+            const children = (gd_method(helper, 'get_scene_nodes')(scene_path) as undefined | NodeTypeDescriptorPathMap)?.proxy();
+
+            if (typeof children !== 'object') {
+                throw new Error(`root node children unavailable: ${scene_path}`);
+            }
+
+            const dir_path = this.make_scene_path(scene_path, false);
+            const dir_error = gd_method(DirAccess, 'make_dir_recursive_absolute')(dir_path);
+
+            if (dir_error !== 0) {
+                console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
+            }
+
+            const file_path = this.make_scene_path(scene_path);
+            const file = gd_method(FileAccess, 'open')(file_path, enum_value(FileAccess.ModeFlags, 'WRITE'));
+
+            if (!file) {
+                throw new Error(`failed to open file for writing: ${dir_path}`);
+            }
+
+            try {
+                const file_writer = new FileWriter(file_path, this._types, file);
+                const module = new ModuleWriter(file_writer, 'godot');
+                const scene_nodes_interface = new InterfaceWriter(module, 'SceneNodes');
+                const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ''));
+                this.emit_children_node_types(scene_property, children);
+                scene_property.finish();
+                scene_nodes_interface.finish();
+                module.finish();
+                file_writer.finish();
+            } finally {
+                file.close();
+            }
+        } catch (error) {
+            console.error(`failed to generate scene node types: ${scene_path}`);
+            throw error;
+        }
+    }
+}
+
+export class ResourceTSDCodeGen {
+    private _out_dir: string;
+    private _resource_paths: string[];
+    private _types: TypeDB;
+
+    constructor(out_dir: string, resource_paths: string[]) {
+        console.log('ResourceTSDCodeGen constructor');
+        this._out_dir = out_dir;
+        this._resource_paths = resource_paths;
+
+        this._types = new TypeDB();
+    }
+
+    private make_resource_path(resource_path: string, include_filename = true) {
+        const relative_path = (
+          include_filename
+            ? resource_path + '.gen.d.ts'
+            : resource_path.replace(/\/[^\/]+$/, '')
+        ).replace(/^res:\/\/?/, '');
+
+        if (typeof this._out_dir !== 'string' || this._out_dir.length == 0) {
+            return relative_path;
+        }
+
+        return this._out_dir.endsWith('/')
+          ? this._out_dir + relative_path
+          : this._out_dir + '/' + relative_path;
+    }
+
+    async emit() {
+        await frame_step();
+
+        const tasks = new CodegenTasks('Generating resource types');
+
+        for (const resource_path of this._resource_paths) {
+            tasks.add_task(`Generating resource type: ${resource_path}`, () => this.emit_resource_type(resource_path));
+        }
+
+        return tasks.submit();
+    }
+
+    private emit_resource_type(resource_path: string) {
+        try {
+            const helper = require('godot').GodotJSEditorHelper;
+            const descriptor = (gd_method(helper, 'get_resource_type_descriptor')(resource_path) as undefined | TypeDescriptor)?.proxy();
+
+            if (typeof descriptor !== 'object') {
+                throw new Error(`resource type unavailable: ${resource_path}`);
+            }
+
+            const dir_path = this.make_resource_path(resource_path, false);
+            const dir_error = gd_method(DirAccess, 'make_dir_recursive_absolute')(dir_path);
+
+            if (dir_error !== 0) {
+                console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
+            }
+
+            const file_path = this.make_resource_path(resource_path);
+            const file = gd_method(FileAccess, 'open')(file_path, enum_value(FileAccess.ModeFlags, 'WRITE'));
+
+            if (!file) {
+                throw new Error(`failed to open file for writing: ${dir_path}`);
+            }
+
+            try {
+                const file_writer = new FileWriter(file_path, this._types, file);
+                const module = new ModuleWriter(file_writer, 'godot');
+                const resource_types_interface = new InterfaceWriter(module, 'ResourceTypes');
+                const resource_property = resource_types_interface.property_(resource_path);
+                const type_descriptor = new TypeDescriptorWriter(resource_property, true);
+                type_descriptor.serialize_type_descriptor(descriptor);
+                type_descriptor.finish();
+                resource_property.finish();
+                resource_types_interface.finish();
+                module.finish();
+                file_writer.finish();
+            } finally {
+                file.close();
+            }
+        } catch (error) {
+            console.error(`failed to generate resource type: ${resource_path}`);
+            throw error;
+        }
+    }
 }
