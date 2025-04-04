@@ -16,6 +16,8 @@ namespace jsb::internal
     static constexpr char kEdIgnoredClasses[] =     JSB_MODULE_NAME_STRING "/codegen/ignored_classes";
     static constexpr char kEdAutogenSceneDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_scene_dts_on_save";
     static constexpr char kEdGenSceneDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_scene_dts";
+    static constexpr char kEdAutogenResourceDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_resource_dts_on_save";
+    static constexpr char kEdGenResourceDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_resource_dts";
 #endif
 
     // use unnecessary first category layer (runtime and editor) to make the second layer shown as sections in project settings
@@ -57,6 +59,8 @@ namespace jsb::internal
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
                 _EDITOR_DEF(kEdGenSceneDTS, true, false);
                 _EDITOR_DEF(kEdAutogenSceneDTSOnSave, true, false);
+                _EDITOR_DEF(kEdGenResourceDTS, true, false);
+                _EDITOR_DEF(kEdAutogenResourceDTSOnSave, true, false);
             }
         }
         return inited;
@@ -118,6 +122,18 @@ namespace jsb::internal
     {
         init_editor_settings();
         return EDITOR_GET(kEdGenSceneDTS);
+    }
+
+    bool Settings::get_autogen_resource_dts_on_save()
+    {
+        init_editor_settings();
+        return EDITOR_GET(kEdAutogenResourceDTSOnSave);
+    }
+
+    bool Settings::get_gen_resource_dts()
+    {
+        init_editor_settings();
+        return EDITOR_GET(kEdGenResourceDTS);
     }
 #endif
 

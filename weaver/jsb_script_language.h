@@ -106,9 +106,7 @@ private:
     ScriptCallProfileInfoMap profile_info_map_;
 #endif
 
-    // [TS] matches 'export default class ClassName extends BaseName {'
     Ref<RegEx> ts_class_name_matcher_;
-    Ref<RegEx> ts_class_name_tool_matcher_;
 
     // [JS] export & declare in two lines, matches 'class ClassName extends BaseName' + 'exports.default = ClassName'
     Ref<RegEx> js_class_name_matcher2_;
@@ -133,6 +131,8 @@ public:
     void scan_external_changes();
 
     void add_script_call_profile_info(const String& p_path, const StringName& p_class, const StringName& p_method, uint64_t p_time);
+
+    bool is_global_class_generic(const String &p_path) const;
 
     template<size_t N>
     jsb::JSValueMove eval_source(const char (&p_code)[N], Error& r_err)

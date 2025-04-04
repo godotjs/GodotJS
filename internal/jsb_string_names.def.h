@@ -61,7 +61,13 @@ DEF(transfer)
 DEF(close)
 
 // editor
+#ifdef TOOLS_ENABLED
 DEF(arguments)
+DEF(base)
 DEF(codegen)
+DEF(index)
 DEF(node)
 DEF(properties)
+DEF(resource)
+DEF(GodotJSScript)
+#endif
