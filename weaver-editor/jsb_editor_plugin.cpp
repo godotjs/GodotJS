@@ -141,6 +141,67 @@ bool GodotJSEditorPlugin::delete_file(const String &p_file)
     return jsb::internal::PathUtil::delete_file(path);
 }
 
+String GodotJSEditorPlugin::mutate_types(const String& p_content)
+{
+    // Regex obviously isn't the best tool for the job and this regex will, for example, match some generic parameter
+    // names. However, for now, it does the job.
+    RegEx type_regex("(?m)(?:=>|[:|&<=,{]|\\s+(?:type|enum|extends)\\s+|\\s+(?:class|interface)(?:<[^>]+>)?\\s+)\\s*([A-Z]\\w+)(?:\\.([A-Z]\\w+))*");
+    TypedArray<RegExMatch> type_matches = type_regex.search_all(p_content);
+    String result = p_content;
+    for (int match_index = type_matches.size() - 1; match_index >= 0; match_index--)
+    {
+        Ref<RegExMatch> match = type_matches[match_index];
+        String identifier;
+        String replacement;
+        int start;
+        int end;
+
+        if (!match->get_string(2).is_empty())
+        {
+            // Whilst PCRE2 supports repeated capture groups, only the last match for a repeated group is stored. We
+            // need to replace all matches.
+            start = match->get_end(1) + 1;
+            end = match->get_end(0);
+            String component_str = result.substr(start, end - start);
+            Vector<String> components = component_str.split(".");
+            for (int i = components.size() - 1; i >= 0; i--)
+            {
+                String component = components[i];
+                start = end - component.length();
+                identifier = result.substr(start, end - start);
+                replacement = jsb::internal::NamingUtil::get_class_name(identifier);
+                if (replacement != identifier)
+                {
+                    result = result.substr(0, start) + replacement + result.substr(end);
+                }
+                end = start - 1;
+            }
+        }
+
+        start = match->get_start(1);
+        end = match->get_end(1);
+        identifier = result.substr(start, end - start);
+        replacement = jsb::internal::NamingUtil::get_class_name(identifier);
+        if (replacement != identifier && identifier != "Array") // Godot Array is already GArray, Array is the JS type.
+        {
+            result = result.substr(0, start) + replacement + result.substr(end);
+        }
+    }
+
+    // Remove references
+    RegEx reference_regex("(?m)^///\\s*<reference\\spath=.+$");
+    TypedArray<RegExMatch> reference_matches = reference_regex.search_all(result);
+    for (int match_index = reference_matches.size() - 1; match_index >= 0; match_index--)
+    {
+        Ref<RegExMatch> match = reference_matches[match_index];
+        int start = match->get_start(0);
+        int end = match->get_end(0);
+        result = result.substr(0, start) + result.substr(end + 1);
+    }
+
+    return result;
+}
+
 Error GodotJSEditorPlugin::apply_file(const jsb::weaver::InstallFileInfo &p_file)
 {
     const String target_name = jsb::internal::PathUtil::combine(p_file.target_dir, p_file.source_name);
@@ -171,6 +232,12 @@ Error GodotJSEditorPlugin::apply_file(const jsb::weaver::InstallFileInfo &p_file
         parsed = parsed.replacen("__MODULE__", "CommonJS"); // CommonJS is the only option currently supported
         parsed = parsed.replacen("__TYPE_ROOTS__", String(",").join({ R"("./node_modules/@types")", "\"./" JSB_TYPE_ROOT "\"" }));
         outfile->store_string(parsed);
+    }
+    else if ((p_file.hint & jsb::weaver::CH_D_TS) != 0 && target_name.ends_with(".d.ts"))
+    {
+        String parsed;
+        parsed.parse_utf8(data, (int) size);
+        outfile->store_string(mutate_types(parsed));
     }
     else
     {
@@ -243,12 +310,20 @@ bool GodotJSEditorPlugin::verify_file(const jsb::weaver::InstallFileInfo& p_file
         const Ref<FileAccess> access = FileAccess::open(target_name, FileAccess::READ, &err);
         if (err != OK || access.is_null()) return false;
         const size_t file_len = access->get_length();
+        String mutated_data;
+        if ((p_file.hint & jsb::weaver::CH_D_TS) != 0 && target_name.ends_with(".d.ts"))
+        {
+            String parsed;
+            parsed.parse_utf8(data, (int) size);
+            mutated_data = mutate_types(parsed);
+            size = mutated_data.length();
+        }
         if (file_len != size) return false;
         Vector<uint8_t> file_data;
         jsb_check(size == (size_t)(int) size);
         if (file_data.resize((int) size) != OK) return false;
         if (access->get_buffer(file_data.ptrw(), size) != size) return false;
-        return memcmp(data, file_data.ptr(), size) == 0;
+        return memcmp(mutated_data.is_empty() ? data : mutated_data.utf8().ptr(), file_data.ptr(), size) == 0;
     }
     return true;
 }

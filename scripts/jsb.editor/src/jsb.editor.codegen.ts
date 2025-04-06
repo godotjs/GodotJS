@@ -1,50 +1,26 @@
-import {
-    DirAccess,
+import type {
     FileAccess,
     GArray,
     GDictionary,
     GReadProxyValueWrap,
-    MethodFlags,
     Node,
-    PropertyHint,
     PropertyInfo,
     Resource,
     Variant,
-    str as gd_to_string,
-    type_string,
-} from 'godot';
-import * as jsb from "godot-jsb";
+} from "godot";
 
-type UpperSnakeToPascalCase<S extends string> =
-    S extends `${infer T}_${infer U}`
-        ? `${Capitalize<Lowercase<T>>}${UpperSnakeToPascalCase<Capitalize<Lowercase<U>>>}`
-        : Capitalize<Lowercase<S>>;
+import type * as GodotJsb from "godot-jsb";
+const godot = require("godot.lib.api");
 
-function upper_snake_to_pascal_case<T extends string>(input: T): UpperSnakeToPascalCase<T> {
-    return input
-        .toLowerCase()
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join('') as UpperSnakeToPascalCase<T>;
-}
-
-type SnakeToCamelCase<S extends string> =
-    S extends `${infer T}_${infer U}${infer Rest}`
-        ? `${T}${Capitalize<U>}${SnakeToCamelCase<Rest>}`
-        : S;
-
-function snake_to_camel_case<T extends string>(input: T): SnakeToCamelCase<T> {
-    return input
-        .toLowerCase()
-        .split('_')
-        .map((word, index) => index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1))
-        .join('') as SnakeToCamelCase<T>;
-}
+const jsb = godot.jsb;
+const gd_to_string = godot.str;
+const names = jsb.internal.names;
 
 function camel_property_overrides(overrides: undefined | Record<string, string[] | ((line: string) => string)>) {
+    const get_member = jsb.internal.names.get_member;
     return overrides && Object.fromEntries(
         Object.entries(overrides).map(([name, value]) => {
-            const camel_case_name = snake_to_camel_case(name);
+            const camel_case_name = get_member(name);
             return [
                 camel_case_name,
                 Array.isArray(value)
@@ -53,30 +29,6 @@ function camel_property_overrides(overrides: undefined | Record<string, string[]
             ];
         })
     )
-}
-
-const member_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
-    ? snake_to_camel_case
-    : (name: string) => name;
-
-const parameter_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
-    ? snake_to_camel_case
-    : (name: string) => name;
-
-const enum_value_name = jsb.CAMEL_CASE_BINDINGS_ENABLED
-    ? upper_snake_to_pascal_case
-    : (name: string) => name;
-
-// Godot's runtime can be toggled between snake case and camel case naming schemes. In this script we use upper camel
-// case value names. If the camel-case naming scheme is enabled, then we must convert to pascal case.
-function enum_value<E, N extends keyof E & string>(enum_map: E, name: N): E[N] {
-    return enum_map[enum_value_name(name) as keyof E] as E[N];
-}
-
-// Godot's runtime can be toggled between snake case and camel case naming schemes. In this script we use lower snake
-// case method names. If the camel-case naming scheme is enabled, then we must convert to camel case.
-function gd_method<O, N extends keyof O & string>(obj: O, name: N): O[N] {
-    return (obj[member_name(name) as keyof O] as Function).bind(obj) as O[N];
 }
 
 if (!jsb.TOOLS_ENABLED) {
@@ -109,7 +61,7 @@ function chain_mutators(...mutators: Array<(line: string) => string>) {
 }
 function mutate_parameter_type(name: string, type: string) {
     return function(line: string) {
-        const replaced = line.replace(new RegExp(`([,(] *)${name.replace(/\./g, "\\.")}: .+?( ?[,)=])`, 'g'), `$1${name}: ${type}$2`);
+        const replaced = line.replace(new RegExp(`([,(] *)${name.replace(/\./g, "\\.")}\\??: .+?( ?[,)/])`, "g"), `$1${name}: ${type}$2`);
         if (replaced === line) {
             throw new Error(`Failed to mutate "${name}" parameter's type: ${line}`);
         }
@@ -138,7 +90,7 @@ function mutate_template(template: string) {
 const TypeMutations: Record<string, TypeMutation> = {
     Signal: {
         intro: [
-            `${member_name("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
+            `${names.get_member("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
         ],
         generic_parameters: {
             T: {
@@ -162,7 +114,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             "/**",
             " * Create godot Callable with a bound object `self`.",
             " */",
-            "static create<S extends GDObject, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>",
+            "static create<S extends Object, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>",
         ],
         generic_parameters: {
             T: {
@@ -178,7 +130,7 @@ const TypeMutations: Record<string, TypeMutation> = {
     GArray: {
         generic_parameters: {
             T: {
-                default: "Any",
+                default: GodotAnyType,
             },
         },
         intro: [
@@ -188,8 +140,8 @@ const TypeMutations: Record<string, TypeMutation> = {
             "/** Returns a Proxy that targets this GArray but behaves similar to a JavaScript array. */",
             "proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>",
             "",
-            `${member_name("set_indexed")}(index: number, value: T): void`,
-            `${member_name("get_indexed")}(index: number): T`,
+            `${names.get_member("set_indexed")}(index: number, value: T): void`,
+            `${names.get_member("get_indexed")}(index: number): T`,
         ],
         property_overrides: {
             set: mutate_parameter_type("value", "T"),
@@ -203,7 +155,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             has: mutate_parameter_type("value", "T"),
             bsearch: mutate_parameter_type("value", "T"),
             bsearch_custom: chain_mutators(mutate_parameter_type("value", "T"), mutate_parameter_type("func", "Callable2<T, T, boolean>")),
-            find: mutate_parameter_type('what', 'T'),
+            find: mutate_parameter_type("what", "T"),
             rfind: mutate_parameter_type("what", "T"),
             get: mutate_return_type("T"),
             front: mutate_return_type("T"),
@@ -237,8 +189,8 @@ const TypeMutations: Record<string, TypeMutation> = {
             "/** Returns a Proxy that targets this GDictionary but behaves similar to a regular JavaScript object. Values are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work. */",
             "proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>",
             "",
-            `${member_name("set_keyed")}<K extends keyof T>(key: K, value: T[K]): void`,
-            `${member_name("get_keyed")}<K extends keyof T>(key: K): T[K]`,
+            `${names.get_member("set_keyed")}<K extends keyof T>(key: K, value: T[K]): void`,
+            `${names.get_member("get_keyed")}<K extends keyof T>(key: K): T[K]`,
         ],
         property_overrides: {
             assign: mutate_parameter_type("dictionary", "T"),
@@ -285,7 +237,7 @@ const TypeMutations: Record<string, TypeMutation> = {
     PackedByteArray: {
         intro: [
             "/** [jsb utility method] Converts a PackedByteArray to a JavaScript ArrayBuffer. */",
-            `${member_name("to_array_buffer")}(): ArrayBuffer`,
+            `${names.get_member("to_array_buffer")}(): ArrayBuffer`,
         ],
     },
     PackedScene: {
@@ -303,7 +255,7 @@ const TypeMutations: Record<string, TypeMutation> = {
     ResourceLoader: {
         property_overrides: {
             load: [
-                `static load<Path extends keyof ResourceTypes>(path: Path, ${parameter_name("type_hint")}: string = '', ${parameter_name("cache_mode")}: ResourceLoader.CacheMode = 1): ResourceTypes[Path]`,
+                `static load<Path extends keyof ResourceTypes>(path: Path, ${names.get_parameter("type_hint")}?: string /* = "" */, ${names.get_parameter("cache_mode")}?: ResourceLoader.CacheMode /* = 1 */): ResourceTypes[Path]`,
                 "static load(path: string): Resource",
             ],
             load_threaded_get: [
@@ -326,11 +278,11 @@ const InheritedTypeMutations: Record<string, TypeMutation> = {
     },
 };
 
-function is_primitive_class_info(cls: jsb.editor.BasicClassInfo): cls is jsb.editor.PrimitiveClassInfo {
-    return 'type' in cls;
+function is_primitive_class_info(cls: GodotJsb.editor.BasicClassInfo): cls is GodotJsb.editor.PrimitiveClassInfo {
+    return "type" in cls;
 }
 
-function class_type_mutation(cls: jsb.editor.BasicClassInfo): TypeMutation {
+function class_type_mutation(cls: GodotJsb.editor.BasicClassInfo): TypeMutation {
     const intro: string[] = []
 
     if (is_primitive_class_info(cls) && typeof cls.element_type !== "undefined") {
@@ -360,7 +312,7 @@ function merge_type_mutations(base: TypeMutation, overrides: TypeMutation) {
     };
 }
 
-function get_type_mutation(name: string, classes: { [Name in string]?: jsb.editor.ClassInfo } = {}): TypeMutation {
+function get_type_mutation(name: string, classes: { [Name in string]?: GodotJsb.editor.ClassInfo } = {}): TypeMutation {
     const class_info = classes[name];
     let type_mutation = class_info ? class_type_mutation(class_info) : {};
     let super_name = class_info?.super;
@@ -393,7 +345,7 @@ interface CodeWriter {
     append(newLine: boolean, text: string): void;
 
     enum_(name: string): EnumWriter;
-    namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter;
+    namespace_(name: string, class_doc?: GodotJsb.editor.ClassDoc): NamespaceWriter;
     interface_(
         name: string,
         generic_parameters?: undefined | Record<string, GenericParameter>,
@@ -410,17 +362,17 @@ interface CodeWriter {
         property_overrides: undefined | PropertyOverrides,
         intro: undefined | Intro,
         singleton_mode: boolean,
-        class_doc?: jsb.editor.ClassDoc
+        class_doc?: GodotJsb.editor.ClassDoc
     ): ClassWriter;
     generic_(name: string): GenericWriter;
     property_(name: string): PropertyWriter;
     object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter;
-    // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter;
+    // singleton_(info: GodotJsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
 }
 
 interface ScopeWriter extends CodeWriter {
-    get class_doc(): jsb.editor.ClassDoc | undefined;
+    get class_doc(): GodotJsb.editor.ClassDoc | undefined;
 
     finish(): void;
 }
@@ -434,8 +386,8 @@ function frame_step() {
 }
 
 function toast(msg: string) {
-    let helper = require("godot").GodotJSEditorHelper;
-    gd_method(helper, 'show_toast')(msg, 0); // 0: info, 1: warning, 2: error
+    let helper = godot.GodotJSEditorHelper;
+    helper.show_toast(msg, 0); // 0: info, 1: warning, 2: error
 }
 
 interface CodegenTaskInfo {
@@ -456,10 +408,10 @@ class CodegenTasks {
     }
 
     async submit() {
-        const EditorProgress = require("godot").GodotJSEditorProgress;
+        const EditorProgress = godot.GodotJSEditorProgress;
         const progress = new EditorProgress();
         let force_wait = 24;
-        gd_method(progress, 'init')(`codegen-${this._name}`, `Generating ${this._name}`, this.tasks.length);
+        progress.init(`codegen-${this._name}`, `Generating ${this._name}`, this.tasks.length);
 
         try {
             for (let i = 0; i < this.tasks.length; ++i) {
@@ -467,25 +419,24 @@ class CodegenTasks {
                 const result = task.execute();
 
                 if (typeof result === "object" && result instanceof Promise) {
-                    gd_method(progress, 'set_state_name')(task.name);
-                    gd_method(progress, 'set_current')(i);
+                    progress.set_state_name(task.name);
+                    progress.set_current(i);
                     await result;
                 } else {
                     if (!(i % force_wait)) {
-                        gd_method(progress, 'set_state_name')(task.name);
-                        gd_method(progress, 'set_current')(i);
+                        progress.set_state_name(task.name);
+                        progress.set_current(i);
                         await frame_step();
                     }
                 }
             }
 
-            gd_method(progress, 'finish')();
+            progress.finish();
             toast(`${this._name} generated successfully`);
         } catch (e) {
-            console.error("CodegenTasks error:", e);
+            console.error(`CodegenTask ${this._name} error:`, e);
             toast(`${this._name} failed!`);
-            console.error(`${this._name} failed!`, e);
-            gd_method(progress, 'finish')();
+            progress.finish();
         }
     }
 }
@@ -525,16 +476,15 @@ const KeywordReplacement: { [name: string]: string } = {
 }
 
 const PrimitiveTypeNames: { [type: number]: string } = {
-    [enum_value(Variant.Type, "TYPE_NIL")]: "any",
-    [enum_value(Variant.Type, "TYPE_BOOL")]: "boolean",
-    [enum_value(Variant.Type, "TYPE_INT")]: "int64",
-    [enum_value(Variant.Type, "TYPE_FLOAT")]: "float64",
-    [enum_value(Variant.Type, "TYPE_STRING")]: "string",
+    [godot.Variant.Type.TYPE_NIL]: "any",
+    [godot.Variant.Type.TYPE_BOOL]: "boolean",
+    [godot.Variant.Type.TYPE_INT]: "int64",
+    [godot.Variant.Type.TYPE_FLOAT]: "float64",
+    [godot.Variant.Type.TYPE_STRING]: "string",
 }
 
 const RemapTypes: { [name: string]: string } = {
     ["bool"]: "boolean",
-    ["Error"]: "GError",
 }
 const IgnoredTypes = new Set([
     "IPUnix",
@@ -580,13 +530,13 @@ const GlobalUtilityFuncs = [
 
 const PrimitiveTypesSet = (function (): Set<string> {
     let set = new Set<string>();
-    for (let name in Variant.Type) {
+    for (let name in godot.Variant.Type) {
         // avoid babbling error messages in `type_string` call
-        if (<any>Variant.Type[name] === Variant.Type.TYPE_MAX) continue;
+        if (<any>godot.Variant.Type[name] === godot.Variant.Type.TYPE_MAX) continue;
 
         // use the original type name of Variant.Type,
         // because this set is used with type name from the original godot class info (PropertyInfo)
-        let str = type_string(<any>Variant.Type[name]);
+        let str = godot.type_string(<any>godot.Variant.Type[name]);
         if (str.length != 0) {
             set.add(str);
         }
@@ -600,8 +550,7 @@ function get_primitive_type_name(type: Variant.Type): string | undefined {
         return primitive_name;
     }
 
-    return jsb.internal.get_type_name(type);
-    // return type_string(type);
+    return jsb.internal.names.get_variant_type(type);
 }
 
 function get_js_array_type_name(element_type_name: string | undefined) {
@@ -620,16 +569,16 @@ function get_primitive_type_name_as_input(type: Variant.Type): string | undefine
     const primitive_name = get_primitive_type_name(type);
 
     switch (type) {
-        case enum_value(Variant.Type, "TYPE_PACKED_COLOR_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(enum_value(Variant.Type, "TYPE_COLOR"))));
-        case enum_value(Variant.Type, "TYPE_PACKED_VECTOR2_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(enum_value(Variant.Type, "TYPE_VECTOR2"))));
-        case enum_value(Variant.Type, "TYPE_PACKED_VECTOR3_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(enum_value(Variant.Type, "TYPE_VECTOR3"))));
-        case enum_value(Variant.Type, "TYPE_PACKED_STRING_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("string"));
-        case enum_value(Variant.Type, "TYPE_PACKED_FLOAT32_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("float32"));
-        case enum_value(Variant.Type, "TYPE_PACKED_FLOAT64_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("float64"));
-        case enum_value(Variant.Type, "TYPE_PACKED_INT32_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("int32"));
-        case enum_value(Variant.Type, "TYPE_PACKED_INT64_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("int64"));
-        case enum_value(Variant.Type, "TYPE_PACKED_BYTE_ARRAY"): return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
-        case enum_value(Variant.Type, "TYPE_NODE_PATH"): return join_type_name(primitive_name, "string");
+        case godot.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_COLOR)));
+        case godot.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_VECTOR2)));
+        case godot.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_VECTOR3)));
+        case godot.Variant.Type.TYPE_PACKED_STRING_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("string"));
+        case godot.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float32"));
+        case godot.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float64"));
+        case godot.Variant.Type.TYPE_PACKED_INT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int32"));
+        case godot.Variant.Type.TYPE_PACKED_INT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("int64"));
+        case godot.Variant.Type.TYPE_PACKED_BYTE_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("byte"), "ArrayBuffer");
+        case godot.Variant.Type.TYPE_NODE_PATH: return join_type_name(primitive_name, "string");
         default: return primitive_name;
     }
 }
@@ -650,7 +599,7 @@ abstract class AbstractWriter implements ScopeWriter {
     abstract get_imports(): Record<string, Record<string, string>>;
     abstract resolve_import(script_resource: string): string;
 
-    get class_doc(): jsb.editor.ClassDoc | undefined { return undefined; }
+    get class_doc(): GodotJsb.editor.ClassDoc | undefined { return undefined; }
 
     constructor() { }
 
@@ -662,7 +611,7 @@ abstract class AbstractWriter implements ScopeWriter {
         }
         return new EnumWriter(this, name);
     }
-    namespace_(name: string, class_doc?: jsb.editor.ClassDoc): NamespaceWriter {
+    namespace_(name: string, class_doc?: GodotJsb.editor.ClassDoc): NamespaceWriter {
         return new NamespaceWriter(this, name, class_doc)
     }
     interface_(
@@ -683,7 +632,7 @@ abstract class AbstractWriter implements ScopeWriter {
       property_overrides: undefined | PropertyOverrides,
       intro: undefined | Intro,
       singleton_mode: boolean,
-      class_doc?: jsb.editor.ClassDoc
+      class_doc?: GodotJsb.editor.ClassDoc
     ): ClassWriter {
         return new ClassWriter(this, name, generic_parameters, super_, super_generic_arguments, intro, property_overrides, singleton_mode, class_doc);
     }
@@ -696,7 +645,7 @@ abstract class AbstractWriter implements ScopeWriter {
     object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter {
         return new ObjectWriter(this, intro, property_overrides);
     }
-    // singleton_(info: jsb.editor.SingletonInfo): SingletonWriter {
+    // singleton_(info: GodotJsb.editor.SingletonInfo): SingletonWriter {
     //     return new SingletonWriter(this, info);
     // }
     line_comment_(text: string) {
@@ -801,7 +750,7 @@ class DocCommentHelper {
     static write(writer: CodeWriter, description: Description | string | string[] | undefined, newline: boolean): boolean {
         if (typeof description === "undefined" || description.length == 0) return false;
         let lines =
-            description instanceof Array
+            Array.isArray(description)
                 ? description
                 : this.get_simplified_description(typeof description === "string" ? Description.forAny(description).text : description.text).replace("\r\n", "\n").split("\n");
         if (lines.length > 0 && this.is_empty_or_whitespace(lines[0])) lines.splice(0, 1);
@@ -1425,26 +1374,26 @@ class ModuleWriter extends IndentWriter {
     }
 
     // godot utility functions must be in global scope
-    utility_(method_info: jsb.editor.MethodBind) {
+    utility_(method_info: GodotJsb.editor.MethodBind) {
         const args = this.types.make_args(method_info);
         const rval = this.types.make_return(method_info);
 
         // some godot methods declared with special characters which can not be declared literally
         if (!this.types.is_valid_method_name(method_info.name)) {
-            this.line(`// [INVALID_NAME]: static function ${method_info.name}(${args}): ${rval}`);
+            this.line(`// [INVALID_NAME]: function ${method_info.name}(${args}): ${rval}`);
             return;
         }
-        this.line(`static function ${method_info.name}(${args}): ${rval}`);
+        this.line(`function ${method_info.name}(${args}): ${rval}`);
     }
 }
 
 class NamespaceWriter extends IndentWriter {
     protected _name: string;
-    protected _doc?: jsb.editor.ClassDoc;
+    protected _doc?: GodotJsb.editor.ClassDoc;
 
     get class_doc() { return this._doc; }
 
-    constructor(base: ScopeWriter, name: string, class_doc?: jsb.editor.ClassDoc) {
+    constructor(base: ScopeWriter, name: string, class_doc?: GodotJsb.editor.ClassDoc) {
         super(base);
         this._name = name;
         this._doc = class_doc;
@@ -1468,10 +1417,10 @@ class ClassWriter extends IndentWriter {
     protected _intro?: Intro;
     protected _property_overrides?: Record<string, string[] | ((line: string) => string)>;
     protected _singleton_mode: boolean;
-    protected _doc?: jsb.editor.ClassDoc;
+    protected _doc?: GodotJsb.editor.ClassDoc;
     protected _separator_line = false;
 
-    get class_doc(): jsb.editor.ClassDoc | undefined { return this._doc; }
+    get class_doc(): GodotJsb.editor.ClassDoc | undefined { return this._doc; }
 
     constructor(
         base: ScopeWriter,
@@ -1482,7 +1431,7 @@ class ClassWriter extends IndentWriter {
         intro: undefined | Intro,
         property_overrides: undefined | PropertyOverrides,
         singleton_mode: boolean,
-        class_doc?: jsb.editor.ClassDoc
+        class_doc?: GodotJsb.editor.ClassDoc
     ) {
         super(base);
         this._name = name;
@@ -1510,7 +1459,7 @@ class ClassWriter extends IndentWriter {
         return `class ${this._name}${params} extends ${this._super}${args}`;
     }
 
-    protected make_method_prefix(method_info: jsb.editor.MethodBind): string {
+    protected make_method_prefix(method_info: GodotJsb.editor.MethodBind): string {
         return this._singleton_mode || method_info.is_static ? "static " : "";
     }
 
@@ -1536,7 +1485,7 @@ class ClassWriter extends IndentWriter {
         this._base.line('}')
     }
 
-    primitive_constant_(constant: jsb.editor.PrimitiveConstantInfo) {
+    primitive_constant_(constant: GodotJsb.editor.PrimitiveConstantInfo) {
         DocCommentHelper.write(this, this._doc?.constants[constant.name]?.description, this._separator_line);
         this._separator_line = true;
         if (typeof constant.value !== "undefined") {
@@ -1547,15 +1496,15 @@ class ClassWriter extends IndentWriter {
         }
     }
 
-    constant_(constant: jsb.editor.ConstantInfo) {
+    constant_(constant: GodotJsb.editor.ConstantInfo) {
         DocCommentHelper.write(this, this._doc?.constants[constant.name]?.description, this._separator_line);
         this._separator_line = true;
         this.line(`static readonly ${constant.name} = ${constant.value}`);
     }
 
     property_(name: string): PropertyWriter;
-    property_(getset_info: jsb.editor.PropertySetGetInfo): void;
-    property_(name_or_getset_info: string | jsb.editor.PropertySetGetInfo): void | PropertyWriter {
+    property_(getset_info: GodotJsb.editor.PropertySetGetInfo): void;
+    property_(name_or_getset_info: string | GodotJsb.editor.PropertySetGetInfo): void | PropertyWriter {
         if (typeof name_or_getset_info === "string") {
             return super.property_(name_or_getset_info);
         }
@@ -1590,17 +1539,17 @@ class ClassWriter extends IndentWriter {
         }
     }
 
-    primitive_property_(property_info: jsb.editor.PrimitiveGetSetInfo) {
+    primitive_property_(property_info: GodotJsb.editor.PrimitiveGetSetInfo) {
         this._separator_line = true;
 
         this.line(`get ${property_info.name}(): ${get_primitive_type_name(property_info.type)}`);
         this.line(`set ${property_info.name}(value: ${get_primitive_type_name_as_input(property_info.type)})`);
     }
 
-    constructor_(constructor_info: jsb.editor.ConstructorInfo) {
+    constructor_(constructor_info: GodotJsb.editor.ConstructorInfo) {
         this._separator_line = true;
         const args = constructor_info.arguments.map(it =>
-            `${replace_var_name(it.name)}: ${this.types.replace_type_inplace(get_primitive_type_name_as_input(it.type))}`
+            `${replace_var_name(it.name)}: ${get_primitive_type_name_as_input(it.type)}`
         ).join(", ");
         this.line(`constructor(${args})`);
     }
@@ -1609,27 +1558,27 @@ class ClassWriter extends IndentWriter {
         this.line(`constructor(identifier?: any)`);
     }
 
-    operator_(operator_info: jsb.editor.OperatorInfo) {
+    operator_(operator_info: GodotJsb.editor.OperatorInfo) {
         this._separator_line = true;
-        const return_type_name = this.types.replace_type_inplace(get_primitive_type_name(operator_info.return_type));
-        const left_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.left_type));
-        if (operator_info.right_type == enum_value(Variant.Type, "TYPE_NIL")) {
+        const return_type_name = get_primitive_type_name(operator_info.return_type);
+        const left_type_name = get_primitive_type_name_as_input(operator_info.left_type);
+        if (operator_info.right_type == godot.Variant.Type.TYPE_NIL) {
             this.line(`static ${operator_info.name}(left: ${left_type_name}): ${return_type_name}`);
         } else {
-            const right_type_name = this.types.replace_type_inplace(get_primitive_type_name_as_input(operator_info.right_type));
+            const right_type_name = get_primitive_type_name_as_input(operator_info.right_type);
             this.line(`static ${operator_info.name}(left: ${left_type_name}, right: ${right_type_name}): ${return_type_name}`);
         }
     }
 
-    virtual_method_(method_info: jsb.editor.MethodBind) {
+    virtual_method_(method_info: GodotJsb.editor.MethodBind) {
         this.method_(method_info, "/* gdvirtual */ ");
     }
 
-    ordinary_method_(method_info: jsb.editor.MethodBind) {
+    ordinary_method_(method_info: GodotJsb.editor.MethodBind) {
         this.method_(method_info, "");
     }
 
-    method_(method_info: jsb.editor.MethodBind, category: string) {
+    method_(method_info: GodotJsb.editor.MethodBind, category: string) {
         DocCommentHelper.write(this, this._doc?.methods[method_info.name]?.description, this._separator_line);
         this._separator_line = true;
 
@@ -1656,7 +1605,7 @@ class ClassWriter extends IndentWriter {
         line(`${category}${prefix}${method_info.name}${template}(${args}): ${rval}`);
     }
 
-    signal_(signal_info: jsb.editor.SignalInfo) {
+    signal_(signal_info: GodotJsb.editor.SignalInfo) {
         DocCommentHelper.write(this, this._doc?.signals[signal_info.name]?.description, this._separator_line);
         this._separator_line = true;
         const sig = this.types.make_signal_type(signal_info.method_);
@@ -1762,7 +1711,7 @@ class InterfaceWriter extends IndentWriter {
         this._base.line(`${this.head()} {`)
         this.intro()
         super.finish()
-        this._base.line('}')
+        this._base.line("}")
     }
 
     property_(key: string): PropertyWriter;
@@ -1832,14 +1781,14 @@ class ObjectWriter extends IndentWriter {
 
     finish() {
         if (this._lines.length === 0 && !this._intro) {
-            this._base.line('{}')
+            this._base.line("{}")
             return;
         }
 
         this._base.line(`{`)
         this.intro()
         super.finish()
-        this._base.line('}')
+        this._base.line("}")
     }
 
     property_(key: string): PropertyWriter;
@@ -1922,7 +1871,7 @@ class FileWriter extends AbstractWriter {
         this._file = file;
     }
 
-    add_import(preferred_name: string, script_resource: string, export_name = 'default'): void {
+    add_import(preferred_name: string, script_resource: string, export_name = "default"): void {
         const resource_imports = this._import_map[script_resource] ??= {};
         resource_imports[export_name] ??= this.get_import_name(preferred_name);
     }
@@ -1939,19 +1888,19 @@ class FileWriter extends AbstractWriter {
         let last_slash_index = -1;
 
         for (let i = 0; i < source_length && i < destination_length && source[i] === destination[i]; i++) {
-            if (source[i] === '/') {
+            if (source[i] === "/") {
                 last_slash_index = i;
             }
         }
 
-        let up = '';
+        let up = "";
         for (let i = last_slash_index + 1; i < source_length; i++) {
-            if (source[i] === '/') {
-                up += '../';
+            if (source[i] === "/") {
+                up += "../";
             }
         }
 
-        return (up || './') + destination.slice(last_slash_index + 1).replace(/\.[jt]sx?$/, "");
+        return (up || "./") + destination.slice(last_slash_index + 1).replace(/\.[jt]sx?$/, "");
     }
 
     get size() { return this._size; }
@@ -1959,18 +1908,18 @@ class FileWriter extends AbstractWriter {
     get types() { return this._types; }
 
     line(text: string): void {
-        gd_method(this._file, 'store_line')(text);
+        this._file.store_line(text);
         this._size += text.length + 1;
         this._lineno += 1;
     }
 
     concatenate(text: string): void {
-        gd_method(this._file, 'store_string')(text);
+        this._file.store_string(text);
         this._size += text.length;
     }
 
     finish(): void {
-        gd_method(this._file, 'flush')();
+        this._file.flush();
     }
 }
 
@@ -1981,17 +1930,17 @@ class FileSplitter {
 
     constructor(types: TypeDB, path: string) {
         this._types = types;
-        this._file = gd_method(FileAccess, 'open')(path, enum_value(FileAccess.ModeFlags, "WRITE"));
+        this._file = godot.FileAccess.open(path, godot.FileAccess.ModeFlags.WRITE);
         this._toplevel = new ModuleWriter(new FileWriter(path, this._types, this._file), "godot");
 
-        gd_method(this._file, 'store_line')("// AUTO-GENERATED");
-        gd_method(this._file, 'store_line')('/// <reference no-default-lib="true"/>');
+        this._file.store_line("// AUTO-GENERATED");
+        this._file.store_line("/// <reference no-default-lib=\"true\"/>");
     }
 
     close() {
         this._toplevel.finish();
-        gd_method(this._file, 'flush')();
-        gd_method(this._file, 'close')();
+        this._file.flush();
+        this._file.close();
     }
 
     get_writer() {
@@ -2003,16 +1952,14 @@ class FileSplitter {
 }
 
 export class TypeDB {
-    singletons: { [name: string]: jsb.editor.SingletonInfo } = {};
-    classes: { [name: string]: jsb.editor.ClassInfo } = {};
-    primitive_types: { [name: string]: jsb.editor.PrimitiveClassInfo } = {};
-    primitive_type_names: { [type: number /* Variant.Type */]: string } = {};
-    globals: { [name: string]: jsb.editor.GlobalConstantInfo } = {};
-    utilities: { [name: string]: jsb.editor.MethodBind } = {};
-    internal_class_name_map: { [name: string]: string } = {};
+    singletons: { [name: string]: GodotJsb.editor.SingletonInfo } = {};
+    classes: { [name: string]: GodotJsb.editor.ClassInfo } = {};
+    primitive_types: { [name: string]: GodotJsb.editor.PrimitiveClassInfo } = {};
+    globals: { [name: string]: GodotJsb.editor.GlobalConstantInfo } = {};
+    utilities: { [name: string]: GodotJsb.editor.MethodBind } = {};
 
     // `class_doc` is loaded lazily once used, and be cached in `class_docs`
-    class_docs: { [name: string]: jsb.editor.ClassDoc | false } = {};
+    class_docs: { [name: string]: GodotJsb.editor.ClassDoc | false } = {};
 
     constructor() {
         const classes = jsb.editor.get_classes();
@@ -2022,11 +1969,9 @@ export class TypeDB {
         const utilities = jsb.editor.get_utility_functions();
         for (let cls of classes) {
             this.classes[cls.name] = cls;
-            this.internal_class_name_map[cls.internal_name] = cls.name;
         }
         for (let cls of primitive_types) {
             this.primitive_types[cls.name] = cls;
-            this.primitive_type_names[cls.type] = cls.name;
         }
         for (let singleton of singletons) {
             this.singletons[singleton.name] = singleton;
@@ -2039,10 +1984,10 @@ export class TypeDB {
         }
     }
 
-    find_doc(class_name: string): jsb.editor.ClassDoc | undefined {
+    find_doc(class_name: string): GodotJsb.editor.ClassDoc | undefined {
         let class_doc = this.class_docs[class_name];
         if (typeof class_doc === "object") {
-            return <jsb.editor.ClassDoc>class_doc;
+            return <GodotJsb.editor.ClassDoc>class_doc;
         }
         if (typeof class_doc === "boolean") {
             return undefined;
@@ -2060,52 +2005,46 @@ export class TypeDB {
         if (typeof KeywordReplacement[name] !== "undefined") {
             return false;
         }
-        if (name.indexOf('/') >= 0 || name.indexOf('.') >= 0) {
+        if (name.indexOf("/") >= 0 || name.indexOf(".") >= 0) {
             return false;
         }
         return true;
     }
 
-    make_classname(class_name: string, used_as_input: boolean): string {
+    make_classname(internal_class_name: string): string {
         const types = this;
-        const remap_name: string | undefined = RemapTypes[class_name];
+        const remap_name: string | undefined = RemapTypes[internal_class_name];
         if (typeof remap_name !== "undefined") {
             return remap_name;
         }
+        const class_name = names.get_class(internal_class_name);
         if (class_name in types.classes) {
             return class_name;
-        } else {
-            if (class_name.indexOf(".") >= 0) {
-                const layers = class_name.split(".");
-                if (layers.length == 2) {
-                    // nested enums in primitive types do not exist in class_info, they are manually binded.
-                    if (PrimitiveTypesSet.has(layers[0])) {
-                        return class_name;
-                    }
-                    const cls = types.classes[layers[0]];
-                    if (typeof cls !== "undefined" && cls.enums!.findIndex(v => v.name == layers[1]) >= 0) {
-                        return class_name;
-                    }
+        } else if (class_name in types.singletons) {
+            return class_name;
+        } else if (internal_class_name in types.globals) {
+            return internal_class_name;
+        } else if (internal_class_name.indexOf(".") >= 0) {
+            const layers = internal_class_name.split(".").map(n => names.get_class(n));
+            if (layers.length == 2) {
+                // nested enums in primitive types do not exist in class_info, they are manually binded.
+                if (PrimitiveTypesSet.has(layers[0])) {
+                    return layers.join(".");
+                }
+                const cls = types.classes[layers[0]];
+                if (typeof cls !== "undefined" && cls.enums!.findIndex(v => v.name == layers[1]) >= 0) {
+                    return layers.join(".");
                 }
             }
-            if (class_name in types.globals) {
-                return class_name;
-            }
-            if (class_name in types.singletons) {
-                return class_name;
-            }
-            // if (ReservedTypes.has(class_name)) {
-            //     return class_name;
-            // }
-            console.warn("undefined class", class_name);
-            return `any /*${class_name}*/`;
         }
+        console.warn("undefined class", class_name);
+        return `any /*${class_name}*/`;
     }
 
     make_typename(info: PropertyInfo, used_as_input: boolean): string {
-        if (info.hint == enum_value(PropertyHint, "PROPERTY_HINT_RESOURCE_TYPE")) {
+        if (info.hint == godot.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return info.hint_string.split(",").map(class_name => this.make_classname(class_name, used_as_input)).join(" | ")
+            return info.hint_string.split(",").map(internal_class_name => this.make_classname(internal_class_name)).join(" | ")
         }
 
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
@@ -2117,32 +2056,32 @@ export class TypeDB {
             return `any /*unhandled: ${info.type}*/`;
         }
 
-        return this.make_classname(info.class_name, used_as_input);
+        return this.make_classname(info.class_name);
     }
 
-    make_arg(info: PropertyInfo, type_replacer?: (name: string) => string): string {
-        return `${replace_var_name(info.name)}: ${this.replace_type_inplace(this.make_typename(info, true), type_replacer)}`
+    make_arg(info: PropertyInfo, optional?: boolean): string {
+        return `${replace_var_name(info.name)}${optional ? "?" : ""}: ${this.make_typename(info, true)}`
     }
 
-    make_literal_value(value: jsb.editor.DefaultArgumentInfo) {
+    make_literal_value(value: GodotJsb.editor.DefaultArgumentInfo) {
         // plain types
         const type_name = get_primitive_type_name(value.type);
         switch (value.type) {
-            case enum_value(Variant.Type, "TYPE_BOOL"): return value.value == null ? "false" : `${value.value}`;
-            case enum_value(Variant.Type, "TYPE_FLOAT"):
-            case enum_value(Variant.Type, "TYPE_INT"): return value.value == null ? "0" : `${value.value}`;
-            case enum_value(Variant.Type, "TYPE_STRING"):
-            case enum_value(Variant.Type, "TYPE_STRING_NAME"): return value.value == null ? "''" : `'${value.value}'`;
-            case enum_value(Variant.Type, "TYPE_NODE_PATH"): return value.value == null ? "''" : `'${gd_to_string(value.value)}'`;
-            case enum_value(Variant.Type, "TYPE_ARRAY"): return value.value == null || gd_method(value.value, 'is_empty')() ? "[]" : `${gd_to_string(value.value)}`;
-            case enum_value(Variant.Type, "TYPE_OBJECT"): return value.value == null ? "undefined" : "<any> {}";
-            case enum_value(Variant.Type, "TYPE_NIL"): return "<any> {}";
-            case enum_value(Variant.Type, "TYPE_CALLABLE"):
-            case enum_value(Variant.Type, "TYPE_RID"): return `new ${type_name}()`;
+            case godot.Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
+            case godot.Variant.Type.TYPE_FLOAT:
+            case godot.Variant.Type.TYPE_INT: return value.value == null ? "0" : `${value.value}`;
+            case godot.Variant.Type.TYPE_STRING:
+            case godot.Variant.Type.TYPE_STRING_NAME: return value.value == null ? "''" : `'${value.value}'`;
+            case godot.Variant.Type.TYPE_NODE_PATH: return value.value == null ? "''" : `'${gd_to_string(value.value)}'`;
+            case godot.Variant.Type.TYPE_ARRAY: return value.value == null || value.value.is_empty() ? "[]" : `${gd_to_string(value.value)}`;
+            case godot.Variant.Type.TYPE_OBJECT: return value.value == null ? "undefined" : "<any> {}";
+            case godot.Variant.Type.TYPE_NIL: return "<any> {}";
+            case godot.Variant.Type.TYPE_CALLABLE:
+            case godot.Variant.Type.TYPE_RID: return `new ${type_name}()`;
             default: break;
         }
         // make them more readable?
-        if (value.type == enum_value(Variant.Type, "TYPE_VECTOR2") || value.type == enum_value(Variant.Type, "TYPE_VECTOR2I")) {
+        if (value.type == godot.Variant.Type.TYPE_VECTOR2 || value.type == godot.Variant.Type.TYPE_VECTOR2I) {
             if (value == null) return `new ${type_name}()`;
             if (value.value.x == value.value.y) {
                 if (value.value.x == 0) return `${type_name}.ZERO`;
@@ -2150,7 +2089,7 @@ export class TypeDB {
             }
             return `new ${type_name}(${value.value.x}, ${value.value.y})`;
         }
-        if (value.type == enum_value(Variant.Type, "TYPE_VECTOR3") || value.type == enum_value(Variant.Type, "TYPE_VECTOR3I")) {
+        if (value.type == godot.Variant.Type.TYPE_VECTOR3 || value.type == godot.Variant.Type.TYPE_VECTOR3I) {
             if (value == null) return `new ${type_name}()`;
             if (value.value.x == value.value.y == value.value.z) {
                 if (value.value.x == 0) return `${type_name}.ZERO`;
@@ -2158,68 +2097,64 @@ export class TypeDB {
             }
             return `new ${type_name}(${value.value.x}, ${value.value.y}, ${value.value.z})`;
         }
-        if (value.type == enum_value(Variant.Type, "TYPE_COLOR")) {
+        if (value.type == godot.Variant.Type.TYPE_COLOR) {
             if (value == null) return `new ${type_name}()`;
             return `new ${type_name}(${value.value.r}, ${value.value.g}, ${value.value.b}, ${value.value.a})`;
         }
-        if (value.type == enum_value(Variant.Type, "TYPE_RECT2") || value.type == enum_value(Variant.Type, "TYPE_RECT2I")) {
+        if (value.type == godot.Variant.Type.TYPE_RECT2 || value.type == godot.Variant.Type.TYPE_RECT2I) {
             if (value.value == null) return `new ${type_name}()`;
             return `new ${type_name}(${value.value.position.x}, ${value.value.position.y}, ${value.value.size.x}, ${value.value.size.y})`
         }
         // it's tedious to repeat all types :(
-        if ((value.type >= enum_value(Variant.Type, "TYPE_PACKED_BYTE_ARRAY") && value.type <= enum_value(Variant.Type, "TYPE_PACKED_COLOR_ARRAY"))) {
-            if (value.value == null || gd_method(value.value, 'is_empty')()) {
+        if ((value.type >= godot.Variant.Type.TYPE_PACKED_BYTE_ARRAY && value.type <= godot.Variant.Type.TYPE_PACKED_COLOR_ARRAY)) {
+            if (value.value == null || value.value.is_empty()) {
                 return "[]";
             }
         }
-        if (value.type == enum_value(Variant.Type, "TYPE_DICTIONARY")) {
-            if (value.value == null || gd_method(value.value, 'is_empty')()) return `new ${type_name}()`;
+        if (value.type == godot.Variant.Type.TYPE_DICTIONARY) {
+            if (value.value == null || value.value.is_empty()) return `new ${type_name}()`;
         }
         //NOTE hope all default value for Transform2D/Transform3D is IDENTITY
-        if (value.type == enum_value(Variant.Type, "TYPE_TRANSFORM2D") || value.type == enum_value(Variant.Type, "TYPE_TRANSFORM3D")) {
+        if (value.type == godot.Variant.Type.TYPE_TRANSFORM2D || value.type == godot.Variant.Type.TYPE_TRANSFORM3D) {
             return `new ${type_name}()`;
         }
 
         //TODO value sig for compound types
-        return `<any> {} /*compound.type from ${Variant.Type[value.type]} (${value.value})*/`;
+        return `<any> {} /*compound.type from ${godot.Variant.Type[value.type]} (${value.value})*/`;
     }
 
-    replace_type_inplace(name: string | undefined, type_replacer?: (name: string) => string): string {
-        return typeof type_replacer === "function" ? type_replacer(name!) : name!;
-    }
-
-    make_arg_default_value(method_info: jsb.editor.MethodBind, index: number, type_replacer?: (name: string) => string): string {
+    make_arg_default_value(method_info: GodotJsb.editor.MethodBind, index: number): string {
         const default_arguments = method_info.default_arguments || [];
         const def_index = index - (method_info.args_.length - default_arguments.length);
-        if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index], type_replacer);
-        return this.make_arg(method_info.args_[index], type_replacer) + " = " + this.make_literal_value(default_arguments[def_index]);
+        if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index]);
+        return `${this.make_arg(method_info.args_[index], true)} /* = ${this.make_literal_value(default_arguments[def_index])} */`;
     }
 
-    make_args(method_info: jsb.editor.MethodBind, type_replacer?: (name: string) => string): string {
+    make_args(method_info: GodotJsb.editor.MethodBind): string {
         //TODO consider default arguments
         const varargs = "...varargs: any[]";
-        const is_vararg = !!(method_info.hint_flags & enum_value(MethodFlags, "METHOD_FLAG_VARARG"));
+        const is_vararg = !!(method_info.hint_flags & godot.MethodFlags.METHOD_FLAG_VARARG);
         if (method_info.args_.length == 0) {
             return is_vararg ? varargs : "";
         }
-        const args = method_info.args_.map((it, index) => this.make_arg_default_value(method_info, index, type_replacer)).join(", ");
+        const args = method_info.args_.map((_it, index) => this.make_arg_default_value(method_info, index)).join(", ");
         if (is_vararg) {
             return `${args}, ${varargs}`;
         }
         return args;
     }
 
-    make_return(method_info: jsb.editor.MethodBind, type_replacer?: (name: string) => string): string {
+    make_return(method_info: GodotJsb.editor.MethodBind): string {
         //TODO
         if (typeof method_info.return_ != "undefined") {
-            return this.replace_type_inplace(this.make_typename(method_info.return_, false), type_replacer);
+            return this.make_typename(method_info.return_, false);
         }
         return "void"
     }
 
-    make_signal_type(method_info: jsb.editor.MethodBind): string {
+    make_signal_type(method_info: GodotJsb.editor.MethodBind): string {
         const args = method_info.args_.map((arg => `${arg.name}: ${this.make_typename(arg, true)}`));
-        if (method_info.hint_flags & enum_value(MethodFlags, "METHOD_FLAG_VARARG")) {
+        if (method_info.hint_flags & godot.MethodFlags.METHOD_FLAG_VARARG) {
             args.push("...varargs: any[]");
         }
         return `Signal<(${args.join(", ")}) => void>`;
@@ -2279,7 +2214,7 @@ export class TSDCodeGen {
     private cleanup() {
         while (true) {
             const path = this.make_path(this._split_index++);
-            if (!gd_method(FileAccess, 'file_exists')(path)) {
+            if (!godot.FileAccess.file_exists(path)) {
                 break;
             }
             console.log("delete file", path);
@@ -2350,14 +2285,14 @@ export class TSDCodeGen {
         return tasks.submit();
     }
 
-    private emit_utility(utility_func: jsb.editor.MethodBind) {
+    private emit_utility(utility_func: GodotJsb.editor.MethodBind) {
         const global_doc = this._types.find_doc("@GlobalScope");
         const cg = this.split();
         DocCommentHelper.write(cg, global_doc?.methods[utility_func.name]?.description, true);
         cg.utility_(utility_func);
     }
 
-    private emit_global(global_obj: jsb.editor.GlobalConstantInfo) {
+    private emit_global(global_obj: GodotJsb.editor.GlobalConstantInfo) {
         const cg = this.split();
         const doc = this._types.find_doc("@GlobalScope");
         const ns = cg.enum_(global_obj.name);
@@ -2378,7 +2313,7 @@ export class TSDCodeGen {
 
         if (GodotAnyType != "any") {
             let gd_variant_alias = `type ${GodotAnyType} = `;
-            for (let i = enum_value(Variant.Type, "TYPE_NIL") + 1; i < enum_value(Variant.Type, "TYPE_MAX"); ++i) {
+            for (let i = godot.Variant.Type.TYPE_NIL + 1; i < godot.Variant.Type.TYPE_MAX; ++i) {
                 const type_name = get_primitive_type_name(i);
                 if (type_name == GodotAnyType || type_name == "any") continue;
                 gd_variant_alias += type_name + " | ";
@@ -2389,7 +2324,7 @@ export class TSDCodeGen {
 
     }
 
-    private emit_singleton(singleton: jsb.editor.SingletonInfo) {
+    private emit_singleton(singleton: GodotJsb.editor.SingletonInfo) {
         const cg = this.split();
         const cls = this._types.classes[singleton.class_name];
         if (typeof cls !== "undefined") {
@@ -2400,7 +2335,7 @@ export class TSDCodeGen {
         }
     }
 
-    private emit_godot_primitive(cg: CodeWriter, cls: jsb.editor.PrimitiveClassInfo) {
+    private emit_godot_primitive(cg: CodeWriter, cls: GodotJsb.editor.PrimitiveClassInfo) {
         const class_doc = this._types.find_doc(cls.name);
         const ignored_consts: Set<string> = new Set();
         const class_ns_cg = cg.namespace_(cls.name, class_doc);
@@ -2419,13 +2354,13 @@ export class TSDCodeGen {
         }
         class_ns_cg.finish();
 
-        const type_name = jsb.internal.get_type_name(cls.type);
+        const type_name = jsb.internal.names.get_variant_type(cls.type);
         const type_mutation = get_type_mutation(type_name);
         const super_ = type_mutation.super ?? undefined;
         const class_cg = cg.class_(type_name, type_mutation.generic_parameters, super_, type_mutation.super_generic_arguments, type_mutation.property_overrides, type_mutation.intro, false, class_doc);
         if (cls.constants) {
             for (let constant of cls.constants) {
-                if (!ignored_consts.has(constant.name) && !ignored_consts.has(upper_snake_to_pascal_case(constant.name))) {
+                if (!ignored_consts.has(constant.name) && !ignored_consts.has(names.get_enum_value(constant.name))) {
                     class_cg.primitive_constant_(constant);
                 }
             }
@@ -2446,7 +2381,7 @@ export class TSDCodeGen {
         class_cg.finish();
     }
 
-    private emit_godot_class(cg: CodeWriter, cls: jsb.editor.ClassInfo, singleton_mode: boolean) {
+    private emit_godot_class(cg: CodeWriter, cls: GodotJsb.editor.ClassInfo, singleton_mode: boolean) {
         try {
             const class_doc = this._types.find_doc(cls.name);
             const ignored_consts: Set<string> = new Set();
@@ -2492,7 +2427,7 @@ export class TSDCodeGen {
             }
             class_cg.finish();
         } catch (error) {
-            console.error(`failed to generate '${cls.name}'`);
+            console.error(`failed to generate '${cls.name}'`, (error as Error).stack);
             throw error;
         }
     }
@@ -2509,7 +2444,6 @@ export class SceneTSDCodeGen {
     private _types: TypeDB;
 
     constructor(out_dir: string, scene_paths: string[]) {
-        console.log('SceneTSDCodeGen constructor');
         this._out_dir = out_dir;
         this._scene_paths = scene_paths;
 
@@ -2519,23 +2453,23 @@ export class SceneTSDCodeGen {
     private make_scene_path(scene_path: string, include_filename = true) {
         const relative_path = (
             include_filename
-                ? scene_path.replace(/\.t?scn$/i, '.nodes.gen.d.ts')
-                : scene_path.replace(/\/[^\/]+$/, '')
-        ).replace(/^res:\/\/?/, '');
+                ? scene_path.replace(/\.t?scn$/i, ".nodes.gen.d.ts")
+                : scene_path.replace(/\/[^\/]+$/, "")
+        ).replace(/^res:\/\/?/, "");
 
-        if (typeof this._out_dir !== 'string' || this._out_dir.length == 0) {
+        if (typeof this._out_dir !== "string" || this._out_dir.length == 0) {
             return relative_path;
         }
 
-        return this._out_dir.endsWith('/')
+        return this._out_dir.endsWith("/")
             ? this._out_dir + relative_path
-            : this._out_dir + '/' + relative_path;
+            : this._out_dir + "/" + relative_path;
     }
 
     async emit() {
         await frame_step();
 
-        const tasks = new CodegenTasks('Generating scene node types');
+        const tasks = new CodegenTasks("Generating scene node types");
 
         for (const scene_path of this._scene_paths) {
             tasks.add_task(`Generating scene node types: ${scene_path}`, () => this.emit_scene_node_types(scene_path));
@@ -2562,22 +2496,22 @@ export class SceneTSDCodeGen {
 
     private emit_scene_node_types(scene_path: string) {
         try {
-            const helper = require('godot').GodotJSEditorHelper;
-            const children = (gd_method(helper, 'get_scene_nodes')(scene_path) as undefined | NodeTypeDescriptorPathMap)?.proxy();
+            const helper = godot.GodotJSEditorHelper;
+            const children = (helper.get_scene_nodes(scene_path) as undefined | NodeTypeDescriptorPathMap)?.proxy();
 
-            if (typeof children !== 'object') {
+            if (typeof children !== "object") {
                 throw new Error(`root node children unavailable: ${scene_path}`);
             }
 
             const dir_path = this.make_scene_path(scene_path, false);
-            const dir_error = gd_method(DirAccess, 'make_dir_recursive_absolute')(dir_path);
+            const dir_error = godot.DirAccess.make_dir_recursive_absolute(dir_path);
 
             if (dir_error !== 0) {
                 console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
             }
 
             const file_path = this.make_scene_path(scene_path);
-            const file = gd_method(FileAccess, 'open')(file_path, enum_value(FileAccess.ModeFlags, 'WRITE'));
+            const file = godot.FileAccess.open(file_path, godot.FileAccess.ModeFlags.WRITE);
 
             if (!file) {
                 throw new Error(`failed to open file for writing: ${dir_path}`);
@@ -2585,9 +2519,9 @@ export class SceneTSDCodeGen {
 
             try {
                 const file_writer = new FileWriter(file_path, this._types, file);
-                const module = new ModuleWriter(file_writer, 'godot');
-                const scene_nodes_interface = new InterfaceWriter(module, 'SceneNodes');
-                const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ''));
+                const module = new ModuleWriter(file_writer, "godot");
+                const scene_nodes_interface = new InterfaceWriter(module, "SceneNodes");
+                const scene_property = scene_nodes_interface.property_(scene_path.replace(/^res:\/\//, ""));
                 this.emit_children_node_types(scene_property, children);
                 scene_property.finish();
                 scene_nodes_interface.finish();
@@ -2609,7 +2543,6 @@ export class ResourceTSDCodeGen {
     private _types: TypeDB;
 
     constructor(out_dir: string, resource_paths: string[]) {
-        console.log('ResourceTSDCodeGen constructor');
         this._out_dir = out_dir;
         this._resource_paths = resource_paths;
 
@@ -2619,23 +2552,23 @@ export class ResourceTSDCodeGen {
     private make_resource_path(resource_path: string, include_filename = true) {
         const relative_path = (
           include_filename
-            ? resource_path + '.gen.d.ts'
-            : resource_path.replace(/\/[^\/]+$/, '')
-        ).replace(/^res:\/\/?/, '');
+            ? resource_path + ".gen.d.ts"
+            : resource_path.replace(/\/[^\/]+$/, "")
+        ).replace(/^res:\/\/?/, "");
 
-        if (typeof this._out_dir !== 'string' || this._out_dir.length == 0) {
+        if (typeof this._out_dir !== "string" || this._out_dir.length == 0) {
             return relative_path;
         }
 
-        return this._out_dir.endsWith('/')
+        return this._out_dir.endsWith("/")
           ? this._out_dir + relative_path
-          : this._out_dir + '/' + relative_path;
+          : this._out_dir + "/" + relative_path;
     }
 
     async emit() {
         await frame_step();
 
-        const tasks = new CodegenTasks('Generating resource types');
+        const tasks = new CodegenTasks("Generating resource types");
 
         for (const resource_path of this._resource_paths) {
             tasks.add_task(`Generating resource type: ${resource_path}`, () => this.emit_resource_type(resource_path));
@@ -2646,22 +2579,22 @@ export class ResourceTSDCodeGen {
 
     private emit_resource_type(resource_path: string) {
         try {
-            const helper = require('godot').GodotJSEditorHelper;
-            const descriptor = (gd_method(helper, 'get_resource_type_descriptor')(resource_path) as undefined | TypeDescriptor)?.proxy();
+            const helper = godot.GodotJSEditorHelper;
+            const descriptor = (helper.get_resource_type_descriptor(resource_path) as undefined | TypeDescriptor)?.proxy();
 
-            if (typeof descriptor !== 'object') {
+            if (typeof descriptor !== "object") {
                 throw new Error(`resource type unavailable: ${resource_path}`);
             }
 
             const dir_path = this.make_resource_path(resource_path, false);
-            const dir_error = gd_method(DirAccess, 'make_dir_recursive_absolute')(dir_path);
+            const dir_error = godot.DirAccess.make_dir_recursive_absolute(dir_path);
 
             if (dir_error !== 0) {
                 console.error(`failed to create directory (error: ${dir_error}): ${dir_path}`);
             }
 
             const file_path = this.make_resource_path(resource_path);
-            const file = gd_method(FileAccess, 'open')(file_path, enum_value(FileAccess.ModeFlags, 'WRITE'));
+            const file = godot.FileAccess.open(file_path, godot.FileAccess.ModeFlags.WRITE);
 
             if (!file) {
                 throw new Error(`failed to open file for writing: ${dir_path}`);
@@ -2669,8 +2602,8 @@ export class ResourceTSDCodeGen {
 
             try {
                 const file_writer = new FileWriter(file_path, this._types, file);
-                const module = new ModuleWriter(file_writer, 'godot');
-                const resource_types_interface = new InterfaceWriter(module, 'ResourceTypes');
+                const module = new ModuleWriter(file_writer, "godot");
+                const resource_types_interface = new InterfaceWriter(module, "ResourceTypes");
                 const resource_property = resource_types_interface.property_(resource_path);
                 const type_descriptor = new TypeDescriptorWriter(resource_property, true);
                 type_descriptor.serialize_type_descriptor(descriptor);

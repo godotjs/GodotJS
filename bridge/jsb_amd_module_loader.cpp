@@ -51,7 +51,16 @@ namespace jsb
         {
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const v8::Local<v8::Function> evaluator = evaluator_.Get(isolate);
-            if (evaluator->Call(context, v8::Undefined(isolate), len, dep_vals).IsEmpty())
+            v8::Local<v8::Value> result;
+
+            if (evaluator->Call(context, v8::Undefined(isolate), len, dep_vals).ToLocal(&result))
+            {
+                if (!result->IsUndefined())
+                {
+                    p_module.exports.Reset(isolate, result);
+                }
+            }
+            else
             {
                 JSB_LOG(Error, "failed to evaluate AMD module");
                 succeeded = false;
@@ -73,6 +82,11 @@ namespace jsb
         jsb_check(len == (size_t)(int) len);
         _load_source(p_env, str, (int) len, p_source.get_filename());
         return OK;
+    }
+
+    void AMDModuleLoader::load_source(Environment* p_env, const String& p_source, const String& p_name)
+    {
+        _load_source(p_env, (const char*) p_source.ptr(), p_source.length(), p_name);
     }
 
     void AMDModuleLoader::_load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name)

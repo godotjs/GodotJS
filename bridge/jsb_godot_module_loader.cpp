@@ -103,7 +103,7 @@ namespace jsb
             // dynamic binding: godot class types
             if (const NativeClassInfoPtr class_info = env->expose_godot_object_class(ClassDB::classes.getptr(original_name)))
             {
-                jsb_check(class_info->name == original_name);
+                jsb_check(class_info->name == p_type_name);
                 jsb_check(!class_info->clazz.IsEmpty());
                 info.GetReturnValue().Set(class_info->clazz.Get(isolate));
                 return;
@@ -140,8 +140,9 @@ namespace jsb
     {
         if (!loader_.IsEmpty()) return loader_.Get(p_env->get_isolate());
         const v8::Local<v8::Context> context = p_env->get_context();
-        const JavaScriptModule& typeloader = *p_env->get_module_cache().find(jsb_string_name(godot_typeloader));
-        const v8::Local<v8::Value> typeloader_exports = typeloader.exports.Get(p_env->get_isolate());
+        const JavaScriptModule* typeloader = p_env->get_module_cache().find(jsb_string_name(godot_typeloader));
+        jsb_check(typeloader != nullptr);
+        const v8::Local<v8::Value> typeloader_exports = typeloader->exports.Get(p_env->get_isolate());
         jsb_check(!typeloader_exports.IsEmpty() && typeloader_exports->IsObject());
         // not using string cache, as it's run only once
         const v8::Local<v8::Value> proxy_func_val = typeloader_exports.As<v8::Object>()->Get(context, impl::Helper::new_string_ascii(p_env->get_isolate(), "_mod_proxy_")).ToLocalChecked();

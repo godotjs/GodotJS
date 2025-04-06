@@ -43,6 +43,7 @@ namespace jsb::internal
 
 #ifdef TOOLS_ENABLED
         // [EDITOR ONLY]
+        static bool editor_settings_available();
         static PackedStringArray get_ignored_classes();
         static bool get_autogen_scene_dts_on_save();
         static bool get_gen_scene_dts();

@@ -1,3 +1,14 @@
+import type * as Godot from "godot";
+import type * as GodotJsb from "godot-jsb";
+
+type GArrayProxy<T> = Godot.GArrayProxy<T> & {
+    [ProxyTarget]: Godot.GArray<T>;
+}
+
+type GDictionaryProxy<T> = Godot.GDictionaryProxy<T> & {
+    [ProxyTarget]: Godot.GDictionary<T>;
+};
+
 const ProxyTarget = Symbol("proxy_target");
 
 const proxy_unwrap = function(value: any) {
@@ -22,58 +33,54 @@ const proxy_wrap = function(value: any) {
 };
 
 require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
-    const camel_case_bindings = require("godot-jsb").CAMEL_CASE_BINDINGS_ENABLED;
+    const get_member = (require("godot-jsb") as typeof GodotJsb).internal.names.get_member;
 
     proxyable_prototypes.push(type.prototype);
 
-    type.prototype[Symbol.iterator] = camel_case_bindings
-        ? function* (this: any /* GArray */) {
-            for (let i = 0; i < this.size(); ++i) {
-                yield this.getIndexed(i);
-            }
+    type.prototype[Symbol.iterator] = function* (this: Godot.GArray) {
+        const get_indexed = Reflect.get(this, get_member('get_indexed'));
+        for (let i = 0; i < this.size(); ++i) {
+            yield get_indexed.call(this, i);
         }
-        : function* (this: any /* GArray */) {
-            for (let i = 0; i < this.size(); ++i) {
-                yield this.get_indexed(i);
-            }
-        };
+    };
 
     // We're not going to try expose the whole Array API, we'll just be super minimalistic. If the user is after
     // something more complex, it'll likely be more performant to spread the GArray into a JS array anyway.
+    const pop_back_name = get_member('pop_back');
+    const push_back_name = get_member('push_back');
     const array_api = {
-        forEach: function (this: any /* GArrayProxy */, callback: (value: any, index: number) => void, thisArg?: any) {
+        forEach: function (this: GArrayProxy<any>, callback: (value: any, index: number) => void, thisArg?: any) {
             const target = this[ProxyTarget];
             let i = 0;
             for (const value of target) {
                 callback.call(thisArg ?? this, proxy_wrap(value), i++);
             }
         },
-        includes: function (this: any /* GArrayProxy */, value: any) {
+        includes: function (this: GArrayProxy<any>, value: any) {
             const target = this[ProxyTarget];
             return target.has(proxy_unwrap(value));
         },
-        indexOf: function (this: any /* GArrayProxy */, value: any, fromIndex?: number) {
+        indexOf: function (this: GArrayProxy<any>, value: any, fromIndex?: number) {
             const target = this[ProxyTarget];
             return target.find(proxy_unwrap(value), fromIndex);
         },
-        pop: function (this: any /* GArrayProxy */) {
+        pop: function (this: GArrayProxy<any>) {
             const target = this[ProxyTarget];
-            const pop = camel_case_bindings ? target.popBack : target.pop_back;
-            const result = pop.call(target);
+            const result = Reflect.get(target, pop_back_name)();
             return result == null ? result : proxy_wrap(result);
         },
-        push: function (this: any /* GArrayProxy */, ...values: any[]) {
+        push: function (this: GArrayProxy<any>, ...values: any[]) {
             const target = this[ProxyTarget];
-            const push = camel_case_bindings ? target.pushBack : target.push_back;
+            const push = Reflect.get(target, push_back_name);
             for (const value of values) {
                 push.call(target, proxy_unwrap(value));
             }
             return target.size();
         },
-        toJSON: function (this: any /* GArrayProxy */, key = ""): any {
+        toJSON: function (this: GArrayProxy<any>, key = ""): any {
             return [...this];
         },
-        toString: function (this: any /* GArrayProxy */, index?: number): any {
+        toString: function (this: GArrayProxy<any>, index?: number): any {
             return [...this].map(v => v?.toString?.() ?? v).join(",");
         },
     } as const;
@@ -84,7 +91,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
         }
     };
 
-    const handler: ProxyHandler<any> = {
+    const handler: ProxyHandler<Godot.GArray> = {
         get(target, p, receiver) {
             if (typeof p !== "string") {
                 return p === ProxyTarget
@@ -186,32 +193,27 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
 });
 
 require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
-    const camel_case_bindings = require("godot-jsb").CAMEL_CASE_BINDINGS_ENABLED;
+    const get_member = (require("godot-jsb") as typeof GodotJsb).internal.names.get_member;
 
     proxyable_prototypes.push(type.prototype);
 
-    type.prototype[Symbol.iterator] = camel_case_bindings
-        ? function* (this: any) {
-            let keys = this.keys();
-            for (let i = 0; i < keys.size(); ++i) {
-                const key = keys.getIndexed(i);
-                yield { key: key, value: this.getKeyed(key) };
-            }
+    type.prototype[Symbol.iterator] = function* (this: Godot.GDictionary) {
+        const keys = this.keys();
+        const arr_get_indexed = keys[get_member('get_indexed')];
+        const dict_get_keyed = this[get_member('get_keyed')];
+        for (let i = 0; i < keys.size(); ++i) {
+            const key = arr_get_indexed.call(keys, i);
+            yield { key: key, value: dict_get_keyed.call(this, key) };
         }
-        : function* (this: any) {
-            let keys = this.keys();
-            for (let i = 0; i < keys.size(); ++i) {
-                const key = keys.get_indexed(i);
-                yield { key: key, value: this.get_keyed(key) };
-            }
-        };
+    }
 
-    const handler: ProxyHandler<any> = {
+    const handler: ProxyHandler<Godot.GDictionary> = {
         defineProperty(target, property, attributes) {
             return false;
         },
         deleteProperty(target, p) {
-            return target.erase(p);
+            target.erase(p);
+            return true;
         },
         get(target, p, receiver) {
             if (typeof p !== "string") {
@@ -279,7 +281,7 @@ require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
         return new Proxy(this, handler);
     };
 
-    type.create = function(entries: any /*Record<string, any>*/) {
+    type.create = function(entries: Record<string, any>) {
         const arr = new type();
         const proxy = arr.proxy();
         for (const [key, value] of Object.entries(entries)) {
@@ -312,14 +314,14 @@ require("godot.typeloader").on_type_loaded("Callable", function (type: any) {
 });
 
 require("godot.typeloader").on_type_loaded("Signal", function (type: any) {
-    const camel_case_bindings = require("godot-jsb").CAMEL_CASE_BINDINGS_ENABLED;
+    let { jsb, Callable, Object } = require("godot.lib.api");
+    const get_member = jsb.internal.names.get_member;
+    const notify_microtasks_run = jsb.internal.notify_microtasks_run;
 
-    type.prototype[camel_case_bindings ? 'asPromise' : 'as_promise'] = function () {
+    type.prototype[get_member('as_promise')] = function () {
         let self = this;
         return new Promise(function (resolve, reject) {
-            let fn: any = null;
-            let gd = require("godot");
-            fn = gd.Callable.create(function () {
+            let fn = Callable.create(function () {
                 //self.disconnect(fn);
                 if (arguments.length == 0) {
                     resolve(undefined);
@@ -331,28 +333,24 @@ require("godot.typeloader").on_type_loaded("Signal", function (type: any) {
                 }
                 // return as javascript array if more than one
                 resolve(Array.from(arguments));
-                require("godot-jsb").internal.notify_microtasks_run();
+                notify_microtasks_run();
             });
-            self.connect(fn, gd.Object.ConnectFlags.CONNECT_ONE_SHOT);
+            self.connect(fn, Object.ConnectFlags.CONNECT_ONE_SHOT);
             self = undefined;
         });
     }
 });
 
 (function() {
-    const camel_case_bindings = require("godot-jsb").CAMEL_CASE_BINDINGS_ENABLED;
-    const get_setting_with_override = camel_case_bindings ? 'getSettingWithOverride' : 'get_setting_with_override';
-    const get_editor_settings = camel_case_bindings ? 'getEditorSettings' : 'get_editor_settings';
-
     Object.defineProperty(require("godot"), "GLOBAL_GET", {
         value: function (entry_path: string): any {
-            return require("godot").ProjectSettings[get_setting_with_override](entry_path);
+            return require("godot.lib.api").ProjectSettings.get_setting_with_override(entry_path);
         }
     })
 
     Object.defineProperty(require("godot"), "EDITOR_GET", {
         value: function (entry_path: string): any {
-            return require("godot").EditorInterface[get_editor_settings]().get(entry_path);
+            return require("godot.lib.api").EditorInterface.get_editor_settings().get(entry_path);
         }
     });
 }());

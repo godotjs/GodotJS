@@ -98,20 +98,77 @@ namespace jsb
                 impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))));
         }
 
-        void _get_type_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        template <typename Lambda>
+        constexpr void _return_result(const v8::FunctionCallbackInfo<v8::Value>& info, Variant::Type type, Variant& identifier, Lambda get_result)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            Variant type;
-            if (TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::INT, type))
+
+            if (TypeConvert::js_to_gd_var(isolate, context, info[0], type, identifier))
             {
-                const Variant type_name = internal::VariantUtil::get_type_name((Variant::Type)(int) type);
                 v8::Local<v8::Value> rval;
-                TypeConvert::gd_var_to_js(isolate, context, type_name, rval);
+                TypeConvert::gd_var_to_js(isolate, context, get_result(identifier), rval);
                 info.GetReturnValue().Set(rval);
                 return;
             }
+
             jsb_throw(isolate, "bad param");
+        }
+
+        void _get_class_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Variant identifier;
+            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
+                return internal::NamingUtil::get_class_name(identifier);
+            });
+        }
+
+        void _get_enum_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Variant identifier;
+            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
+                return internal::NamingUtil::get_enum_name(identifier);
+            });
+        }
+
+        void _get_enum_value_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Variant identifier;
+            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
+                return internal::NamingUtil::get_enum_value_name(identifier);
+            });
+        }
+
+        void _get_internal_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Variant identifier;
+            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
+                return internal::StringNames::get_singleton().get_original_name(identifier);
+            });
+        }
+
+        void _get_member_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Variant identifier;
+            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
+                return internal::NamingUtil::get_member_name(identifier);
+            });
+        }
+
+        void _get_parameter_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Variant identifier;
+            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
+                return internal::NamingUtil::get_parameter_name(identifier);
+            });
+        }
+
+        void _get_variant_type_name(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Variant type;
+            _return_result(info, Variant::INT, type, [](const Variant &type) {
+                return internal::VariantUtil::get_type_name((Variant::Type)(int) type);
+            });
         }
 
         void _notify_microtasks_run(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -481,7 +538,21 @@ namespace jsb
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_rpc"), JSB_NEW_FUNCTION(context, _add_script_rpc, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "set_script_doc"), JSB_NEW_FUNCTION(context, _set_script_doc, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "notify_microtasks_run"), JSB_NEW_FUNCTION(context, _notify_microtasks_run, {})).Check();
-                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_type_name"), JSB_NEW_FUNCTION(context, _get_type_name, {})).Check();
+
+                // jsb.internal.names
+                {
+                    v8::Local<v8::Object> names_obj = v8::Object::New(isolate);
+
+                    internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "names"), names_obj).Check();
+
+                    names_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_class"), JSB_NEW_FUNCTION(context, _get_class_name, {})).Check();
+                    names_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_enum"), JSB_NEW_FUNCTION(context, _get_enum_name, {})).Check();
+                    names_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_enum_value"), JSB_NEW_FUNCTION(context, _get_enum_value_name, {})).Check();
+                    names_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_internal_mapping"), JSB_NEW_FUNCTION(context, _get_internal_name, {})).Check();
+                    names_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_member"), JSB_NEW_FUNCTION(context, _get_member_name, {})).Check();
+                    names_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_parameter"), JSB_NEW_FUNCTION(context, _get_parameter_name, {})).Check();
+                    names_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_variant_type"), JSB_NEW_FUNCTION(context, _get_variant_type_name, {})).Check();
+                }
             }
 
             // internal 'jsb.editor'

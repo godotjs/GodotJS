@@ -4,18 +4,30 @@
 ///<reference path="godot.mix.d.ts" />
 
 declare module "godot" {
+    import { TypeDescriptor } from "jsb.editor.codegen";
+
     class Node<Map extends Record<string, Node> = {}> extends Object { }
     class Resource { }
     class GArray<T = any> {
+        [Symbol.iterator](): IteratorObject<T>
         proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>;
         get_indexed(index: number): T
+        get(index: int64): T
+        set(index: int64, value: T): void
         size(): number
+        push_back(value: T): void
+        pop_back(): T
+        has(value: T): boolean
+        find(what: T, from: int64 = 0): int64
     }
     class GDictionary<T = any> {
         proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>;
         get<K extends keyof T>(key: K, default_: any = <any> {}): T[K]
         get_keyed<K extends keyof T>(index: K): T[K]
+        set<K extends keyof T>(key: K, value: T[K]): boolean
         keys(): GArray<keyof T>
+        erase(key: keyof T): boolean
+        has(key: keyof T): boolean
     }
     type byte = number
     type int32 = number
@@ -339,6 +351,14 @@ declare module "godot" {
     }
 
     class Callable<T extends Function = Function> {
+        /**
+         * Create godot Callable without a bound object.
+         */
+        static create<F extends Function>(fn: F): Callable<F>
+        /**
+         * Create godot Callable with a bound object `self`.
+         */
+        static create<S extends Object, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>
         is_null(): boolean
         is_custom(): boolean
         is_standard(): boolean
@@ -446,9 +466,9 @@ declare module "godot" {
     class Signal<T extends (...args: any[]) => void = (...args: any[]) => void> {
         constructor()
         constructor(from: Signal)
-        constructor(object: GObject, signal: StringName)
+        constructor(object: Object, signal: StringName)
         isNull(): boolean
-        getObject(): GObject
+        getObject(): Object
         getObjectId(): int64
         getName(): StringName
 
@@ -1041,4 +1061,43 @@ declare module "godot" {
     class DirAccess {
         static make_dir_recursive_absolute(path: string): Error;
     }
+
+    /**
+     * Editor only (internal)
+     */
+    namespace GodotJSEditorHelper {
+        function show_toast(text: string, severity: 0 | 1 | 2): void;
+        function get_resource_type_descriptor(resource_path: string): TypeDescriptor;
+        function get_scene_nodes(scene_path: string): GDictionary<Record<string, TypeDescriptor>>;
+    }
+
+    /**
+     * Editor only (internal)
+     */
+    class GodotJSEditorProgress extends Object {
+        init(name: string, description: string, total_steps: number): void;
+        set_state_name(name: string): void;
+        set_current(value: number): void;
+        step(): void;
+        finish(): void;
+    }
+}
+
+declare module "godot.lib.api" {
+    import type * as Godot from "godot";
+    import type * as GodotJsb from "godot-jsb";
+    const api: typeof Godot & { jsb: GodotJsb };
+    /**
+     * This is a starting point for writing GodotJS code that is camel-case binding agnostic at runtime.
+     *
+     * Library code must consume this API rather than "godot", and be built with camel case bindings disabled. This is to
+     * ensure that the library will function at runtime for all projects irrespective of whether they have camel-case
+     * bindings enabled.
+     */
+    export = api;
+}
+
+declare module "jsb.editor.codegen" {
+    import { GDictionary } from "godot";
+    type TypeDescriptor = GDictionary<unknown>;
 }

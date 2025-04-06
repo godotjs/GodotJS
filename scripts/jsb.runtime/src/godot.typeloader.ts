@@ -75,8 +75,7 @@ const jsb_builtin_extras: { [key: string]: any } = {
 // callback on a godot type loaded by jsb_godot_module_loader
 exports._mod_proxy_ = function (type_loader_func: (type_name: string) => any): any {
     return new Proxy(type_db, {
-        // @ts-ignore
-        set: function (target: any, prop_name, value) {
+        set: function (target, prop_name, value) {
             if (typeof prop_name !== 'string') {
                 throw new Error(`only string key is allowed`);
             }
@@ -84,6 +83,7 @@ exports._mod_proxy_ = function (type_loader_func: (type_name: string) => any): a
                 console.warn('overwriting existing value', prop_name);
             }
             target[prop_name] = value;
+            return true;
         },
         get: function (target: any , prop_name) {
             let o = target[prop_name];

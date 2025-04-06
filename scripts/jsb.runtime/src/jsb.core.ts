@@ -1,6 +1,7 @@
+import type * as Godot from "godot";
+import type * as GodotJsb from "godot-jsb";
 
-import { MultiplayerAPI, MultiplayerPeer, PropertyHint, PropertyUsageFlags, Variant } from "godot";
-import * as jsb from "godot-jsb";
+const { jsb } = require("godot.lib.api");
 
 // [WARNING] ALL IMPLEMENTATIONS BELOW ARE FOR BACKWARD COMPATIBILITY ONLY.
 // [WARNING] THEY EXIST TO TEMPORARILY SUPPORT OLD CODES THAT USE THESE FUNCTIONS.
@@ -13,7 +14,7 @@ import * as jsb from "godot-jsb";
 exports.$wait = function (signal: any) {
     return new Promise(resolve => {
         let fn: any = null;
-        fn = require("godot").Callable.create(function () {
+        fn = require("godot.lib.api").create(function () {
             signal.disconnect(fn);
             if (arguments.length == 0) {
                 resolve(undefined);
@@ -71,10 +72,12 @@ exports.signal = function() {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_multiline = function () {
+    const { PropertyHint, Variant } = require("godot.lib.api");
     return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_MULTILINE_TEXT });
 }
 
-function __export_range(type: Variant.Type, min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+function __export_range(type: Godot.Variant.Type, min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+    const { PropertyHint } = require("godot.lib.api");
     let hint_string = `${min},${max},${step}`;
     if (typeof extra_hints !== "undefined") {
         hint_string += "," + extra_hints.join(",");
@@ -87,6 +90,7 @@ function __export_range(type: Variant.Type, min: number, max: number, step: numb
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_range = function (min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+    const { Variant } = require("godot.lib.api");
     return __export_range(Variant.Type.TYPE_FLOAT, min, max, step, ...extra_hints);
 }
 
@@ -95,6 +99,7 @@ exports.export_range = function (min: number, max: number, step: number = 1, ...
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_range_i = function (min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+    const { Variant } = require("godot.lib.api");
     return __export_range(Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
 }
 
@@ -103,6 +108,7 @@ exports.export_range_i = function (min: number, max: number, step: number = 1, .
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_file = function (filter: string) {
+    const { PropertyHint, Variant } = require("godot.lib.api");
     return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_FILE, hint_string: filter });
 }
 
@@ -112,6 +118,7 @@ exports.export_file = function (filter: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_dir = function (filter: string) {
+    const { PropertyHint, Variant } = require("godot.lib.api");
     return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_DIR, hint_string: filter });
 }
 
@@ -121,6 +128,7 @@ exports.export_dir = function (filter: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_global_file = function (filter: string) {
+    const { PropertyHint, Variant } = require("godot.lib.api");
     return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_FILE, hint_string: filter });
 }
 
@@ -130,6 +138,7 @@ exports.export_global_file = function (filter: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_global_dir = function (filter: string) {
+    const { PropertyHint, Variant } = require("godot.lib.api");
     return exports.export_(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_GLOBAL_DIR, hint_string: filter });
 }
 
@@ -139,6 +148,7 @@ exports.export_global_dir = function (filter: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_exp_easing = function (hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only") {
+    const { PropertyHint, Variant } = require("godot.lib.api");
     return exports.export_(Variant.Type.TYPE_FLOAT, { hint: PropertyHint.PROPERTY_HINT_EXP_EASING, hint_string: hint });
 }
 
@@ -147,7 +157,8 @@ exports.export_exp_easing = function (hint?: "" | "attenuation" | "positive_only
  * FOR BACKWARD COMPATIBILITY ONLY
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
-exports.export_ = function (type: Variant.Type, details?: { class_?: Function, hint?: PropertyHint, hint_string?: string, usage?: PropertyUsageFlags }) {
+exports.export_ = function (type: Godot.Variant.Type, details?: { class_?: Function, hint?: Godot.PropertyHint, hint_string?: string, usage?: Godot.PropertyUsageFlags }) {
+    const { PropertyHint, PropertyUsageFlags } = require("godot.lib.api");
     return function (target: any, key: string) {
         let ebd = { name: key, type: type, hint: PropertyHint.PROPERTY_HINT_NONE, hint_string: "", usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT };
         if (typeof details === "object") {
@@ -164,6 +175,7 @@ exports.export_ = function (type: Variant.Type, details?: { class_?: Function, h
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_enum = function (enum_type: any) {
+    const { PropertyHint, PropertyUsageFlags, Variant } = require("godot.lib.api");
     return function (target: any, key: string) {
         let enum_vs: Array<string> = [];
         for (let c in enum_type) {
@@ -182,6 +194,7 @@ exports.export_enum = function (enum_type: any) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.export_flags = function (enum_type: any) {
+    const { PropertyHint, PropertyUsageFlags, Variant } = require("godot.lib.api");
     return function (target: any, key: string) {
         let enum_vs: Array<string> = [];
         for (let c in enum_type) {
@@ -196,9 +209,9 @@ exports.export_flags = function (enum_type: any) {
 }
 
 interface RPCConfig {
-    mode?: MultiplayerAPI.RPCMode,
+    mode?: Godot.MultiplayerAPI.RPCMode,
     sync?: "call_remote" | "call_local",
-    transfer_mode?: MultiplayerPeer.TransferMode,
+    transfer_mode?: Godot.MultiplayerPeer.TransferMode,
     transfer_channel?: number,
 }
 
@@ -207,7 +220,7 @@ interface RPCConfig {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.rpc = function (config?: RPCConfig) {
-    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+    return function (target: any, propertyKey?: PropertyKey) {
         if (typeof propertyKey !== "string") {
             throw new Error("only string is allowed as propertyKey for rpc config");
             return;
@@ -230,7 +243,7 @@ exports.rpc = function (config?: RPCConfig) {
  * FOR BACKWARD COMPATIBILITY ONLY
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
-exports.onready = function (evaluator: string | jsb.internal.OnReadyEvaluatorFunc) {
+exports.onready = function (evaluator: string | GodotJsb.internal.OnReadyEvaluatorFunc) {
     return function (target: any, key: string) {
         let ebd = { name: key, evaluator: evaluator };
         jsb.internal.add_script_ready(target, ebd);
@@ -262,7 +275,7 @@ exports.icon = function (path: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.deprecated = function (message?: string) {
-    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+    return function (target: any, propertyKey?: PropertyKey) {
         if (typeof propertyKey === "undefined") {
             jsb.internal.set_script_doc(target, undefined, 0, message ?? "");
             return;
@@ -277,7 +290,7 @@ exports.deprecated = function (message?: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.experimental = function (message?: string) {
-    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+    return function (target: any, propertyKey?: PropertyKey) {
         if (typeof propertyKey === "undefined") {
             jsb.internal.set_script_doc(target, undefined, 1, message ?? "");
             return;
@@ -292,7 +305,7 @@ exports.experimental = function (message?: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
  */
 exports.help = function (message?: string) {
-    return function (target: any, propertyKey?: PropertyKey, descriptor?: PropertyDescriptor) {
+    return function (target: any, propertyKey?: PropertyKey) {
         if (typeof propertyKey === "undefined") {
             jsb.internal.set_script_doc(target, undefined, 2, message ?? "");
             return;
@@ -307,7 +320,8 @@ exports.help = function (message?: string) {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot` instead.
  */
 exports.GLOBAL_GET = function (entry_path: any): any {
-    return require("godot").ProjectSettings.get_setting_with_override(entry_path);
+    const { ProjectSettings } = require("godot.lib.api");
+    return ProjectSettings.get_setting_with_override(entry_path);
 }
 
 /**
@@ -315,5 +329,6 @@ exports.GLOBAL_GET = function (entry_path: any): any {
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot` instead.
  */
 exports.EDITOR_GET = function (entry_path: any): any {
-    return require("godot").EditorInterface.get_editor_settings().get(entry_path);
+    const { EditorInterface } = require("godot.lib.api");
+    return EditorInterface.get_editor_settings().get(entry_path);
 }
