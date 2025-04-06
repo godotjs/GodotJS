@@ -311,6 +311,8 @@ namespace jsb
                 module_cache_.init(isolate_, cache_obj);
             }
 
+            internal::StringNames& names = internal::StringNames::get_singleton();
+
             // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
             {
                 List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_class_list();
@@ -321,7 +323,33 @@ namespace jsb
 
                     if (exposed_name != *it)
                     {
-                        internal::StringNames::get_singleton().add_replacement(*it, exposed_name);
+                        names.add_replacement(*it, exposed_name);
+                    }
+                }
+
+                List<Engine::Singleton> singleton_list;
+                Engine::get_singleton()->get_singletons(&singleton_list);
+
+                for (auto it = singleton_list.begin(); it != singleton_list.end(); ++it)
+                {
+                    String exposed_name = internal::NamingUtil::get_class_name(it->name);
+
+                    if (exposed_name != it->name)
+                    {
+                        names.add_replacement(it->name, exposed_name);
+                    }
+                }
+
+                List<StringName> utility_function_list;
+                Variant::get_utility_function_list(&utility_function_list);
+
+                for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it)
+                {
+                    String exposed_name = internal::NamingUtil::get_member_name(*it);
+
+                    if (exposed_name != *it)
+                    {
+                        names.add_replacement(*it, exposed_name);
                     }
                 }
             }
@@ -395,10 +423,15 @@ namespace jsb
         static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
         jsb_ensuref(AMDModuleLoader::load_source(this, GodotJSProjectPreset::get_source_rt(kRuntimeBundleFile)) == OK,
             "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
-#ifdef TOOLS_ENABLED
         static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
+#ifdef TOOLS_ENABLED
         jsb_ensuref(AMDModuleLoader::load_source(this, GodotJSProjectPreset::get_source_ed(kEditorBundleFile)) == OK,
             "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
+#else
+        // Users may consume editor APIs in codegen functions. However, we want to permit regular ES6 import syntax.
+        // We provide a dummy module that can be imported (but not used) in runtime-only builds.
+        static constexpr char kDummyModule[] = "define('jsb.editor.codegen',[],function(){return{}})";
+        AMDModuleLoader::load_source(this, kDummyModule, kEditorBundleFile);
 #endif
 
     }

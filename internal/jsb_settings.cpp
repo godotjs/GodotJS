@@ -106,6 +106,11 @@ namespace jsb::internal
     }
 
 #ifdef TOOLS_ENABLED
+    bool Settings::editor_settings_available()
+    {
+        return EditorSettings::get_singleton() != nullptr || Engine::get_singleton()->is_editor_hint() || Engine::get_singleton()->is_project_manager_hint() || jsb_ext_is_cmdline_tool();
+    }
+
     PackedStringArray Settings::get_ignored_classes()
     {
         init_editor_settings();

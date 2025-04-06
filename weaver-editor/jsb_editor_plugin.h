@@ -67,6 +67,7 @@ protected:
     // Crash if the given info is invalid, ensure to update the preset list in C++ code after it changed in SCsub.
     void add_install_file(jsb::weaver::InstallFileInfo&& p_install_file);
 
+    static String mutate_types(const String& p_content);
     static Error apply_file(const jsb::weaver::InstallFileInfo& p_file);
     static bool install_files(const Vector<jsb::weaver::InstallFileInfo>& p_files);
     static Vector<jsb::weaver::InstallFileInfo> filter_files(const Vector<jsb::weaver::InstallFileInfo>& p_files, int p_hint);

@@ -718,7 +718,8 @@ namespace jsb
                 {
                     JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
-                    constants_obj->Set(context, impl::Helper::new_string(isolate, constant_doc.name), constant_obj).Check();
+                    String constant_name = internal::NamingUtil::get_constant_name(constant_doc.name);
+                    constants_obj->Set(context, impl::Helper::new_string(isolate, constant_name), constant_obj).Check();
 
                     set_field(isolate, context, constant_obj, "description", constant_doc.description);
                 }
@@ -734,7 +735,8 @@ namespace jsb
                 {
                     JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
-                    methods_obj->Set(context, impl::Helper::new_string(isolate, method_doc.name), method_obj).Check();
+                    String method_name = internal::NamingUtil::get_member_name(method_doc.name);
+                    methods_obj->Set(context, impl::Helper::new_string(isolate, method_name), method_obj).Check();
 
                     set_field(isolate, context, method_obj, "description", method_doc.description);
                 }
@@ -749,7 +751,8 @@ namespace jsb
                 {
                     JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
-                    properties_obj->Set(context, impl::Helper::new_string(isolate, property_doc.name), property_obj).Check();
+                    String property_name = internal::NamingUtil::get_member_name(property_doc.name);
+                    properties_obj->Set(context, impl::Helper::new_string(isolate, property_name), property_obj).Check();
 
                     set_field(isolate, context, property_obj, "description", property_doc.description);
                 }
@@ -765,7 +768,8 @@ namespace jsb
                 {
                     JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
-                    signals_obj->Set(context, impl::Helper::new_string(isolate, signal_doc.name), signal_obj).Check();
+                    String signal_name = internal::NamingUtil::get_member_name(signal_doc.name);
+                    signals_obj->Set(context, impl::Helper::new_string(isolate, signal_name), signal_obj).Check();
 
                     set_field(isolate, context, signal_obj, "description", signal_doc.description);
                 }

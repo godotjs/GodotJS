@@ -31,7 +31,7 @@ declare module "godot" {
      * FOR BACKWARD COMPATIBILITY ONLY
      * @deprecated [WARNING] Use Callable<T>.
      */
-    type Callable2<T1, T2, R = void> = Callable<(v1: T1, v2, T2) => R>;
+    type Callable2<T1, T2, R = void> = Callable<(v1: T1, v2: T2) => R>;
 
     /**
      * FOR BACKWARD COMPATIBILITY ONLY
@@ -67,7 +67,7 @@ declare module "godot" {
      * FOR BACKWARD COMPATIBILITY ONLY
      * @deprecated [WARNING] Use Signal<T>.
      */
-    type Signal2<T1, T2> = Signal<(v1: T1, v2, T2) => void>;
+    type Signal2<T1, T2> = Signal<(v1: T1, v2: T2) => void>;
 
     /**
      * FOR BACKWARD COMPATIBILITY ONLY
@@ -204,7 +204,7 @@ declare module "godot" {
         usage: PropertyUsageFlags;
     }
 
-  type BindRight<F extends (this: any, ...args: any[]) => any, B extends any[]> =
+  type BindRight<F extends Function, B extends any[]> =
     F extends (this: infer T, ...args: [...(infer A), ...B]) => infer R
       ? (this: T, ...args: A) => R
       : never;

@@ -27,6 +27,7 @@ namespace jsb::internal
 			{ "Error", "GError" },
 			{ "Array", "GArray" },
 			{ "OpenXRIPBinding", "OpenXRIPBinding" },
+			{ "OpenXRIPBindingModifier", "OpenXRIPBindingModifier" },
 			{ "SkeletonModification2DCCDIK", "SkeletonModification2DCcdik" },
 			{ "SkeletonModification2DFABRIK", "SkeletonModification2DFabrik" },
 			{ "SkeletonModification3DCCDIK", "SkeletonModification3DCcdik" },
@@ -48,6 +49,7 @@ namespace jsb::internal
 			{ "IO", "IO" }, // Input/Output
 			{ "IP", "IP" }, // Internet Protocol
 			{ "IV", "IV" }, // Initialization Vector
+			{ "JS", "JS" }, // JavaScript
 			{ "MACOS", "MacOS" },
 			{ "NODEPATH", "NodePath" },
 			{ "SPIRV", "SpirV" },
@@ -273,13 +275,18 @@ namespace jsb::internal
 	List<StringName> NamingUtil::get_exposed_class_list()
 	{
 #ifdef TOOLS_ENABLED
-		const PackedStringArray ignored_classes = internal::Settings::get_ignored_classes();
-		const int ignored_classes_num = (int) ignored_classes.size();
-		HashSet<StringName> ignored_classes_set(ignored_classes_num);
+		HashSet<StringName> ignored_classes_set;
 
-		for (int i = 0; i < ignored_classes_num; ++i)
+		if (internal::Settings::editor_settings_available())
 		{
-			ignored_classes_set.insert(ignored_classes[i]);
+			const PackedStringArray ignored_classes = internal::Settings::get_ignored_classes();
+			const int ignored_classes_num = (int) ignored_classes.size();
+			ignored_classes_set.reserve(ignored_classes_num);
+
+			for (int i = 0; i < ignored_classes_num; ++i)
+			{
+				ignored_classes_set.insert(ignored_classes[i]);
+			}
 		}
 #endif
 
@@ -293,7 +300,7 @@ namespace jsb::internal
 			StringName class_name = *it;
 
 #ifdef TOOLS_ENABLED
-			if (ignored_classes_set.has(class_name))
+			if (ignored_classes_set.has(get_class_name(class_name)))
 			{
 				JSB_LOG(Verbose, "Ignoring class '%s' because it's in the ignored classes list", class_name);
 				continue;
