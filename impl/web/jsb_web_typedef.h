@@ -44,6 +44,7 @@ namespace jsb::impl
     {
         JS_ATOM_message = 0,
         JS_ATOM_stack = 1,
+        JS_ATOM_name = 2,
     };
 }
 

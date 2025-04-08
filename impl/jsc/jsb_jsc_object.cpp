@@ -42,6 +42,17 @@ namespace v8
         return internal_data->internal_fields[slot];
     }
 
+    Local<String> Object::GetConstructorName()
+    {
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSValueRef name = isolate_->_GetProperty(self, jsb::impl::JS_ATOM_name);
+        if (!JSValueIsString(isolate_->ctx(), name))
+        {
+            return Local<String>();
+        }
+        return Local<String>(Data(isolate_, isolate_->push_copy(name)));
+    }
+    
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
         const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);

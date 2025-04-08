@@ -1,8 +1,8 @@
 #include "jsb_editor_helper.h"
 
-#include "../../bridge/jsb_callable.h"
-#include "../../bridge/jsb_type_convert.h"
-#include "../../weaver/jsb_script.h"
+#include "../bridge/jsb_callable.h"
+#include "../bridge/jsb_type_convert.h"
+#include "../weaver/jsb_script.h"
 
 #include "editor/gui/editor_toaster.h"
 #include "scene/resources/packed_scene.h"

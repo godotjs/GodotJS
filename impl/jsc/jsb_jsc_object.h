@@ -21,6 +21,8 @@ namespace v8
         void SetAlignedPointerInInternalFields(int argc, int indices[], void* values[]);
         void* GetAlignedPointerFromInternalField(int slot) const;
 
+        Local<String> GetConstructorName();
+        
         Maybe<bool> Set(Local<Context> context, Local<Value> key, Local<Value> value);
         Maybe<bool> Set(Local<Context> context, uint32_t index, Local<Value> value);
 

@@ -30,6 +30,12 @@ namespace v8
         return JS_IsNull(val) || JS_IsUndefined(val);
     }
 
+    bool Data::IsNull() const
+    {
+        const JSValue val = isolate_->stack_val(stack_pos_);
+        return JS_IsNull(val);
+    }
+
     bool Data::IsUndefined() const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);

@@ -25,6 +25,7 @@ namespace v8
         int GetIdentityHash() const;
 
         bool IsNullOrUndefined() const;
+        bool IsNull() const;
         bool IsUndefined() const;
         bool IsBoolean() const;
         bool IsObject() const;

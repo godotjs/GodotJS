@@ -35,6 +35,12 @@ namespace v8
         return JSValueIsNull(isolate_->ctx(), val) || JSValueIsUndefined(isolate_->ctx(), val);
     }
 
+    bool Data::IsNull() const
+    {
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return JSValueIsNull(isolate_->ctx(), val);
+    }
+
     bool Data::IsUndefined() const
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);

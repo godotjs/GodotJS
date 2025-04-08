@@ -45,6 +45,25 @@ namespace v8
         return data->internal_fields[slot];
     }
 
+    Local<String> Object::GetConstructorName()
+    {
+        const JSValue self = isolate_->stack_val(stack_pos_);
+        jsb_check(JS_IsFunction(isolate_->ctx(), self) || JS_IsObject(self));
+
+        const JSValue name = JS_GetProperty(isolate_->ctx(), self, jsb::impl::JS_ATOM_name);
+        if (JS_IsException(name))
+        {
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(isolate_->ctx());
+            return Local<String>();
+        }
+        if (!JS_IsString(name))
+        {
+            JS_FreeValue(isolate_->ctx(), name);
+            return Local<String>();
+        }
+        return Local<String>(Data(isolate_, isolate_->push_steal(name)));
+    }
+
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
         const JSValue self = isolate_->stack_val(stack_pos_);

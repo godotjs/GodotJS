@@ -14,6 +14,11 @@ namespace v8
         return jsbi_IsNullOrUndefined(isolate_->rt(), stack_pos_);
     }
 
+    bool Data::IsNull() const
+    {
+        return jsbi_IsNull(isolate_->rt(), stack_pos_);
+    }
+
     bool Data::IsUndefined() const
     {
         return jsbi_IsUndefined(isolate_->rt(), stack_pos_);

@@ -342,9 +342,10 @@ class jsbb_Engine {
         this._registry = new jsbb_Registry(opaque);
 
         // init all commonly used string here
-        this._atoms = new Array(2);
+        this._atoms = new Array(3);
         this._atoms[0] = "message";
         this._atoms[1] = "stack";
+        this._atoms[2] = "name";
 
         // init fixed stack objects
         jsbb_ensure(this._stack.Push(undefined) === jsbb_StackPos.Undefined);

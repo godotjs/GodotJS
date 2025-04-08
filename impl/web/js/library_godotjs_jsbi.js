@@ -106,6 +106,7 @@ const GodotJSBrowserInterface = {
         const val = _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos);
         return val === null || val === undefined;
     },
+    jsbi_IsNull: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === null; },
     jsbi_IsUndefined: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) === undefined; },
     jsbi_IsExternal: function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).IsExternal(stack_pos); },
     jsbi_IsObject: function (engine_id, stack_pos) {

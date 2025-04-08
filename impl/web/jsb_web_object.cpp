@@ -42,6 +42,17 @@ namespace v8
         return data->internal_fields[slot];
     }
 
+    Local<String> Object::GetConstructorName()
+    {
+        const jsb::impl::StackPosition name_sp = jsbi_GetPropertyAtomID(isolate_->rt(), stack_pos_, jsb::impl::JS_ATOM_name);
+        if (!jsbi_IsString(isolate_->rt(), name_sp))
+        {
+            return Local<String>();
+        }
+
+        return Local<String>(Data(isolate_, name_sp));
+    }
+    
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
         const jsb::impl::ResultValue res = jsbi_SetPropertyUint32(isolate_->rt(), stack_pos_, index, value->stack_pos_);

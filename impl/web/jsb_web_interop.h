@@ -143,6 +143,7 @@ JSBROWSER_API jsb::impl::StackPosition jsbi_handle_PushStack(jsb::impl::JSRuntim
 
 // JS VALUE TYPE CHECKING
 JSBROWSER_API bool  jsbi_IsNullOrUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool  jsbi_IsNull(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API bool  jsbi_IsUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API bool  jsbi_IsExternal(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API bool  jsbi_IsObject(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
