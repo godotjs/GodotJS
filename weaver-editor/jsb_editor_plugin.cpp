@@ -159,7 +159,7 @@ Error GodotJSEditorPlugin::apply_file(const jsb::weaver::InstallFileInfo &p_file
     if ((p_file.hint & jsb::weaver::CH_REPLACE_VARS) != 0)
     {
         String parsed;
-        parsed.parse_utf8(data, (int) size);
+        parsed.append_utf8(data, (int) size);
         parsed = parsed.replacen("__OUT_DIR__", jsb::internal::Settings::get_jsb_out_dir_name());
         parsed = parsed.replacen("__BUILD_INFO_FILE__", jsb::internal::Settings::get_tsbuildinfo_path());
         parsed = parsed.replacen("__SRC_DIR__", "../../../");  // locate typescripts at the project root path for better dev experience

@@ -248,7 +248,7 @@ namespace jsb
             {
                 v8::Local<v8::Array> args_obj = v8::Array::New(isolate, argument_num);
                 int index = 0;
-                for (List<PropertyInfo>::ConstIterator it = method_info.arguments.begin(); it != method_info.arguments.end(); ++it)
+                for (auto it = method_info.arguments.begin(); it != method_info.arguments.end(); ++it)
                 {
                     jsb_check(index < argument_num);
                     const PropertyInfo& arg_info = *it;
