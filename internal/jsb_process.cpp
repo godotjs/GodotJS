@@ -337,7 +337,7 @@ namespace jsb::internal
         {
             if (rd_line.is_empty()) return;
             String line;
-            if (line.parse_utf8(rd_line.ptr()) == OK)
+            if (line.append_utf8(rd_line.ptr()) == OK)
             {
                JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, line);
             }
