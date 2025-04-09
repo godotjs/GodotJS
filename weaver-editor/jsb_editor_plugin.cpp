@@ -25,11 +25,7 @@ jsb::internal::PresetSource GodotJSEditorPlugin::get_preset_source(const String&
 {
     jsb::internal::PresetSource preset = GodotJSProjectPreset::get_source_rt(p_filename);
     if (preset.is_valid()) return preset;
-#ifdef TOOLS_ENABLED
     return GodotJSProjectPreset::get_source_ed(p_filename);
-#else
-    return jsb::internal::PresetSource();
-#endif
 }
 
 void GodotJSEditorPlugin::_notification(int p_what)
