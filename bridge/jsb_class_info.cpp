@@ -133,8 +133,9 @@ namespace jsb
                         {
                             v8::Local<v8::Object> rpc_obj = rpc_val.As<v8::Object>();
                             Dictionary rpc_config;
-                            //TODO for `rpc_config[name]`, do a StringName have an identical hash of it's underlying String?
-
+                            
+                            // for `rpc_config[name]`, a StringName has an identical hash of it's underlying String
+                            // and returns true for equality check. So, it's safe to use jsb_string_name here
                             if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, mode)).ToLocal(&config_val))
                             {
                                 rpc_config[jsb_string_name(mode)] = config_val.As<v8::Int32>()->Value();
