@@ -27,7 +27,16 @@ namespace jsb::internal
     public:
         bool is_valid() const { return !filename_.is_empty() && data_ != nullptr && data_size_ != 0; }
         
-        PresetSource(const String& p_filename = String(), const char* p_data = nullptr, size_t p_size = 0, size_t p_uncompressed_size = 0, bool p_is_zero_terminated = false)
+        PresetSource()
+            : filename_()
+            , uncompressed_size_(0)
+            , uncompressed_data_()
+            , data_size_(0)
+            , data_(nullptr)
+            , is_zero_terminated_(false) 
+        {}
+
+        PresetSource(const String& p_filename, const char* p_data, size_t p_size, size_t p_uncompressed_size, bool p_is_zero_terminated)
             : filename_(p_filename)
             , uncompressed_size_(p_uncompressed_size)
             , uncompressed_data_()
