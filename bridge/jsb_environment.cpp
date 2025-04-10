@@ -1061,7 +1061,7 @@ namespace jsb
         ModuleSourceInfo source_info;
         if (IModuleResolver* resolver = this->find_module_resolver(normalized_id, source_info))
         {
-            const StringName& module_id = source_info.source_filepath;
+            const StringName module_id = source_info.source_filepath;
 
             // check again with the resolved module_id
             existing_module = module_cache_.find(module_id);
