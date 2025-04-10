@@ -16,6 +16,14 @@ namespace jsb
         {
             StringName name_;
             TStrongRef<v8::String> ref_;
+
+            Slot() = default;
+            Slot(const StringName& p_name) : name_(p_name), ref_() {}
+            Slot(const Slot&) = default;
+            Slot& operator=(const Slot&) = default;
+            Slot(Slot&& other) noexcept = default;
+            Slot& operator=(Slot&& other) noexcept = default;
+            ~Slot() = default;
         };
 
         // StringName => StringNameID
@@ -122,7 +130,10 @@ namespace jsb
             if constexpr (kMaxCacheSize <= 0) return;
 
             values_.move_to_back(id);
+            jsb_check(values_.is_valid_index(id));
+            jsb_check(values_.get_last_index() == id);
         }
+        
         
         void remove_the_least_used(v8::Isolate* isolate)
         {
@@ -148,7 +159,7 @@ namespace jsb
             }
             
             remove_the_least_used(isolate);
-            const StringNameID id = values_.add({ p_string_name, {} });
+            const StringNameID id = values_.add(Slot(p_string_name));
             name_index.insert(p_string_name, id);
             JSB_LOG(VeryVerbose, "new string name (plain) %s %d [slots:%d]", p_string_name, id, values_.size());
             return id;
