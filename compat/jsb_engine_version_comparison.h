@@ -3,7 +3,7 @@
 
 #define GODOT_VERSION_COMPARE(Current, MinExpected, ComparisonChain) (((Current) > (MinExpected)) || ((Current) == (MinExpected) && (ComparisonChain)))
 
-#if JSB_GDEXTENSION
+#if __has_include(<godot_cpp/core/version.hpp>)
 #   include <godot_cpp/core/version.hpp>
 #   define GODOT_VERSION_NEWER_THAN(major, minor, patch) GODOT_VERSION_COMPARE(GODOT_VERSION_MAJOR, major, GODOT_VERSION_COMPARE(GODOT_VERSION_MINOR, minor, GODOT_VERSION_COMPARE(GODOT_VERSION_PATCH, patch, false)))
 #else
