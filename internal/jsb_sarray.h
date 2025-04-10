@@ -418,6 +418,7 @@ namespace jsb::internal
             }
             slot.previous = INDEX_NONE;
             slot.next = _first_index;
+            get_data()[_first_index].previous = p_index.get_index();
             _first_index = p_index.get_index();
             ++_version;
             jsb_check(is_consistent());
@@ -446,6 +447,7 @@ namespace jsb::internal
             }
             slot.next = INDEX_NONE;
             slot.previous = _last_index;
+            get_data()[_last_index].next = p_index.get_index();
             _last_index = p_index.get_index();
             ++_version;
             jsb_check(is_consistent());
