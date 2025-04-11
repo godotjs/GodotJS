@@ -337,10 +337,11 @@ namespace jsb::internal
         {
             if (rd_line.is_empty()) return;
             String line;
-            if (line.append_utf8(rd_line.ptr()) == OK)
-            {
-               JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, line);
-            }
+#if GODOT_4_5_OR_NEWER
+            if (line.append_utf8(rd_line.ptr()) == OK) JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, line);
+#else
+            if (line.parse_utf8(rd_line.ptr()) == OK) JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, line);
+#endif
             rd_line.clear();
         }
 
