@@ -1,9 +1,11 @@
 import type * as Godot from "godot";
 import type * as GodotJsb from "godot-jsb";
 
-const Proxied = Symbol("lib_api_proxied");
+const godot_api: typeof Godot = require("godot");
+const jsb_api: typeof GodotJsb = require("godot-jsb");
 
-const { get_class, get_enum, get_enum_value, get_internal_mapping, get_member } = require("godot-jsb").internal.names;
+const ProxyTarget = godot_api.ProxyTarget;
+const { get_class, get_enum, get_enum_value, get_internal_mapping, get_member } = jsb_api.internal.names;
 
 function pascal_to_upper_snake_case(str: string) {
     return str.replace(/[a-z][A-Z]|[0-9][A-Z][a-z]/g, (m) => `${m[0]}_${m.slice(1)}`).toUpperCase();
@@ -23,15 +25,15 @@ function proxy_value(value: any) {
         return value;
     }
 
-    if (value[Proxied]) {
+    if (value[ProxyTarget]) {
         return value;
     }
 
     if (typeof value === "function") {
         const proxied_function = function(this: any, ...args: any[]) {
             return proxy_value(value.apply(this, args.map(proxy_value)));
-        };
-        proxied_function[Proxied] = true;
+        } as any as (Function & { [ProxyTarget]: Function });
+        proxied_function[ProxyTarget] = value;
         return proxied_function;
     }
 
@@ -48,8 +50,8 @@ function proxy_value(value: any) {
 
 const object_handler = {
     get(target, p, _receiver) {
-        if (p === Proxied) {
-            return true;
+        if (p === ProxyTarget) {
+            return target;
         }
 
         const value = Reflect.get(target, p);
@@ -88,8 +90,8 @@ const instance_handler = {
         return false;
     },
     get(target, p, _receiver) {
-        if (p === Proxied) {
-            return true;
+        if (p === ProxyTarget) {
+            return target;
         }
 
         if (typeof p !== "string") {
@@ -135,8 +137,8 @@ const class_handler = {
         return instance_proxy(new target(...args));
     },
     get(target, p, _receiver) {
-        if (p === Proxied) {
-            return true;
+        if (p === ProxyTarget) {
+            return target;
         }
 
         if (typeof p !== "string") {
@@ -171,8 +173,8 @@ const enum_handler = {
         return false;
     },
     get(target, p, _receiver) {
-        if (p === Proxied) {
-            return true;
+        if (p === ProxyTarget) {
+            return target;
         }
 
         if (typeof p !== "string") {
@@ -220,8 +222,8 @@ const api_handler = (target: any) => ({
         return false;
     },
     get(_pseudo_target, p, _receiver) {
-        if (p === Proxied) {
-            return true;
+        if (p === ProxyTarget) {
+            return target;
         }
 
         if (p in _pseudo_target) {
@@ -286,8 +288,8 @@ const api_handler = (target: any) => ({
     },
 } satisfies ProxyHandler<any>);
 
-const godot_jsb = object_proxy(require("godot-jsb")) as typeof GodotJsb;
-const api = new Proxy({ jsb: godot_jsb }, api_handler(require("godot"))) as typeof Godot & { jsb: typeof GodotJsb };
+const godot_jsb = object_proxy(jsb_api) as typeof GodotJsb;
+const api = new Proxy({ jsb: godot_jsb }, api_handler(godot_api)) as typeof Godot & { jsb: typeof GodotJsb };
 
 /**
  * This is a starting point for writing GodotJS code that is camel-case binding agnostic at runtime.

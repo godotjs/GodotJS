@@ -67,13 +67,8 @@ export function on_type_loaded(type_name: string | string[], callback: TypeLoade
     }
 }
 
-const jsb_builtin_extras: { [key: string]: any } = {
-    "IntegerType": Symbol("IntegerType"), 
-    "FloatType":   Symbol("FloatType"), 
-}
-
 // callback on a godot type loaded by jsb_godot_module_loader
-exports._mod_proxy_ = function (type_loader_func: (type_name: string) => any): any {
+exports._mod_proxy_ = function (builtin_symbols: { [key in string]?: symbol }, type_loader_func: (type_name: string) => any): any {
     return new Proxy(type_db, {
         set: function (target, prop_name, value) {
             if (typeof prop_name !== 'string') {
@@ -89,8 +84,8 @@ exports._mod_proxy_ = function (type_loader_func: (type_name: string) => any): a
             let o = target[prop_name];
             if (typeof o === 'undefined' && typeof prop_name === 'string') {
                 o = target[prop_name] =
-                    typeof jsb_builtin_extras[prop_name] !== "undefined"
-                        ? jsb_builtin_extras[prop_name]
+                    typeof builtin_symbols[prop_name] !== "undefined"
+                        ? builtin_symbols[prop_name]
                         : type_loader_func(prop_name);
             }
             return o;

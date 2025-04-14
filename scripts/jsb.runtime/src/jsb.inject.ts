@@ -2,22 +2,12 @@ import type * as Godot from "godot";
 import type * as GodotJsb from "godot-jsb";
 
 type GArrayProxy<T> = Godot.GArrayProxy<T> & {
-    [ProxyTarget]: Godot.GArray<T>;
+    [Godot.ProxyTarget]: Godot.GArray<T>;
 }
 
 type GDictionaryProxy<T> = Godot.GDictionaryProxy<T> & {
-    [ProxyTarget]: Godot.GDictionary<T>;
+    [Godot.ProxyTarget]: Godot.GDictionary<T>;
 };
-
-const ProxyTarget = Symbol("proxy_target");
-
-const proxy_unwrap = function(value: any) {
-    if (typeof value !== "object" || value === null) {
-        return value;
-    }
-
-    return value[ProxyTarget] ?? value;
-}
 
 const proxyable_prototypes: any[] = [];
 
@@ -33,6 +23,16 @@ const proxy_wrap = function(value: any) {
 };
 
 require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
+    const ProxyTarget = require("godot").ProxyTarget;
+
+    const proxy_unwrap = function(value: any) {
+        if (typeof value !== "object" || value === null) {
+            return value;
+        }
+
+        return value[ProxyTarget] ?? value;
+    };
+
     const get_member = (require("godot-jsb") as typeof GodotJsb).internal.names.get_member;
 
     proxyable_prototypes.push(type.prototype);
@@ -193,6 +193,16 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
 });
 
 require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
+    const ProxyTarget = require("godot").ProxyTarget;
+
+    const proxy_unwrap = function(value: any) {
+        if (typeof value !== "object" || value === null) {
+            return value;
+        }
+
+        return value[ProxyTarget] ?? value;
+    };
+
     const get_member = (require("godot-jsb") as typeof GodotJsb).internal.names.get_member;
 
     proxyable_prototypes.push(type.prototype);

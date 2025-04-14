@@ -2,6 +2,16 @@
 declare module "godot" {
     export const IntegerType: unique symbol;
     export const FloatType: unique symbol;
+    /**
+     * Proxy objects are typically transparent by design, allowing a proxy to impersonate a type. However, GodotJS also
+     * makes use of proxies to wrap existing objects in order to provide a more convenient API. In such cases, it is
+     * convenient to be able to unwrap the object i.e. obtain access to the target object. In order to achieve this,
+     * GodotJS exposes a property with the key ProxyTarget. You can access this to, for example, obtain direct access
+     * to the original GDictionary wrapped via a call to .proxy(). Additionally, GodotJS uses this property internally
+     * to unwrap proxies, thus allowing you to pass a proxy wrapped GArray/GDictionary as an argument to any function
+     * expecting a GArray/GDictionary parameter.
+     */
+    export const ProxyTarget: unique symbol;
 
     /**
      * FOR BACKWARD COMPATIBILITY ONLY
