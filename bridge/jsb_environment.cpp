@@ -1338,18 +1338,20 @@ namespace jsb
 
         // bind and cache the class immediately
         {
-            NativeClassInfoPtr class_info = class_register->register_func(ClassRegister {
+            // We can't hold NativeClassInfoPtr here because on_class_post_bind calls into user code, which may wish to load
+            // additional classes and thus needs the lock released.
+            const NativeClassInfo* class_info = (NativeClassInfo*)class_register->register_func(ClassRegister {
                 this,
                 p_type_name,
                 this->isolate_,
                 this->context_.Get(this->isolate_),
-            }, &class_register->id);
+            }, &class_register->id).ptr();
             jsb_check(class_register->id);
             JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, class_register->id);
             if (r_class_id) *r_class_id = class_register->id;
 
             on_class_post_bind(class_info);
-            return class_info;
+            return get_native_class(class_register->id);
         }
     }
 
@@ -1373,13 +1375,18 @@ namespace jsb
             return class_info;
         }
 
-        NativeClassInfoPtr class_ = ObjectReflectBindingUtil::reflect_bind(this, p_class_info, r_class_id);
-
+        // We can't hold NativeClassInfoPtr here because on_class_post_bind calls into user code, which may wish to load
+        // additional classes and thus needs the lock released.
+        NativeClassID class_id;
+        const NativeClassInfo* class_ = (NativeClassInfo*)ObjectReflectBindingUtil::reflect_bind(this, p_class_info, &class_id).ptr();
+        jsb_check(class_id);
+        if (r_class_id) *r_class_id = class_id;
         on_class_post_bind(class_);
-        return class_;
+
+        return this->get_native_class(class_id);
     }
 
-    void Environment::on_class_post_bind(const NativeClassInfoPtr& p_class_info)
+    void Environment::on_class_post_bind(const NativeClassInfo* p_class_info)
     {
         const JavaScriptModule& typeloader = *this->get_module_cache().find(jsb_string_name(godot_typeloader));
         const v8::Local<v8::Value> typeloader_exports = typeloader.exports.Get(this->get_isolate());
