@@ -47,8 +47,13 @@ namespace jsb
             deps.push_back(item_str);
         }
         JSB_LOG(VeryVerbose, "new AMD module loader %s deps: %s", module_id_str, String(", ").join(deps));
-        env->add_module_loader<AMDModuleLoader>(module_id_str,
+        AMDModuleLoader& loader = env->add_module_loader<AMDModuleLoader>(module_id_str,
             deps, v8::Global<v8::Function>(isolate, info[2].As<v8::Function>()));
+
+        if (info.Data()->IsBoolean())
+        {
+            loader.set_internal(info.Data()->BooleanValue(isolate));
+        }
     }
 
     void Builtins::_require(const v8::FunctionCallbackInfo<v8::Value>& info)

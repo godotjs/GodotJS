@@ -1273,19 +1273,22 @@ namespace jsb
         }
     }
 
-    v8::Local<v8::Function> Environment::_new_require_func(const String &p_module_id)
+    v8::Local<v8::Function> Environment::_new_require_func(const String &p_module_id, bool p_expose_main)
     {
         const v8::Local<v8::Context> context = context_.Get(isolate_);
         const v8::Local<v8::String> module_id = impl::Helper::new_string(isolate_, p_module_id);
         const v8::Local<v8::Function> require = JSB_NEW_FUNCTION(context, Builtins::_require, /* magic: module_id */ module_id);
-        if (v8::Local<v8::Object> main_module; _get_main_module(&main_module))
+        if (p_expose_main)
         {
-            require->Set(context, jsb_name(this, main), main_module).Check();
-        }
-        else
-        {
-            JSB_LOG(Log, "%s: require.main is not set due to main module not available", p_module_id);
-            require->Set(context, jsb_name(this, main), v8::Undefined(isolate_)).Check();
+            if (v8::Local<v8::Object> main_module; _get_main_module(&main_module))
+            {
+                require->Set(context, jsb_name(this, main), main_module).Check();
+            }
+            else
+            {
+                JSB_LOG(Log, "%s: require.main is not set due to main module not available", p_module_id);
+                require->Set(context, jsb_name(this, main), v8::Undefined(isolate_)).Check();
+            }
         }
         require->Set(context, jsb_name(this, cache), module_cache_.get_cache(isolate_)).Check();
         return require;

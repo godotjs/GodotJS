@@ -29,7 +29,7 @@ namespace jsb
             // special case: `require` & `exports`
             if (dep_module_id == "require")
             {
-                dep_vals[index] = p_env->_new_require_func(self_module_id);
+                dep_vals[index] = p_env->_new_require_func(self_module_id, !internal_);
                 continue;
             }
             if (dep_module_id == "exports")
@@ -80,7 +80,7 @@ namespace jsb
         const char* str = p_source.get_data(len);
         if (!str) return ERR_FILE_NOT_FOUND;
         jsb_check(len == (size_t)(int) len);
-        _load_source(p_env, str, (int) len, p_source.get_filename());
+        _load_source(p_env, str, (int) len, p_source.get_filename(), true);
         return OK;
     }
 
@@ -89,7 +89,7 @@ namespace jsb
         _load_source(p_env, (const char*) p_source.ptr(), p_source.length(), p_name);
     }
 
-    void AMDModuleLoader::_load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name)
+    void AMDModuleLoader::_load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name, bool p_internal)
     {
         jsb_check(strstr(p_source, "(function(define){") == p_source);
 
@@ -114,7 +114,8 @@ namespace jsb
             return;
         }
 
-        v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, Builtins::_define, {}) };
+        v8::Local<v8::Boolean> internal = v8::Boolean::New(isolate, p_internal);
+        v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, Builtins::_define, internal) };
         const v8::MaybeLocal<v8::Value> result = func.As<v8::Function>()->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
         if (try_catch.has_caught())
         {

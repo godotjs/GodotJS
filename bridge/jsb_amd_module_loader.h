@@ -13,6 +13,7 @@ namespace jsb
     private:
         Vector<String> deps_;
         v8::Global<v8::Function> evaluator_;
+        bool internal_;
 
     public:
         AMDModuleLoader(const Vector<String>& p_deps, v8::Global<v8::Function>&& p_evaluator)
@@ -23,11 +24,16 @@ namespace jsb
 
         virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
 
+        void set_internal(bool internal)
+        {
+            internal_ = internal;
+        }
+
         static Error load_source(Environment* p_env, const internal::PresetSource& p_source);
         static void load_source(Environment* p_env, const String& p_source, const String& p_name);
 
     private:
-        static void _load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name);
+        static void _load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name, bool p_internal = false);
     };
 
 }

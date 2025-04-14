@@ -338,7 +338,7 @@ namespace jsb
 
         void rebind(Object* p_this, ScriptClassID p_class_id);
 
-        v8::Local<v8::Function> _new_require_func(const String& p_module_id);
+        v8::Local<v8::Function> _new_require_func(const String& p_module_id, bool p_expose_main = true);
 
         bool _get_main_module(v8::Local<v8::Object>* r_main_module) const;
 
