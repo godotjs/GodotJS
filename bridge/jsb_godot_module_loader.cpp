@@ -37,18 +37,20 @@ namespace jsb
         // (1) singletons have the top priority (in GDScriptLanguage::init, singletons will overwrite the globals slot even if a type/const has the same name)
         //     check before getting to avoid error prints in `get_singleton_object`
         if (Engine::get_singleton()->has_singleton(original_name))
-        if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(original_name))
         {
-            JSB_LOG(VeryVerbose, "exposing singleton object %s", (String) original_name);
-            if (v8::Local<v8::Object> rval;
-                TypeConvert::gd_obj_to_js(isolate, context, gd_singleton, rval) && !rval.IsEmpty())
+            if (Object* gd_singleton = Engine::get_singleton()->get_singleton_object(original_name))
             {
-                env->mark_as_persistent_object(gd_singleton);
-                info.GetReturnValue().Set(rval);
+                JSB_LOG(VeryVerbose, "exposing singleton object %s", (String) original_name);
+                if (v8::Local<v8::Object> rval;
+                    TypeConvert::gd_obj_to_js(isolate, context, gd_singleton, rval) && !rval.IsEmpty())
+                {
+                    env->mark_as_persistent_object(gd_singleton);
+                    info.GetReturnValue().Set(rval);
+                    return;
+                }
+                jsb_throw(isolate, "failed to bind a singleton object");
                 return;
             }
-            jsb_throw(isolate, "failed to bind a singleton object");
-            return;
         }
 
         // (2) (global) utility functions.
