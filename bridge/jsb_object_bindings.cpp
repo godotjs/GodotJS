@@ -92,8 +92,8 @@ namespace jsb
              for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
              {
                  v8::HandleScope handle_scope_for_signal(isolate);
-                 const StringName& signal_name = internal::NamingUtil::get_member_name(pair.key);
-                 const v8::Local<v8::String> signal_name_js = p_env->get_string_name_cache().get_string_value(isolate, signal_name);
+                 String signal_name = internal::NamingUtil::get_member_name(pair.key);
+                 const v8::Local<v8::String> signal_name_js = p_env->get_string_name_cache().get_string_value(isolate, pair.key);
                  class_builder.Instance().Property(signal_name, _godot_object_signal, signal_name_js.As<v8::Value>());
              }
 
