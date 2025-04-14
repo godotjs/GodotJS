@@ -14,6 +14,7 @@
 #include "jsb_object_handle.h"
 #include "jsb_module_loader.h"
 #include "jsb_module_resolver.h"
+#include "jsb_async_module_manager.h"
 #include "jsb_string_name_cache.h"
 #include "jsb_array_buffer_allocator.h"
 #include "../internal/jsb_internal.h"
@@ -170,6 +171,7 @@ namespace jsb
 
         internal::CFunctionPointers function_pointers_;
 
+        AsyncModuleManager async_module_manager_;
         JavaScriptModuleCache module_cache_;
 
         internal::TypeGen<TWeakRef<v8::Function>, internal::Index32>::UnorderedMap function_refs_; // backlink
@@ -303,6 +305,8 @@ namespace jsb
 
         jsb_force_inline const JavaScriptModuleCache& get_module_cache() const { return module_cache_; }
         jsb_force_inline JavaScriptModuleCache& get_module_cache() { return module_cache_; }
+
+        AsyncModuleManager& get_async_module_manager() { return async_module_manager_; }
 
         //NOTE AVOID USING THIS CALL, CONSIDERING REMOVING IT.
         //     eval from source

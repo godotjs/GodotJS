@@ -1,85 +1,59 @@
 ﻿#ifndef GODOTJS_ASYNC_MODULE_MANAGER_H
 #define GODOTJS_ASYNC_MODULE_MANAGER_H
 #include "jsb_bridge_pch.h"
+#include "jsb_async_module_loader.h"
 
-namespace jsb::draft
+namespace jsb
 {
-    typedef internal::Index32 AsyncModuleToken;
-
-    struct AsyncModuleHandle
-    {
-        friend class AsyncModuleManager;
-        
-    private:
-        EnvironmentID env_;
-        AsyncModuleToken token_;
-
-    public:
-        StringName get_module_id() const;
-
-        /** return false if env or token is invalid to call resolve/reject */
-        bool is_valid() const;
-
-        bool resolve(const String& p_source);
-        bool reject(const String& p_error);
-    };
-
-    class IAsyncModuleLoader
-    {
-    public:
-        virtual ~IAsyncModuleLoader() {}
-
-        /** called by AsyncModuleManager if an async module is imported */
-        virtual void load(AsyncModuleHandle p_handle) = 0;
-    };
-    
     /** a simple async module manager implementation */
     class AsyncModuleManager
     {
-        friend struct JavaScriptModuleCache;
-        
         struct ModuleInfo
         {
-            /** a request has already been sent to the env to complete the async op. */
-            bool requested;
+            StringName module_id;
 
             /** a Promise created by `import`. */
             v8::Global<v8::Promise::Resolver> resolver;
+            
+            /** a request has already been sent to the env to complete the async op. */
+            bool requested = false;
         };
 
-        Mutex mutex_;
+        Mutex modules_mutex_;
 
         /**
          * ModuleCache need to complete an async op by module_id if it is synchronously loaded
          * before IAsyncModuleLoader complete the loading.
          * The AsyncModuleHandle becomes invalid in this situation.
+         *
+         * This map is only used to accelerate the lookup of the module id.
          */
         HashMap<StringName, AsyncModuleToken> tokens_;
-        internal::SArray<ModuleInfo, AsyncModuleToken> modules_;
         
+        std::shared_ptr<IAsyncModuleLoader> loader_;
+        
+        internal::SArray<ModuleInfo, AsyncModuleToken> modules_;
+
     public:
+        void set_loader(const std::shared_ptr<IAsyncModuleLoader>& p_loader)
+        {
+            loader_ = p_loader;
+        }
+        
+        //TODO direct use p_module_id => v8::String ?
         /**
          * call it only if the module does not exist in module cache
          * [environment thread only]
          */
-        void import(const StringName& p_module_id);
+        v8::MaybeLocal<v8::Promise> _import(Environment& p_env, const StringName& p_module_id);
 
-        /**
-         * the source will be compiled and loaded as a module
-         *     (the actual loading is not happened here, it will send a load request to the main thread)
-         * return false if the token is invalid
-         * call it on a token which is already `Requested` will return false.
-         * [threaded]
-        */
-        bool resolve(AsyncModuleToken p_token, const String& p_source);
+        /** [threaded] */
+        bool is_valid(AsyncModuleToken p_token) const;
 
-        /**
-         * mark an async module loading as failed.
-         * return false if the token is invalid.
-         * call it on a token which is already `Requested` will return false.
-         * [threaded]
-        */
-        bool reject(AsyncModuleToken p_token, const String& p_error);
+        StringName get_module_id(AsyncModuleToken p_token) const;
+
+        /** call by IAsyncModuleLoader */
+        void _mark_as_handled(const v8::Local<v8::Context>& p_context, AsyncModuleToken p_token, bool p_is_fulfill, const v8::Local<v8::Value>& p_value);
 
     private:
         /**
