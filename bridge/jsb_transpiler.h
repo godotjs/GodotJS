@@ -360,8 +360,12 @@ namespace jsb
 
             jsb_checkf(info.IsConstructCall(), "call constructor as a regular function is not allowed");
             Environment* environment = Environment::wrap(isolate);
-            const NativeClassInfoPtr class_info = environment->get_native_class(class_id);
-            jsb_check(class_info->type == NativeClassType::GodotObject);
+            StringName class_name;
+            {
+                const NativeClassInfoPtr class_info = environment->get_native_class(class_id);
+                jsb_check(class_info->type == NativeClassType::GodotObject);
+                class_name = class_info->name;
+            }
 
             // We need to handle different cases of cross-binding here.
             // 1. new SubClass() which defined in scripts
@@ -378,18 +382,18 @@ namespace jsb
                 // (case-2) constructing CDO from C++ (nothing more to do, it's a pure javascript)
                 if (identifier == jsb_symbol(environment, CDO))
                 {
-                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", class_info->name, class_id);
+                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", class_name, class_id);
                     return;
                 }
 
                 // (case-3) constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
                 if (identifier == jsb_symbol(environment, CrossBind))
                 {
-                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", class_info->name, class_id);
+                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", class_name, class_id);
                     return;
                 }
 
-                jsb_checkf(false, "unexpected identifier received. %s(%d)", class_info->name, class_id);
+                jsb_checkf(false, "unexpected identifier received. %s(%d)", class_name, class_id);
                 return;
             }
 
@@ -402,7 +406,7 @@ namespace jsb
             // if (class_info->clazz.NewTarget(isolate) == new_target)
             {
                 const v8::Local<v8::Object> self = info.This();
-                Object* gd_object = ClassDB::instantiate(class_info->name);
+                Object* gd_object = ClassDB::instantiate(class_name);
 
                 // IS IT A TRUTH that ref_count==1 after creation_func??
                 jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
@@ -418,7 +422,7 @@ namespace jsb
                 jsb_check(environment->get_module_cache().find(script_module_id));
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
                     environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id,
-                    class_info->name, class_id);
+                    class_name, class_id);
                 const v8::Local<v8::Object> self = info.This();
                 ScriptClassInfo::instantiate(script_module_id, self);
                 return;
@@ -427,7 +431,7 @@ namespace jsb
             impl::Helper::throw_error(isolate, jsb_format(
                 "unexpected 'new.target', you may be instantiating a script class which is not exported as default. class: %s [native: %s (%d)]",
                 impl::Helper::to_string_opt(isolate, new_target->Get(context, jsb_name(environment, name))),
-                class_info->name, class_id));
+                class_name, class_id));
         }
 
         static void finalizer(Environment* runtime, void* pointer, FinalizationType p_finalize)

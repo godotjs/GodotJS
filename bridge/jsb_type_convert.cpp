@@ -141,10 +141,18 @@ namespace jsb
     // translate js val into gd variant with an expected type
     bool TypeConvert::js_to_gd_var(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_jval, Variant::Type p_type, Variant& r_cvar)
     {
+#if JSB_WITH_V8
         if (p_jval->IsProxy())
+#else
+        if (p_jval->IsObject())
+#endif
         {
-            v8::Local<v8::Proxy> proxy = v8::Local<v8::Proxy>::Cast(p_jval);
-            return js_to_gd_var(isolate, context, proxy->GetTarget(), p_type, r_cvar);
+            v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(p_jval);
+            v8::MaybeLocal<v8::Value> target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
+            if (!target.IsEmpty())
+            {
+                return js_to_gd_var(isolate, context, target.ToLocalChecked(), p_type, r_cvar);
+            }
         }
 
         switch (p_type)
@@ -477,14 +485,22 @@ namespace jsb
         // if (p_jval->IsFunction())
         // {
         // }
-        if (p_jval->IsProxy())
-        {
-            const v8::Local<v8::Proxy> proxy = p_jval.As<v8::Proxy>();
-            return js_to_gd_var(isolate, context, proxy->GetTarget(), r_cvar);
-        }
+
         if (p_jval->IsObject())
         {
             const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+
+#if JSB_WITH_V8
+            if (p_jval->IsProxy())
+#endif
+            {
+                v8::MaybeLocal<v8::Value> target = self->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
+                if (!target.IsEmpty())
+                {
+                    return js_to_gd_var(isolate, context, target.ToLocalChecked(), r_cvar);
+                }
+            }
+
             switch (self->InternalFieldCount())
             {
             case IF_VariantFieldCount: { r_cvar = *(Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer); return true; }

@@ -47,6 +47,12 @@ namespace jsb
 
             CrossBind,               // a symbol can only be used from C++ to indicate calling from cross-bind
             CDO,                     // constructing class default object for a script
+
+            // Exposed as properties on the `godot` module
+            FloatType,
+            IntegerType,
+            ProxyTarget,
+
             kNum,
         };
     }

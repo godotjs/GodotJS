@@ -152,7 +152,11 @@ namespace jsb
         const v8::Local<v8::Function> proxy_func = proxy_func_val.As<v8::Function>();
         {
             v8::Isolate* isolate = p_env->get_isolate();
-            v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
+            v8::Local<v8::Object> builtin_symbols = v8::Object::New(isolate);
+            builtin_symbols->Set(context, impl::Helper::new_string_ascii(isolate, "FloatType"), p_env->get_symbol(Symbols::FloatType));
+            builtin_symbols->Set(context, impl::Helper::new_string_ascii(isolate, "IntegerType"), p_env->get_symbol(Symbols::IntegerType));
+            builtin_symbols->Set(context, impl::Helper::new_string_ascii(isolate, "ProxyTarget"), p_env->get_symbol(Symbols::ProxyTarget));
+            v8::Local<v8::Value> argv[] = { builtin_symbols, JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
             const v8::MaybeLocal<v8::Value> result = proxy_func->Call(context, v8::Undefined(isolate), std::size(argv), argv);
 
             if (v8::Local<v8::Value> proxy; result.ToLocal(&proxy))
