@@ -41,6 +41,49 @@ declare module "godot-jsb" {
      */
     function to_array_buffer(packed: PackedByteArray): ArrayBuffer;
 
+    type AsyncModuleSourceLoaderResolveFunc = (source: string) => void;
+    type AsyncModuleSourceLoaderRejectFunc = (error: string) => void;
+
+    /**
+     * Set a callback function to handle the load of source code of asynchronously modules.
+     * Only use this function if it's not set in C++.
+     */
+    function set_async_module_loader(fn: (module_id: string, resolve: AsyncModuleSourceLoaderResolveFunc, reject: AsyncModuleSourceLoaderRejectFunc) => void): void;
+
+    interface MinimalCommonJSModule { 
+        exports: any;
+        loaded: boolean;
+        id: string;
+    }
+
+    /**
+     * Import a CommonJS module asynchronously.
+     * 
+     * NOTE: Only the source code is loaded asynchronously, the module is still evaluated on the script thread.  
+     * NOTE: Calling the $import() function without a async module loader set in advance will return undefined.  
+     * @param module_id the module id to import
+     * @example
+     * ```js
+     *   // [init.js]
+     *   import * as jsb from "godot-jsb";
+     *   jsb.set_async_module_loader((id, resolve, reject) => {
+     *       console.log("[test] async module loader start", id);
+     *       // here should be the actual async loading of the module, HTTP request, etc.
+     *       // we just simulate it with a timeout
+     *       setTimeout(() => {
+     *           console.log("[test] async module loader resolve", id);
+     *           resolve("exports.foo = function () { console.log('hello, module imported'); }");
+     *       }, 3000);
+     *   });
+     *   // [somescript.js]
+     *   jsb.$import("http://localhost/async_loaded.js").then(mod => {
+     *       console.log("[test] async module loader", mod);
+     *       mod.exports.foo();
+     *   });
+     * ```
+     */
+    function $import(module_id: string): Promise<MinimalCommonJSModule>;
+
     interface ScriptPropertyInfo {
         name: string;
         type: Variant.Type;

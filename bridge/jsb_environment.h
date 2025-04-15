@@ -171,7 +171,8 @@ namespace jsb
 
         internal::CFunctionPointers function_pointers_;
 
-        AsyncModuleManager async_module_manager_;
+        /** it's initially optional until accessed by code (calling get_async_module_manager) */
+        AsyncModuleManager* async_module_manager_ = nullptr;
         JavaScriptModuleCache module_cache_;
 
         internal::TypeGen<TWeakRef<v8::Function>, internal::Index32>::UnorderedMap function_refs_; // backlink
@@ -306,7 +307,11 @@ namespace jsb
         jsb_force_inline const JavaScriptModuleCache& get_module_cache() const { return module_cache_; }
         jsb_force_inline JavaScriptModuleCache& get_module_cache() { return module_cache_; }
 
-        AsyncModuleManager& get_async_module_manager() { return async_module_manager_; }
+        /**
+         * [env thread only]
+         * Get async module manager.
+         */
+        AsyncModuleManager& get_async_module_manager();
 
         //NOTE AVOID USING THIS CALL, CONSIDERING REMOVING IT.
         //     eval from source

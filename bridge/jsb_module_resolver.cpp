@@ -280,27 +280,32 @@ namespace jsb
 
     bool DefaultModuleResolver::load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module)
     {
-        // load source buffer
-        const internal::FileAccessSourceReader reader(p_asset_path);
-        if (reader.is_null() || reader.get_length() == 0)
+        internal::FileAccessSourceReader reader(p_asset_path);
+        return load(p_env, reader, p_module);
+    }
+    
+    bool DefaultModuleResolver::load(Environment* p_env, const internal::ISourceReader& p_reader, JavaScriptModule& p_module)
+    {
+        if (p_reader.is_null() || p_reader.get_length() == 0)
         {
             jsb_throw(p_env->get_isolate(), "failed to read module source");
             return false;
         }
 
 #if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
-        p_module.time_modified = reader.get_time_modified();
-        p_module.hash = reader.get_hash();
+        p_module.time_modified = p_reader.get_time_modified();
+        p_module.hash = p_reader.get_hash();
 #endif
 
+        const String p_asset_path = p_reader.get_path();
         // parse as JSON
         if (p_asset_path.ends_with("." JSB_JSON_EXT))
         {
             Vector<uint8_t> source;
-            const uint64_t len = reader.get_length();
+            const uint64_t len = p_reader.get_length();
             source.resize((int) len + 1);
             source.write[(int) len] = 0; // ensure it's zero-terminated
-            reader.get_buffer(source.ptrw(), len);
+            p_reader.get_buffer(source.ptrw(), len);
             return load_as_json(p_env, p_module, p_asset_path, source, len);
         }
 
@@ -317,9 +322,9 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             v8::Context::Scope context_scope(context);
 
-            const String filename_abs = reader.get_path_absolute();
+            const String filename_abs = p_reader.get_path_absolute();
             Vector<uint8_t> source;
-            const size_t len = read_all_bytes_with_shebang(reader, source);
+            const size_t len = read_all_bytes_with_shebang(p_reader, source);
             jsb_check((size_t)(int)len == len);
 
             // source evaluator (the module protocol)

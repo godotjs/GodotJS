@@ -24,16 +24,24 @@ namespace jsb
         static bool load_as_json(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const Vector<uint8_t>& p_bytes, size_t p_len);
     };
 
-    // the default module resolver finds source files directly with `FileAccess` with `search_paths`
+    /**
+     * the default module resolver finds source files directly with `FileAccess` in all `search_paths`.
+     * The module is defined in commonjs style.
+     */
     class DefaultModuleResolver : public IModuleResolver
     {
     public:
         virtual ~DefaultModuleResolver() override = default;
 
         virtual bool get_source_info(const String& p_module_id, ModuleSourceInfo& r_source_info) override;
+
+        /** load module from asset path (use FileAccessSourceReader) */
         virtual bool load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module) override;
 
         DefaultModuleResolver& add_search_path(const String& p_path);
+
+        /** Compile source from reader (in commonjs style) and init as module */
+        static bool load(Environment* p_env, const internal::ISourceReader& p_reader, JavaScriptModule& p_module);
 
     protected:
         bool check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info);

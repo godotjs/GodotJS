@@ -35,7 +35,8 @@ namespace jsb
     {
         if (const auto env = Environment::_access(env_))
         {
-            //TODO env -> enqueue async call    
+            //TODO env -> enqueue async call
+            jsb_not_implemented(true, "resolve from handle is not implemented yet");
         }
         return false;
     }
@@ -44,7 +45,8 @@ namespace jsb
     {
         if (const auto env = Environment::_access(env_))
         {
-            //TODO env -> enqueue async call    
+            //TODO env -> enqueue async call
+            jsb_not_implemented(true, "reject from handle is not implemented yet");
         }
         return false;
     }

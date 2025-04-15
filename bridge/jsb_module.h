@@ -45,12 +45,12 @@ namespace jsb
         uint64_t time_modified = 0;
         String hash;
 
-        jsb_force_inline bool is_loaded() const { return !reload_requested; }
+        jsb_force_inline bool is_reloading() const { return reload_requested; }
 
         // can't reload modules if it's time_modified is unknown or non-file modules
         bool is_reloadable() const { return time_modified != 0 && !source_info.source_filepath.is_empty(); }
 #else
-        jsb_force_inline constexpr bool is_loaded() const { return true; }
+        jsb_force_inline constexpr bool is_reloading() const { return false; }
         jsb_force_inline constexpr bool is_reloadable() const { return false; }
 #endif
 

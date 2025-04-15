@@ -62,6 +62,15 @@
 // support hot-reload for javascript modules
 #define JSB_SUPPORT_RELOAD 1
 
+// EXPERIMENTAL, LIMITED SUPPORT
+// only implemented in v8.impl, temporarily.
+// ---
+//
+// module 'godot-jsb':
+//    - set_async_module_loader
+//    - $import
+#define JSB_SUPPORT_ASYNC_MODULE_LOADER JSB_WITH_V8
+
 // translate the js source stacktrace with source map (currently, the `.map` file must locate at the same filename & directory of the js source)
 #define JSB_WITH_SOURCEMAP 1
 

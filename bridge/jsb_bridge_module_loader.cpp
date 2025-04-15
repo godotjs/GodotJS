@@ -461,6 +461,8 @@ namespace jsb
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "impl"), impl::Helper::new_string(isolate, JSB_IMPL_VERSION_STRING)).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "callable"), JSB_NEW_FUNCTION(context, _new_callable, {})).Check();
             jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "to_array_buffer"), JSB_NEW_FUNCTION(context, _to_array_buffer, {})).Check();
+            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "set_async_module_loader"), JSB_NEW_FUNCTION(context, AsyncModuleManager::_set_async_module_loader, {})).Check();
+            jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "$import"), JSB_NEW_FUNCTION(context, AsyncModuleManager::_import, {})).Check();
 
             // jsb.internal
             {

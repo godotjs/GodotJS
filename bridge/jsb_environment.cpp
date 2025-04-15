@@ -359,6 +359,11 @@ namespace jsb
             memdelete(resolver);
         }
         module_resolvers_.clear();
+        if (async_module_manager_)
+        {
+            memdelete(async_module_manager_);
+            async_module_manager_ = nullptr;
+        }
 
         for (KeyValue<StringName, IModuleLoader*>& pair : module_loaders_)
         {
@@ -1003,7 +1008,7 @@ namespace jsb
         if (JavaScriptModule* module = module_cache_.find(p_name))
         {
             jsb_check(!module->source_info.source_filepath.is_empty());
-            if (!module->is_loaded() || module->mark_as_reloading())
+            if (module->is_reloading() || module->mark_as_reloading())
             {
                 return ModuleReloadResult::Requested;
             }
@@ -1016,7 +1021,7 @@ namespace jsb
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _load_module);
         JavaScriptModule* existing_module = module_cache_.find(p_module_id);
-        if (existing_module && existing_module->is_loaded())
+        if (existing_module && !existing_module->is_reloading())
         {
             return existing_module;
         }
@@ -1065,7 +1070,7 @@ namespace jsb
 
             // check again with the resolved module_id
             existing_module = module_cache_.find(module_id);
-            if (existing_module && existing_module->is_loaded())
+            if (existing_module && !existing_module->is_reloading())
             {
                 return existing_module;
             }
@@ -1826,4 +1831,15 @@ namespace jsb
             it->add_async_call(AsyncCall::TYPE_GC_REQUEST, nullptr);
         }
     }
+
+    AsyncModuleManager& Environment::get_async_module_manager()
+    {
+        check_internal_state();
+        if (!async_module_manager_)
+        {
+            async_module_manager_ = memnew(AsyncModuleManager);
+        }
+        return *async_module_manager_;
+    }
+
 }
