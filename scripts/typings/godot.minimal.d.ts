@@ -45,7 +45,7 @@ declare module "godot-jsb" {
     type AsyncModuleSourceLoaderRejectFunc = (error: string) => void;
 
     /**
-     * Set a callback function to handle the load of source code of asynchronously modules.
+     * Set a callback function to handle the load of source code of asynchronous modules.
      * Only use this function if it's not set in C++.
      */
     function set_async_module_loader(fn: (module_id: string, resolve: AsyncModuleSourceLoaderResolveFunc, reject: AsyncModuleSourceLoaderRejectFunc) => void): void;
