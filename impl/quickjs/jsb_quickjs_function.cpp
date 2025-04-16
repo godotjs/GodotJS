@@ -61,7 +61,7 @@ namespace v8
         return JS_DupValue(isolate->ctx(), (JSValue) info.GetReturnValue());
     }
 
-    MaybeLocal<Function> Function::New(Local<Context> context, FunctionCallback callback, Local<Value> data)
+    MaybeLocal<Function> Function::New(Local<Context> context, FunctionCallback callback, Local<Value> data, int length)
     {
         Isolate* isolate = context->isolate_;
         JSValue payload[] = {
@@ -73,7 +73,7 @@ namespace v8
         static_assert(jsb::impl::FuncPayload::kNum == ::std::size(payload));
         return MaybeLocal<Function>(Data(isolate, isolate->push_steal(JS_NewCFunctionData(isolate->ctx(),
             _function_call,
-            /* length */ 0,
+            length,
             /* magic */ 0,
             ::std::size(payload), payload))));
     }

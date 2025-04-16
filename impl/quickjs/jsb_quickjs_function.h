@@ -28,7 +28,8 @@ namespace v8
 
         static MaybeLocal<Function> New(
             Local<Context> context, FunctionCallback callback,
-            Local<Value> data = Local<Value>());
+            Local<Value> data = Local<Value>(),
+            int length = 0);
 
         Local<Context> GetCreationContextChecked() const;
 

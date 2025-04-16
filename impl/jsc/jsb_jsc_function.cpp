@@ -65,7 +65,7 @@ namespace v8
         return (JSValueRef) info.GetReturnValue();
     }
 
-    MaybeLocal<Function> Function::New(Local<Context> context, FunctionCallback callback, Local<Value> data)
+    MaybeLocal<Function> Function::New(Local<Context> context, FunctionCallback callback, Local<Value> data, int length)
     {
         Isolate* isolate = context->isolate_;
         static_assert(sizeof(callback) == sizeof(void*));
