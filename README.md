@@ -20,7 +20,7 @@ See [Breaking Changes](https://github.com/godotjs/GodotJS/wiki/Breaking-Changes)
 * [x] Hot-reloading
 * [x] Support for multiple javascript engines ([v8](https://github.com/v8/v8), [quickjs](https://github.com/bellard/quickjs), [quickjs-ng](https://github.com/quickjs-ng/quickjs), [JavaScriptCore](https://developer.apple.com/documentation/javascriptcore), the host Browser JS)
 * [x] [Worker threads](https://github.com/godotjs/GodotJS/wiki/Worker) (limited support) (**experimental**)
-* [x] Asynchronously loaded modules (limited support) (*temporarily in v8.impl only*)
+* [x] Asynchronously loaded modules (limited support) (*temporarily only available in v8.impl, quickjs.impl*)
 
 ## Get Started
 

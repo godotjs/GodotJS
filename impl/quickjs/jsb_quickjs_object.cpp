@@ -1,5 +1,6 @@
 #include "jsb_quickjs_object.h"
 #include "jsb_quickjs_isolate.h"
+#include "jsb_quickjs_context.h"
 #include "jsb_quickjs_function_interop.h"
 
 namespace v8
@@ -356,4 +357,105 @@ namespace v8
         return MaybeLocal<Array>(Data(isolate_, isolate_->push_steal(array)));
     }
 
+    MaybeLocal<Promise::Resolver> Promise::Resolver::New(Local<Context> context)
+    {
+        Isolate* isolate = context->isolate_;
+        JSContext* ctx = isolate->ctx();
+        JSValue resolvers[] = { JS_UNDEFINED, JS_UNDEFINED };
+        const JSValue promise = JS_NewPromiseCapability(ctx, resolvers);
+        if (JS_IsException(promise))
+        {
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
+            return MaybeLocal<Promise::Resolver>();
+        }
+        
+        // need an object to hold all three elements at the same time to represent it as a Resolver.
+        // we don't want to break the simplicity of the implementations of `Data` class and `Global` handle.
+        // so use an indirect array to hold all of them. 
+        const JSValue holder = JS_NewArray(ctx);
+        jsb_ensure(!JS_IsException(holder));
+        jsb_check(JS_IsArray(ctx, holder));
+
+        // these references are consumed by SetProperty, no additional FreeValue is needed
+        JS_SetPropertyUint32(ctx, holder, kHolderIndexResolve, resolvers[0]); // resolve
+        JS_SetPropertyUint32(ctx, holder, kHolderIndexReject,  resolvers[1]); // reject
+        JS_SetPropertyUint32(ctx, holder, kHolderIndexPromise, promise); 
+        
+        return MaybeLocal<Promise::Resolver>(Data(isolate, isolate->push_steal(holder)));
+    }
+
+    namespace
+    {
+        uint32_t get_packed_array_length(JSContext* ctx, JSValueConst val)
+        {
+            const JSValue pv = JS_GetProperty(ctx, val, jsb::impl::JS_ATOM_length);
+            jsb_check(!JS_IsException(pv));
+            uint32_t length;
+            const int failed = JS_ToUint32(ctx, &length, pv);
+            JS_FreeValue(ctx, pv);
+            jsb_check(failed == 0);
+            jsb_unused(failed);
+            return length;
+        }
+    }
+
+    Local<Promise> Promise::Resolver::GetPromise()
+    {
+        JSContext* ctx = isolate_->ctx();
+        const JSValue holder = (JSValue) *this;
+        jsb_check(JS_IsArray(ctx, holder));
+        jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
+        
+        const JSValue obj = JS_GetPropertyUint32(ctx, holder, kHolderIndexPromise);
+        jsb_check(JS_IsPromise(obj));
+        return Local<Promise>(Data(isolate_, isolate_->push_steal(obj)));
+    }
+            
+    Maybe<bool> Promise::Resolver::Resolve(Local<Context> context, Local<Value> value)
+    {
+        JSContext* ctx = isolate_->ctx();
+        const JSValue holder = (JSValue) *this;
+        jsb_check(JS_IsArray(ctx, holder));
+        jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
+
+        // unpack the resolve function 
+        const JSValue obj = JS_GetPropertyUint32(ctx, holder, kHolderIndexResolve);
+        jsb_check(JS_IsFunction(ctx, obj));
+
+        // call the resolve function
+        JSValue args[] = { (JSValue) value };
+        const JSValue rval = JS_Call(ctx, obj, JS_UNDEFINED, std::size(args), args);
+        JS_FreeValue(ctx, obj);
+        if (JS_IsException(rval))
+        {
+            // leave the exception as it is
+            return Maybe<bool>();
+        }
+        JS_FreeValue(ctx, rval);
+        return Maybe<bool>(true);
+    }
+
+    Maybe<bool> Promise::Resolver::Reject(Local<Context> context, Local<Value> value)
+    {
+        JSContext* ctx = isolate_->ctx();
+        const JSValue holder = (JSValue) *this;
+        jsb_check(JS_IsArray(ctx, holder));
+        jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
+
+        // unpack the reject function 
+        const JSValue obj = JS_GetPropertyUint32(ctx, holder, kHolderIndexReject);
+        jsb_check(JS_IsFunction(ctx, obj));
+        
+        // call the reject function
+        JSValue args[] = { (JSValue) value };
+        const JSValue rval = JS_Call(ctx, obj, JS_UNDEFINED, std::size(args), args);
+        JS_FreeValue(ctx, obj);
+        if (JS_IsException(rval))
+        {
+            // leave the exception as it is
+            return Maybe<bool>();
+        }
+        JS_FreeValue(ctx, rval);
+        return Maybe<bool>(true);
+    }
 }
