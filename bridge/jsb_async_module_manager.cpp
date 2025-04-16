@@ -148,6 +148,8 @@ namespace jsb
             // p_value is the error message (string)
             resolver->Reject(p_context, p_value).Check();
         }
+        
+        env->notify_microtasks_run();
 #else
         jsb_not_implemented(true, "not implemented yet");
 #endif
