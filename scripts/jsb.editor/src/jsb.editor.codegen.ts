@@ -588,6 +588,23 @@ function replace_var_name(name: string) {
     return typeof rep !== "undefined" ? rep : name;
 }
 
+const needs_quotes_regex = /^(?![$_])[^\w$]|[^\w$]/;
+const quoted_escape_map: Record<string, string> = {
+    '"': '\\"',
+    '\\': '\\\\',
+    '\n': '\\n',
+    '\r': '\\r',
+    '\t': '\\t'
+};
+
+function name_string(name: string) {
+    if (!KeywordReplacement[name] && !name.match(needs_quotes_regex)) {
+        return name;
+    }
+
+    return `"${name.replace(/["\\\n\r\t]/g, match => quoted_escape_map[match])}"`;
+}
+
 abstract class AbstractWriter implements ScopeWriter {
     abstract line(text: string): void;
     abstract concatenate(text: string): void;
@@ -1176,7 +1193,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                         return;
                     }
 
-                    indent.line(`${key}: `);
+                    indent.line(`${name_string(key)}: `);
                     const prop_writer = new TypeDescriptorWriter(indent, true);
                     prop_writer.serialize_type_descriptor(value);
                     prop_writer.finish();
@@ -1489,17 +1506,17 @@ class ClassWriter extends IndentWriter {
         DocCommentHelper.write(this, this._doc?.constants[constant.name]?.description, this._separator_line);
         this._separator_line = true;
         if (typeof constant.value !== "undefined") {
-            this.line(`static readonly ${constant.name} = ${constant.value}`);
+            this.line(`static readonly ${name_string(constant.name)} = ${constant.value}`);
         } else {
             const type_name = get_primitive_type_name(constant.type);
-            this.line(`static readonly ${constant.name}: ${type_name}`);
+            this.line(`static readonly ${name_string(constant.name)}: ${type_name}`);
         }
     }
 
     constant_(constant: GodotJsb.editor.ConstantInfo) {
         DocCommentHelper.write(this, this._doc?.constants[constant.name]?.description, this._separator_line);
         this._separator_line = true;
-        this.line(`static readonly ${constant.name} = ${constant.value}`);
+        this.line(`static readonly ${name_string(constant.name)} = ${constant.value}`);
     }
 
     property_(name: string): PropertyWriter;
@@ -1522,11 +1539,7 @@ class ClassWriter extends IndentWriter {
             return;
         }
         const line = (line: string) => this.line(property_override?.(line) ?? line);
-
-        // Handle properties with forward slashes e.g. `AnimatedTexture.frame_0/texture`
-        const name = getset_info.name.indexOf("/") >= 0
-            ? `"${getset_info.name}"`
-            : getset_info.name;
+        const name = name_string(getset_info.name);
 
         // declare as get/set to avoid the pitfalls of modifying a value type return value
         // `node.position.x = 0;` (Although, it works in GDScript)
@@ -1542,8 +1555,9 @@ class ClassWriter extends IndentWriter {
     primitive_property_(property_info: GodotJsb.editor.PrimitiveGetSetInfo) {
         this._separator_line = true;
 
-        this.line(`get ${property_info.name}(): ${get_primitive_type_name(property_info.type)}`);
-        this.line(`set ${property_info.name}(value: ${get_primitive_type_name_as_input(property_info.type)})`);
+        const name = name_string(property_info.name);
+        this.line(`get ${name}(): ${get_primitive_type_name(property_info.type)}`);
+        this.line(`set ${name}(value: ${get_primitive_type_name_as_input(property_info.type)})`);
     }
 
     constructor_(constructor_info: GodotJsb.editor.ConstructorInfo) {
@@ -1602,7 +1616,7 @@ class ClassWriter extends IndentWriter {
             return;
         }
 
-        line(`${category}${prefix}${method_info.name}${template}(${args}): ${rval}`);
+        line(`${category}${prefix}${name_string(method_info.name)}${template}(${args}): ${rval}`);
     }
 
     signal_(signal_info: GodotJsb.editor.SignalInfo) {
@@ -1611,9 +1625,9 @@ class ClassWriter extends IndentWriter {
         const sig = this.types.make_signal_type(signal_info.method_);
 
         if (this._singleton_mode) {
-            this.line(`static readonly ${signal_info.name}: ${sig}`);
+            this.line(`static readonly ${name_string(signal_info.name)}: ${sig}`);
         } else {
-            this.line(`readonly ${signal_info.name}: ${sig}`);
+            this.line(`readonly ${name_string(signal_info.name)}: ${sig}`);
         }
     }
 }
@@ -2361,7 +2375,7 @@ export class TSDCodeGen {
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name) && !ignored_consts.has(names.get_enum_value(constant.name))) {
-                    class_cg.primitive_constant_(constant);
+                    class_cg.primitive_constant_(constant);[]
                 }
             }
         }
