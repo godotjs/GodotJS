@@ -542,7 +542,7 @@ namespace jsb
         }
 
         // [unsafe, lowlevel, experimental] call a tweak function on the class
-        void on_class_post_bind(const NativeClassInfo* p_class_info);
+        void on_class_post_bind(const StringName& p_class_name, const v8::Local<v8::Function>& p_class);
 
         // [unsafe]
         // It's dangerous to hold the `NativeClassInfo` reference/pointer because the address is not ensured stable.

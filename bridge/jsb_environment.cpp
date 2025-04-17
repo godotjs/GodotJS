@@ -1341,19 +1341,17 @@ namespace jsb
 
         // bind and cache the class immediately
         {
-            // We can't hold NativeClassInfoPtr here because on_class_post_bind calls into user code, which may wish to load
-            // additional classes and thus needs the lock released.
-            const NativeClassInfo* class_info = (NativeClassInfo*)class_register->register_func(ClassRegister {
+            const v8::Local<v8::Function> class_ = class_register->register_func(ClassRegister {
                 this,
                 p_type_name,
                 this->isolate_,
                 this->context_.Get(this->isolate_),
-            }, &class_register->id).ptr();
+            }, &class_register->id)->clazz.Get(this->isolate_);
             jsb_check(class_register->id);
             JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, class_register->id);
             if (r_class_id) *r_class_id = class_register->id;
 
-            on_class_post_bind(class_info);
+            on_class_post_bind(p_type_name, class_);
             return get_native_class(class_register->id);
         }
     }
@@ -1378,18 +1376,16 @@ namespace jsb
             return class_info;
         }
 
-        // We can't hold NativeClassInfoPtr here because on_class_post_bind calls into user code, which may wish to load
-        // additional classes and thus needs the lock released.
         NativeClassID class_id;
-        const NativeClassInfo* class_ = (NativeClassInfo*)ObjectReflectBindingUtil::reflect_bind(this, p_class_info, &class_id).ptr();
+        const v8::Local<v8::Function> class_ = ObjectReflectBindingUtil::reflect_bind(this, p_class_info, &class_id)->clazz.Get(isolate_);
         jsb_check(class_id);
         if (r_class_id) *r_class_id = class_id;
-        on_class_post_bind(class_);
+        on_class_post_bind(class_name, class_);
 
         return this->get_native_class(class_id);
     }
 
-    void Environment::on_class_post_bind(const NativeClassInfo* p_class_info)
+    void Environment::on_class_post_bind(const StringName& p_class_name, const v8::Local<v8::Function>& p_class)
     {
         const JavaScriptModule& typeloader = *this->get_module_cache().find(jsb_string_name(godot_typeloader));
         const v8::Local<v8::Value> typeloader_exports = typeloader.exports.Get(this->get_isolate());
@@ -1398,7 +1394,7 @@ namespace jsb
         const v8::Local<v8::Value> post_bind_val = typeloader_exports.As<v8::Object>()->Get(context, jsb_name(this, godot_postbind)).ToLocalChecked();
         jsb_check(!post_bind_val.IsEmpty() && post_bind_val->IsFunction());
         const v8::Local<v8::Function> post_bind = post_bind_val.As<v8::Function>();
-        v8::Local<v8::Value> argv[] = { this->get_string_value(p_class_info->name), p_class_info->clazz.Get(isolate_) };
+        v8::Local<v8::Value> argv[] = { this->get_string_value(p_class_name), p_class };
         v8::MaybeLocal<v8::Value> rval = post_bind->Call(context, v8::Undefined(isolate_), std::size(argv), argv);
         jsb_unused(rval);
         jsb_check(rval.ToLocalChecked()->IsUndefined());
