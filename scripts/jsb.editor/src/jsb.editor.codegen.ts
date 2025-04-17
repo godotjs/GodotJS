@@ -256,7 +256,7 @@ const TypeMutations: Record<string, TypeMutation> = {
         property_overrides: {
             load: [
                 `static load<Path extends keyof ResourceTypes>(path: Path, ${names.get_parameter("type_hint")}?: string /* = "" */, ${names.get_parameter("cache_mode")}?: ResourceLoader.CacheMode /* = 1 */): ResourceTypes[Path]`,
-                "static load(path: string): Resource",
+                `static load(path: string, ${names.get_parameter("type_hint")}?: string /* = "" */, ${names.get_parameter("cache_mode")}?: ResourceLoader.CacheMode /* = 1 */): Resource`,
             ],
             load_threaded_get: [
                 `static load_threaded_get<Path extends keyof ResourceTypes>(path: Path): ResourceTypes[Path]`,
