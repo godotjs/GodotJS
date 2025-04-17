@@ -4,6 +4,7 @@ import io
 import time
 import re
 import zlib
+from misc.utility.color import print_error, print_info, print_warning
 # from typing import TypedDict, Callable
 
 Import("env")
@@ -90,7 +91,7 @@ class CompileDefines:
 def check(condition, text):
     '''Directly fail the build if the condition is not met'''
     if not condition:
-        print("Error: " + text)
+        print_error(text)
         Exit(2)
 
 # def get_library_support(support: LibraryDescriptor) -> tuple[LibraryDescriptor, LibraryDetails]:
@@ -386,9 +387,15 @@ version_info = get_godot_version_info()
 def check_godot_version_newer_than(major, minor, patch):
     return version_info["major"] > major or (version_info["major"] == major and (version_info["minor"] > minor or (version_info["minor"] == minor and version_info["patch"] >= patch)))
 
-# natvis_local_path: relative path the in current module, no leading forward slash required
 # def add_natvis(natvis_local_path: str):
 def add_natvis(natvis_local_path):
+    '''
+    natvis_local_path: relative path the in current module, no leading forward slash required  
+    NOTE: 
+        LINKFLAGS introduced by natvis will make the engine being unexpectedly rebuilt, 
+        usually happens when switching between v8 and quickjs.
+    '''
+
     if env["vsproj"]:
         natvis_filepath = f"modules/{module_name}/"+natvis_local_path
         print(f"add natvis: {natvis_filepath}")
@@ -505,7 +512,7 @@ if quickjs_support is not None:
     env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
 
 if is_defined("JSB_WITH_WEB"):
-    print("WARNING: web.impl is experimental and may not work as expected")
+    print_warning("web.impl is experimental and may not work as expected")
 
     env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
     
@@ -518,7 +525,7 @@ if is_defined("JSB_WITH_JAVASCRIPTCORE"):
     env.Append(LINKFLAGS=[ "-framework", "JavaScriptCore" ])
 
     if jsb_platform not in ["macos", "ios"]:
-        print("WARNING: INCLUDING JSC HEADERS ONLY FOR DEV, NOT SUPPORTED TO BUILD")
+        print_warning("INCLUDING JSC HEADERS ONLY FOR DEV, NOT SUPPORTED TO BUILD")
         env_jsb.Append(CPPPATH=[f"jsc"])
         if env.msvc and env["vsproj"]:
             env.Append(CPPPATH=[f"#modules/{module_name}/impl/jsc/_NOT_FOR_INCLUDE_"])
