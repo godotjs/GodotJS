@@ -314,6 +314,7 @@ namespace jsb
             internal::StringNames& names = internal::StringNames::get_singleton();
 
             // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
+            if (internal::Settings::get_camel_case_bindings_enabled())
             {
                 List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_class_list();
 
