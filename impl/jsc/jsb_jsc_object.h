@@ -55,6 +55,19 @@ namespace v8
     class Promise : public Object
     {
     public:
+        class Resolver : public Object
+        {
+            enum : uint32_t { kHolderIndexResolve, kHolderIndexReject, kHolderIndexPromise, kHolderIndexCount };
+            
+        public:
+            static MaybeLocal<Resolver> New(Local<Context> context);
+
+            Local<Promise> GetPromise();
+            
+            Maybe<bool> Resolve(Local<Context> context, Local<Value> value);
+
+            Maybe<bool> Reject(Local<Context> context, Local<Value> value);
+        };
     };
 
 }

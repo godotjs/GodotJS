@@ -1,5 +1,6 @@
 #include "jsb_jsc_object.h"
 #include "jsb_jsc_isolate.h"
+#include "jsb_jsc_context.h"
 #include "jsb_jsc_function_interop.h"
 
 namespace v8
@@ -262,4 +263,95 @@ namespace v8
         return MaybeLocal<Array>();
     }
 
+    MaybeLocal<Promise::Resolver> Promise::Resolver::New(Local<Context> context)
+    {
+        Isolate* isolate = context->GetIsolate();
+        const JSContextRef ctx = isolate->ctx();
+        JSObjectRef resolve, reject;
+        JSValueRef error;
+        const JSObjectRef promise = JSObjectMakeDeferredPromise(ctx, &resolve, &reject, &error);
+        if (error)
+        {
+            isolate->_ThrowError(error);
+            return MaybeLocal<Promise::Resolver>();
+        }
+
+        const JSValueRef args[] = { resolve, reject, promise };
+        const JSObjectRef holder = JSObjectMakeArray(ctx, 3, args, &error);
+        if (error)
+        {
+            isolate->_ThrowError(error);
+            return MaybeLocal<Promise::Resolver>();
+        }
+        
+        JSObjectSetPropertyAtIndex(ctx, holder, kHolderIndexResolve, args[0], &error);
+        jsb_ensure(!error);
+        JSObjectSetPropertyAtIndex(ctx, holder, kHolderIndexReject,  args[1], &error);
+        jsb_ensure(!error);
+        JSObjectSetPropertyAtIndex(ctx, holder, kHolderIndexPromise, args[2], &error);
+        jsb_ensure(!error);
+        return MaybeLocal<Array>(Data(isolate, isolate->push_copy(holder)));
+    }
+
+    Local<Promise> Promise::Resolver::GetPromise()
+    {
+        const JSContextRef ctx = isolate_->ctx();
+        jsb_check(JSValueIsArray(ctx, (JSValueRef) *this));
+        const JSObjectRef holder = jsb::impl::JavaScriptCore::AsObject(ctx, (JSValueRef) *this);
+        JSValueRef error;
+        const JSValueRef rval = JSObjectGetPropertyAtIndex(ctx, holder, kHolderIndexPromise, &error);
+        
+        // or, just loosely check `!JSValueIsObject(ctx, rval)`
+        if (error || !isolate_->_IsPromise(rval))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx, error);
+            return Local<Promise>();
+        }
+        return Local<Promise>(Data(isolate_, isolate_->push_copy(rval)));
+    }
+
+    namespace
+    {
+        template <uint32_t kHolderIndex>
+        Maybe<bool> InvokePromise(Local<Context> context, Data* this_, Local<Value> value)
+        {
+            Isolate* isolate = context->GetIsolate();
+            const JSContextRef ctx = isolate->ctx();
+            jsb_check(JSValueIsArray(ctx, (JSValueRef) *this_));
+            const JSObjectRef holder = jsb::impl::JavaScriptCore::AsObject(ctx, (JSValueRef) *this_);
+            JSValueRef error;
+            const JSValueRef holderValue = JSObjectGetPropertyAtIndex(ctx, holder, kHolderIndex, &error);
+            if (error)
+            {
+                isolate->_ThrowError(error);
+                return Maybe<bool>();
+            }
+            const JSObjectRef func = jsb::impl::JavaScriptCore::AsObject(ctx, holderValue);
+            jsb_check(func && JSObjectIsFunction(ctx, func));
+            const JSObjectRef thisObj = jsb::impl::JavaScriptCore::AsObject(ctx, isolate->stack_val(jsb::impl::StackPos::Undefined));
+            const JSValueRef args[] = { (JSValueRef) value };
+            const JSValueRef rval = JSObjectCallAsFunction(ctx,
+                /* func */ func, 
+                /* this */ thisObj,
+                /* args */ std::size(args), args,
+                &error);
+            if (error)
+            {
+                isolate->_ThrowError(error);
+                return Maybe<bool>();
+            }
+            jsb_check(JSValueIsUndefined(ctx, rval));
+            return Maybe<bool>(true);
+        }
+    }
+    
+    Maybe<bool> Promise::Resolver::Resolve(Local<Context> context, Local<Value> value)
+    {
+        return InvokePromise<kHolderIndexResolve>(context, this, value);
+    }
+
+    Maybe<bool> Promise::Resolver::Reject(Local<Context> context, Local<Value> value)
+    {
+        return InvokePromise<kHolderIndexReject>(context, this, value);
+    }
 }
