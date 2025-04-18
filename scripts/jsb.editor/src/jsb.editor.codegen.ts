@@ -2375,7 +2375,7 @@ export class TSDCodeGen {
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name) && !ignored_consts.has(names.get_enum_value(constant.name))) {
-                    class_cg.primitive_constant_(constant);[]
+                    class_cg.primitive_constant_(constant);
                 }
             }
         }
