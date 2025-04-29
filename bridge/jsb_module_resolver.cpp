@@ -135,7 +135,135 @@ namespace jsb
         return false;
     }
 
-    bool DefaultModuleResolver::check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info)
+    String DefaultModuleResolver::resolve_package_export_value(const Variant& p_value, const String& p_condition, const String& p_subpath, bool p_wildcard)
+    {
+        switch (p_value.get_type())
+        {
+            case Variant::STRING:
+            {
+                const String resolved_value = p_value;
+
+                if (!resolved_value.begins_with("./"))
+                {
+                    // Not a file path. It's protocol based resolution which is unsupported (not seen in practice).
+                    JSB_LOG(VeryVerbose, "Unable to resolve package.json export: %s", p_value);
+                    return String();
+                }
+
+                return p_wildcard
+                    ? resolved_value.replace("*", p_subpath)
+                    : resolved_value + p_subpath;
+            }
+
+            case Variant::DICTIONARY:
+            {
+                const Dictionary condition_dict = p_value;
+
+                if (!p_condition.is_empty() && condition_dict.has(p_condition))
+                {
+                    const Variant& condition_target = condition_dict[p_condition];
+                    const String resolved_path = resolve_package_export_value(condition_target, p_condition, p_subpath, p_wildcard);
+
+                    if (!resolved_path.is_empty())
+                    {
+                        return resolved_path;
+                    }
+
+                    if (condition_target.get_type() == Variant::NIL)
+                    {
+                        // Further resolution explicitly disabled i.e. don't fall back to "default"
+                        return String();
+                    }
+                }
+
+                const String key_default = "default";
+
+                if (condition_dict.has(key_default))
+                {
+                    const String resolved_path = resolve_package_export_value(condition_dict[key_default], p_condition, p_subpath, p_wildcard);
+
+                    if (!resolved_path.is_empty())
+                    {
+                        return resolved_path;
+                    }
+                }
+
+                return String(); // No match
+            }
+
+            case Variant::ARRAY:
+            {
+                const Array alternatives = p_value;
+                for (int i = 0; i < alternatives.size(); ++i)
+                {
+                    const Variant& alternative = alternatives[i];
+                    const String resolved_path = resolve_package_export_value(alternative, p_condition, p_subpath, p_wildcard);
+
+                    if (!resolved_path.is_empty())
+                    {
+                        return resolved_path;
+                    }
+
+                    if (alternative.get_type() == Variant::NIL)
+                    {
+                        return String(); // Further resolution explicitly disabled. Used when nested in conditions.
+                    }
+                }
+
+                return String(); // No matches
+            }
+
+            case Variant::NIL:
+                return String(); // Resolution explicitly disabled
+
+            default:
+                JSB_LOG(Warning, "invalid package.json exports value. Expected string, object, string[] or null. Encountered value: %s", p_value);
+                return String();
+        }
+    }
+
+
+    String DefaultModuleResolver::resolve_package_export(const Dictionary& p_exports, const String& p_condition, const String& p_module_id)
+    {
+        String lookup_key = p_module_id.is_empty() || p_module_id == "."
+            ? "."
+            : "./" + p_module_id;
+
+        String longest_match_key;
+        String longest_match_subpath;
+        int longest_match_length = -1;
+        bool longest_match_has_wildcard = false;
+
+        const Array keys = p_exports.keys();
+        for (int i = 0; i < keys.size(); ++i)
+        {
+            const String key = keys[i];
+            const int wildcard_index = key.find("*");
+            const String effective_key = key.substr(0, wildcard_index);
+
+            if (lookup_key.begins_with(effective_key) && (effective_key.ends_with("/") || effective_key == lookup_key))
+            {
+                 const int current_match_len = effective_key.length();
+                 if (current_match_len > longest_match_length)
+                 {
+                     longest_match_length = current_match_len;
+                     longest_match_key = key;
+                     longest_match_subpath = lookup_key.substr(current_match_len);
+                     longest_match_has_wildcard = wildcard_index >= 0;
+                 }
+            }
+        }
+
+        if (longest_match_key.is_empty())
+        {
+            return String();
+        }
+
+        return resolve_package_export_value(p_exports[longest_match_key], p_condition, longest_match_subpath, longest_match_has_wildcard);
+    }
+
+
+    bool DefaultModuleResolver::check_absolute_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info)
     {
         // 1: module_id (we do not check it strictly here, but usually, it should already have a valid extension)
         if (p_module_id.contains(".") && FileAccess::exists(p_module_id))
@@ -147,47 +275,7 @@ namespace jsb
 
         const bool has_module_id_dir = DirAccess::exists(p_module_id);
 
-        // 2: module_id/package.json :main
-        if (has_module_id_dir)
-        {
-            do
-            {
-                const String package_filepath = internal::PathUtil::combine(p_module_id, "package.json");
-                if(!FileAccess::exists(package_filepath)) break;
-
-                const Ref<FileAccess> file = FileAccess::open(package_filepath, FileAccess::READ);
-                jsb_check(file.is_valid());
-
-                const Ref json = memnew(JSON);
-                Error error = json->parse(file->get_as_utf8_string());
-                if (error != OK)
-                {
-                    JSB_LOG(Error, "failed to parse package.json (%d: %s)", json->get_error_line(), json->get_error_message());
-                    break;
-                }
-                const Dictionary data = json->get_data();
-                const String key_main = "main";
-                if (!data.has(key_main)) break;
-
-                const String main = internal::PathUtil::combine(p_module_id, data[key_main]);
-                String extracted_main;
-                error = internal::PathUtil::extract(main, extracted_main);
-                if (error != OK)
-                {
-                    JSB_LOG(Error, "unrecognized main path [%s] in %s/package.json", main, p_module_id);
-                    break;
-                }
-
-                if (FileAccess::exists(extracted_main))
-                {
-                    o_source_info.source_filepath = extracted_main;
-                    o_source_info.package_filepath = package_filepath;
-                    return true;
-                }
-            } while (false);
-        }
-
-        // 3-1: implicit file path (module_id.js, module_id.cjs)
+        // 2: implicit file path (module_id.js, module_id.cjs)
         if (String source_path; check_implicit_source_path(p_module_id, source_path))
         {
             o_source_info.source_filepath = source_path;
@@ -196,7 +284,7 @@ namespace jsb
             return true;
         }
 
-        // 3-2: module_id/index.js
+        // 3: module_id/index.js
         if (has_module_id_dir)
         {
             const String index_path = internal::PathUtil::combine(p_module_id, "index.js");
@@ -211,6 +299,123 @@ namespace jsb
         return false;
     }
 
+    bool DefaultModuleResolver::check_package_file_path(const String& p_package_path, const String& p_module_id, ModuleSourceInfo& o_source_info)
+    {
+        if (!DirAccess::exists(p_package_path))
+        {
+            return false;
+        }
+
+        Dictionary package_exports;
+
+        if (package_exports_cache.has(p_package_path))
+        {
+            package_exports = package_exports_cache[p_package_path];
+        }
+        else
+        {
+            const String package_json_path = internal::PathUtil::combine(p_package_path, "package.json");
+
+            if (FileAccess::exists(package_json_path))
+            {
+                const Ref<FileAccess> file = FileAccess::open(package_json_path, FileAccess::READ);
+                jsb_check(file.is_valid());
+
+                const Ref json = memnew(JSON);
+                Error error = json->parse(file->get_as_utf8_string());
+                if (error != OK)
+                {
+                    JSB_LOG(Error, "failed to parse package.json (%d: %s)", json->get_error_line(), json->get_error_message());
+                }
+
+                const Dictionary& package_json = json->get_data();
+                const String key_exports = "exports";
+
+                if (package_json.has(key_exports))
+                {
+                    const Variant& exports = package_json[key_exports];
+                    const Variant::Type exports_type = exports.get_type();
+
+                    // Detected abbreviated exports and abbreviations to standard form
+
+                    if (exports_type == Variant::DICTIONARY)
+                    {
+                        const Dictionary exports_dict = exports;
+                        const String first_key = exports_dict.get_key_at_index(0);
+
+                        if (!first_key.begins_with("."))
+                        {
+                            // Abbreviated conditional
+                            package_exports["."] = exports_dict;
+                        }
+                        else
+                        {
+                            // Already in standard form
+                            package_exports = exports_dict;
+                        }
+                    }
+                    else if (exports_type == Variant::STRING || exports_type == Variant::ARRAY)
+                    {
+                        // Abbreviated value / alternatives
+                        package_exports["."] = exports;
+                    }
+                    else if (exports_type != Variant::NIL) // Exports may be explicitly disabled with exports: null
+                    {
+                        JSB_LOG(Warning, "invalid package.json exports. Module imports will fail: %s", package_json_path);
+                    }
+                }
+                else
+                {
+                    const String key_main = "main";
+
+                    if (package_json.has(key_main))
+                    {
+                        const String dot = ".";
+                        const String dot_slash = "./";
+                        const String& main = package_exports[key_main];
+
+                        // Transform main to equivalent exports
+                        package_exports[dot] = main.begins_with(dot) ? main : internal::PathUtil::combine(dot, main);
+                        package_exports[dot_slash] = dot_slash;
+                    }
+                }
+            }
+
+            package_exports_cache[p_package_path] = package_exports;
+        }
+
+        if (package_exports.is_empty())
+        {
+            // No exports mapping, fall back to absolute resolution
+            return this->check_absolute_file_path(internal::PathUtil::combine(p_package_path, p_module_id), o_source_info);
+        }
+
+        const String relative_exported_path = resolve_package_export(package_exports, "require", p_module_id);
+
+        if (relative_exported_path.is_empty())
+        {
+            return false;
+        }
+
+        const String exported_path = internal::PathUtil::combine(p_package_path, relative_exported_path);
+        String extracted_path;
+        Error error = internal::PathUtil::extract(exported_path, extracted_path);
+        if (error != OK)
+        {
+            JSB_LOG(Error, "unrecognized exports path [%s] in %s", relative_exported_path, p_package_path);
+            return false;
+        }
+
+        if (!FileAccess::exists(extracted_path))
+        {
+            return false;
+        }
+
+        o_source_info.source_filepath = extracted_path;
+        o_source_info.package_filepath = internal::PathUtil::combine(p_package_path, "package.json");
+        return true;
+    }
+
     // early and simple validation: check source file existence
     bool DefaultModuleResolver::get_source_info(const String &p_module_id, ModuleSourceInfo& r_source_info)
     {
@@ -219,7 +424,7 @@ namespace jsb
         // directly inspect it at first if it's an absolute path
         if (internal::PathUtil::is_absolute_path(p_module_id))
         {
-            if(check_file_path(p_module_id, r_source_info))
+            if (check_absolute_file_path(p_module_id, r_source_info))
             {
                 return true;
             }
@@ -258,11 +463,40 @@ namespace jsb
 
     bool DefaultModuleResolver::check_search_path(const String& p_search_path, const String& p_module_id, ModuleSourceInfo& o_source_info)
     {
-        const String filename = internal::PathUtil::combine(p_search_path, p_module_id);
-        if (check_file_path(filename, o_source_info))
+        String package_name;
+
+        if (p_module_id[0] != '.')
         {
-            return true;
+            int package_name_slash_index = p_module_id.find_char('/');
+
+            if (p_module_id[0] == '@' && package_name_slash_index >= 0)
+            {
+                package_name_slash_index = p_module_id.find_char('/', package_name_slash_index + 1);
+            }
+
+            package_name = p_module_id.substr(0, package_name_slash_index);
         }
+
+        if (package_name.is_empty())
+        {
+            const String absolute_file_path = internal::PathUtil::combine(p_search_path, p_module_id);
+
+            if (check_absolute_file_path(absolute_file_path, o_source_info))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            const String absolute_package_path = internal::PathUtil::combine(p_search_path, package_name);
+            const String file_path = p_module_id.substr(package_name.length() + 1);
+
+            if (check_package_file_path(absolute_package_path, file_path, o_source_info))
+            {
+                return true;
+            }
+        }
+
         JSB_LOG(Verbose, "failed to check out module (search_path: %s) %s", p_search_path, p_module_id);
         return false;
     }
