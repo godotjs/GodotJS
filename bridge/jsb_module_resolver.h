@@ -44,13 +44,27 @@ namespace jsb
         static bool load(Environment* p_env, const internal::ISourceReader& p_reader, JavaScriptModule& p_module);
 
     protected:
-        bool check_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info);
+        bool check_absolute_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info);
+        bool check_package_file_path(const String& p_package_path, const String& p_module_id, ModuleSourceInfo& o_source_info);
         bool check_search_path(const String& p_search_path, const String& p_module_id, ModuleSourceInfo& o_source_info);
+
+        static String resolve_package_export(const Dictionary& p_exports, const String& p_condition, const String& p_module_id);
 
         // read the source buffer (transformed into commonjs)
         static size_t read_all_bytes_with_shebang(const internal::ISourceReader& p_reader, Vector<uint8_t>& o_bytes);
 
         static bool check_implicit_source_path(const String& p_module_id, String& o_path);
+
+    private:
+
+        Dictionary package_exports_cache;
+
+        // Helper function for recursive resolution of exports target values
+        // p_value: The value retrieved from package.json exports map
+        // p_condition: The conditional key to prioritize. In our case, most likely "require".
+        // p_subpath: The portion of path (suffix) which did not match the lookup prefix
+        // p_wildcard: True if the matched exports key contained a wildcard ('*')
+        static String resolve_package_export_value(const Variant& p_value, const String& p_condition, const String& p_subpath, bool p_wildcard);
 
         Vector<String> search_paths_;
     };
