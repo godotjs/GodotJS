@@ -1752,7 +1752,14 @@ namespace jsb
             const v8::Local<v8::Value> prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
             jsb_check(prototype->IsObject());
             v8::Local<v8::Value> method;
-            if (prototype.As<v8::Object>()->Get(context, this->get_string_value(p_method)).ToLocal(&method) && method->IsFunction())
+            String exposed_name = p_method;
+
+            if (exposed_name.begins_with("_"))
+            {
+                exposed_name = internal::NamingUtil::get_member_name(exposed_name);
+            }
+
+            if (prototype.As<v8::Object>()->Get(context, this->get_string_value(exposed_name)).ToLocal(&method) && method->IsFunction())
             {
                 method_func = method.As<v8::Function>();
                 script_class_info->method_cache[p_method] = v8::Global<v8::Function>(isolate_, method_func);
@@ -1760,7 +1767,7 @@ namespace jsb
             else
             {
                 script_class_info->method_cache[p_method] = v8::Global<v8::Function>();
-                JSB_LOG(Verbose, "method not found %s.%s (%s)", script_class_info->js_class_name, p_method, script_class_info->module_id);
+                JSB_LOG(Verbose, "method not found %s.%s (%s)", script_class_info->js_class_name, exposed_name, script_class_info->module_id);
             }
         }
         else

@@ -305,12 +305,19 @@ bool GodotJSScript::has_method(const StringName& p_method) const
     ensure_module_loaded();
     jsb_check(loaded_);
 
+    String exposed_name = p_method;
+
+    if (exposed_name.begins_with("_"))
+    {
+        exposed_name = jsb::internal::NamingUtil::get_member_name(exposed_name);
+    }
+
     const GodotJSScript* current = this;
     while (current)
     {
         //TODO temp fix
         if (!current->loaded_) const_cast<GodotJSScript*>(current)->load_module_immediately();
-        if (current->is_valid() && current->script_class_info_.methods.has(p_method)) return true;
+        if (current->is_valid() && current->script_class_info_.methods.has(exposed_name)) return true;
         current = current->base.ptr();
     }
 
