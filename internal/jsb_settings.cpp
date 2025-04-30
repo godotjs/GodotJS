@@ -14,6 +14,7 @@ namespace jsb::internal
 #ifdef TOOLS_ENABLED
     static constexpr char kEdDebuggerPort[] =     JSB_MODULE_NAME_STRING "/debugger/editor_port";
     static constexpr char kEdIgnoredClasses[] =     JSB_MODULE_NAME_STRING "/codegen/ignored_classes";
+    static constexpr char kEdAutogenPath[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_path";
     static constexpr char kEdAutogenSceneDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_scene_dts_on_save";
     static constexpr char kEdGenSceneDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_scene_dts";
     static constexpr char kEdAutogenResourceDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_resource_dts_on_save";
@@ -57,6 +58,7 @@ namespace jsb::internal
                 inited = true;
                 _EDITOR_DEF(kEdDebuggerPort, 9230, true);
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
+                _EDITOR_DEF(kEdAutogenPath, "gen/godot", false);
                 _EDITOR_DEF(kEdGenSceneDTS, true, false);
                 _EDITOR_DEF(kEdAutogenSceneDTSOnSave, true, false);
                 _EDITOR_DEF(kEdGenResourceDTS, true, false);
@@ -115,6 +117,12 @@ namespace jsb::internal
     {
         init_editor_settings();
         return EDITOR_GET(kEdIgnoredClasses);
+    }
+
+    String Settings::get_autogen_path()
+    {
+        init_editor_settings();
+        return EDITOR_GET(kEdAutogenPath);
     }
 
     bool Settings::get_autogen_scene_dts_on_save()

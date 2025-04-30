@@ -1,4 +1,5 @@
 ///<reference path="godot.generated.d.ts" />
+
 declare module "godot-jsb" {
     import {
         Callable,
@@ -50,7 +51,7 @@ declare module "godot-jsb" {
      */
     function set_async_module_loader(fn: (module_id: string, resolve: AsyncModuleSourceLoaderResolveFunc, reject: AsyncModuleSourceLoaderRejectFunc) => void): void;
 
-    interface MinimalCommonJSModule { 
+    interface MinimalCommonJSModule {
         exports: any;
         loaded: boolean;
         id: string;
@@ -58,9 +59,9 @@ declare module "godot-jsb" {
 
     /**
      * Import a CommonJS module asynchronously.
-     * 
-     * NOTE: Only the source code is loaded asynchronously, the module is still evaluated on the script thread.  
-     * NOTE: Calling the $import() function without a async module loader set in advance will return undefined.  
+     *
+     * NOTE: Only the source code is loaded asynchronously, the module is still evaluated on the script thread.
+     * NOTE: Calling the $import() function without a async module loader set in advance will return undefined.
      * @param module_id the module id to import
      * @example
      * ```js
@@ -301,3 +302,37 @@ declare module "godot-jsb" {
         const VERSION_DOCS_URL: string;
     }
 }
+
+// Globals
+
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console) */
+interface Console {
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/assert_static) */
+    assert(condition?: boolean, ...data: any[]): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/debug_static) */
+    debug(...data: any[]): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/error_static) */
+    error(...data: any[]): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/info_static) */
+    info(...data: any[]): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/log_static) */
+    log(...data: any[]): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/time_static) */
+    time(label?: string): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/timeEnd_static) */
+    timeEnd(label?: string): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/trace_static) */
+    trace(...data: any[]): void;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/console/warn_static) */
+    warn(...data: any[]): void;
+}
+declare const console: Console;
+
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/clearInterval) */
+declare function clearInterval(id: number | undefined): void;
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout) */
+declare function clearTimeout(id: number | undefined): void;
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/setInterval) */
+declare function setInterval(handler: () => void, timeout?: number, ...arguments: any[]): number;
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/setTimeout) */
+declare function setTimeout(handler: () => void, timeout?: number, ...arguments: any[]): number;

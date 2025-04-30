@@ -1948,7 +1948,6 @@ class FileSplitter {
         this._toplevel = new ModuleWriter(new FileWriter(path, this._types, this._file), "godot");
 
         this._file.store_line("// AUTO-GENERATED");
-        this._file.store_line("/// <reference no-default-lib=\"true\"/>");
     }
 
     close() {

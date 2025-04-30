@@ -96,6 +96,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_install_file({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
     add_install_file({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });
     add_install_file({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
+    add_install_file({ ".gdignore", "res://" + jsb::internal::Settings::get_autogen_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
 
     // type declaration files
     // VSCode treats the directory containing the jsconfig.json file as the root of a javascript project, and reads type declarations from d.ts.
@@ -533,7 +534,7 @@ void GodotJSEditorPlugin::generate_scene_nodes_dts(const Vector<String>& p_paths
 
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.SceneTSDCodeGen("%s", ["%s"])).emit();})())--",
-        "./" JSB_TYPE_ROOT,
+        "./" + jsb::internal::Settings::get_autogen_path(),
         String("\", \"").join(p_paths)
     );
     lang->eval_source(code, err).ignore();
@@ -556,7 +557,7 @@ void GodotJSEditorPlugin::generate_resource_dts(const Vector<String>& p_paths)
 
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.ResourceTSDCodeGen("%s", ["%s"])).emit();})())--",
-        "./" JSB_TYPE_ROOT,
+        "./" + jsb::internal::Settings::get_autogen_path(),
         String("\", \"").join(p_paths)
     );
     lang->eval_source(code, err).ignore();
