@@ -353,6 +353,18 @@ namespace jsb
                         names.add_replacement(*it, exposed_name);
                     }
                 }
+
+                const int constant_count = CoreConstants::get_global_constant_count();
+                for (int index = 0; index < constant_count; ++index)
+                {
+                    const StringName enum_name = CoreConstants::get_global_constant_enum(index);
+                    String exposed_name = internal::NamingUtil::get_class_name(enum_name);
+
+                    if (exposed_name != enum_name)
+                    {
+                        names.add_replacement(enum_name, exposed_name);
+                    }
+                }
             }
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
