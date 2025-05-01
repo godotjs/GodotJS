@@ -43,6 +43,11 @@ interface GenericParameter {
     default?: string;
 }
 
+interface Implements {
+    type: string;
+    generic_arguments?: string[];
+}
+
 type Intro = string[] | ((types: TypeDB) => string[]);
 type PropertyOverrides = Record<string, string[] | ((line: string) => string)>;
 
@@ -50,7 +55,9 @@ interface TypeMutation {
     generic_parameters?: Record<string, GenericParameter>;
     super?: string;
     super_generic_arguments?: string[];
+    implements?: Implements[];
     intro?: Intro;
+    prelude?: string[];
     property_overrides?: PropertyOverrides;
 }
 
@@ -60,6 +67,7 @@ function chain_mutators(...mutators: Array<(line: string) => string>) {
     };
 }
 function mutate_parameter_type(name: string, type: string) {
+    name = names.get_parameter(name);
     return function(line: string) {
         const replaced = line.replace(new RegExp(`([,(] *)${name.replace(/\./g, "\\.")}\\??: .+?( ?[,)/])`, "g"), `$1${name}: ${type}$2`);
         if (replaced === line) {
@@ -88,22 +96,138 @@ function mutate_template(template: string) {
 }
 
 const TypeMutations: Record<string, TypeMutation> = {
-    Signal: {
-        intro: [
-            `${names.get_member("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
+    AnimationLibrary: {
+        prelude: [
+            `namespace __PathMappableDummyKeys { const AnimationLibrary: unique symbol }`,
         ],
         generic_parameters: {
-            T: {
-                extends: "(...args: any[]) => void",
-                default: "(...args: any[]) => void",
+            AnimationName: {
+                extends: "string",
+                default: "string",
             },
         },
+        implements: [
+            {
+                type: 'PathMappable',
+                generic_arguments: ['typeof __PathMappableDummyKeys.AnimationLibrary', 'Record<AnimationName, Animation>'],
+            }
+        ],
+        intro: [
+            "[__PathMappableDummyKeys.AnimationLibrary]: Record<AnimationName, Animation>",
+        ],
         property_overrides: {
-            connect: mutate_parameter_type("callable", "Callable<T>"),
-            disconnect: mutate_parameter_type("callable", "Callable<T>"),
-            is_connected: mutate_parameter_type("callable", "Callable<T>"),
-            emit: ["emit: T"],
-        }
+            add_animation: mutate_parameter_type("name", "AnimationName"),
+            remove_animation: mutate_parameter_type("name", "AnimationName"),
+            rename_animation: chain_mutators(mutate_parameter_type("name", "AnimationName"), mutate_parameter_type("newname", "AnimationName")),
+            has_animation: chain_mutators(mutate_parameter_type("name", "AnimationName")),
+            get_animation: mutate_parameter_type("name", "AnimationName"),
+            get_animation_list: mutate_return_type("GArray<AnimationName>"),
+            animation_added: [`readonly ${names.get_member('animation_added')}: Signal<(name: StringName) => void>`],
+            animation_removed: [`readonly ${names.get_member('animation_removed')}: Signal<(name: StringName) => void>`],
+            animation_renamed: [`readonly ${names.get_member('animation_renamed')}: Signal<(name: StringName, ${names.get_parameter('to_name')}) => void>`],
+            animation_changed: [`readonly ${names.get_member('animation_changed')}: Signal<(name: StringName) => void>`],
+        },
+    },
+    AnimationMixer: {
+        prelude: [
+            `namespace __PathMappableDummyKeys { const AnimationMixer: unique symbol }`,
+        ],
+        generic_parameters: {
+            NodeMap: {
+                extends: "NodePathMap",
+                default: "any",
+            },
+            LibraryMap: {
+                extends: "AnimationMixerPathMap",
+                default: "any",
+            },
+        },
+        super_generic_arguments: ["NodeMap"],
+        implements: [
+            {
+                type: 'PathMappable',
+                generic_arguments: ['typeof __PathMappableDummyKeys.AnimationMixer', 'LibraryMap'],
+            }
+        ],
+        intro: [
+            "[__PathMappableDummyKeys.AnimationMixer]: LibraryMap",
+        ],
+        property_overrides: {
+            add_animation_library: chain_mutators(
+                mutate_template("Name extends keyof LibraryMap"),
+                mutate_parameter_type("name", "Name"),
+                mutate_parameter_type("library", "LibraryMap[Name]"),
+            ),
+            remove_animation_library: chain_mutators(
+                mutate_template("Name extends keyof LibraryMap"),
+                mutate_parameter_type("name", "Name"),
+            ),
+            rename_animation_library: chain_mutators(
+                mutate_template("FromName extends keyof LibraryMap, ToName extends PickValueKeys<LibraryMap, LibraryMap[FromName]>"),
+                mutate_parameter_type("name", "FromName"),
+                mutate_parameter_type("newname", "ToName"),
+            ),
+            has_animation_library: chain_mutators(
+                mutate_template("Name extends keyof LibraryMap"),
+                mutate_parameter_type("name", "Name"),
+            ),
+            get_animation_library: chain_mutators(
+                mutate_template("Name extends keyof LibraryMap"),
+                mutate_parameter_type("name", "Name"),
+                mutate_return_type("LibraryMap[Name]")
+            ),
+            get_animation_library_list: mutate_return_type("GArray<keyof LibraryMap>"),
+            has_animation: chain_mutators(
+                mutate_template("Name extends StaticAnimationMixerPath<LibraryMap>"),
+                mutate_parameter_type("name", "Name"),
+            ),
+            get_animation: chain_mutators(
+                mutate_template("Name extends StaticAnimationMixerPath<LibraryMap>"),
+                mutate_parameter_type("name", "Name"),
+                mutate_return_type("ResolveAnimationMixerPath<LibraryMap, Name>")
+            ),
+        },
+    },
+    AnimationPlayer: {
+        property_overrides: {
+            animation_set_next: chain_mutators(
+                mutate_parameter_type("animation_from", "StaticAnimationMixerPath<LibraryMap>"),
+                mutate_parameter_type("animation_to", "StaticAnimationMixerPath<LibraryMap>")
+            ),
+            animation_get_next: chain_mutators(
+                mutate_parameter_type("animation_from", "StaticAnimationMixerPath<LibraryMap>"),
+                mutate_return_type("StaticAnimationMixerPath<LibraryMap>")
+            ),
+            set_blend_time: chain_mutators(
+                mutate_parameter_type("animation_from", "StaticAnimationMixerPath<LibraryMap>"),
+                mutate_parameter_type("animation_to", "StaticAnimationMixerPath<LibraryMap>")
+            ),
+            get_blend_time: chain_mutators(
+                mutate_parameter_type("animation_from", "StaticAnimationMixerPath<LibraryMap>"),
+                mutate_parameter_type("animation_to", "StaticAnimationMixerPath<LibraryMap>")
+            ),
+            play: mutate_parameter_type("name", "StaticAnimationMixerPath<LibraryMap>"),
+            play_section: mutate_parameter_type("name", "StaticAnimationMixerPath<LibraryMap>"),
+            play_backwards: mutate_parameter_type("name", "StaticAnimationMixerPath<LibraryMap>"),
+            play_section_with_markers_backwards: mutate_parameter_type("name", "StaticAnimationMixerPath<LibraryMap>"),
+            play_section_backwards: mutate_parameter_type("name", "StaticAnimationMixerPath<LibraryMap>"),
+            play_with_capture: mutate_parameter_type("name", "StaticAnimationMixerPath<LibraryMap>"),
+            queue: mutate_parameter_type("name", "StaticAnimationMixerPath<LibraryMap>"),
+            current_animation: [
+                `get ${names.get_member('current_animation')}(): StaticAnimationMixerPath<LibraryMap>`,
+                `set ${names.get_member('current_animation')}(value: StaticAnimationMixerPath<LibraryMap>)`,
+            ],
+            assigned_animation: [
+                `get ${names.get_member('assigned_animation')}(): StaticAnimationMixerPath<LibraryMap>`,
+                `set ${names.get_member('assigned_animation')}(value: StaticAnimationMixerPath<LibraryMap>)`,
+            ],
+            autoplay: [
+                `get autoplay(): StaticAnimationMixerPath<LibraryMap>`,
+                `set autoplay(value: StaticAnimationMixerPath<LibraryMap>)`,
+            ],
+            current_animation_changed: [`readonly ${names.get_member('current_animation_changed')}: Signal<(name: StaticAnimationMixerPath<LibraryMap>) => void>`],
+            animation_changed: [`readonly ${names.get_member('current_animation_changed')}: Signal<(${names.get_parameter('old_name')}: StaticAnimationMixerPath<LibraryMap>, ${names.get_parameter('new_name')}: StaticAnimationMixerPath<LibraryMap>) => void>`],
+        },
     },
     Callable: {
         intro: [
@@ -209,24 +333,26 @@ const TypeMutations: Record<string, TypeMutation> = {
         }
     },
     Node: {
+        prelude: [
+            `namespace __PathMappableDummyKeys { const Node: unique symbol }`,
+        ],
+        intro: [
+            "[__PathMappableDummyKeys.Node]: Map",
+        ],
         generic_parameters: {
             Map: {
-                extends: "Record<string, Node>",
-                default: "{}",
+                extends: "NodePathMap",
+                default: "any",
             },
         },
-        intro: [
-            "// TypeScript's inference won't directly match against a generic parameter. The generic parameter has to",
-            "// appear somewhere in the type definition. Consequently, we insert a dummy direct usage of the parameter.",
-            // To observe this in practice, visit the following and comment out line 20:
-            // https://www.typescriptlang.org/play/?ts=5.8.2#code/C4TwDgpgBAcg9gEwgBQIbABYFlVigXigG8oBtAaSgEsA7KAZ2ACdaBzAXQH4AuWRCAMwARKAF8AsACgpoSFADKwdFQDG8JGkwAeHHggAPYBBoJ6fDemy4AfASgAKANYQQcAGZRdUAGQNmbAEooAB9iKSgySlooZ1cPL19GFhoOXl0KdigDIxMzdUEhLVo3CCYoAGEMKgAbBF1rcIioTigAAwASInJRADpOxWU1fk0MLUqauptRVsaI3hoIADdSqVFSWPdPXB8-ZI4AbikZcGgAJQh6OGrl-JGdbezjU3MUS10AGigRrMMnsyS2J8hBA3KgAK7VYB2BbLJi2QjfR65GIuTa6RotdIjdiNXiI37IjpEYqlKDkFw-HLPDbxbaJfwpXqdElleRggBGI2ms2aWzAFBcmSRz3ywiKNBKZXGtXqPIiLXOl2uEFuljGVRluE+bM5liBIPBkIakiaTV4wNBEOAPPNBqth2kkiQKmqqCY0BUcBojCgAH1fQg4BcaHAjPoqIxffldLwwTQqABHMHQeggAC27Ku+ygR0kLtQ9Dy-DFWEpfxeIy8hFVmHqYRNUGdrvdUDALEW6GgpH9geDoYMEeAUf4unYaQdEkd+cLCkgKioblUosKpeFRYste21eGbxsZeRy50tiIk+OciwIAAKu7oIQiI03HA4Lx5HOF0vi4V7w2IuzUKgXzfRchiQMVv1NCJMDYXhlwdU1RGsOCxEQ1YHSkT1vShMBLBfJRgA-DdRgva8IAgeEoAAckfOAKIdDCfWwzAACZcMGGsiKvG9yKop8ej-VBaPQr0GMsARWPwkDXm0YiuLsHi4D4-8eiglJBMkAB6TSoAAAWAegAFoDDnYBDKYJg4CYITMOoGgO2qKgEBGABGcSCKkjiSLIuSQ0wUoIDUzT1J0vTDP0YzTPMyy82EqFaDshyRhYhQ8Lcu4ZNI7jqJ6HyMD8gKtN0gyjIgFQTNKSKrJ9OLUHsxzRNcyS0s4jK5Ky-jstDXL3TUyqoWo3hFSuG4d2k5qIE+eSKPIk8oALWaaBAOiYqgaiACF-wGi4hpVEaPJvCa2v-Ka7BmubUAWh1AuCoqwpKsqzIs3qVqfeBgAACT8gBJegYCWUpNqVYbCJ0MaDt4nK8um0RZrMc7Fqetb-0vKoUgB7b2JBzywYU9qVNYY672hs6LqkK7CtC8Lyse6LrMR1BXo+91vt+2E0eVDH0vGyjDtQDrfO6qGYfm+HHSAA
-            "private __doesnotexist_NodeMap: Map"
+        implements: [
+            {
+                type: 'PathMappable',
+                generic_arguments: ['typeof __PathMappableDummyKeys.Node', 'Map'],
+            }
         ],
         property_overrides: {
-            get_node: [
-                "get_node<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>",
-                "get_node(path: NodePath | string): Node",
-            ],
+            get_node: ["get_node<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>"],
             get_node_or_null: [
                 "get_node_or_null<Path extends StaticNodePath<Map>, Default = never>(path: Path): null | ResolveNodePath<Map, Path, Default>",
                 "get_node_or_null(path: NodePath | string): null | Node",
@@ -264,14 +390,44 @@ const TypeMutations: Record<string, TypeMutation> = {
             ],
         },
     },
+    Signal: {
+        intro: [
+            `${names.get_member("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
+        ],
+        generic_parameters: {
+            T: {
+                extends: "(...args: any[]) => void",
+                default: "(...args: any[]) => void",
+            },
+        },
+        property_overrides: {
+            connect: mutate_parameter_type("callable", "Callable<T>"),
+            disconnect: mutate_parameter_type("callable", "Callable<T>"),
+            is_connected: mutate_parameter_type("callable", "Callable<T>"),
+            emit: ["emit: T"],
+        }
+    },
 };
 
 const InheritedTypeMutations: Record<string, TypeMutation> = {
+    AnimationMixer: {
+        generic_parameters: {
+            NodeMap: {
+                extends: "NodePathMap",
+                default: "any",
+            },
+            LibraryMap: {
+                extends: "AnimationMixerPathMap",
+                default: "any",
+            },
+        },
+        super_generic_arguments: ["NodeMap", "LibraryMap"],
+    },
     Node: {
         generic_parameters: {
             Map: {
-                extends: "Record<string, Node>",
-                default: "{}",
+                extends: "NodePathMap",
+                default: "any",
             },
         },
         super_generic_arguments: ["Map"],
@@ -314,14 +470,19 @@ function merge_type_mutations(base: TypeMutation, overrides: TypeMutation) {
 
 function get_type_mutation(name: string, classes: { [Name in string]?: GodotJsb.editor.ClassInfo } = {}): TypeMutation {
     const class_info = classes[name];
-    let type_mutation = class_info ? class_type_mutation(class_info) : {};
-    let super_name = class_info?.super;
+    const ancestor_names = [];
 
-    while (super_name) {
-        if (InheritedTypeMutations[super_name]) {
-            type_mutation = merge_type_mutations(type_mutation, InheritedTypeMutations[super_name]);
+    for (let ancestor_name = class_info?.super; ancestor_name; ancestor_name = classes[ancestor_name]?.super) {
+        ancestor_names.push(ancestor_name);
+    }
+
+    let type_mutation = class_info ? class_type_mutation(class_info) : {};
+
+    for (let i = ancestor_names.length - 1; i >= 0; i--) {
+        const ancestor_name = ancestor_names[i];
+        if (InheritedTypeMutations[ancestor_name]) {
+            type_mutation = merge_type_mutations(type_mutation, InheritedTypeMutations[ancestor_name]);
         }
-        super_name = classes[super_name]?.super;
     }
 
     if (TypeMutations[name]) {
@@ -359,8 +520,10 @@ interface CodeWriter {
         generic_parameters: undefined | Record<string, GenericParameter>,
         super_: undefined | string,
         super_generic_arguments: undefined | string[],
+        interfaces: undefined | Implements[],
         property_overrides: undefined | PropertyOverrides,
         intro: undefined | Intro,
+        prelude: undefined | string[],
         singleton_mode: boolean,
         class_doc?: GodotJsb.editor.ClassDoc
     ): ClassWriter;
@@ -598,7 +761,7 @@ const quoted_escape_map: Record<string, string> = {
 };
 
 function name_string(name: string) {
-    if (!KeywordReplacement[name] && !name.match(needs_quotes_regex)) {
+    if (!KeywordReplacement[name] && !name.match(needs_quotes_regex) && name.length > 0) {
         return name;
     }
 
@@ -646,12 +809,14 @@ abstract class AbstractWriter implements ScopeWriter {
       generic_parameters: undefined | Record<string, GenericParameter>,
       super_: string,
       super_generic_arguments: undefined | string[],
+      interfaces: undefined | Implements[],
       property_overrides: undefined | PropertyOverrides,
       intro: undefined | Intro,
+      prelude: undefined | string[],
       singleton_mode: boolean,
       class_doc?: GodotJsb.editor.ClassDoc
     ): ClassWriter {
-        return new ClassWriter(this, name, generic_parameters, super_, super_generic_arguments, intro, property_overrides, singleton_mode, class_doc);
+        return new ClassWriter(this, name, generic_parameters, super_, super_generic_arguments, interfaces, intro, prelude, property_overrides, singleton_mode, class_doc);
     }
     generic_(name: string): GenericWriter {
       return new GenericWriter(this, name);
@@ -1072,8 +1237,11 @@ class TypeDescriptorWriter extends BufferingWriter {
             case DescriptorType.Godot: {
                 if (descriptor.arguments) {
                     this.line(`${descriptor.name}<`);
-                    const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
-                    const args = new TypeDescriptorWriter(indent ?? this, descriptor.arguments.length === 1);
+                    const multiline = descriptor.arguments.length > 1
+                        || descriptor.arguments[0]?.type === DescriptorType.Union
+                        || descriptor.arguments[0]?.type === DescriptorType.Intersection;
+                    const indent = multiline ? new IndentWriter(this) : null;
+                    const args = new TypeDescriptorWriter(indent ?? this, !multiline);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
                             args.concatenate(", ");
@@ -1083,7 +1251,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                     });
                     args.finish();
                     indent?.finish();
-                    this.append(descriptor.arguments.length !== 1, `>`);
+                    this.append(multiline, `>`);
                 } else {
                     this.line(descriptor.name);
                 }
@@ -1092,8 +1260,11 @@ class TypeDescriptorWriter extends BufferingWriter {
             case DescriptorType.User: {
                 if (descriptor.arguments) {
                     this.line(`${descriptor.name}<`);
-                    const indent = descriptor.arguments.length > 1 ? new IndentWriter(this) : null;
-                    const args = new TypeDescriptorWriter(indent ?? this, descriptor.arguments.length === 1);
+                    const multiline = descriptor.arguments.length > 1
+                        || descriptor.arguments[0]?.type === DescriptorType.Union
+                        || descriptor.arguments[0]?.type === DescriptorType.Intersection;
+                    const indent = multiline ? new IndentWriter(this) : null;
+                    const args = new TypeDescriptorWriter(indent ?? this, !multiline);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
                             args.concatenate(", ");
@@ -1103,7 +1274,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                     });
                     args.finish();
                     indent?.finish();
-                    this.append(descriptor.arguments.length !== 1, `>`);
+                    this.append(multiline, `>`);
                 } else {
                     this.line(descriptor.name);
                 }
@@ -1431,7 +1602,9 @@ class ClassWriter extends IndentWriter {
     protected _generic_parameters?: Record<string, GenericParameter>;
     protected _super?: string;
     protected _super_generic_arguments?: string[];
+    protected _implements?: Implements[];
     protected _intro?: Intro;
+    protected _prelude?: string[];
     protected _property_overrides?: Record<string, string[] | ((line: string) => string)>;
     protected _singleton_mode: boolean;
     protected _doc?: GodotJsb.editor.ClassDoc;
@@ -1445,7 +1618,9 @@ class ClassWriter extends IndentWriter {
         generic_parameters: undefined | Record<string, GenericParameter>,
         super_: undefined | string,
         super_generic_arguments: undefined | string[],
+        interfaces: undefined | Implements[],
         intro: undefined | Intro,
+        prelude: undefined | string[],
         property_overrides: undefined | PropertyOverrides,
         singleton_mode: boolean,
         class_doc?: GodotJsb.editor.ClassDoc
@@ -1455,7 +1630,9 @@ class ClassWriter extends IndentWriter {
         this._generic_parameters = generic_parameters;
         this._super = super_;
         this._super_generic_arguments = super_generic_arguments;
+        this._implements = interfaces;
         this._intro = intro;
+        this._prelude = prelude;
         this._property_overrides = jsb.CAMEL_CASE_BINDINGS_ENABLED ? camel_property_overrides(property_overrides) : property_overrides;
         this._singleton_mode = singleton_mode;
         this._doc = class_doc;
@@ -1467,13 +1644,26 @@ class ClassWriter extends IndentWriter {
                 `${name}${p.extends ? ` extends ${p.extends}` : ""}${p.default ? ` = ${p.default}` : ""}`
             ).join(", ")}>`
             : "";
-        if (typeof this._super !== "string" || this._super.length == 0) {
-            return `class ${this._name}${params}`;
+
+        let class_extends = "";
+
+        if (typeof this._super === "string" && this._super.length > 0) {
+            const args = this._super_generic_arguments && this._super_generic_arguments.length > 0
+                ? `<${this._super_generic_arguments.join(", ")}>`
+                : "";
+            class_extends = ` extends ${this._super}${args}`;
         }
-        const args = this._super_generic_arguments && this._super_generic_arguments.length > 0
-            ? `<${this._super_generic_arguments.join(", ")}>`
-            : "";
-        return `class ${this._name}${params} extends ${this._super}${args}`;
+
+        const class_implements = this._implements && this._implements.length > 0
+            ?` implements ${this._implements.map(({ type, generic_arguments }) => {
+                const args = generic_arguments && generic_arguments.length > 0
+                    ? `<${generic_arguments.join(", ")}>`
+                    : "";
+                return `${type}${args}`;
+            }).join(", ")}`
+            : '';
+
+        return `class ${this._name}${params}${class_extends}${class_implements}`;
     }
 
     protected make_method_prefix(method_info: GodotJsb.editor.MethodBind): string {
@@ -1495,6 +1685,7 @@ class ClassWriter extends IndentWriter {
     }
 
     finish() {
+        this._prelude?.forEach(line => this._base.line(line));
         DocCommentHelper.write(this._base, Description.forClass(this.types, this._name), false);
         this._base.line(`${this.head()} {`)
         this.intro()
@@ -2370,7 +2561,17 @@ export class TSDCodeGen {
         const type_name = jsb.internal.names.get_variant_type(cls.type);
         const type_mutation = get_type_mutation(type_name);
         const super_ = type_mutation.super ?? undefined;
-        const class_cg = cg.class_(type_name, type_mutation.generic_parameters, super_, type_mutation.super_generic_arguments, type_mutation.property_overrides, type_mutation.intro, false, class_doc);
+        const class_cg = cg.class_(
+            type_name,
+            type_mutation.generic_parameters,
+            super_, type_mutation.super_generic_arguments,
+            type_mutation.implements,
+            type_mutation.property_overrides,
+            type_mutation.intro,
+            type_mutation.prelude,
+            false,
+            class_doc
+        );
         if (cls.constants) {
             for (let constant of cls.constants) {
                 if (!ignored_consts.has(constant.name) && !ignored_consts.has(names.get_enum_value(constant.name))) {
@@ -2413,7 +2614,18 @@ export class TSDCodeGen {
 
             const type_mutation = get_type_mutation(cls.name, this._types.classes);
             const super_ = type_mutation.super ?? (this.has_class(cls.super) ? cls.super : undefined);
-            const class_cg = cg.class_(cls.name, type_mutation.generic_parameters, super_, type_mutation.super_generic_arguments, type_mutation.property_overrides, type_mutation.intro, singleton_mode, class_doc);
+            const class_cg = cg.class_(
+                cls.name,
+                type_mutation.generic_parameters,
+                super_,
+                type_mutation.super_generic_arguments,
+                type_mutation.implements,
+                type_mutation.property_overrides,
+                type_mutation.intro,
+                type_mutation.prelude,
+                singleton_mode,
+                class_doc
+            );
             if (cls.constants) {
                 for (let constant of cls.constants) {
                     if (!ignored_consts.has(constant.name)) {

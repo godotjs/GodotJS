@@ -6,7 +6,7 @@
 declare module "godot" {
     import { TypeDescriptor } from "jsb.editor.codegen";
 
-    class Node<Map extends Record<string, Node> = {}> extends Object { }
+    class Node<Map extends Record<string, Node> = any> extends Object { }
     class Resource { }
     class GArray<T = any> {
         [Symbol.iterator](): IteratorObject<T>

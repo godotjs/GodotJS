@@ -5,6 +5,7 @@
 #include "../weaver/jsb_script.h"
 
 #include "editor/gui/editor_toaster.h"
+#include "scene/animation/animation_mixer.h"
 #include "scene/resources/packed_scene.h"
 
 // The following enums must be kept in sync with jsb.editor.codegen.ts
@@ -118,7 +119,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
     {
         // By default, only scene (and sub-scene) roots are typed with a user defined type. This ensures that classes are
         // able to use SceneNodes in their type declaration without illegally referencing their own type. Users can use
-        // codegen to override alter behavior.
+        // codegen to override this behavior.
         if (script == nullptr || p_node->get_scene_file_path().is_empty() || GodotJSScriptLanguage::get_singleton()->is_global_class_generic(script->get_path()))
         {
             Dictionary object_literal;
@@ -127,6 +128,53 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
 
             Array generic_arguments;
             generic_arguments.push_back(object_literal);
+
+            AnimationMixer *animation_mixer = Object::cast_to<AnimationMixer>(p_node);
+
+            if (animation_mixer)
+            {
+                List<StringName> library_names;
+                animation_mixer->get_animation_library_list(&library_names);
+
+                Dictionary animation_libraries_object_literal;
+                Dictionary animation_libraries_properties;
+                animation_libraries_object_literal[jsb_string_name(type)] = (int32_t) DescriptorType::ObjectLiteral;
+                animation_libraries_object_literal[jsb_string_name(properties)] = animation_libraries_properties;
+
+                for (const StringName &library_name : library_names)
+                {
+                    Ref<AnimationLibrary> library = animation_mixer->get_animation_library(library_name);
+
+                    Array animation_names_union_array;
+
+                    List<StringName> animation_names;
+                    library->get_animation_list(&animation_names);
+
+                    for (const StringName& animation_name : animation_names)
+                    {
+                        Dictionary string_literal;
+                        string_literal[jsb_string_name(type)] = (int32_t) DescriptorType::StringLiteral;
+                        string_literal[jsb_string_name(value)] = animation_name;
+                        animation_names_union_array.push_back(string_literal);
+                    }
+
+                    Dictionary animation_names_union;
+                    animation_names_union[jsb_string_name(type)] = (int32_t) DescriptorType::Union;
+                    animation_names_union["types"] = animation_names_union_array;
+
+                    Array animation_generic_arguments;
+                    animation_generic_arguments.push_back(animation_names_union);
+
+                    Dictionary animation_library_descriptor;
+                    animation_library_descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
+                    animation_library_descriptor[jsb_string_name(name)] = jsb::internal::NamingUtil::get_class_name("AnimationLibrary");
+                    animation_library_descriptor[jsb_string_name(arguments)] = animation_generic_arguments;
+
+                    animation_libraries_properties[library_name] = animation_library_descriptor;
+                }
+
+                generic_arguments.push_back(animation_libraries_object_literal);
+            }
 
             descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
             descriptor[jsb_string_name(name)] = jsb::internal::NamingUtil::get_class_name(p_node->get_class_name());
