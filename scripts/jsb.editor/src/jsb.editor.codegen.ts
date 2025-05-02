@@ -1737,9 +1737,9 @@ class ClassWriter extends IndentWriter {
         //
         // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
 
-        line(`get ${name}(): ${this.types.make_typename(getset_info.info, false)}`);
+        line(`get ${name}(): ${this.types.make_typename(getset_info.info, false, false)}`);
         if (getset_info.setter.length != 0) {
-            line(`set ${name}(value: ${this.types.make_typename(getset_info.info, true)})`);
+            line(`set ${name}(value: ${this.types.make_typename(getset_info.info, true, false)})`);
         }
     }
 
@@ -2245,26 +2245,30 @@ export class TypeDB {
         return `any /*${class_name}*/`;
     }
 
-    make_typename(info: PropertyInfo, used_as_input: boolean): string {
+    make_typename(info: PropertyInfo, used_as_input: boolean, non_nullable: boolean): string {
+        const null_prefix = !non_nullable && (info.type === godot.Variant.Type.TYPE_OBJECT || (info.usage & godot.PropertyUsageFlags.PROPERTY_USAGE_STORE_IF_NULL) !== 0)
+          ? "null | "
+          : "";
+
         if (info.hint == godot.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return info.hint_string.split(",").map(internal_class_name => this.make_classname(internal_class_name)).join(" | ")
+            return null_prefix + info.hint_string.split(",").map(internal_class_name => this.make_classname(internal_class_name)).join(" | ")
         }
 
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
         if (info.class_name.length == 0) {
             const primitive_name = used_as_input ? get_primitive_type_name_as_input(info.type) : get_primitive_type_name(info.type);
             if (typeof primitive_name !== "undefined") {
-                return primitive_name;
+                return null_prefix + primitive_name;
             }
             return `any /*unhandled: ${info.type}*/`;
         }
 
-        return this.make_classname(info.class_name);
+        return null_prefix + this.make_classname(info.class_name);
     }
 
     make_arg(info: PropertyInfo, optional?: boolean): string {
-        return `${replace_var_name(info.name)}${optional ? "?" : ""}: ${this.make_typename(info, true)}`
+        return `${replace_var_name(info.name)}${optional ? "?" : ""}: ${this.make_typename(info, true, true)}`
     }
 
     make_literal_value(value: GodotJsb.editor.DefaultArgumentInfo) {
@@ -2351,13 +2355,13 @@ export class TypeDB {
     make_return(method_info: GodotJsb.editor.MethodBind): string {
         //TODO
         if (typeof method_info.return_ != "undefined") {
-            return this.make_typename(method_info.return_, false);
+            return this.make_typename(method_info.return_, false, method_info.name.startsWith("create"));
         }
         return "void"
     }
 
     make_signal_type(method_info: GodotJsb.editor.MethodBind): string {
-        const args = method_info.args_.map((arg => `${arg.name}: ${this.make_typename(arg, true)}`));
+        const args = method_info.args_.map((arg => `${arg.name}: ${this.make_typename(arg, true, true)}`));
         if (method_info.hint_flags & godot.MethodFlags.METHOD_FLAG_VARARG) {
             args.push("...varargs: any[]");
         }
