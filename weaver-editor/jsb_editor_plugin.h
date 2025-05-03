@@ -55,6 +55,7 @@ private:
 
     void _generate_edited_scene_dts(const String& p_path);
     void _generate_edited_resource_dts(const Ref<Resource>& p_resource);
+    void _generate_imported_resource_dts(const Vector<String>& p_resources);
 
 protected:
     static void _bind_methods();

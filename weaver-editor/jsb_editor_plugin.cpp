@@ -50,6 +50,7 @@ void GodotJSEditorPlugin::_notification(int p_what)
     	// EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
         connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
         connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_resource_dts));
+        EditorFileSystem::get_singleton()->connect("resources_reimported", callable_mp(this, &GodotJSEditorPlugin::_generate_imported_resource_dts));
         break;
     default: break;
     }
@@ -464,6 +465,13 @@ void GodotJSEditorPlugin::_generate_edited_resource_dts(const Ref<Resource>& p_r
 
     Vector<String> paths = { p_resource->get_path() };
     generate_resource_dts(paths);
+}
+
+void GodotJSEditorPlugin::_generate_imported_resource_dts(const Vector<String>& p_resource)
+{
+    if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
+
+    generate_resource_dts(p_resource);
 }
 
 void GodotJSEditorPlugin::generate_godot_dts()
