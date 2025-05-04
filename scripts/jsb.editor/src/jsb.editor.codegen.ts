@@ -2361,7 +2361,7 @@ export class TypeDB {
     }
 
     make_signal_type(method_info: GodotJsb.editor.MethodBind): string {
-        const args = method_info.args_.map((arg => `${arg.name}: ${this.make_typename(arg, true, true)}`));
+        const args = method_info.args_.map((arg => `${arg.name}: ${this.make_typename(arg, false, true)}`));
         if (method_info.hint_flags & godot.MethodFlags.METHOD_FLAG_VARARG) {
             args.push("...varargs: any[]");
         }
