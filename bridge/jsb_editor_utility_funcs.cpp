@@ -856,6 +856,31 @@ namespace jsb
         info.GetReturnValue().Set(array);
     }
 
+    static void _get_input_actions(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        v8::Local<v8::Array> actions = v8::Array::New(isolate);
+        int index = 0;
+
+        List<PropertyInfo> property_list;
+        ProjectSettings::get_singleton()->get_property_list(&property_list);
+
+        for (const PropertyInfo &property : property_list)
+        {
+            if (!property.name.begins_with("input/"))
+            {
+                continue;
+            }
+
+            String name = property.name.substr(property.name.find_char('/') + 1, property.name.length());
+            actions->Set(context, index++,  impl::Helper::new_string(isolate, name));
+        }
+
+        info.GetReturnValue().Set(actions);
+    }
+
     static void _get_utility_functions(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -933,6 +958,7 @@ namespace jsb
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_singletons"), JSB_NEW_FUNCTION(context, _get_singletons, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_utility_functions"), JSB_NEW_FUNCTION(context, _get_utility_functions, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_primitive_types"), JSB_NEW_FUNCTION(context, _get_primitive_types, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_input_actions"), JSB_NEW_FUNCTION(context, _get_input_actions, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "delete_file"), JSB_NEW_FUNCTION(context, _delete_file, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_DOCS_URL"), impl::Helper::new_string(isolate, VERSION_DOCS_URL)).Check();
     }

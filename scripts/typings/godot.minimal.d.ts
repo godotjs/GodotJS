@@ -297,6 +297,8 @@ declare module "godot-jsb" {
 
         function get_utility_functions(): Array<MethodBind>;
 
+        function get_input_actions(): Array<string>;
+
         function delete_file(filepath: string): void;
 
         const VERSION_DOCS_URL: string;

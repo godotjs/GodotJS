@@ -50,6 +50,7 @@ namespace jsb::internal
         static bool get_gen_scene_dts();
         static bool get_autogen_resource_dts_on_save();
         static bool get_gen_resource_dts();
+        static bool get_codegen_use_project_settings();
 #endif
     };
 }

@@ -484,7 +484,12 @@ void GodotJSEditorPlugin::generate_godot_dts()
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
-    const String code = jsb_format(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s")).emit();})())--", "./" JSB_TYPE_ROOT);
+    const bool use_project_settings = jsb::internal::Settings::get_codegen_use_project_settings();
+    const String code = jsb_format(
+        R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s", %s)).emit();})())--",
+        "./" JSB_TYPE_ROOT,
+        use_project_settings ? "true" : "false"
+    );
     lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 

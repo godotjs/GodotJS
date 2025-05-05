@@ -19,6 +19,7 @@ namespace jsb::internal
     static constexpr char kEdGenSceneDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_scene_dts";
     static constexpr char kEdAutogenResourceDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_resource_dts_on_save";
     static constexpr char kEdGenResourceDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_resource_dts";
+    static constexpr char kEdCodegenUseProjectSettings[] =     JSB_MODULE_NAME_STRING "/codegen/use_project_settings";
 #endif
 
     // use unnecessary first category layer (runtime and editor) to make the second layer shown as sections in project settings
@@ -63,6 +64,7 @@ namespace jsb::internal
                 _EDITOR_DEF(kEdAutogenSceneDTSOnSave, true, false);
                 _EDITOR_DEF(kEdGenResourceDTS, true, false);
                 _EDITOR_DEF(kEdAutogenResourceDTSOnSave, true, false);
+                _EDITOR_DEF(kEdCodegenUseProjectSettings, true, false);
             }
         }
         return inited;
@@ -147,6 +149,12 @@ namespace jsb::internal
     {
         init_editor_settings();
         return EDITOR_GET(kEdGenResourceDTS);
+    }
+
+    bool Settings::get_codegen_use_project_settings()
+    {
+        init_editor_settings();
+        return EDITOR_GET(kEdCodegenUseProjectSettings);
     }
 #endif
 
