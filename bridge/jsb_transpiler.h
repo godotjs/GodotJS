@@ -405,8 +405,10 @@ namespace jsb
             if (new_target->HasOwnProperty(context, jsb_symbol(environment, ClassId)).ToChecked())
             // if (class_info->clazz.NewTarget(isolate) == new_target)
             {
+                internal::StringNames& names = internal::StringNames::get_singleton();
+                const StringName original_name = names.get_original_name(class_name);
                 const v8::Local<v8::Object> self = info.This();
-                Object* gd_object = ClassDB::instantiate(class_name);
+                Object* gd_object = ClassDB::instantiate(original_name);
 
                 // IS IT A TRUTH that ref_count==1 after creation_func??
                 jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
