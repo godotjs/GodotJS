@@ -419,6 +419,12 @@ const TypeMutations: Record<string, TypeMutation> = {
             ],
         },
     },
+    SceneTree: {
+        property_overrides: {
+            get_processed_tweens: mutate_return_type("GArray<Tween>"),
+            get_nodes_in_group: mutate_return_type("GArray<Node>"), // TODO: Codegen for group names,
+        },
+    },
     Signal: {
         intro: [
             `${names.get_member("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
