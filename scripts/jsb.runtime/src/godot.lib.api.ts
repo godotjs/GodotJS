@@ -4,7 +4,7 @@ import type * as GodotJsb from "godot-jsb";
 const godot_api: typeof Godot = require("godot");
 const jsb_api: typeof GodotJsb = require("godot-jsb");
 
-const ProxyTarget = godot_api.ProxyTarget;
+const ProxyTarget: typeof godot_api.ProxyTarget = godot_api.ProxyTarget;
 const { get_class, get_enum, get_enum_value, get_internal_mapping, get_member } = jsb_api.internal.names;
 
 function pascal_to_upper_snake_case(str: string) {
@@ -94,7 +94,7 @@ const instance_handler = {
             return target;
         }
 
-        if (typeof p !== "string") {
+        if (typeof p !== "string" || p === "constructor") {
             return Reflect.get(target, p);
         }
 
@@ -127,10 +127,6 @@ function instance_proxy<T>(target_instance: T): T {
     return new Proxy(target_instance, instance_handler);
 }
 
-function proxied_constructor(this: (...args: any[]) => any, ...args: any[]) {
-    return instance_proxy(this.apply(this, args));
-}
-
 const class_handler = {
     ...instance_handler,
     construct(target, args, _new_target) {
@@ -141,12 +137,17 @@ const class_handler = {
             return target;
         }
 
+        if (p === Symbol.hasInstance) {
+            return Function[Symbol.hasInstance].bind(target);
+        }
+
         if (typeof p !== "string") {
             return Reflect.get(target, p);
         }
 
-        if (p === "constructor") {
-            return proxied_constructor;
+        if (p === "prototype") {
+            const proto = Reflect.get(target, "prototype");
+            return proto && class_proxy(proto);
         }
 
         if (p[0]?.toUpperCase() !== p[0]) {
