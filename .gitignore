@@ -24,3 +24,4 @@ __MACOSX
 /weaver-editor/templates/templates.gen.h
 
 .vscode
+.idea
