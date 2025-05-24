@@ -108,6 +108,7 @@ namespace jsb
             EF_PreDispose = 1 << 1,
             EF_PostDispose = 1 << 2,
             EF_Worker = 1 << 3,
+            EF_Shadow = 1 << 4,
         };
 
         friend class Builtins;

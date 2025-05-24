@@ -236,14 +236,14 @@ namespace jsb
         }
     }
 
-    void ScriptClassInfo::instantiate(const StringName& p_module_id, const v8::Local<v8::Object>& p_self)
+    void ScriptClassInfo::instantiate(Environment* p_env, const StringName& p_module_id, const v8::Local<v8::Object>& p_self)
     {
         const String source_path = internal::PathUtil::convert_javascript_path(p_module_id);
         const Ref<GodotJSScript> script = ResourceLoader::load(source_path);
         if (script.is_valid())
         {
             jsb_unused(script->can_instantiate()); // make it loaded immediately
-            const ScriptInstance* script_instance = script->instance_create(p_self);
+            const ScriptInstance* script_instance = script->instance_create(p_self, p_env->flags_ & Environment::EnvironmentFlags::EF_Shadow);
             jsb_unused(script_instance);
             jsb_check(script_instance);
         }

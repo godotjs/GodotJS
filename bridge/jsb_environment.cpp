@@ -265,6 +265,7 @@ namespace jsb
 #endif
 
         if (p_params.type == Type::Worker) flags_ |= EF_Worker;
+        else if (p_params.type == Type::Shadow) flags_ |= EF_Shadow;
 
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);

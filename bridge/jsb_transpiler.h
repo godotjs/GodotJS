@@ -426,7 +426,7 @@ namespace jsb
                     environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id,
                     class_name, class_id);
                 const v8::Local<v8::Object> self = info.This();
-                ScriptClassInfo::instantiate(script_module_id, self);
+                ScriptClassInfo::instantiate(environment, script_module_id, self);
                 return;
             }
 
