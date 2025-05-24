@@ -125,7 +125,7 @@ namespace jsb
             const internal::StringSourceReader reader(module_id, module_id, source);
 
             const impl::TryCatch try_catch(isolate);
-            if (!DefaultModuleResolver::load(env, reader, *module))
+            if (!DefaultModuleResolver::load(env, module_id, reader, *module))
             {
                 // error thrown in load()
                 jsb_ensure(try_catch.has_caught());

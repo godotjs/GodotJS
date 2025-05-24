@@ -30,10 +30,7 @@ namespace jsb
         }
 
         static Error load_source(Environment* p_env, const internal::PresetSource& p_source);
-        static void load_source(Environment* p_env, const String& p_source, const String& p_name);
-
-    private:
-        static void _load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name, bool p_internal = false);
+        static void load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name, bool p_internal = false);
     };
 
 }

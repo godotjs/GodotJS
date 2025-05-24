@@ -453,7 +453,11 @@ bool GodotJSScript::instance_has(const Object* p_this) const
 Error GodotJSScript::load_source_code(const String &p_path)
 {
     Error err;
+#ifdef TOOLS_ENABLED
     const String source_code = FileAccess::get_file_as_string(p_path, &err);
+#else
+    const String source_code = FileAccess::get_file_as_string(jsb::internal::PathUtil::convert_typescript_path(p_path), &err);
+#endif
     if (err != OK)
     {
         JSB_LOG(Warning, "can not read source from %s", p_path);
