@@ -238,7 +238,11 @@ Error GodotJSEditorPlugin::apply_file(const jsb::weaver::InstallFileInfo &p_file
     else if ((p_file.hint & jsb::weaver::CH_D_TS) != 0 && target_name.ends_with(".d.ts"))
     {
         String parsed;
+#if GODOT_4_5_OR_NEWER
+        parsed.append_utf8(data, (int) size);
+#else
         parsed.parse_utf8(data, (int) size);
+#endif
         outfile->store_string(mutate_types(parsed));
     }
     else
@@ -316,7 +320,11 @@ bool GodotJSEditorPlugin::verify_file(const jsb::weaver::InstallFileInfo& p_file
         if ((p_file.hint & jsb::weaver::CH_D_TS) != 0 && target_name.ends_with(".d.ts"))
         {
             String parsed;
+#if GODOT_4_5_OR_NEWER
+            parsed.append_utf8(data, (int) size);
+#else
             parsed.parse_utf8(data, (int) size);
+#endif
             mutated_data = mutate_types(parsed);
             size = mutated_data.length();
         }

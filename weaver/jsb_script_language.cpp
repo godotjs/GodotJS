@@ -159,22 +159,6 @@ void GodotJSScriptLanguage::frame()
 #endif
 }
 
-void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const
-{
-    static const char* keywords[] = {
-        "return", "function", "interface", "class", "let", "break", "as", "any", "switch", "case", "if", "enum",
-        "throw", "else", "var", "number", "string", "get", "module", "instanceof", "typeof", "public", "private",
-        "while", "void", "null", "super", "this", "new", "in", "await", "async", "extends", "static",
-        "package", "implements", "interface", "continue", "yield", "const", "export", "finally", "for",
-        "import", "byte", "delete", "goto",
-        "default",
-    };
-    for (int i = 0, n = std::size(keywords); i < n; ++i)
-    {
-        p_words->push_back(keywords[i]);
-    }
-}
-
 struct JavaScriptControlFlowKeywords
 {
     HashSet<String> values;
@@ -199,6 +183,50 @@ bool GodotJSScriptLanguage::is_control_flow_keyword(ConstStringRefCompat p_keywo
     return collection.values.has(p_keyword);
 }
 
+#if GODOT_4_5_OR_NEWER
+Vector<String> GodotJSScriptLanguage::get_reserved_words() const
+{
+    return Vector<String> {
+        "return", "function", "interface", "class", "let", "break", "as", "any", "switch", "case", "if", "enum",
+        "throw", "else", "var", "number", "string", "get", "module", "instanceof", "typeof", "public", "private",
+        "while", "void", "null", "super", "this", "new", "in", "await", "async", "extends", "static",
+        "package", "implements", "interface", "continue", "yield", "const", "export", "finally", "for",
+        "import", "byte", "delete", "goto",
+        "default",
+    };
+}
+
+Vector<String> GodotJSScriptLanguage::get_doc_comment_delimiters() const
+{
+    return Vector<String> { "///" };
+}
+
+Vector<String> GodotJSScriptLanguage::get_comment_delimiters() const
+{
+    return Vector<String> { "//", "/* */" };
+}
+
+Vector<String> GodotJSScriptLanguage::get_string_delimiters() const
+{
+    return Vector<String> { "' '", "\" \"", "` `" };
+}
+#else
+void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const
+{
+    static const char* keywords[] = {
+        "return", "function", "interface", "class", "let", "break", "as", "any", "switch", "case", "if", "enum",
+        "throw", "else", "var", "number", "string", "get", "module", "instanceof", "typeof", "public", "private",
+        "while", "void", "null", "super", "this", "new", "in", "await", "async", "extends", "static",
+        "package", "implements", "interface", "continue", "yield", "const", "export", "finally", "for",
+        "import", "byte", "delete", "goto",
+        "default",
+    };
+    for (int i = 0, n = std::size(keywords); i < n; ++i)
+    {
+        p_words->push_back(keywords[i]);
+    }
+}
+
 void GodotJSScriptLanguage::get_doc_comment_delimiters(List<String>* p_delimiters) const
 {
     p_delimiters->push_back("///");
@@ -216,6 +244,7 @@ void GodotJSScriptLanguage::get_string_delimiters(List<String>* p_delimiters) co
     p_delimiters->push_back("\" \"");
     p_delimiters->push_back("` `");
 }
+#endif
 
 //TODO this virtual method seems never used in godot?
 Script* GodotJSScriptLanguage::create_script() const

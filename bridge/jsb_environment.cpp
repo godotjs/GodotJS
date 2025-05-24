@@ -19,7 +19,9 @@
 #include "../internal/jsb_settings.h"
 #include "../jsb_project_preset.h"
 
+#ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
+#endif
 #include "main/performance.h"
 
 //TODO remove this

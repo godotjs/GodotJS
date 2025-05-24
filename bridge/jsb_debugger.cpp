@@ -27,7 +27,7 @@ namespace jsb
             {
                 return String();
             }
-            return String(buf, w);
+            return String::utf8(buf, w);
         }
 
         int _response_json(lws* wsi, http_status code, const char* content, int content_len)
