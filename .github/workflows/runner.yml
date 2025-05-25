@@ -1,0 +1,102 @@
+name: 🔗 GHA
+
+# Only run pipeline on open pull_requests and main + releases
+# we don't need it on every push and some parameters are not available for push only
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+  release:
+    types: [ published ]
+
+env:
+  VERSION: 4.4
+
+concurrency:
+  group: ${{ github.workflow }}|${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  android-build:
+    name: 🤖 Android
+    uses: ./.github/workflows/android_builds.yml
+    with:
+      version: $VERSION
+
+  ios-build:
+    name: 🍏 iOS
+    uses: ./.github/workflows/ios_builds.yml
+    with:
+      version: $VERSION
+
+  linux-build:
+    name: 🐧 Linux
+    uses: ./.github/workflows/linux_builds.yml
+    with:
+      version: $VERSION
+
+  macos-build:
+    name: 🍎 macOS
+    uses: ./.github/workflows/macos_builds.yml
+    with:
+      version: $VERSION
+
+  windows-build:
+    name: 🏁 Windows
+    uses: ./.github/workflows/windows_builds.yml
+    with:
+      version: $VERSION
+
+  web-build:
+    name: 🌐 Web
+    uses: ./.github/workflows/web_builds.yml
+    with:
+      version: $VERSION
+
+  checks-done:
+    if: ${{ always() }}
+    name: ✅ Check builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🎉 Checks done
+        run: |
+          resultWebBuild="${{ needs.web-build.result }}"
+          resultWindowsBuild="${{ needs.windows-build.result }}"          
+          resultMacosBuild="${{ needs.macos-build.result }}"
+          resultLinuxBuild="${{ needs.linux-build.result }}"
+          resultIosBuild="${{ needs.ios-build.result }}"
+          resultAndroidBuild="${{ needs.android-build.result }}"
+          if [[ 
+            $resultWebBuild == "success" && 
+            $resultWindowsBuild == "success" && 
+            $resultMacosBuild == "success" && 
+            $resultLinuxBuild == "success" && 
+            $resultIosBuild == "success" && 
+            $resultAndroidBuild == "success" 
+          ]]; 
+          then
+            echo "🎉 All builds were successful."
+            exit 0
+          else
+            echo "😥 Some builds were failing."
+            exit 1
+          fi
+    needs:
+      [
+        web-build,
+        windows-build,
+        macos-build,
+        linux-build,
+        ios-build,
+        android-build
+      ]
+
+  release:
+    name: 🦅 Release
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [ checks-done ]
+    uses: ./.github/workflows/release_builds.yml
+    secrets: inherit
+    with:
+      version: $VERSION

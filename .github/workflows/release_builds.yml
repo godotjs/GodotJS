@@ -1,0 +1,96 @@
+name: 🦅 Release Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 📛 Add version to release name
+        uses: actions/github-script@v6
+        with:
+          result-encoding: json
+          script: |
+            const { repo, owner } = context.repo;
+            const date = new Date();
+            const year = date.getFullYear().toString();
+            const month = (date.getMonth() + 1).toString().padStart(2,"0");
+            const day = (date.getDay() + 1).toString().padStart(2,"0");
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: context.payload.release.id,
+              name: '${{ inputs.version }}-' + context.payload.release.name + '-' + year + month + day,
+            });
+
+  release:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+          - android-template-v8
+          - android-template-qjs-ng
+          - ios-template
+          - linux-editor-v8
+          - linux-template-release-v8
+          - linux-template-debug-v8
+          - linux-editor-qjs-ng
+          - linux-template-release-qjs-ng
+          - linux-template-debug-qjs-ng
+          - macos-editor-v8
+          - macos-template-release-v8
+          - macos-template-debug-v8
+          - macos-editor-qjs-ng
+          - macos-template-release-qjs-ng
+          - macos-template-debug-qjs-ng
+          - web-template
+          - web-nothreads-template
+          - web-template-qjs-ng
+          - web-nothreads-template-qjs-ng
+          - windows-editor-v8
+          - windows-template-release-v8
+          - windows-template-debug-v8
+          - windows-editor-qjs-ng
+          - windows-template-release-qjs-ng
+          - windows-template-debug-qjs-ng
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: ⏬ Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
+      - name: 📦 Pack build as zip
+        run: zip -r ${{ matrix.name }}.zip ${{ matrix.name }}
+        shell: bash
+
+      - name: ⏫ Upload Release Asset
+        id: upload-release-asset
+        uses: actions/github-script@v6
+        with:
+          result-encoding: json
+          script: |
+            const FS = require('node:fs')
+            const { repo, owner } = context.repo;
+            return await github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id: context.payload.release.id,
+              name: '${{ matrix.name }}.zip',
+              data: FS.readFileSync('${{ github.workspace }}/${{ matrix.name }}.zip')
+            });

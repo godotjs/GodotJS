@@ -1,0 +1,135 @@
+name: 🍎 macOS Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      deps_package_tag:
+        description: 'deps package tag'
+        type: string
+        required: true
+        default: "v8_12.4.254.21_r13"
+
+# Global Settings
+env:
+  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes strict_checks=yes
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Editor (target=editor, v8)
+            cache-name: macos-editor-v8
+            target: editor
+            cache-limit: 1
+            engine: v8
+
+          - name: Template (target=template_release, v8)
+            cache-name: macos-template-release-v8
+            target: template_release
+            sconsflags: debug_symbols=no
+            cache-limit: 1
+            engine: v8
+
+          - name: Template (target=template_debug, v8)
+            cache-name: macos-template-debug-v8
+            target: template_debug
+            sconsflags: debug_symbols=no
+            cache-limit: 1
+            engine: v8
+
+          - name: Editor (target=editor, qjs_ng)
+            cache-name: macos-editor-qjs-ng
+            target: editor
+            sconsflags: use_quickjs_ng=yes
+            cache-limit: 1
+            engine: qjs-ng
+
+          - name: Template (target=template_release, qjs_ng)
+            cache-name: macos-template-release-qjs-ng
+            target: template_release
+            sconsflags: debug_symbols=no use_quickjs_ng=yes
+            cache-limit: 1
+            engine: qjs-ng
+
+          - name: Template (target=template_debug, qjs_ng)
+            cache-name: macos-template-debug-qjs-ng
+            target: template_debug
+            sconsflags: debug_symbols=no use_quickjs_ng=yes
+            cache-limit: 1
+            engine: qjs-ng
+
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.version }}
+
+      - name: Checkout GodotJS
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}/modules/GodotJS/
+          lfs: true
+          submodules: recursive
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Setup Vulkan SDK
+        run: |
+          sh misc/scripts/install_vulkan_sdk_macos.sh
+
+      - name: Deps v8
+        if: matrix.engine == 'v8'
+        run: |
+          Invoke-WebRequest -Uri https://github.com/ialex32x/GodotJS-Dependencies/releases/download/${{ github.event.inputs.deps_package_tag }}/${{ github.event.inputs.deps_package_tag }}.zip -OutFile v8.zip
+          dir v8.zip
+          7z x -ogodot/modules/GodotJS v8.zip
+          dir godot/modules/GodotJS/v8
+
+      - name: Compilation (x86_64)
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} arch=x86_64
+          platform: macos
+          target: ${{ matrix.target }}
+          scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
+
+      - name: Compilation (arm64)
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} arch=arm64
+          platform: macos
+          target: ${{ matrix.target }}
+          scons-cache-limit: ${{ matrix.cache-limit }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Prepare artifact
+        run: |
+          lipo -create ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64 -output ./bin/godot.macos.${{ matrix.target }}.universal
+          rm ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64
+          strip bin/godot.*
+          chmod +x bin/godot.*
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.cache-name }}
