@@ -8,8 +8,7 @@ on:
       deps_package_tag:
         description: 'deps package tag'
         type: string
-        required: false
-        default: "v8_12.4.254.21_r13"
+        required: true
 
 # Global Settings
 env:
