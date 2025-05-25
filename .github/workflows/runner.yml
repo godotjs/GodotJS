@@ -34,9 +34,9 @@ jobs:
         env:
           V8: "v8_12.4.254.21_r13"
         run: |
-          curl -L -o https://github.com/ialex32x/GodotJS-Dependencies/releases/download/$V8/$V8.zip
-          unzip $V8.zip -d /tmp/$V8
-          mv /tmp/$V8/v8 godot/modules/GodotJS/v8
+          curl -L -o "$V8.zip" "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/$V8/$V8.zip"
+          unzip "$V8.zip" -d "/tmp/$V8"
+          mv "/tmp/$V8/v8" godot/modules/GodotJS/v8
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
