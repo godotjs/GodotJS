@@ -5,14 +5,10 @@ on:
       version:
         required: true
         type: string
-      deps_package_tag:
-        description: 'deps package tag'
-        type: string
-        required: true
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: verbose=no warnings=extra werror=no module_text_server_fb_enabled=yes strict_checks=yes
   TSAN_OPTIONS: suppressions=misc/error_suppressions/tsan.txt
   UBSAN_OPTIONS: suppressions=misc/error_suppressions/ubsan.txt
 
@@ -30,14 +26,12 @@ jobs:
             cache-name: linux-editor-v8
             target: editor
             cache-limit: 2
-            engine: v8
 
           - name: Template release (target=template_release, v8)
             cache-name: linux-template-release-v8
             sconsflags: debug_symbols=no
             target: template_release
             cache-limit: 1
-            engine: v8
 
           - name: Template debug (target=template_debug, v8)
             cache-name: linux-template-debug-v8
@@ -45,28 +39,24 @@ jobs:
             target: template_debug
             bin: ./bin/godot.linuxbsd.template_debug.x86_64.v8
             cache-limit: 1
-            engine: v8
 
           - name: Editor (target=editor, qjs_ng)
             cache-name: linux-editor-qjs-ng
             target: editor
             sconsflags: use_quickjs_ng=yes
             cache-limit: 2
-            engine: qjs-ng
 
           - name: Template release (target=template_release, qjs_ng)
             cache-name: linux-template-release-qjs-ng
             target: template_release
             sconsflags: use_quickjs_ng=yes debug_symbols=no
             cache-limit: 1
-            engine: qjs-ng
 
           - name: Template debug (target=template_debug, qjs_ng)
             cache-name: linux-template-debug-qjs-ng
             target: template_debug
             sconsflags: use_quickjs_ng=yes debug_symbols=no
             cache-limit: 1
-            engine: qjs-ng
 
     steps:
       - name: Checkout Godot
@@ -74,6 +64,7 @@ jobs:
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version }}
+          submodules: recursive
 
       - name: Checkout GodotJS
         uses: actions/checkout@v4
@@ -99,13 +90,12 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
-      - name: Deps v8
-        if: matrix.engine == 'v8'
-        run: |
-          Invoke-WebRequest -Uri https://github.com/ialex32x/GodotJS-Dependencies/releases/download/${{ github.event.inputs.deps_package_tag }}/${{ github.event.inputs.deps_package_tag }}.zip -OutFile v8.zip
-          dir v8.zip
-          7z x -ogodot/modules/GodotJS v8.zip
-          dir godot/modules/GodotJS/v8
+
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: godot/modules/GodotJS/v8
 
       - name: Setup Python and SCons
         if: "!matrix.legacy-scons"

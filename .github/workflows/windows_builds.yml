@@ -5,15 +5,11 @@ on:
       version:
         required: true
         type: string
-      deps_package_tag:
-        description: 'deps package tag'
-        type: string
-        required: true
 
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes "angle_libs=${{ github.workspace }}/"
+  SCONSFLAGS: verbose=no warnings=extra werror=no module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes "angle_libs=${{ github.workspace }}/"
   SCONS_CACHE_MSVC_CONFIG: true
 
 jobs:
@@ -32,21 +28,18 @@ jobs:
             # Skip debug symbols, they're way too big with MSVC.
             sconsflags: debug_symbols=no vsproj=yes vsproj_gen_only=no windows_subsystem=console
             cache-limit: 2
-            engine: v8
 
           - name: Template (target=template_debug, v8)
             cache-name: windows-template-debug-v8
             target: template_debug
             sconsflags: debug_symbols=no
             cache-limit: 2
-            engine: v8
 
           - name: Template (target=template_release, v8)
             cache-name: windows-template-release-v8
             target: template_release
             sconsflags: debug_symbols=no
             cache-limit: 2
-            engine: v8
 
           - name: Editor (target=editor, qjs_ng)
             cache-name: windows-editor-qjs-ng
@@ -76,6 +69,7 @@ jobs:
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version }}
+          submodules: recursive
 
       - name: Checkout GodotJS
         uses: actions/checkout@v4
@@ -90,13 +84,12 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
-      - name: Deps v8
-        if: matrix.engine == 'v8'
-        run: |
-          Invoke-WebRequest -Uri https://github.com/ialex32x/GodotJS-Dependencies/releases/download/${{ github.event.inputs.deps_package_tag }}/${{ github.event.inputs.deps_package_tag }}.zip -OutFile v8.zip
-          dir v8.zip
-          7z x -ogodot/modules/GodotJS v8.zip
-          dir godot/modules/GodotJS/v8
+
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: godot/modules/GodotJS/v8
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps

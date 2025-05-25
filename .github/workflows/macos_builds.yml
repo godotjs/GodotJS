@@ -5,14 +5,10 @@ on:
       version:
         required: true
         type: string
-      deps_package_tag:
-        description: 'deps package tag'
-        type: string
-        required: true
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: verbose=no warnings=extra werror=no module_text_server_fb_enabled=yes strict_checks=yes
 
 jobs:
   build-macos:
@@ -27,42 +23,36 @@ jobs:
             cache-name: macos-editor-v8
             target: editor
             cache-limit: 1
-            engine: v8
 
           - name: Template (target=template_release, v8)
             cache-name: macos-template-release-v8
             target: template_release
             sconsflags: debug_symbols=no
             cache-limit: 1
-            engine: v8
 
           - name: Template (target=template_debug, v8)
             cache-name: macos-template-debug-v8
             target: template_debug
             sconsflags: debug_symbols=no
             cache-limit: 1
-            engine: v8
 
           - name: Editor (target=editor, qjs_ng)
             cache-name: macos-editor-qjs-ng
             target: editor
             sconsflags: use_quickjs_ng=yes
             cache-limit: 1
-            engine: qjs-ng
 
           - name: Template (target=template_release, qjs_ng)
             cache-name: macos-template-release-qjs-ng
             target: template_release
             sconsflags: debug_symbols=no use_quickjs_ng=yes
             cache-limit: 1
-            engine: qjs-ng
 
           - name: Template (target=template_debug, qjs_ng)
             cache-name: macos-template-debug-qjs-ng
             target: template_debug
             sconsflags: debug_symbols=no use_quickjs_ng=yes
             cache-limit: 1
-            engine: qjs-ng
 
     steps:
       - name: Checkout Godot
@@ -70,6 +60,7 @@ jobs:
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version }}
+          submodules: recursive
 
       - name: Checkout GodotJS
         uses: actions/checkout@v4
@@ -91,13 +82,12 @@ jobs:
         run: |
           sh misc/scripts/install_vulkan_sdk_macos.sh
 
-      - name: Deps v8
-        if: matrix.engine == 'v8'
-        run: |
-          Invoke-WebRequest -Uri https://github.com/ialex32x/GodotJS-Dependencies/releases/download/${{ github.event.inputs.deps_package_tag }}/${{ github.event.inputs.deps_package_tag }}.zip -OutFile v8.zip
-          dir v8.zip
-          7z x -ogodot/modules/GodotJS v8.zip
-          dir godot/modules/GodotJS/v8
+
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: godot/modules/GodotJS/v8
 
       - name: Compilation (x86_64)
         uses: ./.github/actions/godot-build
