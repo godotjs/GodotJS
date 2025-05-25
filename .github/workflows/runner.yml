@@ -30,7 +30,6 @@ jobs:
           echo "version=4.4" >> $GITHUB_OUTPUT
 
       - name: Deps v8
-        if: matrix.engine == 'v8'
         shell: bash
         env:
           V8: "v8_12.4.254.21_r13"
