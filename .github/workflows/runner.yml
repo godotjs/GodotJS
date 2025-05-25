@@ -38,6 +38,7 @@ jobs:
           unzip "$V8.zip" -d "/tmp/$V8"
           mkdir -p godot/modules/GodotJS
           mv "/tmp/$V8/v8" godot/modules/GodotJS/v8
+          ls godot/modules/GodotJS/v8
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
