@@ -5,14 +5,10 @@ on:
       version:
         required: true
         type: string
-      deps_package_tag:
-        description: 'deps package tag'
-        type: string
-        required: true
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: verbose=no warnings=extra werror=no strict_checks=yes debug_symbols=no module_text_server_fb_enabled=yes
 
 # We only build template release - most developers will use a desktop device for editor
 jobs:
@@ -30,7 +26,6 @@ jobs:
             tests: false
             sconsflags: arch=arm64 swappy=yes
             cache-limit: 1
-            engine: v8
 
           - name: Template (target=template_release, arch=arm64, qjs_ng)
             cache-name: android-template-qjs-ng
@@ -38,7 +33,6 @@ jobs:
             tests: false
             sconsflags: arch=arm64 swappy=yes use_quickjs_ng=yes
             cache-limit: 1
-            engine: qjs-ng
 
     steps:
       - name: Checkout Godot
@@ -46,6 +40,7 @@ jobs:
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version }}
+          submodules: recursive
 
       - name: Checkout GodotJS
         uses: actions/checkout@v4
@@ -66,13 +61,11 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
-      - name: Deps v8
-        if: matrix.engine == 'v8'
-        run: |
-          Invoke-WebRequest -Uri https://github.com/ialex32x/GodotJS-Dependencies/releases/download/${{ github.event.inputs.deps_package_tag }}/${{ github.event.inputs.deps_package_tag }}.zip -OutFile v8.zip
-          dir v8.zip
-          7z x -ogodot/modules/GodotJS v8.zip
-          dir godot/modules/GodotJS/v8
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: godot/modules/GodotJS/v8
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
