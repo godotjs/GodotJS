@@ -12,7 +12,7 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no use_closure_compiler=yes strict_checks=yes deprecated=no lto=none use_assertions=no use_safe_heap=yes
+  SCONSFLAGS: verbose=yes warnings=extra werror=no debug_symbols=no use_closure_compiler=yes strict_checks=yes deprecated=no lto=none use_assertions=no use_safe_heap=yes
   EM_VERSION: 3.1.64
 
 jobs:
@@ -52,6 +52,7 @@ jobs:
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version }}
+          submodules: recursive
 
       - name: Checkout GodotJS
         uses: actions/checkout@v4

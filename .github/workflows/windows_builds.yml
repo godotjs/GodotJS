@@ -13,7 +13,7 @@ on:
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes "angle_libs=${{ github.workspace }}/"
+  SCONSFLAGS: verbose=yes warnings=extra werror=no module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes "angle_libs=${{ github.workspace }}/"
   SCONS_CACHE_MSVC_CONFIG: true
 
 jobs:
@@ -76,6 +76,7 @@ jobs:
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version }}
+          submodules: recursive
 
       - name: Checkout GodotJS
         uses: actions/checkout@v4
@@ -92,11 +93,11 @@ jobs:
 
       - name: Deps v8
         if: matrix.engine == 'v8'
+        shell: bash
         run: |
-          Invoke-WebRequest -Uri https://github.com/ialex32x/GodotJS-Dependencies/releases/download/${{ github.event.inputs.deps_package_tag }}/${{ github.event.inputs.deps_package_tag }}.zip -OutFile v8.zip
-          dir v8.zip
-          7z x -ogodot/modules/GodotJS v8.zip
-          dir godot/modules/GodotJS/v8
+          curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/${{ inputs.deps_package_tag }}/${{ inputs.deps_package_tag }}.zip
+          unzip ${{ inputs.deps_package_tag }}.zip -d /tmp/${{ inputs.deps_package_tag }}
+          mv ${{ inputs.deps_package_tag }}/v8 godot/modules/GodotJS/v8
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps

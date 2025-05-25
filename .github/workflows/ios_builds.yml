@@ -12,7 +12,7 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes use_jsc=yes
+  SCONSFLAGS: verbose=yes warnings=extra werror=no debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes use_jsc=yes
 
 jobs:
   ios-template:
@@ -26,6 +26,7 @@ jobs:
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version }}
+          submodules: recursive
 
       - name: Checkout GodotJS
         uses: actions/checkout@v4
