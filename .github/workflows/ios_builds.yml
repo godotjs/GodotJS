@@ -5,14 +5,10 @@ on:
       version:
         required: true
         type: string
-      deps_package_tag:
-        description: 'deps package tag'
-        type: string
-        required: true
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=no debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes use_jsc=yes
+  SCONSFLAGS: verbose=no warnings=extra werror=no debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes use_jsc=yes
 
 jobs:
   ios-template:

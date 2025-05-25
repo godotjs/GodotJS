@@ -23,14 +23,28 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.versions.outputs.version }}
-      v8: ${{ steps.versions.outputs.v8 }}
     steps:
       - name: 🏷 Set Versions
         id: versions
         run: |
           echo "version=4.4" >> $GITHUB_OUTPUT
-          echo "v8=v8_12.4.254.21_r13" >> $GITHUB_OUTPUT
 
+      - name: Deps v8
+        if: matrix.engine == 'v8'
+        shell: bash
+        env:
+          V8: "v8_12.4.254.21_r13"
+        run: |
+          curl https://github.com/ialex32x/GodotJS-Dependencies/releases/download/$V8/$V8.zip
+          unzip $V8.zip -d /tmp/$V8
+          mv /tmp/$V8/v8 godot/modules/GodotJS/v8
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: V8
+          path: godot/modules/GodotJS/v8
+          retention-days: 10
 
   android-build:
     name: 🤖 Android
@@ -38,7 +52,6 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
-      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   ios-build:
     name: 🍏 iOS
@@ -46,7 +59,6 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
-      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   linux-build:
     name: 🐧 Linux
@@ -54,7 +66,6 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
-      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   macos-build:
     name: 🍎 macOS
@@ -62,7 +73,6 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
-      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   windows-build:
     name: 🏁 Windows
@@ -70,7 +80,6 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
-      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   web-build:
     name: 🌐 Web
@@ -78,7 +87,6 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
-      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   checks-done:
     if: ${{ always() }}

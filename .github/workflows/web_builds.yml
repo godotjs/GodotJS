@@ -5,14 +5,10 @@ on:
       version:
         required: true
         type: string
-      deps_package_tag:
-        description: 'deps package tag'
-        type: string
-        required: true
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=yes warnings=extra werror=no debug_symbols=no use_closure_compiler=yes strict_checks=yes deprecated=no lto=none use_assertions=no use_safe_heap=yes
+  SCONSFLAGS: verbose=no warnings=extra werror=no debug_symbols=no use_closure_compiler=yes strict_checks=yes deprecated=no lto=none use_assertions=no use_safe_heap=yes
   EM_VERSION: 3.1.64
 
 jobs:
@@ -38,13 +34,11 @@ jobs:
             cache-name: web-template-qjs-ng
             target: template_release
             sconsflags: threads=yes use_quickjs_ng=yes
-            engine: qjs-ng
 
           - name: Template w/o threads (target=template_release, threads=no, qjs_ng)
             cache-name: web-nothreads-template-qjs-ng
             target: template_release
             sconsflags: threads=no use_quickjs_ng=yes
-            engine: qjs-ng
 
     steps:
       - name: Checkout Godot
