@@ -32,7 +32,9 @@ function proxy_value(value: any) {
     if (typeof value === "function") {
         const proxied_function = function(this: any, ...args: any[]) {
             return proxy_value(value.apply(this, args.map(proxy_value)));
-        } as any as (Function & { [ProxyTarget]: Function });
+        } as any as (Function & { // @ts-ignore
+            [ProxyTarget]: Function });
+        // @ts-ignore
         proxied_function[ProxyTarget] = value;
         return proxied_function;
     }

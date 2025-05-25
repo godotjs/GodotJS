@@ -7,7 +7,7 @@ namespace jsb
 {
     namespace
     {
-        // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood 
+        // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood
         PackedStringArray get_dynamic_search_paths()
         {
 #ifdef TOOLS_ENABLED
@@ -18,7 +18,7 @@ namespace jsb
 #endif
         }
     }
-    
+
     bool IModuleResolver::load_as_json(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const Vector<uint8_t>& p_bytes, size_t p_len)
     {
         v8::Isolate* isolate = p_env->get_isolate();
@@ -517,7 +517,7 @@ namespace jsb
         internal::FileAccessSourceReader reader(p_asset_path);
         return load(p_env, reader, p_module);
     }
-    
+
     bool DefaultModuleResolver::load(Environment* p_env, const internal::ISourceReader& p_reader, JavaScriptModule& p_module)
     {
         if (p_reader.is_null() || p_reader.get_length() == 0)
@@ -544,7 +544,7 @@ namespace jsb
         }
 
 #if JSB_DEBUG
-        if (!internal::PathUtil::is_recognized_javascript_extension(p_asset_path))
+        if (p_asset_path.length() > 0 && !internal::PathUtil::is_recognized_javascript_extension(p_asset_path))
         {
             JSB_LOG(Warning, "%s is suspiciously not JS", p_asset_path);
         }
