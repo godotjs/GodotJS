@@ -90,12 +90,17 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
-
       - name: Download deps artifact
         uses: actions/download-artifact@v4
         with:
           name: V8
-          path: godot/modules/GodotJS/v8
+          path: ${{github.workspace}}/modules/GodotJS/v8
+
+      - name: Print Files
+        run: |
+          ls ${{github.workspace}}/modules/GodotJS
+          echo "---"
+          ls ${{github.workspace}}/modules/GodotJS/v8
 
       - name: Setup Python and SCons
         if: "!matrix.legacy-scons"

@@ -39,12 +39,13 @@ jobs:
           mkdir -p godot/modules/GodotJS
           mv "/tmp/$V8/v8" godot/modules/GodotJS/v8
           ls godot/modules/GodotJS/v8
+          
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: V8
-          path: godot/modules/GodotJS/v8
+          path: ${{github.workspace}}/modules/GodotJS/v8
           retention-days: 10
 
   android-build:
