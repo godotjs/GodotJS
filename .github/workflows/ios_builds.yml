@@ -1,0 +1,59 @@
+name: 🍏 iOS Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      deps_package_tag:
+        description: 'deps package tag'
+        type: string
+        required: true
+        default: "v8_12.4.254.21_r13"
+
+# Global Settings
+env:
+  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes use_jsc=yes
+
+jobs:
+  ios-template:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    name: Template (target=template_release)
+
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.version }}
+
+      - name: Checkout GodotJS
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}/modules/GodotJS/
+          lfs: true
+          submodules: recursive
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        continue-on-error: true
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Compilation (arm64)
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }}
+          platform: ios
+          target: template_release
+          tests: false
+          scons-cache-limit: 1
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        continue-on-error: true
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
