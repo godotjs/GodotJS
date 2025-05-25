@@ -11,7 +11,8 @@ on:
     types: [ published ]
 
 env:
-  VERSION: 4.4
+  VERSION: "4.4"
+  V8_DEPENDENCY: "v8_12.4.254.21_r13"
 
 concurrency:
   group: ${{ github.workflow }}|${{ github.ref_name }}
@@ -25,37 +26,43 @@ jobs:
     name: 🤖 Android
     uses: ./.github/workflows/android_builds.yml
     with:
-      version: $VERSION
+      version: ${{ env.VERSION }}
+      deps_package_tag: ${{ env.V8_DEPENDENCY }}
 
   ios-build:
     name: 🍏 iOS
     uses: ./.github/workflows/ios_builds.yml
     with:
-      version: $VERSION
+      version: ${{ env.VERSION }}
+      deps_package_tag: ${{ env.V8_DEPENDENCY }}
 
   linux-build:
     name: 🐧 Linux
     uses: ./.github/workflows/linux_builds.yml
     with:
-      version: $VERSION
+      version: ${{ env.VERSION }}
+      deps_package_tag: ${{ env.V8_DEPENDENCY }}
 
   macos-build:
     name: 🍎 macOS
     uses: ./.github/workflows/macos_builds.yml
     with:
-      version: $VERSION
+      version: ${{ env.VERSION }}
+      deps_package_tag: ${{ env.V8_DEPENDENCY }}
 
   windows-build:
     name: 🏁 Windows
     uses: ./.github/workflows/windows_builds.yml
     with:
-      version: $VERSION
+      version: ${{ env.VERSION }}
+      deps_package_tag: ${{ env.V8_DEPENDENCY }}
 
   web-build:
     name: 🌐 Web
     uses: ./.github/workflows/web_builds.yml
     with:
-      version: $VERSION
+      version: ${{ env.VERSION }}
+      deps_package_tag: ${{ env.V8_DEPENDENCY }}
 
   checks-done:
     if: ${{ always() }}
@@ -102,4 +109,4 @@ jobs:
     uses: ./.github/workflows/release_builds.yml
     secrets: inherit
     with:
-      version: $VERSION
+      version: ${{ env.VERSION }}
