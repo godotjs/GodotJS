@@ -10,9 +10,6 @@ on:
   release:
     types: [ published ]
 
-env:
-  VERSION: 4.4
-
 concurrency:
   group: ${{ github.workflow }}|${{ github.ref_name }}
   cancel-in-progress: true
@@ -21,41 +18,67 @@ permissions:
   contents: write
 
 jobs:
+  environment:
+    name: 🌳 Set Environment
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.versions.outputs.version }}
+      v8: ${{ steps.versions.outputs.v8 }}
+    steps:
+      - name: 🏷 Set Versions
+        id: versions
+        run: |
+          echo "version=4.4" >> $GITHUB_OUTPUT
+          echo "v8=v8_12.4.254.21_r13" >> $GITHUB_OUTPUT
+
+
   android-build:
     name: 🤖 Android
     uses: ./.github/workflows/android_builds.yml
+    needs: environment
     with:
-      version: $VERSION
+      version: ${{ needs.environment.outputs.version }}
+      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   ios-build:
     name: 🍏 iOS
     uses: ./.github/workflows/ios_builds.yml
+    needs: environment
     with:
-      version: $VERSION
+      version: ${{ needs.environment.outputs.version }}
+      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   linux-build:
     name: 🐧 Linux
     uses: ./.github/workflows/linux_builds.yml
+    needs: environment
     with:
-      version: $VERSION
+      version: ${{ needs.environment.outputs.version }}
+      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   macos-build:
     name: 🍎 macOS
     uses: ./.github/workflows/macos_builds.yml
+    needs: environment
     with:
-      version: $VERSION
+      version: ${{ needs.environment.outputs.version }}
+      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   windows-build:
     name: 🏁 Windows
     uses: ./.github/workflows/windows_builds.yml
+    needs: environment
     with:
-      version: $VERSION
+      version: ${{ needs.environment.outputs.version }}
+      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   web-build:
     name: 🌐 Web
     uses: ./.github/workflows/web_builds.yml
+    needs: environment
     with:
-      version: $VERSION
+      version: ${{ needs.environment.outputs.version }}
+      deps_package_tag: ${{ needs.environment.outputs.v8 }}
 
   checks-done:
     if: ${{ always() }}
@@ -98,8 +121,8 @@ jobs:
   release:
     name: 🦅 Release
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [ checks-done ]
+    needs: [ checks-done, environment ]
     uses: ./.github/workflows/release_builds.yml
     secrets: inherit
     with:
-      version: $VERSION
+      version: ${{ needs.environment.outputs.version }}
