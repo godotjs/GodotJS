@@ -8,7 +8,7 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=no warnings=extra werror=no module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
 
 jobs:
   build-macos:
@@ -87,7 +87,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: V8
-          path: godot/modules/GodotJS/v8
+          path: ${{github.workspace}}/modules/GodotJS/v8
 
       - name: Compilation (x86_64)
         uses: ./.github/actions/godot-build
