@@ -8,7 +8,7 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=no warnings=extra werror=no module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
   TSAN_OPTIONS: suppressions=misc/error_suppressions/tsan.txt
   UBSAN_OPTIONS: suppressions=misc/error_suppressions/ubsan.txt
 
@@ -90,12 +90,11 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
-
       - name: Download deps artifact
         uses: actions/download-artifact@v4
         with:
           name: V8
-          path: godot/modules/GodotJS/v8
+          path: ${{github.workspace}}/modules/GodotJS/v8
 
       - name: Setup Python and SCons
         if: "!matrix.legacy-scons"

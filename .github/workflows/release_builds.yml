@@ -5,6 +5,9 @@ on:
       version:
         required: true
         type: string
+      v8:
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -22,61 +25,51 @@ jobs:
           result-encoding: json
           script: |
             const { repo, owner } = context.repo;
-            const date = new Date();
-            const year = date.getFullYear().toString();
-            const month = (date.getMonth() + 1).toString().padStart(2,"0");
-            const day = (date.getDay() + 1).toString().padStart(2,"0");
             await github.rest.repos.updateRelease({
               owner,
               repo,
               release_id: context.payload.release.id,
-              name: '${{ inputs.version }}-' + context.payload.release.name + '-' + year + month + day,
+              name: '${{ inputs.version }}-${{ inputs.v8 }}-' + context.payload.release.name,
             });
 
   release:
     runs-on: ubuntu-latest
-    name: ${{ matrix.name }}
+    name: ${{ matrix.os }}-${{ matrix.target }}-${{ matrix.engine }}
     strategy:
       fail-fast: false
       matrix:
-        name:
-          - android-template-v8
-          - android-template-qjs-ng
-          - ios-template
-          - linux-editor-v8
-          - linux-template-release-v8
-          - linux-template-debug-v8
-          - linux-editor-qjs-ng
-          - linux-template-release-qjs-ng
-          - linux-template-debug-qjs-ng
-          - macos-editor-v8
-          - macos-template-release-v8
-          - macos-template-debug-v8
-          - macos-editor-qjs-ng
-          - macos-template-release-qjs-ng
-          - macos-template-debug-qjs-ng
-          - web-template
-          - web-nothreads-template
-          - web-template-qjs-ng
-          - web-nothreads-template-qjs-ng
-          - windows-editor-v8
-          - windows-template-release-v8
-          - windows-template-debug-v8
-          - windows-editor-qjs-ng
-          - windows-template-release-qjs-ng
-          - windows-template-debug-qjs-ng
+        engine: [ v8,qjs-ng ]
+        os:
+          - android
+          - ios
+          - linux
+          - macos
+          - web
+          - web-nothreads
+          - windows
+        include:
+          - target: template-release
+          - target: template-debug
+            os: [ linux, macos, windows ]
+          - target: editor
+            os: [ linux, macos, windows ]
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v4
 
+      - name: 🧬 Generate Name
+        id: name
+        run: |
+          echo "name=${{ matrix.os }}-${{ matrix.target }}-${{ matrix.engine }}" >> $GITHUB_OUTPUT
+
       - name: ⏬ Download build
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.name }}
-          path: ${{ matrix.name }}
+          name: ${{ steps.name.outputs.name }}
+          path: ${{ steps.name.outputs.name }}
 
       - name: 📦 Pack build as zip
-        run: zip -r ${{ matrix.name }}.zip ${{ matrix.name }}
+        run: zip -r ${{ steps.name.outputs.name }}.zip ${{ steps.name.outputs.name }}
         shell: bash
 
       - name: ⏫ Upload Release Asset
@@ -91,6 +84,6 @@ jobs:
               owner,
               repo,
               release_id: context.payload.release.id,
-              name: '${{ matrix.name }}.zip',
-              data: FS.readFileSync('${{ github.workspace }}/${{ matrix.name }}.zip')
+              name: '${{ steps.name.outputs.name }}.zip',
+              data: FS.readFileSync('${{ github.workspace }}/${{ steps.name.outputs.name }}.zip')
             });
