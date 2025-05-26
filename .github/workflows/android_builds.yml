@@ -21,14 +21,14 @@ jobs:
       matrix:
         include:
           - name: Template (target=template_release, arch=arm64, v8)
-            cache-name: android-template-v8
+            cache-name: android-template-release-v8
             target: template_release
             tests: false
             sconsflags: arch=arm64 swappy=yes deprecated=no ndk_platform=android-24 generate_apk=yes
             cache-limit: 1
 
           - name: Template (target=template_release, arch=arm64, qjs_ng)
-            cache-name: android-template-qjs-ng
+            cache-name: android-template-release-qjs-ng
             target: template_release
             tests: false
             sconsflags: arch=arm64 swappy=yes use_quickjs_ng=yes

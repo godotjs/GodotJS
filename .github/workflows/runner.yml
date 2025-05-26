@@ -23,16 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.versions.outputs.version }}
+      v8: ${{ steps.versions.outputs.v8 }}
     steps:
       - name: 🏷 Set Versions
         id: versions
         run: |
           echo "version=4.4" >> $GITHUB_OUTPUT
+          echo "v8=v8_12.4.254.21_r13" >> $GITHUB_OUTPUT
 
-      - name: Deps v8
+      - name: 🎱 Deps v8
         shell: bash
         env:
-          V8: "v8_12.4.254.21_r13"
+          V8: ${{ steps.versions.outputs.v8 }}
         run: |
           curl -L -o "$V8.zip" "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/$V8/$V8.zip"
           unzip "$V8.zip" -d "/tmp/$V8"
@@ -41,7 +43,7 @@ jobs:
           ls "${{github.workspace}}/modules/GodotJS/v8"
           
 
-      - name: Upload artifact
+      - name: ⬆️ Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: V8
@@ -136,3 +138,4 @@ jobs:
     secrets: inherit
     with:
       version: ${{ needs.environment.outputs.version }}
+      v8: ${{ needs.environment.outputs.v8 }}
