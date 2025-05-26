@@ -64,7 +64,6 @@ jobs:
           sconsflags: ${{ env.SCONSFLAGS }}  ${{ matrix.sconsflags }}
           platform: ios
           target: ${{ matrix.target }}
-          tests: ${{ matrix.tests }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Save Godot build cache
