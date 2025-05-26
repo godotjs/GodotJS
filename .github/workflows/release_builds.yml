@@ -34,7 +34,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    name: ${{ steps.name.outputs.name }}
+    name: ${{ matrix.os }}-${{ matrix.target }}-${{ matrix.engine }}
     strategy:
       fail-fast: false
       matrix:
