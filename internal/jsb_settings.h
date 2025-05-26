@@ -41,6 +41,10 @@ namespace jsb::internal
 
         static PackedStringArray get_packaging_include_files();
 
+        static PackedStringArray get_packaging_include_directories();
+
+        static bool is_packaging_referenced_node_modules();
+
 #ifdef TOOLS_ENABLED
         // [EDITOR ONLY]
         static bool editor_settings_available();

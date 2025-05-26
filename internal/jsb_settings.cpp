@@ -33,6 +33,8 @@ namespace jsb::internal
     // editor specific settings, but we need it configured as project-wise instead of global-wise
     static constexpr char kRtPackagingWithSourceMap[] = JSB_MODULE_NAME_STRING "/editor/packaging/source_map_included";
     static constexpr char kRtPackagingIncludeFiles[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_files";
+    static constexpr char kRtPackagingIncludeDirectories[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_directories";
+    static constexpr char kRtPackagingReferencedNodeModules[] = JSB_MODULE_NAME_STRING "/editor/packaging/referenced_node_modules";
 
 #ifdef TOOLS_ENABLED
     bool init_editor_settings()
@@ -98,6 +100,7 @@ namespace jsb::internal
             }
 
             _GLOBAL_DEF(kRtPackagingWithSourceMap, true, false);
+
             {
                 PropertyInfo PackagingIncludeFiles;
                 PackagingIncludeFiles.type = Variant::ARRAY;
@@ -106,6 +109,17 @@ namespace jsb::internal
                 PackagingIncludeFiles.hint_string = vformat("%s/%s:%s", Variant::STRING, PROPERTY_HINT_FILE, filter);
                 _GLOBAL_DEF(PackagingIncludeFiles, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             }
+
+            {
+                PropertyInfo PackagingIncludeDirectories;
+                PackagingIncludeDirectories.type = Variant::ARRAY;
+                PackagingIncludeDirectories.name = kRtPackagingIncludeDirectories;
+                PackagingIncludeDirectories.hint = PROPERTY_HINT_ARRAY_TYPE;
+                PackagingIncludeDirectories.hint_string = vformat("%s/%s:%s", Variant::STRING, PROPERTY_HINT_DIR, filter);
+                _GLOBAL_DEF(PackagingIncludeDirectories, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            }
+
+            _GLOBAL_DEF(kRtPackagingReferencedNodeModules, true, false);
         }
     }
 
@@ -169,6 +183,19 @@ namespace jsb::internal
         init_settings();
         // rely on auto variant convert from Array
         return (PackedStringArray) GLOBAL_GET(kRtPackagingIncludeFiles);
+    }
+
+    PackedStringArray Settings::get_packaging_include_directories()
+    {
+        init_settings();
+        // rely on auto variant convert from Array
+        return (PackedStringArray) GLOBAL_GET(kRtPackagingIncludeDirectories);
+    }
+
+    bool Settings::is_packaging_referenced_node_modules()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtPackagingReferencedNodeModules);
     }
 
     uint16_t Settings::get_debugger_port()
