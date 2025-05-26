@@ -24,7 +24,7 @@ jobs:
             cache-name: android-template-v8
             target: template_release
             tests: false
-            sconsflags: arch=arm64 swappy=yes
+            sconsflags: arch=arm64 swappy=yes deprecated=no ndk_platform=android-24 generate_apk=yes
             cache-limit: 1
 
           - name: Template (target=template_release, arch=arm64, qjs_ng)

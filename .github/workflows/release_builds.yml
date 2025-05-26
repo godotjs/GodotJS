@@ -42,7 +42,7 @@ jobs:
         name:
           - android-template-v8
           - android-template-qjs-ng
-          - ios-template
+          - ios-template-v8
           - linux-editor-v8
           - linux-template-release-v8
           - linux-template-debug-v8

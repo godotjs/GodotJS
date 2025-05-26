@@ -8,13 +8,27 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: debug_symbols=no module_text_server_fb_enabled=yes use_jsc=yes
+  SCONSFLAGS: debug_symbols=no module_text_server_fb_enabled=yes
 
 jobs:
   ios-template:
     runs-on: macos-latest
     timeout-minutes: 60
     name: Template (target=template_release)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Template (target=template_release, v8)
+            cache-name: ios-template-v8
+            target: template_release
+            cache-limit: 1
+
+#          - name: Template (target=template_release, jsc)
+#            cache-name: ios-template-jsc
+#            target: template_release
+#            sconsflags: use_jsc=yes
+#            cache-limit: 1
 
     steps:
       - name: Checkout Godot
@@ -47,15 +61,19 @@ jobs:
       - name: Compilation (arm64)
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }}
+          sconsflags: ${{ env.SCONSFLAGS }}  ${{ matrix.sconsflags }}
           platform: ios
-          target: template_release
-          tests: false
-          scons-cache-limit: 1
+          target: ${{ matrix.target }}
+          tests: ${{ matrix.tests }}
+          scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.cache-name }}
