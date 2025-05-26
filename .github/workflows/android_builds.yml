@@ -8,7 +8,7 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=no warnings=extra werror=no strict_checks=yes debug_symbols=no module_text_server_fb_enabled=yes
+  SCONSFLAGS: strict_checks=yes debug_symbols=no module_text_server_fb_enabled=yes
 
 # We only build template release - most developers will use a desktop device for editor
 jobs:

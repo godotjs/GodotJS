@@ -8,7 +8,7 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=no warnings=extra werror=no module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
 
 jobs:
   build-macos:

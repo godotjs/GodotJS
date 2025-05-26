@@ -8,7 +8,7 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: verbose=no warnings=extra werror=no debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes use_jsc=yes
+  SCONSFLAGS: debug_symbols=no module_text_server_fb_enabled=yes use_jsc=yes
 
 jobs:
   ios-template:
@@ -34,6 +34,12 @@ jobs:
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         continue-on-error: true
+
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: ${{github.workspace}}/modules/GodotJS/v8
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps

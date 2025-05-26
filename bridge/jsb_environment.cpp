@@ -19,13 +19,16 @@
 #include "../internal/jsb_settings.h"
 #include "../jsb_project_preset.h"
 
-#include "editor/editor_settings.h"
 #include "main/performance.h"
 
 //TODO remove this
 #include "../weaver/jsb_script.h"
 #include "modules/GodotJS/weaver/jsb_script_instance.h"
 #include "modules/GodotJS/weaver/jsb_script_language.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/editor_settings.h"
+#endif
 
 #if !JSB_WITH_STATIC_BINDINGS
 #include "jsb_primitive_bindings_reflect.h"
