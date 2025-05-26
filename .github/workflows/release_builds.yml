@@ -50,9 +50,17 @@ jobs:
         include:
           - target: template-release
           - target: template-debug
-            os: [ linux, macos, windows ]
+            os: linux
+          - target: template-debug
+            os: macos
+          - target: template-debug
+            os: windows
           - target: editor
-            os: [ linux, macos, windows ]
+            os: linux
+          - target: editor
+            os: macos
+          - target: editor
+            os: windows
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v4
