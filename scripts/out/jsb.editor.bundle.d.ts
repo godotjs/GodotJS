@@ -180,7 +180,7 @@ declare module "jsb.editor.codegen" {
         is_primitive_type(name: string): boolean;
         is_valid_method_name(name: string): boolean;
         make_classname(internal_class_name: string): string;
-        make_typename(info: PropertyInfo, used_as_input: boolean): string;
+        make_typename(info: PropertyInfo, used_as_input: boolean, non_nullable: boolean): string;
         make_arg(info: PropertyInfo, optional?: boolean): string;
         make_literal_value(value: GodotJsb.editor.DefaultArgumentInfo): string;
         make_arg_default_value(method_info: GodotJsb.editor.MethodBind, index: number): string;
@@ -193,7 +193,8 @@ declare module "jsb.editor.codegen" {
         private _outDir;
         private _splitter;
         private _types;
-        constructor(outDir: string);
+        private _use_project_settings;
+        constructor(outDir: string, use_project_settings: boolean);
         private make_path;
         private new_splitter;
         private split;
@@ -202,7 +203,7 @@ declare module "jsb.editor.codegen" {
         emit(): Promise<void>;
         private emit_utility;
         private emit_global;
-        private emit_mock;
+        private emit_aliases;
         private emit_singleton;
         private emit_godot_primitive;
         private emit_godot_class;

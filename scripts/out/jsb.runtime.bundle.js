@@ -446,7 +446,7 @@ define("godot.lib.api", ["require", "exports"], function (require, exports) {
             if (p === ProxyTarget) {
                 return target;
             }
-            if (typeof p !== "string") {
+            if (typeof p !== "string" || p === "constructor") {
                 return Reflect.get(target, p);
             }
             return proxy_value(bind(target, Reflect.get(target, p !== "toString" ? get_member(p) : p)));
@@ -476,9 +476,6 @@ define("godot.lib.api", ["require", "exports"], function (require, exports) {
     function instance_proxy(target_instance) {
         return new Proxy(target_instance, instance_handler);
     }
-    function proxied_constructor(...args) {
-        return instance_proxy(this.apply(this, args));
-    }
     const class_handler = Object.assign(Object.assign({}, instance_handler), { construct(target, args, _new_target) {
             return instance_proxy(new target(...args));
         },
@@ -487,11 +484,15 @@ define("godot.lib.api", ["require", "exports"], function (require, exports) {
             if (p === ProxyTarget) {
                 return target;
             }
+            if (p === Symbol.hasInstance) {
+                return Function[Symbol.hasInstance].bind(target);
+            }
             if (typeof p !== "string") {
                 return Reflect.get(target, p);
             }
-            if (p === "constructor") {
-                return proxied_constructor;
+            if (p === "prototype") {
+                const proto = Reflect.get(target, "prototype");
+                return proto && class_proxy(proto);
             }
             if (((_a = p[0]) === null || _a === void 0 ? void 0 : _a.toUpperCase()) !== p[0]) {
                 return proxy_value(bind(target, Reflect.get(target, get_member(p))));
