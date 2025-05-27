@@ -396,7 +396,6 @@ define("godot.lib.api", ["require", "exports"], function (require, exports) {
             const proxied_function = function (...args) {
                 return proxy_value(value.apply(this, args.map(proxy_value)));
             };
-            // @ts-ignore
             proxied_function[ProxyTarget] = value;
             return proxied_function;
         }
