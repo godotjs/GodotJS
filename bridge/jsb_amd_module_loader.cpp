@@ -80,16 +80,11 @@ namespace jsb
         const char* str = p_source.get_data(len);
         if (!str) return ERR_FILE_NOT_FOUND;
         jsb_check(len == (size_t)(int) len);
-        _load_source(p_env, str, (int) len, p_source.get_filename(), true);
+        load_source(p_env, str, (int) len, p_source.get_filename(), true);
         return OK;
     }
 
-    void AMDModuleLoader::load_source(Environment* p_env, const String& p_source, const String& p_name)
-    {
-        _load_source(p_env, (const char*) p_source.ptr(), p_source.length(), p_name);
-    }
-
-    void AMDModuleLoader::_load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name, bool p_internal)
+    void AMDModuleLoader::load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name, bool p_internal)
     {
         jsb_check(strstr(p_source, "(function(define){") == p_source);
 

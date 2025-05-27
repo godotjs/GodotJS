@@ -83,13 +83,13 @@ StringName GodotJSScript::get_instance_base_type() const
     return is_valid() ? script_class_info_.native_class_name : StringName();
 }
 
-ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this)
+ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed)
 {
     jsb_check(is_valid());
     jsb_check(loaded_);
 
     Object* owner = ClassDB::instantiate(script_class_info_.native_class_name);
-    ScriptInstance* instance = instance_create(p_this, owner);
+    ScriptInstance* instance = instance_create(p_this, owner, p_is_temp_allowed);
     if (!instance)
     {
         memdelete(owner);
@@ -97,12 +97,12 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     return instance;
 }
 
-ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner)
+ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner, bool p_is_temp_allowed)
 {
     jsb_check(is_valid());
     jsb_check(loaded_);
 
-    jsb::JSEnvironment env(get_path(), false);
+    jsb::JSEnvironment env(get_path(), p_is_temp_allowed);
     jsb::JavaScriptModule* module = nullptr;
     const Error err = env->load(script_class_info_.module_id, &module);
     jsb_ensuref(module && err == OK, "JS Module not found: %s", script_class_info_.module_id);
@@ -305,12 +305,19 @@ bool GodotJSScript::has_method(const StringName& p_method) const
     ensure_module_loaded();
     jsb_check(loaded_);
 
+    String exposed_name = p_method;
+
+    if (exposed_name.begins_with("_"))
+    {
+        exposed_name = jsb::internal::NamingUtil::get_member_name(exposed_name);
+    }
+
     const GodotJSScript* current = this;
     while (current)
     {
         //TODO temp fix
         if (!current->loaded_) const_cast<GodotJSScript*>(current)->load_module_immediately();
-        if (current->is_valid() && current->script_class_info_.methods.has(p_method)) return true;
+        if (current->is_valid() && current->script_class_info_.methods.has(exposed_name)) return true;
         current = current->base.ptr();
     }
 

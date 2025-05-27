@@ -59,8 +59,8 @@ public:
     // Error attach_source(const String& p_path, bool p_take_over);
     Error load_source_code(const String &p_path);
     void load_module_if_missing();
-    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner);
-    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this);
+    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner, bool p_is_temp_allowed);
+    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed);
     ScriptInstance* instance_create(Object* p_this, bool p_is_temp_allowed);
 
 #pragma region Script Implementation

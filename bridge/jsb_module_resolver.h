@@ -41,7 +41,7 @@ namespace jsb
         DefaultModuleResolver& add_search_path(const String& p_path);
 
         /** Compile source from reader (in commonjs style) and init as module */
-        static bool load(Environment* p_env, const internal::ISourceReader& p_reader, JavaScriptModule& p_module);
+        static bool load(Environment* p_env, const String& p_asset_path, const internal::ISourceReader& p_reader, JavaScriptModule& p_module);
 
     protected:
         bool check_absolute_file_path(const String& p_module_id, ModuleSourceInfo& o_source_info);

@@ -19,7 +19,9 @@
 #include "../internal/jsb_settings.h"
 #include "../jsb_project_preset.h"
 
+#ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
+#endif
 #include "main/performance.h"
 
 //TODO remove this
@@ -263,6 +265,7 @@ namespace jsb
 #endif
 
         if (p_params.type == Type::Worker) flags_ |= EF_Worker;
+        else if (p_params.type == Type::Shadow) flags_ |= EF_Shadow;
 
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
@@ -353,6 +356,18 @@ namespace jsb
                         names.add_replacement(*it, exposed_name);
                     }
                 }
+
+                const int constant_count = CoreConstants::get_global_constant_count();
+                for (int index = 0; index < constant_count; ++index)
+                {
+                    const StringName enum_name = CoreConstants::get_global_constant_enum(index);
+                    String exposed_name = internal::NamingUtil::get_class_name(enum_name);
+
+                    if (exposed_name != enum_name)
+                    {
+                        names.add_replacement(enum_name, exposed_name);
+                    }
+                }
             }
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
@@ -432,8 +447,8 @@ namespace jsb
         // Users may consume editor APIs in codegen functions. However, we want to permit regular ES6 import syntax.
         // We provide a dummy module that can be imported (but not used) in runtime-only builds.
     	// TODO: This crashes the build - why do we need it
-        // static constexpr char kDummyModule[] = "define('jsb.editor.codegen',[],function(){return{}})";
-        // AMDModuleLoader::load_source(this, kDummyModule, kEditorBundleFile);
+        // static constexpr char kDummyModule[] = u8"(function(define){define('jsb.editor.codegen',[],function(){return{}})})";
+        // AMDModuleLoader::load_source(this, kDummyModule, sizeof(kDummyModule) - 1, kEditorBundleFile);
 #endif
 
     }
@@ -1741,7 +1756,14 @@ namespace jsb
             const v8::Local<v8::Value> prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
             jsb_check(prototype->IsObject());
             v8::Local<v8::Value> method;
-            if (prototype.As<v8::Object>()->Get(context, this->get_string_value(p_method)).ToLocal(&method) && method->IsFunction())
+            String exposed_name = p_method;
+
+            if (exposed_name.begins_with("_"))
+            {
+                exposed_name = internal::NamingUtil::get_member_name(exposed_name);
+            }
+
+            if (prototype.As<v8::Object>()->Get(context, this->get_string_value(exposed_name)).ToLocal(&method) && method->IsFunction())
             {
                 method_func = method.As<v8::Function>();
                 script_class_info->method_cache[p_method] = v8::Global<v8::Function>(isolate_, method_func);
@@ -1749,7 +1771,7 @@ namespace jsb
             else
             {
                 script_class_info->method_cache[p_method] = v8::Global<v8::Function>();
-                JSB_LOG(Verbose, "method not found %s.%s (%s)", script_class_info->js_class_name, p_method, script_class_info->module_id);
+                JSB_LOG(Verbose, "method not found %s.%s (%s)", script_class_info->js_class_name, exposed_name, script_class_info->module_id);
             }
         }
         else

@@ -405,8 +405,10 @@ namespace jsb
             if (new_target->HasOwnProperty(context, jsb_symbol(environment, ClassId)).ToChecked())
             // if (class_info->clazz.NewTarget(isolate) == new_target)
             {
+                internal::StringNames& names = internal::StringNames::get_singleton();
+                const StringName original_name = names.get_original_name(class_name);
                 const v8::Local<v8::Object> self = info.This();
-                Object* gd_object = ClassDB::instantiate(class_name);
+                Object* gd_object = ClassDB::instantiate(original_name);
 
                 // IS IT A TRUTH that ref_count==1 after creation_func??
                 jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
@@ -424,7 +426,7 @@ namespace jsb
                     environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id,
                     class_name, class_id);
                 const v8::Local<v8::Object> self = info.This();
-                ScriptClassInfo::instantiate(script_module_id, self);
+                ScriptClassInfo::instantiate(environment, script_module_id, self);
                 return;
             }
 

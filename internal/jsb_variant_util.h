@@ -100,7 +100,7 @@ namespace jsb::internal
          */
         jsb_force_inline static bool is_valid_name(const StringName& p_name)
         {
-            return ((const void*) p_name) != nullptr;
+            return p_name.data_unique_pointer() != nullptr;
         }
     };
 }

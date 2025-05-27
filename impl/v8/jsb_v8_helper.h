@@ -3,6 +3,8 @@
 
 #include "jsb_v8_pch.h"
 
+#define V8_VERSION_NEWER_THAN(major, minor, patch) GODOT_VERSION_COMPARE(V8_MAJOR_VERSION, major, GODOT_VERSION_COMPARE(V8_MINOR_VERSION, minor, GODOT_VERSION_COMPARE(V8_BUILD_VERSION, patch, false)))
+
 namespace jsb::impl
 {
     class Helper
@@ -169,7 +171,12 @@ namespace jsb::impl
                 const CharString filename = p_filename.utf8();
 #endif
 #endif
-                v8::ScriptOrigin origin(isolate, v8::String::NewFromUtf8(isolate, filename, v8::NewStringType::kNormal, filename.length()).ToLocalChecked());
+
+#if V8_VERSION_NEWER_THAN(12, 1, 139)
+                v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, filename.ptr(), v8::NewStringType::kNormal, filename.length()).ToLocalChecked());
+#else
+                v8::ScriptOrigin origin(isolate, v8::String::NewFromUtf8(isolate, filename.ptr(), v8::NewStringType::kNormal, filename.length()).ToLocalChecked());
+#endif
                 script = v8::Script::Compile(context, source, &origin);
             }
 

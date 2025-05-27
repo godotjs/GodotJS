@@ -33,6 +33,8 @@ private:
     bool export_compiled_script(const String& p_path);
     bool export_module_files(const jsb::JavaScriptModule& p_module);
     bool export_raw_file(const String& p_path);
+    void export_raw_files(const PackedStringArray& p_paths, bool p_permit_typescript);
+    void get_script_resources(const String &p_dir, Vector<String> &r_list);
 
     HashSet<String> exported_paths_;
     std::shared_ptr<jsb::Environment> env_;

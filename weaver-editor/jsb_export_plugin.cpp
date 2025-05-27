@@ -1,5 +1,7 @@
 ﻿#include "jsb_export_plugin.h"
 
+#include "../weaver/jsb_script.h"
+
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 
 HashSet<String> GodotJSExportPlugin::ignored_paths_ {
@@ -24,6 +26,63 @@ PackedStringArray GodotJSExportPlugin::_get_export_features(const Ref<EditorExpo
     return {};
 }
 
+void GodotJSExportPlugin::export_raw_files(const PackedStringArray &p_paths, bool p_permit_typescript)
+{
+    for (const String& file_path : p_paths)
+    {
+        // in this situation, we do not call `load module` to avoid unexpected side effects
+        // (for example, it's impossible to directly load worker scripts in main env).
+
+        if (!file_path.ends_with("." JSB_TYPESCRIPT_EXT))
+        {
+            export_raw_file(file_path);
+        }
+        else if (p_permit_typescript)
+        {
+            const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(file_path);
+            export_raw_file(compiled_script_path);
+        }
+    }
+}
+
+void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<String> &r_list)
+{
+    Ref<DirAccess> dir = DirAccess::open(p_dir);
+
+    if (!dir.is_valid())
+    {
+        JSB_EXPORTER_LOG(Warning, "Could not open explicit script directory for traversal: %s", p_dir);
+        return;
+    }
+
+    dir->list_dir_begin();
+    String filename = dir->get_next();
+
+    while (!filename.is_empty())
+    {
+        if (filename == "." || filename == "..")
+        {
+            filename = dir->get_next();
+            continue;
+        }
+
+        String path = p_dir.path_join(filename);
+
+        if (dir->current_is_dir())
+        {
+            get_script_resources(path, r_list);
+        }
+        else if (ResourceLoader::get_resource_type(path) == jsb_typename(GodotJSScript) && !get_ignored_paths().has(path))
+        {
+            r_list.push_back(path);
+        }
+
+        filename = dir->get_next();
+    }
+
+    dir->list_dir_end();
+}
+
 // p_path is the exported package full path (like X:/Folder1/Folder2/test.zip)
 void GodotJSExportPlugin::_export_begin(const HashSet<String>& p_features, bool p_debug, const String& p_path, int p_flags)
 {
@@ -32,20 +91,15 @@ void GodotJSExportPlugin::_export_begin(const HashSet<String>& p_features, bool 
 
     // add all explicitly included file paths in settings
     const PackedStringArray file_paths = jsb::internal::Settings::get_packaging_include_files();
-    for (const String& file_path : file_paths)
-    {
-        // in this situation, we do not call `load module` to avoid unexpected side effects
-        // (for example, it's impossible to directly load worker scripts in main env).
+    export_raw_files(file_paths, true);
 
-        if (file_path.ends_with("." JSB_TYPESCRIPT_EXT))
-        {
-            const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(p_path);
-            export_raw_file(compiled_script_path);
-        }
-        else
-        {
-            export_raw_file(file_path);
-        }
+    // add all explicitly included directory paths
+    const PackedStringArray dir_paths = jsb::internal::Settings::get_packaging_include_directories();
+    for (const String& dir_path : dir_paths)
+    {
+        Vector<String> script_paths;
+        get_script_resources(dir_path, script_paths);
+        export_raw_files(script_paths, true);
     }
 }
 
@@ -94,6 +148,8 @@ bool GodotJSExportPlugin::export_module_files(const jsb::JavaScriptModule& p_mod
 
 bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
 {
+    static constexpr char kNodeModulesPrefix[] = u8"res://node_modules/";
+
     if (p_path.is_empty() || exported_paths_.has(p_path))
     {
         return false;
@@ -102,6 +158,34 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
     {
         JSB_EXPORTER_LOG(Warning, "can not export external source: %s", p_path);
         return false;
+    }
+    if (jsb::internal::Settings::is_packaging_referenced_node_modules() && p_path.begins_with(kNodeModulesPrefix))
+    {
+        // Node modules may dynamically require files within themselves, and thus these modules won't end up in our
+        // module's "children" array. The kRtPackagingReferencedNodeModules setting (on by default) allows us to play
+        // it safe and export all JS scripts found in referenced packages. However, this won't cover the case where
+        // entirely new packages are dynamically imported. kRtPackagingIncludeDirectories must be used to handle that
+        // case.
+        int package_path_slash_index = p_path.find_char('/', sizeof(kNodeModulesPrefix) - 1);
+
+        if (p_path[sizeof(kNodeModulesPrefix) - 1] == '@' && package_path_slash_index >= 0)
+        {
+            package_path_slash_index = p_path.find_char('/', package_path_slash_index + 1);
+        }
+
+        String package_path = p_path.substr(0, package_path_slash_index);
+        Vector<String> script_paths;
+        get_script_resources(package_path, script_paths);
+
+        const String package_json_path = jsb::internal::PathUtil::combine(package_path, "package.json");
+
+        if (FileAccess::exists(package_json_path))
+        {
+            script_paths.append(package_json_path);
+        }
+
+        export_raw_files(script_paths, false);
+        return true;
     }
 
     // export dependent files.

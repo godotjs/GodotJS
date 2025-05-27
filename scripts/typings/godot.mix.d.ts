@@ -1,7 +1,7 @@
 ///<reference path="godot.generated.d.ts" />
 declare module "godot" {
-    export const IntegerType: unique symbol;
-    export const FloatType: unique symbol;
+    const IntegerType: unique symbol;
+    const FloatType: unique symbol;
     /**
      * Proxy objects are typically transparent by design, allowing a proxy to impersonate a type. However, GodotJS also
      * makes use of proxies to wrap existing objects in order to provide a more convenient API. In such cases, it is
@@ -11,7 +11,7 @@ declare module "godot" {
      * to unwrap proxies, thus allowing you to pass a proxy wrapped GArray/GDictionary as an argument to any function
      * expecting a GArray/GDictionary parameter.
      */
-    export const ProxyTarget: unique symbol;
+    const ProxyTarget: unique symbol;
 
     /**
      * FOR BACKWARD COMPATIBILITY ONLY
@@ -97,21 +97,89 @@ declare module "godot" {
      */
     type Signal5<T1, T2, T3, T4, T5> = Signal<(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => void>;
 
-    type NodePathMap = { [K in string]?: Node };
+    type ExtractValueKeys<T, V> = { [K in keyof T]: T[K] extends V ? K : never }[keyof T];
+    type IfAny<T, Y, N> = 0 extends (1 & T) ? Y : N;
 
-    type StaticNodePath<Map extends NodePathMap> = (keyof Map & string) | {
-        [K in keyof Map & string]: Map[K] extends Node<infer ChildMap>
-            ? `${K}/${StaticNodePath<ChildMap>}`
+    /**
+     * This namespace and the values within do not exist at runtime. They're declared here, for internal use only, as a
+     * work-around for limitations of TypeScript's type system.
+     */
+    namespace __PathMappableDummyKeys {}
+
+    type PathMappable<DummyKey extends symbol, Map extends PathMap = PathMap> = {
+        [K in DummyKey]: Map;
+    };
+
+    type PathMap<T = unknown> = Record<string, T>;
+
+    type StaticPath<
+        Map extends PathMap,
+        Permitted = any,
+        DefaultKey extends string = never,
+        DummyKey extends symbol = typeof __PathMappableDummyKeys[keyof typeof __PathMappableDummyKeys]
+    > = IfAny<
+        Map,
+        string,
+        ExtractValueKeys<Map, Permitted> & string
+            | (
+                DummyKey extends any
+                    ? (
+                        (
+                            Map[DefaultKey] extends never
+                                ? never
+                                : (
+                                    Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
+                                        ? StaticPath<ChildMap, Permitted, DefaultKey>
+                                        : never
+                                )
+                        )
+                        | {
+                            [K in Exclude<keyof Map, DefaultKey> & string]: Map[K] extends PathMappable<DummyKey, infer ChildMap>
+                                ? `${K}/${StaticPath<ChildMap, Permitted, DefaultKey>}`
+                                : never
+                        }[Exclude<keyof Map, DefaultKey> & string]
+                    )
+                    : never
+            )
+    >;
+
+    type ResolvePath<
+        Map extends PathMap,
+        Path extends string,
+        Default,
+        Permitted,
+        DefaultKey extends string = never,
+        DummyKey extends symbol = typeof __PathMappableDummyKeys[keyof typeof __PathMappableDummyKeys]
+    > = IfAny<
+        Map,
+        Permitted,
+        DummyKey extends any
+            ? (
+                Path extends keyof Map
+                    ? Map[Path] extends Permitted
+                        ? Map[Path]
+                        : Default
+                    : Path extends `${infer Key extends Exclude<keyof Map, DefaultKey> & string}/${infer SubPath}`
+                        ? Map[Key] extends PathMappable<DummyKey, infer ChildMap>
+                            ? ResolvePath<ChildMap, SubPath, Default, Permitted>
+                            : Default
+                        : Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
+                            ? ResolvePath<ChildMap, Path, Default, Permitted>
+                            : never
+            )
             : never
-    }[keyof Map & string];
+    >;
 
-    type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never> = Path extends keyof Map
-        ? Map[Path]
-        : Path extends `${infer Key extends keyof Map & string}/${infer SubPath}`
-            ? Map[Key] extends Node<infer ChildMap>
-                ? ResolveNodePath<ChildMap, SubPath, Default>
-                : Default
-            : Default;
+    type NodePathMap = PathMap<Node>;
+    type StaticNodePath<Map extends NodePathMap> = StaticPath<Map, Node, never, typeof __PathMappableDummyKeys.Node>;
+    type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never> =
+        ResolvePath<Map, Path, Default, Node, never, typeof __PathMappableDummyKeys.Node>;
+
+    type AnimationMixerPathMap = PathMap<AnimationLibrary>;
+    type StaticAnimationMixerPath<Map extends AnimationMixerPathMap> =
+        StaticPath<Map, Animation, "", typeof __PathMappableDummyKeys['AnimationLibrary' | 'AnimationMixer']>;
+    type ResolveAnimationMixerPath<Map extends AnimationMixerPathMap, Path extends string, Default = never> =
+        ResolvePath<Map, Path, Default, Animation, "", typeof __PathMappableDummyKeys['AnimationLibrary' | 'AnimationMixer']>;
 
     /**
      * GArray elements are exposed with a subset of JavaScript's standard Array API. Array indexes are exposed as
@@ -214,8 +282,8 @@ declare module "godot" {
         usage: PropertyUsageFlags;
     }
 
-  type BindRight<F extends Function, B extends any[]> =
-    F extends (this: infer T, ...args: [...(infer A), ...B]) => infer R
-      ? (this: T, ...args: A) => R
-      : never;
+    type BindRight<F extends Function, B extends any[]> =
+        F extends (this: infer T, ...args: [...(infer A), ...B]) => infer R
+            ? (this: T, ...args: A) => R
+            : never;
 }

@@ -53,6 +53,9 @@ namespace v8
         }
 
         template <typename S>
+        static Local<T> Cast(Local<S> that) { return Local<T>(that); }
+
+        template <typename S>
         Local<S> As() const { return Local<S>(data_); }
 
         Local(const Data data): data_(data) {}
