@@ -454,9 +454,17 @@ Error GodotJSScript::load_source_code(const String &p_path)
 {
     Error err;
 #ifdef TOOLS_ENABLED
-    const String source_code = FileAccess::get_file_as_string(p_path, &err);
+	const String source_code = FileAccess::get_file_as_string(p_path, &err);
 #else
-    const String source_code = FileAccess::get_file_as_string(jsb::internal::PathUtil::convert_typescript_path(p_path), &err);
+
+#if JSB_USE_TYPESCRIPT
+	const String path = jsb::internal::PathUtil::convert_typescript_path(p_path);
+	const String source_code = FileAccess::get_file_as_string(path, &err);
+#else
+	const String path = jsb::internal::PathUtil::convert_javascript_path(p_path);
+	const String source_code = FileAccess::get_file_as_string(path, &err);
+#endif
+
 #endif
     if (err != OK)
     {
