@@ -39,28 +39,24 @@ jobs:
       fail-fast: false
       matrix:
         engine: [ v8,qjs-ng ]
-        os:
-          - android
-          - ios
-          - linux
-          - macos
-          - web
-          - web-nothreads
-          - windows
+        os: [ android, ios, linux, macos, web, web-nothreads, windows ]
+        target: [ template-release ]
         include:
+          - target: template-debug
+            os: linux
+          - target: template-app
+            os: macos
+          - target: template-debug
+            os: windows
+          - target: editor
+            os: linux
+          - target: editor-app
+            os: macos
+          - target: editor
+            os: windows
+        exclude:
           - target: template-release
-          - target: template-debug
-            os: linux
-          - target: template-debug
             os: macos
-          - target: template-debug
-            os: windows
-          - target: editor
-            os: linux
-          - target: editor
-            os: macos
-          - target: editor
-            os: windows
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v4

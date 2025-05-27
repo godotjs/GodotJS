@@ -111,6 +111,11 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
+# TODO: The x86_64 build isn't working with `Forward+` projects see: https://github.com/godotengine/godot/issues/64471
+# Check why the official build is working:
+# - https://github.com/godotengine/godot-build-scripts/blob/main/build.sh#L147-L157
+# - https://github.com/godotengine/godot-build-scripts/blob/main/build-macos/build.sh#L7-L87
+# - https://github.com/godotengine/godot-build-scripts/blob/main/build-release.sh#L367-L375
       - name: Prepare artifact
         run: |
           lipo -create ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64 -output ./bin/godot.macos.${{ matrix.target }}.universal
@@ -122,3 +127,66 @@ jobs:
         uses: ./.github/actions/upload-artifact
         with:
           name: ${{ matrix.cache-name }}
+
+  build-macos-apps:
+    needs:
+      - build-macos
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [ v8,qjs-ng ]
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.version }}
+          submodules: recursive
+
+      - name: ⏬ Download editor
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-editor-${{ matrix.engine }}
+          path: macos-editor-${{ matrix.engine }}
+
+      - name: ⚒️ Build Editor App
+        run: |
+          mkdir editor-app
+          cp -r misc/dist/macos_tools.app editor-app/Godot.app
+          mkdir -p editor-app/Godot.app/Contents/MacOS
+          cp macos-editor-${{ matrix.engine }}/godot.macos.editor.universal editor-app/Godot.app/Contents/MacOS/Godot
+          chmod +x editor-app/Godot.app/Contents/MacOS/Godot
+
+      - name: ⏫ Upload editor app
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-editor-app-${{ matrix.engine }}
+          path: editor-app
+
+      - name: ⏬ Download template-release
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-template-release-${{ matrix.engine }}
+          path: macos-template-release-${{ matrix.engine }}
+
+      - name: ⏬ Download template-debug
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-template-debug-${{ matrix.engine }}
+          path: macos-template-debug-${{ matrix.engine }}
+
+      - name: ⚒️ Build Template App
+        run: |
+          mkdir template-app
+          cp -r misc/dist/macos_template.app template-app/macos_template.app
+          mkdir -p template-app/macos_template.app/Contents/MacOS
+          cp macos-template-release-${{ matrix.engine }}/godot.macos.template_release.universal template-app/macos_template.app/Contents/MacOS/godot_macos_release.universal
+          cp macos-template-debug-${{ matrix.engine }}/godot.macos.template_debug.universal template-app/macos_template.app/Contents/MacOS/godot_macos_debug.universal
+          chmod +x template-app/macos_template.app/Contents/MacOS/godot_macos*
+
+      - name: ⏫ Upload template app
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-template-app-${{ matrix.engine }}
+          path: template-app
