@@ -52,6 +52,9 @@ namespace v8
             return data_.isolate_ ? data_.stack_pos_ : jsb::impl::StackBase::Undefined;
         }
 
+    	template <typename S>
+		static Local<T> Cast(Local<S> that) { return Local<T>(that); }
+
         template <typename S>
         Local<S> As() const { return Local<S>(data_); }
 

@@ -50,6 +50,7 @@ void GodotJSEditorPlugin::_notification(int p_what)
     	// EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
         connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
         connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_resource_dts));
+        EditorFileSystem::get_singleton()->connect("resources_reimported", callable_mp(this, &GodotJSEditorPlugin::_generate_imported_resource_dts));
         break;
     default: break;
     }
@@ -96,6 +97,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     add_install_file({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
     add_install_file({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });
     add_install_file({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
+    add_install_file({ ".gdignore", "res://" + jsb::internal::Settings::get_autogen_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
 
     // type declaration files
     // VSCode treats the directory containing the jsconfig.json file as the root of a javascript project, and reads type declarations from d.ts.
@@ -236,7 +238,11 @@ Error GodotJSEditorPlugin::apply_file(const jsb::weaver::InstallFileInfo &p_file
     else if ((p_file.hint & jsb::weaver::CH_D_TS) != 0 && target_name.ends_with(".d.ts"))
     {
         String parsed;
+#if GODOT_4_5_OR_NEWER
+        parsed.append_utf8(data, (int) size);
+#else
         parsed.parse_utf8(data, (int) size);
+#endif
         outfile->store_string(mutate_types(parsed));
     }
     else
@@ -314,7 +320,11 @@ bool GodotJSEditorPlugin::verify_file(const jsb::weaver::InstallFileInfo& p_file
         if ((p_file.hint & jsb::weaver::CH_D_TS) != 0 && target_name.ends_with(".d.ts"))
         {
             String parsed;
+#if GODOT_4_5_OR_NEWER
+            parsed.append_utf8(data, (int) size);
+#else
             parsed.parse_utf8(data, (int) size);
+#endif
             mutated_data = mutate_types(parsed);
             size = mutated_data.length();
         }
@@ -465,6 +475,13 @@ void GodotJSEditorPlugin::_generate_edited_resource_dts(const Ref<Resource>& p_r
     generate_resource_dts(paths);
 }
 
+void GodotJSEditorPlugin::_generate_imported_resource_dts(const Vector<String>& p_resource)
+{
+    if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
+
+    generate_resource_dts(p_resource);
+}
+
 void GodotJSEditorPlugin::generate_godot_dts()
 {
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
@@ -475,7 +492,12 @@ void GodotJSEditorPlugin::generate_godot_dts()
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
-    const String code = jsb_format(R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s")).emit();})())--", "./" JSB_TYPE_ROOT);
+    const bool use_project_settings = jsb::internal::Settings::get_codegen_use_project_settings();
+    const String code = jsb_format(
+        R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s", %s)).emit();})())--",
+        "./" JSB_TYPE_ROOT,
+        use_project_settings ? "true" : "false"
+    );
     lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 
@@ -533,7 +555,7 @@ void GodotJSEditorPlugin::generate_scene_nodes_dts(const Vector<String>& p_paths
 
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.SceneTSDCodeGen("%s", ["%s"])).emit();})())--",
-        "./" JSB_TYPE_ROOT,
+        "./" + jsb::internal::Settings::get_autogen_path(),
         String("\", \"").join(p_paths)
     );
     lang->eval_source(code, err).ignore();
@@ -556,7 +578,7 @@ void GodotJSEditorPlugin::generate_resource_dts(const Vector<String>& p_paths)
 
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.ResourceTSDCodeGen("%s", ["%s"])).emit();})())--",
-        "./" JSB_TYPE_ROOT,
+        "./" + jsb::internal::Settings::get_autogen_path(),
         String("\", \"").join(p_paths)
     );
     lang->eval_source(code, err).ignore();

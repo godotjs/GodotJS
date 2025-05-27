@@ -302,7 +302,14 @@ namespace jsb
             const Variant::Type type = index >= method_argc
                 ? Variant::Type::NIL
                 : method_bind->get_argument_type(index);
-            if (!TypeConvert::js_to_gd_var(isolate, context, info[index], type, args[index]))
+
+            const v8::Local<v8::Value>& argument = info[index];
+
+            if (argument->IsUndefined() && method_bind->has_default_argument(index))
+            {
+                args[index] = method_bind->get_default_argument(index);
+            }
+            else if (!TypeConvert::js_to_gd_var(isolate, context, argument, type, args[index]))
             {
                 // revert all constructors
                 const String error_message = jsb_errorf("Failed to call: %s. Bad argument: %d. Unable to convert JS %s to Godot %s", method_bind->get_name(), index, TypeConvert::js_debug_typeof(isolate, info[index]), Variant::get_type_name(type));

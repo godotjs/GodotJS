@@ -1,0 +1,111 @@
+name: 🤖 Android Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+# Global Settings
+env:
+  SCONSFLAGS: strict_checks=yes debug_symbols=no module_text_server_fb_enabled=yes
+
+# We only build template release - most developers will use a desktop device for editor
+jobs:
+  build-android:
+    runs-on: ubuntu-24.04
+    name: ${{ matrix.name }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Template (target=template_release, arch=arm64, v8)
+            cache-name: android-template-release-v8
+            target: template_release
+            tests: false
+            sconsflags: arch=arm64 swappy=yes deprecated=no ndk_platform=android-24 generate_apk=yes
+            cache-limit: 1
+
+          - name: Template (target=template_release, arch=arm64, qjs_ng)
+            cache-name: android-template-release-qjs-ng
+            target: template_release
+            tests: false
+            sconsflags: arch=arm64 swappy=yes use_quickjs_ng=yes
+            cache-limit: 1
+
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.version }}
+          submodules: recursive
+
+      - name: Checkout GodotJS
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}/modules/GodotJS/
+          lfs: true
+          submodules: recursive
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: ${{github.workspace}}/modules/GodotJS/v8
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Download pre-built Android Swappy Frame Pacing Library
+        uses: dsaltares/fetch-gh-release-asset@1.1.2
+        with:
+          repo: godotengine/godot-swappy
+          version: tags/from-source-2025-01-31
+          file: godot-swappy.7z
+          target: swappy/godot-swappy.7z
+
+      - name: Extract pre-built Android Swappy Frame Pacing Library
+        run: 7za x -y swappy/godot-swappy.7z -o${{github.workspace}}/thirdparty/swappy-frame-pacing
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          platform: android
+          target: ${{ matrix.target }}
+          tests: ${{ matrix.tests }}
+          scons-cache-limit: ${{ matrix.cache-limit }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Generate Godot templates
+        if: matrix.target == 'template_release'
+        run: |
+          cd platform/android/java
+          ./gradlew generateGodotTemplates
+          cd ../../..
+          ls -l bin/
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.cache-name }}
+

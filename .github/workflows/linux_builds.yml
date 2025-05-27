@@ -1,0 +1,134 @@
+name: 🐧 Linux Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+# Global Settings
+env:
+  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
+  TSAN_OPTIONS: suppressions=misc/error_suppressions/tsan.txt
+  UBSAN_OPTIONS: suppressions=misc/error_suppressions/ubsan.txt
+
+jobs:
+  build-linux:
+    # Stay one LTS before latest to increase portability of Linux artifacts.
+    runs-on: ubuntu-22.04
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Editor (target=editor, v8)
+            cache-name: linux-editor-v8
+            target: editor
+            cache-limit: 2
+
+          - name: Template release (target=template_release, v8)
+            cache-name: linux-template-release-v8
+            sconsflags: debug_symbols=no
+            target: template_release
+            cache-limit: 1
+
+          - name: Template debug (target=template_debug, v8)
+            cache-name: linux-template-debug-v8
+            sconsflags: debug_symbols=no
+            target: template_debug
+            bin: ./bin/godot.linuxbsd.template_debug.x86_64.v8
+            cache-limit: 1
+
+          - name: Editor (target=editor, qjs_ng)
+            cache-name: linux-editor-qjs-ng
+            target: editor
+            sconsflags: use_quickjs_ng=yes
+            cache-limit: 2
+
+          - name: Template release (target=template_release, qjs_ng)
+            cache-name: linux-template-release-qjs-ng
+            target: template_release
+            sconsflags: use_quickjs_ng=yes debug_symbols=no
+            cache-limit: 1
+
+          - name: Template debug (target=template_debug, qjs_ng)
+            cache-name: linux-template-debug-qjs-ng
+            target: template_debug
+            sconsflags: use_quickjs_ng=yes debug_symbols=no
+            cache-limit: 1
+
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.version }}
+          submodules: recursive
+
+      - name: Checkout GodotJS
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}/modules/GodotJS/
+          lfs: true
+          submodules: recursive
+
+      # TODO: Figure out somehow how to embed this one.
+      - name: wayland-scanner dependency
+        run: |
+          sudo apt-get install libwayland-bin
+
+      - name: Free disk space on runner
+        run: |
+          echo "Disk usage before:" && df -h
+          sudo rm -rf /usr/local/lib/android
+          echo "Disk usage after:" && df -h
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: ${{github.workspace}}/modules/GodotJS/v8
+
+      - name: Setup Python and SCons
+        if: "!matrix.legacy-scons"
+        uses: ./.github/actions/godot-deps
+
+      - name: Setup Python and SCons (legacy versions)
+        if: matrix.legacy-scons
+        uses: ./.github/actions/godot-deps
+        with:
+          # Sync with Ensure*Version in SConstruct.
+          python-version: 3.8
+          scons-version: 4.0
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          platform: linuxbsd
+          target: ${{ matrix.target }}
+          scons-cache-limit: ${{ matrix.cache-limit }}
+
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Prepare artifact
+        run: |
+          strip bin/godot.*
+          chmod +x bin/godot.*
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.cache-name }}

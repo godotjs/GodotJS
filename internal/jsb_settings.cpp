@@ -14,10 +14,12 @@ namespace jsb::internal
 #ifdef TOOLS_ENABLED
     static constexpr char kEdDebuggerPort[] =     JSB_MODULE_NAME_STRING "/debugger/editor_port";
     static constexpr char kEdIgnoredClasses[] =     JSB_MODULE_NAME_STRING "/codegen/ignored_classes";
+    static constexpr char kEdAutogenPath[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_path";
     static constexpr char kEdAutogenSceneDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_scene_dts_on_save";
     static constexpr char kEdGenSceneDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_scene_dts";
     static constexpr char kEdAutogenResourceDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_resource_dts_on_save";
     static constexpr char kEdGenResourceDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_resource_dts";
+    static constexpr char kEdCodegenUseProjectSettings[] =     JSB_MODULE_NAME_STRING "/codegen/use_project_settings";
 #endif
 
     // use unnecessary first category layer (runtime and editor) to make the second layer shown as sections in project settings
@@ -31,6 +33,8 @@ namespace jsb::internal
     // editor specific settings, but we need it configured as project-wise instead of global-wise
     static constexpr char kRtPackagingWithSourceMap[] = JSB_MODULE_NAME_STRING "/editor/packaging/source_map_included";
     static constexpr char kRtPackagingIncludeFiles[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_files";
+    static constexpr char kRtPackagingIncludeDirectories[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_directories";
+    static constexpr char kRtPackagingReferencedNodeModules[] = JSB_MODULE_NAME_STRING "/editor/packaging/referenced_node_modules";
 
 #ifdef TOOLS_ENABLED
     bool init_editor_settings()
@@ -57,10 +61,12 @@ namespace jsb::internal
                 inited = true;
                 _EDITOR_DEF(kEdDebuggerPort, 9230, true);
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
+                _EDITOR_DEF(kEdAutogenPath, "gen/godot", false);
                 _EDITOR_DEF(kEdGenSceneDTS, true, false);
                 _EDITOR_DEF(kEdAutogenSceneDTSOnSave, true, false);
                 _EDITOR_DEF(kEdGenResourceDTS, true, false);
                 _EDITOR_DEF(kEdAutogenResourceDTSOnSave, true, false);
+                _EDITOR_DEF(kEdCodegenUseProjectSettings, true, false);
             }
         }
         return inited;
@@ -94,6 +100,7 @@ namespace jsb::internal
             }
 
             _GLOBAL_DEF(kRtPackagingWithSourceMap, true, false);
+
             {
                 PropertyInfo PackagingIncludeFiles;
                 PackagingIncludeFiles.type = Variant::ARRAY;
@@ -102,6 +109,17 @@ namespace jsb::internal
                 PackagingIncludeFiles.hint_string = vformat("%s/%s:%s", Variant::STRING, PROPERTY_HINT_FILE, filter);
                 _GLOBAL_DEF(PackagingIncludeFiles, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             }
+
+            {
+                PropertyInfo PackagingIncludeDirectories;
+                PackagingIncludeDirectories.type = Variant::ARRAY;
+                PackagingIncludeDirectories.name = kRtPackagingIncludeDirectories;
+                PackagingIncludeDirectories.hint = PROPERTY_HINT_ARRAY_TYPE;
+                PackagingIncludeDirectories.hint_string = vformat("%s/%s:%s", Variant::STRING, PROPERTY_HINT_DIR, filter);
+                _GLOBAL_DEF(PackagingIncludeDirectories, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            }
+
+            _GLOBAL_DEF(kRtPackagingReferencedNodeModules, true, false);
         }
     }
 
@@ -115,6 +133,12 @@ namespace jsb::internal
     {
         init_editor_settings();
         return EDITOR_GET(kEdIgnoredClasses);
+    }
+
+    String Settings::get_autogen_path()
+    {
+        init_editor_settings();
+        return EDITOR_GET(kEdAutogenPath);
     }
 
     bool Settings::get_autogen_scene_dts_on_save()
@@ -140,6 +164,12 @@ namespace jsb::internal
         init_editor_settings();
         return EDITOR_GET(kEdGenResourceDTS);
     }
+
+    bool Settings::get_codegen_use_project_settings()
+    {
+        init_editor_settings();
+        return EDITOR_GET(kEdCodegenUseProjectSettings);
+    }
 #endif
 
     bool Settings::is_packaging_with_source_map()
@@ -153,6 +183,19 @@ namespace jsb::internal
         init_settings();
         // rely on auto variant convert from Array
         return (PackedStringArray) GLOBAL_GET(kRtPackagingIncludeFiles);
+    }
+
+    PackedStringArray Settings::get_packaging_include_directories()
+    {
+        init_settings();
+        // rely on auto variant convert from Array
+        return (PackedStringArray) GLOBAL_GET(kRtPackagingIncludeDirectories);
+    }
+
+    bool Settings::is_packaging_referenced_node_modules()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtPackagingReferencedNodeModules);
     }
 
     uint16_t Settings::get_debugger_port()

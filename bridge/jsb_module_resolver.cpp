@@ -515,10 +515,10 @@ namespace jsb
     bool DefaultModuleResolver::load(Environment* p_env, const String& p_asset_path, JavaScriptModule& p_module)
     {
         internal::FileAccessSourceReader reader(p_asset_path);
-        return load(p_env, reader, p_module);
+        return load(p_env, p_asset_path, reader, p_module);
     }
     
-    bool DefaultModuleResolver::load(Environment* p_env, const internal::ISourceReader& p_reader, JavaScriptModule& p_module)
+    bool DefaultModuleResolver::load(Environment* p_env, const String& p_asset_path, const internal::ISourceReader& p_reader, JavaScriptModule& p_module)
     {
         if (p_reader.is_null() || p_reader.get_length() == 0)
         {
@@ -531,7 +531,6 @@ namespace jsb
         p_module.hash = p_reader.get_hash();
 #endif
 
-        const String p_asset_path = p_reader.get_path();
         // parse as JSON
         if (p_asset_path.ends_with("." JSB_JSON_EXT))
         {

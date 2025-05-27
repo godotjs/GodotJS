@@ -159,10 +159,18 @@ public:
     virtual bool is_control_flow_keyword(ConstStringRefCompat p_keyword) const override;
     virtual Vector<ScriptTemplate> get_built_in_templates(ConstStringNameRefCompat p_object) override;
 
+#if GODOT_4_5_OR_NEWER
+    virtual Vector<String> get_reserved_words() const override;
+    virtual Vector<String> get_doc_comment_delimiters() const override;
+    virtual Vector<String> get_comment_delimiters() const override;
+    virtual Vector<String> get_string_delimiters() const override;
+#else
     virtual void get_reserved_words(List<String>* p_words) const override;
     virtual void get_doc_comment_delimiters(List<String>* p_delimiters) const override;
     virtual void get_comment_delimiters(List<String>* p_delimiters) const override;
     virtual void get_string_delimiters(List<String>* p_delimiters) const override;
+#endif
+
     virtual Script* create_script() const override;
     virtual bool validate(const String& p_script, const String& p_path = "", List<String>* r_functions = nullptr, List<ScriptError>* r_errors = nullptr, List<Warning>* r_warnings = nullptr, HashSet<int>* r_safe_lines = nullptr) const override;
     virtual Ref<Script> make_template(const String& p_template, const String& p_class_name, const String& p_base_class_name) const override;
