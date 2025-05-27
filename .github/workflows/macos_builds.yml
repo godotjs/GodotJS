@@ -111,6 +111,11 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
+# TODO: The x86_64 build isn't working with `Forward+` projects see: https://github.com/godotengine/godot/issues/64471
+# Check why the official build is working:
+# - https://github.com/godotengine/godot-build-scripts/blob/main/build.sh#L147-L157
+# - https://github.com/godotengine/godot-build-scripts/blob/main/build-macos/build.sh#L7-L87
+# - https://github.com/godotengine/godot-build-scripts/blob/main/build-release.sh#L367-L375
       - name: Prepare artifact
         run: |
           lipo -create ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64 -output ./bin/godot.macos.${{ matrix.target }}.universal
