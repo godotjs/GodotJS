@@ -446,10 +446,7 @@ namespace jsb
 #else
         // Users may consume editor APIs in codegen functions. However, we want to permit regular ES6 import syntax.
         // We provide a dummy module that can be imported (but not used) in runtime-only builds.
-    	// TODO: This crashes the build - why do we need it
-        // static constexpr char kDummyModule[] = u8"(function(define){define('jsb.editor.codegen',[],function(){return{}})})";
-        // AMDModuleLoader::load_source(this, kDummyModule, sizeof(kDummyModule) - 1, kEditorBundleFile);
-#endif
+ #endif
 
     }
 
