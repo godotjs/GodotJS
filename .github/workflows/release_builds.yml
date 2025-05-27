@@ -47,17 +47,20 @@ jobs:
           - web
           - web-nothreads
           - windows
+        exclude:
+          - target: template-release
+            os: macos
         include:
           - target: template-release
           - target: template-debug
             os: linux
-          - target: template-debug
+          - target: template-app
             os: macos
           - target: template-debug
             os: windows
           - target: editor
             os: linux
-          - target: editor
+          - target: editor-app
             os: macos
           - target: editor
             os: windows
