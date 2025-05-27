@@ -147,16 +147,17 @@ jobs:
 
       - name: ⚒️ Build Editor App
         run: |
-          cp -r misc/dist/macos_tools.app Godot.app
-          mkdir -p Godot.app/Contents/MacOS
-          cp macos-editor-${{ matrix.engine }}/godot.macos.editor.universal Godot.app/Contents/MacOS/Godot
-          chmod +x Godot.app/Contents/MacOS/Godot
+          mkdir editor-app
+          cp -r misc/dist/macos_tools.app editor-app/Godot.app
+          mkdir -p editor-app/Godot.app/Contents/MacOS
+          cp macos-editor-${{ matrix.engine }}/godot.macos.editor.universal editor-app/Godot.app/Contents/MacOS/Godot
+          chmod +x editor-app/Godot.app/Contents/MacOS/Godot
 
       - name: ⏫ Upload editor app
         uses: actions/upload-artifact@v4
         with:
           name: macos-editor-app-${{ matrix.engine }}
-          path: Godot.app
+          path: editor-app
 
       - name: ⏬ Download template-release
         uses: actions/download-artifact@v4
@@ -172,14 +173,15 @@ jobs:
 
       - name: ⚒️ Build Template App
         run: |
-          cp -r misc/dist/macos_template.app .
-          mkdir -p macos_template.app/Contents/MacOS
-          cp macos-template-release-${{ matrix.engine }}/godot.macos.template_release.universal macos_template.app/Contents/MacOS/godot_macos_release.universal
-          cp macos-template-debug-${{ matrix.engine }}/godot.macos.template_debug.universal macos_template.app/Contents/MacOS/godot_macos_debug.universal
-          chmod +x macos_template.app/Contents/MacOS/godot_macos*
+          mkdir template-app
+          cp -r misc/dist/macos_template.app template-app/macos_template.app
+          mkdir -p template-app/macos_template.app/Contents/MacOS
+          cp macos-template-release-${{ matrix.engine }}/godot.macos.template_release.universal template-app/macos_template.app/Contents/MacOS/godot_macos_release.universal
+          cp macos-template-debug-${{ matrix.engine }}/godot.macos.template_debug.universal template-app/macos_template.app/Contents/MacOS/godot_macos_debug.universal
+          chmod +x template-app/macos_template.app/Contents/MacOS/godot_macos*
 
       - name: ⏫ Upload template app
         uses: actions/upload-artifact@v4
         with:
           name: macos-template-app-${{ matrix.engine }}
-          path: macos_template.app
+          path: template-app
