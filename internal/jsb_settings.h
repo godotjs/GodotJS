@@ -50,6 +50,7 @@ namespace jsb::internal
         static bool editor_settings_available();
         static PackedStringArray get_ignored_classes();
         static String get_autogen_path();
+        static String get_autogen_typings_path();
         static bool get_autogen_scene_dts_on_save();
         static bool get_gen_scene_dts();
         static bool get_autogen_resource_dts_on_save();

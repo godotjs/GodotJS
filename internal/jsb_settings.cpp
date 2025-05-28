@@ -9,6 +9,7 @@
 #define JSB_SET_BASIC(val) (val)
 #define JSB_SET_INTERNAL(val) (val)
 
+
 namespace jsb::internal
 {
 #ifdef TOOLS_ENABLED
@@ -61,7 +62,7 @@ namespace jsb::internal
                 inited = true;
                 _EDITOR_DEF(kEdDebuggerPort, 9230, true);
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
-                _EDITOR_DEF(kEdAutogenPath, "gen/godot", false);
+                _EDITOR_DEF(kEdAutogenPath, "generated", false);
                 _EDITOR_DEF(kEdGenSceneDTS, true, false);
                 _EDITOR_DEF(kEdAutogenSceneDTSOnSave, true, false);
                 _EDITOR_DEF(kEdGenResourceDTS, true, false);
@@ -139,6 +140,11 @@ namespace jsb::internal
     {
         init_editor_settings();
         return EDITOR_GET(kEdAutogenPath);
+    }
+
+    String Settings::get_autogen_typings_path()
+    {
+        return get_autogen_path() + "/typings";
     }
 
     bool Settings::get_autogen_scene_dts_on_save()
