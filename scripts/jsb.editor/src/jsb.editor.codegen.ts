@@ -251,6 +251,32 @@ const TypeMutations: Record<string, TypeMutation> = {
             call: ["call: T"],
         },
     },
+    CameraFeed: {
+        prelude: [
+            "namespace CameraFeed {",
+            "    type FeedFormat = GDictionary<{",
+            "        width: int64",
+            "        height: int64",
+            "        format: string",
+            `        frame_numerator?: int64`,
+            `        frame_denominator?: int64`,
+            `        pixel_format?: uint32`,
+            "    }>",
+            "}",
+            "",
+        ],
+        property_overrides: {
+            formats: [
+                `get formats(): GArray<CameraFeed.FeedFormat>`,
+                `set formats(value: GArray<CameraFeed.FeedFormat>)`,
+            ],
+        },
+    },
+    CameraServer: {
+        property_overrides: {
+            feeds: mutate_return_type("GArray<CameraFeed>"),
+        },
+    },
     GArray: {
         generic_parameters: {
             T: {
@@ -654,6 +680,7 @@ const PredefinedLines = [
     "type int64 = number /* || bigint */",
     "type float32 = number",
     "type float64 = number",
+    "type uint32 = number",
     "type StringName = string",
     "type unresolved = any",
 ]
