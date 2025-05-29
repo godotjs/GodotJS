@@ -12,9 +12,8 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_all_in_one.yml"><img src="https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_all_in_one.yml/badge.svg" alt="Release Status"></a>
-    <a href="https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml"><img src="https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_macos.yml/badge.svg" alt="MacOS Build Status"></a>
-    <a href="https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml"><img src="https://github.com/ialex32x/GodotJS-Build/actions/workflows/build_editor_linux.yml/badge.svg" alt="Linus Build Status"></a>
+    <a href="https://github.com/godotjs/GodotJS/actions"><img src="https://github.com/godotjs/GodotJS/actions/workflows/runner.yml/badge.svg?branch=main" alt="Build Status"></a>
+    <a href="https://github.com/godotjs/GodotJS/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
 </p>
 
 ## Documentation
