@@ -2,6 +2,8 @@
 #include "jsb_docked_panel.h"
 #include "jsb_export_plugin.h"
 
+#define JSB_TYPE_ROOT "typings"
+
 enum
 {
     MENU_ID_INSTALL_TS_PROJECT,
@@ -94,17 +96,18 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
 #endif
     add_install_file({ "package.json", "res://", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_CREATE_ONLY });
     add_install_file({ ".gdignore", "res://node_modules", jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_NODE_MODULES });
-    add_install_file({ ".gdignore", "res://" + jsb::internal::Settings::get_autogen_typings_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
+    add_install_file({ ".gdignore", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
+    add_install_file({ ".gdignore", "res://" + jsb::internal::Settings::get_autogen_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_GDIGNORE | jsb::weaver::CH_D_TS });
 
     // type declaration files
     // VSCode treats the directory containing the jsconfig.json file as the root of a javascript project, and reads type declarations from d.ts.
-    add_install_file({ "godot.minimal.d.ts", "res://" + jsb::internal::Settings::get_autogen_typings_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
-    add_install_file({ "godot.mix.d.ts", "res://" + jsb::internal::Settings::get_autogen_typings_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
-    add_install_file({ "jsb.editor.bundle.d.ts", "res://" + jsb::internal::Settings::get_autogen_typings_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
-    add_install_file({ "jsb.runtime.bundle.d.ts", "res://" + jsb::internal::Settings::get_autogen_typings_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "jsb.editor.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+    add_install_file({ "jsb.runtime.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
 
     // obsolete files (for upgrading from old versions)
-    add_install_file({ "jsb.bundle.d.ts", "res://" + jsb::internal::Settings::get_autogen_typings_path(), jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS | jsb::weaver::CH_OBSOLETE});
+    add_install_file({ "jsb.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS | jsb::weaver::CH_OBSOLETE});
 
     // write `.gdignore` in the `node_modules` folder anyway to avoid scanning in the situation that `node_modules` is generated externally before starting the Godot engine.
     if (DirAccess::exists("res://node_modules") && !FileAccess::exists("res://node_modules/.gdignore"))
@@ -229,7 +232,7 @@ Error GodotJSEditorPlugin::apply_file(const jsb::weaver::InstallFileInfo &p_file
         parsed = parsed.replacen("__SRC_DIR__", "../../../");  // locate typescripts at the project root path for better dev experience
         parsed = parsed.replacen("__NEW_LINE__", "crlf");
         parsed = parsed.replacen("__MODULE__", "CommonJS"); // CommonJS is the only option currently supported
-        parsed = parsed.replacen("__TYPE_ROOTS__", String(",").join({ R"("./node_modules/@types")", "\"./" + jsb::internal::Settings::get_autogen_typings_path() +"\"" }));
+        parsed = parsed.replacen("__TYPE_ROOTS__", String(",").join({ R"("./node_modules/@types")", "\"./" JSB_TYPE_ROOT "\"" }));
         outfile->store_string(parsed);
     }
     else if ((p_file.hint & jsb::weaver::CH_D_TS) != 0 && target_name.ends_with(".d.ts"))
@@ -492,7 +495,7 @@ void GodotJSEditorPlugin::generate_godot_dts()
     const bool use_project_settings = jsb::internal::Settings::get_codegen_use_project_settings();
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s", %s)).emit();})())--",
-        "./" + jsb::internal::Settings::get_autogen_typings_path(),
+        "./" JSB_TYPE_ROOT,
         use_project_settings ? "true" : "false"
     );
     lang->eval_source(code, err).ignore();
@@ -552,7 +555,7 @@ void GodotJSEditorPlugin::generate_scene_nodes_dts(const Vector<String>& p_paths
 
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.SceneTSDCodeGen("%s", ["%s"])).emit();})())--",
-        "./" + jsb::internal::Settings::get_autogen_typings_path(),
+        "./" + jsb::internal::Settings::get_autogen_path(),
         String("\", \"").join(p_paths)
     );
     lang->eval_source(code, err).ignore();
@@ -575,7 +578,7 @@ void GodotJSEditorPlugin::generate_resource_dts(const Vector<String>& p_paths)
 
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.ResourceTSDCodeGen("%s", ["%s"])).emit();})())--",
-        "./" + jsb::internal::Settings::get_autogen_typings_path(),
+        "./" + jsb::internal::Settings::get_autogen_path(),
         String("\", \"").join(p_paths)
     );
     lang->eval_source(code, err).ignore();
