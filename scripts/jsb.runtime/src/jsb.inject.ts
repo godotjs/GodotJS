@@ -9,31 +9,66 @@ type GDictionaryProxy<T> = Godot.GDictionaryProxy<T> & {
     [Godot.ProxyTarget]: Godot.GDictionary<T>;
 };
 
+interface ProxyHelpers {
+    get_member: typeof GodotJsb.internal.names.get_member;
+    godot_wrap: (value: any) => any;
+    proxy_unwrap: (value: any) => any;
+    proxy_wrap: (value: any) => any;
+    ProxyTarget: typeof Godot.ProxyTarget;
+}
+
 const proxyable_prototypes: any[] = [];
 
-const proxy_wrap = function(value: any) {
-    if (typeof value !== "object" || value === null) {
-        return value;
+let helpers: null | ProxyHelpers = null;
+
+function get_helpers(): ProxyHelpers {
+    if (!helpers) {
+        const { GArray, GDictionary, ProxyTarget } = require("godot") as typeof Godot;
+        const get_member = (require("godot-jsb") as typeof GodotJsb).internal.names.get_member;
+
+        helpers = {
+            get_member,
+            proxy_wrap: function(value: any) {
+                if (typeof value !== "object" || value === null) {
+                    return value;
+                }
+
+                const proto = Object.getPrototypeOf(value);
+                return proto && proxyable_prototypes.includes(proto)
+                  ? value.proxy()
+                  : value;
+            },
+            proxy_unwrap: function(value: any) {
+                if (typeof value !== "object" || value === null) {
+                    return value;
+                }
+
+                return value[ProxyTarget] ?? value;
+            },
+            godot_wrap: function (value: any) {
+                if (Array.isArray(value)) {
+                    return GArray.create(value);
+                }
+
+                const proto = Object.getPrototypeOf(value);
+
+                if (proto === Object.prototype || proto === null) {
+                    return GDictionary.create(value);
+                }
+
+                return value;
+            },
+            ProxyTarget: ProxyTarget as ProxyHelpers['ProxyTarget'],
+        }
     }
 
-    const proto = Object.getPrototypeOf(value);
-    return proto && proxyable_prototypes.includes(proto)
-        ? value.proxy()
-        : value;
-};
+    return helpers;
+}
 
 require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
-    const ProxyTarget = require("godot").ProxyTarget;
-
-    const proxy_unwrap = function(value: any) {
-        if (typeof value !== "object" || value === null) {
-            return value;
-        }
-
-        return value[ProxyTarget] ?? value;
-    };
-
-    const get_member = (require("godot-jsb") as typeof GodotJsb).internal.names.get_member;
+    const helpers = get_helpers();
+    const { get_member, godot_wrap, proxy_unwrap, proxy_wrap } = helpers;
+    const ProxyTarget: ProxyHelpers['ProxyTarget'] = helpers.ProxyTarget;
 
     proxyable_prototypes.push(type.prototype);
 
@@ -186,24 +221,16 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
 
     type.create = function(values: any[]) {
         const arr = new type();
-		const proxy = arr.proxy();
-		proxy.push.apply(proxy, values);
+        const proxy = arr.proxy();
+        proxy.push.apply(proxy, values.map(godot_wrap));
         return arr;
     };
 });
 
 require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
-    const ProxyTarget = require("godot").ProxyTarget;
-
-    const proxy_unwrap = function(value: any) {
-        if (typeof value !== "object" || value === null) {
-            return value;
-        }
-
-        return value[ProxyTarget] ?? value;
-    };
-
-    const get_member = (require("godot-jsb") as typeof GodotJsb).internal.names.get_member;
+    const helpers = get_helpers();
+    const { get_member, godot_wrap, proxy_unwrap, proxy_wrap } = helpers;
+    const ProxyTarget: ProxyHelpers['ProxyTarget'] = helpers.ProxyTarget;
 
     proxyable_prototypes.push(type.prototype);
 
@@ -292,12 +319,12 @@ require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
     };
 
     type.create = function(entries: Record<string, any>) {
-        const arr = new type();
-        const proxy = arr.proxy();
+        const dict = new type();
+        const proxy = dict.proxy();
         for (const [key, value] of Object.entries(entries)) {
-            proxy[key] = value;
+            proxy[key] = godot_wrap(value);
         }
-        return arr;
+        return dict;
     };
 });
 
