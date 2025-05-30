@@ -9,7 +9,14 @@ declare module "godot" {
     class Node<Map extends Record<string, Node> = any> extends Object { }
     class Resource { }
     class GArray<T = any> {
-        static create<T>(elements: [T] extends [GArray<infer E>] ? Array<E | GProxyValueWrap<E>> : Array<T | GProxyValueWrap<T>>): [T] extends [GArray<infer E>] ? GArray<E> : GArray<T>
+        static create<T>(elements: [T] extends [GArray<infer E>] ? Array<E | GProxyValueWrap<E>> : Array<T | GProxyValueWrap<T>>):
+          [T] extends [GArray<infer E>]
+            ? [GValueWrap<E>] extends [never]
+              ? never
+              : GArray<GValueWrap<T>>
+            : [GValueWrap<T>] extends [never]
+              ? never
+              : GArray<GValueWrap<T>>
         [Symbol.iterator](): IteratorObject<T>
         proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>;
         get_indexed(index: number): T
@@ -22,7 +29,7 @@ declare module "godot" {
         find(what: T, from: int64 = 0): int64
     }
     class GDictionary<T = any> {
-        static create<T>(properties: T extends GDictionary<infer S> ? GDictionaryProxy<S> : GDictionaryProxy<T>): T extends GDictionary<infer S> ? GDictionary<S> : GDictionary<T>
+        static create<T>(properties: T extends GDictionary<infer S> ? GDictionaryProxy<S> : GDictionaryProxy<T>): T extends GDictionary<infer S> ? GValueWrap<S> : GValueWrap<T>
         proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>;
         get<K extends keyof T>(key: K, default_: any = <any> {}): T[K]
         get_keyed<K extends keyof T>(index: K): T[K]
