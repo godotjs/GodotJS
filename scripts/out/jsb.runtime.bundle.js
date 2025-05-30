@@ -1021,25 +1021,48 @@ define("jsb.inject", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     const proxyable_prototypes = [];
-    const proxy_wrap = function (value) {
-        if (typeof value !== "object" || value === null) {
-            return value;
+    let helpers = null;
+    function get_helpers() {
+        if (!helpers) {
+            const { GArray, GDictionary, ProxyTarget } = require("godot");
+            const get_member = require("godot-jsb").internal.names.get_member;
+            helpers = {
+                get_member,
+                proxy_wrap: function (value) {
+                    if (typeof value !== "object" || value === null) {
+                        return value;
+                    }
+                    const proto = Object.getPrototypeOf(value);
+                    return proto && proxyable_prototypes.includes(proto)
+                        ? value.proxy()
+                        : value;
+                },
+                proxy_unwrap: function (value) {
+                    var _a;
+                    if (typeof value !== "object" || value === null) {
+                        return value;
+                    }
+                    return (_a = value[ProxyTarget]) !== null && _a !== void 0 ? _a : value;
+                },
+                godot_wrap: function (value) {
+                    if (Array.isArray(value)) {
+                        return GArray.create(value);
+                    }
+                    const proto = Object.getPrototypeOf(value);
+                    if (proto === Object.prototype || proto === null) {
+                        return GDictionary.create(value);
+                    }
+                    return value;
+                },
+                ProxyTarget: ProxyTarget,
+            };
         }
-        const proto = Object.getPrototypeOf(value);
-        return proto && proxyable_prototypes.includes(proto)
-            ? value.proxy()
-            : value;
-    };
+        return helpers;
+    }
     require("godot.typeloader").on_type_loaded("GArray", function (type) {
-        const ProxyTarget = require("godot").ProxyTarget;
-        const proxy_unwrap = function (value) {
-            var _a;
-            if (typeof value !== "object" || value === null) {
-                return value;
-            }
-            return (_a = value[ProxyTarget]) !== null && _a !== void 0 ? _a : value;
-        };
-        const get_member = require("godot-jsb").internal.names.get_member;
+        const helpers = get_helpers();
+        const { get_member, godot_wrap, proxy_unwrap, proxy_wrap } = helpers;
+        const ProxyTarget = helpers.ProxyTarget;
         proxyable_prototypes.push(type.prototype);
         type.prototype[Symbol.iterator] = function* () {
             const get_indexed = Reflect.get(this, get_member('get_indexed'));
@@ -1172,20 +1195,14 @@ define("jsb.inject", ["require", "exports"], function (require, exports) {
         type.create = function (values) {
             const arr = new type();
             const proxy = arr.proxy();
-            proxy.push.apply(proxy, values);
+            proxy.push.apply(proxy, values.map(godot_wrap));
             return arr;
         };
     });
     require("godot.typeloader").on_type_loaded("GDictionary", function (type) {
-        const ProxyTarget = require("godot").ProxyTarget;
-        const proxy_unwrap = function (value) {
-            var _a;
-            if (typeof value !== "object" || value === null) {
-                return value;
-            }
-            return (_a = value[ProxyTarget]) !== null && _a !== void 0 ? _a : value;
-        };
-        const get_member = require("godot-jsb").internal.names.get_member;
+        const helpers = get_helpers();
+        const { get_member, godot_wrap, proxy_unwrap, proxy_wrap } = helpers;
+        const ProxyTarget = helpers.ProxyTarget;
         proxyable_prototypes.push(type.prototype);
         type.prototype[Symbol.iterator] = function* () {
             const keys = this.keys();
@@ -1266,12 +1283,12 @@ define("jsb.inject", ["require", "exports"], function (require, exports) {
             return new Proxy(this, handler);
         };
         type.create = function (entries) {
-            const arr = new type();
-            const proxy = arr.proxy();
+            const dict = new type();
+            const proxy = dict.proxy();
             for (const [key, value] of Object.entries(entries)) {
-                proxy[key] = value;
+                proxy[key] = godot_wrap(value);
             }
-            return arr;
+            return dict;
         };
     });
     require("godot.typeloader").on_type_loaded("Callable", function (type) {
