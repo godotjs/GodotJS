@@ -452,7 +452,7 @@ define("jsb.editor.codegen", ["require", "exports"], function (require, exports)
             this.tasks.push({ name: name, execute: func });
         }
         submit() {
-            return __awaiter(this, void 0, void 0, function* () {
+            return __awaiter(this, arguments, void 0, function* (withToast = true) {
                 const EditorProgress = godot.GodotJSEditorProgress;
                 const progress = new EditorProgress();
                 let force_wait = 24;
@@ -475,7 +475,9 @@ define("jsb.editor.codegen", ["require", "exports"], function (require, exports)
                         }
                     }
                     progress.finish();
-                    toast(`${this._name} generated successfully`);
+                    if (withToast) {
+                        toast(`${this._name} generated successfully`);
+                    }
                 }
                 catch (e) {
                     console.error(`CodegenTask ${this._name} error:`, e);
@@ -2091,11 +2093,17 @@ define("jsb.editor.codegen", ["require", "exports"], function (require, exports)
         emit() {
             return __awaiter(this, void 0, void 0, function* () {
                 yield frame_step();
-                const tasks = new CodegenTasks("Generating scene node types");
+                let taskName = "Generating scene node types";
+                if (this._scene_paths.length === 1) {
+                    /* Before running the project every scene is saved seperately.
+                    * We ensure that the task don't have the same name */
+                    taskName += ` ${this._scene_paths.at(0)}`;
+                }
+                const tasks = new CodegenTasks(taskName);
                 for (const scene_path of this._scene_paths) {
                     tasks.add_task(`Generating scene node types: ${scene_path}`, () => this.emit_scene_node_types(scene_path));
                 }
-                return tasks.submit();
+                return tasks.submit(false);
             });
         }
         emit_children_node_types(writer, children) {
@@ -2176,7 +2184,7 @@ define("jsb.editor.codegen", ["require", "exports"], function (require, exports)
                 for (const resource_path of this._resource_paths) {
                     tasks.add_task(`Generating resource type: ${resource_path}`, () => this.emit_resource_type(resource_path));
                 }
-                return tasks.submit();
+                return tasks.submit(false);
             });
         }
         emit_resource_type(resource_path) {

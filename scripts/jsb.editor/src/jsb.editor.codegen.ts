@@ -612,7 +612,7 @@ class CodegenTasks {
         this.tasks.push({ name: name, execute: func });
     }
 
-    async submit() {
+    async submit(withToast: boolean = true) {
         const EditorProgress = godot.GodotJSEditorProgress;
         const progress = new EditorProgress();
         let force_wait = 24;
@@ -637,7 +637,9 @@ class CodegenTasks {
             }
 
             progress.finish();
-            toast(`${this._name} generated successfully`);
+            if (withToast) {
+                toast(`${this._name} generated successfully`);
+            }
         } catch (e) {
             console.error(`CodegenTask ${this._name} error:`, e);
             toast(`${this._name} failed!`);
@@ -2751,13 +2753,19 @@ export class SceneTSDCodeGen {
     async emit() {
         await frame_step();
 
-        const tasks = new CodegenTasks("Generating scene node types");
+        let taskName = "Generating scene node types";
+        if (this._scene_paths.length===1){
+            /* Before running the project every scene is saved seperately.
+            * We ensure that the task don't have the same name */
+            taskName += ` ${this._scene_paths.at(0)}`
+        }
+        const tasks = new CodegenTasks(taskName);
 
         for (const scene_path of this._scene_paths) {
             tasks.add_task(`Generating scene node types: ${scene_path}`, () => this.emit_scene_node_types(scene_path));
         }
 
-        return tasks.submit();
+        return tasks.submit(false);
     }
 
     private emit_children_node_types(writer: ScopeWriter, children: GReadProxyValueWrap<NodeTypeDescriptorPathMap>) {
@@ -2856,7 +2864,7 @@ export class ResourceTSDCodeGen {
             tasks.add_task(`Generating resource type: ${resource_path}`, () => this.emit_resource_type(resource_path));
         }
 
-        return tasks.submit();
+        return tasks.submit(false);
     }
 
     private emit_resource_type(resource_path: string) {
