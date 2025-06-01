@@ -1,4 +1,6 @@
 {
+  "name": "@godot-js/jsb-editor",
+  "private": true,
   "scripts": {
     "build": "tsc"
   },

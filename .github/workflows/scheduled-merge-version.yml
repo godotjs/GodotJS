@@ -1,0 +1,26 @@
+name: ⏲️ Scheduled Merge Version
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Sunday midnight
+
+jobs:
+  scheduled-merge-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Find Changeset PR
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(gh pr list --state open --search "chore: update versions" --author "app/github-actions" --json number --jq '.[0].number')
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
+      - name: 🔀 Merge PR
+        if: env.PR_NUMBER
+        run: gh pr merge $PR_NUMBER --admin
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
