@@ -1,4 +1,6 @@
 {
+  "name": "@godot-js/jsb-runtime",
+  "private": true,
   "scripts": {
     "build": "tsc"
   },

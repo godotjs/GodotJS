@@ -4,6 +4,7 @@ import io
 import time
 import re
 import zlib
+import subprocess
 from misc.utility.color import print_error, print_info, print_warning
 # from typing import TypedDict, Callable
 
@@ -529,6 +530,10 @@ if is_defined("JSB_WITH_JAVASCRIPTCORE"):
         env_jsb.Append(CPPPATH=[f"jsc"])
         if env.msvc and env["vsproj"]:
             env.Append(CPPPATH=[f"#modules/{module_name}/impl/jsc/_NOT_FOR_INCLUDE_"])
+
+# Build JS files before generating
+if not os.path.exists("scripts/out"):
+    print(subprocess.check_output(["pnpm", "build"]))
 
 generate_code([\
         # presets for runtime

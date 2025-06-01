@@ -1,0 +1,93 @@
+name: 🌳 Set Environment
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "Godot version"
+        value: ${{ jobs.environment.outputs.version }}
+      v8:
+        description: "V8 version"
+        value: ${{ jobs.environment.outputs.v8 }}
+      publish:
+        description: "Should publish"
+        value: ${{ jobs.environment.outputs.publish }}
+
+jobs:
+  environment:
+    name: 🌳 Set Environment
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.versions.outputs.version }}
+      v8: ${{ steps.versions.outputs.v8 }}
+      publish: ${{ steps.should_publish.outputs.publish }}
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛫 Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: 🦕❌ Setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: 🛠️ Build scripts/out
+        run: |
+          pnpm install
+          pnpm build
+
+      - name: ⬆️ Upload scripts/out
+        uses: actions/upload-artifact@v4
+        with:
+          name: out
+          path: ${{github.workspace}}/modules/GodotJS/scripts/out
+          retention-days: 10
+
+      - name: 🏷 Set Versions
+        id: versions
+        run: |
+          echo "version=4.4" >> $GITHUB_OUTPUT
+          echo "v8=v8_12.4.254.21_r13" >> $GITHUB_OUTPUT
+
+      - name: 🎱 Deps v8
+        shell: bash
+        env:
+          V8: ${{ steps.versions.outputs.v8 }}
+        run: |
+          curl -L -o "$V8.zip" "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/$V8/$V8.zip"
+          unzip "$V8.zip" -d "/tmp/$V8"
+          mkdir -p "${{github.workspace}}/modules/GodotJS/"
+          mv "/tmp/$V8/v8" "${{github.workspace}}/modules/GodotJS/v8"
+          ls "${{github.workspace}}/modules/GodotJS/v8"
+
+      - name: ⬆️ Upload v8
+        uses: actions/upload-artifact@v4
+        with:
+          name: V8
+          path: ${{github.workspace}}/modules/GodotJS/v8
+          retention-days: 10
+
+      - name: 🆚 Create and publish versions
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: "chore: update versions"
+          title: "chore: update versions"
+          version: pnpm ci:version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ❓ Should publish
+        id: should_publish
+        env:
+          HAS_CHANGESETS: ${{ steps.changesets.outputs.hasChangesets }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHOULD_PUBLISH=$(pnpm run ci:should-publish)
+          if [[ $SHOULD_PUBLISH == "true" && $HAS_CHANGESETS == "false" ]]; then
+            echo "publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "publish=false" >> $GITHUB_OUTPUT
+          fi

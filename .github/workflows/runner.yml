@@ -7,8 +7,8 @@ on:
   push:
     branches:
       - "main"
-  release:
-    types: [ published ]
+  schedule:
+    - cron: "2 0 * * 0" # Sunday after midnight to trigger a release
 
 concurrency:
   group: ${{ github.workflow }}|${{ github.ref_name }}
@@ -20,74 +20,46 @@ permissions:
 jobs:
   environment:
     name: 🌳 Set Environment
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.versions.outputs.version }}
-      v8: ${{ steps.versions.outputs.v8 }}
-    steps:
-      - name: 🏷 Set Versions
-        id: versions
-        run: |
-          echo "version=4.4" >> $GITHUB_OUTPUT
-          echo "v8=v8_12.4.254.21_r13" >> $GITHUB_OUTPUT
-
-      - name: 🎱 Deps v8
-        shell: bash
-        env:
-          V8: ${{ steps.versions.outputs.v8 }}
-        run: |
-          curl -L -o "$V8.zip" "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/$V8/$V8.zip"
-          unzip "$V8.zip" -d "/tmp/$V8"
-          mkdir -p "${{github.workspace}}/modules/GodotJS/"
-          mv "/tmp/$V8/v8" "${{github.workspace}}/modules/GodotJS/v8"
-          ls "${{github.workspace}}/modules/GodotJS/v8"
-          
-
-      - name: ⬆️ Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: V8
-          path: ${{github.workspace}}/modules/GodotJS/v8
-          retention-days: 10
+    uses: ./.github/workflows/misc/environment.yml
 
   android-build:
     name: 🤖 Android
-    uses: ./.github/workflows/android_builds.yml
+    uses: ./.github/workflows/builds/android.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   ios-build:
     name: 🍏 iOS
-    uses: ./.github/workflows/ios_builds.yml
+    uses: ./.github/workflows/builds/ios.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   linux-build:
     name: 🐧 Linux
-    uses: ./.github/workflows/linux_builds.yml
+    uses: ./.github/workflows/builds/linux.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   macos-build:
     name: 🍎 macOS
-    uses: ./.github/workflows/macos_builds.yml
+    uses: ./.github/workflows/builds/macos.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   windows-build:
     name: 🏁 Windows
-    uses: ./.github/workflows/windows_builds.yml
+    uses: ./.github/workflows/builds/windows.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   web-build:
     name: 🌐 Web
-    uses: ./.github/workflows/web_builds.yml
+    uses: ./.github/workflows/builds/web.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
@@ -132,9 +104,9 @@ jobs:
 
   release:
     name: 🦅 Release
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: needs.environment.outputs.publish == 'true'
     needs: [ checks-done, environment ]
-    uses: ./.github/workflows/release_builds.yml
+    uses: ./.github/workflows/misc/release.yml
     secrets: inherit
     with:
       version: ${{ needs.environment.outputs.version }}

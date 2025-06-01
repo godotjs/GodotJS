@@ -55,6 +55,12 @@ jobs:
           lfs: true
           submodules: recursive
 
+      - name: Download out
+        uses: actions/download-artifact@v4
+        with:
+          name: out
+          path: ${{github.workspace}}/modules/GodotJS/scripts/out
+
       - name: Set up Emscripten latest
         uses: mymindstorm/setup-emsdk@v14
         with:
