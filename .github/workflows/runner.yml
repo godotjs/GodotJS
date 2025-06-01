@@ -99,13 +99,13 @@ jobs:
         macos-build,
         linux-build,
         ios-build,
-        android-build
+        android-build,
       ]
 
   release:
     name: 🦅 Release
-    if: needs.environment.outputs.publish == 'true'
-    needs: [ checks-done, environment ]
+    if: needs.environment.outputs.publish == 'true' && github.event_name != 'pull_request'
+    needs: [checks-done, environment]
     uses: ./.github/workflows/misc_release.yml
     secrets: inherit
     with:
