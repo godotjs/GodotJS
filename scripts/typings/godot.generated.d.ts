@@ -40,6 +40,7 @@ declare module "godot" {
     }
     type byte = number
     type int32 = number
+    type uint32 = number
     type int64 = number /* || bigint */
     type float32 = number
     type float64 = number
