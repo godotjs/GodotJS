@@ -22,6 +22,17 @@ __MACOSX
 /jsb.gen.h
 /jsb_project_preset.gen.cpp
 /weaver-editor/templates/templates.gen.h
+/release-notes.md
+/*/out
 
+# VS Code
 .vscode
-.idea
+
+# IntelliJ IDEA project files
+/.idea/
+
+# Node modules
+/node_modules/
+
+# pnpm store
+.pnpm-store

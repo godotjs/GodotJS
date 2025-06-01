@@ -13,32 +13,43 @@ permissions:
   contents: write
 
 jobs:
-  rename:
+  release:
     runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.publish_release.outputs.id }}
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v4
 
-      - name: 📛 Add version to release name
-        uses: actions/github-script@v6
-        with:
-          result-encoding: json
-          script: |
-            const { repo, owner } = context.repo;
-            await github.rest.repos.updateRelease({
-              owner,
-              repo,
-              release_id: context.payload.release.id,
-              name: '${{ inputs.version }}-${{ inputs.v8 }}-' + context.payload.release.name,
-            });
+      - name: 🛫 Setup pnpm
+        uses: pnpm/action-setup@v4
 
-  release:
+      - name: 🦕❌ Setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: 🔄️ Install dependencies
+        run: pnpm install
+
+      - name: 🚢 Publish release
+        id: publish_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm ci:publish ${{ inputs.version }} ${{ inputs.v8 }}
+          RELEASE_ID=$(gh release view ${{ inputs.version }} --json id --jq ".id")          
+          echo "id=$RELEASE_ID" >> $GITHUB_OUTPUT
+
+  upload-assets:
     runs-on: ubuntu-latest
     name: ${{ matrix.os }}-${{ matrix.target }}-${{ matrix.engine }}
+    needs: [ release ]
     strategy:
       fail-fast: false
       matrix:
-        engine: [ v8,qjs-ng ]
+        engine: [ v8, qjs-ng ]
         os: [ android, ios, linux, macos, web, web-nothreads, windows ]
         target: [ template-release ]
         include:
@@ -87,7 +98,7 @@ jobs:
             return await github.rest.repos.uploadReleaseAsset({
               owner,
               repo,
-              release_id: context.payload.release.id,
+              release_id: ${{ needs.release.outputs.id }},
               name: '${{ steps.name.outputs.name }}.zip',
               data: FS.readFileSync('${{ github.workspace }}/${{ steps.name.outputs.name }}.zip')
             });
