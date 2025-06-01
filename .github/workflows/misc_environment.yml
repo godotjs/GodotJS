@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: out
-          path: ${{github.workspace}}/modules/GodotJS/scripts/out
+          path: ${{github.workspace}}/scripts/out
           retention-days: 10
 
       - name: 🏷 Set Versions
