@@ -20,46 +20,46 @@ permissions:
 jobs:
   environment:
     name: 🌳 Set Environment
-    uses: ./.github/workflows/misc/environment.yml
+    uses: ./.github/workflows/misc_environment.yml
 
   android-build:
     name: 🤖 Android
-    uses: ./.github/workflows/builds/android.yml
+    uses: ./.github/workflows/build_android.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   ios-build:
     name: 🍏 iOS
-    uses: ./.github/workflows/builds/ios.yml
+    uses: ./.github/workflows/build_ios.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   linux-build:
     name: 🐧 Linux
-    uses: ./.github/workflows/builds/linux.yml
+    uses: ./.github/workflows/build_linux.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   macos-build:
     name: 🍎 macOS
-    uses: ./.github/workflows/builds/macos.yml
+    uses: ./.github/workflows/build_macos.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   windows-build:
     name: 🏁 Windows
-    uses: ./.github/workflows/builds/windows.yml
+    uses: ./.github/workflows/build_windows.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
 
   web-build:
     name: 🌐 Web
-    uses: ./.github/workflows/builds/web.yml
+    uses: ./.github/workflows/build_web.yml
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
@@ -106,7 +106,7 @@ jobs:
     name: 🦅 Release
     if: needs.environment.outputs.publish == 'true'
     needs: [ checks-done, environment ]
-    uses: ./.github/workflows/misc/release.yml
+    uses: ./.github/workflows/misc_release.yml
     secrets: inherit
     with:
       version: ${{ needs.environment.outputs.version }}
