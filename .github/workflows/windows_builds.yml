@@ -130,6 +130,7 @@ jobs:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
           platform: windows
           target: ${{ matrix.target }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Save Godot build cache

@@ -118,7 +118,7 @@ jobs:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
           platform: linuxbsd
           target: ${{ matrix.target }}
-          tests: ${{ matrix.tests }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
 

@@ -108,6 +108,7 @@ jobs:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=arm64
           platform: macos
           target: ${{ matrix.target }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Save Godot build cache
