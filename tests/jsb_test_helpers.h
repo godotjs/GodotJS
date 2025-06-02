@@ -113,7 +113,9 @@ namespace jsb::tests
             CHECK(FileAccess::exists("project.godot"));
             // MESSAGE("init GodotJSScriptLanguage on thread ", Thread::get_caller_id());
 
-            install_npm();
+        	install_npm();
+        	// Wait for 1 second until ./node_modules has been created
+        	std::this_thread::sleep_for(std::chrono::seconds(1));
             compile_scripts();
             ignore_directories();
             GodotJSScriptLanguage::get_singleton()->init();
