@@ -8,7 +8,11 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: strict_checks=yes debug_symbols=no module_text_server_fb_enabled=yes
+  SCONSFLAGS: >-
+    strict_checks=yes 
+    debug_symbols=no 
+    module_text_server_fb_enabled=yes 
+    swappy=yes
 
 # We only build template release - most developers will use a desktop device for editor
 jobs:
@@ -24,14 +28,20 @@ jobs:
             cache-name: android-template-release-v8
             target: template_release
             tests: false
-            sconsflags: arch=arm64 swappy=yes deprecated=no ndk_platform=android-24 generate_apk=yes
+            sconsflags: >-
+              arch=arm64 
+              deprecated=no 
+              ndk_platform=android-24 
+              generate_apk=yes
             cache-limit: 1
 
           - name: Template (target=template_release, arch=arm64, qjs_ng)
             cache-name: android-template-release-qjs-ng
             target: template_release
             tests: false
-            sconsflags: arch=arm64 swappy=yes use_quickjs_ng=yes
+            sconsflags: >-
+              arch=arm64 
+              use_quickjs_ng=yes
             cache-limit: 1
 
     steps:
