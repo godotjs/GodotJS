@@ -41,7 +41,7 @@ jobs:
           mkdir -p "${{github.workspace}}/modules/GodotJS/"
           mv "/tmp/$V8/v8" "${{github.workspace}}/modules/GodotJS/v8"
           ls "${{github.workspace}}/modules/GodotJS/v8"
-          
+
 
       - name: ⬆️ Upload artifact
         uses: actions/upload-artifact@v4
@@ -70,6 +70,7 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
+      tests: ${{ github.event_name != 'release' }}
 
   macos-build:
     name: 🍎 macOS
@@ -77,6 +78,7 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
+      tests: ${{ github.event_name != 'release' }}
 
   windows-build:
     name: 🏁 Windows
@@ -84,6 +86,7 @@ jobs:
     needs: environment
     with:
       version: ${{ needs.environment.outputs.version }}
+      tests: ${{ github.event_name != 'release' }}
 
   web-build:
     name: 🌐 Web

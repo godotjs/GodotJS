@@ -5,10 +5,15 @@ on:
       version:
         required: true
         type: string
+      tests:
+        type: boolean
+        default: true
 
 # Global Settings
 env:
-  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: >-
+    module_text_server_fb_enabled=yes 
+    strict_checks=yes
   TSAN_OPTIONS: suppressions=misc/error_suppressions/tsan.txt
   UBSAN_OPTIONS: suppressions=misc/error_suppressions/ubsan.txt
 
@@ -37,7 +42,6 @@ jobs:
             cache-name: linux-template-debug-v8
             sconsflags: debug_symbols=no
             target: template_debug
-            bin: ./bin/godot.linuxbsd.template_debug.x86_64.v8
             cache-limit: 1
 
           - name: Editor (target=editor, qjs_ng)
@@ -114,6 +118,7 @@ jobs:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
           platform: linuxbsd
           target: ${{ matrix.target }}
+          tests: ${{ matrix.tests }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
 
@@ -132,3 +137,12 @@ jobs:
         uses: ./.github/actions/upload-artifact
         with:
           name: ${{ matrix.cache-name }}
+
+      - name: Unit tests
+        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        env:
+          BIN: ./bin/godot.linuxbsd.editor.x86_64
+        run: |
+          ${{ env.BIN }} --version
+          ${{ env.BIN }} --help
+          ${{ env.BIN }} --headless --test --test-case="[jsb]*" --force-colors

@@ -4,6 +4,9 @@
 #include "../weaver/jsb_script_language.h"
 #include "tests/test_macros.h"
 
+#include <chrono>
+#include <thread>
+
 #define JSB_TESTS_EXECUTION_SCOPE(env) const jsb::tests::V8ContextScope JSB_CONCAT(unique_, __COUNTER__)(env)
 
 namespace jsb::tests
@@ -143,6 +146,8 @@ namespace jsb::tests
             const String exe_path = OS::get_singleton()->get_name() != "Windows" ? "node" : "node.exe";
             const Error err = OS::get_singleton()->create_process(exe_path, args);
             CHECK(err == OK);
+			// Wait for 1 second until ./.godot has been created
+        	std::this_thread::sleep_for(std::chrono::seconds(1));
             CHECK(FileAccess::exists("./.godot/GodotJS/test_01.js"));
         }
 

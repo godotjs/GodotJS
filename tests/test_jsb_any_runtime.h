@@ -418,7 +418,7 @@ console.assert(!gd.is_instance_valid(node));
         Error err;
         GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
 let gd = require("godot");
-let mod = require("test_01");
+let mod = require(".godot/GodotJS/test_01");
 console.assert(typeof mod === "object");
 console.assert(mod.call_me() == 123);
 console.assert(typeof mod.default === "function");

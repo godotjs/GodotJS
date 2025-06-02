@@ -5,10 +5,15 @@ on:
       version:
         required: true
         type: string
+      tests:
+        type: boolean
+        default: true
 
 # Global Settings
 env:
-  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
+  SCONSFLAGS: >-
+    module_text_server_fb_enabled=yes 
+    strict_checks=yes
 
 jobs:
   build-macos:
@@ -127,6 +132,15 @@ jobs:
         uses: ./.github/actions/upload-artifact
         with:
           name: ${{ matrix.cache-name }}
+
+      - name: Unit tests
+        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        env:
+          BIN: ./bin/godot.macos.editor.universal
+        run: |
+          ${{ env.BIN }} --version
+          ${{ env.BIN }} --help
+          ${{ env.BIN }} --headless --test --test-case="[jsb]*" --force-colors
 
   build-macos-apps:
     needs:

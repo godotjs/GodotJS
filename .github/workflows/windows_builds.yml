@@ -5,11 +5,18 @@ on:
       version:
         required: true
         type: string
+      tests:
+        type: boolean
+        default: true
 
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  SCONSFLAGS: module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes "angle_libs=${{ github.workspace }}/"
+  SCONSFLAGS: >-
+    module_text_server_fb_enabled=yes 
+    d3d12=yes 
+    strict_checks=yes 
+    "angle_libs=${{ github.workspace }}/"
   SCONS_CACHE_MSVC_CONFIG: true
 
 jobs:
@@ -26,7 +33,11 @@ jobs:
             cache-name: windows-editor-v8
             target: editor
             # Skip debug symbols, they're way too big with MSVC.
-            sconsflags: debug_symbols=no vsproj=yes vsproj_gen_only=no windows_subsystem=console
+            sconsflags: >-
+              debug_symbols=no 
+              vsproj=yes 
+              vsproj_gen_only=no 
+              windows_subsystem=console
             cache-limit: 2
 
           - name: Template (target=template_debug, v8)
@@ -45,7 +56,12 @@ jobs:
             cache-name: windows-editor-qjs-ng
             target: editor
             # Skip debug symbols, they're way too big with MSVC.
-            sconsflags: debug_symbols=no vsproj=yes vsproj_gen_only=no windows_subsystem=console use_quickjs_ng=yes
+            sconsflags: >-
+              debug_symbols=no 
+              vsproj=yes 
+              vsproj_gen_only=no 
+              windows_subsystem=console 
+              use_quickjs_ng=yes
             cache-limit: 2
             engine: qjs_ng
 
@@ -130,3 +146,12 @@ jobs:
         uses: ./.github/actions/upload-artifact
         with:
           name: ${{ matrix.cache-name }}
+
+      - name: Unit tests
+        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        env:
+          BIN: ./bin/godot.windows.editor.x86_64.exe
+        run: |
+          ${{ env.BIN }} --version
+          ${{ env.BIN }} --help
+          ${{ env.BIN }} --headless --test --test-case="[jsb]*" --force-colors
