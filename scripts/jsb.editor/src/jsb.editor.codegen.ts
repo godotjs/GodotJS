@@ -1,4 +1,5 @@
 import type {
+    ExtractValueKeys,
     FileAccess,
     GArray,
     GDictionary,
@@ -6,6 +7,8 @@ import type {
     Node,
     PropertyInfo,
     Resource,
+    ResourceTypes,
+    Script,
     Variant,
 } from "godot";
 
@@ -1136,7 +1139,7 @@ export type UserTypeDescriptor = GDictionary<{
     /**
      * res:// style path to the TypeScript module where this type is exported.
      */
-    resource: string;
+    resource: ExtractValueKeys<ResourceTypes, Script>;
     /**
      * Preferred type name to use when importing.
      */
