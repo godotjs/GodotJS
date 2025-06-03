@@ -8,6 +8,9 @@ declare module "godot" {
 
     class Node<Map extends Record<string, Node> = any> extends Object { }
     class Resource { }
+    class Script extends Resource { }
+    interface ResourceTypes { }
+
     class GArray<T = any> {
         static create<T>(elements: [T] extends [GArray<infer E>] ? Array<E | GProxyValueWrap<E>> : Array<T | GProxyValueWrap<T>>):
           [T] extends [GArray<infer E>]
