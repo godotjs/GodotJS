@@ -48,8 +48,8 @@ void GodotJSEditorPlugin::_notification(int p_what)
         singleton_ = this;
         // stupid self watching, but there is no other way which work both in module and gdextension
     	// EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
-        connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
-        connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_resource_dts));
+        connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_on_scene_saved));
+        connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_on_resource_saved));
         EditorFileSystem::get_singleton()->connect("resources_reimported", callable_mp(this, &GodotJSEditorPlugin::_generate_imported_resource_dts));
         break;
     default: break;
@@ -459,15 +459,22 @@ void GodotJSEditorPlugin::cleanup_invalid_files()
     JSB_LOG(Log, "%d files are deleted", deleted_num);
 }
 
-void GodotJSEditorPlugin::_generate_edited_scene_dts(const String& p_path)
+void GodotJSEditorPlugin::_on_scene_saved(const String& p_path)
 {
     if (!jsb::internal::Settings::get_autogen_scene_dts_on_save()) return;
 
     Vector<String> paths = { p_path };
     generate_scene_nodes_dts(paths);
+
+    // Curiously, the "resource_saved" signal is not emitted for scenes even though they're resources. So we implement
+    // resource saved logic here too.
+
+    if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
+
+    generate_resource_dts(paths);
 }
 
-void GodotJSEditorPlugin::_generate_edited_resource_dts(const Ref<Resource>& p_resource)
+void GodotJSEditorPlugin::_on_resource_saved(const Ref<Resource>& p_resource)
 {
     if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
 

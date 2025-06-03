@@ -53,8 +53,8 @@ private:
 
     std::shared_ptr<jsb::internal::Process> tsc_;
 
-    void _generate_edited_scene_dts(const String& p_path);
-    void _generate_edited_resource_dts(const Ref<Resource>& p_resource);
+    void _on_scene_saved(const String& p_path);
+    void _on_resource_saved(const Ref<Resource>& p_resource);
     void _generate_imported_resource_dts(const Vector<String>& p_resources);
 
 protected:
