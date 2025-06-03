@@ -174,6 +174,15 @@ declare module "godot" {
     type StaticNodePath<Map extends NodePathMap> = StaticPath<Map, Node, never, typeof __PathMappableDummyKeys.Node>;
     type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never> =
         ResolvePath<Map, Path, Default, Node, never, typeof __PathMappableDummyKeys.Node>;
+    type ResolveNodePathMap<Map extends NodePathMap, Path extends string, Default = never> = Path extends keyof Map
+      ? Map[Path] extends Node<infer ChildMap>
+        ? ChildMap
+        : Default
+      : Path extends `${infer Key extends keyof Map & string}/${infer SubPath}`
+        ? Map[Key] extends Node<infer ChildMap>
+          ? ResolveNodePathMap<ChildMap, SubPath, Default>
+          : Default
+        : Default;
 
     type AnimationMixerPathMap = PathMap<AnimationLibrary>;
     type StaticAnimationMixerPath<Map extends AnimationMixerPathMap> =
