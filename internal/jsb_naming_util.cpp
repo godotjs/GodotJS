@@ -67,6 +67,27 @@ namespace jsb::internal
 			{ "XRAPI", "XRApi" },
 	});
 
+	const HashSet<String> omitted_original_classes_set = {
+		"IPUnix",
+		"ScriptEditorDebugger",
+		"Thread",
+		"Semaphore",
+
+		// GodotJS related clases
+		"GodotJSEditorPlugin",
+		"GodotJSExportPlugin",
+		"GodotJSREPL",
+		"GodotJSScript",
+		"GodotJSEditorHelper",
+		"GodotJSEditorProgress",
+
+		// GDScript related classes
+		"GDScript",
+		"GDScriptEditorTranslationParserPlugin",
+		"GDScriptNativeClass",
+		"GDScriptSyntaxHighlighter"
+	};
+
 	String _get_pascal_case_part_override(String p_part, bool p_input_is_upper = true)
 	{
 		if (!p_input_is_upper)
@@ -337,10 +358,10 @@ namespace jsb::internal
 		return ret;
 	}
 
-	List<StringName> NamingUtil::get_exposed_class_list()
+	List<StringName> NamingUtil::get_exposed_original_class_list()
 	{
 #ifdef TOOLS_ENABLED
-		HashSet<StringName> ignored_classes_set;
+		HashSet<String> ignored_classes_set;
 
 		if (internal::Settings::editor_settings_available())
 		{
@@ -364,6 +385,12 @@ namespace jsb::internal
 		{
 			StringName class_name = *it;
 
+			if (omitted_original_classes_set.has(class_name))
+			{
+				JSB_LOG(Verbose, "Omitted class '%s' as it's currently not usable from JavaScript", class_name);
+				continue;
+			}
+
 #ifdef TOOLS_ENABLED
 			if (ignored_classes_set.has(get_class_name(class_name)))
 			{
@@ -376,6 +403,7 @@ namespace jsb::internal
 
 			if (api_type == ClassDB::API_NONE)
 			{
+				JSB_LOG(Verbose, "Ignoring class '%s' because it's marked as API_NONE", class_name);
 				continue;
 			}
 
@@ -395,5 +423,39 @@ namespace jsb::internal
 		}
 
 		return exposed_class_names;
+	}
+
+	bool NamingUtil::is_original_class_exposed(const String& p_original_name)
+	{
+		if (omitted_original_classes_set.has(p_original_name))
+		{
+			return false;
+		}
+
+		ClassDB::APIType api_type = ClassDB::get_api_type(p_original_name);
+
+		if (api_type == ClassDB::API_NONE)
+		{
+			return false;
+		}
+
+		if (!ClassDB::is_class_exposed(p_original_name))
+		{
+			return false;
+		}
+
+		if (!ClassDB::is_class_enabled(p_original_name))
+		{
+			return false;
+		}
+
+#ifdef TOOLS_ENABLED
+		if (internal::Settings::get_ignored_classes().find(p_original_name) >= 0)
+		{
+			return false;
+		}
+#endif
+
+		return true;
 	}
 }

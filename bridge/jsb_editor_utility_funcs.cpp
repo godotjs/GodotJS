@@ -786,7 +786,7 @@ namespace jsb
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-        List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_class_list();
+        List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_original_class_list();
         v8::Local<v8::Array> array = v8::Array::New(isolate, exposed_class_list.size());
         int index = 0;
 

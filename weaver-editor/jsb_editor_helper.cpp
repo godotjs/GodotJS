@@ -87,6 +87,18 @@ bool GodotJSEditorHelper::_request_codegen(jsb::JSEnvironment& p_env, GodotJSScr
     return true;
 }
 
+StringName GodotJSEditorHelper::_get_exposed_node_class_name(const StringName& class_name)
+{
+    StringName exposed_class_name = class_name;
+
+    while (!jsb::internal::NamingUtil::is_original_class_exposed(exposed_class_name))
+    {
+        exposed_class_name = ClassDB::get_parent_class(exposed_class_name);
+    }
+
+    return jsb::internal::NamingUtil::get_class_name(exposed_class_name);
+}
+
 Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, const String& scene_resource_path)
 {
     Dictionary descriptor;
@@ -177,7 +189,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
             }
 
             descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
-            descriptor[jsb_string_name(name)] = jsb::internal::NamingUtil::get_class_name(p_node->get_class_name());
+            descriptor[jsb_string_name(name)] = GodotJSEditorHelper::_get_exposed_node_class_name(p_node->get_class_name());
             descriptor[jsb_string_name(arguments)] = generic_arguments;
         }
         else
@@ -332,9 +344,8 @@ Dictionary GodotJSEditorHelper::get_resource_type_descriptor(const String& p_pat
 
     if (script == nullptr || GodotJSScriptLanguage::get_singleton()->is_global_class_generic(script->get_path()))
     {
-        const StringName& resource_class = resource->get_class_name();
         descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
-        descriptor[jsb_string_name(name)] = resource_class == jsb_string_name(GodotJSScript) ? "Script" : jsb::internal::NamingUtil::get_class_name(resource_class);
+        descriptor[jsb_string_name(name)] = GodotJSEditorHelper::_get_exposed_node_class_name(resource->get_class_name());
     }
     else
     {
