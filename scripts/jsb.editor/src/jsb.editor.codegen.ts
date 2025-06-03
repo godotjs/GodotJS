@@ -414,11 +414,16 @@ const TypeMutations: Record<string, TypeMutation> = {
             }
         ],
         property_overrides: {
+            add_child: mutate_parameter_type('node', 'NodePathMapChild<Map>'),
+            get_child: mutate_return_type('NodePathMapChild<Map>'),
+            get_children: mutate_return_type('GArray<NodePathMapChild<Map>>'),
             get_node: ["get_node<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>"],
             get_node_or_null: [
                 "get_node_or_null<Path extends StaticNodePath<Map>, Default = never>(path: Path): null | ResolveNodePath<Map, Path, Default>",
                 "get_node_or_null(path: NodePath | string): null | Node",
             ],
+            move_child: mutate_parameter_type(names.get_parameter('child_node'), 'NodePathMapChild<Map>'),
+            remove_child: mutate_parameter_type('node', 'NodePathMapChild<Map>'),
             validate_property: mutate_parameter_type("property", "GDictionary<PropertyInfo>"),
         },
     },

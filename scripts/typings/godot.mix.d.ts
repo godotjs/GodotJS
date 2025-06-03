@@ -170,6 +170,12 @@ declare module "godot" {
             : never
     >;
 
+    type PathMapChild<Map extends NodePathMap, Permitted, Default> = IfAny<
+      Map,
+      Permitted,
+      Map[keyof Map] extends undefined | Permitted ? Exclude<Map[keyof Map], undefined> : Default
+    >;
+
     type NodePathMap = PathMap<Node>;
     type StaticNodePath<Map extends NodePathMap> = StaticPath<Map, Node, never, typeof __PathMappableDummyKeys.Node>;
     type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never> =
@@ -183,6 +189,7 @@ declare module "godot" {
           ? ResolveNodePathMap<ChildMap, SubPath, Default>
           : Default
         : Default;
+    type NodePathMapChild<Map extends NodePathMap> = PathMapChild<Map, Node, Node>;
 
     type AnimationMixerPathMap = PathMap<AnimationLibrary>;
     type StaticAnimationMixerPath<Map extends AnimationMixerPathMap> =
