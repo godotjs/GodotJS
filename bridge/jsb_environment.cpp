@@ -319,7 +319,7 @@ namespace jsb
             // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
             if (internal::Settings::get_camel_case_bindings_enabled())
             {
-                List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_class_list();
+                List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_original_class_list();
 
                 for (auto it = exposed_class_list.begin(); it != exposed_class_list.end(); ++it)
                 {

@@ -728,33 +728,6 @@ const PrimitiveTypeNames: { [type: number]: string } = {
 const RemapTypes: { [name: string]: string } = {
     ["bool"]: "boolean",
 }
-const IgnoredTypes = new Set([
-    "IPUnix",
-    "ScriptEditorDebugger",
-    "Thread",
-    "Semaphore",
-
-    //
-    // "GodotNavigationServer2D",
-    // "GodotPhysicsServer2D",
-    // "GodotPhysicsServer3D",
-    // "PhysicsServer2DExtension",
-    // "PhysicsServer3DExtension",
-
-    // GodotJS related clases
-    "GodotJSEditorPlugin",
-    "GodotJSExportPlugin",
-    "GodotJSREPL",
-    "GodotJSScript",
-    "GodotJSEditorHelper",
-    "GodotJSEditorProgress",
-
-    // GDScript related classes
-    "GDScript",
-    "GDScriptEditorTranslationParserPlugin",
-    "GDScriptNativeClass",
-    "GDScriptSyntaxHighlighter",
-])
 const GlobalUtilityFuncs = [
     {
         description: "shorthand for getting project settings",
@@ -2530,9 +2503,6 @@ export class TSDCodeGen {
         // godot classes
         for (let class_name in this._types.classes) {
             const cls = this._types.classes[class_name];
-            if (IgnoredTypes.has(class_name)) {
-                continue;
-            }
             if (typeof this._types.singletons[class_name] !== "undefined") {
                 // ignore the class if it's already defined as Singleton
                 continue;
@@ -2772,7 +2742,7 @@ export class SceneTSDCodeGen {
     private make_scene_path(scene_path: string, include_filename = true) {
         const relative_path = (
             include_filename
-                ? scene_path.replace(/\.t?scn$/i, ".nodes.gen.d.ts")
+                ? scene_path.replace(/\.t?scn$/i, ".nodes.gen.ts")
                 : scene_path.replace(/\/[^\/]+$/, "")
         ).replace(/^res:\/\/?/, "");
 
@@ -2877,7 +2847,7 @@ export class ResourceTSDCodeGen {
     private make_resource_path(resource_path: string, include_filename = true) {
         const relative_path = (
           include_filename
-            ? resource_path + ".gen.d.ts"
+            ? resource_path + ".gen.ts"
             : resource_path.replace(/\/[^\/]+$/, "")
         ).replace(/^res:\/\/?/, "");
 
