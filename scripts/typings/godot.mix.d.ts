@@ -156,8 +156,10 @@ declare module "godot" {
         DummyKey extends any
             ? (
                 Path extends keyof Map
-                    ? Map[Path] extends Permitted
-                        ? Map[Path]
+                    ? [Map[Path]] extends [Permitted]
+                        ? [undefined] extends [Map[Path]]
+                            ? null | Exclude<Map[Path], undefined>
+                            : Map[Path]
                         : Default
                     : Path extends `${infer Key extends Exclude<keyof Map, DefaultKey> & string}/${infer SubPath}`
                         ? Map[Key] extends PathMappable<DummyKey, infer ChildMap>
@@ -177,9 +179,9 @@ declare module "godot" {
     >;
 
     type NodePathMap = PathMap<Node>;
-    type StaticNodePath<Map extends NodePathMap> = StaticPath<Map, Node, never, typeof __PathMappableDummyKeys.Node>;
-    type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never> =
-        ResolvePath<Map, Path, Default, Node, never, typeof __PathMappableDummyKeys.Node>;
+    type StaticNodePath<Map extends NodePathMap, Permitted = Node> = StaticPath<Map, Permitted, never, typeof __PathMappableDummyKeys.Node>;
+    type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never, Permitted = Node> =
+        ResolvePath<Map, Path, Default, Permitted, never, typeof __PathMappableDummyKeys.Node>;
     type ResolveNodePathMap<Map extends NodePathMap, Path extends string, Default = never> = Path extends keyof Map
       ? Map[Path] extends Node<infer ChildMap>
         ? ChildMap

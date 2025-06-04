@@ -422,7 +422,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             get_children: mutate_return_type('GArray<NodePathMapChild<Map>>'),
             get_node: ["get_node<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>"],
             get_node_or_null: [
-                "get_node_or_null<Path extends StaticNodePath<Map>, Default = never>(path: Path): null | ResolveNodePath<Map, Path, Default>",
+                "get_node_or_null<Path extends StaticNodePath<Map, undefined | Node>, Default = null>(path: Path): null | ResolveNodePath<Map, Path, Default, undefined | Node>",
                 "get_node_or_null(path: NodePath | string): null | Node",
             ],
             move_child: mutate_parameter_type(names.get_parameter('child_node'), 'NodePathMapChild<Map>'),
