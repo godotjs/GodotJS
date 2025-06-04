@@ -173,9 +173,9 @@ declare module "godot" {
     >;
 
     type PathMapChild<Map extends NodePathMap, Permitted, Default> = IfAny<
-      Map,
-      Permitted,
-      Map[keyof Map] extends undefined | Permitted ? Exclude<Map[keyof Map], undefined> : Default
+        Map,
+        Permitted,
+        Map[keyof Map] extends undefined | Permitted ? Exclude<Map[keyof Map], undefined> : Default
     >;
 
     type NodePathMap = PathMap<Node>;
@@ -183,14 +183,14 @@ declare module "godot" {
     type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never, Permitted = Node> =
         ResolvePath<Map, Path, Default, Permitted, never, typeof __PathMappableDummyKeys.Node>;
     type ResolveNodePathMap<Map extends NodePathMap, Path extends string, Default = never> = Path extends keyof Map
-      ? Map[Path] extends Node<infer ChildMap>
-        ? ChildMap
-        : Default
-      : Path extends `${infer Key extends keyof Map & string}/${infer SubPath}`
-        ? Map[Key] extends Node<infer ChildMap>
-          ? ResolveNodePathMap<ChildMap, SubPath, Default>
-          : Default
-        : Default;
+        ? Map[Path] extends Node<infer ChildMap>
+            ? ChildMap
+            : Default
+        : Path extends `${infer Key extends keyof Map & string}/${infer SubPath}`
+            ? Map[Key] extends Node<infer ChildMap>
+                ? ResolveNodePathMap<ChildMap, SubPath, Default>
+                : Default
+            : Default;
     type NodePathMapChild<Map extends NodePathMap> = PathMapChild<Map, Node, Node>;
 
     type AnimationMixerPathMap = PathMap<AnimationLibrary>;
@@ -224,7 +224,7 @@ declare module "godot" {
         /**
          * Appends new elements to the end of an array, and returns the new length of the array.
          * @param item New element to add to the array.
-		 * @param additionalItems Additional new elements to add to the array.
+         * @param additionalItems Additional new elements to add to the array.
          */
         push(item: T | GProxyValueWrap<T>, ...additionalItems: Array<T | GProxyValueWrap<T>>): number;
         /**
@@ -258,17 +258,17 @@ declare module "godot" {
             : V;
 
     type GProxyValueUnwrap<V> = V extends GArray<infer E>
-      ? E
-      : V extends GDictionary<infer T>
-        ? T
-        : V;
+        ? E
+        : V extends GDictionary<infer T>
+            ? T
+            : V;
 
     type GWrappableValue = GAny | GWrappableValue[] | { [key: string]: GWrappableValue };
     type GValueWrapUnchecked<V> = V extends Array<infer E>
-      ? GArray<GValueWrapUnchecked<E>>
-      : V extends GAny
-        ? V
-        : GDictionary<{ [K in keyof V]: GValueWrapUnchecked<V[K]> }>;
+        ? GArray<GValueWrapUnchecked<E>>
+        : V extends GAny
+            ? V
+            : GDictionary<{ [K in keyof V]: GValueWrapUnchecked<V[K]> }>;
     type GValueWrap<V> = [V] extends [GWrappableValue] ? GValueWrapUnchecked<V> : never;
 
     /**
