@@ -425,6 +425,7 @@ const TypeMutations: Record<string, TypeMutation> = {
                 "get_node_or_null<Path extends StaticNodePath<Map, undefined | Node>, Default = null>(path: Path): null | ResolveNodePath<Map, Path, Default, undefined | Node>",
                 "get_node_or_null(path: NodePath | string): null | Node",
             ],
+            get_tree: mutate_return_type('SceneTree'),
             move_child: mutate_parameter_type(names.get_parameter('child_node'), 'NodePathMapChild<Map>'),
             remove_child: mutate_parameter_type('node', 'NodePathMapChild<Map>'),
             validate_property: mutate_parameter_type("property", "GDictionary<PropertyInfo>"),
