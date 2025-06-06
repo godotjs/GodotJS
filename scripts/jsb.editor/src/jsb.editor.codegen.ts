@@ -651,7 +651,7 @@ class CodegenTasks {
         const EditorProgress = godot.GodotJSEditorProgress;
         const progress = new EditorProgress();
         let force_wait = 24;
-        progress.init(`codegen-${this._name}`, `Generating ${this._name}`, this.tasks.length);
+        progress.init(`codegen-${this._name}`, this._name, this.tasks.length);
 
         try {
             for (let i = 0; i < this.tasks.length; ++i) {
@@ -2491,7 +2491,7 @@ export class TSDCodeGen {
     async emit() {
         await frame_step();
 
-        const tasks = new CodegenTasks("godot.d.ts");
+        const tasks = new CodegenTasks("Generating godot.d.ts");
 
         // aliases
         tasks.add_task("Aliases", () => this.emit_aliases());
