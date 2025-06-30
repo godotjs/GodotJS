@@ -274,111 +274,112 @@ namespace jsb
         isolate_->AddGCPrologueCallback(&OnPreGCCallback);
         isolate_->AddGCEpilogueCallback(&OnPostGCCallback);
 #endif
+
         {
-            v8::HandleScope handle_scope(isolate_);
-            for (int index = 0; index < Symbols::kNum; ++index)
-            {
-                symbols_[index].Reset(isolate_, v8::Symbol::New(isolate_));
-            }
-        }
-
-        native_classes_.reserve(p_params.initial_class_slots);
-        script_classes_.reserve(p_params.initial_script_slots);
-
-        module_loaders_.insert("godot", memnew(GodotModuleLoader));
-        module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
-        EnvironmentStore::get_shared().add(this);
-
-        // create context
-        {
-            JSB_BENCHMARK_SCOPE(JSRealm, Construct);
-
             v8::Isolate::Scope isolate_scope(isolate_);
-            v8::HandleScope handle_scope(isolate_);
 
-            const v8::Local<v8::Context> context = v8::Context::New(isolate_);
-            const v8::Context::Scope context_scope(context);
-            const v8::Local<v8::Object> global = context->Global();
-
-            context->SetAlignedPointerInEmbedderData(kContextEmbedderData, this);
-            context_.Reset(isolate_, context);
-
-            // init module cache, and register the global 'require' function
+            // create context
             {
-                const v8::Local<v8::Object> cache_obj = v8::Object::New(isolate_);
-                const v8::Local<v8::Function> require_func = JSB_NEW_FUNCTION(context, Builtins::_require, {});
-                require_func->Set(context, jsb_name(this, cache), cache_obj).Check();
-                require_func->Set(context, impl::Helper::new_string_ascii(isolate_, "moduleId"), v8::String::Empty(isolate_)).Check();
-                global->Set(context, impl::Helper::new_string_ascii(isolate_, "require"), require_func).Check();
-                global->Set(context, impl::Helper::new_string_ascii(isolate_, "define"), JSB_NEW_FUNCTION(context, Builtins::_define, {})).Check();
-                module_cache_.init(isolate_, cache_obj);
-            }
+                v8::HandleScope handle_scope(isolate_);
 
-            internal::StringNames& names = internal::StringNames::get_singleton();
-
-            // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
-            if (internal::Settings::get_camel_case_bindings_enabled())
-            {
-                List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_original_class_list();
-
-                for (auto it = exposed_class_list.begin(); it != exposed_class_list.end(); ++it)
+                for (int index = 0; index < Symbols::kNum; ++index)
                 {
-                    String exposed_name = internal::NamingUtil::get_class_name(*it);
-
-                    if (exposed_name != *it)
-                    {
-                        names.add_replacement(*it, exposed_name);
-                    }
+                    symbols_[index].Reset(isolate_, v8::Symbol::New(isolate_));
                 }
 
-                List<Engine::Singleton> singleton_list;
-                Engine::get_singleton()->get_singletons(&singleton_list);
+                native_classes_.reserve(p_params.initial_class_slots);
+                script_classes_.reserve(p_params.initial_script_slots);
 
-                for (auto it = singleton_list.begin(); it != singleton_list.end(); ++it)
+                module_loaders_.insert("godot", memnew(GodotModuleLoader));
+                module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
+                EnvironmentStore::get_shared().add(this);
+
+                JSB_BENCHMARK_SCOPE(JSRealm, Construct);
+
+                const v8::Local<v8::Context> context = v8::Context::New(isolate_);
+                const v8::Context::Scope context_scope(context);
+                const v8::Local<v8::Object> global = context->Global();
+
+                context->SetAlignedPointerInEmbedderData(kContextEmbedderData, this);
+                context_.Reset(isolate_, context);
+
+                // init module cache, and register the global 'require' function
                 {
-                    String exposed_name = internal::NamingUtil::get_class_name(it->name);
-
-                    if (exposed_name != it->name)
-                    {
-                        names.add_replacement(it->name, exposed_name);
-                    }
+                    const v8::Local<v8::Object> cache_obj = v8::Object::New(isolate_);
+                    const v8::Local<v8::Function> require_func = JSB_NEW_FUNCTION(context, Builtins::_require, {});
+                    require_func->Set(context, jsb_name(this, cache), cache_obj).Check();
+                    require_func->Set(context, impl::Helper::new_string_ascii(isolate_, "moduleId"), v8::String::Empty(isolate_)).Check();
+                    global->Set(context, impl::Helper::new_string_ascii(isolate_, "require"), require_func).Check();
+                    global->Set(context, impl::Helper::new_string_ascii(isolate_, "define"), JSB_NEW_FUNCTION(context, Builtins::_define, {})).Check();
+                    module_cache_.init(isolate_, cache_obj);
                 }
 
-                List<StringName> utility_function_list;
-                Variant::get_utility_function_list(&utility_function_list);
+                internal::StringNames& names = internal::StringNames::get_singleton();
 
-                for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it)
+                // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
+                if (internal::Settings::get_camel_case_bindings_enabled())
                 {
-                    String exposed_name = internal::NamingUtil::get_member_name(*it);
+                    List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_original_class_list();
 
-                    if (exposed_name != *it)
+                    for (auto it = exposed_class_list.begin(); it != exposed_class_list.end(); ++it)
                     {
-                        names.add_replacement(*it, exposed_name);
+                        String exposed_name = internal::NamingUtil::get_class_name(*it);
+
+                        if (exposed_name != *it)
+                        {
+                            names.add_replacement(*it, exposed_name);
+                        }
+                    }
+
+                    List<Engine::Singleton> singleton_list;
+                    Engine::get_singleton()->get_singletons(&singleton_list);
+
+                    for (auto it = singleton_list.begin(); it != singleton_list.end(); ++it)
+                    {
+                        String exposed_name = internal::NamingUtil::get_class_name(it->name);
+
+                        if (exposed_name != it->name)
+                        {
+                            names.add_replacement(it->name, exposed_name);
+                        }
+                    }
+
+                    List<StringName> utility_function_list;
+                    Variant::get_utility_function_list(&utility_function_list);
+
+                    for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it)
+                    {
+                        String exposed_name = internal::NamingUtil::get_member_name(*it);
+
+                        if (exposed_name != *it)
+                        {
+                            names.add_replacement(*it, exposed_name);
+                        }
+                    }
+
+                    const int constant_count = CoreConstants::get_global_constant_count();
+                    for (int index = 0; index < constant_count; ++index)
+                    {
+                        const StringName enum_name = CoreConstants::get_global_constant_enum(index);
+                        String exposed_name = internal::NamingUtil::get_class_name(enum_name);
+
+                        if (exposed_name != enum_name)
+                        {
+                            names.add_replacement(enum_name, exposed_name);
+                        }
                     }
                 }
-
-                const int constant_count = CoreConstants::get_global_constant_count();
-                for (int index = 0; index < constant_count; ++index)
-                {
-                    const StringName enum_name = CoreConstants::get_global_constant_enum(index);
-                    String exposed_name = internal::NamingUtil::get_class_name(enum_name);
-
-                    if (exposed_name != enum_name)
-                    {
-                        names.add_replacement(enum_name, exposed_name);
-                    }
-                }
-            }
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
-            Worker::register_(context, global);
+                Worker::register_(context, global);
 #endif
-            Essentials::register_(context, global);
-            register_primitive_bindings(this);
-        }
+                Essentials::register_(context, global);
+                register_primitive_bindings(this);
+            }
 
-        //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
-        start_debugger(p_params.debugger_port);
+            //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
+            start_debugger(p_params.debugger_port);
+        }
     }
 
     // no JS code should be executed in the destructor.
@@ -1203,6 +1204,7 @@ namespace jsb
     {
         this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
@@ -1470,6 +1472,7 @@ namespace jsb
             if (strong_ref.unref())
             {
                 v8::Isolate* isolate = get_isolate();
+                v8::Isolate::Scope isolate_scope(isolate);
                 v8::HandleScope handle_scope(isolate);
                 if (jsb_likely(!strong_ref.object_.IsEmpty()))
                 {
@@ -1573,6 +1576,7 @@ namespace jsb
         }
 
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
