@@ -243,7 +243,7 @@ namespace jsb::impl
         template<int InternalFieldCount>
         static ClassBuilder New(v8::Isolate* isolate, const StringName& name, const v8::FunctionCallback constructor, const uint32_t class_payload)
         {
-            const v8::Local<v8::Value> data = class_payload != 0 ? v8::Uint32::NewFromUnsigned(isolate, class_payload).As<v8::Value>() : v8::Local<v8::Value>();
+            const v8::Local<v8::Value> data = v8::Uint32::NewFromUnsigned(isolate, class_payload).As<v8::Value>();
 
             ClassBuilder builder;
             builder.isolate_ = isolate;
