@@ -1550,6 +1550,7 @@ namespace jsb
         }
 
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
