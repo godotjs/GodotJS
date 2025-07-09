@@ -91,6 +91,12 @@ jobs:
           name: V8
           path: ${{github.workspace}}/modules/GodotJS/v8
 
+      - name: Download out
+        uses: actions/download-artifact@v4
+        with:
+          name: out
+          path: ${{github.workspace}}/modules/GodotJS/scripts/out
+
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
