@@ -178,7 +178,7 @@ declare module "godot" {
         Map[keyof Map] extends undefined | Permitted ? Exclude<Map[keyof Map], undefined> : Default
     >;
 
-    type NodePathMap = PathMap<Node>;
+    type NodePathMap = PathMap<undefined | Node>;
     type StaticNodePath<Map extends NodePathMap, Permitted = Node> = StaticPath<Map, Permitted, never, typeof __PathMappableDummyKeys.Node>;
     type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never, Permitted = Node> =
         ResolvePath<Map, Path, Default, Permitted, never, typeof __PathMappableDummyKeys.Node>;
