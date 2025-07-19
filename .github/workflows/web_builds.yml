@@ -8,7 +8,14 @@ on:
 
 # Global Settings
 env:
-  SCONSFLAGS: debug_symbols=no use_closure_compiler=yes strict_checks=yes deprecated=no lto=none use_assertions=no use_safe_heap=yes
+  SCONSFLAGS: >-
+    debug_symbols=no 
+    use_closure_compiler=yes 
+    strict_checks=yes 
+    deprecated=no 
+    lto=none 
+    use_assertions=no 
+    use_safe_heap=yes
   EM_VERSION: 3.1.64
 
 jobs:
