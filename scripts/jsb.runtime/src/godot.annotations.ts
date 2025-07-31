@@ -1,7 +1,7 @@
 import type * as Godot from "godot";
 import type * as GodotJsb from "godot-jsb";
 
-const { jsb, FloatType, IntegerType, Node, PropertyHint, PropertyUsageFlags, Resource, Variant } = require("godot.lib.api");
+const { jsb, FloatType, IntegerType, Node, PropertyHint, PropertyUsageFlags, ProxyTarget, Resource, Variant } = require("godot.lib.api");
 
 function guess_type_name(type: any) {
     if (typeof type === "function") {
@@ -146,12 +146,14 @@ function get_hint_string(clazz: any): string {
         }
     }
 
-    if (typeof clazz === "function" && typeof clazz.prototype !== "undefined") {
-        if (clazz.prototype instanceof Resource) {
+    if (typeof clazz === "function") {
+        const prototype = clazz.prototype;
+
+        if (prototype instanceof Resource) {
             return `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_RESOURCE_TYPE}:${clazz.name}`;
-        } else if (clazz.prototype instanceof Node) {
+        } else if (prototype instanceof Node || ((clazz as any)[ProxyTarget] ?? clazz) === (Node[ProxyTarget] ?? Node)) {
             return `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_NODE_TYPE}:${clazz.name}`;
-        } else {
+        } else if (typeof prototype !== "undefined") {
             // other than Resource and Node, only primitive types and enum types are supported in gdscript
             //TODO but we barely know anything about the enum types and int/float/StringName/... in JS
 
@@ -216,12 +218,14 @@ export function export_(type: Godot.Variant.Type, details?: { class_?: ClassDesc
 
                 if (type === Variant.Type.TYPE_OBJECT) {
                     const clazz = details.class_;
-                    if (typeof clazz === "function" && typeof clazz.prototype !== "undefined") {
-                        if (clazz.prototype instanceof Resource) {
+                    if (typeof clazz === "function") {
+                        const prototype = clazz.prototype;
+
+                        if (prototype instanceof Resource) {
                             ebd.hint = PropertyHint.PROPERTY_HINT_RESOURCE_TYPE;
                             ebd.hint_string = clazz.name;
                             ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
-                        } else if (clazz.prototype instanceof Node) {
+                        } else if (prototype instanceof Node || ((clazz as any)[ProxyTarget] ?? clazz) === (Node[ProxyTarget] ?? Node)) {
                             ebd.hint = PropertyHint.PROPERTY_HINT_NODE_TYPE;
                             ebd.hint_string = clazz.name;
                             ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
