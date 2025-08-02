@@ -344,12 +344,19 @@ namespace jsb
                         }
                     }
 
+                    Vector<String> reserved_words = GodotJSScriptLanguage::get_singleton()->get_reserved_words();
+
                     List<StringName> utility_function_list;
                     Variant::get_utility_function_list(&utility_function_list);
 
                     for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it)
                     {
                         String exposed_name = internal::NamingUtil::get_member_name(*it);
+
+                        if (reserved_words.find(exposed_name) >= 0)
+                        {
+                            exposed_name = internal::NamingUtil::get_member_name("godot_" + exposed_name);
+                        }
 
                         if (exposed_name != *it)
                         {
@@ -362,6 +369,11 @@ namespace jsb
                     {
                         const StringName enum_name = CoreConstants::get_global_constant_enum(index);
                         String exposed_name = internal::NamingUtil::get_class_name(enum_name);
+
+                        if (reserved_words.find(exposed_name) >= 0)
+                        {
+                            exposed_name = internal::NamingUtil::get_member_name("godot_" + exposed_name);
+                        }
 
                         if (exposed_name != enum_name)
                         {
