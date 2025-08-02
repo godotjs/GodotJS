@@ -183,7 +183,6 @@ bool GodotJSScriptLanguage::is_control_flow_keyword(ConstStringRefCompat p_keywo
     return collection.values.has(p_keyword);
 }
 
-#if GODOT_4_5_OR_NEWER
 Vector<String> GodotJSScriptLanguage::get_reserved_words() const
 {
     return Vector<String> {
@@ -196,6 +195,7 @@ Vector<String> GodotJSScriptLanguage::get_reserved_words() const
     };
 }
 
+#if GODOT_4_5_OR_NEWER
 Vector<String> GodotJSScriptLanguage::get_doc_comment_delimiters() const
 {
     return Vector<String> { "///" };
@@ -213,17 +213,9 @@ Vector<String> GodotJSScriptLanguage::get_string_delimiters() const
 #else
 void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const
 {
-    static const char* keywords[] = {
-        "return", "function", "interface", "class", "let", "break", "as", "any", "switch", "case", "if", "enum",
-        "throw", "else", "var", "number", "string", "get", "module", "instanceof", "typeof", "public", "private",
-        "while", "void", "null", "super", "this", "new", "in", "await", "async", "extends", "static",
-        "package", "implements", "interface", "continue", "yield", "const", "export", "finally", "for",
-        "import", "byte", "delete", "goto",
-        "default",
-    };
-    for (int i = 0, n = std::size(keywords); i < n; ++i)
+    for (String keyword : get_reserved_words())
     {
-        p_words->push_back(keywords[i]);
+        p_words->push_back(keyword);
     }
 }
 

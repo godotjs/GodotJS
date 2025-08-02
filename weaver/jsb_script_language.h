@@ -161,10 +161,13 @@ public:
 
 #if GODOT_4_5_OR_NEWER
     virtual Vector<String> get_reserved_words() const override;
+
     virtual Vector<String> get_doc_comment_delimiters() const override;
     virtual Vector<String> get_comment_delimiters() const override;
     virtual Vector<String> get_string_delimiters() const override;
 #else
+    virtual Vector<String> get_reserved_words() const;
+
     virtual void get_reserved_words(List<String>* p_words) const override;
     virtual void get_doc_comment_delimiters(List<String>* p_delimiters) const override;
     virtual void get_comment_delimiters(List<String>* p_delimiters) const override;

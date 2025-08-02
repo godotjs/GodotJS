@@ -1619,12 +1619,19 @@ class ModuleWriter extends IndentWriter {
         const args = this.types.make_args(method_info);
         const rval = this.types.make_return(method_info);
 
+        let exposed_name = method_info.name;
+
+        if (typeof KeywordReplacement[exposed_name] !== "undefined") {
+            exposed_name = names.get_member("godot_" + exposed_name);
+        }
+
         // some godot methods declared with special characters which can not be declared literally
-        if (!this.types.is_valid_method_name(method_info.name)) {
-            this.line(`// [INVALID_NAME]: function ${method_info.name}(${args}): ${rval}`);
+        if (!this.types.is_valid_method_name(exposed_name)) {
+            this.line(`// [INVALID_NAME]: function ${exposed_name}(${args}): ${rval}`);
             return;
         }
-        this.line(`function ${method_info.name}(${args}): ${rval}`);
+
+        this.line(`function ${exposed_name}(${args}): ${rval}`);
     }
 }
 
