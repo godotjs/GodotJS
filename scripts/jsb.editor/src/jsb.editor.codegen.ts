@@ -431,6 +431,14 @@ const TypeMutations: Record<string, TypeMutation> = {
             validate_property: mutate_parameter_type("property", "GDictionary<PropertyInfo>"),
         },
     },
+    // GObject:
+    [names.get_class("Object")]: {
+        property_overrides: {
+            get_property_list: mutate_return_type("GArray<GDictionary<PropertyInfo>>"),
+            get_script: mutate_return_type("null | Script"),
+            set_script: mutate_parameter_type("script", "null | Script"),
+        }
+    },
     PackedByteArray: {
         intro: [
             "/** [jsb utility method] Converts a PackedByteArray to a JavaScript ArrayBuffer. */",
