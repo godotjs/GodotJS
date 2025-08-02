@@ -360,7 +360,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             has_all: mutate_parameter_type("keys", "GArray<keyof T>"),
             find_key: chain_mutators(mutate_parameter_type("value", "T[keyof T]"), mutate_return_type("keyof T")), // This can be typed more accurately with a mapped type, but it seems excessive.
             erase: mutate_parameter_type("key", "keyof T"),
-            keys: mutate_return_type("Array<keyof T>"),
+            keys: mutate_return_type("GArray<keyof T>"),
             values: mutate_return_type("GArray<T[keyof T]>"),
             duplicate: mutate_return_type("GDictionary<T>"),
             get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("T[K]"), mutate_template("K extends keyof T")),
