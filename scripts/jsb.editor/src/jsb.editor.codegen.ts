@@ -2586,13 +2586,12 @@ export class TSDCodeGen {
         }
 
         if (GodotAnyType != "any") {
-            let gd_variant_alias = `type ${GodotAnyType} = `;
+            let gd_variant_alias = `type ${GodotAnyType} = undefined | null`;
             for (let i = godot.Variant.Type.TYPE_NIL + 1; i < godot.Variant.Type.TYPE_MAX; ++i) {
                 const type_name = get_primitive_type_name(i);
                 if (type_name == GodotAnyType || type_name == "any") continue;
-                gd_variant_alias += type_name + " | ";
+                gd_variant_alias += " | " + type_name;
             }
-            gd_variant_alias += "undefined";
             cg.line(gd_variant_alias);
         }
 
