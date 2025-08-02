@@ -592,6 +592,7 @@ namespace jsb
                     v8::Isolate::Scope isolate_scope(isolate_);
                     v8::HandleScope handle_scope(isolate_);
                     const v8::Local<v8::Context> context = context_.Get(isolate_);
+                    const v8::Context::Scope context_scope(context);
                     _on_worker_transfer(context, transfer_data);
                 }
                 memdelete(transfer_data);
