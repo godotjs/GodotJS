@@ -1655,7 +1655,10 @@ namespace jsb
                 return;
             }
 
+
             const v8::Local<v8::Object> class_default_object = instance.As<v8::Object>();
+            ScriptClassInfo::instantiate(this, p_class_info.module_id, class_default_object);
+
             // read from the class default object
             for (auto& prop_kv : p_class_info.properties)
             {
