@@ -21,6 +21,8 @@ DEF(children)
 DEF(type)
 DEF(evaluator)
 DEF(_notification)
+DEF(Reflect)
+DEF(construct)
 
 // class names
 DEF(Object)

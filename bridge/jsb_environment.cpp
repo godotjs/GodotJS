@@ -303,6 +303,10 @@ namespace jsb
                 context->SetAlignedPointerInEmbedderData(kContextEmbedderData, this);
                 context_.Reset(isolate_, context);
 
+                v8::Local<v8::FunctionTemplate> js_only_constructor_template = v8::FunctionTemplate::New(isolate_);
+                js_only_constructor_template->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);
+                js_only_constructor_tag_.Reset(isolate_, js_only_constructor_template->GetFunction(context).ToLocalChecked());
+
                 // init module cache, and register the global 'require' function
                 {
                     const v8::Local<v8::Object> cache_obj = v8::Object::New(isolate_);
@@ -1213,7 +1217,7 @@ namespace jsb
         return nullptr;
     }
 
-    NativeObjectID Environment::crossbind(Object* p_this, ScriptClassID p_class_id)
+    NativeObjectID Environment::crossbind(Object* p_this, ScriptClassID p_class_id, const Variant** p_args, int p_argcount)
     {
         this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
@@ -1225,7 +1229,7 @@ namespace jsb
         // In Editor, the script can be attached to an Object after it created in JS (e.g. 'enter_tree' as a child node of a script attached parent node)
         if (const NativeObjectID object_id = this->try_get_object_id(p_this))
         {
-            JSB_LOG(Verbose, "crossbinding on a binded object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
+            JSB_LOG(Verbose, "crossbinding on previously bound object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
 
             //TODO may not work in this way
             _rebind(isolate, context, p_this, p_class_id);
@@ -1245,12 +1249,42 @@ namespace jsb
             jsb_check(!class_obj->IsNullOrUndefined());
         }
 
+        v8::Local<v8::Array> arguments = v8::Array::New(isolate, p_argcount);
+
+        for (int index = 0; index < p_argcount; ++index)
+        {
+            v8::Local<v8::Value> argument;
+
+            if (TypeConvert::gd_var_to_js(isolate, context, *p_args[index], argument))
+            {
+                arguments->Set(context, index, argument);
+            }
+            else
+            {
+                return {};
+            }
+        }
+
         const impl::TryCatch try_catch_run(isolate);
-        v8::Local<v8::Value> identifier = jsb_symbol(this, CrossBind);
-        const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
+
+        v8::Local<v8::Function> js_only_constructor_tag = js_only_constructor_tag_.Get(isolate);
+        v8::Local<v8::Value> class_prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
+        js_only_constructor_tag->Set(context, jsb_name(this, prototype), class_prototype).Check();
+
+        v8::Local<v8::Object> reflect = context->Global()->Get(context, jsb_name(this, Reflect)).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Function> reflect_construct = reflect->Get(context, jsb_name(this, construct)).ToLocalChecked().As<v8::Function>();
+
+        v8::Local<v8::Value> reflect_args[] = {
+                class_obj,
+                arguments,
+                js_only_constructor_tag
+        };
+
+        v8::MaybeLocal<v8::Value> constructed_value = reflect_construct->Call(context, reflect, 3, reflect_args);
+
         if (try_catch_run.has_caught())
         {
-            JSB_LOG(Error, "something wrong when constructing '%s'\n%s", js_class_name, BridgeHelper::get_exception(try_catch_run));
+            JSB_LOG(Error, "something went wrong when constructing '%s'\n%s", js_class_name, BridgeHelper::get_exception(try_catch_run));
             return {};
         }
 
@@ -1635,10 +1669,9 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         {
-            v8::Local<v8::Value> identifier = jsb_symbol(this, CDO);
             const v8::Local<v8::Object> class_obj = p_class_info.js_class.Get(isolate);
             const impl::TryCatch try_catch_run(isolate);
-            const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
+            const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 0, nullptr);
 
             if (try_catch_run.has_caught())
             {
@@ -1655,9 +1688,7 @@ namespace jsb
                 return;
             }
 
-
             const v8::Local<v8::Object> class_default_object = instance.As<v8::Object>();
-            ScriptClassInfo::instantiate(this, p_class_info.module_id, class_default_object);
 
             // read from the class default object
             for (auto& prop_kv : p_class_info.properties)
