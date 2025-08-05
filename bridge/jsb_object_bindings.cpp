@@ -18,7 +18,7 @@ namespace jsb
         // construct type template
         {
 
-            impl::ClassBuilder class_builder = ClassTemplate<Object>::create(p_env, class_id);
+            impl::ClassBuilder class_builder = ObjectTemplate::create(p_env, class_id);
 
             //NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
             const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);

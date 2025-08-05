@@ -46,7 +46,6 @@ namespace jsb
             MemberDocMap,
 
             CrossBind,               // a symbol can only be used from C++ to indicate calling from cross-bind
-            CDO,                     // constructing class default object for a script
 
             // Exposed as properties on the `godot` module
             FloatType,
@@ -198,6 +197,8 @@ namespace jsb
 
         internal::VariantInfoCollection variant_info_collection_;
 
+        v8::Global<v8::Function> js_only_constructor_tag_;
+
     public:
         enum class Type : uint8_t
         {
@@ -287,7 +288,7 @@ namespace jsb
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
         bool release_function(ObjectCacheID p_func_id);
-        Variant call_function(void* p_pointer, ObjectCacheID p_func_id, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
+        Variant call_function(void* p_pointer, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError &r_error);
 
         /**
          * This method will not throw any JS exception.
@@ -335,7 +336,7 @@ namespace jsb
         //TODO is there a simple way to compile (validate) the script without any side effect?
         bool validate_script(const String& p_path);
 
-        NativeObjectID crossbind(Object* p_this, ScriptClassID p_class_id);
+        NativeObjectID crossbind(Object* p_this, ScriptClassID p_class_id, const Variant** p_args, int p_argcount);
 
         void rebind(Object* p_this, ScriptClassID p_class_id);
 
@@ -567,6 +568,19 @@ namespace jsb
         // [unsafe] get the environment from the current thread
         // NOTE: you can't get a shadow environment with this method
         static std::shared_ptr<Environment> _access();
+
+        /**
+         * Should a constructor call only construct a JavaScript object i.e. skip creation of the native Godot Object?
+         * This occurs when we have an existing Godot object that we wish to "cross bind" with its JavaScript
+         * implementation. For example, when instantiating a packed scene, Godot creates the objects first; we must then
+         * cross bind these existing objects with their JavaScript implementation.
+         * @param function
+         * @return
+         */
+        bool is_js_only_constructor_tag(const v8::Local<v8::Function> function)
+        {
+            return function == js_only_constructor_tag_;
+        }
 
     private:
         void exec_async_calls();

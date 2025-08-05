@@ -47,6 +47,8 @@ private:
     jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately(); }
     jsb_force_inline bool _is_valid() const { return jsb::internal::VariantUtil::is_valid_name(script_class_info_.module_id); }
 
+    Variant _new(const Variant** p_args, int p_argcount, Callable::CallError &r_error);
+
     bool _update_exports(PlaceHolderScriptInstance *p_instance_to_update);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
 
@@ -59,9 +61,13 @@ public:
     // Error attach_source(const String& p_path, bool p_take_over);
     Error load_source_code(const String &p_path);
     void load_module_if_missing();
+
+    // Creates a ScriptInstance and associates it with an existing JS object (instance of the script's JS class).
     ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner, bool p_is_temp_allowed);
     ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed);
-    ScriptInstance* instance_create(Object* p_this, bool p_is_temp_allowed);
+
+    // Creates a ScriptInstance and associates it with a newly constructed JS object (instance of script's class).
+    ScriptInstance* instance_construct(Object* p_this, bool p_is_temp_allowed, const Variant **p_args = nullptr, int p_argcount = 0);
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;
@@ -71,7 +77,7 @@ public:
     virtual bool inherits_script(const Ref<Script>& p_script) const override;
 
     virtual StringName get_instance_base_type() const override; // this may not work in all scripts, will return empty if so
-    virtual ScriptInstance* instance_create(Object* p_this) override { return instance_create(p_this, true); }
+    virtual ScriptInstance* instance_create(Object* p_this) override { return instance_construct(p_this, true); }
 
     virtual PlaceHolderScriptInstance* placeholder_instance_create(Object* p_this) override;
     virtual bool instance_has(const Object* p_this) const override;
@@ -136,6 +142,8 @@ public:
 #pragma endregion // Script Interface Implementation
 
 protected:
+    static void _bind_methods();
+
 #pragma region Script Implementation
 #ifdef TOOLS_ENABLED
     virtual void _placeholder_erased(PlaceHolderScriptInstance* p_placeholder) override;
