@@ -17,6 +17,7 @@
 #include "jsb_async_module_manager.h"
 #include "jsb_string_name_cache.h"
 #include "jsb_array_buffer_allocator.h"
+#include "jsb_type_convert.h"
 #include "../internal/jsb_internal.h"
 
 // get v8 string value from string name cache with the given name
@@ -55,11 +56,6 @@ namespace jsb
             kNum,
         };
     }
-
-    struct TransferData
-    {
-        virtual ~TransferData() = default;
-    };
 
     // Environment it-self is NOT thread-safe.
     class Environment : public std::enable_shared_from_this<Environment>
@@ -146,6 +142,13 @@ namespace jsb
         // all exposed native classes
         internal::SArray<NativeClassInfo, NativeClassID> native_classes_;
 
+        bool _execution_deferred = false;
+
+        // in certain contexts (such as cross-worker deserialization) we may encounter a class and bind it lazily as
+        // per usual. However, we're unable to execute JavaScript mid-deserialization. Instead we need to keep track of
+        // pending class post bind classes and execute them when it's safe to do so.
+        Vector<Pair<StringName, v8::Local<v8::Function>>> deferred_class_post_binds_;
+
         //TODO all exported default classes inherit native godot class (directly or indirectly)
         // they're only collected on a module loaded
         internal::SArray<ScriptClassInfo, ScriptClassID> script_classes_;
@@ -224,6 +227,30 @@ namespace jsb
             Type type = Type::Default;
         };
 
+        class ExecutionDeferredScope
+        {
+            Environment* env_;
+            bool previous_execution_deferred_;
+
+        public:
+            explicit ExecutionDeferredScope(Environment* p_env) : env_(p_env),
+                                                                    previous_execution_deferred_(
+                                                                        env_->_execution_deferred)
+            {
+                env_->_execution_deferred = true;
+            }
+
+            ~ExecutionDeferredScope()
+            {
+                env_->_execution_deferred = previous_execution_deferred_;
+
+                if (!previous_execution_deferred_)
+                {
+                    env_->_execute_deferred();
+                }
+            }
+        };
+
         Environment(const CreateParams& p_params);
         ~Environment();
 
@@ -295,13 +322,16 @@ namespace jsb
          */
         Variant call_script_method(ScriptClassID p_script_class_id, NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
 
+        void transfer_out(NativeObjectID p_worker_handle_id, int transfer_index, const Variant& p_variant, TransferData& r_transfer_data);
+        void transfer_in(const TransferData& p_data);
+
         // [EXPERIMENTAL] transfer object between environments.
         // call this method of the source environment in the source environment thread.
         // if the transferred object is RefCounted, the reference count will be increased by 1 during the operation.
         // NOTE: !!! IT MAY CRASH THE ENGINE TO TRANSFER A DEEPLY NESTED OBJECT (such as a godot Array of Objects) !!!
         //       !!! Ensure all transferred objects are ONLY exist in the source environment !!!
-        // [pseudo] transfer_object(worker, master, worker_handle, scene->instantiate());
-        static void transfer_object(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, const Variant& p_target);
+        // [pseudo] transfer_to_host(worker, master, worker_handle, scene->instantiate());
+        static void transfer_to_host(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, const Variant& p_variant);
 
         bool get_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, Variant& r_val);
         bool set_script_property_value(NativeObjectID p_object_id, const ScriptPropertyInfo& p_info, const Variant& p_val);
@@ -593,10 +623,13 @@ namespace jsb
          */
         bool add_async_call(AsyncCall::Type p_type, void* p_binding);
 
-        void _on_worker_transfer(const v8::Local<v8::Context>& p_context, const struct TransferObjectData* p_data);
+        void _on_worker_transfer(const v8::Local<v8::Context>& p_context, const struct TransferData* p_data);
         void _on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
 
         void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
+
+        void _execute_class_post_bind(const StringName& p_class_name, const v8::Local<v8::Function>& p_class);
+        void _execute_deferred();
 
         Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,
             const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
@@ -653,6 +686,146 @@ namespace jsb
 
         void free_object(void* p_pointer, FinalizationType p_finalize);
     };
+
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
+    namespace Serialization
+    {
+        enum class SerializationTag : uint8_t
+        {
+            kGodotVariantTransfer = 'V',
+        };
+
+        class VariantSerializerDelegate : public v8::ValueSerializer::Delegate
+        {
+        private:
+            Environment* from_env_;
+            internal::ReferentialVariantMap<TransferData>& transfers;
+
+            v8::ValueSerializer* serializer_ = nullptr;
+
+            internal::ReferentialVariantMap<Variant> clone_map;
+
+        public:
+            VariantSerializerDelegate(
+                    Environment* p_from_env,
+                    internal::ReferentialVariantMap<TransferData>& p_transfers) :
+                    from_env_(p_from_env),
+                    transfers(p_transfers)
+            {
+                clone_map.reserve(transfers.size());
+
+                for (auto& pair : transfers)
+                {
+                    clone_map.insert(pair.key, pair.value.variant);
+                }
+            }
+
+            void SetSerializer(v8::ValueSerializer* serializer)
+            {
+                serializer_ = serializer;
+            }
+
+            void ThrowDataCloneError(v8::Local<v8::String> p_message) override
+            {
+                from_env_->get_isolate()->ThrowException(v8::Exception::Error(p_message));
+            }
+
+            v8::Maybe<bool> WriteHostObject(v8::Isolate* p_isolate, v8::Local<v8::Object> p_object) override
+            {
+                v8::Isolate* isolate = from_env_->get_isolate();
+                v8::Local<v8::Context> context = from_env_->get_context();
+
+                jsb_checkf(p_isolate == isolate, "GodotObjectTransferDelegate called from the wrong isolate");
+
+                Variant variant;
+                TypeConvert::js_to_gd_var(p_isolate, context, p_object.As<v8::Value>(), variant);
+
+                const TransferData* transfer_data = transfers.getptr(variant);
+
+                if (!transfer_data)
+                {
+                    bool cloned;
+                    TransferData cloned_transfer_data;
+                    cloned_transfer_data.transfer_index = transfers.size();
+                    cloned_transfer_data.variant = internal::VariantUtil::structured_clone(variant, clone_map, cloned);
+
+                    if (!cloned)
+                    {
+                        ThrowDataCloneError(v8::String::NewFromUtf8(p_isolate, "A Godot Object was passed that was not in the transfer list.", v8::NewStringType::kNormal).ToLocalChecked());
+                        return v8::Nothing<bool>();
+                    }
+
+                    transfers.insert(variant, cloned_transfer_data);
+
+                    transfer_data = transfers.getptr(variant);
+                    jsb_check(transfer_data);
+                }
+
+                const uint8_t tag = (uint8_t) SerializationTag::kGodotVariantTransfer;
+                serializer_->WriteRawBytes(&tag, sizeof(tag));
+                serializer_->WriteUint32(transfer_data->transfer_index);
+
+                return v8::Just(true);
+            }
+
+            v8::Maybe<uint32_t> GetSharedArrayBufferId(v8::Isolate* p_isolate, v8::Local<v8::SharedArrayBuffer> p_shared_array_buffer) override { return v8::Nothing<uint32_t>(); }
+            v8::Maybe<uint32_t> GetWasmModuleTransferId(v8::Isolate* p_isolate, v8::Local<v8::WasmModuleObject> p_module) override { return v8::Nothing<uint32_t>(); }
+        };
+
+        class VariantDeserializerDelegate : public v8::ValueDeserializer::Delegate
+        {
+        private:
+            Environment* to_env_;
+            const std::vector<TransferData>& transferred_;
+
+            v8::ValueDeserializer* deserializer_ = nullptr;
+
+        public:
+            VariantDeserializerDelegate(
+                    Environment* p_to_env,
+                    const std::vector<TransferData>& p_transferred) :
+                    to_env_(p_to_env),
+                    transferred_(p_transferred) {}
+
+            void SetSerializer(v8::ValueDeserializer* deserializer)
+            {
+                this->deserializer_ = deserializer;
+            }
+
+            v8::MaybeLocal<v8::Object> ReadHostObject(v8::Isolate* p_isolate) override
+            {
+                const uint8_t* bytes = nullptr;
+
+                if (!deserializer_->ReadRawBytes(sizeof(uint8_t), reinterpret_cast<const void**>(&bytes)))
+                {
+                    return v8::MaybeLocal<v8::Object>();
+                }
+
+                if (bytes[0] != (uint8_t)SerializationTag::kGodotVariantTransfer)
+                {
+                    return v8::MaybeLocal<v8::Object>();
+                }
+
+                uint32_t transfer_id = 0;
+                if (!deserializer_->ReadUint32(&transfer_id))
+                {
+                    return v8::MaybeLocal<v8::Object>();
+                }
+
+                jsb_check(transfer_id < (uint32_t)transferred_.size());
+
+                v8::Local<v8::Value> js_value;
+
+                if (!TypeConvert::gd_var_to_js(to_env_->get_isolate(), to_env_->get_context(), transferred_[transfer_id].variant, js_value))
+                {
+                    return v8::MaybeLocal<v8::Object>();
+                }
+
+                return js_value.As<v8::Object>();
+            }
+        };
+    }
+#endif
 }
 
 #endif
