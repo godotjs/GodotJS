@@ -2,6 +2,9 @@
 #define GODOTJS_WORKER_H
 #include "jsb_bridge_pch.h"
 #include "jsb_buffer.h"
+#include "jsb_class_info.h"
+#include "jsb_environment.h"
+#include "jsb_type_convert.h"
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
 namespace jsb
@@ -9,11 +12,38 @@ namespace jsb
     enum class FinalizationType : uint8_t;
 
     typedef internal::Index32 WorkerID;
-    // typedef BinaryMutex WorkerLock;
     typedef Mutex WorkerLock;
     class Environment;
     class WorkerImpl;
     typedef std::shared_ptr<WorkerImpl> WorkerImplPtr;
+
+    // A message from the master thread to a worker thread.
+    // Contains the serialized V8 data and a side-channel list of Godot variants/objects being transferred.
+    struct WorkerMessage
+    {
+    public:
+        WorkerMessage() = delete;
+        ~WorkerMessage() = default;
+
+        WorkerMessage(const WorkerMessage&) = delete;
+        WorkerMessage& operator=(const WorkerMessage&) = delete;
+
+        WorkerMessage(WorkerMessage&&) noexcept = default;
+        WorkerMessage& operator=(WorkerMessage&&) noexcept = default;
+
+        WorkerMessage(Buffer&& p_data, std::vector<TransferData>&& p_transfers) :
+            data(std::move(p_data)), transfers(std::move(p_transfers))
+        {
+        }
+
+        const Buffer& get_data() const { return data; }
+        const std::vector<TransferData>& get_transfers() const { return transfers; }
+
+    private:
+
+        Buffer data;
+        std::vector<TransferData> transfers;
+    };
 
     class Worker
     {
@@ -54,8 +84,11 @@ namespace jsb
         // terminate a worker
         static bool terminate(WorkerID p_id);
 
-        // master -> worker
-        static void on_receive(WorkerID p_id, Buffer&& p_buffer);
+        // master -> worker message passing
+        static void on_receive(WorkerID p_id, WorkerMessage&& message);
+
+        // shared master <-> worker postMessage logic
+        static std::pair<uint8_t*, size_t> handle_post_message(const v8::FunctionCallbackInfo<v8::Value>& info, internal::ReferentialVariantMap<TransferData>& transfers);
     };
 }
 #endif
