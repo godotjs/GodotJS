@@ -92,7 +92,7 @@ namespace jsb
 
         // class rpc config
         v8::Local<v8::Map> rpc_config_map;
-        if (v8::Local<v8::Value> val; class_obj->Get(p_context, jsb_symbol(environment, ClassRPCConfig)).ToLocal(&val) && val->IsMap())
+        if (v8::Local<v8::Value> val; prototype->Get(p_context, jsb_symbol(environment, ClassRPCConfig)).ToLocal(&val) && val->IsMap())
         {
             rpc_config_map = val.As<v8::Map>();
         }
@@ -136,21 +136,21 @@ namespace jsb
                             
                             // for `rpc_config[name]`, a StringName has an identical hash of it's underlying String
                             // and returns true for equality check. So, it's safe to use jsb_string_name here
-                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, mode)).ToLocal(&config_val))
+                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, rpc_mode)).ToLocal(&config_val))
                             {
-                                rpc_config[jsb_string_name(mode)] = config_val.As<v8::Int32>()->Value();
+                                rpc_config[jsb_string_name(rpc_mode)] = config_val.As<v8::Int32>()->Value();
                             }
-                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, sync)).ToLocal(&config_val))
+                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, call_local)).ToLocal(&config_val))
                             {
-                                rpc_config[jsb_string_name(sync)] = config_val.As<v8::Boolean>()->Value();
+                                rpc_config[jsb_string_name(call_local)] = config_val.As<v8::Boolean>()->Value();
                             }
                             if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, transfer_mode)).ToLocal(&config_val))
                             {
                                 rpc_config[jsb_string_name(transfer_mode)] = config_val.As<v8::Int32>()->Value();
                             }
-                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, transfer_channel)).ToLocal(&config_val))
+                            if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, channel)).ToLocal(&config_val))
                             {
-                                rpc_config[jsb_string_name(transfer_channel)] = config_val.As<v8::Int32>()->Value();
+                                rpc_config[jsb_string_name(channel)] = config_val.As<v8::Int32>()->Value();
                             }
                             jsb_check(!p_class_info->rpc_config.has(name_s));
                             p_class_info->rpc_config[name_s] = rpc_config;
@@ -194,8 +194,8 @@ namespace jsb
 
                     // instantiate a fake Signal property
                     //NOTE: we use JS string representation of signal name for info.Data() to avoid persistent StringNameID requirement.
-                    //      therefore any cached string name could be cleaned up on demand (e.g. on memory low) without additional lifetime control. 
-                    v8::Local<v8::Function> signal_func = JSB_NEW_FUNCTION(p_context, ObjectReflectBindingUtil::_godot_object_signal, signal_name_js);
+                    //      therefore any cached string name could be cleaned up on demand (e.g. on memory low) without additional lifetime control.
+                    v8::Local<v8::Function> signal_func = JSB_NEW_FUNCTION(p_context, ObjectReflectBindingUtil::_godot_object_signal_get, signal_name_js);
                     prototype->SetAccessorProperty(signal_name_js.As<v8::Name>(), signal_func);
                     JSB_LOG(VeryVerbose, "... signal %s", signal_name);
                 }
@@ -223,6 +223,14 @@ namespace jsb
                     property_info.hint = BridgeHelper::to_enum<PropertyHint>(context, obj->Get(context, jsb_name(environment, hint)), PROPERTY_HINT_NONE);
                     property_info.hint_string = impl::Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
                     property_info.usage = BridgeHelper::to_enum<PropertyUsageFlags>(context, obj->Get(context, jsb_name(environment, usage)), PROPERTY_USAGE_DEFAULT) | PROPERTY_USAGE_SCRIPT_VARIABLE;
+
+                    v8::Local<v8::Value> cache;
+
+                    if (obj->Get(context, jsb_name(environment, cache)).ToLocal(&cache))
+                    {
+                        property_info.cache = cache->BooleanValue(isolate);
+                    }
+
 #ifdef TOOLS_ENABLED
                     if (v8::Local<v8::Value> val; !doc_map.IsEmpty() && doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
                     {

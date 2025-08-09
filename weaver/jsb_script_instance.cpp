@@ -30,10 +30,28 @@ jsb::ScriptClassInfoPtr GodotJSScriptInstance::get_script_class() const
     return env_->get_script_class(class_id_);
 }
 
+void GodotJSScriptInstance::postbind()
+{
+    // Store initial value for cached props
+    for (auto& it : this->script_->script_class_info_.properties)
+    {
+        if (it.value.cache)
+        {
+            Variant value;
+            env_->get_script_property_value(object_id_, it.value, value);
+            property_cache_.insert(it.key, value);
+        }
+    }
+}
+
+void GodotJSScriptInstance::cache_property(const StringName& name, const Variant& value)
+{
+    property_cache_.insert(name, value);
+}
+
 bool GodotJSScriptInstance::set(const StringName& p_name, const Variant& p_value)
 {
-    const jsb::ScriptClassInfoPtr class_info = get_script_class();
-    if (const auto& it = class_info->properties.find(p_name); it)
+    if (const auto& it = script_->script_class_info_.properties.find(p_name); it)
     {
         return env_->set_script_property_value(object_id_, it->value, p_value);
     }
@@ -42,11 +60,19 @@ bool GodotJSScriptInstance::set(const StringName& p_name, const Variant& p_value
 
 bool GodotJSScriptInstance::get(const StringName& p_name, Variant& r_ret) const
 {
-    const jsb::ScriptClassInfoPtr class_info = get_script_class();
-    if (const auto& it = class_info->properties.find(p_name); it)
+    const Variant* cached_value = property_cache_.getptr(p_name);
+
+    if (cached_value)
+    {
+        r_ret = *cached_value;
+        return true;
+    }
+
+    if (const auto& it = script_->script_class_info_.properties.find(p_name); it)
     {
         return env_->get_script_property_value(object_id_, it->value, r_ret);
     }
+
     return false;
 }
 

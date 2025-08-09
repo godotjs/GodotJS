@@ -49,6 +49,8 @@ declare module "godot" {
     type float64 = number
     type StringName = string
 
+    type GAny = undefined | null | boolean | int64 | float64 | string | Callable | Object | Signal | GDictionary | GArray | PackedByteArray | PackedStringArray
+
     class EditorSettings { get(path: StringName): any; }
     class EditorInterface { static get_editor_settings(): EditorSettings; }
     class ProjectSettings { static get_setting_with_override(path: StringName): any; }
@@ -97,7 +99,11 @@ declare module "godot" {
         }
     }
 
-    class PackedByteArray { }
+    class PackedByteArray {
+        toArrayBuffer(): ArrayBuffer
+        get(index: int64): int64
+        set(index: int64, value: int64): void
+    }
 
     class PackedStringArray { append(value: string): boolean }
 
@@ -1099,7 +1105,20 @@ declare module "godot" {
 declare module "godot.lib.api" {
     import type * as Godot from "godot";
     import type * as GodotJsb from "godot-jsb";
-    const api: typeof Godot & { jsb: GodotJsb };
+    const api: typeof Godot & {
+        jsb: typeof GodotJsb,
+        proxy: {
+            array_proxy: <T extends any[]>(arr: T) => T,
+            class_proxy: <T extends object>(target_class: T) => T,
+            enum_proxy: <T extends object>(target_enum: T) => T,
+            function_proxy: <T extends (...args: any[]) => any>(target_func: T) => T,
+            instance_proxy: <T extends object>(target_instance: T) => T,
+            key_only_proxy: <T extends object | ((...args: any[]) => any)>(obj: T) => T,
+            object_proxy: <T extends object>(obj: T, remap_properties?: boolean) => T,
+            proxy_wrap_value: <T>(value: T) => T,
+            proxy_unwrap_value: <T>(value: T) => T,
+        },
+    };
     /**
      * This is a starting point for writing GodotJS code that is camel-case binding agnostic at runtime.
      *
@@ -1113,4 +1132,193 @@ declare module "godot.lib.api" {
 declare module "jsb.editor.codegen" {
     import { GDictionary } from "godot";
     type TypeDescriptor = GDictionary<unknown>;
+}
+
+declare module "godot.annotations" {
+    type ClassBinder = (() =>
+        ((
+                target: GObjectConstructor,
+                context: ClassDecoratorContext
+            ) => void))
+        & {
+            tool: () =>
+            ((
+                    target: GObjectConstructor,
+                    _context: ClassDecoratorContext
+                ) => void);
+            icon: (
+                path: string
+            ) =>
+            ((
+                    target: GObjectConstructor,
+                    _context: ClassDecoratorContext
+                ) => void);
+            export: ((
+                    type: Godot.Variant.Type,
+                    options?: ExportOptions
+                ) =>
+                ClassMemberDecorator)
+                & {
+                    multiline: () =>
+                    ClassMemberDecorator;
+                    range: (
+                        min: number,
+                        max: number,
+                        step: number,
+                        ...extra_hints: string[]
+                    ) =>
+                    ClassMemberDecorator;
+                    range_int: (
+                        min: number,
+                        max: number,
+                        step: number,
+                        ...extra_hints: string[]
+                    ) =>
+                    ClassMemberDecorator;
+                    file: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    dir: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    global_file: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    global_dir: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    exp_easing: (
+                        hint?: ""
+                            | "attenuation"
+                            | "positive_only"
+                            | "attenuation,positive_only"
+                    ) =>
+                    ClassMemberDecorator;
+                    array: (
+                        clazz: ClassSpecifier
+                    ) =>
+                    ClassMemberDecorator;
+                    dictionary: (
+                        key_class: VariantConstructor,
+                        value_class: VariantConstructor
+                    ) =>
+                    ClassMemberDecorator;
+                    object: <
+                    Constructor extends GObjectConstructor>(
+                        clazz: Constructor
+                    ) =>
+                    ClassMemberDecorator<
+                        ClassValueMemberDecoratorContext<
+                                unknown,
+                                null
+                                    | InstanceType<
+                                    Constructor>
+                            >
+                        >;
+                    "enum": (
+                        enum_type: Record<
+                            string,
+                            string
+                                | number
+                        >
+                    ) =>
+                    ClassMemberDecorator;
+                    flags: (
+                        enum_type: Record<
+                            string,
+                            string
+                                | number
+                        >
+                    ) =>
+                    ClassMemberDecorator;
+                    cache: () =>
+                    ClassMemberDecorator<
+                            ClassAccessorDecoratorContext<
+                                Godot.Object>
+                                | ClassSetterDecoratorContext<
+                                Godot.Object>
+                        >;
+                };
+            signal: () =>
+            (<
+                Context extends ClassAccessorDecoratorContext<
+                        Godot.Object,
+                        Godot.Signal
+                    >
+                    | ClassGetterDecoratorContext<
+                        Godot.Object,
+                        Godot.Signal
+                    >
+                    | ClassFieldDecoratorContext<
+                        Godot.Object,
+                        Godot.Signal
+                    >>(
+                    _target: unknown,
+                    context: Context
+                ) =>
+                ClassMemberDecoratorReturn<
+                    Context>);
+            rpc: (
+                config?: RPCConfig
+            ) =>
+            ((
+                    _target: Function,
+                    context: string
+                        | ClassMethodDecoratorContext
+                ) => void);
+            onready: (
+                evaluator: string
+                    | GodotJsb.internal.OnReadyEvaluatorFunc
+            ) =>
+            ((
+                    _target: undefined,
+                    context: string
+                        | ClassMethodDecoratorContext
+                ) => void);
+            deprecated: (
+                message?: string
+            ) =>
+            Decorator<
+                    ClassDecoratorContext<
+                        GObjectConstructor>
+                        | ClassValueMemberDecoratorContext<
+                        GObjectConstructor>
+                >;
+            experimental: (
+                message?: string
+            ) =>
+            Decorator<
+                    ClassDecoratorContext<
+                        GObjectConstructor>
+                        | ClassValueMemberDecoratorContext<
+                        GObjectConstructor>
+                >;
+            help: (
+                message?: string
+            ) =>
+            Decorator<
+                    ClassDecoratorContext<
+                        GObjectConstructor>
+                        | ClassValueMemberDecoratorContext<
+                        GObjectConstructor>
+                >;
+        }
+
+    type ExportOptions = {
+        class?: ClassDescriptor,
+        hint?: Godot.PropertyHint,
+        hint_string?: string,
+        usage?: Godot.PropertyUsageFlags
+    }
+
+    interface RPCConfig {
+        mode?: Godot.MultiplayerApi.RpcMode;
+        sync?: "call_remote" | "call_local";
+        transfer_mode?: Godot.MultiplayerPeer.TransferMode;
+        transfer_channel?: number;
+    }
 }

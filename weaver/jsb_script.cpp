@@ -195,6 +195,8 @@ ScriptInstance* GodotJSScript::instance_construct(Object* p_this, bool p_is_temp
         return nullptr;
     }
 
+    instance->postbind();
+
     return instance;
 }
 

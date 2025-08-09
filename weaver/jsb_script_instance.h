@@ -127,6 +127,8 @@ private:
     // object handle (the JS object binding id)
     jsb::NativeObjectID object_id_;
 
+    HashMap<Variant, Variant, VariantHasher, StringLikeVariantComparator> property_cache_;
+
 private:
     jsb::ScriptClassInfoPtr get_script_class() const;
 
@@ -135,6 +137,9 @@ public:
 
     // for Environment lifecycle control (avoid object leaks), detach all JS object bindings
     // void _detach();
+
+    void postbind();
+    void cache_property(const StringName& name, const Variant& value);
 
 #pragma region ScriptIntance Implementation
 

@@ -1,6 +1,9 @@
 #include "jsb_object_bindings.h"
 #include "jsb_transpiler.h"
 #include "jsb_type_convert.h"
+// TODO: Refactor. Violates isolation of bridge.
+#include "../weaver/jsb_script_instance.h"
+#include "../weaver/jsb_script_language.h"
 
 namespace jsb
 {
@@ -94,7 +97,7 @@ namespace jsb
                  v8::HandleScope handle_scope_for_signal(isolate);
                  String signal_name = internal::NamingUtil::get_member_name(pair.key);
                  const v8::Local<v8::String> signal_name_js = p_env->get_string_name_cache().get_string_value(isolate, pair.key);
-                 class_builder.Instance().Property(signal_name, _godot_object_signal, signal_name_js.As<v8::Value>());
+                 class_builder.Instance().Property(signal_name, _godot_object_signal_get, signal_name_js.As<v8::Value>());
              }
 
              HashSet<StringName> enum_consts;
@@ -152,7 +155,7 @@ namespace jsb
         } // end type template block scope
     }
 
-    void ObjectReflectBindingUtil::_godot_object_signal(const v8::FunctionCallbackInfo<v8::Value>& info)
+    void ObjectReflectBindingUtil::_godot_object_signal_get(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
         const v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -167,11 +170,12 @@ namespace jsb
         {
             return;
         }
+
         // strict check for Godot Object
         void* pointer = environment->get_verified_object(self, NativeClassType::GodotObject);
         if (!pointer)
         {
-            const String error_message = jsb_errorf("failure obtaining signal: %s. signal owner is undefined or dead", gd_signal_name);
+            const String error_message = jsb_errorf("failure obtaining signal: %s. signal owner is undefined or dead.", gd_signal_name);
             impl::Helper::throw_error(isolate, error_message);
             return;
         }
@@ -185,6 +189,70 @@ namespace jsb
         }
         const String error_message = jsb_errorf("failure obtaining signal: %s. bad signal", gd_signal_name);
         impl::Helper::throw_error(isolate, error_message);
+    }
+
+    void ObjectReflectBindingUtil::_godot_object_cached_export_update(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+        Environment* environment = Environment::wrap(isolate);
+        jsb_check(info.Data()->IsString());
+
+        const v8::Local<v8::Object> self = info.This();
+
+        void* pointer = environment->get_verified_object(self, NativeClassType::GodotObject);
+
+        if (!pointer)
+        {
+            // Ignore. This may occur if a JS constructor/initializer sets the property (the object is not yet bound).
+            // GodotJSScriptInstance's postbind will establish the initial cache, so this is safe to ignore.
+            return;
+        }
+
+        const StringName property_name = environment->get_string_name_cache().get_string_name(isolate, info.Data().As<v8::String>());
+
+        jsb_check(((Object*) pointer)->get_script_instance()->get_language() == GodotJSScriptLanguage::get_singleton());
+
+        GodotJSScriptInstance* script_instance = (GodotJSScriptInstance*) ((Object*) pointer)->get_script_instance();
+
+        if (!script_instance)
+        {
+            // Again, this could conceivably occur during construction. Safe to ignore.
+            return;
+        }
+
+        v8::Local<v8::Value> js_value;
+
+        if (info.Length() > 0)
+        {
+            // Auto-accessor pass the latest value in, saving an unnecessary get
+            js_value = info[0];
+        }
+        else
+        {
+            v8::MaybeLocal<v8::Value> get_result = self->Get(context, info.Data());
+
+            if (get_result.IsEmpty())
+            {
+                const String error_message = jsb_errorf("failure setting cached export: %s. failed to get latest value", property_name);
+                impl::Helper::throw_error(isolate, error_message);
+                return;
+            }
+
+            js_value = get_result.ToLocalChecked();
+        }
+
+        Variant gd_value;
+
+        if (!TypeConvert::js_to_gd_var(isolate, context, js_value, gd_value))
+        {
+            const String error_message = jsb_errorf("failure setting cached export: %s. failed to convert value to a variant", property_name);
+            impl::Helper::throw_error(isolate, error_message);
+            return;
+        }
+
+        script_instance->cache_property(property_name, gd_value);
     }
 
     void ObjectReflectBindingUtil::_godot_object_free(const v8::FunctionCallbackInfo<v8::Value>& info)
