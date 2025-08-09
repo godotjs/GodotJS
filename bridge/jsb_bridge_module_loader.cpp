@@ -2,6 +2,7 @@
 #include "jsb_type_convert.h"
 #include "jsb_editor_utility_funcs.h"
 #include "jsb_callable.h"
+#include "jsb_object_bindings.h"
 
 namespace jsb
 {
@@ -80,7 +81,7 @@ namespace jsb
             info.GetReturnValue().Set(rval);
         }
 
-        // function (target: any): void;
+        // function add_script_tool(constructor: GObjectConstructor): void;
         void _add_script_tool(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -178,13 +179,12 @@ namespace jsb
             environment->notify_microtasks_run();
         }
 
-        // interface RPCConfig {
-        //     mode?: MultiplayerAPI.RPCMode,
-        //     sync?: boolean,
+        // function add_script_rpc(prototype: GObject, property_key: string, config: {
+        //     rpc_mode?: MultiplayerAPI.RPCMode,
+        //     call_local?: boolean,
         //     transfer_mode?: MultiplayerPeer.TransferMode,
-        //     transfer_channel?: number,
-        // }
-        // function add_script_rpc(target: any, propertyKey: string, config: RPCConfig): void;
+        //     channel?: number,
+        // }): void;
         void _add_script_rpc(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -215,7 +215,7 @@ namespace jsb
                 impl::Helper::to_string(isolate, info[1]));
         }
 
-        // function (target: any): void;
+        // function add_script_icon(constructor: GObjectConstructor, path: string): void;
         void _add_script_icon(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -234,8 +234,8 @@ namespace jsb
                 impl::Helper::to_string(isolate, info[1]));
         }
 
-        // function add_script_ready(target: any, name: string,  evaluator: string | Function): void;
-        void _add_script_ready(const v8::FunctionCallbackInfo<v8::Value> &info)
+        // function add_script_ready(prototype: GObject, details: { name: string, evaluator: string | OnReadyEvaluatorFunc }): void;
+        void _add_script_ready(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -272,7 +272,8 @@ namespace jsb
                 impl::Helper::to_string_opt(isolate, evaluator->Get(context, jsb_name(environment, name))));
         }
 
-        // function (target: any, prop?: string, cat: [0, 1, 2], message?: string)
+        // function set_script_doc(target: GObjectConstructor, property_key: undefined, field: 0 | 1 | 2, message: string): void;
+        // function set_script_doc(target: GObject, property_key: string, field: 0 | 1 | 2, message: string): void;
         void _set_script_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
 #ifdef TOOLS_ENABLED
@@ -348,8 +349,8 @@ namespace jsb
 #endif
         }
 
-        // function (target: any, name: string, details: ScriptPropertyInfo): void;
-        void _add_script_property(const v8::FunctionCallbackInfo<v8::Value> &info)
+        // function add_script_property(prototype: GObject, details: ScriptPropertyInfo): void
+        void _add_script_property(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -390,7 +391,49 @@ namespace jsb
                 impl::Helper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
         }
 
-        void _find_module(const v8::FunctionCallbackInfo<v8::Value> &info)
+        // TODO: Cache for our cache functions?:
+        //      internal::TypeGen<StringName, TWeakRef<v8::Function>>::UnorderedMap _signal_getters;
+        // However, we don't really want to be hanging onto StringNames either, so we'd need to hook into GC finalizers.
+
+        // function (name: string): (value?: unknown) => void
+        void _create_script_cached_property_updater(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::HandleScope handle_scope(isolate);
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+            if (info.Length() != 1 || !info[0]->IsString())
+            {
+                jsb_throw(isolate, "bad param");
+                return;
+            }
+
+            v8::Local<v8::String> property_name = info[0].As<v8::String>();
+
+            jsb_check(property_name->IsString());
+
+            info.GetReturnValue().Set(JSB_NEW_FUNCTION(context, ObjectReflectBindingUtil::_godot_object_cached_export_update, property_name));
+        }
+
+        // TODO: Weak ref function cache
+        // function (name: string): () => Signal
+        void _create_script_signal_getter(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::HandleScope handle_scope(isolate);
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+            if (info.Length() != 1 || !info[0]->IsString())
+            {
+                jsb_throw(isolate, "bad param");
+                return;
+            }
+
+            v8::Local<v8::String> signal_name_js = info[0].As<v8::String>();
+            info.GetReturnValue().Set(JSB_NEW_FUNCTION(context, ObjectReflectBindingUtil::_godot_object_signal_get, signal_name_js));
+        }
+
+        void _find_module(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -415,7 +458,7 @@ namespace jsb
             }
         }
 
-        void _add_module(const v8::FunctionCallbackInfo<v8::Value> &info)
+        void _add_module(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -445,8 +488,8 @@ namespace jsb
             info.GetReturnValue().Set(module.module);
         }
 
-        // function add_script_signal(target: any, signal_name: string): void;
-        void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value> &info)
+        // function add_script_signal(prototype: GObject, name: string): void
+        void _add_script_signal(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -483,6 +526,8 @@ namespace jsb
             JSB_LOG(VeryVerbose, "script %s define signal %s",
                 impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
                 impl::Helper::to_string(isolate, signal));
+
+            info.GetReturnValue().Set(JSB_NEW_FUNCTION(context, ObjectReflectBindingUtil::_godot_object_signal_get, signal));
         }
     }
 
@@ -538,6 +583,9 @@ namespace jsb
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_rpc"), JSB_NEW_FUNCTION(context, _add_script_rpc, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "set_script_doc"), JSB_NEW_FUNCTION(context, _set_script_doc, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "notify_microtasks_run"), JSB_NEW_FUNCTION(context, _notify_microtasks_run, {})).Check();
+
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "create_script_cached_property_updater"), JSB_NEW_FUNCTION(context, _create_script_cached_property_updater, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "create_script_signal_getter"), JSB_NEW_FUNCTION(context, _create_script_signal_getter, {})).Check();
 
                 // jsb.internal.names
                 {

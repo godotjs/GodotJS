@@ -1753,7 +1753,6 @@ namespace jsb
                 }
                 else if (element_value->IsFunction())
                 {
-                    jsb_not_implemented(true, "function evaluator not implemented yet");
                     v8::Local<v8::Value> argv[] = { self };
                     const impl::TryCatch try_catch_run(isolate);
                     v8::MaybeLocal<v8::Value> result = element_value.As<v8::Function>()->Call(context, self, std::size(argv), argv);
@@ -1764,9 +1763,22 @@ namespace jsb
                             BridgeHelper::get_exception(try_catch_run));
                         return;
                     }
-                    if (!result.IsEmpty())
+
+                    v8::Maybe<bool> assignment = result.IsEmpty()
+                        ? self->Set(context, element_name, v8::Local<v8::Value>(v8::Undefined(isolate)))
+                        : self->Set(context, element_name, result.ToLocalChecked());
+                    if (try_catch_run.has_caught())
                     {
-                        self->Set(context, element_name, result.ToLocalChecked()).Check();
+                        JSB_LOG(Warning, "something wrong assigning onready result to '%s'\n%s",
+                            impl::Helper::to_string(isolate, element_name),
+                            BridgeHelper::get_exception(try_catch_run));
+                        return;
+                    }
+                    if (assignment.IsNothing())
+                    {
+                        JSB_LOG(Warning, "failed to assign onready result to '%s'\n%s",
+                            impl::Helper::to_string(isolate, element_name));
+                        return;
                     }
                 }
             }
