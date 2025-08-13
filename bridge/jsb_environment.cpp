@@ -1596,12 +1596,24 @@ namespace jsb
         const v8::Local<v8::Object> self = this->get_object(p_object_id);
         const v8::Local<v8::String> name = this->get_string_value(p_info.name);
         v8::Local<v8::Value> value;
-        if (!self->Get(context, name).ToLocal(&value))
+
+        impl::TryCatch try_catch(isolate);
+        bool get_result = self->Get(context, name).ToLocal(&value);
+
+        if (try_catch.has_caught())
+        {
+            JSB_LOG(Error, "Failed to get property '%s' on a %s: %s", p_info.name, p_info.class_name, jsb::BridgeHelper::get_exception(try_catch));
+            return false;
+        }
+
+        if (!get_result)
         {
             return false;
         }
+
         if (!TypeConvert::js_to_gd_var(isolate, context, value, p_info.type, r_val))
         {
+            JSB_LOG(Error, "Failed to get property '%s' on a %s: Failed to convert result to a Godot type", p_info.name, p_info.class_name);
             return false;
         }
         return true;
@@ -1628,8 +1640,16 @@ namespace jsb
             return false;
         }
 
-        self->Set(context, name, value).Check();
-        return true;
+        impl::TryCatch try_catch(isolate);
+        v8::Maybe<bool> set_result = self->Set(context, name, value);
+
+        if (try_catch.has_caught())
+        {
+            JSB_LOG(Error, "Failed to set property '%s' on a %s: %s", p_info.name, p_info.class_name, jsb::BridgeHelper::get_exception(try_catch));
+            return false;
+        }
+
+        return set_result.IsJust();
     }
 
     bool Environment::get_default_property_value(ScriptClassInfo& p_class_info, const StringName& p_name, Variant& r_val)
