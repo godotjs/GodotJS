@@ -1,5 +1,6 @@
 #include "jsb_editor_helper.h"
 
+#include "../bridge/jsb_bridge_helper.h"
 #include "../bridge/jsb_callable.h"
 #include "../bridge/jsb_type_convert.h"
 #include "../weaver/jsb_script.h"
@@ -41,7 +42,7 @@ bool GodotJSEditorHelper::_request_codegen(jsb::JSEnvironment& p_env, GodotJSScr
 
     if (module == nullptr)
     {
-        JSB_LOG(Warning, "Codegen failed to load module '%s'.", module_id);
+        JSB_LOG(Warning, "Codegen failed to load module script '%s'.", p_script->get_path());
         return false;
     }
 
@@ -65,16 +66,26 @@ bool GodotJSEditorHelper::_request_codegen(jsb::JSEnvironment& p_env, GodotJSScr
     }
 
     const v8::Local<v8::Function> codegen_func = codegen_func_val.As<v8::Function>();
+
     v8::Local<v8::Value> codegen_request_val;
 
     if (!jsb::TypeConvert::gd_var_to_js(isolate, context, p_request, codegen_request_val))
     {
+        JSB_LOG(Error, "Codegen failed for module '%s': Failed to convert codegen request", module_id);
         return false;
     }
 
-    v8::Local<v8::Value> argv[] = { codegen_request_val };
+    jsb::impl::TryCatch try_catch(isolate);
 
+    v8::Local<v8::Value> argv[] = { codegen_request_val };
     const v8::MaybeLocal<v8::Value> maybe_result = codegen_func->Call(context, v8::Undefined(isolate), std::size(argv), argv);
+
+    if (try_catch.has_caught())
+    {
+        JSB_LOG(Error, "Codegen failed for module '%s': %s", module_id, jsb::BridgeHelper::get_exception(try_catch));
+        return false;
+    }
+
     v8::Local<v8::Value> result_val;
     Variant result;
 
@@ -99,7 +110,7 @@ StringName GodotJSEditorHelper::_get_exposed_node_class_name(const StringName& c
     return jsb::internal::NamingUtil::get_class_name(exposed_class_name);
 }
 
-Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, const String& scene_resource_path)
+Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, const String& p_scene_resource_path)
 {
     Dictionary descriptor;
     Dictionary children;
@@ -132,7 +143,10 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
         // By default, only scene (and sub-scene) roots are typed with a user defined type. This ensures that classes are
         // able to use SceneNodes in their type declaration without illegally referencing their own type. Users can use
         // codegen to override this behavior.
-        if (script == nullptr || p_node->get_scene_file_path().is_empty() || GodotJSScriptLanguage::get_singleton()->is_global_class_generic(script->get_path()))
+        if (script == nullptr
+            || p_node->get_scene_file_path().is_empty()
+            || GodotJSScriptLanguage::get_singleton()->is_global_class_generic(script->get_path())
+            || script->get_global_name().is_empty())
         {
             Dictionary object_literal;
             object_literal[jsb_string_name(type)] = (int32_t) DescriptorType::ObjectLiteral;
@@ -201,7 +215,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
     }
 
     // Optionally replace children literal with SceneNodes["path/to/scene.tscn"]
-    if (!scene_resource_path.is_empty())
+    if (!p_scene_resource_path.is_empty())
     {
         Variant arguments_var = descriptor[jsb_string_name(arguments)];
 
@@ -226,7 +240,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
 
                     Dictionary string_literal;
                     string_literal[jsb_string_name(type)] = (int32_t) DescriptorType::StringLiteral;
-                    string_literal[jsb_string_name(value)] = scene_resource_path.substr(6); // Remove leading res://
+                    string_literal[jsb_string_name(value)] = p_scene_resource_path.substr(6); // Remove leading res://
 
                     Dictionary indexed_scene_nodes;
                     indexed_scene_nodes[jsb_string_name(type)] = (int32_t) DescriptorType::Indexed;
