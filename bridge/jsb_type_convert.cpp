@@ -628,6 +628,20 @@ namespace jsb
             return false;
         }
 
+#if JSB_WITH_V8
+        if (p_jval->IsProxy())
+#else
+        if (p_jval->IsObject())
+#endif
+        {
+            v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(p_jval);
+            v8::MaybeLocal<v8::Value> target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
+            if (!target.IsEmpty())
+            {
+                return js_to_gd_obj(isolate, context, target.ToLocalChecked(), r_godot_obj);
+            }
+        }
+
         // return false if strict type check fails
         const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
         if (!TypeConvert::is_object(self)
