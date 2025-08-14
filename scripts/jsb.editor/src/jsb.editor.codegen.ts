@@ -588,7 +588,7 @@ interface CodeWriter {
 
     line(text: string): void;
     concatenate(text: string): void;
-    append(newLine: boolean, text: string): void;
+    append(new_line: boolean, text: string): void;
 
     enum_(name: string): EnumWriter;
     namespace_(name: string, class_doc?: GodotJsb.editor.ClassDoc): NamespaceWriter;
@@ -894,8 +894,8 @@ abstract class AbstractWriter implements ScopeWriter {
     line_comment_(text: string) {
         this.line(`// ${text}`);
     }
-    append(newLine: boolean, text: string) {
-        if (newLine) {
+    append(new_line: boolean, text: string) {
+        if (new_line) {
             this.line(text);
         } else {
             this.concatenate(text);
@@ -1049,17 +1049,17 @@ abstract class BufferingWriter extends AbstractWriter {
         return this._base.resolve_import(script_resource);
     }
 
-    abstract bufferedSize(text: string, newLine: boolean): number;
+    abstract buffered_size(text: string, new_line: boolean): number;
 
     line(text: string): void {
         this._lines.push(text);
-        this._size += this.bufferedSize(text, this._lines.length > 1 || !this._concatenate_first_line);
+        this._size += this.buffered_size(text, this._lines.length > 1 || !this._concatenate_first_line);
     }
 
     concatenate(text: string): void {
         if (this._lines.length > 0) {
             this._lines[this._lines.length - 1] += text;
-            this._size += this.bufferedSize(text, false);
+            this._size += this.buffered_size(text, false);
         } else {
             this.line(text);
         }
@@ -1067,19 +1067,33 @@ abstract class BufferingWriter extends AbstractWriter {
 }
 
 class IndentWriter extends BufferingWriter {
+    protected _indent_first_line: boolean;
+
+    constructor(base: ScopeWriter, indent_first_line = true, concatenate_first_line = !indent_first_line) {
+        super(base, concatenate_first_line);
+        this._indent_first_line = indent_first_line;
+    }
+
     finish() {
         const lines = this._lines;
-        for (let i = 0, l = lines.length; i < l; i++) {
-            if (i === 0 && this._concatenate_first_line) {
-                this._base.concatenate(lines[i]);
-            } else {
-                this._base.line(tab + lines[i]);
-            }
+
+        if (lines.length === 0) {
+            return;
+        }
+
+        if (this._indent_first_line) {
+            this._base.line(tab + lines[0]);
+        } else {
+            this._base.line(lines[0]);
+        }
+
+        for (let i = 1, l = lines.length; i < l; i++) {
+            this._base.line(tab + lines[i]);
         }
     }
 
-    bufferedSize(text: string, newLine: boolean): number {
-        return text.length + (newLine ? tab.length + 1 : 0);
+    buffered_size(text: string, new_line: boolean): number {
+        return text.length + (this._lines.length > 1 || this._indent_first_line ? tab.length : 0) + (new_line ? 1 : 0);
     }
 }
 
@@ -1145,7 +1159,7 @@ export type GenericParameterDescriptor = GDictionary<{
 export type ParameterDescriptor = GDictionary<{
     name: string;
     type: TypeDescriptor;
-    default?: TypeDescriptor;
+    optional?: boolean;
 }>;
 
 export type FunctionLiteralTypeDescriptor = GDictionary<{
@@ -1157,7 +1171,7 @@ export type FunctionLiteralTypeDescriptor = GDictionary<{
 
 export type ObjectLiteralTypeDescriptor = GDictionary<{
     type: DescriptorType.ObjectLiteral;
-    properties: GDictionary<Partial<Record<string, TypeDescriptor>>>;
+    properties?: GDictionary<Partial<Record<string, TypeDescriptor>>>;
     index?: GDictionary<{
         key: TypeDescriptor;
         value: TypeDescriptor;
@@ -1278,8 +1292,8 @@ export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest | ScriptReso
 export type CodeGenHandler = (request: CodeGenRequest) => undefined | TypeDescriptor;
 
 class TypeDescriptorWriter extends BufferingWriter {
-    bufferedSize(text: string, newLine: boolean): number {
-        return text.length + (newLine ? 1 : 0);
+    buffered_size(text: string, new_line: boolean): number {
+        return text.length + (new_line ? 1 : 0);
     }
 
     finish() {
@@ -1296,23 +1310,23 @@ class TypeDescriptorWriter extends BufferingWriter {
     serialize_type_descriptor(descriptor: GReadProxyValueWrap<TypeDescriptor>): void {
         switch (descriptor.type) {
             case DescriptorType.Godot: {
-                if (descriptor.arguments) {
+                if (descriptor.arguments?.length) {
                     this.line(`${descriptor.name}<`);
                     const multiline = descriptor.arguments.length > 1
                         || descriptor.arguments[0]?.type === DescriptorType.Union
                         || descriptor.arguments[0]?.type === DescriptorType.Intersection;
-                    const indent = multiline ? new IndentWriter(this) : null;
-                    const args = new TypeDescriptorWriter(indent ?? this, !multiline);
+                    const indent = new IndentWriter(this, multiline);
+                    const args = new TypeDescriptorWriter(indent);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
-                            args.concatenate(", ");
+                            args.concatenate(",");
                         }
 
                         args.serialize_type_descriptor(arg);
                     });
                     args.finish();
-                    indent?.finish();
-                    this.append(multiline, `>`);
+                    indent.finish();
+                    this.append(indent.lineno > 1, `>`);
                 } else {
                     this.line(descriptor.name);
                 }
@@ -1324,18 +1338,18 @@ class TypeDescriptorWriter extends BufferingWriter {
                     const multiline = descriptor.arguments.length > 1
                         || descriptor.arguments[0]?.type === DescriptorType.Union
                         || descriptor.arguments[0]?.type === DescriptorType.Intersection;
-                    const indent = multiline ? new IndentWriter(this) : null;
-                    const args = new TypeDescriptorWriter(indent ?? this, !multiline);
+                    const indent = new IndentWriter(this, multiline);
+                    const args = new TypeDescriptorWriter(indent, !multiline);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
-                            args.concatenate(", ");
+                            args.concatenate(",");
                         }
 
                         args.serialize_type_descriptor(arg);
                     });
                     args.finish();
-                    indent?.finish();
-                    this.append(multiline, `>`);
+                    indent.finish();
+                    this.append(indent.lineno > 1, `>`);
                 } else {
                     this.line(descriptor.name);
                 }
@@ -1348,6 +1362,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                 const generic_count = descriptor.generics ? Object.entries(descriptor.generics).length : 0;
 
                 if (generic_count > 0) {
+                    this.concatenate('<');
                     descriptor.generics!.forEach((generic, index) => {
                         if (index > 0) {
                             this.concatenate(", ");
@@ -1370,39 +1385,54 @@ class TypeDescriptorWriter extends BufferingWriter {
                             default_writer.finish();
                         }
                     });
+                    this.concatenate('>');
                 }
 
                 this.append(generic_count == 0, `(`);
 
-                const multiline = (descriptor.parameters?.length ?? 0) > 1;
+                const multiline = !!descriptor.parameters?.length;
 
                 if (descriptor.parameters) {
+                    const indent = new IndentWriter(this, multiline);
+
                     descriptor.parameters.forEach((param, index) => {
                         if (index > 0) {
-                            this.concatenate(", ");
+                            indent.concatenate(", ");
                         }
 
-                        this.line(`${param.name}: `);
+                        indent.line(`${param.name}${param.optional ? "?" : ""}: `);
 
-                        const param_writer = new TypeDescriptorWriter(this, !multiline);
+                        const param_writer = new TypeDescriptorWriter(indent, true);
                         param_writer.serialize_type_descriptor(param.type);
                         param_writer.finish();
-
-                        if (param.default) {
-                            this.concatenate(` = `);
-                            const default_writer = new TypeDescriptorWriter(this, true);
-                            default_writer.serialize_type_descriptor(param.default);
-                            default_writer.finish();
-                        }
                     });
+
+                    indent.finish();
                 }
 
-                this.append(multiline, ") => ");
+                this.append(this.lineno > 1, ") => ");
 
                 if (descriptor.returns) {
-                    const return_writer = new TypeDescriptorWriter(this, true);
+                    const indent = new IndentWriter(this, false);
+                    const return_type = descriptor.returns.type;
+                    const parenthesis_required = return_type === DescriptorType.Union
+                        || return_type === DescriptorType.Intersection
+                        || return_type === DescriptorType.FunctionLiteral
+                        || return_type === DescriptorType.Conditional;
+
+                    if (parenthesis_required) {
+                        indent.line("(");
+                    }
+
+                    const return_writer = new TypeDescriptorWriter(indent, parenthesis_required);
                     return_writer.serialize_type_descriptor(descriptor.returns);
                     return_writer.finish();
+
+                    if (parenthesis_required) {
+                        indent.concatenate(")");
+                    }
+
+                    indent.finish();
                 } else {
                     this.concatenate("void");
                 }
@@ -1411,7 +1441,7 @@ class TypeDescriptorWriter extends BufferingWriter {
             }
 
             case DescriptorType.ObjectLiteral: {
-                const properties = Object.entries(descriptor.properties);
+                const properties = descriptor.properties ? Object.entries(descriptor.properties) : [];
 
                 if (properties.length === 0 && !descriptor.index) {
                     this.line("{}");
@@ -1419,7 +1449,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                 }
 
                 this.line("{");
-                const indent = new IndentWriter(this);
+                const indent = new IndentWriter(this, true);
                 properties.forEach(([key, value]) => {
                     if (!value) {
                         return;
@@ -1486,29 +1516,39 @@ class TypeDescriptorWriter extends BufferingWriter {
                 break;
             }
 
-            case DescriptorType.Union: {
-                descriptor.types.forEach((type, index) => {
-                    if (index > 0) {
-                        this.line(" | ");
-                    }
-
-                    const union_writer = new TypeDescriptorWriter(this, index > 0);
-                    union_writer.serialize_type_descriptor(type);
-                    union_writer.finish();
-                });
-                break;
-            }
-
+            case DescriptorType.Union:
             case DescriptorType.Intersection: {
+                const multiline = descriptor.types.length > 1;
+                const separator = descriptor.type === DescriptorType.Union
+                    ? `${multiline ? '' : ' '}| `
+                    : `${multiline ? '' : ' '}& `;
+                const members = new IndentWriter(this, false, false);
+
                 descriptor.types.forEach((type, index) => {
                     if (index > 0) {
-                        this.line(" & ");
+                        members.line(separator);
                     }
 
-                    const intersection_writer = new TypeDescriptorWriter(this, index > 0);
-                    intersection_writer.serialize_type_descriptor(type);
-                    intersection_writer.finish();
+                    const member_type = type.type;
+                    const parenthesis_required = member_type === DescriptorType.Union
+                        || member_type === DescriptorType.Intersection
+                        || member_type === DescriptorType.FunctionLiteral
+                        || member_type === DescriptorType.Conditional;
+
+                    if (parenthesis_required) {
+                        members.append(index === 0, '(');
+                    }
+
+                    const member = new TypeDescriptorWriter(members, parenthesis_required || index > 0);
+                    member.serialize_type_descriptor(type);
+                    member.finish();
+
+                    if (parenthesis_required) {
+                        members.concatenate(')');
+                    }
                 });
+
+                members.finish();
                 break;
             }
 
@@ -1740,7 +1780,7 @@ class ClassWriter extends IndentWriter {
 
     intro() {
         if (!this._intro) {
-            return
+            return;
         }
 
         const lines = Array.isArray(this._intro)
@@ -2110,8 +2150,8 @@ class PropertyWriter extends BufferingWriter {
         this._base.concatenate(";");
     }
 
-    bufferedSize(text: string, newLine: boolean): number {
-        return text.length + (newLine ? 1 : 0);
+    buffered_size(text: string, new_line: boolean): number {
+        return text.length + (new_line ? 1 : 0);
     }
 }
 
@@ -2440,27 +2480,27 @@ export class TypeDB {
 // d.ts generator
 export class TSDCodeGen {
     private _split_index: number;
-    private _outDir: string;
+    private _out_dir: string;
     private _splitter: FileSplitter | undefined;
     private _types: TypeDB;
     private _use_project_settings: boolean;
 
     constructor(outDir: string, use_project_settings: boolean) {
         this._split_index = 0;
-        this._outDir = outDir;
+        this._out_dir = outDir;
         this._use_project_settings = use_project_settings;
         this._types = new TypeDB();
     }
 
     private make_path(index: number) {
         const filename = `godot${index}.gen.d.ts`;
-        if (typeof this._outDir !== "string" || this._outDir.length == 0) {
+        if (typeof this._out_dir !== "string" || this._out_dir.length == 0) {
             return filename;
         }
-        if (this._outDir.endsWith("/")) {
-            return this._outDir + filename;
+        if (this._out_dir.endsWith("/")) {
+            return this._out_dir + filename;
         }
-        return this._outDir + "/" + filename;
+        return this._out_dir + "/" + filename;
     }
 
     private new_splitter() {
@@ -2597,7 +2637,7 @@ export class TSDCodeGen {
 
         if (this._use_project_settings) {
             cg.line("type InputActionName = ");
-            const indent = new IndentWriter(cg);
+            const indent = new IndentWriter(cg, true);
             for (const action of jsb.editor.get_input_actions()) {
                 indent.line(`| "${action}"`);
             }
