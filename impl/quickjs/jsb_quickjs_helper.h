@@ -78,6 +78,19 @@ namespace jsb::impl
 #endif
         }
 
+        static v8::Local<v8::Function> new_noop_function(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
+        {
+            const JSValue func_obj = JS_NewCFunction(isolate->ctx(),
+                QuickJS::NoopCallback,
+                nullptr,
+                0);
+#if JSB_DEBUG
+            JSContext* ctx = context->GetIsolate()->ctx();
+            jsb_check(JS_IsFunction(ctx, func_obj));
+#endif
+            return v8::Local<v8::Function>(v8::Data(isolate, isolate->push_steal(func_obj)));
+        }
+
         template<size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])
         {

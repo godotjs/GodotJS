@@ -47,6 +47,12 @@ namespace jsb::impl
             return v8::Function::New(context, callback, data).ToLocalChecked();
         }
 
+        static v8::Local<v8::Function> new_noop_function(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
+        {
+            v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(isolate);
+            return function_template->GetFunction(context).ToLocalChecked();
+        }
+
         // with side effects (may trigger value evaluation).
         // any decoding error will be ignored.
         jsb_force_inline static String to_string_opt(v8::Isolate* isolate, const v8::MaybeLocal<v8::Value>& p_val)

@@ -243,9 +243,13 @@ namespace jsb
                 }
             }
 
+#if JSB_WITH_V8
             Serialization::VariantDeserializerDelegate delegate(worker_env, p_message.get_transfers());
             v8::ValueDeserializer deserializer(isolate, p_message.get_data().ptr(), p_message.get_data().size(), &delegate);
             delegate.SetSerializer(&deserializer);
+#else
+            v8::ValueDeserializer deserializer(isolate, p_message.get_data().ptr(), p_message.get_data().size());
+#endif
 
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
@@ -713,9 +717,15 @@ namespace jsb
         }
 
         Vector<TransferData> transferred;
+
+        // TODO: Transfer support non-V8.
+#if JSB_WITH_V8
         Serialization::VariantSerializerDelegate delegate(from_env, transfers);
         v8::ValueSerializer serializer(isolate, &delegate);
         delegate.SetSerializer(&serializer);
+#else
+        v8::ValueSerializer serializer(isolate);
+#endif
 
         serializer.WriteHeader();
         v8::Maybe<bool> write_result = serializer.WriteValue(context, info[0]);

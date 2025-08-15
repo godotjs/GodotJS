@@ -289,9 +289,7 @@ namespace jsb
                 context->SetAlignedPointerInEmbedderData(kContextEmbedderData, this);
                 context_.Reset(isolate_, context);
 
-                v8::Local<v8::FunctionTemplate> js_only_constructor_template = v8::FunctionTemplate::New(isolate_);
-                js_only_constructor_template->InstanceTemplate()->SetInternalFieldCount(IF_ObjectFieldCount);
-                js_only_constructor_tag_.Reset(isolate_, js_only_constructor_template->GetFunction(context).ToLocalChecked());
+                js_only_constructor_tag_.Reset(isolate_, impl::Helper::new_noop_function(isolate_, context));
 
                 // init module cache, and register the global 'require' function
                 {
@@ -672,9 +670,13 @@ namespace jsb
         v8::Local<v8::Value> value;
         if (p_message)
         {
+#if JSB_WITH_V8
             Serialization::VariantDeserializerDelegate delegate(p_env, p_message->get_transfers());
             v8::ValueDeserializer deserializer(isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size(), &delegate);
             delegate.SetSerializer(&deserializer);
+#else
+            v8::ValueDeserializer deserializer(isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size());
+#endif
 
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
