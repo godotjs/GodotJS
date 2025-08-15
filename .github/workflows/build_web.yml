@@ -23,21 +23,25 @@ jobs:
           - name: Template w/ threads (target=template_release, threads=yes, browser)
             cache-name: web-template-release-browser
             target: template_release
+            engine: browser
             sconsflags: threads=yes
 
           - name: Template w/o threads (target=template_release, threads=no, browser)
             cache-name: web-nothreads-template-release-browser
             target: template_release
+            engine: browser
             sconsflags: threads=no
 
           - name: Template w/ threads (target=template_release, threads=yes, qjs_ng)
             cache-name: web-template-release-qjs-ng
             target: template_release
+            engine: qjs-ng
             sconsflags: threads=yes use_quickjs_ng=yes
 
           - name: Template w/o threads (target=template_release, threads=no, qjs_ng)
             cache-name: web-nothreads-template-release-qjs-ng
             target: template_release
+            engine: qjs-ng
             sconsflags: threads=no use_quickjs_ng=yes
 
     steps:
@@ -55,11 +59,18 @@ jobs:
           lfs: true
           submodules: recursive
 
-      - name: Download out
+      - name: Download scripts/out
         uses: actions/download-artifact@v4
         with:
-          name: out
+          name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
+
+      - name: Download impl/web/js
+        if: matrix.engine == 'browser'
+        uses: actions/download-artifact@v4
+        with:
+          name: impl-web-js
+          path: ${{github.workspace}}/modules/GodotJS/impl/web/js
 
       - name: Set up Emscripten latest
         uses: mymindstorm/setup-emsdk@v14
