@@ -687,7 +687,8 @@ namespace jsb
         void free_object(void* p_pointer, FinalizationType p_finalize);
     };
 
-#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
+// TODO: Support other runtimes.
+#if JSB_WITH_V8
     namespace Serialization
     {
         enum class SerializationTag : uint8_t

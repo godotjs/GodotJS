@@ -1093,6 +1093,13 @@ class jsbb_Engine {
         });
     }
 
+    // [stack-based]
+    // return: stack position of the wrapper function
+    NewNoopFunction(): StackPosition {
+        return this._stack.Push(function () {
+        });
+    }
+
     // generate a constructor wrapper function for native class
     NewClass(cb: FunctionPointer, data_sp: StackPosition, internal_field_count: number, class_name_ptr: CString): StackPosition {
         const self = this;
