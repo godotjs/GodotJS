@@ -20,13 +20,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Template w/ threads (target=template_release, threads=yes, v8)
-            cache-name: web-template-release-v8
+          - name: Template w/ threads (target=template_release, threads=yes, browser)
+            cache-name: web-template-release-browser
             target: template_release
             sconsflags: threads=yes
 
-          - name: Template w/o threads (target=template_release, threads=no, v8)
-            cache-name: web-nothreads-template-release-v8
+          - name: Template w/o threads (target=template_release, threads=no, browser)
+            cache-name: web-nothreads-template-release-browser
             target: template_release
             sconsflags: threads=no
 
