@@ -24,6 +24,8 @@ __MACOSX
 /weaver-editor/templates/templates.gen.h
 /release-notes.md
 /*/out
+/scripts/*/out
+/impl/web/js/jsbb.impl.js
 
 # VS Code
 .vscode

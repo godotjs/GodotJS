@@ -33,7 +33,7 @@ jobs:
           node-version: 20
           cache: "pnpm"
 
-      - name: 🛠️ Build scripts/out
+      - name: 🛠️ Build bundled JavaScript
         run: |
           pnpm install
           pnpm build
@@ -41,8 +41,15 @@ jobs:
       - name: ⬆️ Upload scripts/out
         uses: actions/upload-artifact@v4
         with:
-          name: out
+          name: scripts-out
           path: ${{github.workspace}}/scripts/out
+          retention-days: 10
+
+      - name: ⬆️ Upload impl/web/js
+        uses: actions/upload-artifact@v4
+        with:
+          name: impl-web-js
+          path: ${{github.workspace}}/impl/web/js
           retention-days: 10
 
       - name: 🏷 Set Versions

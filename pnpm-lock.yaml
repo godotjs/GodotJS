@@ -12,6 +12,12 @@ importers:
         specifier: ^2.29.4
         version: 2.29.4
 
+  impl/web/bridge:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.8.3
+
   scripts/jsb.editor:
     devDependencies:
       '@types/node':
