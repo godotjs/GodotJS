@@ -55,6 +55,9 @@ jobs:
             cache-limit: 1
 
     steps:
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+
       - name: Checkout Godot
         uses: actions/checkout@v4
         with:
