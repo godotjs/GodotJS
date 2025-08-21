@@ -1026,13 +1026,11 @@ abstract class BufferingWriter extends AbstractWriter {
     protected _base: ScopeWriter;
     protected _lines: string[];
     protected _size: number = 0;
-    protected _concatenate_first_line = false;
 
-    constructor(base: ScopeWriter, concatenate_first_line = false) {
+    constructor(base: ScopeWriter) {
         super();
         this._base = base;
         this._lines = [];
-        this._concatenate_first_line = concatenate_first_line;
     }
 
     get size() { return this._size; }
@@ -1055,7 +1053,7 @@ abstract class BufferingWriter extends AbstractWriter {
 
     line(text: string): void {
         this._lines.push(text);
-        this._size += this.buffered_size(text, this._lines.length > 1 || !this._concatenate_first_line);
+        this._size += this.buffered_size(text, this._lines.length > 1);
     }
 
     concatenate(text: string): void {
@@ -1069,10 +1067,12 @@ abstract class BufferingWriter extends AbstractWriter {
 }
 
 class IndentWriter extends BufferingWriter {
+    protected _never_collapse: boolean;
     protected _indent_first_line: boolean;
 
-    constructor(base: ScopeWriter, indent_first_line = true, concatenate_first_line = !indent_first_line) {
-        super(base, concatenate_first_line);
+    constructor(base: ScopeWriter, always_multiline = false, indent_first_line = true) {
+        super(base);
+        this._never_collapse = always_multiline;
         this._indent_first_line = indent_first_line;
     }
 
@@ -1080,6 +1080,11 @@ class IndentWriter extends BufferingWriter {
         const lines = this._lines;
 
         if (lines.length === 0) {
+            return;
+        }
+
+        if (lines.length === 1 && !this._never_collapse) {
+            this._base.concatenate(lines[0]);
             return;
         }
 
@@ -1831,6 +1836,13 @@ export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest | ScriptReso
 export type CodeGenHandler = (request: CodeGenRequest) => undefined | TypeDescriptor;
 
 class TypeDescriptorWriter extends BufferingWriter {
+    protected _concatenate_first_line = false;
+
+    constructor(base: ScopeWriter, concatenate_first_line = false) {
+        super(base);
+        this._concatenate_first_line = concatenate_first_line;
+    }
+
     buffered_size(text: string, new_line: boolean): number {
         return text.length + (new_line ? 1 : 0);
     }
@@ -1855,10 +1867,7 @@ class TypeDescriptorWriter extends BufferingWriter {
 
                 if (descriptor.arguments?.length) {
                     this.line(`${descriptor.name}<`);
-                    const multiline = descriptor.arguments.length > 1
-                        || descriptor.arguments[0]?.type === DescriptorType.Union
-                        || descriptor.arguments[0]?.type === DescriptorType.Intersection;
-                    const indent = new IndentWriter(this, multiline);
+                    const indent = new IndentWriter(this);
                     const args = new TypeDescriptorWriter(indent);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
@@ -1882,11 +1891,8 @@ class TypeDescriptorWriter extends BufferingWriter {
 
                 if (descriptor.arguments) {
                     this.line(`${descriptor.name}<`);
-                    const multiline = descriptor.arguments.length > 1
-                        || descriptor.arguments[0]?.type === DescriptorType.Union
-                        || descriptor.arguments[0]?.type === DescriptorType.Intersection;
-                    const indent = new IndentWriter(this, multiline);
-                    const args = new TypeDescriptorWriter(indent, !multiline);
+                    const indent = new IndentWriter(this);
+                    const args = new TypeDescriptorWriter(indent, false);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
                             args.concatenate(",");
@@ -1937,10 +1943,8 @@ class TypeDescriptorWriter extends BufferingWriter {
 
                 this.append(generic_count == 0, `(`);
 
-                const multiline = !!descriptor.parameters?.length;
-
                 if (descriptor.parameters) {
-                    const indent = new IndentWriter(this, multiline);
+                    const indent = new IndentWriter(this);
 
                     descriptor.parameters.forEach((param, index) => {
                         if (index > 0) {
@@ -2069,7 +2073,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                 const separator = descriptor.type === DescriptorType.Union
                     ? `${multiline ? '' : ' '}| `
                     : `${multiline ? '' : ' '}& `;
-                const members = new IndentWriter(this, false, false);
+                const members = new IndentWriter(this, true, false);
 
                 descriptor.types.forEach((type, index) => {
                     if (index > 0) {
@@ -2170,7 +2174,7 @@ class ModuleWriter extends IndentWriter {
     protected _name: string;
 
     constructor(base: ScopeWriter, name: string) {
-        super(base);
+        super(base, true);
         this._name = name;
     }
 
@@ -2237,7 +2241,7 @@ class NamespaceWriter extends IndentWriter {
     get class_doc() { return this._doc; }
 
     constructor(base: ScopeWriter, name: string, class_doc?: GodotJsb.editor.ClassDoc) {
-        super(base);
+        super(base, true);
         this._name = name;
         this._doc = class_doc;
     }
@@ -2280,7 +2284,7 @@ class ClassWriter extends IndentWriter {
         singleton_mode: boolean,
         class_doc?: GodotJsb.editor.ClassDoc
     ) {
-        super(base);
+        super(base, true);
         this._name = name;
         this._generic_parameters = generic_parameters;
         this._super = super_;
@@ -2484,7 +2488,7 @@ class EnumWriter extends IndentWriter {
     protected _separator_line = false;
 
     constructor(base: ScopeWriter, name: string) {
-        super(base);
+        super(base, true);
         this._name = name;
     }
 
@@ -2532,7 +2536,7 @@ class InterfaceWriter extends IndentWriter {
         intro?: undefined | string[],
         property_overrides?: undefined | PropertyOverrides,
     ) {
-        super(base);
+        super(base, true);
         this._name = name;
         this._generic_parameters = generic_parameters;
         this._super = super_;
@@ -2648,7 +2652,7 @@ class ObjectWriter extends IndentWriter {
         this._base.line(`{`)
         this.intro()
         super.finish()
-        this._base.line("}")
+        this._base.append((this._intro?.length ?? 0) + this._lines.length > 1, '}')
     }
 
     property_(key: string): PropertyWriter;
@@ -2672,10 +2676,13 @@ class ObjectWriter extends IndentWriter {
 }
 
 class PropertyWriter extends BufferingWriter {
+    protected _concatenate_first_line = false;
+
     private _key: string;
 
     constructor(base: ScopeWriter, name: string, concatenate_first_line = false) {
-        super(base, concatenate_first_line);
+        super(base);
+        this._concatenate_first_line = concatenate_first_line;
         this._key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
             ? name
             : `"${name.replace("\"", "\\\"")}"`;
@@ -3218,7 +3225,7 @@ export class TSDCodeGen {
 
         if (this._use_project_settings) {
             cg.line("type InputActionName = ");
-            const indent = new IndentWriter(cg, true);
+            const indent = new IndentWriter(cg);
             for (const action of jsb.editor.get_input_actions()) {
                 indent.line(`| "${action}"`);
             }
