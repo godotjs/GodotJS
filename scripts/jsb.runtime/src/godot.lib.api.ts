@@ -69,10 +69,12 @@ const object_handler = {
         return proxy_wrap_value(value);
     },
     getOwnPropertyDescriptor(target, p) {
-        return Reflect.getOwnPropertyDescriptor(target, typeof p === "string" ? get_member(p) : p);
+        return Reflect.getOwnPropertyDescriptor(target, typeof p === "string" ? get_member(p) : p)
+            ?? Reflect.getOwnPropertyDescriptor(target, p);
     },
     has(target, p) {
-        return Reflect.has(target, typeof p === "string" ? get_member(p) : p);
+        return Reflect.has(target, typeof p === "string" ? get_member(p) : p)
+            || Reflect.has(target, p);
     },
     ownKeys(target) {
         return Reflect.ownKeys(target).map(key => typeof key === "string" && get_internal_mapping(key) || key);
