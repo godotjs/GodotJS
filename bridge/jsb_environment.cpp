@@ -172,7 +172,12 @@ namespace jsb
                 // must check before async, InstanceBindingCallback need to know whether the object should die or not if it's a ref-counted object.
                 if (env->verify_object(p_binding))
                 {
-                    env->add_async_call(Environment::AsyncCall::TYPE_UNLINK, p_binding);
+                    // Note: Our pointer to the native Godot object is about to become invalid. We must IMMEDIATELY
+                    //       remove this pointer/address from our data structures. It's not safe to post a message and
+                    //       do this work on the environment's thread, because another Godot object may be allocated at
+                    //       the same address before our message is handled. This is not hypothetical, it was observed
+                    //       in practice several times.
+                    env->free_object(p_binding, FinalizationType::None);
                 }
             }
         }
@@ -582,7 +587,6 @@ namespace jsb
         {
         case AsyncCall::TYPE_REF:       reference_object(p_binding, true); break;
         case AsyncCall::TYPE_DEREF:     reference_object(p_binding, false); break;
-        case AsyncCall::TYPE_UNLINK:    free_object(p_binding, FinalizationType::None); break;
         case AsyncCall::TYPE_GC_FREE:   free_object(p_binding, FinalizationType::Default); break;
         case AsyncCall::TYPE_TRANSFER_:
             {
@@ -920,7 +924,7 @@ namespace jsb
     // }
 
     // the only case `free_object` called from background threads is when it's called from InstanceBindingCallbacks::free_callback
-    // in this case, the only modified state is object_db_ (p_finalize is false)
+    // in this case, the only modified state is object_db_ (p_finalize is FinalizationType::None)
     // ---
     // whether the ObjectHandlePtr lock satisfies the requirement of thread safety is still unknown
     void Environment::free_object(void* p_pointer, FinalizationType p_finalize)

@@ -67,9 +67,6 @@ namespace jsb
             {
                 TYPE_NONE,
 
-                // no finalization: no need to do additional finalization because `free_callback` is triggered by godot when an Object is being deleted
-                TYPE_UNLINK,
-
                 // should only be used in gc callback.
                 // break the binding. free the managed native object.
                 TYPE_GC_FREE,
