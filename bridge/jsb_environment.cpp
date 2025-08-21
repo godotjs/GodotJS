@@ -1719,6 +1719,16 @@ namespace jsb
                     ::jsb::internal::VariantUtil::construct_variant(prop_kv.value.default_value, prop_info.type);
                 }
             }
+
+            Object* pointer = (Object*) get_verified_object(class_default_object, NativeClassType::GodotObject);
+
+            if (!pointer)
+            {
+                JSB_LOG(Error, "failed to obtain reference to instantiated '%s' default object", p_class_info.js_class_name);
+                return;
+            }
+
+            memdelete(pointer);
         }
     }
 
