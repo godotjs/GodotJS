@@ -459,6 +459,11 @@ const TypeMutations: Record<string, TypeMutation> = {
             instantiate: mutate_return_type("T"),
         },
     },
+    Resource: {
+        property_overrides: {
+            duplicate: mutate_return_type("this"),
+        },
+    },
     ResourceLoader: {
         property_overrides: {
             load: [
