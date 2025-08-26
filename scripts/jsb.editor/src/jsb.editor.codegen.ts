@@ -2364,7 +2364,7 @@ class ClassWriter extends IndentWriter {
             this.line(`static readonly ${name_string(constant.name)} = ${constant.value}`);
         } else {
             const type_name = get_primitive_type_name(constant.type);
-            this.line(`static readonly ${name_string(constant.name)}: ${type_name}`);
+            this.line(`static readonly ${name_string(constant.name)}: Readonly<${type_name}>`);
         }
     }
 
