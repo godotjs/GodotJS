@@ -282,6 +282,14 @@ const TypeMutations: Record<string, TypeMutation> = {
             feeds: mutate_return_type("GArray<CameraFeed>"),
         },
     },
+    EditorUndoRedoManager: {
+        property_overrides: {
+            add_do_method: [`${names.get_member('add_do_method')}<T extends ${names.get_class("Object")}, M extends ExtractValueKeys<T, (...args: any[]) => any>>(object: T, method: M, ...args: Parameters<T[M]>): void`],
+            add_undo_method: [`${names.get_member('add_undo_method')}<T extends ${names.get_class("Object")}, M extends ExtractValueKeys<T, (...args: any[]) => any>>(object: T, method: M, ...args: Parameters<T[M]>): void`],
+            add_do_property: [`${names.get_member('add_do_property')}<T extends ${names.get_class("Object")}, P extends ExtractValueKeys<T, GAny>>(object: T, property: P, value: T[P]): void`],
+            add_undo_property: [`${names.get_member('add_undo_property')}<T extends ${names.get_class("Object")}, P extends ExtractValueKeys<T, GAny>>(object: T, property: P, value: T[P]): void`],
+        }
+    },
     GArray: {
         generic_parameters: {
             T: {
