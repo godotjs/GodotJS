@@ -1,4 +1,3 @@
-///<reference path="godot.generated.d.ts" />
 declare module "godot" {
     const IntegerType: unique symbol;
     const FloatType: unique symbol;
@@ -199,6 +198,10 @@ declare module "godot" {
     type ResolveAnimationMixerPath<Map extends AnimationMixerPathMap, Path extends string, Default = never> =
         ResolvePath<Map, Path, Default, Animation, "", typeof __PathMappableDummyKeys['AnimationLibrary' | 'AnimationMixer']>;
 
+    type GArrayElement<T extends GAny | GAny[], I extends int64 = int64> = T extends any[]
+        ? T[I]
+        : T;
+
     /**
      * GArray elements are exposed with a subset of JavaScript's standard Array API. Array indexes are exposed as
      * enumerable properties, thus if you want to perform more complex operations you can convert to a regular
@@ -245,31 +248,45 @@ declare module "godot" {
 
     // Ideally this would be a class, but TS currently doesn't provide a way to type a class with mapped properties.
     /**
-     * GObject entries are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work.
+     * GObject entries are exposed as enumerable properties, so Object.keys(), GObject.entries() etc. will work.
      */
     type GDictionaryProxy<T> = {
         [K in keyof T]: T[K] | GProxyValueWrap<T[K]>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
     };
 
-    type GProxyValueWrap<V> = V extends GArray<infer E>
-        ? GArrayProxy<E>
+    type GProxyValueWrap<V> = V extends GArray<infer T>
+        ? GArrayProxy<GArrayElement<T>>
         : V extends GDictionary<infer T>
             ? GDictionaryProxy<T>
             : V;
 
-    type GProxyValueUnwrap<V> = V extends GArray<infer E>
+    type GProxyValueUnwrap<V> = V extends GArrayProxy<infer E>
         ? E
-        : V extends GDictionary<infer T>
+        : V extends GDictionaryProxy<infer T>
             ? T
             : V;
 
-    type GWrappableValue = GAny | GWrappableValue[] | { [key: string]: GWrappableValue };
-    type GValueWrapUnchecked<V> = V extends Array<infer E>
-        ? GArray<GValueWrapUnchecked<E>>
+    type GWrappableValue = GAny | GWrappableValue[] | { [key: number | string]: GWrappableValue };
+    type GValueWrapUnchecked<V> = V extends any[]
+        ? number extends V["length"]
+            ? GArray<GValueWrapUnchecked<V[number]>>
+            : GArray<{ [I in keyof V]: GValueWrapUnchecked<V[I]> }>
         : V extends GAny
             ? V
             : GDictionary<{ [K in keyof V]: GValueWrapUnchecked<V[K]> }>;
-    type GValueWrap<V> = [V] extends [GWrappableValue] ? GValueWrapUnchecked<V> : never;
+    type GValueWrap<V> = [keyof V] extends [never]
+        ? GDictionary<{}>
+        : [V] extends [GWrappableValue]
+            ? GValueWrapUnchecked<V>
+            : never;
+
+    type GValueUnwrap<V> = V extends GArray<infer T>
+        ? T extends any[]
+            ? { [I in keyof T]: GValueUnwrap<T[I]> }
+            : Array<GValueUnwrap<T>>
+        : V extends GDictionary<infer T>
+            ? { [K in keyof T]: GValueUnwrap<T[K]> }
+            : V;
 
     /**
      * Semi-workaround for https://github.com/microsoft/TypeScript/issues/43826.

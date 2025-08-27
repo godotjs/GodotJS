@@ -1,7 +1,7 @@
 import type * as Godot from "godot";
 import type * as GodotJsb from "godot-jsb";
 
-type GArrayProxy<T> = Godot.GArrayProxy<T> & {
+type GArrayProxy<T extends Godot.GAny> = Godot.GArrayProxy<T> & {
     [Godot.ProxyTarget]: Godot.GArray<T>;
 }
 
@@ -47,7 +47,7 @@ function get_helpers(): ProxyHelpers {
             },
             godot_wrap: function (value: any) {
                 if (Array.isArray(value)) {
-                    return GArray.create(value);
+                    return GArray.create<any>(value);
                 }
 
                 const proto = Object.getPrototypeOf(value);
