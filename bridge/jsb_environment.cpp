@@ -20,7 +20,11 @@
 #include "../jsb_project_preset.h"
 
 #ifdef TOOLS_ENABLED
+#if GODOT_4_5_OR_NEWER
+#include "editor/settings/editor_settings.h"
+#else
 #include "editor/editor_settings.h"
+#endif
 #endif
 #include "main/performance.h"
 

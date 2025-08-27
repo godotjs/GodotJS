@@ -76,7 +76,7 @@ namespace jsb::internal
                 }
             }
 
-#if JSB_GDEXTENSION
+#if GODOT_4_5_OR_NEWER || JSB_GDEXTENSION
             const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr());
 #else
             const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr(), num);
