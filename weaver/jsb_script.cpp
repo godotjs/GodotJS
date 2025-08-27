@@ -144,7 +144,12 @@ ScriptInstance* GodotJSScript::instance_construct(Object* p_this, bool p_is_temp
     jsb_check(is_valid());
     jsb_check(loaded_);
     JSB_LOG(Verbose, "create instance %d of %s(%s)", (uintptr_t) p_this, script_class_info_.native_class_name, script_class_info_.module_id);
-    jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name));
+
+    if (!ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name))
+    {
+        JSB_LOG(Error, "GodotJS class %s (%s) cannot be instantiated for a %s, it requires a %s", script_class_info_.js_class_name, script_class_info_.module_id, p_this->get_class_name(), script_class_info_.native_class_name);
+        return nullptr;
+    }
 
     jsb::JSEnvironment env(get_path(), p_is_temp_allowed);
     if (env.is_shadow())
@@ -538,8 +543,17 @@ void GodotJSScript::load_module_immediately()
                 Object* obj = E->get();
                 jsb_check(obj->get_script() == Ref(this));
                 jsb_check(env->verify_object(obj));
-                jsb_check(ClassDB::is_parent_class(env->get_script_class(module->script_class_id)->native_class_name, obj->get_class_name()));
-                env->rebind(obj, module->script_class_id);
+
+                if (ClassDB::is_parent_class(env->get_script_class(module->script_class_id)->native_class_name, obj->get_class_name()))
+                {
+                    env->rebind(obj, module->script_class_id);
+                }
+                else
+                {
+                    JSB_LOG(Warning, "Cannot rebind class %s (%s) on %s, it requires a %s", script_class_info_.js_class_name, script_class_info_.module_id, obj->get_class_name(), env->get_script_class(module->script_class_id)->native_class_name);
+                    obj->set_script(Ref<Script>());
+                }
+
                 E = N;
             }
         }
