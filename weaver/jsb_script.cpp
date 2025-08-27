@@ -426,7 +426,9 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
         : false;
 }
 
-#if GODOT_4_4_OR_NEWER
+#if GODOT_4_5_OR_NEWER
+const Variant GodotJSScript::get_rpc_config() const
+#elif GODOT_4_4_OR_NEWER
 Variant GodotJSScript::get_rpc_config() const
 #else
 const Variant GodotJSScript::get_rpc_config() const

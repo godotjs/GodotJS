@@ -133,7 +133,9 @@ public:
     {
     }
 
-#if GODOT_4_4_OR_NEWER
+#if GODOT_4_5_OR_NEWER
+    virtual const Variant get_rpc_config() const override;
+#elif GODOT_4_4_OR_NEWER
     virtual Variant get_rpc_config() const override;
 #else
     virtual const Variant get_rpc_config() const override;

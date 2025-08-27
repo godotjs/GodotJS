@@ -580,7 +580,11 @@ namespace jsb
                 GetVariantInfoCollection(p_env.env).constructors.append({});
                 internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.env).constructors.write[constructor_index];
                 const int count = Variant::get_constructor_count(TYPE);
+#if GODOT_4_5_OR_NEWER
+                constructor_info.variants.resize_initialized(count);
+#else
                 constructor_info.variants.resize_zeroed(count);
+#endif
                 for (int index = 0; index < count; ++index)
                 {
                     internal::FConstructorVariantInfo& variant_info = constructor_info.variants.write[index];
@@ -793,7 +797,11 @@ namespace jsb
                     method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, name);
                     method_info.return_type = return_type;
                     method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
+#if GODOT_4_5_OR_NEWER
+                    method_info.argument_types.resize_initialized(argument_count);
+#else
                     method_info.argument_types.resize_zeroed(argument_count);
+#endif
                     method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, name);
                     for (int argument_index = 0; argument_index < argument_count; ++argument_index)
                     {

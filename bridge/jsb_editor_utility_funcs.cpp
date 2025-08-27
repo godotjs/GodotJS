@@ -960,7 +960,11 @@ namespace jsb
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_primitive_types"), JSB_NEW_FUNCTION(context, _get_primitive_types, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_input_actions"), JSB_NEW_FUNCTION(context, _get_input_actions, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "delete_file"), JSB_NEW_FUNCTION(context, _delete_file, {})).Check();
+#ifdef GODOT_VERSION_DOCS_URL // 4.5+ or GDExtension
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_DOCS_URL"), impl::Helper::new_string(isolate, GODOT_VERSION_DOCS_URL)).Check();
+#else
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_DOCS_URL"), impl::Helper::new_string(isolate, VERSION_DOCS_URL)).Check();
+#endif
     }
 }
 #else
