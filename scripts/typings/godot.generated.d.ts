@@ -11,28 +11,24 @@ declare module "godot" {
     class Script extends Resource { }
     interface ResourceTypes { }
 
-    class GArray<T = any> {
-        static create<T>(elements: [T] extends [GArray<infer E>] ? Array<E | GProxyValueWrap<E>> : Array<T | GProxyValueWrap<T>>):
-          [T] extends [GArray<infer E>]
-            ? [GValueWrap<E>] extends [never]
-              ? never
-              : GArray<GValueWrap<T>>
-            : [GValueWrap<T>] extends [never]
-              ? never
-              : GArray<GValueWrap<T>>
-        [Symbol.iterator](): IteratorObject<T>
-        proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>;
-        get_indexed(index: number): T
-        get(index: int64): T
-        set(index: int64, value: T): void
-        size(): number
-        push_back(value: T): void
-        pop_back(): T
-        has(value: T): boolean
-        find(what: T, from: int64 = 0): int64
+    type GArrayCreateSource<T> = ReadonlyArray<T> | {
+        [Symbol.iterator](): IteratorObject<GDataStructureCreateValue<T>>;
+        [K: number]: GDataStructureCreateValue<T>;
     }
-    class GDictionary<T = any> {
-        static create<T>(properties: T extends GDictionary<infer S> ? GDictionaryProxy<S> : GDictionaryProxy<T>): T extends GDictionary<infer S> ? GValueWrap<S> : GValueWrap<T>
+
+    type GDataStructureCreateValue<V> = V | (
+        V extends GArray<infer T>
+            ? [T] extends [any[]]
+                ? GArrayCreateSource<{ [I in keyof T]: GDataStructureCreateValue<T[I]> }>
+                : GArrayCreateSource<GDataStructureCreateValue<T>>
+            : V extends GDictionary<infer T>
+                ? { [K in keyof T]: GDataStructureCreateValue<T[K]> }
+                : never
+        )
+
+    class GDictionary<T = Record<any, any>> {
+        static create<V extends { [key: number | string]: GWrappableValue }>(properties: V): GValueWrap<V>
+        static create<V extends GDictionary<any>>(properties: V extends GDictionary<infer T> ? { [K in keyof T]: GDataStructureCreateValue<T[K]> } : never): V
         proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>;
         get<K extends keyof T>(key: K, default_: any = <any> {}): T[K]
         get_keyed<K extends keyof T>(index: K): T[K]
@@ -40,6 +36,27 @@ declare module "godot" {
         keys(): GArray<keyof T>
         erase(key: keyof T): boolean
         has(key: keyof T): boolean
+    }
+    class GArray<T extends GAny | GAny[] = GAny | GAny[]> {
+        static create<A extends any[]>(elements: A): GValueWrap<A>
+        static create<A extends GArray<any>>(
+            elements: A extends GArray<infer T>
+                ? [T] extends [any[]]
+                    ? { [I in keyof T]: GDataStructureCreateValue<T[I]> }
+                    : Array<GDataStructureCreateValue<T>>
+                : never
+        ): GValueWrap<A>
+        static create<E extends GAny>(elements: Array<GDataStructureCreateValue<E>>): GArray<E>
+        [Symbol.iterator](): IteratorObject<GArrayElement<T>>
+        proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<GArrayElement<T>> : GArrayReadProxy<GArrayElement<T>>
+        get_indexed<I extends int64>(index: I): GArrayElement<T, I>
+        get<I extends int64>(index: I): GArrayElement<T, I>
+        set<I extends int64>(index: I, value: GArrayElement<T, I>): void
+        size(): number
+        push_back(value: GArrayElement<T>): void
+        pop_back(): GArrayElement<T>
+        has(value: GArrayElement<T>): boolean
+        find(what: GArrayElement<T>, from: int64 = 0): int64
     }
     type byte = number
     type int32 = number
