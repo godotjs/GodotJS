@@ -316,7 +316,7 @@ namespace jsb
         }
 
         // trick: save godot class id for convenience of getting it in JS class constructor
-        class_obj->Set(p_context, jsb_symbol(environment, CrossBind), environment->get_string_value(p_module.id)).Check();
+        class_obj->Set(p_context, jsb_symbol(environment, ClassModuleId), environment->get_string_value(p_module.id)).Check();
 
         const v8::Local<v8::Object> dt_base_obj =
             class_obj
@@ -325,7 +325,7 @@ namespace jsb
             ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
         jsb_check(class_obj != dt_base_obj);
 
-        const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, CrossBind)).ToLocalChecked();
+        const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, ClassModuleId)).ToLocalChecked();
         existed_class_info->base_script_module_id = dt_base_tag->IsString() ? environment->get_string_name(dt_base_tag.As<v8::String>()) : StringName();
         JSB_LOG(Verbose, "%s script %d inherits script module %s native: %d",
             p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_module_id, *native_class_id);

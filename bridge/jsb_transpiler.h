@@ -306,26 +306,30 @@ namespace jsb
 
             // We need to handle different binding scenarios:
             //
-            // 1. Instantiating a new Godot object (e.g. new SubClass() in JS) with a new JS script class instance.
-            // 2. Instantiating a JS class to be attached to an existing Godot Object e.g., scene instantiation.
+            // 1. Instantiating only the script class instance, which is to be bound to an existing Godot Object.
+            // 2. Instantiating a new native Godot object along with the newly instantiated script class.
 
             jsb_check(info.NewTarget()->IsFunction());
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const v8::Local<v8::Function> new_target = info.NewTarget().As<v8::Function>();
 
-            if (environment->is_js_only_constructor_tag(new_target))
+            const v8::Local<v8::Object> self = info.This();
+
+            // 1. binding to an existing Godot object
+            v8::Local<v8::Value> bind_object_value;
+            if (new_target->Get(context, jsb_symbol(environment, ConstructorBindObject)).ToLocal(&bind_object_value) && bind_object_value->IsExternal())
             {
-                JSB_LOG(Verbose, "cross binding from C++. %s(%d)", class_name, class_id);
+                JSB_LOG(Verbose, "binding to JS instance to existing native object. %s(%d)", class_name, class_id);
+                environment->bind_godot_object(class_id, (Object*) bind_object_value.As<v8::External>()->Value(), self);
                 return;
             }
 
-            // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
+            // 2a. directly instantiating a Godot native object (via its corresponding JavaScript wrapper class)
             if (new_target->HasOwnProperty(context, jsb_symbol(environment, ClassId)).ToChecked())
             // if (class_info->clazz.NewTarget(isolate) == new_target)
             {
                 internal::StringNames& names = internal::StringNames::get_singleton();
                 const StringName original_name = names.get_original_name(class_name);
-                const v8::Local<v8::Object> self = info.This();
                 Object* gd_object = ClassDB::instantiate(original_name);
 
                 // IS IT A TRUTH that ref_count==1 after creation_func??
@@ -334,16 +338,15 @@ namespace jsb
                 return;
             }
 
-            // (case-1) new from scripts
-            v8::Local<v8::Value> cross_bind_sym;
-            if (new_target->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym) && cross_bind_sym->IsString())
+            // 2b. instantiating a sub-class of a native Godot object (JavaScript wrapper class)
+            v8::Local<v8::Value> module_id_value;
+            if (new_target->Get(context, jsb_symbol(environment, ClassModuleId)).ToLocal(&module_id_value) && module_id_value->IsString())
             {
-                const StringName script_module_id = environment->get_string_name(cross_bind_sym.As<v8::String>());
+                const StringName script_module_id = environment->get_string_name(module_id_value.As<v8::String>());
                 jsb_check(environment->get_module_cache().find(script_module_id));
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
                     environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id,
                     class_name, class_id);
-                const v8::Local<v8::Object> self = info.This();
                 ScriptClassInfo::instantiate(environment, script_module_id, self);
                 return;
             }
