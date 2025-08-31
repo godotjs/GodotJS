@@ -46,7 +46,8 @@ namespace jsb
             Doc,
             MemberDocMap,
 
-            CrossBind,               // a symbol can only be used from C++ to indicate calling from cross-bind
+            ClassModuleId,           // provides quick access from a class' constructor to its corresponding module ID
+            ConstructorBindObject,   // indicates a constructor invocation is binding to an existing Godot native object
 
             // Exposed as properties on the `godot` module
             FloatType,
@@ -196,8 +197,6 @@ namespace jsb
         StringName godot_primitive_map_[Variant::VARIANT_MAX];
 
         internal::VariantInfoCollection variant_info_collection_;
-
-        v8::Global<v8::Function> js_only_constructor_tag_;
 
     public:
         enum class Type : uint8_t
@@ -595,19 +594,6 @@ namespace jsb
         // [unsafe] get the environment from the current thread
         // NOTE: you can't get a shadow environment with this method
         static std::shared_ptr<Environment> _access();
-
-        /**
-         * Should a constructor call only construct a JavaScript object i.e. skip creation of the native Godot Object?
-         * This occurs when we have an existing Godot object that we wish to "cross bind" with its JavaScript
-         * implementation. For example, when instantiating a packed scene, Godot creates the objects first; we must then
-         * cross bind these existing objects with their JavaScript implementation.
-         * @param function
-         * @return
-         */
-        bool is_js_only_constructor_tag(const v8::Local<v8::Function> function)
-        {
-            return function == js_only_constructor_tag_;
-        }
 
     private:
         void exec_async_calls();

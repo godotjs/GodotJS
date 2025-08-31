@@ -42,7 +42,7 @@ namespace jsb
                     // read script class id from the javascript Class object (the constructor object)
                     const v8::Local<v8::Object> prototype = prototype_val.As<v8::Object>();
                     const v8::Local<v8::Object> dt_base_obj = prototype->Get(context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
-                    if (!dt_base_obj->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym) || !cross_bind_sym->IsString())
+                    if (!dt_base_obj->Get(context, jsb_symbol(environment, ClassModuleId)).ToLocal(&cross_bind_sym) || !cross_bind_sym->IsString())
                     {
                         break;
                     }

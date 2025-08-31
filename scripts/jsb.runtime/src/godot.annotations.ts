@@ -941,6 +941,8 @@ export function createClassBinder(): ClassBinder {
                     throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
                 }
 
+                context = proxy.proxy_unwrap_value(context);
+
                 const name = context.name;
 
                 if (typeof name !== "string") {
@@ -951,18 +953,18 @@ export function createClassBinder(): ClassBinder {
 
                 if (context.kind === "accessor") {
                     return {
-                        get: jsb.internal.create_script_signal_getter(name),
+                        get: proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)),
                         set: () => {
                             throw new Error(`Signal properties cannot be reassigned. Did you mean to .connect() a callback instead?`);
                         },
                     } satisfies ClassMemberDecoratorReturn<ClassAccessorDecoratorContext<Godot.Object, Godot.Signal>> as any;
                 } else if (context.kind === "field") {
                     context.addInitializer(function (this: Godot.Object) {
-                        context.access.set(this, jsb.internal.create_script_signal_getter(name).call(this));
+                        context.access.set(this, proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)).call(this));
                     });
                     return undefined as any;
                 } else if (context.kind === "getter") {
-                    return jsb.internal.create_script_signal_getter(name) satisfies
+                    return proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)) satisfies
                         ClassMemberDecoratorReturn<ClassGetterDecoratorContext<Godot.Object, Godot.Signal>> as any;
                 } else {
                     throw new Error(`The signal decorator can not be used to decorate a ${(context as ClassMemberDecoratorContext).kind}. A \`readonly\` field is recommended.`);

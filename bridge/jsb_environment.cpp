@@ -298,8 +298,6 @@ namespace jsb
                 context->SetAlignedPointerInEmbedderData(kContextEmbedderData, this);
                 context_.Reset(isolate_, context);
 
-                js_only_constructor_tag_.Reset(isolate_, impl::Helper::new_noop_function(isolate_, context));
-
                 // init module cache, and register the global 'require' function
                 {
                     const v8::Local<v8::Object> cache_obj = v8::Object::New(isolate_);
@@ -874,8 +872,7 @@ namespace jsb
 
     void* Environment::get_verified_object(const v8::Local<v8::Object>& p_obj, NativeClassType::Type p_type) const
     {
-        if (!TypeConvert::is_object(p_obj, p_type)
-            || (NativeClassType::Type) (uintptr_t) p_obj->GetAlignedPointerFromInternalField(IF_ClassType) != p_type)
+        if (!TypeConvert::is_object(p_obj, p_type))
         {
             return nullptr;
         }
@@ -1200,7 +1197,7 @@ namespace jsb
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
 
-        // In Editor, the script can be attached to an Object after it created in JS (e.g. 'enter_tree' as a child node of a script attached parent node)
+        // Can occur at runtime if object.set_script(...) is used, or in the editor due to hot-reloading etc.
         if (const NativeObjectID object_id = this->try_get_object_id(p_this))
         {
             JSB_LOG(Verbose, "crossbinding on previously bound object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
@@ -1211,13 +1208,11 @@ namespace jsb
         }
 
         StringName js_class_name;
-        NativeClassID native_class_id;
         v8::Local<v8::Object> class_obj;
 
         {
             const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
             js_class_name = class_info->js_class_name;
-            native_class_id = class_info->native_class_id;
             class_obj = class_info->js_class.Get(isolate);
             JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %d", class_info->js_class_name, class_info->native_class_name, class_info->native_class_id, (uintptr_t) p_this);
             jsb_check(!class_obj->IsNullOrUndefined());
@@ -1241,9 +1236,10 @@ namespace jsb
 
         const impl::TryCatch try_catch_run(isolate);
 
-        v8::Local<v8::Function> js_only_constructor_tag = js_only_constructor_tag_.Get(isolate);
         v8::Local<v8::Value> class_prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
-        js_only_constructor_tag->Set(context, jsb_name(this, prototype), class_prototype).Check();
+        v8::Local<v8::Function> new_target = impl::Helper::new_noop_function(isolate_, context);
+        new_target->Set(context, jsb_name(this, prototype), class_prototype).Check();
+        new_target->Set(context, jsb_symbol(this, ConstructorBindObject), v8::External::New(isolate, p_this)).Check();
 
         v8::Local<v8::Object> reflect = context->Global()->Get(context, jsb_name(this, Reflect)).ToLocalChecked().As<v8::Object>();
         v8::Local<v8::Function> reflect_construct = reflect->Get(context, jsb_name(this, construct)).ToLocalChecked().As<v8::Function>();
@@ -1251,7 +1247,7 @@ namespace jsb
         v8::Local<v8::Value> reflect_args[] = {
                 class_obj,
                 arguments,
-                js_only_constructor_tag
+                new_target
         };
 
         v8::MaybeLocal<v8::Value> constructed_value = reflect_construct->Call(context, reflect, 3, reflect_args);
@@ -1269,8 +1265,8 @@ namespace jsb
             JSB_LOG(Error, "bad instance '%s", js_class_name);
             return {};
         }
-        const NativeObjectID object_id = this->bind_godot_object(native_class_id, p_this, instance.As<v8::Object>());
-        return object_id;
+
+        return this->try_get_object_id(p_this);
     }
 
     void Environment::rebind(Object *p_this, ScriptClassID p_class_id)
