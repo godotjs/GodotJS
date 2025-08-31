@@ -18,11 +18,16 @@ GodotJSScriptInstanceBase::ScriptCallProfilingScope::~ScriptCallProfilingScope()
 
 GodotJSScriptInstanceBase::~GodotJSScriptInstanceBase()
 {
-    jsb_check(script_.is_valid() && owner_ && script_->get_language());
+    jsb_check(owner_);
 
-    const GodotJSScriptLanguage* lang = (GodotJSScriptLanguage*) script_->get_language();
-    MutexLock lock(lang->mutex_);
-    script_->instances_.erase(owner_);
+    // When script binding fails due to an invalid script, we delete the invalid script instance.
+    if (script_.is_valid())
+    {
+        jsb_check(script_->get_language());
+        const GodotJSScriptLanguage* lang = (GodotJSScriptLanguage*) script_->get_language();
+        MutexLock lock(lang->mutex_);
+        script_->instances_.erase(owner_);
+    }
 }
 
 jsb::ScriptClassInfoPtr GodotJSScriptInstance::get_script_class() const
