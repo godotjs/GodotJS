@@ -99,6 +99,8 @@ declare module "godot" {
     type ExtractValueKeys<T, V> = { [K in keyof T]: T[K] extends V ? K : never }[keyof T];
     type IfAny<T, Y, N> = 0 extends (1 & T) ? Y : N;
 
+    type UndefinedToNull<T> = T extends undefined ? null : T;
+
     /**
      * This namespace and the values within do not exist at runtime. They're declared here, for internal use only, as a
      * work-around for limitations of TypeScript's type system.

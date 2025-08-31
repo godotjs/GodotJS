@@ -378,7 +378,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             "proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>",
             "",
             `${names.get_member("set_keyed")}<K extends keyof T>(key: K, value: T[K]): void`,
-            `${names.get_member("get_keyed")}<K extends keyof T>(key: K): T[K]`,
+            `${names.get_member("get_keyed")}<K extends keyof T>(key: K): UndefinedToNull<T[K]>`,
         ],
         property_overrides: {
             assign: mutate_parameter_type("dictionary", "T"),
@@ -389,10 +389,10 @@ const TypeMutations: Record<string, TypeMutation> = {
             find_key: chain_mutators(mutate_parameter_type("value", "T[keyof T]"), mutate_return_type("keyof T")), // This can be typed more accurately with a mapped type, but it seems excessive.
             erase: mutate_parameter_type("key", "keyof T"),
             keys: mutate_return_type("GArray<keyof T>"),
-            values: mutate_return_type("GArray<T[keyof T]>"),
+            values: mutate_return_type("GArray<UndefinedToNull<T[keyof T]>>"),
             duplicate: mutate_return_type("GDictionary<T>"),
-            get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("T[K]"), mutate_template("K extends keyof T")),
-            get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("default_", "T[K]"), mutate_template("K extends keyof T")),
+            get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("UndefinedToNull<T[K]>"), mutate_template("K extends keyof T")),
+            get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("UndefinedToNull<T[K]>"), mutate_parameter_type("default_", "T[K]"), mutate_template("K extends keyof T")),
             set: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("value", "T[K]"), mutate_template("K extends keyof T")),
         }
     },
