@@ -693,6 +693,121 @@ namespace jsb
         return class_info_obj;
     }
 
+
+    template<typename T>
+    static v8::Local<v8::Value> generate_primitive_type_utilities(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
+    {
+        constexpr static Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
+        v8::Local<v8::Object> class_info_obj = v8::Object::New(isolate);
+        String class_name = internal::NamingUtil::get_class_name(Variant::get_type_name(TYPE));
+        set_field(isolate, context, class_info_obj, "name", class_name);
+        set_field(isolate, context, class_info_obj, "type", TYPE);
+        if (Variant::has_indexing(TYPE))
+        {
+            set_field(isolate, context, class_info_obj, "element_type", Variant::get_indexed_element_type(TYPE));
+        }
+        set_field(isolate, context, class_info_obj, "is_keyed", Variant::is_keyed(TYPE));
+
+        // methods
+        {
+            JSB_HANDLE_SCOPE(isolate);
+
+            List<StringName> methods;
+            Variant::get_builtin_method_list(TYPE, &methods);
+            v8::Local<v8::Array> methods_obj = v8::Array::New(isolate, (int) methods.size());
+            set_field(isolate, context, class_info_obj, "methods", methods_obj);
+            int index = 0;
+            for (const StringName& name : methods)
+            {
+                JSB_HANDLE_SCOPE(isolate);
+                MethodInfo method_info;
+                method_info.name = name;
+                method_info.flags = METHOD_FLAG_STATIC;
+                if (Variant::is_builtin_method_vararg(TYPE, name)) method_info.flags |= METHOD_FLAG_VARARG;
+                method_info.return_val.type = Variant::get_builtin_method_return_type(TYPE, name);
+
+                if (!Variant::is_builtin_method_static(TYPE, name))
+                {
+                    PropertyInfo prop_info;
+                    prop_info.name = "target";
+                    prop_info.type = TYPE;
+                    method_info.arguments.push_back(prop_info);
+                }
+
+                for (int i = 0, n = Variant::get_builtin_method_argument_count(TYPE, name); i < n; ++i)
+                {
+                    PropertyInfo prop_info;
+                    prop_info.name = Variant::get_builtin_method_argument_name(TYPE, name, i);
+                    prop_info.type = Variant::get_builtin_method_argument_type(TYPE, name, i);
+                    method_info.arguments.push_back(prop_info);
+                }
+                method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
+                if (Variant::is_builtin_method_const(TYPE, name)) method_info.flags |= METHOD_FLAG_CONST;
+                if (Variant::is_builtin_method_vararg(TYPE, name)) method_info.flags |= METHOD_FLAG_VARARG;
+                const bool has_return_value = Variant::has_builtin_method_return_value(TYPE, name);
+                v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
+                build_method_info(isolate, context, method_info, has_return_value, method_info_obj);
+                methods_obj->Set(context, index++, method_info_obj).Check();
+            }
+        }
+
+        // enums
+        {
+            JSB_HANDLE_SCOPE(isolate);
+
+            List<StringName> enums;
+            Variant::get_enums_for_type(TYPE, &enums);
+            v8::Local<v8::Array> enums_obj = v8::Array::New(isolate, (int) enums.size());
+            set_field(isolate, context, class_info_obj, "enums", enums_obj);
+            int index = 0;
+            for (const StringName& enum_name : enums)
+            {
+                JSB_HANDLE_SCOPE(isolate);
+                List<StringName> enumerations;
+                Variant::get_enumerations_for_enum(TYPE, enum_name, &enumerations);
+                ClassDB::ClassInfo::EnumInfo enum_info;
+                for (const StringName& enumeration : enumerations)
+                {
+                    enum_info.constants.push_back(enumeration);
+                }
+                v8::Local<v8::Object> enum_info_obj = v8::Object::New(isolate);
+                set_field(isolate, context, enum_info_obj, "name", enum_name);
+                build_enum_info(isolate, context, TYPE, enum_name, enum_info, enum_info_obj);
+                enums_obj->Set(context, index++, enum_info_obj).Check();
+            }
+        }
+
+        // constants
+        {
+            JSB_HANDLE_SCOPE(isolate);
+
+            List<StringName> constants;
+            Variant::get_constants_for_type(TYPE, &constants);
+            v8::Local<v8::Array> constants_obj = v8::Array::New(isolate, (int) constants.size());
+            set_field(isolate, context, class_info_obj, "constants", constants_obj);
+            int index = 0;
+            for (const StringName& constant : constants)
+            {
+                JSB_HANDLE_SCOPE(isolate);
+                v8::Local<v8::Object> constant_info_obj = v8::Object::New(isolate);
+                const Variant constant_value = Variant::get_constant_value(TYPE, constant);
+
+                set_field(isolate, context, constant_info_obj, "name", constant);
+                set_field(isolate, context, constant_info_obj, "type", constant_value.get_type());
+                switch (constant_value.get_type())
+                {
+                case Variant::BOOL: set_field(isolate, context, constant_info_obj, "value", (bool) constant_value); break;
+                case Variant::INT: set_field(isolate, context, constant_info_obj, "value", (int64_t) constant_value); break;
+                case Variant::FLOAT: set_field(isolate, context, constant_info_obj, "value", (double) constant_value); break;
+                default: break;
+                }
+                constants_obj->Set(context, index++, constant_info_obj).Check();
+            }
+        }
+
+        return class_info_obj;
+    }
+
     static void _get_class_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -852,6 +967,11 @@ namespace jsb
 #   define  DEF(TypeName) { JSB_HANDLE_SCOPE(isolate); array->Set(context, index++, generate_primitive_type<TypeName>(isolate, context)).Check(); }
 #   include "jsb_primitive_types.def.h"
 #pragma pop_macro("DEF")
+
+        {
+            JSB_HANDLE_SCOPE(isolate);
+            array->Set(context, index++, generate_primitive_type_utilities<String>(isolate, context)).Check();
+        }
 
         info.GetReturnValue().Set(array);
     }

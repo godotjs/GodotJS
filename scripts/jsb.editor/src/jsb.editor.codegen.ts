@@ -3317,18 +3317,23 @@ export class TSDCodeGen {
                 }
             }
         }
-        for (let constructor_info of cls.constructors) {
-            class_cg.constructor_(constructor_info);
+        if (cls.constructors) {
+            for (let constructor_info of cls.constructors) {
+                class_cg.constructor_(constructor_info);
+            }
         }
-
         for (let method_info of cls.methods) {
             class_cg.ordinary_method_(method_info);
         }
-        for (let operator_info of cls.operators) {
-            class_cg.operator_(operator_info);
+        if (cls.operators) {
+            for (let operator_info of cls.operators) {
+                class_cg.operator_(operator_info);
+            }
         }
-        for (let property_info of cls.properties) {
-            class_cg.primitive_property_(property_info);
+        if (cls.properties) {
+            for (let property_info of cls.properties) {
+                class_cg.primitive_property_(property_info);
+            }
         }
         class_cg.finish();
     }

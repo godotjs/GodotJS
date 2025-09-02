@@ -262,9 +262,9 @@ declare module "godot-jsb" {
             // true only if is_keyed
             is_keyed: boolean;
 
-            constructors: Array<ConstructorInfo>;
-            operators: Array<OperatorInfo>;
-            properties: Array<PrimitiveGetSetInfo>;
+            constructors?: Array<ConstructorInfo>;
+            operators?: Array<OperatorInfo>;
+            properties?: Array<PrimitiveGetSetInfo>;
             constants?: Array<PrimitiveConstantInfo>;
         }
 

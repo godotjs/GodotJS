@@ -448,9 +448,10 @@ namespace jsb
 
         template<bool HasReturnValueT>
         static void call_builtin_function(Variant* self, const internal::FBuiltinMethodInfo& method_info,
-            const v8::FunctionCallbackInfo<v8::Value>& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context)
+            const v8::FunctionCallbackInfo<v8::Value>& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context,
+            const bool utility = false)
         {
-            const int argc = info.Length();
+            const int argc = utility ? info.Length() - 1 : info.Length();
             if (!method_info.check_argc(argc))
             {
                 jsb_throw(isolate, "num of arguments does not meet the requirement");
@@ -470,7 +471,7 @@ namespace jsb
                 {
                     if (index < argc)
                     {
-                        if (TypeConvert::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index]))
+                        if (TypeConvert::js_to_gd_var(isolate, context, info[utility ? index + 1 : index], method_info.argument_types[index], args[index]))
                         {
                             continue;
                         }
@@ -488,14 +489,14 @@ namespace jsb
                 }
                 else
                 {
-                    if (TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
+                    if (TypeConvert::js_to_gd_var(isolate, context, info[utility ? index + 1 : index], args[index]))
                     {
                         continue;
                     }
                 }
 
                 // revert all constructors
-                const String error_message = jsb_errorf("bad argument: %d", index);
+                const String error_message = jsb_errorf("bad argument: %d", utility ? index + 1 : index);
                 while (index >= 0) { args[index--].~Variant(); }
                 impl::Helper::throw_error(isolate, error_message);
                 return;
@@ -561,6 +562,30 @@ namespace jsb
             const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
 
             call_builtin_function<HasReturnValueT>(nullptr, method_info, info, isolate, context);
+        }
+
+        template<Variant::Type VariantT, bool HasReturnValueT>
+        static void _utility_method(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            v8::Isolate* isolate = info.GetIsolate();
+
+            if (info.Length() < 1 || info[0]->IsObject() || info[0]->IsNull())
+            {
+                jsb_throw(isolate, "utility methods' first argument must be a JS primitive");
+                return;
+            }
+
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
+
+            Variant variant;
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], VariantT, variant))
+            {
+                jsb_throw(isolate, "Failed to convert utility function JS primitive to the required Godot variant type");
+                return;
+            }
+
+            call_builtin_function<HasReturnValueT>(&variant, method_info, info, isolate, context, true);
         }
 
         static impl::ClassBuilder get_class_builder(const ClassRegister& p_env, const NativeClassID p_class_id, const StringName& p_class_name)
@@ -892,6 +917,136 @@ namespace jsb
                 return class_info;
             }
         }
+
+        static void utility_noop_constructor(const v8::FunctionCallbackInfo<v8::Value>& _info)
+        {
+        }
+
+        // Expose primitive instance methods as static utility functions for variant types not exposed to JS e.g. String
+        static NativeClassInfoPtr reflect_bind_utilities(const ClassRegister& p_env, NativeClassID* r_class_id = nullptr)
+        {
+            const StringName& class_name = internal::NamingUtil::get_class_name(p_env.type_name);
+
+            if (class_name != p_env.type_name)
+            {
+                internal::StringNames::get_singleton().add_replacement(p_env.type_name, class_name);
+            }
+
+            const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotPrimitive, class_name);
+
+            v8::Isolate* isolate = p_env->get_isolate();
+            NativeClassInfoPtr class_info = p_env->get_native_class(class_id);
+            impl::ClassBuilder class_builder = impl::ClassBuilder::New<0>(isolate, class_info->name, &utility_noop_constructor, *class_id);
+
+            auto static_builder = class_builder.Static();
+
+            // methods
+            {
+                List<StringName> methods;
+                Variant::get_builtin_method_list(TYPE, &methods);
+
+                for (const StringName& name : methods)
+                {
+                    const int argument_count = Variant::get_builtin_method_argument_count(TYPE, name);
+                    const bool has_return_value = Variant::has_builtin_method_return_value(TYPE, name);
+                    const Variant::Type return_type = Variant::get_builtin_method_return_type(TYPE, name);
+                    String member_name = internal::NamingUtil::get_member_name(name);
+
+                    if (member_name == "length")
+                    {
+                        // We can't bind a property named .length to a function in JS because it clashes with a built-in
+                        // property.
+                        member_name = "length_";
+                    }
+
+                    // convert method info, and store
+                    const int collection_index = (int) GetVariantInfoCollection(p_env.env).methods.size();
+                    GetVariantInfoCollection(p_env.env).methods.append({});
+                    internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(p_env.env).methods.write[collection_index];
+                    method_info.set_debug_name(member_name);
+                    method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, name);
+                    method_info.return_type = return_type;
+                    method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
+#if GODOT_4_5_OR_NEWER
+                    method_info.argument_types.resize_initialized(argument_count);
+#else
+                    method_info.argument_types.resize_zeroed(argument_count);
+#endif
+                    method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, name);
+                    for (int argument_index = 0; argument_index < argument_count; ++argument_index)
+                    {
+                        const Variant::Type type = Variant::get_builtin_method_argument_type(TYPE, name, argument_index);
+                        method_info.argument_types.write[argument_index] = type;
+                    }
+
+                    // function wrapper
+                    if (has_return_value)
+                    {
+                        if (Variant::is_builtin_method_static(TYPE, name))
+                        {
+                            static_builder.Method(member_name, _static_method<true>, collection_index);
+                        }
+                        else
+                        {
+                            static_builder.Method(member_name, _utility_method<TYPE, true>, collection_index);
+                        }
+                    }
+                    else if (Variant::is_builtin_method_static(TYPE, name))
+                    {
+                        static_builder.Method(member_name, _static_method<false>, collection_index);
+                    }
+                    else
+                    {
+                        static_builder.Method(member_name, _utility_method<TYPE, false>, collection_index);
+                    }
+                }
+
+                ReflectAdditionalMethodRegister<T>::register_(class_builder);
+            }
+
+             // enums
+             HashSet<StringName> enum_constants;
+             {
+                 List<StringName> enums;
+                 Variant::get_enums_for_type(TYPE, &enums);
+                 for (const StringName& enum_name : enums)
+                 {
+                     String exposed_enum_name = internal::NamingUtil::get_enum_name(enum_name);
+                     auto enum_decl = static_builder.Enum(exposed_enum_name);
+                     List<StringName> enumerations;
+                     Variant::get_enumerations_for_enum(TYPE, enum_name, &enumerations);
+                     for (const StringName& enumeration : enumerations)
+                     {
+                         bool r_valid;
+                         const int enum_value = Variant::get_enum_value(TYPE, enum_name, enumeration, &r_valid);
+                         jsb_check(r_valid);
+                         enum_decl.Value(internal::NamingUtil::get_enum_value_name(enumeration), enum_value);
+                         enum_constants.insert(enumeration);
+                     }
+                 }
+             }
+
+             // constants
+             {
+                 List<StringName> constants;
+                 Variant::get_constants_for_type(TYPE, &constants);
+                 for (const StringName& constant : constants)
+                 {
+                     // exclude all enum constants
+                     if (enum_constants.has(constant)) continue;
+                     static_builder.LazyProperty(internal::NamingUtil::get_constant_name(constant), _get_constant_value_lazy);
+                 }
+             }
+
+            {
+                if (r_class_id) *r_class_id = class_id;
+
+                NativeClassInfoPtr class_info = p_env.env->get_native_class(class_id);
+                class_info->clazz = class_builder.Build();
+                jsb_check(!class_info->clazz.IsEmpty());
+                return class_info;
+            }
+        }
     };
 
     void register_primitive_bindings_reflect(Environment* p_env)
@@ -902,6 +1057,7 @@ namespace jsb
 #   include "jsb_primitive_types.def.h"
 #pragma pop_macro("DEF")
 
+        p_env->add_class_register(GetTypeInfo<String>::VARIANT_TYPE, &VariantBind<String>::reflect_bind_utilities);
     }
 }
 
