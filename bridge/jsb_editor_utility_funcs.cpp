@@ -141,6 +141,7 @@ namespace jsb
 
         void build_property_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& property_name, const ClassDB::PropertySetGet& getset_info, const v8::Local<v8::Object>& object)
         {
+            set_field(isolate, context, object, "internal_name", property_name);
             set_field(isolate, context, object, "name", internal::NamingUtil::get_member_name(property_name));
             set_field(isolate, context, object, "type", getset_info.type);
             set_field(isolate, context, object, "index", getset_info.index);
@@ -165,8 +166,10 @@ namespace jsb
 
         void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, MethodBind const* method_bind, const v8::Local<v8::Object>& object)
         {
+            StringName name = method_bind->get_name();
+            set_field(isolate, context, object, "internal_name", name);
             set_field(isolate, context, object, "id", method_bind->get_method_id());
-            set_field(isolate, context, object, "name", internal::NamingUtil::get_member_name(method_bind->get_name()));
+            set_field(isolate, context, object, "name", internal::NamingUtil::get_member_name(name));
             set_field(isolate, context, object, "hint_flags", method_bind->get_hint_flags());
             set_field(isolate, context, object, "is_static", method_bind->is_static());
             set_field(isolate, context, object, "is_const", method_bind->is_const());
@@ -222,6 +225,7 @@ namespace jsb
 
         void build_method_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const MethodInfo& method_info, bool has_return_value, const v8::Local<v8::Object>& object)
         {
+            set_field(isolate, context, object, "internal_name", method_info.name);
             set_field(isolate, context, object, "id", method_info.id);
             set_field(isolate, context, object, "name", internal::NamingUtil::get_member_name(method_info.name));
             set_field(isolate, context, object, "hint_flags", method_info.flags);
@@ -451,6 +455,7 @@ namespace jsb
                 {
                     JSB_HANDLE_SCOPE(isolate);
                     v8::Local<v8::Object> signal_info_obj = v8::Object::New(isolate);
+                    set_field(isolate, context, signal_info_obj, "internal_name", pair.key);
                     set_field(isolate, context, signal_info_obj, "name", internal::NamingUtil::get_member_name(pair.key));
                     build_signal_info(isolate, context, pair.value, signal_info_obj);
                     signals_obj->Set(context, index++, signal_info_obj).Check();
