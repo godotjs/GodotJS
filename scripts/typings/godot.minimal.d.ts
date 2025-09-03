@@ -183,6 +183,7 @@ declare module "godot-jsb" {
         // we treat godot MethodInfo/MethodBind as the same thing here for simplicity
         //NOTE some fields will not be set if it's actually a MethodInfo struct
         interface MethodBind {
+            internal_name: string;
             id: number;
             name: string;
 
@@ -198,6 +199,7 @@ declare module "godot-jsb" {
         }
 
         interface PropertySetGetInfo {
+            internal_name: string;
             name: string;
 
             type: Variant.Type;
@@ -214,6 +216,7 @@ declare module "godot-jsb" {
         }
 
         interface SignalInfo {
+            internal_name: string;
             name: string;
             method_: MethodBind;
         }

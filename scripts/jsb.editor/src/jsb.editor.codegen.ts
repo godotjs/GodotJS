@@ -24,20 +24,15 @@ const names = jsb.internal.names;
 function camel_property_overrides(overrides: undefined | Record<string, string[] | ((line: string) => string)>) {
     const get_member = jsb.internal.names.get_member;
     return overrides && Object.fromEntries(
-        Object.entries(overrides).map(([name, value]) => {
-            const camel_case_name = get_member(name);
-            return [
-                camel_case_name,
-                Array.isArray(value)
-                    ? value.map(line => line.replace(new RegExp(`${name}( *[<(:])`), `${camel_case_name}$1`))
-                    : value
-            ];
-        })
-    )
+        Object.entries(overrides).map(([name, value]) => [
+            get_member(name),
+            value,
+        ])
+    );
 }
 
 if (!jsb.TOOLS_ENABLED) {
-    throw new Error("codegen is only allowed in editor mode")
+    throw new Error("codegen is only allowed in editor mode");
 }
 
 const tab = "    ";
@@ -284,11 +279,11 @@ const TypeMutations: Record<string, TypeMutation> = {
     },
     EditorUndoRedoManager: {
         property_overrides: {
-            add_do_method: [`${names.get_member('add_do_method')}<T extends ${names.get_class("Object")}, M extends ExtractValueKeys<T, (...args: any[]) => any>>(object: T, method: M, ...args: Parameters<T[M]>): void`],
-            add_undo_method: [`${names.get_member('add_undo_method')}<T extends ${names.get_class("Object")}, M extends ExtractValueKeys<T, (...args: any[]) => any>>(object: T, method: M, ...args: Parameters<T[M]>): void`],
-            add_do_property: [`${names.get_member('add_do_property')}<T extends ${names.get_class("Object")}, P extends ExtractValueKeys<T, GAny>>(object: T, property: P, value: T[P]): void`],
-            add_undo_property: [`${names.get_member('add_undo_property')}<T extends ${names.get_class("Object")}, P extends ExtractValueKeys<T, GAny>>(object: T, property: P, value: T[P]): void`],
-        }
+            add_do_method: [`${names.get_member("add_do_method")}<T extends GObject, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`],
+            add_undo_method: [`${names.get_member("add_undo_method")}<T extends GObject, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`],
+            add_do_property: [`${names.get_member("add_do_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
+            add_undo_property: [`${names.get_member("add_undo_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
+        },
     },
     GArray: {
         generic_parameters: {
@@ -448,10 +443,10 @@ const TypeMutations: Record<string, TypeMutation> = {
             add_child: mutate_parameter_type('node', 'NodePathMapChild<Map>'),
             get_child: mutate_return_type('NodePathMapChild<Map>'),
             get_children: mutate_return_type('GArray<NodePathMapChild<Map>>'),
-            get_node: ["get_node<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>"],
+            get_node: [`${names.get_member("get_node")}<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>`],
             get_node_or_null: [
-                "get_node_or_null<Path extends StaticNodePath<Map, undefined | Node>, Default = null>(path: Path): null | ResolveNodePath<Map, Path, Default, undefined | Node>",
-                "get_node_or_null(path: NodePath | string): null | Node",
+                `${names.get_member("get_node_or_null")}<Path extends StaticNodePath<Map, undefined | Node>, Default = null>(path: Path): null | ResolveNodePath<Map, Path, Default, undefined | Node>`,
+                `${names.get_member("get_node_or_null")}(path: NodePath | string): null | Node`,
             ],
             get_tree: mutate_return_type('SceneTree'),
             move_child: mutate_parameter_type(names.get_parameter('child_node'), 'NodePathMapChild<Map>'),
@@ -462,6 +457,10 @@ const TypeMutations: Record<string, TypeMutation> = {
     // GObject:
     [names.get_class("Object")]: {
         property_overrides: {
+            call: ['call<M extends GodotNames<this>>(method: M, ...args: ResolveGodotNameParameters<this, NoInfer<M>>): ResolveGodotReturnType<this, NoInfer<M>>'],
+            call_deferred: [`${names.get_member('call_deferred')}<M extends GodotNames<this>>(method: M, ...args: ResolveGodotNameParameters<this, NoInfer<M>>): void`],
+            set_deferred: [`${names.get_member('set_deferred')}<P extends GodotNames<this>>(property: P, value: ResolveGodotNameValue<this,  NoInfer<P>>): void`],
+            callv: ['callv<M extends GodotNames<this>>(method: M, argArray: GArray<ResolveGodotNameParameters<this, NoInfer<M>>>): ResolveGodotReturnType<this, NoInfer<M>>'],
             get_property_list: mutate_return_type("GArray<GDictionary<PropertyInfo>>"),
             get_script: mutate_return_type("null | Script"),
             set_script: mutate_parameter_type("script", "null | Script"),
@@ -497,8 +496,8 @@ const TypeMutations: Record<string, TypeMutation> = {
                 `static load(path: string, ${names.get_parameter("type_hint")}?: string /* = "" */, ${names.get_parameter("cache_mode")}?: ResourceLoader.CacheMode /* = 1 */): Resource`,
             ],
             load_threaded_get: [
-                `static load_threaded_get<Path extends keyof ResourceTypes>(path: Path): ResourceTypes[Path]`,
-                "static load_threaded_get(path: string): Resource",
+                `static ${names.get_member("load_threaded_get")}<Path extends keyof ResourceTypes>(path: Path): ResourceTypes[Path]`,
+                `static ${names.get_member("load_threaded_get")}(path: string): Resource`,
             ],
         },
     },
@@ -523,6 +522,12 @@ const TypeMutations: Record<string, TypeMutation> = {
             disconnect: mutate_parameter_type("callable", "Callable<T>"),
             is_connected: mutate_parameter_type("callable", "Callable<T>"),
             emit: ["emit: T"],
+        }
+    },
+    UndoRedo: {
+        property_overrides: {
+            add_do_property: [`${names.get_member('add_do_property')}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
+            add_undo_property: [`${names.get_member('add_undo_property')}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
         }
     },
 };
@@ -646,7 +651,7 @@ interface CodeWriter {
         class_doc?: GodotJsb.editor.ClassDoc
     ): ClassWriter;
     generic_(name: string): GenericWriter;
-    property_(name: string): PropertyWriter;
+    property_(name: string, static_property?: boolean): PropertyWriter;
     object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter;
     // singleton_(info: GodotJsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
@@ -733,7 +738,7 @@ const PredefinedLines = [
     "type uint32 = number",
     "type StringName = string",
     "type unresolved = any",
-]
+];
 
 const KeywordReplacement: { [name: string]: string } = {
     ["default"]: "default_",
@@ -915,8 +920,8 @@ abstract class AbstractWriter implements ScopeWriter {
     generic_(name: string): GenericWriter {
       return new GenericWriter(this, name);
     }
-    property_(name: string): PropertyWriter {
-        return new PropertyWriter(this, name);
+    property_(name: string, static_property = false): PropertyWriter {
+        return new PropertyWriter(this, name, static_property);
     }
     object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter {
         return new ObjectWriter(this, intro, property_overrides);
@@ -2400,11 +2405,11 @@ class ClassWriter extends IndentWriter {
         this.line(`static readonly ${name_string(constant.name)} = ${constant.value}`);
     }
 
-    property_(name: string): PropertyWriter;
-    property_(getset_info: GodotJsb.editor.PropertySetGetInfo): void;
-    property_(name_or_getset_info: string | GodotJsb.editor.PropertySetGetInfo): void | PropertyWriter {
+    property_(name: string, static_property?: boolean): PropertyWriter;
+    property_(getset_info: GodotJsb.editor.PropertySetGetInfo, static_property?: boolean): void;
+    property_(name_or_getset_info: string | GodotJsb.editor.PropertySetGetInfo, static_property = false): void | PropertyWriter {
         if (typeof name_or_getset_info === "string") {
-            return super.property_(name_or_getset_info);
+            return super.property_(name_or_getset_info, static_property);
         }
 
         const getset_info = name_or_getset_info;
@@ -2427,9 +2432,9 @@ class ClassWriter extends IndentWriter {
         //
         // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
 
-        line(`get ${name}(): ${this.types.make_typename(getset_info.info, false, false)}`);
+        line(`${static_property ? 'static ': ''}get ${name}(): ${this.types.make_typename(getset_info.info, false, false)}`);
         if (getset_info.setter.length != 0) {
-            line(`set ${name}(value: ${this.types.make_typename(getset_info.info, true, false)})`);
+            line(`${static_property ? 'static ': ''}set ${name}(value: ${this.types.make_typename(getset_info.info, true, false)})`);
         }
     }
 
@@ -2625,7 +2630,7 @@ class InterfaceWriter extends IndentWriter {
         }
         const line = (line: string) => this.line(property_override?.(line) ?? line);
 
-        line(`${key}: ${type};`);
+        line(`${name_string(key)}: ${type};`);
     }
 }
 
@@ -2680,10 +2685,14 @@ class ObjectWriter extends IndentWriter {
             return;
         }
 
-        this._base.line(`{`)
+        const line_count = (this._intro?.length ?? 0) + this._lines.length;
+        const single_line = line_count === 0 || (line_count === 1 && !this._never_collapse);
+        const padding = line_count === 1 && single_line ? ' ' : '';
+
+        this._base.line(`{${padding}`)
         this.intro()
         super.finish()
-        this._base.append((this._intro?.length ?? 0) + this._lines.length > 1, '}')
+        this._base.append(!single_line, `${padding}}`)
     }
 
     property_(key: string): PropertyWriter;
@@ -2702,7 +2711,7 @@ class ObjectWriter extends IndentWriter {
         }
         const line = (line: string) => this.line(property_override?.(line) ?? line);
 
-        line(`${key}: ${type};`);
+        line(`${name_string(key)}: ${type};`);
     }
 }
 
@@ -2710,13 +2719,13 @@ class PropertyWriter extends BufferingWriter {
     protected _concatenate_first_line = false;
 
     private _key: string;
+    private _static_property: boolean;
 
-    constructor(base: ScopeWriter, name: string, concatenate_first_line = false) {
+    constructor(base: ScopeWriter, name: string, static_property = false, concatenate_first_line = false) {
         super(base);
         this._concatenate_first_line = concatenate_first_line;
-        this._key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
-            ? name
-            : `"${name.replace("\"", "\\\"")}"`;
+        this._key = name;
+        this._static_property = static_property;
         this._size += this._key.length + 3;
     }
 
@@ -2725,7 +2734,7 @@ class PropertyWriter extends BufferingWriter {
             return;
         }
 
-        this._base.append(!this._concatenate_first_line, `${this._key}: `);
+        this._base.append(!this._concatenate_first_line, `${this._static_property ? 'static ': ''}${name_string(this._key)}: `);
 
         const lines = this._lines;
         for (let i = 0, l = lines.length; i < l; i++) {
@@ -3379,20 +3388,53 @@ export class TSDCodeGen {
             if (!singleton_mode) {
                 class_cg.constructor_ex_();
             }
+
+            const godot_name_overrides: Record<string, string> = {};
+
             for (let method_info of cls.virtual_methods) {
                 class_cg.virtual_method_(method_info);
+                if (method_info.internal_name !== method_info.name) {
+                    godot_name_overrides[method_info.internal_name] = method_info.name;
+                }
             }
             for (let method_info of cls.methods) {
                 class_cg.ordinary_method_(method_info);
+                if (method_info.internal_name !== method_info.name) {
+                    godot_name_overrides[method_info.internal_name] = method_info.name;
+                }
             }
+
             for (let property_info of cls.properties) {
                 class_cg.property_(property_info);
+                if (property_info.internal_name !== property_info.name) {
+                    godot_name_overrides[property_info.internal_name] = property_info.name;
+                }
             }
+
             if (cls.signals) {
                 for (let signal_info of cls.signals) {
                     class_cg.signal_(signal_info);
+                    if (signal_info.internal_name !== signal_info.name) {
+                        godot_name_overrides[signal_info.internal_name] = signal_info.name;
+                    }
                 }
             }
+
+            const overrides_interface_name = `__NameMap${cls.name}`;
+            const overrides_interface_writer = cg.interface_(overrides_interface_name, undefined, cls.super && `__NameMap${cls.super}`);
+            for (const [key, value] of Object.entries(godot_name_overrides)) {
+                overrides_interface_writer.property_(key, `"${value}"`);
+            }
+            // Not really deprecated, but we don't want people using this.
+            cg.line("/** @deprecated Internal use. Does not exist at runtime. */");
+            overrides_interface_writer.finish();
+
+            const godot_name_map_writer = class_cg.property_("__godotNameMap");
+            godot_name_map_writer.line(overrides_interface_name);
+
+            class_cg.line("/** @deprecated Internal use. Does not exist at runtime. */");
+            godot_name_map_writer.finish();
+
             class_cg.finish();
         } catch (error) {
             console.error(`failed to generate '${cls.name}'`, (error as Error).stack);
