@@ -21,6 +21,8 @@ const jsb: typeof GodotJsb = require("godot.lib.api").jsb;
 const gd_to_string = godot.str;
 const names = jsb.internal.names;
 
+const js_object_key_types = new Set(["string", "byte", "int32", "int64", "float32", "float64", "uint32"]);
+
 function camel_property_overrides(overrides: undefined | Record<string, string[] | ((line: string) => string)>) {
     const get_member = jsb.internal.names.get_member;
     return overrides && Object.fromEntries(
@@ -121,7 +123,6 @@ const TypeMutations: Record<string, TypeMutation> = {
             rename_animation: chain_mutators(mutate_parameter_type("name", "AnimationName"), mutate_parameter_type("newname", "AnimationName")),
             has_animation: chain_mutators(mutate_parameter_type("name", "AnimationName")),
             get_animation: mutate_parameter_type("name", "AnimationName"),
-            get_animation_list: mutate_return_type("GArray<AnimationName>"),
             animation_added: [`readonly ${names.get_member('animation_added')}: Signal<(name: StringName) => void>`],
             animation_removed: [`readonly ${names.get_member('animation_removed')}: Signal<(name: StringName) => void>`],
             animation_renamed: [`readonly ${names.get_member('animation_renamed')}: Signal<(name: StringName, ${names.get_parameter('to_name')}) => void>`],
@@ -176,7 +177,7 @@ const TypeMutations: Record<string, TypeMutation> = {
                 mutate_parameter_type("name", "Name"),
                 mutate_return_type("LibraryMap[Name]")
             ),
-            get_animation_library_list: mutate_return_type("GArray<keyof LibraryMap>"),
+            get_animation_library_list: mutate_return_type("keyof LibraryMap extends GAny ? GArray<keyof LibraryMap> : GArray"),
             has_animation: chain_mutators(
                 mutate_template("Name extends StaticAnimationMixerPath<LibraryMap>"),
                 mutate_parameter_type("name", "Name"),
@@ -258,9 +259,9 @@ const TypeMutations: Record<string, TypeMutation> = {
             "        width: int64",
             "        height: int64",
             "        format: string",
-            `        frame_numerator?: int64`,
-            `        frame_denominator?: int64`,
-            `        pixel_format?: uint32`,
+            "        frame_numerator?: int64",
+            "        frame_denominator?: int64",
+            "        pixel_format?: uint32",
             "    }>",
             "}",
             "",
@@ -270,11 +271,6 @@ const TypeMutations: Record<string, TypeMutation> = {
                 `get formats(): GArray<CameraFeed.FeedFormat>`,
                 `set formats(value: GArray<CameraFeed.FeedFormat>)`,
             ],
-        },
-    },
-    CameraServer: {
-        property_overrides: {
-            feeds: mutate_return_type("GArray<CameraFeed>"),
         },
     },
     EditorUndoRedoManager: {
@@ -337,7 +333,7 @@ const TypeMutations: Record<string, TypeMutation> = {
             all: mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => boolean>"),
             any: mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => boolean>"),
             filter: chain_mutators(mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => boolean>"), mutate_return_type("GArray<GArrayElement<T>>")),
-            map: chain_mutators(mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => U>"), mutate_return_type("GArray<U>"), mutate_template("U")),
+            map: chain_mutators(mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => U>"), mutate_return_type("GArray<U>"), mutate_template("U extends GAny")),
             append_array: mutate_parameter_type("array", "GArray<GArrayElement<T>>"),
             duplicate: mutate_return_type("this"),
             slice: mutate_return_type("GArray<GArrayElement<T>>"),
@@ -380,11 +376,11 @@ const TypeMutations: Record<string, TypeMutation> = {
             merge: mutate_parameter_type("dictionary", "T"),
             merged: chain_mutators(mutate_parameter_type("dictionary", "GDictionary<U>"), mutate_return_type("GDictionary<T & U>"), mutate_template("U")),
             has: mutate_parameter_type("key", "keyof T"),
-            has_all: mutate_parameter_type("keys", "GArray<keyof T>"),
+            has_all: mutate_parameter_type("keys", "keyof T extends GAny ? GArray<keyof T> : GArray"),
             find_key: chain_mutators(mutate_parameter_type("value", "T[keyof T]"), mutate_return_type("keyof T")), // This can be typed more accurately with a mapped type, but it seems excessive.
             erase: mutate_parameter_type("key", "keyof T"),
-            keys: mutate_return_type("GArray<keyof T>"),
-            values: mutate_return_type("GArray<UndefinedToNull<T[keyof T]>>"),
+            keys: mutate_return_type("keyof T extends GAny ? GArray<keyof T> : GArray"),
+            values: mutate_return_type("UndefinedToNull<T[keyof T]> extends GAny ? GArray<UndefinedToNull<T[keyof T]>> : GArray"),
             duplicate: mutate_return_type("GDictionary<T>"),
             get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("UndefinedToNull<T[K]>"), mutate_template("K extends keyof T")),
             get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("UndefinedToNull<T[K]>"), mutate_parameter_type("default_", "T[K]"), mutate_template("K extends keyof T")),
@@ -501,12 +497,6 @@ const TypeMutations: Record<string, TypeMutation> = {
             ],
         },
     },
-    SceneTree: {
-        property_overrides: {
-            get_processed_tweens: mutate_return_type("GArray<Tween>"),
-            get_nodes_in_group: mutate_return_type("GArray<Node>"), // TODO: Codegen for group names,
-        },
-    },
     Signal: {
         intro: [
             `${names.get_member("as_promise")}(): Parameters<T> extends [] ? Promise<void> : Parameters<T> extends [infer R] ? Promise<R> : Promise<Parameters<T>>`,
@@ -565,7 +555,7 @@ function class_type_mutation(cls: GodotJsb.editor.BasicClassInfo): TypeMutation 
     const intro: string[] = []
 
     if (is_primitive_class_info(cls) && typeof cls.element_type !== "undefined") {
-        const element_type_name = get_primitive_type_name(cls.element_type);
+        const element_type_name = VariantTypeNames.get(cls.element_type);
         intro.push(`set_indexed(index: number, value: ${element_type_name}): void`);
         intro.push(`get_indexed(index: number): ${element_type_name}`);
     }
@@ -762,19 +752,28 @@ const KeywordReplacement: { [name: string]: string } = {
 
     // a special item which used as the name of variadic arguments placement
     ["varargs"]: "varargs_",
-}
+};
 
-const PrimitiveTypeNames: { [type: number]: string } = {
+const RemappedPrimitiveTypeNames: Partial<Record<Godot.Variant.Type, string>> = {
     [godot.Variant.Type.TYPE_NIL]: "any",
     [godot.Variant.Type.TYPE_BOOL]: "boolean",
     [godot.Variant.Type.TYPE_INT]: "int64",
     [godot.Variant.Type.TYPE_FLOAT]: "float64",
     [godot.Variant.Type.TYPE_STRING]: "string",
-}
+};
 
-const RemapTypes: { [name: string]: string } = {
-    ["bool"]: "boolean",
-}
+const VariantTypeNames = (function (): Map<Godot.Variant.Type, string> {
+    const variant_name_map = new Map<Godot.Variant.Type, string>();
+    for (const variant_type of Object.values(godot.Variant.Type)) {
+        if (typeof variant_type !== 'number' || variant_type === godot.Variant.Type.TYPE_MAX) {
+            continue;
+        }
+        const name = RemappedPrimitiveTypeNames[variant_type] ?? jsb.internal.names.get_variant_type(variant_type);
+        variant_name_map.set(variant_type, name);
+    }
+    return variant_name_map;
+})();
+
 const GlobalUtilityFuncs = [
     {
         description: "shorthand for getting project settings",
@@ -788,32 +787,19 @@ const GlobalUtilityFuncs = [
         ],
         method: "function EDITOR_GET(entry_path: StringName): any"
     }
-]
+];
 
-const PrimitiveTypesSet = (function (): Set<string> {
-    let set = new Set<string>();
-    for (let name in godot.Variant.Type) {
-        // avoid babbling error messages in `type_string` call
-        if (<any>godot.Variant.Type[name] === godot.Variant.Type.TYPE_MAX) continue;
-
-        // use the original type name of Variant.Type,
-        // because this set is used with type name from the original godot class info (PropertyInfo)
-        let str = godot.type_string(<any>godot.Variant.Type[name]);
-        if (str.length != 0) {
-            set.add(str);
+const VariantNames = (function (): Partial<Record<string, Godot.Variant.Type>> {
+    const name_map: Partial<Record<string, Godot.Variant.Type>> = {};
+    for (const variant_type of Object.values(godot.Variant.Type)) {
+        if (typeof variant_type !== 'number' || variant_type === godot.Variant.Type.TYPE_MAX) {
+            continue;
         }
+        name_map[godot.type_string(variant_type)] = variant_type; // Godot internal
+        name_map[VariantTypeNames.get(variant_type)!] = variant_type; // GodotJS name
     }
-    return set;
+    return name_map;
 })();
-
-function get_primitive_type_name(type: Variant.Type): string | undefined {
-    const primitive_name = PrimitiveTypeNames[type];
-    if (typeof primitive_name !== "undefined") {
-        return primitive_name;
-    }
-
-    return jsb.internal.names.get_variant_type(type);
-}
 
 function get_js_array_type_name(element_type_name: string | undefined) {
     if (typeof element_type_name === "undefined" || element_type_name.length == 0) return "";
@@ -828,12 +814,11 @@ function join_type_name(...args: (string | undefined)[]) {
 }
 
 function get_primitive_type_name_as_input(type: Variant.Type): string | undefined {
-    const primitive_name = get_primitive_type_name(type);
-
+    const primitive_name = VariantTypeNames.get(type);
     switch (type) {
-        case godot.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_COLOR)));
-        case godot.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_VECTOR2)));
-        case godot.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_VECTOR3)));
+        case godot.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(VariantTypeNames.get(godot.Variant.Type.TYPE_COLOR)));
+        case godot.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(VariantTypeNames.get(godot.Variant.Type.TYPE_VECTOR2)));
+        case godot.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(VariantTypeNames.get(godot.Variant.Type.TYPE_VECTOR3)));
         case godot.Variant.Type.TYPE_PACKED_STRING_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("string"));
         case godot.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float32"));
         case godot.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float64"));
@@ -2394,7 +2379,7 @@ class ClassWriter extends IndentWriter {
         if (typeof constant.value !== "undefined") {
             this.line(`static readonly ${name_string(constant.name)} = ${constant.value}`);
         } else {
-            const type_name = get_primitive_type_name(constant.type);
+            const type_name = VariantTypeNames.get(constant.type);
             this.line(`static readonly ${name_string(constant.name)}: Readonly<${type_name}>`);
         }
     }
@@ -2442,7 +2427,7 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
 
         const name = name_string(property_info.name);
-        this.line(`get ${name}(): ${get_primitive_type_name(property_info.type)}`);
+        this.line(`get ${name}(): ${VariantTypeNames.get(property_info.type)}`);
         this.line(`set ${name}(value: ${get_primitive_type_name_as_input(property_info.type)})`);
     }
 
@@ -2460,7 +2445,7 @@ class ClassWriter extends IndentWriter {
 
     operator_(operator_info: GodotJsb.editor.OperatorInfo) {
         this._separator_line = true;
-        const return_type_name = get_primitive_type_name(operator_info.return_type);
+        const return_type_name = VariantTypeNames.get(operator_info.return_type);
         const left_type_name = get_primitive_type_name_as_input(operator_info.left_type);
         if (operator_info.right_type == godot.Variant.Type.TYPE_NIL) {
             this.line(`static ${operator_info.name}(left: ${left_type_name}): ${return_type_name}`);
@@ -2917,31 +2902,53 @@ export class TypeDB {
         return true;
     }
 
-    make_classname(internal_class_name: string): string {
+    make_classname(class_name: string, internal?: boolean): string {
         const types = this;
-        const remap_name: string | undefined = RemapTypes[internal_class_name];
-        if (typeof remap_name !== "undefined") {
-            return remap_name;
-        }
-        const class_name = names.get_class(internal_class_name);
-        if (class_name in types.classes) {
-            return class_name;
-        } else if (class_name in types.singletons) {
-            return class_name;
-        } else if (internal_class_name in types.globals) {
-            return internal_class_name;
-        } else if (internal_class_name.indexOf(".") >= 0) {
-            const layers = internal_class_name.split(".").map(n => names.get_class(n));
-            if (layers.length == 2) {
-                // nested enums in primitive types do not exist in class_info, they are manually binded.
-                if (PrimitiveTypesSet.has(layers[0])) {
-                    return layers.join(".");
+
+        if (class_name.indexOf(".") > 0) {
+            const layers = class_name.split(".");
+
+            if (layers.length === 2) {
+                const enum_name = names.get_enum(layers[1]);
+
+                // nested enums in primitive types do not exist in class_info, they are manually bound.
+                if (layers[0] in VariantNames) {
+                    return `${VariantTypeNames.get(VariantNames[layers[0]]!)!}.${enum_name}`;
                 }
-                const cls = types.classes[layers[0]];
-                if (typeof cls !== "undefined" && cls.enums!.findIndex(v => v.name == layers[1]) >= 0) {
-                    return layers.join(".");
+
+                const class_name = names.get_class(layers[0]);
+
+                if (class_name in VariantNames) {
+                    return `${VariantTypeNames.get(VariantNames[class_name]!)!}.${enum_name}`;
+                }
+
+                const cls = types.classes[class_name];
+                const enum_index = cls?.enums?.findIndex(v => v.name === enum_name) ?? -1;
+
+                if (enum_index >= 0) {
+                    return `${class_name}.${enum_name}`;
                 }
             }
+        } else {
+            if (internal) {
+                if (class_name in VariantNames) {
+                    return VariantTypeNames.get(VariantNames[class_name]!)!;
+                }
+                class_name = names.get_class(class_name);
+            }
+
+            if (class_name in VariantNames) {
+                return VariantTypeNames.get(VariantNames[class_name]!)!;
+            }
+
+            if (class_name in types.classes) {
+                return class_name;
+            } else if (class_name in types.singletons) {
+                return class_name;
+            }
+        }
+        if (class_name in types.globals) {
+            return class_name;
         }
         console.warn("undefined class", class_name);
         return `any /*${class_name}*/`;
@@ -2954,15 +2961,41 @@ export class TypeDB {
 
         if (info.hint == godot.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return null_prefix + info.hint_string.split(",").map(internal_class_name => this.make_classname(internal_class_name)).join(" | ")
+            return null_prefix + info.hint_string.split(',').map(name => this.make_classname(name, true)).join(" | ");
         }
 
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
-        if (info.class_name.length == 0) {
-            const primitive_name = used_as_input ? get_primitive_type_name_as_input(info.type) : get_primitive_type_name(info.type);
-            if (typeof primitive_name !== "undefined") {
-                return null_prefix + primitive_name;
+        if (info.class_name.length === 0) {
+            const variant_type_name = used_as_input ? get_primitive_type_name_as_input(info.type) : VariantTypeNames.get(info.type);
+
+            if (typeof variant_type_name !== "undefined") {
+                if (info.type === godot.Variant.Type.TYPE_ARRAY && info.hint == godot.PropertyHint.PROPERTY_HINT_ARRAY_TYPE && info.hint_string) {
+                    // Handle MAKE_RESOURCE_TYPE_HINT
+                    const class_name_components = info.hint_string.split(":");
+                    const class_name = class_name_components[class_name_components.length - 1];
+                    return `${null_prefix}${variant_type_name}<${this.make_classname(class_name, true)}>`;
+                }
+
+                // PROPERTY_HINT_DICTIONARY_TYPE won't be present prior to 4.4
+                if (info.type === godot.Variant.Type.TYPE_DICTIONARY
+                    && 'PROPERTY_HINT_DICTIONARY_TYPE' in godot.PropertyHint
+                    && info.hint === godot.PropertyHint.PROPERTY_HINT_DICTIONARY_TYPE
+                    && info.hint_string) {
+                    const class_names = info.hint_string.split(";");
+
+                    if (class_names.length === 2) {
+                        // TODO: Record can only handle string, number and symbol keys, but GDictionary can support any.
+                        //       We should support Record taking a Map<> in addition to a Record<>.
+                        const key_type = this.make_classname(class_names[0], true);
+                        return js_object_key_types.has(key_type)
+                            ? `${null_prefix}${variant_type_name}<Record<${key_type}, ${this.make_classname(class_names[0], true)}>>`
+                            : `${null_prefix}${variant_type_name}`;
+                    }
+                }
+
+                return null_prefix + variant_type_name;
             }
+
             return `any /*unhandled: ${info.type}*/`;
         }
 
@@ -2975,7 +3008,7 @@ export class TypeDB {
 
     make_literal_value(value: GodotJsb.editor.DefaultArgumentInfo) {
         // plain types
-        const type_name = get_primitive_type_name(value.type);
+        const type_name = VariantTypeNames.get(value.type);
         switch (value.type) {
             case godot.Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
             case godot.Variant.Type.TYPE_FLOAT:
@@ -3256,7 +3289,7 @@ export class TSDCodeGen {
         if (GodotAnyType != "any") {
             let gd_variant_alias = `type ${GodotAnyType} = undefined | null`;
             for (let i = godot.Variant.Type.TYPE_NIL + 1; i < godot.Variant.Type.TYPE_MAX; ++i) {
-                const type_name = get_primitive_type_name(i);
+                const type_name = VariantTypeNames.get(i);
                 if (type_name == GodotAnyType || type_name == "any") continue;
                 gd_variant_alias += " | " + type_name;
             }
