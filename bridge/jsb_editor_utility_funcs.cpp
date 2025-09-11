@@ -90,9 +90,32 @@ namespace jsb
             String name = method
                     ? internal::NamingUtil::get_parameter_name(property_info.name)
                     : internal::NamingUtil::get_member_name(property_info.name);
+            String info_class_name = property_info.class_name;
+
             set_field(isolate, context, object, "name", name);
             set_field(isolate, context, object, "type", property_info.type);
-            set_field(isolate, context, object, "class_name", internal::NamingUtil::get_class_name(property_info.class_name));
+
+            if (info_class_name.find_char('.') >= 0)
+            {
+                const Vector<String> components = info_class_name.split(".", false);
+
+                if (components.size() == 2)
+                {
+                    String class_name = internal::NamingUtil::get_class_name(components[0]);
+                    String enum_name = internal::NamingUtil::get_enum_name(components[1]);
+                    set_field(isolate, context, object, "class_name", class_name + "." + enum_name);
+                }
+                else
+                {
+                    // Should not occur
+                    set_field(isolate, context, object, "class_name", property_info.class_name);
+                }
+            }
+            else
+            {
+                set_field(isolate, context, object, "class_name", internal::NamingUtil::get_class_name(property_info.class_name));
+            }
+
             set_field(isolate, context, object, "hint", property_info.hint);
             set_field(isolate, context, object, "hint_string", property_info.hint_string);
             set_field(isolate, context, object, "usage", property_info.usage);

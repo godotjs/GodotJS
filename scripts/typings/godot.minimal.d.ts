@@ -8,7 +8,8 @@ declare module "godot-jsb" {
         MultiplayerPeer,
         Object as GObject,
         PackedByteArray,
-        PropertyInfo, Signal,
+        PropertyInfo,
+        Signal,
         StringName,
         Variant,
     } from "godot";

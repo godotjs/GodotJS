@@ -178,26 +178,26 @@ declare module "godot" {
         Map,
         string,
         ExtractValueKeys<Map, Permitted> & string
-            | (
-                DummyKey extends any
-                    ? (
-                        (
-                            Map[DefaultKey] extends never
-                                ? never
-                                : (
-                                    Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
-                                        ? StaticPath<ChildMap, Permitted, DefaultKey>
-                                        : never
-                                )
-                        )
-                        | {
-                            [K in Exclude<keyof Map, DefaultKey> & string]: Map[K] extends PathMappable<DummyKey, infer ChildMap>
-                                ? `${K}/${StaticPath<ChildMap, Permitted, DefaultKey>}`
+        | (
+        DummyKey extends any
+            ? (
+                (
+                    Map[DefaultKey] extends never
+                        ? never
+                        : (
+                            Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
+                                ? StaticPath<ChildMap, Permitted, DefaultKey>
                                 : never
-                        }[Exclude<keyof Map, DefaultKey> & string]
+                            )
                     )
+                | {
+                [K in Exclude<keyof Map, DefaultKey> & string]: Map[K] extends PathMappable<DummyKey, infer ChildMap>
+                    ? `${K}/${StaticPath<ChildMap, Permitted, DefaultKey>}`
                     : never
-            )
+            }[Exclude<keyof Map, DefaultKey> & string]
+                )
+            : never
+        )
     >;
 
     type ResolvePath<
@@ -225,7 +225,7 @@ declare module "godot" {
                         : Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
                             ? ResolvePath<ChildMap, Path, Default, Permitted>
                             : never
-            )
+                )
             : never
     >;
 
@@ -267,40 +267,49 @@ declare module "godot" {
      */
     class GArrayProxy<T> {
         [Symbol.iterator](): IteratorObject<GProxyValueWrap<T>>;
+
         /**
          * Gets the length of the array. This is a number one higher than the highest index in the array.
          */
         get length(): number;
+
         /**
          * Performs the specified action for each element in an array.
          * @param callback A function that accepts up to three arguments. forEach calls the callback function one time for each element in the array.
          * @param thisArg An object to which the this keyword can refer in the callback function. If thisArg is omitted, undefined is used as the this value.
          */
         forEach<S = GArrayProxy<T>>(callback: (this: GArrayProxy<T>, value: GProxyValueWrap<T>, index: number) => void, thisArg?: S): void;
+
         /**
          * Removes the last element from an array and returns it.
          * If the array is empty, undefined is returned and the array is not modified.
          */
         pop(): GProxyValueWrap<T> | undefined;
+
         /**
          * Appends new elements to the end of an array, and returns the new length of the array.
          * @param item New element to add to the array.
          * @param additionalItems Additional new elements to add to the array.
          */
         push(item: T | GProxyValueWrap<T>, ...additionalItems: Array<T | GProxyValueWrap<T>>): number;
+
         /**
          * Returns the index of the first occurrence of a value in an array, or -1 if it is not present.
          * @param searchElement The value to locate in the array.
          * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the search starts at index 0.
          */
         indexOf(searchElement: T | GProxyValueWrap<T>, fromIndex?: number): number;
+
         /**
          * Determines whether an array includes a certain element, returning true or false as appropriate.
          * @param searchElement The element to search for.
          */
         includes(searchElement: T | GProxyValueWrap<T>): boolean;
+
         toJSON(key?: any): any;
+
         toString(): string;
+
         [n: number]: T | GProxyValueWrap<T>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
     }
 
