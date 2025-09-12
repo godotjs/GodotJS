@@ -5,10 +5,25 @@ on:
       version:
         required: true
         type: string
+      version_ref:
+        description: "Godot engine commit reference"
+        required: true
+        type: string
 
 # Global Settings
 env:
-  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
+  # 4.4
+  SCONSFLAGS: >-
+    module_text_server_fb_enabled=yes
+    strict_checks=yes
+  # 4.5
+  # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
+  SCONS_FLAGS: >-
+    verbose=yes
+    warnings=extra
+    strict_checks=yes
+    module_text_server_fb_enabled=yes
+    "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
 
 jobs:
   build-macos:
@@ -20,38 +35,42 @@ jobs:
       matrix:
         include:
           - name: Editor (target=editor, v8)
-            cache-name: macos-editor-v8
+            cache-name: macos-editor-${{inputs.version}}-v8
             target: editor
             cache-limit: 1
 
           - name: Template (target=template_release, v8)
-            cache-name: macos-template-release-v8
+            cache-name: macos-template-${{inputs.version}}-release-v8
             target: template_release
             sconsflags: debug_symbols=no
             cache-limit: 1
 
           - name: Template (target=template_debug, v8)
-            cache-name: macos-template-debug-v8
+            cache-name: macos-template-${{inputs.version}}-debug-v8
             target: template_debug
             sconsflags: debug_symbols=no
             cache-limit: 1
 
           - name: Editor (target=editor, qjs_ng)
-            cache-name: macos-editor-qjs-ng
+            cache-name: macos-editor-${{inputs.version}}-qjs-ng
             target: editor
             sconsflags: use_quickjs_ng=yes
             cache-limit: 1
 
           - name: Template (target=template_release, qjs_ng)
-            cache-name: macos-template-release-qjs-ng
+            cache-name: macos-template-${{inputs.version}}-release-qjs-ng
             target: template_release
-            sconsflags: debug_symbols=no use_quickjs_ng=yes
+            sconsflags: >-
+              debug_symbols=no
+              use_quickjs_ng=yes
             cache-limit: 1
 
           - name: Template (target=template_debug, qjs_ng)
-            cache-name: macos-template-debug-qjs-ng
+            cache-name: macos-template-${{inputs.version}}-debug-qjs-ng
             target: template_debug
-            sconsflags: debug_symbols=no use_quickjs_ng=yes
+            sconsflags: >-
+              debug_symbols=no
+              use_quickjs_ng=yes
             cache-limit: 1
 
     steps:
@@ -62,7 +81,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.version_ref }}
           submodules: recursive
 
       - name: Checkout GodotJS
@@ -81,10 +100,29 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Setup Vulkan SDK
-        run: |
-          sh misc/scripts/install_vulkan_sdk_macos.sh
+      - name: Download pre-built AccessKit [4.5+]
+        if: inputs.version != '4.4'
+        uses: dsaltares/fetch-gh-release-asset@1.1.2
+        with:
+          repo: AccessKit/accesskit-c
+          version: tags/0.17.0
+          file: accesskit-c-0.17.0.zip
+          target: accesskit-c-0.17.0/accesskit_c.zip
 
+      - name: Extract pre-built AccessKit [4.5+]
+        if: inputs.version != '4.4'
+        run: unzip -o accesskit-c-0.17.0/accesskit_c.zip
+
+      - name: Setup Vulkan SDK
+        id: vulkan-sdk
+        run: |
+          if sh misc/scripts/install_vulkan_sdk_macos.sh; then
+            echo "VULKAN_ENABLED=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::macOS: Vulkan SDK installation failed, building without Vulkan support."
+            echo "VULKAN_ENABLED=no" >> "$GITHUB_OUTPUT"
+          fi
+        continue-on-error: true
 
       - name: Download deps artifact
         uses: actions/download-artifact@v4
@@ -98,21 +136,39 @@ jobs:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
 
-      - name: Compilation (x86_64)
+      - name: Compilation [4.4] (x86_64)
+        if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=x86_64
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
           platform: macos
           target: ${{ matrix.target }}
           scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
 
-      - name: Compilation (arm64)
+      - name: Compilation [4.5+] (x86_64)
+        if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=arm64
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
+          platform: macos
+          target: ${{ matrix.target }}
+
+      - name: Compilation [4.4] (arm64)
+        if: inputs.version == '4.4'
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
           platform: macos
           target: ${{ matrix.target }}
           scons-cache-limit: ${{ matrix.cache-limit }}
+
+      - name: Compilation [4.5+] (arm64)
+        if: inputs.version != '4.4'
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
+          platform: macos
+          target: ${{ matrix.target }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
@@ -150,52 +206,52 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.version_ref }}
           submodules: recursive
 
       - name: ⏬ Download editor
         uses: actions/download-artifact@v4
         with:
-          name: macos-editor-${{ matrix.engine }}
-          path: macos-editor-${{ matrix.engine }}
+          name: macos-editor-${{inputs.version}}-${{ matrix.engine }}
+          path: macos-editor-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⚒️ Build Editor App
         run: |
           mkdir editor-app
           cp -r misc/dist/macos_tools.app editor-app/Godot.app
           mkdir -p editor-app/Godot.app/Contents/MacOS
-          cp macos-editor-${{ matrix.engine }}/godot.macos.editor.universal editor-app/Godot.app/Contents/MacOS/Godot
+          cp macos-editor-${{inputs.version}}-${{ matrix.engine }}/godot.macos.editor.universal editor-app/Godot.app/Contents/MacOS/Godot
           chmod +x editor-app/Godot.app/Contents/MacOS/Godot
 
       - name: ⏫ Upload editor app
         uses: actions/upload-artifact@v4
         with:
-          name: macos-editor-app-${{ matrix.engine }}
+          name: macos-editor-${{inputs.version}}-app-${{ matrix.engine }}
           path: editor-app
 
       - name: ⏬ Download template-release
         uses: actions/download-artifact@v4
         with:
-          name: macos-template-release-${{ matrix.engine }}
-          path: macos-template-release-${{ matrix.engine }}
+          name: macos-template-${{inputs.version}}-release-${{ matrix.engine }}
+          path: macos-template-${{inputs.version}}-release-${{ matrix.engine }}
 
       - name: ⏬ Download template-debug
         uses: actions/download-artifact@v4
         with:
-          name: macos-template-debug-${{ matrix.engine }}
-          path: macos-template-debug-${{ matrix.engine }}
+          name: macos-template-${{inputs.version}}-debug-${{ matrix.engine }}
+          path: macos-template-${{inputs.version}}-debug-${{ matrix.engine }}
 
       - name: ⚒️ Build Template App
         run: |
           mkdir template-app
           cp -r misc/dist/macos_template.app template-app/macos_template.app
           mkdir -p template-app/macos_template.app/Contents/MacOS
-          cp macos-template-release-${{ matrix.engine }}/godot.macos.template_release.universal template-app/macos_template.app/Contents/MacOS/godot_macos_release.universal
-          cp macos-template-debug-${{ matrix.engine }}/godot.macos.template_debug.universal template-app/macos_template.app/Contents/MacOS/godot_macos_debug.universal
+          cp macos-template-${{inputs.version}}-release-${{ matrix.engine }}/godot.macos.template_release.universal template-app/macos_template.app/Contents/MacOS/godot_macos_release.universal
+          cp macos-template-${{inputs.version}}-debug-${{ matrix.engine }}/godot.macos.template_debug.universal template-app/macos_template.app/Contents/MacOS/godot_macos_debug.universal
           chmod +x template-app/macos_template.app/Contents/MacOS/godot_macos*
 
       - name: ⏫ Upload template app
         uses: actions/upload-artifact@v4
         with:
-          name: macos-template-app-${{ matrix.engine }}
+          name: macos-template-${{inputs.version}}-app-${{ matrix.engine }}
           path: template-app

@@ -5,12 +5,29 @@ on:
       version:
         required: true
         type: string
+      version_ref:
+        description: "Godot engine commit reference"
+        required: true
+        type: string
 
 # Global Settings
 env:
-  SCONSFLAGS: module_text_server_fb_enabled=yes strict_checks=yes
-  TSAN_OPTIONS: suppressions=misc/error_suppressions/tsan.txt
-  UBSAN_OPTIONS: suppressions=misc/error_suppressions/ubsan.txt
+  # 4.4
+  SCONSFLAGS: >-
+    module_text_server_fb_enabled=yes
+    strict_checks=yes
+  # 4.5
+  # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
+  SCONS_FLAGS: >-
+    verbose=yes
+    warnings=extra
+    strict_checks=yes
+    module_text_server_fb_enabled=yes
+    "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
+#  ASAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/asan.txt
+#  LSAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/lsan.txt
+#  TSAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/tsan.txt
+#  UBSAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/ubsan.txt
 
 jobs:
   build-linux:
@@ -23,37 +40,37 @@ jobs:
       matrix:
         include:
           - name: Editor (target=editor, v8)
-            cache-name: linux-editor-v8
+            cache-name: linux-editor-${{inputs.version}}-v8
             target: editor
             cache-limit: 2
 
           - name: Template release (target=template_release, v8)
-            cache-name: linux-template-release-v8
+            cache-name: linux-template-${{inputs.version}}-release-v8
             sconsflags: debug_symbols=no
             target: template_release
             cache-limit: 1
 
           - name: Template debug (target=template_debug, v8)
-            cache-name: linux-template-debug-v8
+            cache-name: linux-template-${{inputs.version}}-debug-v8
             sconsflags: debug_symbols=no
             target: template_debug
             bin: ./bin/godot.linuxbsd.template_debug.x86_64.v8
             cache-limit: 1
 
           - name: Editor (target=editor, qjs_ng)
-            cache-name: linux-editor-qjs-ng
+            cache-name: linux-editor-${{inputs.version}}-qjs-ng
             target: editor
             sconsflags: use_quickjs_ng=yes
             cache-limit: 2
 
           - name: Template release (target=template_release, qjs_ng)
-            cache-name: linux-template-release-qjs-ng
+            cache-name: linux-template-${{inputs.version}}-release-qjs-ng
             target: template_release
             sconsflags: use_quickjs_ng=yes debug_symbols=no
             cache-limit: 1
 
           - name: Template debug (target=template_debug, qjs_ng)
-            cache-name: linux-template-debug-qjs-ng
+            cache-name: linux-template-${{inputs.version}}-debug-qjs-ng
             target: template_debug
             sconsflags: use_quickjs_ng=yes debug_symbols=no
             cache-limit: 1
@@ -63,7 +80,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.version_ref }}
           submodules: recursive
 
       - name: Checkout GodotJS
@@ -103,18 +120,23 @@ jobs:
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
 
       - name: Setup Python and SCons
-        if: "!matrix.legacy-scons"
         uses: ./.github/actions/godot-deps
 
-      - name: Setup Python and SCons (legacy versions)
-        if: matrix.legacy-scons
-        uses: ./.github/actions/godot-deps
+      - name: Download pre-built AccessKit [4.5+]
+        if: inputs.version != '4.4'
+        uses: dsaltares/fetch-gh-release-asset@1.1.2
         with:
-          # Sync with Ensure*Version in SConstruct.
-          python-version: 3.8
-          scons-version: 4.0
+          repo: AccessKit/accesskit-c
+          version: tags/0.17.0
+          file: accesskit-c-0.17.0.zip
+          target: accesskit-c-0.17.0/accesskit_c.zip
 
-      - name: Compilation
+      - name: Extract pre-built AccessKit [4.5+]
+        if: inputs.version != '4.4'
+        run: unzip -o accesskit-c-0.17.0/accesskit_c.zip
+
+      - name: Compilation [4.4]
+        if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
@@ -122,6 +144,12 @@ jobs:
           target: ${{ matrix.target }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
+      - name: Compilation [4.5+]
+        if: inputs.version != '4.4'
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          platform: linuxbsd
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save

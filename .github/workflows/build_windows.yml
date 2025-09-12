@@ -5,12 +5,33 @@ on:
       version:
         required: true
         type: string
+      version_ref:
+        description: "Godot engine commit reference"
+        required: true
+        type: string
 
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  SCONSFLAGS: module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes "angle_libs=${{ github.workspace }}/"
+  # 4.4
+  SCONSFLAGS: >-
+    module_text_server_fb_enabled=yes
+    d3d12=yes
+    strict_checks=yes
+    "angle_libs=${{ github.workspace }}/"
+  # 4.5+
+  # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
+  SCONS_FLAGS: >-
+    verbose=yes
+    warnings=extra
+    strict_checks=yes
+    module_text_server_fb_enabled=yes
+    debug_symbols=no
+    d3d12=yes
+    "angle_libs=${{ github.workspace }}/"
+    "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
   SCONS_CACHE_MSVC_CONFIG: true
+  PYTHONIOENCODING: utf8
 
 jobs:
   build-windows:
@@ -23,43 +44,54 @@ jobs:
       matrix:
         include:
           - name: Editor (target=editor, v8)
-            cache-name: windows-editor-v8
+            cache-name: windows-editor-${{inputs.version}}-v8
             target: editor
-            # Skip debug symbols, they're way too big with MSVC.
-            sconsflags: debug_symbols=no vsproj=yes vsproj_gen_only=no windows_subsystem=console
+            sconsflags: >-
+              vsproj=yes
+              vsproj_gen_only=no
+              windows_subsystem=console
             cache-limit: 2
 
           - name: Template (target=template_debug, v8)
-            cache-name: windows-template-debug-v8
+            cache-name: windows-template-${{inputs.version}}-debug-v8
             target: template_debug
             sconsflags: debug_symbols=no
             cache-limit: 2
 
           - name: Template (target=template_release, v8)
-            cache-name: windows-template-release-v8
+            cache-name: windows-template-${{inputs.version}}-release-v8
             target: template_release
             sconsflags: debug_symbols=no
             cache-limit: 2
 
           - name: Editor (target=editor, qjs_ng)
-            cache-name: windows-editor-qjs-ng
+            cache-name: windows-editor-${{inputs.version}}-qjs-ng
             target: editor
             # Skip debug symbols, they're way too big with MSVC.
-            sconsflags: debug_symbols=no vsproj=yes vsproj_gen_only=no windows_subsystem=console use_quickjs_ng=yes
+            sconsflags: >-
+              debug_symbols=no
+              vsproj=yes
+              vsproj_gen_only=no
+              windows_subsystem=console
+              use_quickjs_ng=yes
             cache-limit: 2
             engine: qjs_ng
 
           - name: Template (target=template_debug, qjs_ng)
-            cache-name: windows-template-debug-qjs-ng
+            cache-name: windows-template-${{inputs.version}}-debug-qjs-ng
             target: template_debug
-            sconsflags: debug_symbols=no use_quickjs_ng=yes
+            sconsflags: >-
+              debug_symbols=no
+              use_quickjs_ng=yes
             cache-limit: 2
             engine: qjs_ng
 
           - name: Template (target=template_release, qjs_ng)
-            cache-name: windows-template-release-qjs-ng
+            cache-name: windows-template-${{inputs.version}}-release-qjs-ng
             target: template_release
-            sconsflags: debug_symbols=no use_quickjs_ng=yes
+            sconsflags: >-
+              debug_symbols=no
+              use_quickjs_ng=yes
             cache-limit: 2
             engine: qjs_ng
 
@@ -68,7 +100,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.version_ref }}
           submodules: recursive
 
       - name: Checkout GodotJS
@@ -114,13 +146,35 @@ jobs:
       - name: Extract pre-built ANGLE static libraries
         run: Expand-Archive -Force angle/angle.zip ${{ github.workspace }}/
 
-      - name: Compilation
+      - name: Download pre-built AccessKit [4.5+]
+        if: inputs.version != '4.4'
+        uses: dsaltares/fetch-gh-release-asset@1.1.2
+        with:
+          repo: AccessKit/accesskit-c
+          version: tags/0.17.0
+          file: accesskit-c-0.17.0.zip
+          target: accesskit-c-0.17.0/accesskit_c.zip
+
+      - name: Extract pre-built AccessKit [4.5+]
+        if: inputs.version != '4.4'
+        run: unzip -o accesskit-c-0.17.0/accesskit_c.zip
+
+      - name: Compilation (4.4)
+        if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
           platform: windows
           target: ${{ matrix.target }}
           scons-cache-limit: ${{ matrix.cache-limit }}
+
+      - name: Compilation (4.5+)
+        if: inputs.version != '4.4'
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          platform: windows
+          target: ${{ matrix.target }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save

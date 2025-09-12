@@ -2,9 +2,6 @@ name: 🌳 Set Environment
 on:
   workflow_call:
     outputs:
-      version:
-        description: "Godot version"
-        value: ${{ jobs.environment.outputs.version }}
       v8:
         description: "V8 version"
         value: ${{ jobs.environment.outputs.v8 }}
@@ -14,7 +11,6 @@ jobs:
     name: 🌳 Set Environment
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.versions.outputs.version }}
       v8: ${{ steps.versions.outputs.v8 }}
     steps:
       - name: ⏬ Checkout repository
@@ -26,7 +22,7 @@ jobs:
       - name: 🦕❌ Setup node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "pnpm"
 
       - name: 🛠️ Install dependencies
@@ -54,7 +50,6 @@ jobs:
       - name: 🏷 Set Versions
         id: versions
         run: |
-          echo "version=4.4" >> $GITHUB_OUTPUT
           echo "v8=v8_12.4.254.21_r13" >> $GITHUB_OUTPUT
 
       - name: 🎱 Deps v8
