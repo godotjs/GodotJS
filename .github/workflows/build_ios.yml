@@ -5,10 +5,26 @@ on:
       version:
         required: true
         type: string
+      version_ref:
+        description: "Godot engine commit reference"
+        required: true
+        type: string
 
 # Global Settings
 env:
-  SCONSFLAGS: debug_symbols=no module_text_server_fb_enabled=yes
+  # 4.4
+  SCONSFLAGS: >-
+    debug_symbols=no
+    module_text_server_fb_enabled=yes
+  # 4.5+
+  # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
+  SCONS_FLAGS: >-
+    verbose=yes
+    warnings=extra
+    strict_checks=yes
+    module_text_server_fb_enabled=yes
+    tests=no
+    debug_symbols=no
 
 jobs:
   ios-template:
@@ -20,18 +36,18 @@ jobs:
       matrix:
         include:
           - name: Template (target=template_release, v8)
-            cache-name: ios-template-release-v8
+            cache-name: ios-template-${{inputs.version}}-release-v8
             target: template_release
             cache-limit: 1
 
           - name: Template (target=template_release, qjs_ng)
-            cache-name: ios-template-release-qjs-ng
+            cache-name: ios-template-${{inputs.version}}-release-qjs-ng
             target: template_release
             sconsflags: use_quickjs_ng=yes
             cache-limit: 1
 
 #          - name: Template (target=template_release, jsc)
-#            cache-name: ios-template-jsc
+#            cache-name: ios-template-${{inputs.version}}-jsc
 #            target: template_release
 #            sconsflags: use_jsc=yes
 #            cache-limit: 1
@@ -41,7 +57,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.version_ref }}
           submodules: recursive
 
       - name: Checkout GodotJS
@@ -70,13 +86,22 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Compilation (arm64)
+      - name: Compilation [4.4]
+        if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }}  ${{ matrix.sconsflags }}
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
           platform: ios
           target: ${{ matrix.target }}
           scons-cache-limit: ${{ matrix.cache-limit }}
+
+      - name: Compilation [4.5+]
+        if: inputs.version != '4.4'
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          platform: ios
+          target: ${{ matrix.target }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save

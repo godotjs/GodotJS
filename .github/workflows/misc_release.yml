@@ -27,7 +27,7 @@ jobs:
       - name: 🦕❌ Setup node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "pnpm"
 
       - name: 🔄️ Install dependencies
@@ -75,7 +75,7 @@ jobs:
       - name: 🧬 Generate Name
         id: name
         run: |
-          echo "name=${{ matrix.os }}-${{ matrix.target }}-${{ matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "name=${{ matrix.os }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}" >> $GITHUB_OUTPUT
 
       - name: ⏬ Download build
         uses: actions/download-artifact@v4

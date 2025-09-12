@@ -14,9 +14,6 @@ concurrency:
   group: ${{ github.workflow }}|${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-
 jobs:
   environment:
     name: 🌳 Set Environment
@@ -30,90 +27,30 @@ jobs:
     name: 🔄 Changesets
     uses: ./.github/workflows/misc_changesets.yml
 
-  android-build:
-    name: 🤖 Android
-    uses: ./.github/workflows/build_android.yml
+  engine-version-build:
+    name: ⚙️ Build Godot Version with GodotJS
     needs: environment
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 4.4
+            version_ref: 4.4
+          - version: 4.5
+            version_ref: 4.5
+    uses: ./.github/workflows/build_engine_version.yml
     with:
-      version: ${{ needs.environment.outputs.version }}
-
-  ios-build:
-    name: 🍏 iOS
-    uses: ./.github/workflows/build_ios.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-
-  linux-build:
-    name: 🐧 Linux
-    uses: ./.github/workflows/build_linux.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-
-  macos-build:
-    name: 🍎 macOS
-    uses: ./.github/workflows/build_macos.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-
-  windows-build:
-    name: 🏁 Windows
-    uses: ./.github/workflows/build_windows.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-
-  web-build:
-    name: 🌐 Web
-    uses: ./.github/workflows/build_web.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-
-  checks-done:
-    if: ${{ always() }}
-    name: ✅ Check builds
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🎉 Checks done
-        run: |
-          resultWebBuild="${{ needs.web-build.result }}"
-          resultWindowsBuild="${{ needs.windows-build.result }}"          
-          resultMacosBuild="${{ needs.macos-build.result }}"
-          resultLinuxBuild="${{ needs.linux-build.result }}"
-          resultIosBuild="${{ needs.ios-build.result }}"
-          resultAndroidBuild="${{ needs.android-build.result }}"
-          if [[ 
-            $resultWebBuild == "success" && 
-            $resultWindowsBuild == "success" && 
-            $resultMacosBuild == "success" && 
-            $resultLinuxBuild == "success" && 
-            $resultIosBuild == "success" && 
-            $resultAndroidBuild == "success" 
-          ]]; 
-          then
-            echo "🎉 All builds were successful."
-            exit 0
-          else
-            echo "😥 Some builds were failing."
-            exit 1
-          fi
-    needs:
-      [
-        web-build,
-        windows-build,
-        macos-build,
-        linux-build,
-        ios-build,
-        android-build,
-      ]
+      v8: ${{ needs.environment.outputs.v8 }}
+      version: ${{ matrix.version }}
+      version_ref: ${{ matrix.version_ref }}
 
   release:
     name: 🦅 Release
+    needs: [ changesets, engine-version-build, environment ]
     if: needs.changesets.outputs.publish == 'true'
-    needs: [changesets, checks-done, environment]
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ./.github/workflows/misc_release.yml
     secrets: inherit
     with:
