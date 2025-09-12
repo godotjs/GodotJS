@@ -12,6 +12,10 @@ on:
         description: "Should publish"
         value: ${{ jobs.environment.outputs.publish }}
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   environment:
     name: 🌳 Set Environment
@@ -33,9 +37,35 @@ jobs:
           node-version: 20
           cache: "pnpm"
 
-      - name: 🛠️ Build bundled JavaScript
+      - name: 🛠️ Install dependencies
         run: |
           pnpm install
+
+      - name: 🆚 Create and publish versions
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: "chore: update versions"
+          title: "chore: update versions"
+          version: pnpm ci:version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ❓ Should publish
+        id: should_publish
+        env:
+          HAS_CHANGESETS: ${{ steps.changesets.outputs.hasChangesets }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHOULD_PUBLISH=$(pnpm run ci:should-publish)
+          if [[ $SHOULD_PUBLISH == "true" && $HAS_CHANGESETS == "false" ]]; then
+            echo "publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "publish=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🛠️ Build bundled JavaScript
+        run: |
           pnpm build
 
       - name: ⬆️ Upload scripts/out
@@ -75,26 +105,3 @@ jobs:
           name: V8
           path: ${{github.workspace}}/modules/GodotJS/v8
           retention-days: 10
-
-      - name: 🆚 Create and publish versions
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          commit: "chore: update versions"
-          title: "chore: update versions"
-          version: pnpm ci:version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: ❓ Should publish
-        id: should_publish
-        env:
-          HAS_CHANGESETS: ${{ steps.changesets.outputs.hasChangesets }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          SHOULD_PUBLISH=$(pnpm run ci:should-publish)
-          if [[ $SHOULD_PUBLISH == "true" && $HAS_CHANGESETS == "false" ]]; then
-            echo "publish=true" >> $GITHUB_OUTPUT
-          else
-            echo "publish=false" >> $GITHUB_OUTPUT
-          fi
