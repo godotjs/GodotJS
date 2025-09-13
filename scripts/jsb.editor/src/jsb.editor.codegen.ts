@@ -3438,7 +3438,7 @@ export class TSDCodeGen {
             }
 
             for (let property_info of cls.properties) {
-                class_cg.property_(property_info);
+                class_cg.property_(property_info, singleton_mode);
                 if (property_info.internal_name !== property_info.name) {
                     godot_name_overrides[property_info.internal_name] = property_info.name;
                 }
