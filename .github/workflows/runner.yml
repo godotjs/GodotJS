@@ -22,6 +22,14 @@ jobs:
     name: 🌳 Set Environment
     uses: ./.github/workflows/misc_environment.yml
 
+  changesets:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+      pull-requests: write
+    name: 🔄 Changesets
+    uses: ./.github/workflows/misc_changesets.yml
+
   android-build:
     name: 🤖 Android
     uses: ./.github/workflows/build_android.yml
@@ -104,8 +112,8 @@ jobs:
 
   release:
     name: 🦅 Release
-    if: needs.environment.outputs.publish == 'true' && github.event_name != 'pull_request'
-    needs: [checks-done, environment]
+    if: needs.changesets.outputs.publish == 'true'
+    needs: [changesets, checks-done, environment]
     uses: ./.github/workflows/misc_release.yml
     secrets: inherit
     with:
