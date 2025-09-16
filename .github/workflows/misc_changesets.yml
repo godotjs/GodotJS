@@ -1,0 +1,56 @@
+name: 🔄 Changesets
+on:
+  workflow_call:
+    outputs:
+      publish:
+        description: "Should publish"
+        value: ${{ jobs.changesets.outputs.publish || 'false' }}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  changesets:
+    name: 🔄 Changesets
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.should_publish.outputs.publish }}
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛫 Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: 🦕❌ Setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: 🛠️ Install dependencies
+        run: |
+          pnpm install
+
+      - name: 🆚 Create and publish versions
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: "chore: update versions"
+          title: "chore: update versions"
+          version: pnpm ci:version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ❓ Should publish
+        id: should_publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HAS_CHANGESETS: ${{ steps.changesets.outputs.hasChangesets }}
+        run: |
+          if [[ $SHOULD_PUBLISH == "true" && $HAS_CHANGESETS == "false" ]]; then
+            echo "publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "publish=false" >> $GITHUB_OUTPUT
+          fi
