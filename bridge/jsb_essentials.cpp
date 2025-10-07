@@ -165,7 +165,7 @@ namespace jsb
         else
         {
             Environment::wrap(isolate)->get_timer_manager().set_timer(handle,
-                JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0), rate, loop);
+                JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0), rate > 0 ? rate : 0, loop);
         }
         info.GetReturnValue().Set((int32_t) handle);
     }
