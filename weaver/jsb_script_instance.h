@@ -104,7 +104,6 @@ public:
 
     virtual void notification(int p_notification, bool p_reversed = false) override
     {
-        JSB_LOG(Error, "now allowed");
     }
 
     virtual const Variant get_rpc_config() const override { return script_->get_rpc_config(); }

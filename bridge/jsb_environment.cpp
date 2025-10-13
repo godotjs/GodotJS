@@ -787,7 +787,7 @@ namespace jsb
                     List<Pair<StringName, Variant>> state;
                     script_instance->get_property_state(state);
                     p_pointer->set_script_instance(nullptr);
-                    ScriptInstance* new_script_instance = script->instance_create(p_object, p_pointer);
+                    ScriptInstance* new_script_instance = script->instance_create(p_object, p_pointer, false);
                     jsb_check(new_script_instance);
                     jsb_unused(new_script_instance);
                     for (const Pair<StringName, Variant>& pair : state)

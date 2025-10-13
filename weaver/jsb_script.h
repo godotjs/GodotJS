@@ -62,9 +62,11 @@ public:
     Error load_source_code(const String &p_path);
     void load_module_if_missing();
 
-    // Creates a ScriptInstance and associates it with an existing JS object (instance of the script's JS class).
+    // Creates a ScriptInstance (for an existing Godot native object) and associates the ScriptInstance with an existing JS object (instance of the script's JS class).
     ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner, bool p_is_temp_allowed);
-    ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed);
+
+    // Creates a ScriptInstance (and a NEW Godot native object) and associates the ScriptInstance with an existing JS object (instance of the script's JS class).
+    ScriptInstance* instance_and_native_object_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed);
 
     // Creates a ScriptInstance and associates it with a newly constructed JS object (instance of script's class).
     ScriptInstance* instance_construct(Object* p_this, bool p_is_temp_allowed, const Variant **p_args = nullptr, int p_argcount = 0);

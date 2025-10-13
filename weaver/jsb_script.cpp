@@ -83,7 +83,7 @@ StringName GodotJSScript::get_instance_base_type() const
     return is_valid() ? script_class_info_.native_class_name : StringName();
 }
 
-ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed)
+ScriptInstance* GodotJSScript::instance_and_native_object_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed)
 {
     jsb_check(is_valid());
     jsb_check(loaded_);
