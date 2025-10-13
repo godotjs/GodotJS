@@ -251,7 +251,7 @@ namespace jsb
         if (script.is_valid())
         {
             jsb_unused(script->can_instantiate()); // make it loaded immediately
-            const ScriptInstance* script_instance = script->instance_create(p_self, p_env->flags_ & Environment::EnvironmentFlags::EF_Shadow);
+            const ScriptInstance* script_instance = script->instance_and_native_object_create(p_self, p_env->flags_ & Environment::EnvironmentFlags::EF_Shadow);
             jsb_unused(script_instance);
             jsb_check(script_instance);
         }
