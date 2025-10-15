@@ -189,8 +189,10 @@ export const ExportDictionary = export_dictionary;
 
 function get_hint_string_for_enum(enum_type: Record<string, string | number>): string {
     const enum_vs: Array<string> = [];
-    for (const [key, value] of Object.keys(enum_type)) {
-        enum_vs.push(`${key}:${value}`);
+    for (const [key, value] of Object.entries(enum_type)) {
+        if (typeof value === 'number' && value >= 0 && Number.isInteger(value)) {
+            enum_vs.push(`${key}:${value}`);
+        }
     }
     return enum_vs.join(",");
 }
@@ -611,6 +613,8 @@ export function createClassBinder(): ClassBinder {
 
     let executed = false;
 
+    const hint_string_name = jsb.internal.names.get_member('hint_string');
+
     // primary class decorator
 
     function bind_class() {
@@ -678,8 +682,6 @@ export function createClassBinder(): ClassBinder {
     }
 
     function add_property(name: string, type: Godot.Variant.Type, options?: ExportOptions) {
-        const hint_string = options?.hint_string;
-
         if (property_info_map[name]) {
             throw new Error(`Property ${name} already exported. You must decorate a getter or a setter, not both.`);
         }
@@ -701,8 +703,8 @@ export function createClassBinder(): ClassBinder {
                 ebd.usage = options.usage;
             }
 
-            if (typeof hint_string === "string") {
-                ebd.hint_string = hint_string;
+            if (typeof options.hint_string === "string") {
+                ebd.hint_string = options.hint_string;
             }
 
             // overwrite hint if class_ is provided
@@ -780,7 +782,7 @@ export function createClassBinder(): ClassBinder {
     function bind_range(type: Godot.Variant.Type, min: number, max: number, step: number = 1, ...extra_hints: string[]) {
         return bind_export(type, {
             hint: PropertyHint.PROPERTY_HINT_RANGE,
-            hint_string: [min, max, step, ...extra_hints].join(","),
+            [hint_string_name]: [min, max, step, ...extra_hints].join(","),
         });
     }
 
@@ -814,31 +816,31 @@ export function createClassBinder(): ClassBinder {
             file(filter: string): ClassMemberDecorator {
                 return bind_export(Variant.Type.TYPE_STRING, {
                     hint: PropertyHint.PROPERTY_HINT_FILE,
-                    hint_string: filter,
+                    [hint_string_name]: filter,
                 });
             },
             dir(filter: string): ClassMemberDecorator {
                 return bind_export(Variant.Type.TYPE_STRING, {
                     hint: PropertyHint.PROPERTY_HINT_DIR,
-                    hint_string: filter,
+                    [hint_string_name]: filter,
                 });
             },
             global_file(filter: string): ClassMemberDecorator {
                 return bind_export(Variant.Type.TYPE_STRING, {
                     hint: PropertyHint.PROPERTY_HINT_GLOBAL_FILE,
-                    hint_string: filter,
+                    [hint_string_name]: filter,
                 });
             },
             global_dir(filter: string): ClassMemberDecorator {
                 return bind_export(Variant.Type.TYPE_STRING, {
                     hint: PropertyHint.PROPERTY_HINT_GLOBAL_DIR,
-                    hint_string: filter,
+                    [hint_string_name]: filter,
                 });
             },
             exp_easing(hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only"): ClassMemberDecorator {
                 return bind_export(Variant.Type.TYPE_FLOAT, {
                     hint: PropertyHint.PROPERTY_HINT_EXP_EASING,
-                    hint_string: hint,
+                    [hint_string_name]: hint,
                 });
             },
             /**
@@ -859,7 +861,7 @@ export function createClassBinder(): ClassBinder {
             enum(enum_type: Record<string, string | number>): ClassMemberDecorator {
                 return bind_export(Variant.Type.TYPE_INT, {
                     hint: PropertyHint.PROPERTY_HINT_ENUM,
-                    hint_string: get_hint_string_for_enum(enum_type),
+                    [hint_string_name]: get_hint_string_for_enum(enum_type),
                     usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT,
                 });
             },
@@ -867,14 +869,14 @@ export function createClassBinder(): ClassBinder {
                 const hints: Array<string> = [];
 
                 for (const [key, value] of Object.entries(enum_type)) {
-                    if (value !== 0) {
+                    if (typeof value === 'number' && value > 0 && Number.isInteger(value)) {
                         hints.push(key + ":" + value);
                     }
                 }
 
                 return bind_export(Variant.Type.TYPE_INT, {
                     hint: PropertyHint.PROPERTY_HINT_FLAGS,
-                    hint_string: hints.join(","),
+                    [hint_string_name]: hints.join(","),
                     usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT,
                 });
             },
