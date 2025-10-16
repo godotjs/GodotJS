@@ -6,7 +6,9 @@ namespace jsb
 {
     void JavaScriptTimerAction::operator()(v8::Isolate* isolate)
     {
-        const v8::Local<v8::Function> func = function_.Get(isolate);
+        jsb_checkf(function_, "Attempt made to call a moved/unassigned JavaScriptTimerAction");
+
+        const v8::Local<v8::Function> func = function_->Get(isolate);
         const v8::Local<v8::Context> context = func->GetCreationContextChecked();
 
         jsb_checkf(Environment::wrap(context), "timer triggered after Environment disposed");
