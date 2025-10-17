@@ -5,6 +5,9 @@
 
 namespace jsb
 {
+    /**
+     * This struct is *not* POD, but aims to be compatible with SArray's memory relocation logic.
+     */
     struct JavaScriptTimerAction
     {
         jsb_force_inline JavaScriptTimerAction(): function_(nullptr), argc_(0), argv_(nullptr)
@@ -29,6 +32,8 @@ namespace jsb
         {
             delete function_;
             delete[] argv_;
+            function_ = nullptr;
+            argv_ = nullptr;
         }
 
         JavaScriptTimerAction(JavaScriptTimerAction& p_other) = delete;

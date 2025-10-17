@@ -6,7 +6,11 @@ namespace jsb
 {
     void JavaScriptTimerAction::operator()(v8::Isolate* isolate)
     {
-        jsb_checkf(function_, "Attempt made to call a moved/unassigned JavaScriptTimerAction");
+        if (!function_)
+        {
+            JSB_LOG(Warning, "Ignored attempt to execute a unassigned/moved/destroyed JavaScriptTimerAction");
+            return;
+        }
 
         const v8::Local<v8::Function> func = function_->Get(isolate);
         const v8::Local<v8::Context> context = func->GetCreationContextChecked();

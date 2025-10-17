@@ -10,8 +10,8 @@ namespace jsb::internal
         jsb_force_inline TimerHandle() = default;
         jsb_force_inline ~TimerHandle() = default;
 
-        jsb_force_inline TimerHandle(const Index32& p_index): id(p_index) {}
-        jsb_force_inline TimerHandle& operator=(const Index32& p_index) { id = p_index; return *this; }
+        jsb_force_inline TimerHandle(const IndexSafe64& p_index): id(p_index) {}
+        jsb_force_inline TimerHandle& operator=(const IndexSafe64& p_index) { id = p_index; return *this; }
 
         jsb_force_inline TimerHandle(const TimerHandle& p_other): id(p_other.id) {}
         jsb_force_inline TimerHandle& operator=(const TimerHandle& p_other) { id = p_other.id; return *this; }
@@ -19,14 +19,14 @@ namespace jsb::internal
         jsb_force_inline TimerHandle(TimerHandle&& p_other) noexcept: id(p_other.id) {}
         jsb_force_inline TimerHandle& operator=(TimerHandle&& p_other) noexcept { id = p_other.id; p_other.id = {}; return *this; }
 
-        jsb_force_inline explicit operator int32_t() const { return (int32_t) *id; }
-        jsb_force_inline explicit operator Index32() const { return id; }
-        jsb_force_inline explicit operator bool() const { return id != Index32::none(); }
+        jsb_force_inline explicit operator int64_t() const { return (int64_t) *id; }
+        jsb_force_inline explicit operator IndexSafe64() const { return id; }
+        jsb_force_inline explicit operator bool() const { return id != IndexSafe64::none(); }
 
-        jsb_force_inline explicit TimerHandle(const int32_t p_index): id((uint32_t) p_index) {}
+        jsb_force_inline explicit TimerHandle(const int64_t p_index): id((int64_t) p_index) {}
 
     private:
-        Index32 id;
+        IndexSafe64 id;
 
         template<typename, uint8_t, uint8_t, uint64_t>
         friend class TTimerManager;
@@ -59,11 +59,11 @@ namespace jsb::internal
 
         struct WheelSlot
         {
-            std::vector<Index32> timer_indices;
+            std::vector<IndexSafe64> timer_indices;
 
-            jsb_force_inline void append(const Index32& index) { timer_indices.push_back(index); }
+            jsb_force_inline void append(const IndexSafe64& index) { timer_indices.push_back(index); }
 
-            jsb_force_inline void move_to(std::vector<Index32>& cache)
+            jsb_force_inline void move_to(std::vector<IndexSafe64>& cache)
             {
                 cache.reserve(cache.size() + timer_indices.size());
                 cache.insert(cache.end(), timer_indices.begin(), timer_indices.end());
@@ -97,15 +97,15 @@ namespace jsb::internal
                 index = 0;
             }
 
-            uint32_t add(uint64_t p_delay, const Index32& p_timer_index)
+            uint64_t add(uint64_t p_delay, const IndexSafe64& p_timer_index)
             {
                 const uint64_t offset = p_delay >= interval ? (p_delay / interval) - 1 : p_delay / interval;
-                const uint32_t slot_index = (uint32_t)((index + offset) % (uint64_t)kWheelSlotNum);
+                const uint64_t slot_index = (uint64_t)((index + offset) % (uint64_t)kWheelSlotNum);
                 slots[slot_index].append(p_timer_index);
                 return slot_index;
             }
 
-            void next(std::vector<Index32>& p_active_indices)
+            void next(std::vector<IndexSafe64>& p_active_indices)
             {
                 slots[index++].move_to(p_active_indices);
             }
@@ -132,10 +132,10 @@ namespace jsb::internal
 
         uint64_t _elapsed;
         uint32_t _time_slice;
-        SArray<TimerData, Index32> _used_timers;
+        SArray<TimerData, IndexSafe64> _used_timers;
         WheelState _wheels[kWheelNum];
-        std::vector<Index32> _activated_timers;
-        std::vector<Index32> _moving_timers;
+        std::vector<IndexSafe64> _activated_timers;
+        std::vector<IndexSafe64> _moving_timers;
 
         static void check_internal_state()
         {
@@ -184,7 +184,7 @@ namespace jsb::internal
             _used_timers.remove_at(inout_handle.id);
 
             const uint64_t delay = p_first_delay > 0 ? p_first_delay : p_rate;
-            const Index32 index = _used_timers.add(TimerData());
+            const IndexSafe64 index = _used_timers.add(TimerData());
             TimerData& timer = _used_timers.get_value(index);
             timer.rate = p_rate;
             timer.expires = delay + _elapsed;
@@ -206,7 +206,7 @@ namespace jsb::internal
         {
             if (_clear_timer(p_handle.id))
             {
-                p_handle.id = Index32::none();
+                p_handle.id = IndexSafe64::none();
                 return true;
             }
             return false;
@@ -258,7 +258,7 @@ namespace jsb::internal
                     }
 
                     _wheels[wheel_index + 1].next(_moving_timers);
-                    for (const Index32& index : _moving_timers)
+                    for (const IndexSafe64& index : _moving_timers)
                     {
                         TimerData* timer;
                         if (_used_timers.try_get_value_pointer(index, timer))
@@ -284,7 +284,7 @@ namespace jsb::internal
         bool invoke_timers(TContext* ctx)
         {
             if (_activated_timers.empty()) return false;
-            for (const Index32& index : _activated_timers)
+            for (const IndexSafe64& index : _activated_timers)
             {
                 TimerData* timer;
                 if (!_used_timers.try_get_value_pointer(index, timer))
@@ -314,13 +314,13 @@ namespace jsb::internal
         }
 
     private:
-        bool _clear_timer(const Index32& p_index)
+        bool _clear_timer(const IndexSafe64& p_index)
         {
             check_internal_state();
             return _used_timers.remove_at(p_index);
         }
 
-        void rearrange_timer(const Index32& p_timer_id, uint64_t p_delay)
+        void rearrange_timer(const IndexSafe64& p_timer_id, uint64_t p_delay)
         {
             jsb_check(_used_timers.is_valid_index(p_timer_id));
             for (WheelState& wheel : _wheels)

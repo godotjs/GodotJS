@@ -167,7 +167,8 @@ namespace jsb
             Environment::wrap(isolate)->get_timer_manager().set_timer(handle,
                 JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0), rate > 0 ? rate : 0, loop);
         }
-        info.GetReturnValue().Set((int32_t) handle);
+        // TODO: V8 update. Once we update V8 past 12.6.221 we can skip the cast to double
+        info.GetReturnValue().Set((double) (int64_t) handle);
     }
 
     void _clear_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
