@@ -46,6 +46,10 @@ function get_helpers(): ProxyHelpers {
                 return value[ProxyTarget] ?? value;
             },
             godot_wrap: function (value: any) {
+                if (typeof value !== "object" || value === null) {
+                    return value;
+                }
+
                 if (Array.isArray(value)) {
                     return GArray.create<any>(value);
                 }
