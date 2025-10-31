@@ -2902,7 +2902,7 @@ export class TypeDB {
         return true;
     }
 
-    make_classname(class_name: string, internal?: boolean): string {
+    make_classname(class_name: string, internal?: boolean, type?: Variant.Type): string {
         const types = this;
 
         if (class_name.indexOf(".") > 0) {
@@ -2950,6 +2950,11 @@ export class TypeDB {
         if (class_name in types.globals) {
             return class_name;
         }
+
+        if (type && RemappedPrimitiveTypeNames[type] != null) {
+            return RemappedPrimitiveTypeNames[type]!
+        }
+
         console.warn("undefined class", class_name);
         return `any /*${class_name}*/`;
     }
@@ -2961,7 +2966,7 @@ export class TypeDB {
 
         if (info.hint == godot.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return null_prefix + info.hint_string.split(',').map(name => this.make_classname(name, true)).join(" | ");
+            return null_prefix + info.hint_string.split(',').map(name => this.make_classname(name, true, info.type)).join(" | ");
         }
 
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
@@ -2999,7 +3004,7 @@ export class TypeDB {
             return `any /*unhandled: ${info.type}*/`;
         }
 
-        return null_prefix + this.make_classname(info.class_name);
+        return null_prefix + this.make_classname(info.class_name, undefined, info.type);
     }
 
     make_arg(info: PropertyInfo, optional?: boolean): string {
