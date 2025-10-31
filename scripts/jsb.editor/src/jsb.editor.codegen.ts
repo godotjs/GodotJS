@@ -2027,7 +2027,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                         return;
                     }
 
-                    indent.line(`${name_string(key)}${value.optional ? '?' : ''}: `);
+                    indent.line(`"${name_string(key)}"${value.optional ? '?' : ''}: `);
                     const prop_writer = new TypeDescriptorWriter(indent, true);
                     prop_writer.serialize_type_descriptor(value);
                     prop_writer.finish();
