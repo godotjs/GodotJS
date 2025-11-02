@@ -835,7 +835,7 @@ function replace_var_name(name: string) {
     return typeof rep !== "undefined" ? rep : name;
 }
 
-const needs_quotes_regex = /^(?![$_])[^\w$]|[^\w$]/;
+const needs_quotes_regex = /^(?![$_A-Za-z])|[^\w$]/;
 const quoted_escape_map: Record<string, string> = {
     '"': '\\"',
     '\\': '\\\\',
@@ -2027,7 +2027,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                         return;
                     }
 
-                    indent.line(`"${name_string(key)}"${value.optional ? '?' : ''}: `);
+                    indent.line(`${name_string(key)}${value.optional ? '?' : ''}: `);
                     const prop_writer = new TypeDescriptorWriter(indent, true);
                     prop_writer.serialize_type_descriptor(value);
                     prop_writer.finish();
