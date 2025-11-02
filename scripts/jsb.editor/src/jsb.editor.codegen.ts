@@ -2965,7 +2965,7 @@ export class TypeDB {
         }
 
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
-        if (info.class_name.length === 0) {
+        if (info.class_name.length === 0 || info.class_name.includes(",")) {
             const variant_type_name = used_as_input ? get_primitive_type_name_as_input(info.type) : VariantTypeNames.get(info.type);
 
             if (typeof variant_type_name !== "undefined") {
