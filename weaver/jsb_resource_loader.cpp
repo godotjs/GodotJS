@@ -13,6 +13,7 @@ namespace
         || p_path.ends_with(".worker." JSB_TYPESCRIPT_EXT)
 #   endif
         || p_path.ends_with(".worker." JSB_JAVASCRIPT_EXT)
+        || p_path.ends_with(".worker." JSB_COMMONJS_EXT)
 #endif
         ;
     }
@@ -25,6 +26,7 @@ namespace
         || p_path.ends_with(".test." JSB_TYPESCRIPT_EXT)
 #   endif
         || p_path.ends_with(".test." JSB_JAVASCRIPT_EXT)
+        || p_path.ends_with(".test." JSB_COMMONJS_EXT)
 #endif
         ;
     }
@@ -67,7 +69,7 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
         return {};
     }
 #endif
-    jsb_check(p_path.ends_with(JSB_TYPESCRIPT_EXT) || p_path.ends_with(JSB_JAVASCRIPT_EXT));
+    jsb_check(p_path.ends_with(JSB_TYPESCRIPT_EXT) || p_path.ends_with(JSB_JAVASCRIPT_EXT) || p_path.ends_with(JSB_COMMONJS_EXT));
 
     // in case `node_modules` is not ignored (which is not expected though), we do not want any GodotJSScript to be generated from it.
     if (p_path.begins_with("res://node_modules"))
@@ -129,6 +131,7 @@ void ResourceFormatLoaderGodotJSScript::get_recognized_extensions(List<String>* 
     p_extensions->push_back(JSB_TYPESCRIPT_EXT);
 #endif
     p_extensions->push_back(JSB_JAVASCRIPT_EXT);
+    p_extensions->push_back(JSB_COMMONJS_EXT);
 }
 
 bool ResourceFormatLoaderGodotJSScript::handles_type(const String& p_type) const
@@ -141,9 +144,9 @@ String ResourceFormatLoaderGodotJSScript::get_resource_type(const String& p_path
     const String el = p_path.get_extension().to_lower();
 
 #if JSB_USE_TYPESCRIPT
-    if (el == JSB_TYPESCRIPT_EXT || el == JSB_JAVASCRIPT_EXT)
+    if (el == JSB_TYPESCRIPT_EXT || el == JSB_JAVASCRIPT_EXT || el == JSB_COMMONJS_EXT)
 #else
-    if (el == JSB_JAVASCRIPT_EXT)
+    if (el == JSB_JAVASCRIPT_EXT || el == JSB_COMMONJS_EXT)
 #endif // JSB_USE_TYPESCRIPT
     {
         return !is_worker_script(p_path) && !is_test_script(p_path)

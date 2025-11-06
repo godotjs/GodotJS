@@ -38,6 +38,7 @@ void ResourceFormatSaverGodotJSScript::get_recognized_extensions(const Ref<Resou
         p_extensions->push_back(JSB_TYPESCRIPT_EXT);
 #endif
         p_extensions->push_back(JSB_JAVASCRIPT_EXT);
+        p_extensions->push_back(JSB_COMMONJS_EXT);
     }
 }
 

@@ -1058,10 +1058,10 @@ namespace jsb
     JavaScriptModule* Environment::_load_module(const String& p_parent_id, const String& p_module_id)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _load_module);
-        JavaScriptModule* existing_module = module_cache_.find(p_module_id);
-        if (existing_module && !existing_module->is_reloading())
+        JavaScriptModule* resolved_module = module_cache_.find(p_module_id);
+        if (resolved_module && !resolved_module->is_reloading())
         {
-            return existing_module;
+            return resolved_module;
         }
 
         v8::Isolate* isolate = this->isolate_;
@@ -1071,7 +1071,7 @@ namespace jsb
         // find loader with the module id
         if (IModuleLoader* loader = this->find_module_loader(p_module_id))
         {
-            jsb_checkf(!existing_module, "module loader does not support reloading");
+            jsb_checkf(!resolved_module, "module loader does not support reloading");
             JavaScriptModule& module = module_cache_.insert(isolate, context, p_module_id, false, false);
 
             //NOTE the loader should throw error if failed
@@ -1107,35 +1107,37 @@ namespace jsb
             const StringName module_id = source_info.source_filepath;
 
             // check again with the resolved module_id
-            existing_module = module_cache_.find(module_id);
-            if (existing_module && !existing_module->is_reloading())
-            {
-                return existing_module;
-            }
+            resolved_module = module_cache_.find(module_id);
+
+            v8::Local<v8::Object> module_obj;
 
             // supported module properties: id, filename, cache, loaded, exports, children
-            if (existing_module)
+            if (resolved_module)
             {
-                jsb_check(existing_module->id == module_id);
-                jsb_check(existing_module->source_info.source_filepath == source_info.source_filepath);
-
-                JSB_LOG(VeryVerbose, "reload module %s", module_id);
-                existing_module->mark_as_reloaded();
-                if (!resolver->load(this, source_info.source_filepath, *existing_module))
+                if (resolved_module->is_reloading())
                 {
-                    return nullptr;
+                    jsb_check(resolved_module->id == module_id);
+                    jsb_check(resolved_module->source_info.source_filepath == source_info.source_filepath);
+
+                    JSB_LOG(VeryVerbose, "reload module %s", module_id);
+                    resolved_module->mark_as_reloaded();
+                    if (!resolver->load(this, source_info.source_filepath, *resolved_module))
+                    {
+                        return nullptr;
+                    }
+                    ScriptClassInfo::_parse_script_class(context, *resolved_module);
                 }
-                ScriptClassInfo::_parse_script_class(context, *existing_module);
-                return existing_module;
+
+                module_obj = resolved_module->module.Get(isolate);
             }
             else
             {
                 JSB_LOG(Verbose, "instantiating module %s", module_id);
                 JavaScriptModule& module = module_cache_.insert(isolate, context, module_id, true, false);
                 v8::Local<v8::Object> exports_obj = v8::Object::New(isolate);
-                v8::Local<v8::Object> module_obj = module.module.Get(isolate);
 
                 // init the new module obj
+                module_obj = module.module.Get(isolate);
                 module_obj->Set(context, jsb_name(this, children), v8::Array::New(isolate)).Check();
                 module_obj->Set(context, jsb_name(this, exports), exports_obj).Check();
                 module.source_info = source_info;
@@ -1148,29 +1150,6 @@ namespace jsb
                     return nullptr;
                 }
 
-                // build the module tree
-                if (!p_parent_id.is_empty())
-                {
-                    if (const JavaScriptModule* parent_ptr = module_cache_.find(p_parent_id))
-                    {
-                        const v8::Local<v8::Object> parent_module = parent_ptr->module.Get(isolate);
-                        if (v8::Local<v8::Value> temp; parent_module->Get(context, jsb_name(this, children)).ToLocal(&temp) && temp->IsArray())
-                        {
-                            const v8::Local<v8::Array> children = temp.As<v8::Array>();
-                            const uint32_t children_num = children->Length();
-                            children->Set(context, children_num, module_obj).Check();
-                        }
-                        else
-                        {
-                            JSB_LOG(Error, "can not access children on '%s'", p_parent_id);
-                        }
-                    }
-                    else
-                    {
-                        JSB_LOG(Warning, "parent module not found with the name '%s'", p_parent_id);
-                    }
-                }
-
                 module.on_load(isolate, context);
                 {
                     const impl::TryCatch try_catch_run(isolate);
@@ -1180,8 +1159,34 @@ namespace jsb
                         JSB_LOG(Error, "something wrong when parsing '%s'\n%s", module_id, BridgeHelper::get_exception(try_catch_run));
                     }
                 }
-                return &module;
+
+                resolved_module = &module;
             }
+
+            // build the module tree
+            if (!p_parent_id.is_empty())
+            {
+                if (const JavaScriptModule* parent_ptr = module_cache_.find(p_parent_id))
+                {
+                    const v8::Local<v8::Object> parent_module = parent_ptr->module.Get(isolate);
+                    if (v8::Local<v8::Value> temp; parent_module->Get(context, jsb_name(this, children)).ToLocal(&temp) && temp->IsArray())
+                    {
+                        const v8::Local<v8::Array> children = temp.As<v8::Array>();
+                        const uint32_t children_num = children->Length();
+                        children->Set(context, children_num, module_obj).Check();
+                    }
+                    else
+                    {
+                        JSB_LOG(Error, "can not access children on '%s'", p_parent_id);
+                    }
+                }
+                else
+                {
+                    JSB_LOG(Warning, "parent module not found with the name '%s'", p_parent_id);
+                }
+            }
+
+            return resolved_module;
         }
 
         impl::Helper::throw_error(isolate, jsb_format("unknown module: %s", normalized_id));
