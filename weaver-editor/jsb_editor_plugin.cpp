@@ -436,7 +436,7 @@ void GodotJSEditorPlugin::collect_invalid_files(const String& p_path, Vector<Str
         }
         else
         {
-            if (!it_path.ends_with("." JSB_JAVASCRIPT_EXT) || !FileAccess::exists(jsb::internal::PathUtil::convert_javascript_path(it_path)))
+            if (!(it_path.ends_with("." JSB_JAVASCRIPT_EXT) || it_path.ends_with("." JSB_COMMONJS_EXT)) || !FileAccess::exists(jsb::internal::PathUtil::convert_javascript_path(it_path)))
             {
                 // invalid if it's not a source map file, or no corresponding .js file exist
                 if (!it_path.ends_with("." JSB_JAVASCRIPT_EXT ".map") || !FileAccess::exists(it_path.substr(0, it_path.length() - 4)))

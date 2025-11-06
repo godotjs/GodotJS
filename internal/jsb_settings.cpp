@@ -79,7 +79,7 @@ namespace jsb::internal
         if (!inited)
         {
             inited = true;
-            static constexpr char filter[] = "*." JSB_JAVASCRIPT_EXT
+            static constexpr char filter[] = "*." JSB_JAVASCRIPT_EXT ",*." JSB_COMMONJS_EXT
 #if JSB_USE_TYPESCRIPT
                                             ",*." JSB_TYPESCRIPT_EXT
 #endif

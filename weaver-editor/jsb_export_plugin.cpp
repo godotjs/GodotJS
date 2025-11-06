@@ -45,7 +45,7 @@ void GodotJSExportPlugin::export_raw_files(const PackedStringArray &p_paths, boo
     }
 }
 
-void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<String> &r_list)
+void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<String> &r_list, bool p_is_node_module)
 {
     Ref<DirAccess> dir = DirAccess::open(p_dir);
 
@@ -60,7 +60,7 @@ void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<Strin
 
     while (!filename.is_empty())
     {
-        if (filename == "." || filename == "..")
+        if (filename == "." || filename == ".." || (p_is_node_module && filename == "node_modules"))
         {
             filename = dir->get_next();
             continue;
@@ -70,7 +70,7 @@ void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<Strin
 
         if (dir->current_is_dir())
         {
-            get_script_resources(path, r_list);
+            get_script_resources(path, r_list, p_is_node_module);
         }
         else if (ResourceLoader::get_resource_type(path) == jsb_typename(GodotJSScript) && !get_ignored_paths().has(path))
         {
@@ -175,7 +175,7 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path)
 
         String package_path = p_path.substr(0, package_path_slash_index);
         Vector<String> script_paths;
-        get_script_resources(package_path, script_paths);
+        get_script_resources(package_path, script_paths, true);
 
         const String package_json_path = jsb::internal::PathUtil::combine(package_path, "package.json");
 
