@@ -12,16 +12,6 @@ on:
 
 # Global Settings
 env:
-  # 4.4
-  SCONSFLAGS: >-
-    debug_symbols=no
-    use_closure_compiler=yes
-    strict_checks=yes
-    deprecated=no
-    lto=none
-    use_assertions=no
-    use_safe_heap=yes
-  # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
     verbose=yes
@@ -78,11 +68,7 @@ jobs:
         env:
           GODOT_VERSION: ${{ inputs.version }}
         run: |
-          if [[ $GODOT_VERSION == "4.4" ]]; then
-            echo "emscripten=3.1.64" >> $GITHUB_OUTPUT
-          else
-            echo "emscripten=4.0.11" >> $GITHUB_OUTPUT
-          fi
+          echo "emscripten=4.0.11" >> $GITHUB_OUTPUT
 
       - name: Set up Emscripten
         uses: mymindstorm/setup-emsdk@v14
@@ -103,19 +89,7 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Compilation [4.4]
-        if: inputs.version == '4.4'
-        uses: ./.github/actions/godot-build
-        with:
-          sconsflags: >-
-            ${{ env.SCONSFLAGS }}             
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
-          platform: web
-          target: ${{ matrix.target }}
-          scons-cache-limit: 0.5
-
-      - name: Compilation [4.5+]
-        if: inputs.version != '4.4'
+      - name: Compilation
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
