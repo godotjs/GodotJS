@@ -376,8 +376,13 @@ namespace jsb::internal
 		}
 #endif
 
+#if GODOT_4_6_OR_NEWER
+		LocalVector<StringName> all_class_names;
+		ClassDB::get_class_list(all_class_names);
+#else
 		List<StringName> all_class_names;
 		ClassDB::get_class_list(&all_class_names);
+#endif
 
 		List<StringName> exposed_class_names;
 
