@@ -12,11 +12,6 @@ on:
 
 # Global Settings
 env:
-  # 4.4
-  SCONSFLAGS: >-
-    debug_symbols=no
-    module_text_server_fb_enabled=yes
-  # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
     verbose=yes
@@ -69,19 +64,7 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Compilation [4.4]
-        if: inputs.version == '4.4'
-        uses: ./.github/actions/godot-build
-        with:
-          sconsflags: >-
-            ${{ env.SCONSFLAGS }}             
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
-          platform: ios
-          target: ${{ matrix.target }}
-          scons-cache-limit: 1
-
-      - name: Compilation [4.5+]
-        if: inputs.version != '4.4'
+      - name: Compilation
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-

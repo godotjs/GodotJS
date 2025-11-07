@@ -15,11 +15,6 @@ on:
 
 # Global Settings
 env:
-  # 4.4
-  SCONSFLAGS: >-
-    module_text_server_fb_enabled=yes
-    strict_checks=yes
-  # 4.5
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
     verbose=yes
@@ -68,8 +63,7 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Download pre-built AccessKit [4.5+]
-        if: inputs.version != '4.4'
+      - name: Download pre-built AccessKit
         uses: dsaltares/fetch-gh-release-asset@1.1.2
         with:
           repo: AccessKit/accesskit-c
@@ -77,8 +71,7 @@ jobs:
           file: accesskit-c-0.17.0.zip
           target: accesskit-c-0.17.0/accesskit_c.zip
 
-      - name: Extract pre-built AccessKit [4.5+]
-        if: inputs.version != '4.4'
+      - name: Extract pre-built AccessKit
         run: unzip -o accesskit-c-0.17.0/accesskit_c.zip
 
       - name: Setup Vulkan SDK
@@ -105,23 +98,7 @@ jobs:
           name: tests-project
           path: ${{github.workspace}}/modules/GodotJS/tests/project/.godot/GodotJS
 
-      - name: Compilation [4.4] (x86_64)
-        if: inputs.version == '4.4'
-        uses: ./.github/actions/godot-build
-        with:
-          sconsflags: >-
-            ${{ env.SCONSFLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            arch=x86_64 
-            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
-          platform: macos
-          target: ${{ matrix.target }}
-          scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
-
-      - name: Compilation [4.5+] (x86_64)
-        if: inputs.version != '4.4'
+      - name: Compilation (x86_64)
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
@@ -134,23 +111,7 @@ jobs:
           platform: macos
           target: ${{ matrix.target }}
 
-      - name: Compilation [4.4] (arm64)
-        if: inputs.version == '4.4'
-        uses: ./.github/actions/godot-build
-        with:
-          sconsflags: >-
-            ${{ env.SCONS_FLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            arch=arm64 
-            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
-          platform: macos
-          target: ${{ matrix.target }}
-          scons-cache-limit: ${{ matrix.target == 'editor' && 2 || 1 }}
-
-      - name: Compilation [4.5+] (arm64)
-        if: inputs.version != '4.4'
+      - name: Compilation (arm64)
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
