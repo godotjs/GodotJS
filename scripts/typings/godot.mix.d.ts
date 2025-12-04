@@ -131,7 +131,7 @@ declare module "godot" {
                 : never
             : never;
     type ResolveGodotReturnType<T, Name> = Name extends GodotDynamicDispatchName
-        ? GAny
+        ? void | GAny
         : ResolveGodotName<T, Name> extends keyof T
             ? T[ResolveGodotName<T, Name>] extends (...args: any[]) => infer R
                 ? R
