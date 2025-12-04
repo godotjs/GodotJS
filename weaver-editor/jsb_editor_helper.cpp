@@ -363,9 +363,21 @@ Dictionary GodotJSEditorHelper::get_resource_type_descriptor(const String& p_pat
     }
     else
     {
-        descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::User;
-        descriptor[jsb_string_name(name)] = ResourceLoader::get_resource_script_class(p_path);
-        descriptor[jsb_string_name(resource)] = script->get_path();
+        String class_name = script->is_valid()
+            ? static_cast<String>(script->get_global_name())
+            : ResourceLoader::get_resource_script_class(p_path);
+
+        if (class_name.is_empty())
+        {
+            descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
+            descriptor[jsb_string_name(name)] = jsb::internal::NamingUtil::get_class_name("Object");
+        }
+        else
+        {
+            descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::User;
+            descriptor[jsb_string_name(name)] = script->get_global_name();
+            descriptor[jsb_string_name(resource)] = script->get_path();
+        }
     }
 
     return descriptor;
