@@ -12,14 +12,6 @@ on:
 
 # Global Settings
 env:
-  # 4.4
-  SCONSFLAGS: >-
-    arch=arm64
-    strict_checks=yes
-    debug_symbols=no
-    module_text_server_fb_enabled=yes
-    swappy=yes
-  # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
     arch=arm64
@@ -44,7 +36,7 @@ jobs:
             cache-name: android-template-${{inputs.version}}-release-v8
             target: template_release
             tests: false
-            sconsflags: ${{ inputs.version == '4.4' && 'deprecated=no ndk_platform=android-24 generate_apk=yes' || '' }}
+            sconsflags: ''
             cache-limit: 1
 
           - name: Template (target=template_release, arch=arm64, qjs_ng)
@@ -107,18 +99,7 @@ jobs:
       - name: Extract pre-built Android Swappy Frame Pacing Library
         run: 7za x -y swappy/godot-swappy.7z -o${{github.workspace}}/thirdparty/swappy-frame-pacing
 
-      - name: Compilation [4.4]
-        if: inputs.version == '4.4'
-        uses: ./.github/actions/godot-build
-        with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
-          platform: android
-          target: ${{ matrix.target }}
-          tests: ${{ matrix.tests }}
-          scons-cache-limit: ${{ matrix.cache-limit }}
-
-      - name: Compilation [4.5+]
-        if: inputs.version != '4.4'
+      - name: Compilation
         uses: ./.github/actions/godot-build
         with:
           scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
