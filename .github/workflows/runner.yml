@@ -53,6 +53,12 @@ jobs:
       pull-requests: write
     uses: ./.github/workflows/misc_release.yml
     secrets: inherit
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - version: 4.4
+          - version: 4.5
     with:
-      version: ${{ needs.environment.outputs.version }}
+      version: ${{ matrix.version }}
       v8: ${{ needs.environment.outputs.v8 }}
