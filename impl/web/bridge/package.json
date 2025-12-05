@@ -1,14 +1,10 @@
 {
-  "name": "godotjs-web",
-  "version": "1.0.0",
-  "main": "library.js",
+  "name": "@godot-js/web-bridge",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc"
   },
-  "author": "ialex32x",
-  "license": "ISC",
-  "description": "",
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "typescript": "^5.9.2"
   }
 }

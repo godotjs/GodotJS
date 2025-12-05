@@ -5,17 +5,22 @@
 
 namespace jsb
 {
+    /**
+     * This struct is *not* POD, but aims to be compatible with SArray's memory relocation logic.
+     */
     struct JavaScriptTimerAction
     {
-        jsb_force_inline JavaScriptTimerAction() = default;
-
-        jsb_force_inline JavaScriptTimerAction(v8::Global<v8::Function>&& p_func, int p_argc) : function_(std::move(p_func)), argc_(p_argc)
+        jsb_force_inline JavaScriptTimerAction(): function_(nullptr), argc_(0), argv_(nullptr)
         {
+        }
+
+        jsb_force_inline JavaScriptTimerAction(v8::Global<v8::Function>&& p_func, int p_argc) : argc_(p_argc)
+        {
+            function_ = new v8::Global<v8::Function>(std::move(p_func));
+
             if (p_argc > 0)
             {
-                //NOTE unsafe
-                argv_ = (v8::Global<v8::Value>*) memalloc(sizeof(v8::Global<v8::Value>) * p_argc);
-                memset((void*) argv_, 0, sizeof(v8::Global<v8::Value>) * p_argc);
+                argv_ = new v8::Global<v8::Value>[p_argc];
             }
             else
             {
@@ -25,34 +30,43 @@ namespace jsb
 
         jsb_force_inline ~JavaScriptTimerAction()
         {
-            if (argc_ > 0)
-            {
-                //NOTE unsafe
-                for (int index = 0 ; index < argc_; ++index)
-                {
-                    argv_[index].Reset();
-                }
-                memfree(argv_);
-            }
-            function_.Reset();
+            delete function_;
+            delete[] argv_;
+            function_ = nullptr;
+            argv_ = nullptr;
         }
 
+        JavaScriptTimerAction(JavaScriptTimerAction& p_other) = delete;
+
         jsb_force_inline JavaScriptTimerAction(JavaScriptTimerAction&& p_other) noexcept
-            : function_(std::move(p_other.function_)), argc_(p_other.argc_), argv_(p_other.argv_)
+            : function_(p_other.function_), argc_(p_other.argc_), argv_(p_other.argv_)
         {
+            p_other.function_ = nullptr;
             p_other.argc_ = 0;
+            p_other.argv_ = nullptr;
         }
+
+        JavaScriptTimerAction& operator=(JavaScriptTimerAction& p_other) = delete;
 
         jsb_force_inline JavaScriptTimerAction& operator=(JavaScriptTimerAction&& p_other) noexcept
         {
-            function_ = std::move(p_other.function_);
-            argc_ = p_other.argc_;
-            argv_ = p_other.argv_;
-            p_other.argc_ = 0;
+            if (this != &p_other)
+            {
+                delete function_;
+                delete[] argv_;
+
+                function_ = p_other.function_;
+                argc_ = p_other.argc_;
+                argv_ = p_other.argv_;
+
+                p_other.function_ = nullptr;
+                p_other.argc_ = 0;
+                p_other.argv_ = nullptr;
+            }
             return *this;
         }
 
-        jsb_force_inline explicit operator bool() const { return !function_.IsEmpty(); }
+        jsb_force_inline explicit operator bool() const { return function_ && !function_->IsEmpty(); }
 
         jsb_force_inline void store(int index, v8::Global<v8::Value>&& value)
         {
@@ -63,7 +77,7 @@ namespace jsb
         void operator()(v8::Isolate* isolate);
 
     private:
-        v8::Global<v8::Function> function_;
+        v8::Global<v8::Function>* function_;
         int argc_;
         v8::Global<v8::Value>* argv_;
     };

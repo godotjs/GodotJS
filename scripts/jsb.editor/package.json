@@ -1,9 +1,11 @@
 {
+  "name": "@godot-js/jsb-editor",
+  "private": true,
   "scripts": {
     "build": "tsc"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
-    "typescript": "^5.5.2"
+    "typescript": "^5.9.2"
   }
 }

@@ -463,8 +463,6 @@ namespace jsb
 
     bool DefaultModuleResolver::check_search_path(const String& p_search_path, const String& p_module_id, ModuleSourceInfo& o_source_info)
     {
-        String package_name;
-
         if (p_module_id[0] != '.')
         {
             int package_name_slash_index = p_module_id.find_char('/');
@@ -474,27 +472,25 @@ namespace jsb
                 package_name_slash_index = p_module_id.find_char('/', package_name_slash_index + 1);
             }
 
-            package_name = p_module_id.substr(0, package_name_slash_index);
-        }
+            String package_name = p_module_id.substr(0, package_name_slash_index);
 
-        if (package_name.is_empty())
-        {
-            const String absolute_file_path = internal::PathUtil::combine(p_search_path, p_module_id);
-
-            if (check_absolute_file_path(absolute_file_path, o_source_info))
+            if (!package_name.is_empty())
             {
-                return true;
+                const String absolute_package_path = internal::PathUtil::combine(p_search_path, package_name);
+                const String file_path = p_module_id.substr(package_name.length() + 1);
+
+                if (check_package_file_path(absolute_package_path, file_path, o_source_info))
+                {
+                    return true;
+                }
             }
         }
-        else
-        {
-            const String absolute_package_path = internal::PathUtil::combine(p_search_path, package_name);
-            const String file_path = p_module_id.substr(package_name.length() + 1);
 
-            if (check_package_file_path(absolute_package_path, file_path, o_source_info))
-            {
-                return true;
-            }
+        const String absolute_file_path = internal::PathUtil::combine(p_search_path, p_module_id);
+
+        if (check_absolute_file_path(absolute_file_path, o_source_info))
+        {
+            return true;
         }
 
         JSB_LOG(Verbose, "failed to check out module (search_path: %s) %s", p_search_path, p_module_id);

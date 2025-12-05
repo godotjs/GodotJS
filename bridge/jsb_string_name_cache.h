@@ -30,7 +30,7 @@ namespace jsb
         HashMap<StringName, StringNameID> name_index;
 
         // JSValue => StringNameID
-        internal::TypeGen<TWeakRef<v8::String>, StringNameID>::UnorderedMap value_index_; // backlink
+        internal::TypeGen<TStrongRef<v8::String>, StringNameID>::UnorderedMap value_index_; // backlink
 
         // List< StringName+JSValue >
         // managed as a least recently used cache if max_size_ > 0
@@ -64,7 +64,7 @@ namespace jsb
 
         bool try_get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value, StringName& r_string_name) const 
         {
-            if (const auto& it = value_index_.find(TWeakRef(isolate, p_value)); it != value_index_.end())
+            if (const auto& it = value_index_.find(TStrongRef(isolate, p_value)); it != value_index_.end())
             {
                 const StringNameID id = it->second;
                 r_string_name = values_[id].name_;
@@ -83,7 +83,7 @@ namespace jsb
 
         StringName get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value)
         {
-            if (const auto& it = value_index_.find(TWeakRef(isolate, p_value)); it != value_index_.end())
+            if (const auto& it = value_index_.find(TStrongRef(isolate, p_value)); it != value_index_.end())
             {
                 const StringNameID id = it->second;
                 const StringName name = values_[id].name_;
@@ -96,14 +96,14 @@ namespace jsb
                 const StringName name = impl::Helper::to_string(isolate, p_value);
                 const StringNameID id = get_string_id(isolate, name);
                 Slot& slot = values_[id];
-                if (slot.ref_ && slot.ref_ != TStrongRef(isolate, p_value))
+                if (slot.ref_ && slot.ref_.object_ != p_value)
                 {
-                    const size_t removed = value_index_.erase(TWeakRef(isolate, slot.ref_.object_.Get(isolate)));
-                    JSB_LOG(Warning, "(not recommended) update an existing string name %s", name);
+                    const size_t removed = value_index_.erase(slot.ref_);
+                    JSB_LOG(Verbose, "(not recommended) update an existing string name %s", name);
                     jsb_check(removed == 1);
                 }
                 slot.ref_ = TStrongRef(isolate, p_value);
-                value_index_.insert(std::pair(TWeakRef(isolate, p_value), id));
+                value_index_.insert(std::pair(TStrongRef(isolate, p_value), id));
                 JSB_LOG(VeryVerbose, "new string name pair (js) %s %d [slots:%d]", name, id, values_.size());
                 return name;
             }
@@ -117,7 +117,7 @@ namespace jsb
             {
                 const v8::Local<v8::String> str_val = impl::Helper::new_string(isolate, p_name);
                 slot.ref_ = TStrongRef(isolate, str_val);
-                value_index_.insert(std::pair(TWeakRef(isolate, str_val), id));
+                value_index_.insert(std::pair(TStrongRef(isolate, str_val), id));
                 JSB_LOG(VeryVerbose, "new string name pair (cpp) %s %d [slots:%d]", p_name, id, values_.size());
                 return str_val;
             }
@@ -142,7 +142,7 @@ namespace jsb
             
             const StringNameID id = values_.get_first_index();
             const Slot& slot = values_[id];
-            value_index_.erase(TWeakRef(isolate, slot.ref_.object_));
+            value_index_.erase(slot.ref_);
             name_index.erase(slot.name_);
             const StringNameID removed_id = values_.remove_first();
             jsb_check(removed_id == id);

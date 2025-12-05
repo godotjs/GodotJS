@@ -7,137 +7,51 @@ on:
   push:
     branches:
       - "main"
-  release:
-    types: [ published ]
+  schedule:
+    - cron: "2 0 * * 0" # Sunday after midnight to trigger a release
 
 concurrency:
   group: ${{ github.workflow }}|${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-
 jobs:
   environment:
     name: 🌳 Set Environment
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.versions.outputs.version }}
-      v8: ${{ steps.versions.outputs.v8 }}
-    steps:
-      - name: 🏷 Set Versions
-        id: versions
-        run: |
-          echo "version=4.4" >> $GITHUB_OUTPUT
-          echo "v8=v8_12.4.254.21_r13" >> $GITHUB_OUTPUT
+    uses: ./.github/workflows/misc_environment.yml
 
-      - name: 🎱 Deps v8
-        shell: bash
-        env:
-          V8: ${{ steps.versions.outputs.v8 }}
-        run: |
-          curl -L -o "$V8.zip" "https://github.com/ialex32x/GodotJS-Dependencies/releases/download/$V8/$V8.zip"
-          unzip "$V8.zip" -d "/tmp/$V8"
-          mkdir -p "${{github.workspace}}/modules/GodotJS/"
-          mv "/tmp/$V8/v8" "${{github.workspace}}/modules/GodotJS/v8"
-          ls "${{github.workspace}}/modules/GodotJS/v8"
+  changesets:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+      pull-requests: write
+    name: 🔄 Changesets
+    uses: ./.github/workflows/misc_changesets.yml
 
-
-      - name: ⬆️ Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: V8
-          path: ${{github.workspace}}/modules/GodotJS/v8
-          retention-days: 10
-
-  android-build:
-    name: 🤖 Android
-    uses: ./.github/workflows/android_builds.yml
+  engine-version-build:
+    name: ⚙️ Build Godot Version with GodotJS
     needs: environment
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 4.4
+            version_ref: 4.4
+          - version: 4.5
+            version_ref: 4.5
+    uses: ./.github/workflows/build_engine_version.yml
     with:
-      version: ${{ needs.environment.outputs.version }}
-
-  ios-build:
-    name: 🍏 iOS
-    uses: ./.github/workflows/ios_builds.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-
-  linux-build:
-    name: 🐧 Linux
-    uses: ./.github/workflows/linux_builds.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-      tests: ${{ github.event_name != 'release' }}
-
-  macos-build:
-    name: 🍎 macOS
-    uses: ./.github/workflows/macos_builds.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-      tests: ${{ github.event_name != 'release' }}
-
-  windows-build:
-    name: 🏁 Windows
-    uses: ./.github/workflows/windows_builds.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-      tests: ${{ github.event_name != 'release' }}
-
-  web-build:
-    name: 🌐 Web
-    uses: ./.github/workflows/web_builds.yml
-    needs: environment
-    with:
-      version: ${{ needs.environment.outputs.version }}
-
-  checks-done:
-    if: ${{ always() }}
-    name: ✅ Check builds
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🎉 Checks done
-        run: |
-          resultWebBuild="${{ needs.web-build.result }}"
-          resultWindowsBuild="${{ needs.windows-build.result }}"          
-          resultMacosBuild="${{ needs.macos-build.result }}"
-          resultLinuxBuild="${{ needs.linux-build.result }}"
-          resultIosBuild="${{ needs.ios-build.result }}"
-          resultAndroidBuild="${{ needs.android-build.result }}"
-          if [[ 
-            $resultWebBuild == "success" && 
-            $resultWindowsBuild == "success" && 
-            $resultMacosBuild == "success" && 
-            $resultLinuxBuild == "success" && 
-            $resultIosBuild == "success" && 
-            $resultAndroidBuild == "success" 
-          ]]; 
-          then
-            echo "🎉 All builds were successful."
-            exit 0
-          else
-            echo "😥 Some builds were failing."
-            exit 1
-          fi
-    needs:
-      [
-        web-build,
-        windows-build,
-        macos-build,
-        linux-build,
-        ios-build,
-        android-build
-      ]
+      v8: ${{ needs.environment.outputs.v8 }}
+      version: ${{ matrix.version }}
+      version_ref: ${{ matrix.version_ref }}
 
   release:
     name: 🦅 Release
-    if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [ checks-done, environment ]
-    uses: ./.github/workflows/release_builds.yml
+    needs: [ changesets, engine-version-build, environment ]
+    if: needs.changesets.outputs.publish == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/misc_release.yml
     secrets: inherit
     with:
       version: ${{ needs.environment.outputs.version }}

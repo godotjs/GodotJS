@@ -21,6 +21,88 @@ namespace jsb::internal
         typedef typename UnorderedMap::const_iterator UnorderedMapConstIt;
     };
 
+    struct VariantReferentialComparator {
+        static bool compare(const Variant& p_a, const Variant& p_b) {
+            return p_a.identity_compare(p_b);
+        }
+    };
+
+    /**
+     * A hasher for Variants that generates a hash based on the identity (pointers)
+     * of Objects and copy-on-write types, not their contents i.e. referential
+     * equality not structural. This takes advantage of the fact that our JS
+     * runtime passes variants around in way that is essentially by reference.
+     */
+    struct VariantReferentialHasher {
+        static uint32_t hash(const Variant& p_variant) {
+            switch (p_variant.get_type()) {
+                case Variant::Type::OBJECT: {
+                    Object* object = p_variant;
+                    return HashMapHasherDefault::hash(object);
+                }
+                case Variant::Type::DICTIONARY: {
+                    const Dictionary& d = p_variant;
+                    return HashMapHasherDefault::hash(d.id());
+                }
+                case Variant::Type::ARRAY: {
+                    const Array& a = p_variant;
+                    return HashMapHasherDefault::hash(a.id());
+                }
+                case Variant::Type::STRING: {
+                    const String& s = p_variant;
+                    return HashMapHasherDefault::hash(s.ptr());
+                }
+                case Variant::Type::PACKED_BYTE_ARRAY: {
+                    const PackedByteArray& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_INT32_ARRAY: {
+                    const PackedInt32Array& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_INT64_ARRAY: {
+                    const PackedInt64Array& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_FLOAT32_ARRAY: {
+                    const PackedFloat32Array& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_FLOAT64_ARRAY: {
+                    const PackedFloat64Array& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_STRING_ARRAY: {
+                    const PackedStringArray& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_VECTOR2_ARRAY: {
+                    const PackedVector2Array& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_VECTOR3_ARRAY: {
+                    const PackedVector3Array& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_COLOR_ARRAY: {
+                    const PackedColorArray& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                case Variant::Type::PACKED_VECTOR4_ARRAY: {
+                    const PackedVector4Array& arr = p_variant;
+                    return HashMapHasherDefault::hash(arr.ptr());
+                }
+                default: {
+                    // Primitives use the standard value-based hash.
+                    return p_variant.hash();
+                }
+            }
+        }
+    };
+
+    template <typename TValue>
+    using ReferentialVariantMap = HashMap<Variant, TValue, VariantReferentialHasher, VariantReferentialComparator>;
+
     struct VariantUtil
     {
         jsb_force_inline static StringName get_type_name(const Variant::Type p_type)
@@ -102,6 +184,8 @@ namespace jsb::internal
         {
             return p_name.data_unique_pointer() != nullptr;
         }
+
+        static Variant structured_clone(const Variant& p_variant, ReferentialVariantMap<Variant>& p_clone_map, bool& r_valid, int p_recursion_count = 0);
     };
 }
 #endif

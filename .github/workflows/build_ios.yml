@@ -1,0 +1,116 @@
+name: 🍏 iOS Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      version_ref:
+        description: "Godot engine commit reference"
+        required: true
+        type: string
+
+# Global Settings
+env:
+  # 4.4
+  SCONSFLAGS: >-
+    strict_checks=yes
+    debug_symbols=no
+    module_text_server_fb_enabled=yes
+  # 4.5+
+  # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
+  SCONS_FLAGS: >-
+    verbose=yes
+    warnings=extra
+    strict_checks=yes
+    module_text_server_fb_enabled=yes
+    tests=no
+    debug_symbols=no
+
+jobs:
+  ios-template:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    name: Template (target=template_release)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Template (target=template_release, v8)
+            cache-name: ios-template-${{inputs.version}}-release-v8
+            target: template_release
+            cache-limit: 1
+
+          - name: Template (target=template_release, qjs_ng)
+            cache-name: ios-template-${{inputs.version}}-release-qjs-ng
+            target: template_release
+            sconsflags: use_quickjs_ng=yes
+            cache-limit: 1
+
+#          - name: Template (target=template_release, jsc)
+#            cache-name: ios-template-${{inputs.version}}-jsc
+#            target: template_release
+#            sconsflags: use_jsc=yes
+#            cache-limit: 1
+
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.version_ref }}
+          submodules: recursive
+
+      - name: Checkout GodotJS
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}/modules/GodotJS/
+          lfs: true
+          submodules: recursive
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        continue-on-error: true
+
+      - name: Download deps artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: V8
+          path: ${{github.workspace}}/modules/GodotJS/v8
+
+      - name: Download scripts/out
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts-out
+          path: ${{github.workspace}}/modules/GodotJS/scripts/out
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Compilation [4.4]
+        if: inputs.version == '4.4'
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          platform: ios
+          target: ${{ matrix.target }}
+          scons-cache-limit: ${{ matrix.cache-limit }}
+
+      - name: Compilation [4.5+]
+        if: inputs.version != '4.4'
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          platform: ios
+          target: ${{ matrix.target }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.cache-name }}

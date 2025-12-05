@@ -20,7 +20,11 @@
 #include "../jsb_project_preset.h"
 
 #ifdef TOOLS_ENABLED
+#if GODOT_4_5_OR_NEWER
+#include "editor/settings/editor_settings.h"
+#else
 #include "editor/editor_settings.h"
+#endif
 #endif
 #include "main/performance.h"
 
@@ -49,20 +53,6 @@ namespace jsb
     };
     namespace { const uint16_t kWrapperID = 1; }
 #endif
-
-    struct TransferObjectData : TransferData
-    {
-        NativeObjectID worker_id;
-        Variant target;
-        String script_path;
-        List<Pair<StringName, Variant>> state;
-
-        TransferObjectData(NativeObjectID p_worker_id, const Variant& p_target, const String& p_script_path, const List<Pair<StringName, Variant>>& p_state)
-            : worker_id(p_worker_id), target(p_target), script_path(p_script_path), state(p_state)
-        {}
-
-        virtual ~TransferObjectData() override = default;
-    };
 
     struct EnvironmentStore
     {
@@ -186,7 +176,12 @@ namespace jsb
                 // must check before async, InstanceBindingCallback need to know whether the object should die or not if it's a ref-counted object.
                 if (env->verify_object(p_binding))
                 {
-                    env->add_async_call(Environment::AsyncCall::TYPE_UNLINK, p_binding);
+                    // Note: Our pointer to the native Godot object is about to become invalid. We must IMMEDIATELY
+                    //       remove this pointer/address from our data structures. It's not safe to post a message and
+                    //       do this work on the environment's thread, because another Godot object may be allocated at
+                    //       the same address before our message is handled. This is not hypothetical, it was observed
+                    //       in practice several times.
+                    env->free_object(p_binding, FinalizationType::None);
                 }
             }
         }
@@ -274,111 +269,124 @@ namespace jsb
         isolate_->AddGCPrologueCallback(&OnPreGCCallback);
         isolate_->AddGCEpilogueCallback(&OnPostGCCallback);
 #endif
+
         {
-            v8::HandleScope handle_scope(isolate_);
-            for (int index = 0; index < Symbols::kNum; ++index)
-            {
-                symbols_[index].Reset(isolate_, v8::Symbol::New(isolate_));
-            }
-        }
-
-        native_classes_.reserve(p_params.initial_class_slots);
-        script_classes_.reserve(p_params.initial_script_slots);
-
-        module_loaders_.insert("godot", memnew(GodotModuleLoader));
-        module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
-        EnvironmentStore::get_shared().add(this);
-
-        // create context
-        {
-            JSB_BENCHMARK_SCOPE(JSRealm, Construct);
-
             v8::Isolate::Scope isolate_scope(isolate_);
-            v8::HandleScope handle_scope(isolate_);
 
-            const v8::Local<v8::Context> context = v8::Context::New(isolate_);
-            const v8::Context::Scope context_scope(context);
-            const v8::Local<v8::Object> global = context->Global();
-
-            context->SetAlignedPointerInEmbedderData(kContextEmbedderData, this);
-            context_.Reset(isolate_, context);
-
-            // init module cache, and register the global 'require' function
+            // create context
             {
-                const v8::Local<v8::Object> cache_obj = v8::Object::New(isolate_);
-                const v8::Local<v8::Function> require_func = JSB_NEW_FUNCTION(context, Builtins::_require, {});
-                require_func->Set(context, jsb_name(this, cache), cache_obj).Check();
-                require_func->Set(context, impl::Helper::new_string_ascii(isolate_, "moduleId"), v8::String::Empty(isolate_)).Check();
-                global->Set(context, impl::Helper::new_string_ascii(isolate_, "require"), require_func).Check();
-                global->Set(context, impl::Helper::new_string_ascii(isolate_, "define"), JSB_NEW_FUNCTION(context, Builtins::_define, {})).Check();
-                module_cache_.init(isolate_, cache_obj);
-            }
+                v8::HandleScope handle_scope(isolate_);
 
-            internal::StringNames& names = internal::StringNames::get_singleton();
-
-            // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
-            if (internal::Settings::get_camel_case_bindings_enabled())
-            {
-                List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_class_list();
-
-                for (auto it = exposed_class_list.begin(); it != exposed_class_list.end(); ++it)
+                for (int index = 0; index < Symbols::kNum; ++index)
                 {
-                    String exposed_name = internal::NamingUtil::get_class_name(*it);
-
-                    if (exposed_name != *it)
-                    {
-                        names.add_replacement(*it, exposed_name);
-                    }
+                    symbols_[index].Reset(isolate_, v8::Symbol::New(isolate_));
                 }
 
-                List<Engine::Singleton> singleton_list;
-                Engine::get_singleton()->get_singletons(&singleton_list);
+                native_classes_.reserve(p_params.initial_class_slots);
+                script_classes_.reserve(p_params.initial_script_slots);
 
-                for (auto it = singleton_list.begin(); it != singleton_list.end(); ++it)
+                module_loaders_.insert("godot", memnew(GodotModuleLoader));
+                module_loaders_.insert("godot-jsb", memnew(BridgeModuleLoader));
+                EnvironmentStore::get_shared().add(this);
+
+                JSB_BENCHMARK_SCOPE(JSRealm, Construct);
+
+                const v8::Local<v8::Context> context = v8::Context::New(isolate_);
+                const v8::Context::Scope context_scope(context);
+                const v8::Local<v8::Object> global = context->Global();
+
+                context->SetAlignedPointerInEmbedderData(kContextEmbedderData, this);
+                context_.Reset(isolate_, context);
+
+                // init module cache, and register the global 'require' function
                 {
-                    String exposed_name = internal::NamingUtil::get_class_name(it->name);
-
-                    if (exposed_name != it->name)
-                    {
-                        names.add_replacement(it->name, exposed_name);
-                    }
+                    const v8::Local<v8::Object> cache_obj = v8::Object::New(isolate_);
+                    const v8::Local<v8::Function> require_func = JSB_NEW_FUNCTION(context, Builtins::_require, {});
+                    require_func->Set(context, jsb_name(this, cache), cache_obj).Check();
+                    require_func->Set(context, impl::Helper::new_string_ascii(isolate_, "moduleId"), v8::String::Empty(isolate_)).Check();
+                    global->Set(context, impl::Helper::new_string_ascii(isolate_, "require"), require_func).Check();
+                    global->Set(context, impl::Helper::new_string_ascii(isolate_, "define"), JSB_NEW_FUNCTION(context, Builtins::_define, {})).Check();
+                    module_cache_.init(isolate_, cache_obj);
                 }
 
-                List<StringName> utility_function_list;
-                Variant::get_utility_function_list(&utility_function_list);
+                internal::StringNames& names = internal::StringNames::get_singleton();
 
-                for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it)
+                // Populate StringNames replacement list so that classes can be lazily loaded by their exposed class name.
+                if (internal::Settings::get_camel_case_bindings_enabled())
                 {
-                    String exposed_name = internal::NamingUtil::get_member_name(*it);
+                    List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_original_class_list();
 
-                    if (exposed_name != *it)
+                    for (auto it = exposed_class_list.begin(); it != exposed_class_list.end(); ++it)
                     {
-                        names.add_replacement(*it, exposed_name);
+                        String exposed_name = internal::NamingUtil::get_class_name(*it);
+
+                        if (exposed_name != *it)
+                        {
+                            names.add_replacement(*it, exposed_name);
+                        }
+                    }
+
+                    List<Engine::Singleton> singleton_list;
+                    Engine::get_singleton()->get_singletons(&singleton_list);
+
+                    for (auto it = singleton_list.begin(); it != singleton_list.end(); ++it)
+                    {
+                        String exposed_name = internal::NamingUtil::get_class_name(it->name);
+
+                        if (exposed_name != it->name)
+                        {
+                            names.add_replacement(it->name, exposed_name);
+                        }
+                    }
+
+                    Vector<String> reserved_words = GodotJSScriptLanguage::get_singleton()->get_reserved_words();
+
+                    List<StringName> utility_function_list;
+                    Variant::get_utility_function_list(&utility_function_list);
+
+                    for (auto it = utility_function_list.begin(); it != utility_function_list.end(); ++it)
+                    {
+                        String exposed_name = internal::NamingUtil::get_member_name(*it);
+
+                        if (reserved_words.find(exposed_name) >= 0)
+                        {
+                            exposed_name = internal::NamingUtil::get_member_name("godot_" + exposed_name);
+                        }
+
+                        if (exposed_name != *it)
+                        {
+                            names.add_replacement(*it, exposed_name);
+                        }
+                    }
+
+                    const int constant_count = CoreConstants::get_global_constant_count();
+                    for (int index = 0; index < constant_count; ++index)
+                    {
+                        const StringName enum_name = CoreConstants::get_global_constant_enum(index);
+                        String exposed_name = internal::NamingUtil::get_class_name(enum_name);
+
+                        if (reserved_words.find(exposed_name) >= 0)
+                        {
+                            exposed_name = internal::NamingUtil::get_member_name("godot_" + exposed_name);
+                        }
+
+                        if (exposed_name != enum_name)
+                        {
+                            names.add_replacement(enum_name, exposed_name);
+                        }
                     }
                 }
-
-                const int constant_count = CoreConstants::get_global_constant_count();
-                for (int index = 0; index < constant_count; ++index)
-                {
-                    const StringName enum_name = CoreConstants::get_global_constant_enum(index);
-                    String exposed_name = internal::NamingUtil::get_class_name(enum_name);
-
-                    if (exposed_name != enum_name)
-                    {
-                        names.add_replacement(enum_name, exposed_name);
-                    }
-                }
-            }
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
-            Worker::register_(context, global);
+                Worker::register_(context, global);
 #endif
-            Essentials::register_(context, global);
-            register_primitive_bindings(this);
-        }
+                Essentials::register_(context, global);
+                register_primitive_bindings(this);
+            }
 
-        //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
-        start_debugger(p_params.debugger_port);
+            //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
+            start_debugger(p_params.debugger_port);
+        }
     }
 
     // no JS code should be executed in the destructor.
@@ -581,16 +589,16 @@ namespace jsb
         {
         case AsyncCall::TYPE_REF:       reference_object(p_binding, true); break;
         case AsyncCall::TYPE_DEREF:     reference_object(p_binding, false); break;
-        case AsyncCall::TYPE_UNLINK:    free_object(p_binding, FinalizationType::None); break;
         case AsyncCall::TYPE_GC_FREE:   free_object(p_binding, FinalizationType::Default); break;
         case AsyncCall::TYPE_TRANSFER_:
             {
-                //TODO need a better way to control lifetime of TransferObjectData?
-                TransferObjectData* transfer_data = (TransferObjectData*) p_binding;
+                //TODO need a better way to control lifetime of TransferData?
+                TransferData* transfer_data = (TransferData*) p_binding;
                 {
                     v8::Isolate::Scope isolate_scope(isolate_);
                     v8::HandleScope handle_scope(isolate_);
                     const v8::Local<v8::Context> context = context_.Get(isolate_);
+                    const v8::Context::Scope context_scope(context);
                     _on_worker_transfer(context, transfer_data);
                 }
                 memdelete(transfer_data);
@@ -614,10 +622,10 @@ namespace jsb
         return true;
     }
 
-    void Environment::_on_worker_transfer(const v8::Local<v8::Context>& p_context, const TransferObjectData* p_data)
+    void Environment::_on_worker_transfer(const v8::Local<v8::Context>& p_context, const TransferData* p_data)
     {
-        jsb_check(p_data->worker_id);
-        if (!object_db_.has_object(p_data->worker_id))
+        jsb_check(p_data->source_worker_id);
+        if (!object_db_.has_object(p_data->source_worker_id))
         {
             JSB_LOG(Error, "invalid worker");
             return;
@@ -626,44 +634,17 @@ namespace jsb
         //TODO 0. HOW TO HANDLE COMPLICATED SITUATIONS? SUCH AS NESTED OBJECTS?
         jsb_nop();
 
-        if (p_data->target.get_type() == Variant::Type::OBJECT)
-        {
-            const ObjectID target_id = p_data->target;
-            Object* instance = jsb::compat::ObjectDB::get_instance(target_id);
-            if (!instance)
-            {
-                JSB_LOG(Error, "transferred object not found: %d", (uint64_t) target_id);
-                return;
-            }
-
-            // restore the object state if it's a GodotJSScript
-            if (!p_data->script_path.is_empty())
-            {
-                // 1. create a script and script instance
-                // 2. attach the script & script instance to the object
-                const Ref<GodotJSScript> script = ResourceLoader::load(p_data->script_path);
-                jsb_check(script.is_valid());
-                jsb_unused(script->can_instantiate());
-                ScriptInstance* script_instance = script->instance_create(instance, false);
-                jsb_check(script_instance);
-
-                // 3. restore the object state
-                for (const Pair<StringName, Variant>& pair : p_data->state)
-                {
-                    script_instance->set(pair.first, pair.second);
-                }
-            }
-        }
+        transfer_in(*p_data);
 
         // call 'ontransfer'
         {
-            ObjectHandleConstPtr handle = object_db_.try_get_object(p_data->worker_id);
+            ObjectHandleConstPtr handle = object_db_.try_get_object(p_data->source_worker_id);
             const v8::Local<v8::Object> worker = handle->ref_.Get(isolate_).As<v8::Object>();
             jsb_check(!worker.IsEmpty());
             handle = nullptr;
 
             v8::Local<v8::Value> transferred_obj;
-            if (!TypeConvert::gd_var_to_js(isolate_, p_context, p_data->target, transferred_obj) || transferred_obj.IsEmpty())
+            if (!TypeConvert::gd_var_to_js(isolate_, p_context, p_data->variant, transferred_obj) || transferred_obj.IsEmpty())
             {
                 JSB_LOG(Error, "failed to convert object to JS");
                 return;
@@ -687,13 +668,22 @@ namespace jsb
         }
     }
 
-    void _invoke(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Function>& p_callback, const Message* p_message)
+    void _invoke(Environment* p_env, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Function>& p_callback, const Message* p_message)
     {
+        v8::Isolate *isolate = p_env->get_isolate();
+
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         v8::Local<v8::Value> value;
         if (p_message)
         {
-            v8::ValueDeserializer deserializer(p_isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size());
+#if JSB_WITH_V8
+            Serialization::VariantDeserializerDelegate delegate(p_env, p_message->get_transfers());
+            v8::ValueDeserializer deserializer(isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size(), &delegate);
+            delegate.SetSerializer(&deserializer);
+#else
+            v8::ValueDeserializer deserializer(isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size());
+#endif
+
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
             {
@@ -708,10 +698,10 @@ namespace jsb
             }
         }
 
-        const impl::TryCatch try_catch(p_isolate);
+        const impl::TryCatch try_catch(isolate);
         const v8::MaybeLocal<v8::Value> rval = p_message
-            ? p_callback->Call(p_context, v8::Undefined(p_isolate), 1, &value)
-            : p_callback->Call(p_context, v8::Undefined(p_isolate), 0, nullptr);
+            ? p_callback->Call(p_context, v8::Undefined(isolate), 1, &value)
+            : p_callback->Call(p_context, v8::Undefined(isolate), 0, nullptr);
         jsb_unused(rval);
         if (try_catch.has_caught())
         {
@@ -744,7 +734,7 @@ namespace jsb
                 JSB_LOG(Error, "onmessage is not a function");
                 return;
             }
-            _invoke(isolate_, p_context, callback.As<v8::Function>(), &p_message);
+            _invoke(this, p_context, callback.As<v8::Function>(), &p_message);
             break;
         case Message::TYPE_READY:
             if (!obj->Get(p_context, jsb_name(this, onready)).ToLocal(&callback) || !callback->IsFunction())
@@ -752,7 +742,7 @@ namespace jsb
                 JSB_LOG(Error, "onready is not a function");
                 return;
             }
-            _invoke(isolate_, p_context, callback.As<v8::Function>(), nullptr);
+            _invoke(this, p_context, callback.As<v8::Function>(), nullptr);
             break;
         case Message::TYPE_ERROR:
             if (!obj->Get(p_context, jsb_name(this, onerror)).ToLocal(&callback) || !callback->IsFunction())
@@ -760,7 +750,7 @@ namespace jsb
                 JSB_LOG(Error, "onerror is not a function");
                 return;
             }
-            _invoke(isolate_, p_context, callback.As<v8::Function>(), &p_message);
+            _invoke(this, p_context, callback.As<v8::Function>(), &p_message);
             break;
         default:
             JSB_LOG(Error, "unknown message type %d", p_message.get_type());
@@ -797,7 +787,7 @@ namespace jsb
                     List<Pair<StringName, Variant>> state;
                     script_instance->get_property_state(state);
                     p_pointer->set_script_instance(nullptr);
-                    ScriptInstance* new_script_instance = script->instance_create(p_object, p_pointer);
+                    ScriptInstance* new_script_instance = script->instance_create(p_object, p_pointer, false);
                     jsb_check(new_script_instance);
                     jsb_unused(new_script_instance);
                     for (const Pair<StringName, Variant>& pair : state)
@@ -882,8 +872,7 @@ namespace jsb
 
     void* Environment::get_verified_object(const v8::Local<v8::Object>& p_obj, NativeClassType::Type p_type) const
     {
-        if (!TypeConvert::is_object(p_obj, p_type)
-            || (NativeClassType::Type) (uintptr_t) p_obj->GetAlignedPointerFromInternalField(IF_ClassType) != p_type)
+        if (!TypeConvert::is_object(p_obj, p_type))
         {
             return nullptr;
         }
@@ -936,7 +925,7 @@ namespace jsb
     // }
 
     // the only case `free_object` called from background threads is when it's called from InstanceBindingCallbacks::free_callback
-    // in this case, the only modified state is object_db_ (p_finalize is false)
+    // in this case, the only modified state is object_db_ (p_finalize is FinalizationType::None)
     // ---
     // whether the ObjectHandlePtr lock satisfies the requirement of thread safety is still unknown
     void Environment::free_object(void* p_pointer, FinalizationType p_finalize)
@@ -1069,10 +1058,10 @@ namespace jsb
     JavaScriptModule* Environment::_load_module(const String& p_parent_id, const String& p_module_id)
     {
         JSB_BENCHMARK_SCOPE(JSRealm, _load_module);
-        JavaScriptModule* existing_module = module_cache_.find(p_module_id);
-        if (existing_module && !existing_module->is_reloading())
+        JavaScriptModule* resolved_module = module_cache_.find(p_module_id);
+        if (resolved_module && !resolved_module->is_reloading())
         {
-            return existing_module;
+            return resolved_module;
         }
 
         v8::Isolate* isolate = this->isolate_;
@@ -1082,7 +1071,7 @@ namespace jsb
         // find loader with the module id
         if (IModuleLoader* loader = this->find_module_loader(p_module_id))
         {
-            jsb_checkf(!existing_module, "module loader does not support reloading");
+            jsb_checkf(!resolved_module, "module loader does not support reloading");
             JavaScriptModule& module = module_cache_.insert(isolate, context, p_module_id, false, false);
 
             //NOTE the loader should throw error if failed
@@ -1118,35 +1107,37 @@ namespace jsb
             const StringName module_id = source_info.source_filepath;
 
             // check again with the resolved module_id
-            existing_module = module_cache_.find(module_id);
-            if (existing_module && !existing_module->is_reloading())
-            {
-                return existing_module;
-            }
+            resolved_module = module_cache_.find(module_id);
+
+            v8::Local<v8::Object> module_obj;
 
             // supported module properties: id, filename, cache, loaded, exports, children
-            if (existing_module)
+            if (resolved_module)
             {
-                jsb_check(existing_module->id == module_id);
-                jsb_check(existing_module->source_info.source_filepath == source_info.source_filepath);
-
-                JSB_LOG(VeryVerbose, "reload module %s", module_id);
-                existing_module->mark_as_reloaded();
-                if (!resolver->load(this, source_info.source_filepath, *existing_module))
+                if (resolved_module->is_reloading())
                 {
-                    return nullptr;
+                    jsb_check(resolved_module->id == module_id);
+                    jsb_check(resolved_module->source_info.source_filepath == source_info.source_filepath);
+
+                    JSB_LOG(VeryVerbose, "reload module %s", module_id);
+                    resolved_module->mark_as_reloaded();
+                    if (!resolver->load(this, source_info.source_filepath, *resolved_module))
+                    {
+                        return nullptr;
+                    }
+                    ScriptClassInfo::_parse_script_class(context, *resolved_module);
                 }
-                ScriptClassInfo::_parse_script_class(context, *existing_module);
-                return existing_module;
+
+                module_obj = resolved_module->module.Get(isolate);
             }
             else
             {
                 JSB_LOG(Verbose, "instantiating module %s", module_id);
                 JavaScriptModule& module = module_cache_.insert(isolate, context, module_id, true, false);
                 v8::Local<v8::Object> exports_obj = v8::Object::New(isolate);
-                v8::Local<v8::Object> module_obj = module.module.Get(isolate);
 
                 // init the new module obj
+                module_obj = module.module.Get(isolate);
                 module_obj->Set(context, jsb_name(this, children), v8::Array::New(isolate)).Check();
                 module_obj->Set(context, jsb_name(this, exports), exports_obj).Check();
                 module.source_info = source_info;
@@ -1159,29 +1150,6 @@ namespace jsb
                     return nullptr;
                 }
 
-                // build the module tree
-                if (!p_parent_id.is_empty())
-                {
-                    if (const JavaScriptModule* parent_ptr = module_cache_.find(p_parent_id))
-                    {
-                        const v8::Local<v8::Object> parent_module = parent_ptr->module.Get(isolate);
-                        if (v8::Local<v8::Value> temp; parent_module->Get(context, jsb_name(this, children)).ToLocal(&temp) && temp->IsArray())
-                        {
-                            const v8::Local<v8::Array> children = temp.As<v8::Array>();
-                            const uint32_t children_num = children->Length();
-                            children->Set(context, children_num, module_obj).Check();
-                        }
-                        else
-                        {
-                            JSB_LOG(Error, "can not access children on '%s'", p_parent_id);
-                        }
-                    }
-                    else
-                    {
-                        JSB_LOG(Warning, "parent module not found with the name '%s'", p_parent_id);
-                    }
-                }
-
                 module.on_load(isolate, context);
                 {
                     const impl::TryCatch try_catch_run(isolate);
@@ -1191,26 +1159,53 @@ namespace jsb
                         JSB_LOG(Error, "something wrong when parsing '%s'\n%s", module_id, BridgeHelper::get_exception(try_catch_run));
                     }
                 }
-                return &module;
+
+                resolved_module = &module;
             }
+
+            // build the module tree
+            if (!p_parent_id.is_empty())
+            {
+                if (const JavaScriptModule* parent_ptr = module_cache_.find(p_parent_id))
+                {
+                    const v8::Local<v8::Object> parent_module = parent_ptr->module.Get(isolate);
+                    if (v8::Local<v8::Value> temp; parent_module->Get(context, jsb_name(this, children)).ToLocal(&temp) && temp->IsArray())
+                    {
+                        const v8::Local<v8::Array> children = temp.As<v8::Array>();
+                        const uint32_t children_num = children->Length();
+                        children->Set(context, children_num, module_obj).Check();
+                    }
+                    else
+                    {
+                        JSB_LOG(Error, "can not access children on '%s'", p_parent_id);
+                    }
+                }
+                else
+                {
+                    JSB_LOG(Warning, "parent module not found with the name '%s'", p_parent_id);
+                }
+            }
+
+            return resolved_module;
         }
 
         impl::Helper::throw_error(isolate, jsb_format("unknown module: %s", normalized_id));
         return nullptr;
     }
 
-    NativeObjectID Environment::crossbind(Object* p_this, ScriptClassID p_class_id)
+    NativeObjectID Environment::crossbind(Object* p_this, ScriptClassID p_class_id, const Variant** p_args, int p_argcount)
     {
         this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = context_.Get(isolate);
         v8::Context::Scope context_scope(context);
 
-        // In Editor, the script can be attached to an Object after it created in JS (e.g. 'enter_tree' as a child node of a script attached parent node)
+        // Can occur at runtime if object.set_script(...) is used, or in the editor due to hot-reloading etc.
         if (const NativeObjectID object_id = this->try_get_object_id(p_this))
         {
-            JSB_LOG(Verbose, "crossbinding on a binded object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
+            JSB_LOG(Verbose, "crossbinding on previously bound object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
 
             //TODO may not work in this way
             _rebind(isolate, context, p_this, p_class_id);
@@ -1218,24 +1213,53 @@ namespace jsb
         }
 
         StringName js_class_name;
-        NativeClassID native_class_id;
         v8::Local<v8::Object> class_obj;
 
         {
             const ScriptClassInfoPtr class_info = this->get_script_class(p_class_id);
             js_class_name = class_info->js_class_name;
-            native_class_id = class_info->native_class_id;
             class_obj = class_info->js_class.Get(isolate);
             JSB_LOG(VeryVerbose, "crossbind %s %s(%d) %d", class_info->js_class_name, class_info->native_class_name, class_info->native_class_id, (uintptr_t) p_this);
             jsb_check(!class_obj->IsNullOrUndefined());
         }
 
+        v8::Local<v8::Array> arguments = v8::Array::New(isolate, p_argcount);
+
+        for (int index = 0; index < p_argcount; ++index)
+        {
+            v8::Local<v8::Value> argument;
+
+            if (TypeConvert::gd_var_to_js(isolate, context, *p_args[index], argument))
+            {
+                arguments->Set(context, index, argument);
+            }
+            else
+            {
+                return {};
+            }
+        }
+
         const impl::TryCatch try_catch_run(isolate);
-        v8::Local<v8::Value> identifier = jsb_symbol(this, CrossBind);
-        const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
+
+        v8::Local<v8::Value> class_prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
+        v8::Local<v8::Function> new_target = impl::Helper::new_noop_function(isolate_, context);
+        new_target->Set(context, jsb_name(this, prototype), class_prototype).Check();
+        new_target->Set(context, jsb_symbol(this, ConstructorBindObject), v8::External::New(isolate, p_this)).Check();
+
+        v8::Local<v8::Object> reflect = context->Global()->Get(context, jsb_name(this, Reflect)).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Function> reflect_construct = reflect->Get(context, jsb_name(this, construct)).ToLocalChecked().As<v8::Function>();
+
+        v8::Local<v8::Value> reflect_args[] = {
+                class_obj,
+                arguments,
+                new_target
+        };
+
+        v8::MaybeLocal<v8::Value> constructed_value = reflect_construct->Call(context, reflect, 3, reflect_args);
+
         if (try_catch_run.has_caught())
         {
-            JSB_LOG(Error, "something wrong when constructing '%s'\n%s", js_class_name, BridgeHelper::get_exception(try_catch_run));
+            JSB_LOG(Error, "something went wrong when constructing '%s'\n%s", js_class_name, BridgeHelper::get_exception(try_catch_run));
             return {};
         }
 
@@ -1246,8 +1270,8 @@ namespace jsb
             JSB_LOG(Error, "bad instance '%s", js_class_name);
             return {};
         }
-        const NativeObjectID object_id = this->bind_godot_object(native_class_id, p_this, instance.As<v8::Object>());
-        return object_id;
+
+        return this->try_get_object_id(p_this);
     }
 
     void Environment::rebind(Object *p_this, ScriptClassID p_class_id)
@@ -1289,7 +1313,39 @@ namespace jsb
         }
     }
 
-    v8::Local<v8::Function> Environment::_new_require_func(const String &p_module_id, bool p_expose_main)
+    void Environment::_execute_class_post_bind(const StringName& p_class_name, const v8::Local<v8::Function>& p_class)
+    {
+        const JavaScriptModule& typeloader = *this->get_module_cache().find(jsb_string_name(godot_typeloader));
+        const v8::Local<v8::Value> typeloader_exports = typeloader.exports.Get(this->get_isolate());
+        jsb_check(!typeloader_exports.IsEmpty() && typeloader_exports->IsObject());
+        const v8::Local<v8::Context> context = context_.Get(isolate_);
+        const v8::Local<v8::Value> post_bind_val = typeloader_exports.As<v8::Object>()->Get(context, jsb_name(this, godot_postbind)).ToLocalChecked();
+        jsb_check(!post_bind_val.IsEmpty() && post_bind_val->IsFunction());
+        const v8::Local<v8::Function> post_bind = post_bind_val.As<v8::Function>();
+        v8::Local<v8::Value> argv[] = { this->get_string_value(p_class_name), p_class };
+        v8::MaybeLocal<v8::Value> rval = post_bind->Call(context, v8::Undefined(isolate_), std::size(argv), argv);
+        jsb_unused(rval);
+        jsb_check(rval.ToLocalChecked()->IsUndefined());
+    }
+
+    void Environment::_execute_deferred()
+    {
+        jsb_check(!_execution_deferred);
+
+        if (deferred_class_post_binds_.is_empty())
+        {
+            return;
+        }
+
+        for (const auto& pair : deferred_class_post_binds_)
+        {
+            _execute_class_post_bind(pair.first, pair.second);
+        }
+
+        deferred_class_post_binds_.clear();
+    }
+
+    v8::Local<v8::Function> Environment::_new_require_func(const String& p_module_id, bool p_expose_main)
     {
         const v8::Local<v8::Context> context = context_.Get(isolate_);
         const v8::Local<v8::String> module_id = impl::Helper::new_string(isolate_, p_module_id);
@@ -1403,17 +1459,13 @@ namespace jsb
 
     void Environment::on_class_post_bind(const StringName& p_class_name, const v8::Local<v8::Function>& p_class)
     {
-        const JavaScriptModule& typeloader = *this->get_module_cache().find(jsb_string_name(godot_typeloader));
-        const v8::Local<v8::Value> typeloader_exports = typeloader.exports.Get(this->get_isolate());
-        jsb_check(!typeloader_exports.IsEmpty() && typeloader_exports->IsObject());
-        const v8::Local<v8::Context> context = context_.Get(isolate_);
-        const v8::Local<v8::Value> post_bind_val = typeloader_exports.As<v8::Object>()->Get(context, jsb_name(this, godot_postbind)).ToLocalChecked();
-        jsb_check(!post_bind_val.IsEmpty() && post_bind_val->IsFunction());
-        const v8::Local<v8::Function> post_bind = post_bind_val.As<v8::Function>();
-        v8::Local<v8::Value> argv[] = { this->get_string_value(p_class_name), p_class };
-        v8::MaybeLocal<v8::Value> rval = post_bind->Call(context, v8::Undefined(isolate_), std::size(argv), argv);
-        jsb_unused(rval);
-        jsb_check(rval.ToLocalChecked()->IsUndefined());
+        if (_execution_deferred)
+        {
+            deferred_class_post_binds_.push_back({ p_class_name, p_class });
+            return;
+        }
+
+        _execute_class_post_bind(p_class_name, p_class);
     }
 
     JSValueMove Environment::eval_source(const char* p_source, int p_length, const String& p_filename, Error& r_err)
@@ -1470,6 +1522,7 @@ namespace jsb
             if (strong_ref.unref())
             {
                 v8::Isolate* isolate = get_isolate();
+                v8::Isolate::Scope isolate_scope(isolate);
                 v8::HandleScope handle_scope(isolate);
                 if (jsb_likely(!strong_ref.object_.IsEmpty()))
                 {
@@ -1547,18 +1600,31 @@ namespace jsb
         }
 
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
         const v8::Local<v8::Object> self = this->get_object(p_object_id);
         const v8::Local<v8::String> name = this->get_string_value(p_info.name);
         v8::Local<v8::Value> value;
-        if (!self->Get(context, name).ToLocal(&value))
+
+        impl::TryCatch try_catch(isolate);
+        bool get_result = self->Get(context, name).ToLocal(&value);
+
+        if (try_catch.has_caught())
+        {
+            JSB_LOG(Error, "Failed to get property '%s' on a %s: %s", p_info.name, p_info.class_name, jsb::BridgeHelper::get_exception(try_catch));
+            return false;
+        }
+
+        if (!get_result)
         {
             return false;
         }
+
         if (!TypeConvert::js_to_gd_var(isolate, context, value, p_info.type, r_val))
         {
+            JSB_LOG(Error, "Failed to get property '%s' on a %s: Failed to convert result to a Godot type", p_info.name, p_info.class_name);
             return false;
         }
         return true;
@@ -1573,6 +1639,7 @@ namespace jsb
         }
 
         v8::Isolate* isolate = get_isolate();
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
         const v8::Local<v8::Context> context = this->get_context();
         v8::Context::Scope context_scope(context);
@@ -1584,8 +1651,16 @@ namespace jsb
             return false;
         }
 
-        self->Set(context, name, value).Check();
-        return true;
+        impl::TryCatch try_catch(isolate);
+        v8::Maybe<bool> set_result = self->Set(context, name, value);
+
+        if (try_catch.has_caught())
+        {
+            JSB_LOG(Error, "Failed to set property '%s' on a %s: %s", p_info.name, p_info.class_name, jsb::BridgeHelper::get_exception(try_catch));
+            return false;
+        }
+
+        return set_result.IsJust();
     }
 
     bool Environment::get_default_property_value(ScriptClassInfo& p_class_info, const StringName& p_name, Variant& r_val)
@@ -1617,10 +1692,9 @@ namespace jsb
         v8::Context::Scope context_scope(context);
 
         {
-            v8::Local<v8::Value> identifier = jsb_symbol(this, CDO);
             const v8::Local<v8::Object> class_obj = p_class_info.js_class.Get(isolate);
             const impl::TryCatch try_catch_run(isolate);
-            const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 1, &identifier);
+            const v8::MaybeLocal<v8::Value> constructed_value = class_obj->CallAsConstructor(context, 0, nullptr);
 
             if (try_catch_run.has_caught())
             {
@@ -1638,6 +1712,7 @@ namespace jsb
             }
 
             const v8::Local<v8::Object> class_default_object = instance.As<v8::Object>();
+
             // read from the class default object
             for (auto& prop_kv : p_class_info.properties)
             {
@@ -1653,6 +1728,16 @@ namespace jsb
                     ::jsb::internal::VariantUtil::construct_variant(prop_kv.value.default_value, prop_info.type);
                 }
             }
+
+            Object* pointer = (Object*) get_verified_object(class_default_object, NativeClassType::GodotObject);
+
+            if (!pointer)
+            {
+                JSB_LOG(Error, "failed to obtain reference to instantiated '%s' default object", p_class_info.js_class_name);
+                return;
+            }
+
+            memdelete(pointer);
         }
     }
 
@@ -1709,7 +1794,6 @@ namespace jsb
                 }
                 else if (element_value->IsFunction())
                 {
-                    jsb_not_implemented(true, "function evaluator not implemented yet");
                     v8::Local<v8::Value> argv[] = { self };
                     const impl::TryCatch try_catch_run(isolate);
                     v8::MaybeLocal<v8::Value> result = element_value.As<v8::Function>()->Call(context, self, std::size(argv), argv);
@@ -1720,9 +1804,22 @@ namespace jsb
                             BridgeHelper::get_exception(try_catch_run));
                         return;
                     }
-                    if (!result.IsEmpty())
+
+                    v8::Maybe<bool> assignment = result.IsEmpty()
+                        ? self->Set(context, element_name, v8::Local<v8::Value>(v8::Undefined(isolate)))
+                        : self->Set(context, element_name, result.ToLocalChecked());
+                    if (try_catch_run.has_caught())
                     {
-                        self->Set(context, element_name, result.ToLocalChecked()).Check();
+                        JSB_LOG(Warning, "something wrong assigning onready result to '%s'\n%s",
+                            impl::Helper::to_string(isolate, element_name),
+                            BridgeHelper::get_exception(try_catch_run));
+                        return;
+                    }
+                    if (assignment.IsNothing())
+                    {
+                        JSB_LOG(Warning, "failed to assign onready result to '%s'\n%s",
+                            impl::Helper::to_string(isolate, element_name));
+                        return;
                     }
                 }
             }
@@ -1839,34 +1936,83 @@ namespace jsb
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
     }
 
-    void Environment::transfer_object(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, const Variant& p_target)
+    void Environment::transfer_out(NativeObjectID p_worker_handle_id, int transfer_index, const Variant& p_variant, TransferData& r_transfer_data)
     {
-        if (p_target.get_type() == Variant::OBJECT)
-        {
-            Object* obj = p_target;
-            jsb_check(obj && p_from->object_db_.has_object(obj) && jsb::compat::ObjectDB::get_instance(p_target));
+        r_transfer_data.source_worker_id = p_worker_handle_id;
+        r_transfer_data.transfer_index = transfer_index;
 
-            String script_path;
-            List<Pair<StringName, Variant>> state;
+        if (p_variant.get_type() == Variant::OBJECT)
+        {
+            Object* obj = p_variant;
+            jsb_check(obj && object_db_.has_object(obj) && jsb::compat::ObjectDB::get_instance(p_variant));
+
             if (ScriptInstance* script_instance = obj->get_script_instance())
             {
                 jsb_check(script_instance);
                 const Ref script = script_instance->get_script();
                 jsb_check(script.is_valid());
 
-                script_instance->get_property_state(state);
-                script_path = script->get_path();
+                script_instance->get_property_state(r_transfer_data.state);
+                r_transfer_data.script_path = script->get_path();
 
                 obj->set_script_instance(nullptr);
             }
 
-            // break the link in the host environment
-            p_from->free_object(obj, FinalizationType::None);
-            p_to->add_async_call(AsyncCall::TYPE_TRANSFER_, memnew(TransferObjectData(p_worker_handle_id, p_target, script_path, state)));
+            free_object(obj, FinalizationType::None);
+        }
+
+        // For now, we don't do anything special with variants since Godot's variant types are thread safe and use
+        // copy-on-write semantics. Technically, it may be advantageous for us to (in future?) clear the variant in the
+        // source environment since Godot has optimizations in place that will skip reallocation of the underlying data
+        // upon mutation if there's a single reference to that data.
+
+        r_transfer_data.variant = p_variant;
+    }
+
+    void Environment::transfer_in(const TransferData& p_data)
+    {
+        if (p_data.variant.get_type() == Variant::Type::OBJECT)
+        {
+            const ObjectID object_id = p_data.variant;
+            Object* instance = jsb::compat::ObjectDB::get_instance(object_id);
+
+            if (!instance)
+            {
+                JSB_LOG(Error, "transferred object not found: %d", (uint64_t) object_id);
+                return;
+            }
+
+            // restore the object state if it's a GodotJSScript
+            if (!p_data.script_path.is_empty())
+            {
+                // 1. create a script and script instance
+                // 2. attach the script & script instance to the object
+                const Ref<GodotJSScript> script = ResourceLoader::load(p_data.script_path);
+                jsb_check(script.is_valid());
+                jsb_unused(script->can_instantiate());
+                ScriptInstance* script_instance = script->instance_construct(instance, false);
+                jsb_check(script_instance);
+
+                // 3. restore the object state
+                for (const Pair<StringName, Variant>& pair : p_data.state)
+                {
+                    script_instance->set(pair.first, pair.second);
+                }
+            }
+        }
+    }
+
+    void Environment::transfer_to_host(Environment* p_from, Environment* p_to, NativeObjectID p_worker_handle_id, const Variant& p_variant)
+    {
+        if (p_variant.get_type() == Variant::OBJECT)
+        {
+            TransferData* transfer_data = memnew(TransferData);
+            p_from->transfer_out(p_worker_handle_id, 0, p_variant, *transfer_data);
+            p_to->add_async_call(AsyncCall::TYPE_TRANSFER_, transfer_data);
         }
         else
         {
-            p_to->add_async_call(AsyncCall::TYPE_TRANSFER_, memnew(TransferObjectData(p_worker_handle_id, p_target, {}, {})));
+            p_to->add_async_call(AsyncCall::TYPE_TRANSFER_, memnew(TransferData(p_worker_handle_id, 0, p_variant)));
         }
     }
 

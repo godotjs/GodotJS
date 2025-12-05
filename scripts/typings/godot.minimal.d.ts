@@ -9,6 +9,7 @@ declare module "godot-jsb" {
         Object as GObject,
         PackedByteArray,
         PropertyInfo,
+        Signal,
         StringName,
         Variant,
     } from "godot";
@@ -92,27 +93,34 @@ declare module "godot-jsb" {
         hint?: number;
         hint_string?: string;
         usage?: number;
+        cache?: boolean;
     }
 
-    namespace internal {
+    export namespace internal {
         type OnReadyEvaluatorFunc = (self: any) => any;
+        type GObjectConstructor = abstract new (...args: any[]) => GObject;
 
-        interface RPCConfig {
-            mode?: MultiplayerAPI.RPCMode,
-            sync?: boolean,
+        function add_script_signal(prototype: GObject, name: string): void;
+        function add_script_property(prototype: GObject, details: ScriptPropertyInfo): void;
+        function add_script_ready(prototype: GObject, details: {
+            name: string,
+            evaluator: string | OnReadyEvaluatorFunc
+        }): void;
+        function add_script_tool(constructor: GObjectConstructor): void;
+        function add_script_icon(constructor: GObjectConstructor, path: string): void;
+        function add_script_rpc(prototype: GObject, property_key: string, config: {
+            rpc_mode?: MultiplayerAPI.RPCMode,
+            call_local?: boolean,
             transfer_mode?: MultiplayerPeer.TransferMode,
-            transfer_channel?: number,
-        }
+            channel?: number,
+        }): void;
 
-        function add_script_signal(target: any, name: string): void;
-        function add_script_property(target: any, details: ScriptPropertyInfo): void;
-        function add_script_ready(target: any, details: { name: string, evaluator: string | OnReadyEvaluatorFunc }): void;
-        function add_script_tool(target: any): void;
-        function add_script_icon(target: any, path: string): void;
-        function add_script_rpc(target: any, property_key: string, config: RPCConfig): void;
+        function create_script_signal_getter(name: string): (this: GObject) => Signal;
+        function create_script_cached_property_updater(name: string): (this: GObject, value?: unknown) => void;
 
         // 0: deprecated, 1: experimental, 2: help
-        function set_script_doc(target: any, property_key: undefined | string, field: 0 | 1 | 2, message: string): void;
+        function set_script_doc(target: GObjectConstructor, property_key: undefined, field: 0 | 1 | 2, message: string): void;
+        function set_script_doc(target: GObject, property_key: string, field: 0 | 1 | 2, message: string): void;
 
         function add_module(id: string, obj: any): void;
         function find_module(id: string): any;
@@ -176,6 +184,7 @@ declare module "godot-jsb" {
         // we treat godot MethodInfo/MethodBind as the same thing here for simplicity
         //NOTE some fields will not be set if it's actually a MethodInfo struct
         interface MethodBind {
+            internal_name: string;
             id: number;
             name: string;
 
@@ -191,6 +200,7 @@ declare module "godot-jsb" {
         }
 
         interface PropertySetGetInfo {
+            internal_name: string;
             name: string;
 
             type: Variant.Type;
@@ -207,6 +217,7 @@ declare module "godot-jsb" {
         }
 
         interface SignalInfo {
+            internal_name: string;
             name: string;
             method_: MethodBind;
         }
@@ -255,9 +266,9 @@ declare module "godot-jsb" {
             // true only if is_keyed
             is_keyed: boolean;
 
-            constructors: Array<ConstructorInfo>;
-            operators: Array<OperatorInfo>;
-            properties: Array<PrimitiveGetSetInfo>;
+            constructors?: Array<ConstructorInfo>;
+            operators?: Array<OperatorInfo>;
+            properties?: Array<PrimitiveGetSetInfo>;
             constants?: Array<PrimitiveConstantInfo>;
         }
 

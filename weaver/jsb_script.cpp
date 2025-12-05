@@ -83,7 +83,7 @@ StringName GodotJSScript::get_instance_base_type() const
     return is_valid() ? script_class_info_.native_class_name : StringName();
 }
 
-ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed)
+ScriptInstance* GodotJSScript::instance_and_native_object_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed)
 {
     jsb_check(is_valid());
     jsb_check(loaded_);
@@ -139,13 +139,17 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
     return instance;
 }
 
-// this should only be called from godot internal
-ScriptInstance* GodotJSScript::instance_create(Object* p_this, bool p_is_temp_allowed)
+ScriptInstance* GodotJSScript::instance_construct(Object* p_this, bool p_is_temp_allowed, const Variant** p_args, int p_argcount)
 {
     jsb_check(is_valid());
     jsb_check(loaded_);
     JSB_LOG(Verbose, "create instance %d of %s(%s)", (uintptr_t) p_this, script_class_info_.native_class_name, script_class_info_.module_id);
-    jsb_check(ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name));
+
+    if (!ClassDB::is_parent_class(p_this->get_class_name(), script_class_info_.native_class_name))
+    {
+        JSB_LOG(Error, "GodotJS class %s (%s) cannot be instantiated for a %s, it requires a %s", script_class_info_.js_class_name, script_class_info_.module_id, p_this->get_class_name(), script_class_info_.native_class_name);
+        return nullptr;
+    }
 
     jsb::JSEnvironment env(get_path(), p_is_temp_allowed);
     if (env.is_shadow())
@@ -180,7 +184,9 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this, bool p_is_temp_al
         MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
         instances_.insert(instance->owner_);
     }
-    instance->object_id_ = env->crossbind(p_this, instance->class_id_);
+
+    instance->object_id_ = env->crossbind(p_this, instance->class_id_, p_args, p_argcount);
+
     if (!instance->object_id_)
     {
         instance->script_ = Ref<GodotJSScript>();
@@ -193,6 +199,8 @@ ScriptInstance* GodotJSScript::instance_create(Object* p_this, bool p_is_temp_al
         JSB_LOG(Error, "Error constructing a GodotJSScriptInstance");
         return nullptr;
     }
+
+    instance->postbind();
 
     return instance;
 }
@@ -423,7 +431,9 @@ bool GodotJSScript::get_property_default_value(const StringName& p_property, Var
         : false;
 }
 
-#if GODOT_4_4_OR_NEWER
+#if GODOT_4_5_OR_NEWER
+const Variant GodotJSScript::get_rpc_config() const
+#elif GODOT_4_4_OR_NEWER
 Variant GodotJSScript::get_rpc_config() const
 #else
 const Variant GodotJSScript::get_rpc_config() const
@@ -533,8 +543,17 @@ void GodotJSScript::load_module_immediately()
                 Object* obj = E->get();
                 jsb_check(obj->get_script() == Ref(this));
                 jsb_check(env->verify_object(obj));
-                jsb_check(ClassDB::is_parent_class(env->get_script_class(module->script_class_id)->native_class_name, obj->get_class_name()));
-                env->rebind(obj, module->script_class_id);
+
+                if (ClassDB::is_parent_class(env->get_script_class(module->script_class_id)->native_class_name, obj->get_class_name()))
+                {
+                    env->rebind(obj, module->script_class_id);
+                }
+                else
+                {
+                    JSB_LOG(Warning, "Cannot rebind class %s (%s) on %s, it requires a %s", script_class_info_.js_class_name, script_class_info_.module_id, obj->get_class_name(), env->get_script_class(module->script_class_id)->native_class_name);
+                    obj->set_script(Ref<Script>());
+                }
+
                 E = N;
             }
         }
@@ -626,12 +645,34 @@ void GodotJSScript::_update_exports_values(List<PropertyInfo>& r_props, HashMap<
     }
 }
 
+Variant GodotJSScript::_new(const Variant** p_args, int p_argcount, Callable::CallError &r_error)
+{
+    if (!is_valid())
+    {
+        JSB_LOG(Error, "Unable to create new instance. The script was not properly loaded (%s)", get_path());
+        return Variant();
+    }
+
+    r_error.error = Callable::CallError::CALL_OK;
+    Object *owner = ClassDB::instantiate(script_class_info_.native_class_name);
+
+    ScriptInstance *script_instance = instance_construct(owner, false, p_args, p_argcount);
+
+    if (!script_instance)
+    {
+        memdelete(owner);
+        return Variant();
+    }
+
+    return owner;
+}
+
 bool GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_update)
 {
     // do not crash the engine if the script not loaded successfully
     if (!is_valid())
     {
-        JSB_LOG(Error, "the script not properly loaded (%s)", get_path());
+        JSB_LOG(Error, "script failed to load (%s)", get_path());
         return false;
     }
 
@@ -710,6 +751,10 @@ bool GodotJSScript::_update_exports(PlaceHolderScriptInstance* p_instance_to_upd
     }
 
     return changed;
+}
+
+void GodotJSScript::_bind_methods() {
+    ClassDB::bind_vararg_method(METHOD_FLAGS_DEFAULT, "new", &GodotJSScript::_new, MethodInfo("new"));
 }
 
 void GodotJSScript::reload_from_file()

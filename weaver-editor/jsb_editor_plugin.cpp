@@ -7,7 +7,7 @@
 enum
 {
     MENU_ID_INSTALL_TS_PROJECT,
-    MENU_ID_GENERATE_GODOT_DTS,
+    MENU_ID_GENERATE_TYPES,
     MENU_ID_CLEANUP_INVALID_FILES,
 };
 
@@ -48,8 +48,8 @@ void GodotJSEditorPlugin::_notification(int p_what)
         singleton_ = this;
         // stupid self watching, but there is no other way which work both in module and gdextension
     	// EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
-        connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_scene_dts));
-        connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_generate_edited_resource_dts));
+        connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_on_scene_saved));
+        connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_on_resource_saved));
         EditorFileSystem::get_singleton()->connect("resources_reimported", callable_mp(this, &GodotJSEditorPlugin::_generate_imported_resource_dts));
         break;
     default: break;
@@ -61,7 +61,7 @@ void GodotJSEditorPlugin::_on_menu_pressed(int p_what)
     switch (p_what)
     {
     case MENU_ID_INSTALL_TS_PROJECT: try_install_ts_project(); break;
-    case MENU_ID_GENERATE_GODOT_DTS: generate_godot_dts(); break;
+    case MENU_ID_GENERATE_TYPES: generate_godot_dts(); break;
     case MENU_ID_CLEANUP_INVALID_FILES: cleanup_invalid_files(); break;
     default: break;
     }
@@ -75,10 +75,10 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // jsb::internal::Settings::on_editor_init();
     PopupMenu *menu = memnew(PopupMenu);
     add_tool_submenu_item(TTR("GodotJS"), menu);
-    menu->add_item(TTR("Install Preset files"), MENU_ID_INSTALL_TS_PROJECT);
-    menu->add_item(TTR("Generate Godot d.ts"), MENU_ID_GENERATE_GODOT_DTS);
+    menu->add_item(TTR("Install Preset Files"), MENU_ID_INSTALL_TS_PROJECT);
+    menu->add_item(TTR("Generate Types"), MENU_ID_GENERATE_TYPES);
     menu->add_separator();
-    menu->add_item(TTR("Cleanup invalid files"), MENU_ID_CLEANUP_INVALID_FILES);
+    menu->add_item(TTR("Cleanup Invalid Files"), MENU_ID_CLEANUP_INVALID_FILES);
     menu->connect("id_pressed", callable_mp(this, &GodotJSEditorPlugin::_on_menu_pressed));
 
     confirm_dialog_ = memnew(InstallGodotJSPresetConfirmationDialog);
@@ -103,6 +103,9 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // VSCode treats the directory containing the jsconfig.json file as the root of a javascript project, and reads type declarations from d.ts.
     add_install_file({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
     add_install_file({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
+    add_install_file({ "godot.worker.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
+#endif
     add_install_file({ "jsb.editor.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
     add_install_file({ "jsb.runtime.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
 
@@ -433,7 +436,7 @@ void GodotJSEditorPlugin::collect_invalid_files(const String& p_path, Vector<Str
         }
         else
         {
-            if (!it_path.ends_with("." JSB_JAVASCRIPT_EXT) || !FileAccess::exists(jsb::internal::PathUtil::convert_javascript_path(it_path)))
+            if (!(it_path.ends_with("." JSB_JAVASCRIPT_EXT) || it_path.ends_with("." JSB_COMMONJS_EXT)) || !FileAccess::exists(jsb::internal::PathUtil::convert_javascript_path(it_path)))
             {
                 // invalid if it's not a source map file, or no corresponding .js file exist
                 if (!it_path.ends_with("." JSB_JAVASCRIPT_EXT ".map") || !FileAccess::exists(it_path.substr(0, it_path.length() - 4)))
@@ -459,27 +462,34 @@ void GodotJSEditorPlugin::cleanup_invalid_files()
     JSB_LOG(Log, "%d files are deleted", deleted_num);
 }
 
-void GodotJSEditorPlugin::_generate_edited_scene_dts(const String& p_path)
+void GodotJSEditorPlugin::_on_scene_saved(const String& p_path)
 {
     if (!jsb::internal::Settings::get_autogen_scene_dts_on_save()) return;
 
     Vector<String> paths = { p_path };
-    generate_scene_nodes_dts(paths);
+    generate_scene_nodes_types(paths);
+
+    // Curiously, the "resource_saved" signal is not emitted for scenes even though they're resources. So we implement
+    // resource saved logic here too.
+
+    if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
+
+    generate_resource_types(paths);
 }
 
-void GodotJSEditorPlugin::_generate_edited_resource_dts(const Ref<Resource>& p_resource)
+void GodotJSEditorPlugin::_on_resource_saved(const Ref<Resource>& p_resource)
 {
     if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
 
     Vector<String> paths = { p_resource->get_path() };
-    generate_resource_dts(paths);
+    generate_resource_types(paths);
 }
 
 void GodotJSEditorPlugin::_generate_imported_resource_dts(const Vector<String>& p_resource)
 {
     if (!jsb::internal::Settings::get_autogen_resource_dts_on_save()) return;
 
-    generate_resource_dts(p_resource);
+    generate_resource_types(p_resource);
 }
 
 void GodotJSEditorPlugin::generate_godot_dts()
@@ -487,22 +497,31 @@ void GodotJSEditorPlugin::generate_godot_dts()
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
     {
         install_files(filter_files(editor_plugin->install_files_, jsb::weaver::CH_D_TS));
+
+        GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
+        jsb_check(lang);
+        Error err;
+        const bool use_project_settings = jsb::internal::Settings::get_codegen_use_project_settings();
+        const String code = jsb_format(
+            R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s", %s)).emit();})())--",
+            "./" JSB_TYPE_ROOT,
+            use_project_settings ? "true" : "false"
+        );
+        lang->eval_source(code, err).ignore();
+        ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
+
+        String autogen_url =  "res://" + jsb::internal::Settings::get_autogen_path();
+
+        // In case the user does something strange with their get_autogen_path, don't delete their project.
+        if (autogen_url.length() > 6 && FileAccess::exists(autogen_url.path_join(".gdignore")))
+        {
+            DirAccess::open(autogen_url)->erase_contents_recursive();
+            install_files(filter_files(editor_plugin->install_files_, jsb::weaver::CH_GDIGNORE));
+        }
+
+        generate_all_scene_nodes_types();
+        generate_all_resource_types();
     }
-
-    GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
-    jsb_check(lang);
-    Error err;
-    const bool use_project_settings = jsb::internal::Settings::get_codegen_use_project_settings();
-    const String code = jsb_format(
-        R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.TSDCodeGen("%s", %s)).emit();})())--",
-        "./" JSB_TYPE_ROOT,
-        use_project_settings ? "true" : "false"
-    );
-    lang->eval_source(code, err).ignore();
-    ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
-
-    generate_all_scene_nodes_dts();
-    generate_all_resource_dts();
 }
 
 void GodotJSEditorPlugin::get_all_scenes(EditorFileSystemDirectory* p_dir, Vector<String>& r_list)
@@ -539,7 +558,7 @@ void GodotJSEditorPlugin::get_all_resources(EditorFileSystemDirectory* p_dir, Ve
     }
 }
 
-void GodotJSEditorPlugin::generate_scene_nodes_dts(const Vector<String>& p_paths)
+void GodotJSEditorPlugin::generate_scene_nodes_types(const Vector<String>& p_paths)
 {
     if (!jsb::internal::Settings::get_gen_scene_dts()) return;
 
@@ -562,7 +581,7 @@ void GodotJSEditorPlugin::generate_scene_nodes_dts(const Vector<String>& p_paths
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 }
 
-void GodotJSEditorPlugin::generate_resource_dts(const Vector<String>& p_paths)
+void GodotJSEditorPlugin::generate_resource_types(const Vector<String>& p_paths)
 {
     if (!jsb::internal::Settings::get_gen_resource_dts()) return;
 
@@ -585,18 +604,18 @@ void GodotJSEditorPlugin::generate_resource_dts(const Vector<String>& p_paths)
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
 }
 
-void GodotJSEditorPlugin::generate_all_scene_nodes_dts()
+void GodotJSEditorPlugin::generate_all_scene_nodes_types()
 {
     Vector<String> paths;
     get_all_scenes(EditorFileSystem::get_singleton()->get_filesystem(), paths);
-    generate_scene_nodes_dts(paths);
+    generate_scene_nodes_types(paths);
 }
 
-void GodotJSEditorPlugin::generate_all_resource_dts()
+void GodotJSEditorPlugin::generate_all_resource_types()
 {
     Vector<String> paths;
     get_all_resources(EditorFileSystem::get_singleton()->get_filesystem(), paths);
-    generate_resource_dts(paths);
+    generate_resource_types(paths);
 }
 
 void GodotJSEditorPlugin::load_editor_entry_module()

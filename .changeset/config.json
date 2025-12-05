@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [],
+  "linked": [],
+  "access": "restricted",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@godot-js/jsb-static",
+    "@godot-js/jsb-runtime",
+    "@godot-js/jsb-editor",
+    "@godot-js/web-bridge"
+  ]
+}

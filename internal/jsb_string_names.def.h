@@ -21,6 +21,8 @@ DEF(children)
 DEF(type)
 DEF(evaluator)
 DEF(_notification)
+DEF(Reflect)
+DEF(construct)
 
 // class names
 DEF(Object)
@@ -42,10 +44,10 @@ DEF(help)
 DEF(__builtin_type__)
 
 // godot rpc config fields
-DEF(mode)
-DEF(sync)
+DEF(rpc_mode)
+DEF(call_local)
 DEF(transfer_mode)
-DEF(transfer_channel)
+DEF(channel)
 
 // keyword names
 DEF(default)

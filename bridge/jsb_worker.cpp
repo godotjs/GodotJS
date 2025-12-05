@@ -27,7 +27,7 @@ namespace jsb
         // object id of this worker object in the master environment
         NativeObjectID handle_;
         std::shared_ptr<Environment> env_;
-        internal::DoubleBuffered<Buffer> inbox_;
+        internal::DoubleBuffered<WorkerMessage> inbox_;
 
     public:
         WorkerImpl(Environment* p_master, const String& p_path, NativeObjectID p_handle)
@@ -123,7 +123,7 @@ namespace jsb
                     {
                         // handle messages from master
                         {
-                            std::vector<Buffer>& messages = impl->inbox_.swap();
+                            std::vector<WorkerMessage>& messages = impl->inbox_.swap();
                             if (!messages.empty())
                             {
                                 v8::Isolate* isolate = env->get_isolate();
@@ -132,7 +132,7 @@ namespace jsb
                                 const v8::Local<v8::Context> context = env->get_context();
                                 const v8::Local<v8::Object> context_obj = context_obj_handle.Get(isolate);
 
-                                for (const Buffer& message : messages)
+                                for (const WorkerMessage& message : messages)
                                 {
                                     if (impl->interrupt_requested_.is_set()) break;
                                     impl->_on_message(env, context, context_obj, message);
@@ -203,19 +203,19 @@ namespace jsb
             }
         }
 
-        bool on_receive(Buffer&& p_buffer)
+        bool on_receive(WorkerMessage&& p_message)
         {
             if (interrupt_requested_.is_set())
             {
                 return false;
             }
-            inbox_.add(std::move(p_buffer));
+            inbox_.add(std::move(p_message));
             return true;
         }
 
     private:
         // (worker) handle message from master
-        void _on_message(const std::shared_ptr<Environment>& p_env, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Object>& p_context_obj, const Buffer& p_message)
+        void _on_message(const std::shared_ptr<Environment>& p_env, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Object>& p_context_obj, const WorkerMessage& p_message)
         {
             v8::Isolate* isolate = p_env->get_isolate();
             v8::Local<v8::Value> callback;
@@ -225,7 +225,32 @@ namespace jsb
                 return;
             }
 
-            v8::ValueDeserializer deserializer(isolate, p_message.ptr(), p_message.size());
+            Environment* worker_env = env_.get();
+
+            if (p_message.get_transfers().size() > 0)
+            {
+                const std::shared_ptr<Environment> owner_env = Environment::_access(token_);
+
+                if (!owner_env)
+                {
+                    JSB_WORKER_LOG(Error, "failed to access worker owner environment from worker onmessage");
+                    return;
+                }
+
+                for (const auto& transfer : p_message.get_transfers())
+                {
+                    p_env->transfer_in(transfer);
+                }
+            }
+
+#if JSB_WITH_V8
+            Serialization::VariantDeserializerDelegate delegate(worker_env, p_message.get_transfers());
+            v8::ValueDeserializer deserializer(isolate, p_message.get_data().ptr(), p_message.get_data().size(), &delegate);
+            delegate.SetSerializer(&deserializer);
+#else
+            v8::ValueDeserializer deserializer(isolate, p_message.get_data().ptr(), p_message.get_data().size());
+#endif
+
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
             {
@@ -233,11 +258,17 @@ namespace jsb
                 return;
             }
             v8::Local<v8::Value> value;
-            if (!deserializer.ReadValue(p_context).ToLocal(&value))
+
             {
-                JSB_WORKER_LOG(Error, "failed to parse message value");
-                return;
+                Environment::ExecutionDeferredScope defer(worker_env);
+
+                if (!deserializer.ReadValue(p_context).ToLocal(&value))
+                {
+                    JSB_WORKER_LOG(Error, "failed to parse message value");
+                    return;
+                }
             }
+
             const impl::TryCatch try_catch(isolate);
             const v8::Local<v8::Function> call = callback.As<v8::Function>();
             const v8::MaybeLocal<v8::Value> rval = call->Call(p_context, v8::Undefined(isolate), 1, &value);
@@ -270,7 +301,7 @@ namespace jsb
                 return;
             }
 
-            master->post_message(Message(Message::TYPE_READY, handle, Buffer()));
+            master->post_message(Message(Message::TYPE_READY, handle));
         }
 
         // worker.close()
@@ -315,7 +346,7 @@ namespace jsb
                 jsb_throw(isolate, "bad parameter");
                 return;
             }
-            Environment::transfer_object(env, master.get(), handle, target);
+            Environment::transfer_to_host(env, master.get(), handle, target);
         }
 
         // worker -> master (run in worker env)
@@ -343,11 +374,21 @@ namespace jsb
                 return;
             }
 
-            v8::ValueSerializer serializer(isolate);
-            serializer.WriteHeader();
-            serializer.WriteValue(context, info[0]);
-            const std::pair<uint8_t*, size_t> data = serializer.Release();
-            master->post_message(Message(Message::TYPE_MESSAGE, handle, Buffer::steal(data.first, data.second)));
+            internal::ReferentialVariantMap<TransferData> transfer_map;
+            const std::pair<uint8_t*, size_t> data = Worker::handle_post_message(info, transfer_map);
+
+            if (data.first)
+            {
+                std::vector<TransferData> transfers;
+                transfers.reserve(transfer_map.size());
+
+                for (const auto& transfer : transfer_map)
+                {
+                    transfers.push_back(transfer.value);
+                }
+
+                master->post_message(Message(Message::TYPE_MESSAGE, handle, Buffer::steal(data.first, data.second), std::move(transfers)));
+            }
         }
     };
 
@@ -434,11 +475,11 @@ namespace jsb
         return (bool) o_handle;
     }
 
-    void Worker::on_receive(WorkerID p_id, Buffer&& p_buffer)
+    void Worker::on_receive(WorkerID p_id, WorkerMessage&& p_message)
     {
         lock_.lock();
         WorkerImplPtr impl;
-        if (!worker_list_.try_get_value(p_id, impl) || !impl->on_receive(std::move(p_buffer)))
+        if (!worker_list_.try_get_value(p_id, impl) || !impl->on_receive(std::move(p_message)))
         {
             JSB_WORKER_LOG(Error, "can't post message to a dead worker (%d)", p_id);
         }
@@ -548,21 +589,36 @@ namespace jsb
         v8::Isolate* isolate = info.GetIsolate();
         v8::HandleScope handle_scope(isolate);
         v8::Isolate::Scope isolate_scope(isolate);
-        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
         const v8::Local<v8::Object> self = info.This();
-        Environment::wrap(isolate)->check_internal_state();
         if (!TypeConvert::is_object(self, NativeClassType::Worker))
         {
-            jsb_throw(isolate, "bad this");
+            jsb_throw(isolate, "bad this: postMessage must be called on a Worker instance");
             return;
         }
-        const Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
 
-        v8::ValueSerializer serializer(isolate);
-        serializer.WriteHeader();
-        serializer.WriteValue(context, info[0]);
-        const std::pair<uint8_t*, size_t> data = serializer.Release();
-        Worker::on_receive(worker->id_, Buffer::steal(data.first, data.second));
+        const Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+        if (!worker || !Worker::is_valid(worker->id_))
+        {
+            jsb_throw(isolate, "JSWorker is not running");
+            return;
+        }
+
+        internal::ReferentialVariantMap<TransferData> transfer_map;
+        const std::pair<uint8_t*, size_t> data = Worker::handle_post_message(info, transfer_map);
+
+        if (data.first)
+        {
+            std::vector<TransferData> transfers;
+            transfers.reserve(transfer_map.size());
+
+            for (const auto& transfer : transfer_map)
+            {
+                transfers.push_back(transfer.value);
+            }
+
+            Worker::on_receive(worker->id_, WorkerMessage(Buffer::steal(data.first, data.second), std::move(transfers)));
+        }
     }
 
     void Worker::terminate(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -586,6 +642,100 @@ namespace jsb
     void Worker::register_(const v8::Local<v8::Context>& p_context, const v8::Local<v8::Object>& p_self)
     {
         Environment::wrap(p_context)->add_module_loader<JSWorkerModuleLoader>(JSB_WORKER_MODULE_NAME);
+    }
+
+    std::pair<uint8_t*, size_t> Worker::handle_post_message(const v8::FunctionCallbackInfo<v8::Value>& info, internal::ReferentialVariantMap<TransferData>& transfers)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        Environment* from_env = Environment::wrap(isolate);
+        from_env->check_internal_state();
+
+        if (info.Length() == 0)
+        {
+            jsb_throw(isolate, "postMessage requires at least 1 argument");
+            return {nullptr, 0};
+        }
+
+        if (info.Length() > 1 && !info[1]->IsUndefined())
+        {
+            v8::Local<v8::Value> transfer_arg = info[1];
+
+            if (!transfer_arg->IsArray() && !transfer_arg->IsObject())
+            {
+                jsb_throw(isolate, "transfer list must be an array");
+                return {nullptr, 0};
+            }
+
+            if (transfer_arg->IsArray())
+            {
+                v8::Local<v8::Array> transfer_array = transfer_arg.As<v8::Array>();
+
+                for (uint32_t i = 0, len = transfer_array->Length(); i < len; i++)
+                {
+                    v8::Local<v8::Value> item = transfer_array->Get(context, i).ToLocalChecked();
+
+                    if (!item->IsObject())
+                    {
+                        // JS primitive, no underling Variant exists to transfer. Since JS primitives are automatically
+                        // coerced to variants, it's more consistent if we permit (but ignore) them.
+                        continue;
+                    }
+
+                    Variant variant;
+
+                    if (!TypeConvert::js_to_gd_var(isolate, context, item.As<v8::Object>(), Variant::Type::ARRAY, variant))
+                    {
+                        jsb_throw(isolate, "transfer list must contain Godot object/variant types only");
+                        return {nullptr, 0};
+                    }
+
+                    TransferData transfer_data;
+                    from_env->transfer_out(NativeObjectID::none(), transfers.size(), variant, transfer_data);
+                    transfers.insert(variant, transfer_data);
+                }
+            }
+            else
+            {
+                Variant transfer_var;
+                if (!TypeConvert::js_to_gd_var(isolate, context, transfer_arg.As<v8::Object>(), Variant::Type::ARRAY, transfer_var))
+                {
+                    jsb_throw(isolate, "transfer list must be an array");
+                    return std::pair<uint8_t*, size_t>();
+                }
+
+                Array transfer_arr = transfer_var;
+
+                for (int i = 0, size = transfer_arr.size(); i < size; i++)
+                {
+                    Variant& variant = transfer_arr[i];
+                    TransferData transfer_data;
+                    from_env->transfer_out(NativeObjectID::none(), i, variant, transfer_data);
+                    transfers.insert(variant, transfer_data);
+                }
+            }
+        }
+
+        Vector<TransferData> transferred;
+
+        // TODO: Transfer support non-V8.
+#if JSB_WITH_V8
+        Serialization::VariantSerializerDelegate delegate(from_env, transfers);
+        v8::ValueSerializer serializer(isolate, &delegate);
+        delegate.SetSerializer(&serializer);
+#else
+        v8::ValueSerializer serializer(isolate);
+#endif
+
+        serializer.WriteHeader();
+        v8::Maybe<bool> write_result = serializer.WriteValue(context, info[0]);
+
+        if (write_result.IsNothing())
+        {
+            return {nullptr, 0};
+        }
+
+        return serializer.Release();
     }
 }
 

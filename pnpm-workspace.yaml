@@ -1,0 +1,4 @@
+packages:
+  - .
+  - scripts/*
+  - impl/web/bridge

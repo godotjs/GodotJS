@@ -1,4 +1,5 @@
 import type {
+    ExtractValueKeys,
     FileAccess,
     GArray,
     GDictionary,
@@ -6,33 +7,34 @@ import type {
     Node,
     PropertyInfo,
     Resource,
+    ResourceTypes,
+    Script,
     Variant,
 } from "godot";
 
+import type * as Godot from "godot";
 import type * as GodotJsb from "godot-jsb";
-const godot = require("godot.lib.api");
 
-const jsb = godot.jsb;
+const godot: typeof Godot = require("godot.lib.api");
+const jsb: typeof GodotJsb = require("godot.lib.api").jsb;
+
 const gd_to_string = godot.str;
 const names = jsb.internal.names;
+
+const js_object_key_types = new Set(["string", "byte", "int32", "int64", "float32", "float64", "uint32"]);
 
 function camel_property_overrides(overrides: undefined | Record<string, string[] | ((line: string) => string)>) {
     const get_member = jsb.internal.names.get_member;
     return overrides && Object.fromEntries(
-        Object.entries(overrides).map(([name, value]) => {
-            const camel_case_name = get_member(name);
-            return [
-                camel_case_name,
-                Array.isArray(value)
-                    ? value.map(line => line.replace(new RegExp(`${name}( *[<(:])`), `${camel_case_name}$1`))
-                    : value
-            ];
-        })
-    )
+        Object.entries(overrides).map(([name, value]) => [
+            get_member(name),
+            value,
+        ])
+    );
 }
 
 if (!jsb.TOOLS_ENABLED) {
-    throw new Error("codegen is only allowed in editor mode")
+    throw new Error("codegen is only allowed in editor mode");
 }
 
 const tab = "    ";
@@ -121,7 +123,6 @@ const TypeMutations: Record<string, TypeMutation> = {
             rename_animation: chain_mutators(mutate_parameter_type("name", "AnimationName"), mutate_parameter_type("newname", "AnimationName")),
             has_animation: chain_mutators(mutate_parameter_type("name", "AnimationName")),
             get_animation: mutate_parameter_type("name", "AnimationName"),
-            get_animation_list: mutate_return_type("GArray<AnimationName>"),
             animation_added: [`readonly ${names.get_member('animation_added')}: Signal<(name: StringName) => void>`],
             animation_removed: [`readonly ${names.get_member('animation_removed')}: Signal<(name: StringName) => void>`],
             animation_renamed: [`readonly ${names.get_member('animation_renamed')}: Signal<(name: StringName, ${names.get_parameter('to_name')}) => void>`],
@@ -176,7 +177,7 @@ const TypeMutations: Record<string, TypeMutation> = {
                 mutate_parameter_type("name", "Name"),
                 mutate_return_type("LibraryMap[Name]")
             ),
-            get_animation_library_list: mutate_return_type("GArray<keyof LibraryMap>"),
+            get_animation_library_list: mutate_return_type("keyof LibraryMap extends GAny ? GArray<keyof LibraryMap> : GArray"),
             has_animation: chain_mutators(
                 mutate_template("Name extends StaticAnimationMixerPath<LibraryMap>"),
                 mutate_parameter_type("name", "Name"),
@@ -251,63 +252,109 @@ const TypeMutations: Record<string, TypeMutation> = {
             call: ["call: T"],
         },
     },
+    CameraFeed: {
+        prelude: [
+            "namespace CameraFeed {",
+            "    type FeedFormat = GDictionary<{",
+            "        width: int64",
+            "        height: int64",
+            "        format: string",
+            "        frame_numerator?: int64",
+            "        frame_denominator?: int64",
+            "        pixel_format?: uint32",
+            "    }>",
+            "}",
+            "",
+        ],
+        property_overrides: {
+            formats: [
+                `get formats(): GArray<CameraFeed.FeedFormat>`,
+                `set formats(value: GArray<CameraFeed.FeedFormat>)`,
+            ],
+        },
+    },
+    EditorUndoRedoManager: {
+        property_overrides: {
+            add_do_method: [`${names.get_member("add_do_method")}<T extends GObject, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`],
+            add_undo_method: [`${names.get_member("add_undo_method")}<T extends GObject, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`],
+            add_do_property: [`${names.get_member("add_do_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
+            add_undo_property: [`${names.get_member("add_undo_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
+        },
+    },
     GArray: {
         generic_parameters: {
             T: {
-                default: GodotAnyType,
+                default: `${GodotAnyType} | ${GodotAnyType}[]`,
+                extends: `${GodotAnyType} | ${GodotAnyType}[]`
             },
         },
         intro: [
             "/** Builder function that returns a GArray populated with elements from a JS array. */",
-            "static create<T>(elements: [T] extends [GArray<infer E>] ? Array<E | GProxyValueWrap<E>> : Array<T | GProxyValueWrap<T>>):",
-            "    [T] extends [GArray<infer E>]",
-            "        ? [GValueWrap<E>] extends [never]",
-            "            ? never",
-            "            : GArray<GValueWrap<T>>",
-            "        : [GValueWrap<T>] extends [never]",
-            "            ? never",
-            "            : GArray<GValueWrap<T>>",
-            "[Symbol.iterator](): IteratorObject<T>",
+            "static create<A extends any[]>(elements: A): GValueWrap<A>",
+            "static create<A extends GArray<any>>(",
+            "    elements: A extends GArray<infer T>",
+            "        ? [T] extends [any[]]",
+            "            ? { [I in keyof T]: GDataStructureCreateValue<T[I]> }",
+            "            : Array<GDataStructureCreateValue<T>>",
+            "        : never",
+            "): GValueWrap<A>",
+            "static create<E extends GAny>(elements: Array<GDataStructureCreateValue<E>>): GArray<E>",
+            "[Symbol.iterator](): IteratorObject<GArrayElement<T>>",
             "/** Returns a Proxy that targets this GArray but behaves similar to a JavaScript array. */",
-            "proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>",
+            "proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<GArrayElement<T>> : GArrayReadProxy<GArrayElement<T>>",
             "",
-            `${names.get_member("set_indexed")}(index: number, value: T): void`,
-            `${names.get_member("get_indexed")}(index: number): T`,
+            `${names.get_member("set_indexed")}<I extends int64>(index: I, value: GArrayElement<T, I>): void`,
+            `${names.get_member("get_indexed")}<I extends int64>(index: I): GArrayElement<T, I>`,
         ],
         property_overrides: {
-            set: mutate_parameter_type("value", "T"),
-            push_back: mutate_parameter_type("value", "T"),
-            push_front: mutate_parameter_type("value", "T"),
-            append: mutate_parameter_type("value", "T"),
-            insert: mutate_parameter_type("value", "T"),
-            fill: mutate_parameter_type("value", "T"),
-            erase: mutate_parameter_type("value", "T"),
-            count: mutate_parameter_type("value", "T"),
-            has: mutate_parameter_type("value", "T"),
-            bsearch: mutate_parameter_type("value", "T"),
-            bsearch_custom: chain_mutators(mutate_parameter_type("value", "T"), mutate_parameter_type("func", "Callable2<T, T, boolean>")),
-            find: mutate_parameter_type("what", "T"),
-            rfind: mutate_parameter_type("what", "T"),
-            get: mutate_return_type("T"),
-            front: mutate_return_type("T"),
-            back: mutate_return_type("T"),
-            pick_random: mutate_return_type("T"),
-            pop_back: mutate_return_type("T"),
-            pop_front: mutate_return_type("T"),
-            pop_at: mutate_return_type("T"),
-            min: mutate_return_type("T"),
-            max: mutate_return_type("T"),
-            sort_custom: mutate_parameter_type("func", "Callable2<T, T, boolean>"),
-            all: mutate_parameter_type("method", "Callable1<T, boolean>"),
-            any: mutate_parameter_type("method", "Callable1<T, boolean>"),
-            filter: chain_mutators(mutate_parameter_type("method", "Callable1<T, boolean>"), mutate_return_type("GArray<T>")),
-            map: chain_mutators(mutate_parameter_type("method", "Callable1<T, U>"), mutate_return_type("GArray<U>"), mutate_template("U")),
-            append_array: mutate_parameter_type("array", "GArray<T>"),
-            duplicate: mutate_return_type("GArray<T>"),
-            slice: mutate_return_type("GArray<T>"),
+            set: [`set<I extends int64>(index: I, value: GArrayElement<T, I>): void`],
+            push_back: mutate_parameter_type("value", "GArrayElement<T>"),
+            push_front: mutate_parameter_type("value", "GArrayElement<T>"),
+            append: mutate_parameter_type("value", "GArrayElement<T>"),
+            insert: mutate_parameter_type("value", "GArrayElement<T>"),
+            fill: mutate_parameter_type("value", "GArrayElement<T>"),
+            erase: mutate_parameter_type("value", "GArrayElement<T>"),
+            count: mutate_parameter_type("value", "GArrayElement<T>"),
+            has: mutate_parameter_type("value", "GArrayElement<T>"),
+            bsearch: mutate_parameter_type("value", "GArrayElement<T>"),
+            bsearch_custom: chain_mutators(mutate_parameter_type("value", "GArrayElement<T>"), mutate_parameter_type("func", "Callable<(a: GArrayElement<T>, b: GArrayElement<T>) => boolean>")),
+            find: mutate_parameter_type("what", "GArrayElement<T>"),
+            rfind: mutate_parameter_type("what", "GArrayElement<T>"),
+            get: [`get<I extends int64>(index: I): GArrayElement<T, I>`],
+            front: mutate_return_type("GArrayElement<T>"),
+            back: mutate_return_type("GArrayElement<T>"),
+            pick_random: mutate_return_type("GArrayElement<T>"),
+            pop_back: mutate_return_type("GArrayElement<T>"),
+            pop_front: mutate_return_type("GArrayElement<T>"),
+            pop_at: mutate_return_type("GArrayElement<T>"),
+            min: mutate_return_type("GArrayElement<T>"),
+            max: mutate_return_type("GArrayElement<T>"),
+            sort_custom: mutate_parameter_type("func", "Callable<(a: GArrayElement<T>, b: GArrayElement<T>) => boolean>"),
+            all: mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => boolean>"),
+            any: mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => boolean>"),
+            filter: chain_mutators(mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => boolean>"), mutate_return_type("GArray<GArrayElement<T>>")),
+            map: chain_mutators(mutate_parameter_type("method", "Callable<(value: GArrayElement<T>) => U>"), mutate_return_type("GArray<U>"), mutate_template("U extends GAny")),
+            append_array: mutate_parameter_type("array", "GArray<GArrayElement<T>>"),
+            duplicate: mutate_return_type("this"),
+            slice: mutate_return_type("GArray<GArrayElement<T>>"),
         },
     },
     GDictionary: {
+        prelude: [
+            "type GArrayCreateSource<T> = ReadonlyArray<T> | {",
+            "    [Symbol.iterator](): IteratorObject<GDataStructureCreateValue<T>>;",
+            "    [K: number]: GDataStructureCreateValue<T>;",
+            "}",
+            "type GDataStructureCreateValue<V> = V | (",
+            "     V extends GArray<infer T>",
+            " ? [T] extends [any[]]",
+            "     ? GArrayCreateSource<{ [I in keyof T]: GDataStructureCreateValue<T[I]> }>",
+            "     : GArrayCreateSource<GDataStructureCreateValue<T>>",
+            " : V extends GDictionary<infer T>",
+            "     ? { [K in keyof T]: GDataStructureCreateValue<T[K]> }",
+            "     : never",
+            "     )"
+        ],
         generic_parameters: {
             T: {
                 default: "Record<any, any>",
@@ -315,27 +362,28 @@ const TypeMutations: Record<string, TypeMutation> = {
         },
         intro: [
             "/** Builder function that returns a GDictionary with properties populated from a source JS object. */",
-            "static create<T>(properties: T extends GDictionary<infer S> ? GDictionaryProxy<S> : GDictionaryProxy<T>): T extends GDictionary<infer S> ? GValueWrap<S> : GValueWrap<T>",
+            "static create<V extends { [key: number | string]: GWrappableValue }>(properties: V): GValueWrap<V>",
+            "static create<V extends GDictionary<any>>(properties: V extends GDictionary<infer T> ? { [K in keyof T]: GDataStructureCreateValue<T[K]> } : never): V",
             "[Symbol.iterator](): IteratorObject<{ key: any, value: any }>",
             "/** Returns a Proxy that targets this GDictionary but behaves similar to a regular JavaScript object. Values are exposed as enumerable properties, so Object.keys(), Object.entries() etc. will work. */",
             "proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>",
             "",
             `${names.get_member("set_keyed")}<K extends keyof T>(key: K, value: T[K]): void`,
-            `${names.get_member("get_keyed")}<K extends keyof T>(key: K): T[K]`,
+            `${names.get_member("get_keyed")}<K extends keyof T>(key: K): UndefinedToNull<T[K]>`,
         ],
         property_overrides: {
             assign: mutate_parameter_type("dictionary", "T"),
             merge: mutate_parameter_type("dictionary", "T"),
             merged: chain_mutators(mutate_parameter_type("dictionary", "GDictionary<U>"), mutate_return_type("GDictionary<T & U>"), mutate_template("U")),
             has: mutate_parameter_type("key", "keyof T"),
-            has_all: mutate_parameter_type("keys", "GArray<keyof T>"),
+            has_all: mutate_parameter_type("keys", "keyof T extends GAny ? GArray<keyof T> : GArray"),
             find_key: chain_mutators(mutate_parameter_type("value", "T[keyof T]"), mutate_return_type("keyof T")), // This can be typed more accurately with a mapped type, but it seems excessive.
             erase: mutate_parameter_type("key", "keyof T"),
-            keys: mutate_return_type("Array<keyof T>"),
-            values: mutate_return_type("GArray<T[keyof T]>"),
+            keys: mutate_return_type("keyof T extends GAny ? GArray<keyof T> : GArray"),
+            values: mutate_return_type("UndefinedToNull<T[keyof T]> extends GAny ? GArray<UndefinedToNull<T[keyof T]>> : GArray"),
             duplicate: mutate_return_type("GDictionary<T>"),
-            get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("T[K]"), mutate_template("K extends keyof T")),
-            get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("default_", "T[K]"), mutate_template("K extends keyof T")),
+            get: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("UndefinedToNull<T[K]>"), mutate_template("K extends keyof T")),
+            get_or_add: chain_mutators(mutate_parameter_type("key", "K"), mutate_return_type("UndefinedToNull<T[K]>"), mutate_parameter_type("default_", "T[K]"), mutate_template("K extends keyof T")),
             set: chain_mutators(mutate_parameter_type("key", "K"), mutate_parameter_type("value", "T[K]"), mutate_template("K extends keyof T")),
         }
     },
@@ -388,13 +436,31 @@ const TypeMutations: Record<string, TypeMutation> = {
             }
         ],
         property_overrides: {
-            get_node: ["get_node<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>"],
+            add_child: mutate_parameter_type('node', 'NodePathMapChild<Map>'),
+            get_child: mutate_return_type('NodePathMapChild<Map>'),
+            get_children: mutate_return_type('GArray<NodePathMapChild<Map>>'),
+            get_node: [`${names.get_member("get_node")}<Path extends StaticNodePath<Map>, Default = never>(path: Path): ResolveNodePath<Map, Path, Default>`],
             get_node_or_null: [
-                "get_node_or_null<Path extends StaticNodePath<Map>, Default = never>(path: Path): null | ResolveNodePath<Map, Path, Default>",
-                "get_node_or_null(path: NodePath | string): null | Node",
+                `${names.get_member("get_node_or_null")}<Path extends StaticNodePath<Map, undefined | Node>, Default = null>(path: Path): null | ResolveNodePath<Map, Path, Default, undefined | Node>`,
+                `${names.get_member("get_node_or_null")}(path: NodePath | string): null | Node`,
             ],
+            get_tree: mutate_return_type('SceneTree'),
+            move_child: mutate_parameter_type(names.get_parameter('child_node'), 'NodePathMapChild<Map>'),
+            remove_child: mutate_parameter_type('node', 'NodePathMapChild<Map>'),
             validate_property: mutate_parameter_type("property", "GDictionary<PropertyInfo>"),
         },
+    },
+    // GObject:
+    [names.get_class("Object")]: {
+        property_overrides: {
+            call: ['call<M extends GodotNames<this>>(method: M, ...args: ResolveGodotNameParameters<this, NoInfer<M>>): ResolveGodotReturnType<this, NoInfer<M>>'],
+            call_deferred: [`${names.get_member('call_deferred')}<M extends GodotNames<this>>(method: M, ...args: ResolveGodotNameParameters<this, NoInfer<M>>): void`],
+            set_deferred: [`${names.get_member('set_deferred')}<P extends GodotNames<this>>(property: P, value: ResolveGodotNameValue<this,  NoInfer<P>>): void`],
+            callv: ['callv<M extends GodotNames<this>>(method: M, argArray: GArray<ResolveGodotNameParameters<this, NoInfer<M>>>): ResolveGodotReturnType<this, NoInfer<M>>'],
+            get_property_list: mutate_return_type("GArray<GDictionary<PropertyInfo>>"),
+            get_script: mutate_return_type("null | Script"),
+            set_script: mutate_parameter_type("script", "null | Script"),
+        }
     },
     PackedByteArray: {
         intro: [
@@ -414,6 +480,11 @@ const TypeMutations: Record<string, TypeMutation> = {
             instantiate: mutate_return_type("T"),
         },
     },
+    Resource: {
+        property_overrides: {
+            duplicate: mutate_return_type("this"),
+        },
+    },
     ResourceLoader: {
         property_overrides: {
             load: [
@@ -421,15 +492,9 @@ const TypeMutations: Record<string, TypeMutation> = {
                 `static load(path: string, ${names.get_parameter("type_hint")}?: string /* = "" */, ${names.get_parameter("cache_mode")}?: ResourceLoader.CacheMode /* = 1 */): Resource`,
             ],
             load_threaded_get: [
-                `static load_threaded_get<Path extends keyof ResourceTypes>(path: Path): ResourceTypes[Path]`,
-                "static load_threaded_get(path: string): Resource",
+                `static ${names.get_member("load_threaded_get")}<Path extends keyof ResourceTypes>(path: Path): ResourceTypes[Path]`,
+                `static ${names.get_member("load_threaded_get")}(path: string): Resource`,
             ],
-        },
-    },
-    SceneTree: {
-        property_overrides: {
-            get_processed_tweens: mutate_return_type("GArray<Tween>"),
-            get_nodes_in_group: mutate_return_type("GArray<Node>"), // TODO: Codegen for group names,
         },
     },
     Signal: {
@@ -447,6 +512,12 @@ const TypeMutations: Record<string, TypeMutation> = {
             disconnect: mutate_parameter_type("callable", "Callable<T>"),
             is_connected: mutate_parameter_type("callable", "Callable<T>"),
             emit: ["emit: T"],
+        }
+    },
+    UndoRedo: {
+        property_overrides: {
+            add_do_property: [`${names.get_member('add_do_property')}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
+            add_undo_property: [`${names.get_member('add_undo_property')}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`],
         }
     },
 };
@@ -484,7 +555,7 @@ function class_type_mutation(cls: GodotJsb.editor.BasicClassInfo): TypeMutation 
     const intro: string[] = []
 
     if (is_primitive_class_info(cls) && typeof cls.element_type !== "undefined") {
-        const element_type_name = get_primitive_type_name(cls.element_type);
+        const element_type_name = VariantTypeNames.get(cls.element_type);
         intro.push(`set_indexed(index: number, value: ${element_type_name}): void`);
         intro.push(`get_indexed(index: number): ${element_type_name}`);
     }
@@ -545,7 +616,7 @@ interface CodeWriter {
 
     line(text: string): void;
     concatenate(text: string): void;
-    append(newLine: boolean, text: string): void;
+    append(new_line: boolean, text: string): void;
 
     enum_(name: string): EnumWriter;
     namespace_(name: string, class_doc?: GodotJsb.editor.ClassDoc): NamespaceWriter;
@@ -570,7 +641,7 @@ interface CodeWriter {
         class_doc?: GodotJsb.editor.ClassDoc
     ): ClassWriter;
     generic_(name: string): GenericWriter;
-    property_(name: string): PropertyWriter;
+    property_(name: string, static_property?: boolean): PropertyWriter;
     object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter;
     // singleton_(info: GodotJsb.editor.SingletonInfo): SingletonWriter;
     line_comment_(text: string): void;
@@ -616,7 +687,7 @@ class CodegenTasks {
         const EditorProgress = godot.GodotJSEditorProgress;
         const progress = new EditorProgress();
         let force_wait = 24;
-        progress.init(`codegen-${this._name}`, `Generating ${this._name}`, this.tasks.length);
+        progress.init(`codegen-${this._name}`, this._name, this.tasks.length);
 
         try {
             for (let i = 0; i < this.tasks.length; ++i) {
@@ -654,9 +725,10 @@ const PredefinedLines = [
     "type int64 = number /* || bigint */",
     "type float32 = number",
     "type float64 = number",
+    "type uint32 = number",
     "type StringName = string",
     "type unresolved = any",
-]
+];
 
 const KeywordReplacement: { [name: string]: string } = {
     ["default"]: "default_",
@@ -680,46 +752,28 @@ const KeywordReplacement: { [name: string]: string } = {
 
     // a special item which used as the name of variadic arguments placement
     ["varargs"]: "varargs_",
-}
+};
 
-const PrimitiveTypeNames: { [type: number]: string } = {
+const RemappedPrimitiveTypeNames: Partial<Record<Godot.Variant.Type, string>> = {
     [godot.Variant.Type.TYPE_NIL]: "any",
     [godot.Variant.Type.TYPE_BOOL]: "boolean",
     [godot.Variant.Type.TYPE_INT]: "int64",
     [godot.Variant.Type.TYPE_FLOAT]: "float64",
     [godot.Variant.Type.TYPE_STRING]: "string",
-}
+};
 
-const RemapTypes: { [name: string]: string } = {
-    ["bool"]: "boolean",
-}
-const IgnoredTypes = new Set([
-    "IPUnix",
-    "ScriptEditorDebugger",
-    "Thread",
-    "Semaphore",
+const VariantTypeNames = (function (): Map<Godot.Variant.Type, string> {
+    const variant_name_map = new Map<Godot.Variant.Type, string>();
+    for (const variant_type of Object.values(godot.Variant.Type)) {
+        if (typeof variant_type !== 'number' || variant_type === godot.Variant.Type.TYPE_MAX) {
+            continue;
+        }
+        const name = RemappedPrimitiveTypeNames[variant_type] ?? jsb.internal.names.get_variant_type(variant_type);
+        variant_name_map.set(variant_type, name);
+    }
+    return variant_name_map;
+})();
 
-    //
-    // "GodotNavigationServer2D",
-    // "GodotPhysicsServer2D",
-    // "GodotPhysicsServer3D",
-    // "PhysicsServer2DExtension",
-    // "PhysicsServer3DExtension",
-
-    // GodotJS related clases
-    "GodotJSEditorPlugin",
-    "GodotJSExportPlugin",
-    "GodotJSREPL",
-    "GodotJSScript",
-    "GodotJSEditorHelper",
-    "GodotJSEditorProgress",
-
-    // GDScript related classes
-    "GDScript",
-    "GDScriptEditorTranslationParserPlugin",
-    "GDScriptNativeClass",
-    "GDScriptSyntaxHighlighter",
-])
 const GlobalUtilityFuncs = [
     {
         description: "shorthand for getting project settings",
@@ -733,32 +787,19 @@ const GlobalUtilityFuncs = [
         ],
         method: "function EDITOR_GET(entry_path: StringName): any"
     }
-]
+];
 
-const PrimitiveTypesSet = (function (): Set<string> {
-    let set = new Set<string>();
-    for (let name in godot.Variant.Type) {
-        // avoid babbling error messages in `type_string` call
-        if (<any>godot.Variant.Type[name] === godot.Variant.Type.TYPE_MAX) continue;
-
-        // use the original type name of Variant.Type,
-        // because this set is used with type name from the original godot class info (PropertyInfo)
-        let str = godot.type_string(<any>godot.Variant.Type[name]);
-        if (str.length != 0) {
-            set.add(str);
+const VariantNames = (function (): Partial<Record<string, Godot.Variant.Type>> {
+    const name_map: Partial<Record<string, Godot.Variant.Type>> = {};
+    for (const variant_type of Object.values(godot.Variant.Type)) {
+        if (typeof variant_type !== 'number' || variant_type === godot.Variant.Type.TYPE_MAX) {
+            continue;
         }
+        name_map[godot.type_string(variant_type)] = variant_type; // Godot internal
+        name_map[VariantTypeNames.get(variant_type)!] = variant_type; // GodotJS name
     }
-    return set;
+    return name_map;
 })();
-
-function get_primitive_type_name(type: Variant.Type): string | undefined {
-    const primitive_name = PrimitiveTypeNames[type];
-    if (typeof primitive_name !== "undefined") {
-        return primitive_name;
-    }
-
-    return jsb.internal.names.get_variant_type(type);
-}
 
 function get_js_array_type_name(element_type_name: string | undefined) {
     if (typeof element_type_name === "undefined" || element_type_name.length == 0) return "";
@@ -773,12 +814,11 @@ function join_type_name(...args: (string | undefined)[]) {
 }
 
 function get_primitive_type_name_as_input(type: Variant.Type): string | undefined {
-    const primitive_name = get_primitive_type_name(type);
-
+    const primitive_name = VariantTypeNames.get(type);
     switch (type) {
-        case godot.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_COLOR)));
-        case godot.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_VECTOR2)));
-        case godot.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(get_primitive_type_name(godot.Variant.Type.TYPE_VECTOR3)));
+        case godot.Variant.Type.TYPE_PACKED_COLOR_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(VariantTypeNames.get(godot.Variant.Type.TYPE_COLOR)));
+        case godot.Variant.Type.TYPE_PACKED_VECTOR2_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(VariantTypeNames.get(godot.Variant.Type.TYPE_VECTOR2)));
+        case godot.Variant.Type.TYPE_PACKED_VECTOR3_ARRAY: return join_type_name(primitive_name, get_js_array_type_name(VariantTypeNames.get(godot.Variant.Type.TYPE_VECTOR3)));
         case godot.Variant.Type.TYPE_PACKED_STRING_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("string"));
         case godot.Variant.Type.TYPE_PACKED_FLOAT32_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float32"));
         case godot.Variant.Type.TYPE_PACKED_FLOAT64_ARRAY: return join_type_name(primitive_name, get_js_array_type_name("float64"));
@@ -795,7 +835,7 @@ function replace_var_name(name: string) {
     return typeof rep !== "undefined" ? rep : name;
 }
 
-const needs_quotes_regex = /^(?![$_])[^\w$]|[^\w$]/;
+const needs_quotes_regex = /^(?![$_A-Za-z])|[^\w$]/;
 const quoted_escape_map: Record<string, string> = {
     '"': '\\"',
     '\\': '\\\\',
@@ -865,8 +905,8 @@ abstract class AbstractWriter implements ScopeWriter {
     generic_(name: string): GenericWriter {
       return new GenericWriter(this, name);
     }
-    property_(name: string): PropertyWriter {
-        return new PropertyWriter(this, name);
+    property_(name: string, static_property = false): PropertyWriter {
+        return new PropertyWriter(this, name, static_property);
     }
     object_(intro?: undefined | string[], property_overrides?: undefined | PropertyOverrides): ObjectWriter {
         return new ObjectWriter(this, intro, property_overrides);
@@ -877,8 +917,8 @@ abstract class AbstractWriter implements ScopeWriter {
     line_comment_(text: string) {
         this.line(`// ${text}`);
     }
-    append(newLine: boolean, text: string) {
-        if (newLine) {
+    append(new_line: boolean, text: string) {
+        if (new_line) {
             this.line(text);
         } else {
             this.concatenate(text);
@@ -1007,13 +1047,11 @@ abstract class BufferingWriter extends AbstractWriter {
     protected _base: ScopeWriter;
     protected _lines: string[];
     protected _size: number = 0;
-    protected _concatenate_first_line = false;
 
-    constructor(base: ScopeWriter, concatenate_first_line = false) {
+    constructor(base: ScopeWriter) {
         super();
         this._base = base;
         this._lines = [];
-        this._concatenate_first_line = concatenate_first_line;
     }
 
     get size() { return this._size; }
@@ -1032,17 +1070,17 @@ abstract class BufferingWriter extends AbstractWriter {
         return this._base.resolve_import(script_resource);
     }
 
-    abstract bufferedSize(text: string, newLine: boolean): number;
+    abstract buffered_size(text: string, new_line: boolean): number;
 
     line(text: string): void {
         this._lines.push(text);
-        this._size += this.bufferedSize(text, this._lines.length > 1 || !this._concatenate_first_line);
+        this._size += this.buffered_size(text, this._lines.length > 1);
     }
 
     concatenate(text: string): void {
         if (this._lines.length > 0) {
             this._lines[this._lines.length - 1] += text;
-            this._size += this.bufferedSize(text, false);
+            this._size += this.buffered_size(text, false);
         } else {
             this.line(text);
         }
@@ -1050,19 +1088,40 @@ abstract class BufferingWriter extends AbstractWriter {
 }
 
 class IndentWriter extends BufferingWriter {
+    protected _never_collapse: boolean;
+    protected _indent_first_line: boolean;
+
+    constructor(base: ScopeWriter, always_multiline = false, indent_first_line = true) {
+        super(base);
+        this._never_collapse = always_multiline;
+        this._indent_first_line = indent_first_line;
+    }
+
     finish() {
         const lines = this._lines;
-        for (let i = 0, l = lines.length; i < l; i++) {
-            if (i === 0 && this._concatenate_first_line) {
-                this._base.concatenate(lines[i]);
-            } else {
-                this._base.line(tab + lines[i]);
-            }
+
+        if (lines.length === 0) {
+            return;
+        }
+
+        if (lines.length === 1 && !this._never_collapse) {
+            this._base.concatenate(lines[0]);
+            return;
+        }
+
+        if (this._indent_first_line) {
+            this._base.line(tab + lines[0]);
+        } else {
+            this._base.line(lines[0]);
+        }
+
+        for (let i = 1, l = lines.length; i < l; i++) {
+            this._base.line(tab + lines[i]);
         }
     }
 
-    bufferedSize(text: string, newLine: boolean): number {
-        return text.length + (newLine ? tab.length + 1 : 0);
+    buffered_size(text: string, new_line: boolean): number {
+        return text.length + (this._lines.length > 1 || this._indent_first_line ? tab.length : 0) + (new_line ? 1 : 0);
     }
 }
 
@@ -1104,7 +1163,7 @@ export type UserTypeDescriptor = GDictionary<{
     /**
      * res:// style path to the TypeScript module where this type is exported.
      */
-    resource: string;
+    resource: ExtractValueKeys<ResourceTypes, Script>;
     /**
      * Preferred type name to use when importing.
      */
@@ -1128,7 +1187,7 @@ export type GenericParameterDescriptor = GDictionary<{
 export type ParameterDescriptor = GDictionary<{
     name: string;
     type: TypeDescriptor;
-    default?: TypeDescriptor;
+    optional?: boolean;
 }>;
 
 export type FunctionLiteralTypeDescriptor = GDictionary<{
@@ -1138,9 +1197,13 @@ export type FunctionLiteralTypeDescriptor = GDictionary<{
     returns?: TypeDescriptor;
 }>;
 
+export type OptionalTypeDescriptor<Descriptor extends GDictionary> = Descriptor extends GDictionary<infer T>
+  ? GDictionary<T & { optional?: boolean }>
+  : never;
+
 export type ObjectLiteralTypeDescriptor = GDictionary<{
     type: DescriptorType.ObjectLiteral;
-    properties: GDictionary<Partial<Record<string, TypeDescriptor>>>;
+    properties?: GDictionary<Partial<Record<string, OptionalTypeDescriptor<TypeDescriptor>>>>;
     index?: GDictionary<{
         key: TypeDescriptor;
         value: TypeDescriptor;
@@ -1253,6 +1316,539 @@ export type ScriptResourceTypeDescriptorCodeGenRequest = GDictionary<{
     resource: Resource;
 }>;
 
+// These types are dynamically generated so that these runtime types support camel-case bindings. Unfortunately, this
+// doesn't scale very well. If we find ourselves adding/editing these often, then we should consider shipping two sets
+// of runtime types instead of generating them on the fly. However, we'd need to use something like ts-morph to convert
+// the snake_case .d.ts to camelCase. With TS7/tsgo on the horizon, there are additional concerns with that approach.
+const annotation_types = {
+    ClassBinder: godot.GDictionary.create<IntersectionTypeDescriptor>({
+        type: DescriptorType.Intersection,
+        types: [
+            {
+                type: DescriptorType.FunctionLiteral,
+                parameters: [],
+                returns: {
+                    type: DescriptorType.FunctionLiteral,
+                    parameters: [
+                        { name: "target", type: { type: DescriptorType.Godot, name: "GObjectConstructor" } },
+                        {
+                            name: "context",
+                            type: { type: DescriptorType.Godot, name: "ClassDecoratorContext" },
+                        },
+                    ],
+                },
+            },
+            {
+                type: DescriptorType.ObjectLiteral,
+                properties: {
+                    tool: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [],
+                        returns: {
+                            type: DescriptorType.FunctionLiteral,
+                            parameters: [
+                                { name: "target", type: { type: DescriptorType.Godot, name: "GObjectConstructor" } },
+                                {
+                                    name: "_context",
+                                    type: { type: DescriptorType.Godot, name: "ClassDecoratorContext" },
+                                },
+                            ],
+                        },
+                    },
+                    icon: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [
+                            { name: "path", type: { type: DescriptorType.Godot, name: "string" } },
+                        ],
+                        returns: {
+                            type: DescriptorType.FunctionLiteral,
+                            parameters: [
+                                { name: "target", type: { type: DescriptorType.Godot, name: "GObjectConstructor" } },
+                                {
+                                    name: "_context",
+                                    type: { type: DescriptorType.Godot, name: "ClassDecoratorContext" },
+                                },
+                            ],
+                        },
+                    },
+                    export: {
+                        type: DescriptorType.Intersection,
+                        types: [
+                            {
+                                type: DescriptorType.FunctionLiteral,
+                                parameters: [
+                                    { name: "type", type: { type: DescriptorType.Godot, name: "Godot.Variant.Type" } },
+                                    {
+                                        name: "options",
+                                        type: { type: DescriptorType.Godot, name: "ExportOptions" },
+                                        optional: true,
+                                    },
+                                ],
+                                returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                            },
+                            {
+                                type: DescriptorType.ObjectLiteral,
+                                properties: {
+                                    multiline: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    range: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [
+                                            { name: "min", type: { type: DescriptorType.Godot, name: "number" } },
+                                            { name: "max", type: { type: DescriptorType.Godot, name: "number" } },
+                                            { name: "step", type: { type: DescriptorType.Godot, name: "number" } },
+                                            {
+                                                name: "...extra_hints",
+                                                type: { type: DescriptorType.Godot, name: "string[]" },
+                                            },
+                                        ],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    [names.get_member("range_int")]: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [
+                                            { name: "min", type: { type: DescriptorType.Godot, name: "number" } },
+                                            { name: "max", type: { type: DescriptorType.Godot, name: "number" } },
+                                            { name: "step", type: { type: DescriptorType.Godot, name: "number" } },
+                                            {
+                                                name: "...extra_hints",
+                                                type: { type: DescriptorType.Godot, name: "string[]" },
+                                            },
+                                        ],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    file: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [{
+                                            name: "filter",
+                                            type: { type: DescriptorType.Godot, name: "string" },
+                                        }],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    dir: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [{
+                                            name: "filter",
+                                            type: { type: DescriptorType.Godot, name: "string" },
+                                        }],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    [names.get_member("global_file")]: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [{
+                                            name: "filter",
+                                            type: { type: DescriptorType.Godot, name: "string" },
+                                        }],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    [names.get_member("global_dir")]: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [{
+                                            name: "filter",
+                                            type: { type: DescriptorType.Godot, name: "string" },
+                                        }],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    [names.get_member("exp_easing")]: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [
+                                            {
+                                                name: "hint",
+                                                optional: true,
+                                                type: {
+                                                    type: DescriptorType.Union,
+                                                    types: [
+                                                        { type: DescriptorType.StringLiteral, value: "" },
+                                                        { type: DescriptorType.StringLiteral, value: "attenuation" },
+                                                        { type: DescriptorType.StringLiteral, value: "positive_only" },
+                                                        {
+                                                            type: DescriptorType.StringLiteral,
+                                                            value: "attenuation,positive_only",
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    array: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [
+                                            {
+                                                name: "clazz",
+                                                type: { type: DescriptorType.Godot, name: "ClassSpecifier" },
+                                            },
+                                        ],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    dictionary: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [
+                                            {
+                                                name: "key_class",
+                                                type: { type: DescriptorType.Godot, name: "VariantConstructor" },
+                                            },
+                                            {
+                                                name: "value_class",
+                                                type: { type: DescriptorType.Godot, name: "VariantConstructor" },
+                                            },
+                                        ],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    object: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        generics: [
+                                            {
+                                                name: "Constructor",
+                                                extends: { type: DescriptorType.Godot, name: "GObjectConstructor" },
+                                            },
+                                        ],
+                                        parameters: [
+                                            { name: "clazz", type: { type: DescriptorType.Godot, name: "Constructor" } },
+                                        ],
+                                        returns: {
+                                            type: DescriptorType.Godot,
+                                            name: "ClassMemberDecorator",
+                                            arguments: [{
+                                                type: DescriptorType.Godot,
+                                                name: "ClassValueMemberDecoratorContext",
+                                                arguments: [
+                                                    { type: DescriptorType.Godot, name: "unknown" },
+                                                    {
+                                                        type: DescriptorType.Union,
+                                                        types: [
+                                                            { type: DescriptorType.Godot, name: "null" },
+                                                            {
+                                                                type: DescriptorType.Godot,
+                                                                name: "InstanceType",
+                                                                arguments: [{
+                                                                    type: DescriptorType.Godot,
+                                                                    name: "Constructor",
+                                                                }],
+                                                            },
+                                                        ],
+                                                    },
+                                                ],
+                                            }],
+                                        },
+                                    },
+                                    enum: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [{
+                                            name: "enum_type",
+                                            type: {
+                                                type: DescriptorType.Godot,
+                                                name: "Record",
+                                                arguments: [
+                                                    { type: DescriptorType.Godot, name: "string" },
+                                                    {
+                                                        type: DescriptorType.Union,
+                                                        types: [
+                                                            { type: DescriptorType.Godot, name: "string" },
+                                                            { type: DescriptorType.Godot, name: "number" },
+                                                        ],
+                                                    },
+                                                ],
+                                            },
+                                        }],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    flags: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [{
+                                            name: "enum_type",
+                                            type: {
+                                                type: DescriptorType.Godot,
+                                                name: "Record",
+                                                arguments: [
+                                                    { type: DescriptorType.Godot, name: "string" },
+                                                    {
+                                                        type: DescriptorType.Union,
+                                                        types: [
+                                                            { type: DescriptorType.Godot, name: "string" },
+                                                            { type: DescriptorType.Godot, name: "number" },
+                                                        ],
+                                                    },
+                                                ],
+                                            },
+                                        }],
+                                        returns: { type: DescriptorType.Godot, name: "ClassMemberDecorator" },
+                                    },
+                                    cache: {
+                                        type: DescriptorType.FunctionLiteral,
+                                        parameters: [],
+                                        returns: {
+                                            type: DescriptorType.Godot,
+                                            name: "ClassMemberDecorator",
+                                            arguments: [{
+                                                type: DescriptorType.Union,
+                                                types: [
+                                                    {
+                                                        type: DescriptorType.Godot,
+                                                        name: "ClassAccessorDecoratorContext",
+                                                        arguments: [{
+                                                            type: DescriptorType.Godot,
+                                                            name: `Godot.${names.get_class('Object')}`,
+                                                        }],
+                                                    },
+                                                    {
+                                                        type: DescriptorType.Godot,
+                                                        name: "ClassSetterDecoratorContext",
+                                                        arguments: [{
+                                                            type: DescriptorType.Godot,
+                                                            name: `Godot.${names.get_class('Object')}`,
+                                                        }],
+                                                    },
+                                                ],
+                                            }],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                    signal: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [],
+                        returns: {
+                            type: DescriptorType.FunctionLiteral,
+                            generics: [{
+                                name: "Context",
+                                extends: {
+                                    type: DescriptorType.Union,
+                                    types: [
+                                        {
+                                            type: DescriptorType.Godot,
+                                            name: "ClassAccessorDecoratorContext",
+                                            arguments: [{
+                                                type: DescriptorType.Godot,
+                                                name: `Godot.${names.get_class('Object')}`,
+                                            }, { type: DescriptorType.Godot, name: "Godot.Signal" }],
+                                        },
+                                        {
+                                            type: DescriptorType.Godot,
+                                            name: "ClassGetterDecoratorContext",
+                                            arguments: [{
+                                                type: DescriptorType.Godot,
+                                                name: `Godot.${names.get_class('Object')}`,
+                                            }, { type: DescriptorType.Godot, name: "Godot.Signal" }],
+                                        },
+                                        {
+                                            type: DescriptorType.Godot,
+                                            name: "ClassFieldDecoratorContext",
+                                            arguments: [{
+                                                type: DescriptorType.Godot,
+                                                name: `Godot.${names.get_class('Object')}`,
+                                            }, { type: DescriptorType.Godot, name: "Godot.Signal" }],
+                                        },
+                                    ],
+                                },
+                            }],
+                            parameters: [
+                                { name: "_target", type: { type: DescriptorType.Godot, name: "unknown" } },
+                                { name: "context", type: { type: DescriptorType.Godot, name: "Context" } },
+                            ],
+                            returns: {
+                                type: DescriptorType.Godot,
+                                name: "ClassMemberDecoratorReturn",
+                                arguments: [{ type: DescriptorType.Godot, name: "Context" }],
+                            },
+                        },
+                    },
+                    rpc: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [
+                            { name: "config", type: { type: DescriptorType.Godot, name: names.get_class('RPCConfig') }, optional: true },
+                        ],
+                        returns: {
+                            type: DescriptorType.FunctionLiteral,
+                            parameters: [
+                                { name: "_target", type: { type: DescriptorType.Godot, name: "Function" } },
+                                {
+                                    name: "context",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [{
+                                            type: DescriptorType.Godot,
+                                            name: "string",
+                                        }, { type: DescriptorType.Godot, name: "ClassMethodDecoratorContext" }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    onready: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [{
+                            name: "evaluator",
+                            type: {
+                                type: DescriptorType.Union,
+                                types: [
+                                    { type: DescriptorType.Godot, name: "string" },
+                                    { type: DescriptorType.Godot, name: "GodotJsb.internal.OnReadyEvaluatorFunc" },
+                                ],
+                            },
+                        }],
+                        returns: {
+                            type: DescriptorType.FunctionLiteral,
+                            parameters: [
+                                { name: "_target", type: { type: DescriptorType.Godot, name: "undefined" } },
+                                {
+                                    name: "context",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [{
+                                            type: DescriptorType.Godot,
+                                            name: "string",
+                                        }, { type: DescriptorType.Godot, name: "ClassMethodDecoratorContext" }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    deprecated: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [
+                            { name: "message", type: { type: DescriptorType.Godot, name: "string" }, optional: true },
+                        ],
+                        returns: {
+                            type: DescriptorType.Godot,
+                            name: "Decorator",
+                            arguments: [{
+                                type: DescriptorType.Union,
+                                types: [
+                                    {
+                                        type: DescriptorType.Godot,
+                                        name: "ClassDecoratorContext",
+                                        arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
+                                    },
+                                    {
+                                        type: DescriptorType.Godot,
+                                        name: "ClassValueMemberDecoratorContext",
+                                        arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
+                                    },
+                                ],
+                            }],
+                        },
+                    },
+                    experimental: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [
+                            { name: "message", type: { type: DescriptorType.Godot, name: "string" }, optional: true },
+                        ],
+                        returns: {
+                            type: DescriptorType.Godot,
+                            name: "Decorator",
+                            arguments: [{
+                                type: DescriptorType.Union,
+                                types: [
+                                    {
+                                        type: DescriptorType.Godot,
+                                        name: "ClassDecoratorContext",
+                                        arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
+                                    },
+                                    {
+                                        type: DescriptorType.Godot,
+                                        name: "ClassValueMemberDecoratorContext",
+                                        arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
+                                    },
+                                ],
+                            }],
+                        },
+                    },
+                    help: {
+                        type: DescriptorType.FunctionLiteral,
+                        parameters: [
+                            { name: "message", type: { type: DescriptorType.Godot, name: "string" }, optional: true },
+                        ],
+                        returns: {
+                            type: DescriptorType.Godot,
+                            name: "Decorator",
+                            arguments: [{
+                                type: DescriptorType.Union,
+                                types: [
+                                    {
+                                        type: DescriptorType.Godot,
+                                        name: "ClassDecoratorContext",
+                                        arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
+                                    },
+                                    {
+                                        type: DescriptorType.Godot,
+                                        name: "ClassValueMemberDecoratorContext",
+                                        arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
+                                    },
+                                ],
+                            }],
+                        },
+                    },
+                },
+            },
+        ],
+    }),
+    ExportOptions: godot.GDictionary.create<ObjectLiteralTypeDescriptor>({
+        type: DescriptorType.ObjectLiteral,
+        properties: {
+            class: {
+                type: DescriptorType.Godot,
+                name: "any",
+                optional: true,
+            },
+            hint: {
+                type: DescriptorType.Godot,
+                name: "Godot.PropertyHint",
+                optional: true,
+            },
+            [names.get_member('hint_string')]: {
+                type: DescriptorType.Godot,
+                name: "string",
+                optional: true,
+            },
+            usage: {
+                type: DescriptorType.Godot,
+                name: "Godot.PropertyUsageFlags",
+                optional: true,
+            },
+        },
+    }),
+    RPCConfig: godot.GDictionary.create<ObjectLiteralTypeDescriptor>({
+        type: DescriptorType.ObjectLiteral,
+        properties: {
+            mode: {
+                type: DescriptorType.Godot,
+                name: `Godot.${names.get_class("MultiplayerAPI")}.${names.get_enum("RPCMode")}`,
+                optional: true,
+            },
+            sync: {
+                type: DescriptorType.Union,
+                types: [
+                    {
+                        type: DescriptorType.StringLiteral,
+                        value: "call_remote",
+                    },
+                    {
+                        type: DescriptorType.StringLiteral,
+                        value: "call_local",
+                    },
+                ],
+                optional: true,
+            },
+            [names.get_member('transfer_mode')]: {
+                type: DescriptorType.Godot,
+                name: 'Godot.MultiplayerPeer.TransferMode',
+                optional: true,
+            },
+            [names.get_member('transfer_channel')]: {
+                type: DescriptorType.Godot,
+                name: "number",
+                optional: true,
+            },
+        },
+    }),
+};
+
 export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest | ScriptResourceTypeDescriptorCodeGenRequest;
 
 /**
@@ -1261,8 +1857,15 @@ export type CodeGenRequest = ScriptNodeTypeDescriptorCodeGenRequest | ScriptReso
 export type CodeGenHandler = (request: CodeGenRequest) => undefined | TypeDescriptor;
 
 class TypeDescriptorWriter extends BufferingWriter {
-    bufferedSize(text: string, newLine: boolean): number {
-        return text.length + (newLine ? 1 : 0);
+    protected _concatenate_first_line = false;
+
+    constructor(base: ScopeWriter, concatenate_first_line = false) {
+        super(base);
+        this._concatenate_first_line = concatenate_first_line;
+    }
+
+    buffered_size(text: string, new_line: boolean): number {
+        return text.length + (new_line ? 1 : 0);
     }
 
     finish() {
@@ -1279,46 +1882,48 @@ class TypeDescriptorWriter extends BufferingWriter {
     serialize_type_descriptor(descriptor: GReadProxyValueWrap<TypeDescriptor>): void {
         switch (descriptor.type) {
             case DescriptorType.Godot: {
-                if (descriptor.arguments) {
+                if (!descriptor.name) {
+                    throw new Error("Invalid User type descriptor: missing name");
+                }
+
+                if (descriptor.arguments?.length) {
                     this.line(`${descriptor.name}<`);
-                    const multiline = descriptor.arguments.length > 1
-                        || descriptor.arguments[0]?.type === DescriptorType.Union
-                        || descriptor.arguments[0]?.type === DescriptorType.Intersection;
-                    const indent = multiline ? new IndentWriter(this) : null;
-                    const args = new TypeDescriptorWriter(indent ?? this, !multiline);
+                    const indent = new IndentWriter(this);
+                    const args = new TypeDescriptorWriter(indent);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
-                            args.concatenate(", ");
+                            args.concatenate(",");
                         }
 
                         args.serialize_type_descriptor(arg);
                     });
                     args.finish();
-                    indent?.finish();
-                    this.append(multiline, `>`);
+                    indent.finish();
+                    this.append(indent.lineno > 1, `>`);
                 } else {
                     this.line(descriptor.name);
                 }
                 break;
             }
             case DescriptorType.User: {
+                if (!descriptor.name) {
+                    throw new Error("Invalid User type descriptor: missing name");
+                }
+
                 if (descriptor.arguments) {
                     this.line(`${descriptor.name}<`);
-                    const multiline = descriptor.arguments.length > 1
-                        || descriptor.arguments[0]?.type === DescriptorType.Union
-                        || descriptor.arguments[0]?.type === DescriptorType.Intersection;
-                    const indent = multiline ? new IndentWriter(this) : null;
-                    const args = new TypeDescriptorWriter(indent ?? this, !multiline);
+                    const indent = new IndentWriter(this);
+                    const args = new TypeDescriptorWriter(indent, false);
                     descriptor.arguments.forEach((arg, index) => {
                         if (index > 0) {
-                            args.concatenate(", ");
+                            args.concatenate(",");
                         }
 
                         args.serialize_type_descriptor(arg);
                     });
                     args.finish();
-                    indent?.finish();
-                    this.append(multiline, `>`);
+                    indent.finish();
+                    this.append(indent.lineno > 1, `>`);
                 } else {
                     this.line(descriptor.name);
                 }
@@ -1331,6 +1936,7 @@ class TypeDescriptorWriter extends BufferingWriter {
                 const generic_count = descriptor.generics ? Object.entries(descriptor.generics).length : 0;
 
                 if (generic_count > 0) {
+                    this.concatenate('<');
                     descriptor.generics!.forEach((generic, index) => {
                         if (index > 0) {
                             this.concatenate(", ");
@@ -1353,39 +1959,52 @@ class TypeDescriptorWriter extends BufferingWriter {
                             default_writer.finish();
                         }
                     });
+                    this.concatenate('>');
                 }
 
                 this.append(generic_count == 0, `(`);
 
-                const multiline = (descriptor.parameters?.length ?? 0) > 1;
-
                 if (descriptor.parameters) {
+                    const indent = new IndentWriter(this);
+
                     descriptor.parameters.forEach((param, index) => {
                         if (index > 0) {
-                            this.concatenate(", ");
+                            indent.concatenate(", ");
                         }
 
-                        this.line(`${param.name}: `);
+                        indent.line(`${param.name}${param.optional ? "?" : ""}: `);
 
-                        const param_writer = new TypeDescriptorWriter(this, !multiline);
+                        const param_writer = new TypeDescriptorWriter(indent, true);
                         param_writer.serialize_type_descriptor(param.type);
                         param_writer.finish();
-
-                        if (param.default) {
-                            this.concatenate(` = `);
-                            const default_writer = new TypeDescriptorWriter(this, true);
-                            default_writer.serialize_type_descriptor(param.default);
-                            default_writer.finish();
-                        }
                     });
+
+                    indent.finish();
                 }
 
-                this.append(multiline, ") => ");
+                this.append(this.lineno > 1, ") => ");
 
                 if (descriptor.returns) {
-                    const return_writer = new TypeDescriptorWriter(this, true);
+                    const indent = new IndentWriter(this, false);
+                    const return_type = descriptor.returns.type;
+                    const parenthesis_required = return_type === DescriptorType.Union
+                        || return_type === DescriptorType.Intersection
+                        || return_type === DescriptorType.FunctionLiteral
+                        || return_type === DescriptorType.Conditional;
+
+                    if (parenthesis_required) {
+                        indent.line("(");
+                    }
+
+                    const return_writer = new TypeDescriptorWriter(indent, parenthesis_required);
                     return_writer.serialize_type_descriptor(descriptor.returns);
                     return_writer.finish();
+
+                    if (parenthesis_required) {
+                        indent.concatenate(")");
+                    }
+
+                    indent.finish();
                 } else {
                     this.concatenate("void");
                 }
@@ -1394,7 +2013,7 @@ class TypeDescriptorWriter extends BufferingWriter {
             }
 
             case DescriptorType.ObjectLiteral: {
-                const properties = Object.entries(descriptor.properties);
+                const properties = descriptor.properties ? Object.entries(descriptor.properties) : [];
 
                 if (properties.length === 0 && !descriptor.index) {
                     this.line("{}");
@@ -1402,13 +2021,13 @@ class TypeDescriptorWriter extends BufferingWriter {
                 }
 
                 this.line("{");
-                const indent = new IndentWriter(this);
+                const indent = new IndentWriter(this, true);
                 properties.forEach(([key, value]) => {
                     if (!value) {
                         return;
                     }
 
-                    indent.line(`${name_string(key)}: `);
+                    indent.line(`${name_string(key)}${value.optional ? '?' : ''}: `);
                     const prop_writer = new TypeDescriptorWriter(indent, true);
                     prop_writer.serialize_type_descriptor(value);
                     prop_writer.finish();
@@ -1469,29 +2088,39 @@ class TypeDescriptorWriter extends BufferingWriter {
                 break;
             }
 
-            case DescriptorType.Union: {
-                descriptor.types.forEach((type, index) => {
-                    if (index > 0) {
-                        this.line(" | ");
-                    }
-
-                    const union_writer = new TypeDescriptorWriter(this, index > 0);
-                    union_writer.serialize_type_descriptor(type);
-                    union_writer.finish();
-                });
-                break;
-            }
-
+            case DescriptorType.Union:
             case DescriptorType.Intersection: {
+                const multiline = descriptor.types.length > 1;
+                const separator = descriptor.type === DescriptorType.Union
+                    ? `${multiline ? '' : ' '}| `
+                    : `${multiline ? '' : ' '}& `;
+                const members = new IndentWriter(this, true, false);
+
                 descriptor.types.forEach((type, index) => {
                     if (index > 0) {
-                        this.line(" & ");
+                        members.line(separator);
                     }
 
-                    const intersection_writer = new TypeDescriptorWriter(this, index > 0);
-                    intersection_writer.serialize_type_descriptor(type);
-                    intersection_writer.finish();
+                    const member_type = type.type;
+                    const parenthesis_required = member_type === DescriptorType.Union
+                        || member_type === DescriptorType.Intersection
+                        || member_type === DescriptorType.FunctionLiteral
+                        || member_type === DescriptorType.Conditional;
+
+                    if (parenthesis_required) {
+                        members.append(index === 0, '(');
+                    }
+
+                    const member = new TypeDescriptorWriter(members, parenthesis_required || index > 0);
+                    member.serialize_type_descriptor(type);
+                    member.finish();
+
+                    if (parenthesis_required) {
+                        members.concatenate(')');
+                    }
                 });
+
+                members.finish();
                 break;
             }
 
@@ -1566,7 +2195,7 @@ class ModuleWriter extends IndentWriter {
     protected _name: string;
 
     constructor(base: ScopeWriter, name: string) {
-        super(base);
+        super(base, true);
         this._name = name;
     }
 
@@ -1610,12 +2239,19 @@ class ModuleWriter extends IndentWriter {
         const args = this.types.make_args(method_info);
         const rval = this.types.make_return(method_info);
 
+        let exposed_name = method_info.name;
+
+        if (typeof KeywordReplacement[exposed_name] !== "undefined") {
+            exposed_name = names.get_member("godot_" + exposed_name);
+        }
+
         // some godot methods declared with special characters which can not be declared literally
-        if (!this.types.is_valid_method_name(method_info.name)) {
-            this.line(`// [INVALID_NAME]: function ${method_info.name}(${args}): ${rval}`);
+        if (!this.types.is_valid_method_name(exposed_name)) {
+            this.line(`// [INVALID_NAME]: function ${exposed_name}(${args}): ${rval}`);
             return;
         }
-        this.line(`function ${method_info.name}(${args}): ${rval}`);
+
+        this.line(`function ${exposed_name}(${args}): ${rval}`);
     }
 }
 
@@ -1626,7 +2262,7 @@ class NamespaceWriter extends IndentWriter {
     get class_doc() { return this._doc; }
 
     constructor(base: ScopeWriter, name: string, class_doc?: GodotJsb.editor.ClassDoc) {
-        super(base);
+        super(base, true);
         this._name = name;
         this._doc = class_doc;
     }
@@ -1669,7 +2305,7 @@ class ClassWriter extends IndentWriter {
         singleton_mode: boolean,
         class_doc?: GodotJsb.editor.ClassDoc
     ) {
-        super(base);
+        super(base, true);
         this._name = name;
         this._generic_parameters = generic_parameters;
         this._super = super_;
@@ -1716,7 +2352,7 @@ class ClassWriter extends IndentWriter {
 
     intro() {
         if (!this._intro) {
-            return
+            return;
         }
 
         const lines = Array.isArray(this._intro)
@@ -1743,8 +2379,8 @@ class ClassWriter extends IndentWriter {
         if (typeof constant.value !== "undefined") {
             this.line(`static readonly ${name_string(constant.name)} = ${constant.value}`);
         } else {
-            const type_name = get_primitive_type_name(constant.type);
-            this.line(`static readonly ${name_string(constant.name)}: ${type_name}`);
+            const type_name = VariantTypeNames.get(constant.type);
+            this.line(`static readonly ${name_string(constant.name)}: Readonly<${type_name}>`);
         }
     }
 
@@ -1754,11 +2390,11 @@ class ClassWriter extends IndentWriter {
         this.line(`static readonly ${name_string(constant.name)} = ${constant.value}`);
     }
 
-    property_(name: string): PropertyWriter;
-    property_(getset_info: GodotJsb.editor.PropertySetGetInfo): void;
-    property_(name_or_getset_info: string | GodotJsb.editor.PropertySetGetInfo): void | PropertyWriter {
+    property_(name: string, static_property?: boolean): PropertyWriter;
+    property_(getset_info: GodotJsb.editor.PropertySetGetInfo, static_property?: boolean): void;
+    property_(name_or_getset_info: string | GodotJsb.editor.PropertySetGetInfo, static_property = false): void | PropertyWriter {
         if (typeof name_or_getset_info === "string") {
-            return super.property_(name_or_getset_info);
+            return super.property_(name_or_getset_info, static_property);
         }
 
         const getset_info = name_or_getset_info;
@@ -1781,9 +2417,9 @@ class ClassWriter extends IndentWriter {
         //
         // It's not an error in javascript which is more dangerous :( the actually modifed value is just a copy of `node.position`.
 
-        line(`get ${name}(): ${this.types.make_typename(getset_info.info, false, false)}`);
+        line(`${static_property ? 'static ': ''}get ${name}(): ${this.types.make_typename(getset_info.info, false, false)}`);
         if (getset_info.setter.length != 0) {
-            line(`set ${name}(value: ${this.types.make_typename(getset_info.info, true, false)})`);
+            line(`${static_property ? 'static ': ''}set ${name}(value: ${this.types.make_typename(getset_info.info, true, false)})`);
         }
     }
 
@@ -1791,7 +2427,7 @@ class ClassWriter extends IndentWriter {
         this._separator_line = true;
 
         const name = name_string(property_info.name);
-        this.line(`get ${name}(): ${get_primitive_type_name(property_info.type)}`);
+        this.line(`get ${name}(): ${VariantTypeNames.get(property_info.type)}`);
         this.line(`set ${name}(value: ${get_primitive_type_name_as_input(property_info.type)})`);
     }
 
@@ -1809,7 +2445,7 @@ class ClassWriter extends IndentWriter {
 
     operator_(operator_info: GodotJsb.editor.OperatorInfo) {
         this._separator_line = true;
-        const return_type_name = get_primitive_type_name(operator_info.return_type);
+        const return_type_name = VariantTypeNames.get(operator_info.return_type);
         const left_type_name = get_primitive_type_name_as_input(operator_info.left_type);
         if (operator_info.right_type == godot.Variant.Type.TYPE_NIL) {
             this.line(`static ${operator_info.name}(left: ${left_type_name}): ${return_type_name}`);
@@ -1873,7 +2509,7 @@ class EnumWriter extends IndentWriter {
     protected _separator_line = false;
 
     constructor(base: ScopeWriter, name: string) {
-        super(base);
+        super(base, true);
         this._name = name;
     }
 
@@ -1921,7 +2557,7 @@ class InterfaceWriter extends IndentWriter {
         intro?: undefined | string[],
         property_overrides?: undefined | PropertyOverrides,
     ) {
-        super(base);
+        super(base, true);
         this._name = name;
         this._generic_parameters = generic_parameters;
         this._super = super_;
@@ -1979,7 +2615,7 @@ class InterfaceWriter extends IndentWriter {
         }
         const line = (line: string) => this.line(property_override?.(line) ?? line);
 
-        line(`${key}: ${type};`);
+        line(`${name_string(key)}: ${type};`);
     }
 }
 
@@ -2034,10 +2670,14 @@ class ObjectWriter extends IndentWriter {
             return;
         }
 
-        this._base.line(`{`)
+        const line_count = (this._intro?.length ?? 0) + this._lines.length;
+        const single_line = line_count === 0 || (line_count === 1 && !this._never_collapse);
+        const padding = line_count === 1 && single_line ? ' ' : '';
+
+        this._base.line(`{${padding}`)
         this.intro()
         super.finish()
-        this._base.line("}")
+        this._base.append(!single_line, `${padding}}`)
     }
 
     property_(key: string): PropertyWriter;
@@ -2056,18 +2696,21 @@ class ObjectWriter extends IndentWriter {
         }
         const line = (line: string) => this.line(property_override?.(line) ?? line);
 
-        line(`${key}: ${type};`);
+        line(`${name_string(key)}: ${type};`);
     }
 }
 
 class PropertyWriter extends BufferingWriter {
-    private _key: string;
+    protected _concatenate_first_line = false;
 
-    constructor(base: ScopeWriter, name: string, concatenate_first_line = false) {
-        super(base, concatenate_first_line);
-        this._key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
-            ? name
-            : `"${name.replace("\"", "\\\"")}"`;
+    private _key: string;
+    private _static_property: boolean;
+
+    constructor(base: ScopeWriter, name: string, static_property = false, concatenate_first_line = false) {
+        super(base);
+        this._concatenate_first_line = concatenate_first_line;
+        this._key = name;
+        this._static_property = static_property;
         this._size += this._key.length + 3;
     }
 
@@ -2076,7 +2719,7 @@ class PropertyWriter extends BufferingWriter {
             return;
         }
 
-        this._base.append(!this._concatenate_first_line, `${this._key}: `);
+        this._base.append(!this._concatenate_first_line, `${this._static_property ? 'static ': ''}${name_string(this._key)}: `);
 
         const lines = this._lines;
         for (let i = 0, l = lines.length; i < l; i++) {
@@ -2086,8 +2729,8 @@ class PropertyWriter extends BufferingWriter {
         this._base.concatenate(";");
     }
 
-    bufferedSize(text: string, newLine: boolean): number {
-        return text.length + (newLine ? 1 : 0);
+    buffered_size(text: string, new_line: boolean): number {
+        return text.length + (new_line ? 1 : 0);
     }
 }
 
@@ -2259,31 +2902,53 @@ export class TypeDB {
         return true;
     }
 
-    make_classname(internal_class_name: string): string {
+    make_classname(class_name: string, internal?: boolean): string {
         const types = this;
-        const remap_name: string | undefined = RemapTypes[internal_class_name];
-        if (typeof remap_name !== "undefined") {
-            return remap_name;
-        }
-        const class_name = names.get_class(internal_class_name);
-        if (class_name in types.classes) {
-            return class_name;
-        } else if (class_name in types.singletons) {
-            return class_name;
-        } else if (internal_class_name in types.globals) {
-            return internal_class_name;
-        } else if (internal_class_name.indexOf(".") >= 0) {
-            const layers = internal_class_name.split(".").map(n => names.get_class(n));
-            if (layers.length == 2) {
-                // nested enums in primitive types do not exist in class_info, they are manually binded.
-                if (PrimitiveTypesSet.has(layers[0])) {
-                    return layers.join(".");
+
+        if (class_name.indexOf(".") > 0) {
+            const layers = class_name.split(".");
+
+            if (layers.length === 2) {
+                const enum_name = names.get_enum(layers[1]);
+
+                // nested enums in primitive types do not exist in class_info, they are manually bound.
+                if (layers[0] in VariantNames) {
+                    return `${VariantTypeNames.get(VariantNames[layers[0]]!)!}.${enum_name}`;
                 }
-                const cls = types.classes[layers[0]];
-                if (typeof cls !== "undefined" && cls.enums!.findIndex(v => v.name == layers[1]) >= 0) {
-                    return layers.join(".");
+
+                const class_name = names.get_class(layers[0]);
+
+                if (class_name in VariantNames) {
+                    return `${VariantTypeNames.get(VariantNames[class_name]!)!}.${enum_name}`;
+                }
+
+                const cls = types.classes[class_name];
+                const enum_index = cls?.enums?.findIndex(v => v.name === enum_name) ?? -1;
+
+                if (enum_index >= 0) {
+                    return `${class_name}.${enum_name}`;
                 }
             }
+        } else {
+            if (internal) {
+                if (class_name in VariantNames) {
+                    return VariantTypeNames.get(VariantNames[class_name]!)!;
+                }
+                class_name = names.get_class(class_name);
+            }
+
+            if (class_name in VariantNames) {
+                return VariantTypeNames.get(VariantNames[class_name]!)!;
+            }
+
+            if (class_name in types.classes) {
+                return class_name;
+            } else if (class_name in types.singletons) {
+                return class_name;
+            }
+        }
+        if (class_name in types.globals) {
+            return class_name;
         }
         console.warn("undefined class", class_name);
         return `any /*${class_name}*/`;
@@ -2296,15 +2961,41 @@ export class TypeDB {
 
         if (info.hint == godot.PropertyHint.PROPERTY_HINT_RESOURCE_TYPE) {
             console.assert(info.hint_string.length != 0, "at least one valid class_name expected");
-            return null_prefix + info.hint_string.split(",").map(internal_class_name => this.make_classname(internal_class_name)).join(" | ")
+            return null_prefix + info.hint_string.split(',').map(name => this.make_classname(name, true)).join(" | ");
         }
 
         //NOTE there are infos with `.class_name == bool` instead of `.type` only, they will be remapped in `make_classname`
-        if (info.class_name.length == 0) {
-            const primitive_name = used_as_input ? get_primitive_type_name_as_input(info.type) : get_primitive_type_name(info.type);
-            if (typeof primitive_name !== "undefined") {
-                return null_prefix + primitive_name;
+        if (info.class_name.length === 0 || info.class_name.includes(",")) {
+            const variant_type_name = used_as_input ? get_primitive_type_name_as_input(info.type) : VariantTypeNames.get(info.type);
+
+            if (typeof variant_type_name !== "undefined") {
+                if (info.type === godot.Variant.Type.TYPE_ARRAY && info.hint == godot.PropertyHint.PROPERTY_HINT_ARRAY_TYPE && info.hint_string) {
+                    // Handle MAKE_RESOURCE_TYPE_HINT
+                    const class_name_components = info.hint_string.split(":");
+                    const class_name = class_name_components[class_name_components.length - 1];
+                    return `${null_prefix}${variant_type_name}<${this.make_classname(class_name, true)}>`;
+                }
+
+                // PROPERTY_HINT_DICTIONARY_TYPE won't be present prior to 4.4
+                if (info.type === godot.Variant.Type.TYPE_DICTIONARY
+                    && 'PROPERTY_HINT_DICTIONARY_TYPE' in godot.PropertyHint
+                    && info.hint === godot.PropertyHint.PROPERTY_HINT_DICTIONARY_TYPE
+                    && info.hint_string) {
+                    const class_names = info.hint_string.split(";");
+
+                    if (class_names.length === 2) {
+                        // TODO: Record can only handle string, number and symbol keys, but GDictionary can support any.
+                        //       We should support Record taking a Map<> in addition to a Record<>.
+                        const key_type = this.make_classname(class_names[0], true);
+                        return js_object_key_types.has(key_type)
+                            ? `${null_prefix}${variant_type_name}<Record<${key_type}, ${this.make_classname(class_names[0], true)}>>`
+                            : `${null_prefix}${variant_type_name}`;
+                    }
+                }
+
+                return null_prefix + variant_type_name;
             }
+
             return `any /*unhandled: ${info.type}*/`;
         }
 
@@ -2317,7 +3008,7 @@ export class TypeDB {
 
     make_literal_value(value: GodotJsb.editor.DefaultArgumentInfo) {
         // plain types
-        const type_name = get_primitive_type_name(value.type);
+        const type_name = VariantTypeNames.get(value.type);
         switch (value.type) {
             case godot.Variant.Type.TYPE_BOOL: return value.value == null ? "false" : `${value.value}`;
             case godot.Variant.Type.TYPE_FLOAT:
@@ -2416,27 +3107,27 @@ export class TypeDB {
 // d.ts generator
 export class TSDCodeGen {
     private _split_index: number;
-    private _outDir: string;
+    private _out_dir: string;
     private _splitter: FileSplitter | undefined;
     private _types: TypeDB;
     private _use_project_settings: boolean;
 
     constructor(outDir: string, use_project_settings: boolean) {
         this._split_index = 0;
-        this._outDir = outDir;
+        this._out_dir = outDir;
         this._use_project_settings = use_project_settings;
         this._types = new TypeDB();
     }
 
     private make_path(index: number) {
         const filename = `godot${index}.gen.d.ts`;
-        if (typeof this._outDir !== "string" || this._outDir.length == 0) {
+        if (typeof this._out_dir !== "string" || this._out_dir.length == 0) {
             return filename;
         }
-        if (this._outDir.endsWith("/")) {
-            return this._outDir + filename;
+        if (this._out_dir.endsWith("/")) {
+            return this._out_dir + filename;
         }
-        return this._outDir + "/" + filename;
+        return this._out_dir + "/" + filename;
     }
 
     private new_splitter() {
@@ -2482,7 +3173,7 @@ export class TSDCodeGen {
     async emit() {
         await frame_step();
 
-        const tasks = new CodegenTasks("godot.d.ts");
+        const tasks = new CodegenTasks("Generating godot.d.ts");
 
         // aliases
         tasks.add_task("Aliases", () => this.emit_aliases());
@@ -2495,9 +3186,6 @@ export class TSDCodeGen {
         // godot classes
         for (let class_name in this._types.classes) {
             const cls = this._types.classes[class_name];
-            if (IgnoredTypes.has(class_name)) {
-                continue;
-            }
             if (typeof this._types.singletons[class_name] !== "undefined") {
                 // ignore the class if it's already defined as Singleton
                 continue;
@@ -2529,6 +3217,40 @@ export class TSDCodeGen {
                 cg.line(mi.method);
             });
         }
+
+        tasks.add_task("jsb.runtime", () => {
+            const path = "/jsb.runtime.gen.d.ts";
+            const dir_path = this._out_dir + path;
+            const file = godot.FileAccess.open(dir_path, godot.FileAccess.ModeFlags.WRITE);
+
+            if (!file) {
+                throw new Error(`failed to open file for writing: ${dir_path}`);
+            }
+
+            const runtime_gen = new FileWriter(dir_path, this._types, file);
+
+            try {
+                const module = new ModuleWriter(
+                    runtime_gen,
+                    "godot.annotations"
+                );
+
+                module.line('import * as Godot from "godot";');
+                module.line('import * as GodotJsb from "godot-jsb";');
+
+                for (const [name, descriptor] of Object.entries(annotation_types)) {
+                    module.line(`type ${names.get_class(name)} = `)
+                    const type_descriptor = new TypeDescriptorWriter(module, true);
+                    type_descriptor.serialize_type_descriptor(descriptor.proxy());
+                    type_descriptor.finish();
+                }
+
+                module.finish();
+                runtime_gen.finish();
+            } finally {
+                file.close();
+            }
+        })
 
         tasks.add_task("Cleanup", () => {
             this._splitter?.close();
@@ -2565,13 +3287,12 @@ export class TSDCodeGen {
         }
 
         if (GodotAnyType != "any") {
-            let gd_variant_alias = `type ${GodotAnyType} = `;
+            let gd_variant_alias = `type ${GodotAnyType} = undefined | null`;
             for (let i = godot.Variant.Type.TYPE_NIL + 1; i < godot.Variant.Type.TYPE_MAX; ++i) {
-                const type_name = get_primitive_type_name(i);
+                const type_name = VariantTypeNames.get(i);
                 if (type_name == GodotAnyType || type_name == "any") continue;
-                gd_variant_alias += type_name + " | ";
+                gd_variant_alias += " | " + type_name;
             }
-            gd_variant_alias += "undefined";
             cg.line(gd_variant_alias);
         }
 
@@ -2638,18 +3359,23 @@ export class TSDCodeGen {
                 }
             }
         }
-        for (let constructor_info of cls.constructors) {
-            class_cg.constructor_(constructor_info);
+        if (cls.constructors) {
+            for (let constructor_info of cls.constructors) {
+                class_cg.constructor_(constructor_info);
+            }
         }
-
         for (let method_info of cls.methods) {
             class_cg.ordinary_method_(method_info);
         }
-        for (let operator_info of cls.operators) {
-            class_cg.operator_(operator_info);
+        if (cls.operators) {
+            for (let operator_info of cls.operators) {
+                class_cg.operator_(operator_info);
+            }
         }
-        for (let property_info of cls.properties) {
-            class_cg.primitive_property_(property_info);
+        if (cls.properties) {
+            for (let property_info of cls.properties) {
+                class_cg.primitive_property_(property_info);
+            }
         }
         class_cg.finish();
     }
@@ -2695,20 +3421,53 @@ export class TSDCodeGen {
             if (!singleton_mode) {
                 class_cg.constructor_ex_();
             }
+
+            const godot_name_overrides: Record<string, string> = {};
+
             for (let method_info of cls.virtual_methods) {
                 class_cg.virtual_method_(method_info);
+                if (method_info.internal_name !== method_info.name) {
+                    godot_name_overrides[method_info.internal_name] = method_info.name;
+                }
             }
             for (let method_info of cls.methods) {
                 class_cg.ordinary_method_(method_info);
+                if (method_info.internal_name !== method_info.name) {
+                    godot_name_overrides[method_info.internal_name] = method_info.name;
+                }
             }
+
             for (let property_info of cls.properties) {
-                class_cg.property_(property_info);
+                class_cg.property_(property_info, singleton_mode);
+                if (property_info.internal_name !== property_info.name) {
+                    godot_name_overrides[property_info.internal_name] = property_info.name;
+                }
             }
+
             if (cls.signals) {
                 for (let signal_info of cls.signals) {
                     class_cg.signal_(signal_info);
+                    if (signal_info.internal_name !== signal_info.name) {
+                        godot_name_overrides[signal_info.internal_name] = signal_info.name;
+                    }
                 }
             }
+
+            const overrides_interface_name = `__NameMap${cls.name}`;
+            const overrides_interface_writer = cg.interface_(overrides_interface_name, undefined, cls.super && `__NameMap${cls.super}`);
+            for (const [key, value] of Object.entries(godot_name_overrides)) {
+                overrides_interface_writer.property_(key, `"${value}"`);
+            }
+            // Not really deprecated, but we don't want people using this.
+            cg.line("/** @deprecated Internal use. Does not exist at runtime. */");
+            overrides_interface_writer.finish();
+
+            const godot_name_map_writer = class_cg.property_("__godotNameMap");
+            godot_name_map_writer.line(overrides_interface_name);
+
+            class_cg.line("/** @deprecated Internal use. Does not exist at runtime. */");
+            godot_name_map_writer.finish();
+
             class_cg.finish();
         } catch (error) {
             console.error(`failed to generate '${cls.name}'`, (error as Error).stack);
@@ -2737,7 +3496,7 @@ export class SceneTSDCodeGen {
     private make_scene_path(scene_path: string, include_filename = true) {
         const relative_path = (
             include_filename
-                ? scene_path.replace(/\.t?scn$/i, ".nodes.gen.d.ts")
+                ? scene_path.replace(/\.t?scn$/i, ".nodes.gen.ts")
                 : scene_path.replace(/\/[^\/]+$/, "")
         ).replace(/^res:\/\/?/, "");
 
@@ -2842,7 +3601,7 @@ export class ResourceTSDCodeGen {
     private make_resource_path(resource_path: string, include_filename = true) {
         const relative_path = (
           include_filename
-            ? resource_path + ".gen.d.ts"
+            ? resource_path + ".gen.ts"
             : resource_path.replace(/\/[^\/]+$/, "")
         ).replace(/^res:\/\/?/, "");
 

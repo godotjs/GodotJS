@@ -10,7 +10,7 @@ void GodotJSREPL::_bind_methods()
 
 GodotJSREPL::GodotJSREPL()
 {
-#ifdef GODOT_4_5_OR_NEWER
+#if GODOT_4_5_OR_NEWER
     sn_backlog_flush_ = StringName("_backlog_flush");
 #else GODOT_4_5_OR_NEWER
     sn_backlog_flush_ = _scs_create("_backlog_flush");

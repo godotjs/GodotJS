@@ -75,6 +75,10 @@ namespace jsb::internal
         UnderlyingType packed_;
     };
 
+    // Allocates 64 bits, but only the lower 52 are used. This is the range that can be safely stored in a JS number.
+    // index(0, 4_294_967_295) revision(1, 1_048_575)
+    typedef TIndex<uint64_t, 20, 0xfffff> IndexSafe64;
+
     // do not really support the index bigger than int32_t.MaxValue
     // /*if unsigned*/ index(0, 4_294_967_295) revision(1, 4_294_967_295)
     typedef TIndex<uint64_t, 32, 0xffffffff> Index64;

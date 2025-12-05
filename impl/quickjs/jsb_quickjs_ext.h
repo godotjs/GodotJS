@@ -95,6 +95,8 @@ namespace jsb::impl
             const JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(value);
             return p ? p->ref_count : 0;
         }
+
+        static JSValue NoopCallback(JSContext* _ctx, JSValueConst _this_val, int _argc, JSValueConst* _argv);
     };
 }
 #endif

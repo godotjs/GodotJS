@@ -72,6 +72,12 @@ namespace v8
             return !operator==(other);
         }
 
+        template <typename S>
+        bool operator==(const Global<S>& other) const;
+
+        template <typename S>
+        bool operator!=(const Global<S>& other) const;
+
     private:
         Data data_;
     };
@@ -299,6 +305,18 @@ namespace v8
             return !operator==(other);
         }
 
+        template <typename S>
+        bool operator==(const Local<S>& other) const
+        {
+            return other == *this;
+        }
+
+        template <typename S>
+        bool operator!=(const Local<S>& other) const
+        {
+            return other != *this;
+        }
+
     private:
         // A primitive JSValue is always alive (shadow_ == nullptr).
         // Otherwise, check if the QuickJS internal JSObject* has not been deleted from the phantom list.
@@ -315,6 +333,20 @@ namespace v8
 
         WeakType weak_type_ = WeakType::kStrong;
     };
+
+    template <typename T>
+    template <typename S>
+    bool Local<T>::operator==(const Global<S>& other) const
+    {
+        return this->operator==(other.Get(data_.isolate_));
+    }
+
+    template <typename T>
+    template <typename S>
+    bool Local<T>::operator!=(const Global<S>& other) const
+    {
+        return !operator==(other);
+    }
 
 }
 

@@ -1,6 +1,11 @@
 ﻿#include "jsb_type_convert.h"
 #include "jsb_environment.h"
 
+// Not ideal. Need to clean up access.
+#include "../weaver/jsb_script_language.h"
+#include "../weaver/jsb_script.h"
+#include "modules/GodotJS/weaver/jsb_script_instance.h"
+
 namespace jsb
 {
     template<typename T>
@@ -419,6 +424,26 @@ namespace jsb
         }
 
         // freshly bind existing gd object (not constructed in javascript)
+
+        ScriptInstance* si = p_godot_obj->get_script_instance();
+
+        if (si != nullptr && si->get_language() == GodotJSScriptLanguage::get_singleton() && !si->is_placeholder())
+        {
+            GodotJSScriptInstanceBase* script_instance = (GodotJSScriptInstanceBase*) si;
+
+            // If the script_instance is NOT a shadow instance, then we're trying to access a GodotJS scripted object
+            // from another thread than the one that owns it. That's not permitted.
+            jsb_check(script_instance->is_shadow());
+
+            Ref<GodotJSScript> script = script_instance->get_script();
+            ScriptInstance* non_shadow_instance = script->instance_construct(p_godot_obj, false);
+
+            if (non_shadow_instance && environment->try_get_object(p_godot_obj, r_jval))
+            {
+                return true;
+            }
+        }
+
         const StringName& class_name = p_godot_obj->get_class_name();
         if (NativeClassID class_id;
             NativeClassInfoPtr class_info = environment->expose_godot_object_class(ClassDB::classes.getptr(class_name), &class_id))
@@ -626,6 +651,20 @@ namespace jsb
         if (!p_jval->IsObject())
         {
             return false;
+        }
+
+#if JSB_WITH_V8
+        if (p_jval->IsProxy())
+#else
+        if (p_jval->IsObject())
+#endif
+        {
+            v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(p_jval);
+            v8::MaybeLocal<v8::Value> target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
+            if (!target.IsEmpty())
+            {
+                return js_to_gd_obj(isolate, context, target.ToLocalChecked(), r_godot_obj);
+            }
         }
 
         // return false if strict type check fails

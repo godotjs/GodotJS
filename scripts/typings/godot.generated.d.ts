@@ -8,28 +8,27 @@ declare module "godot" {
 
     class Node<Map extends Record<string, Node> = any> extends Object { }
     class Resource { }
-    class GArray<T = any> {
-        static create<T>(elements: [T] extends [GArray<infer E>] ? Array<E | GProxyValueWrap<E>> : Array<T | GProxyValueWrap<T>>):
-          [T] extends [GArray<infer E>]
-            ? [GValueWrap<E>] extends [never]
-              ? never
-              : GArray<GValueWrap<T>>
-            : [GValueWrap<T>] extends [never]
-              ? never
-              : GArray<GValueWrap<T>>
-        [Symbol.iterator](): IteratorObject<T>
-        proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<T> : GArrayReadProxy<T>;
-        get_indexed(index: number): T
-        get(index: int64): T
-        set(index: int64, value: T): void
-        size(): number
-        push_back(value: T): void
-        pop_back(): T
-        has(value: T): boolean
-        find(what: T, from: int64 = 0): int64
+    class Script extends Resource { }
+    interface ResourceTypes { }
+
+    type GArrayCreateSource<T> = ReadonlyArray<T> | {
+        [Symbol.iterator](): IteratorObject<GDataStructureCreateValue<T>>;
+        [K: number]: GDataStructureCreateValue<T>;
     }
-    class GDictionary<T = any> {
-        static create<T>(properties: T extends GDictionary<infer S> ? GDictionaryProxy<S> : GDictionaryProxy<T>): T extends GDictionary<infer S> ? GValueWrap<S> : GValueWrap<T>
+
+    type GDataStructureCreateValue<V> = V | (
+        V extends GArray<infer T>
+            ? [T] extends [any[]]
+                ? GArrayCreateSource<{ [I in keyof T]: GDataStructureCreateValue<T[I]> }>
+                : GArrayCreateSource<GDataStructureCreateValue<T>>
+            : V extends GDictionary<infer T>
+                ? { [K in keyof T]: GDataStructureCreateValue<T[K]> }
+                : never
+        )
+
+    class GDictionary<T = Record<any, any>> {
+        static create<V extends { [key: number | string]: GWrappableValue }>(properties: V): GValueWrap<V>
+        static create<V extends GDictionary<any>>(properties: V extends GDictionary<infer T> ? { [K in keyof T]: GDataStructureCreateValue<T[K]> } : never): V
         proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>;
         get<K extends keyof T>(key: K, default_: any = <any> {}): T[K]
         get_keyed<K extends keyof T>(index: K): T[K]
@@ -38,12 +37,36 @@ declare module "godot" {
         erase(key: keyof T): boolean
         has(key: keyof T): boolean
     }
+    class GArray<T extends GAny | GAny[] = GAny | GAny[]> {
+        static create<A extends any[]>(elements: A): GValueWrap<A>
+        static create<A extends GArray<any>>(
+            elements: A extends GArray<infer T>
+                ? [T] extends [any[]]
+                    ? { [I in keyof T]: GDataStructureCreateValue<T[I]> }
+                    : Array<GDataStructureCreateValue<T>>
+                : never
+        ): GValueWrap<A>
+        static create<E extends GAny>(elements: Array<GDataStructureCreateValue<E>>): GArray<E>
+        [Symbol.iterator](): IteratorObject<GArrayElement<T>>
+        proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<GArrayElement<T>> : GArrayReadProxy<GArrayElement<T>>
+        get_indexed<I extends int64>(index: I): GArrayElement<T, I>
+        get<I extends int64>(index: I): GArrayElement<T, I>
+        set<I extends int64>(index: I, value: GArrayElement<T, I>): void
+        size(): number
+        push_back(value: GArrayElement<T>): void
+        pop_back(): GArrayElement<T>
+        has(value: GArrayElement<T>): boolean
+        find(what: GArrayElement<T>, from: int64 = 0): int64
+    }
     type byte = number
     type int32 = number
+    type uint32 = number
     type int64 = number /* || bigint */
     type float32 = number
     type float64 = number
     type StringName = string
+
+    type GAny = undefined | null | boolean | int64 | float64 | string | Callable | Object | Signal | GDictionary | GArray | PackedByteArray | PackedStringArray
 
     class EditorSettings { get(path: StringName): any; }
     class EditorInterface { static get_editor_settings(): EditorSettings; }
@@ -93,7 +116,11 @@ declare module "godot" {
         }
     }
 
-    class PackedByteArray { }
+    class PackedByteArray {
+        toArrayBuffer(): ArrayBuffer
+        get(index: int64): int64
+        set(index: int64, value: int64): void
+    }
 
     class PackedStringArray { append(value: string): boolean }
 
@@ -132,7 +159,6 @@ declare module "godot" {
         PROPERTY_HINT_LAYERS_3D_RENDER = 10,
         PROPERTY_HINT_LAYERS_3D_PHYSICS = 11,
         PROPERTY_HINT_LAYERS_3D_NAVIGATION = 12,
-        PROPERTY_HINT_LAYERS_AVOIDANCE = 37,
         PROPERTY_HINT_FILE = 13,
         PROPERTY_HINT_DIR = 14,
         PROPERTY_HINT_GLOBAL_FILE = 15,
@@ -157,7 +183,15 @@ declare module "godot" {
         PROPERTY_HINT_NODE_TYPE = 34,
         PROPERTY_HINT_HIDE_QUATERNION_EDIT = 35,
         PROPERTY_HINT_PASSWORD = 36,
-        PROPERTY_HINT_MAX = 38,
+        PROPERTY_HINT_LAYERS_AVOIDANCE = 37,
+        PROPERTY_HINT_DICTIONARY_TYPE = 38,
+        PROPERTY_HINT_TOOL_BUTTON = 39,
+        PROPERTY_HINT_ONESHOT = 40,
+        PROPERTY_HINT_NO_NODEPATH = 41,
+        PROPERTY_HINT_GROUP_ENABLE = 42,
+        PROPERTY_HINT_INPUT_NAME = 43,
+        PROPERTY_HINT_FILE_PATH = 44,
+        PROPERTY_HINT_MAX = 45,
     }
     enum MethodFlags {
         /** Flag for a normal method. */
@@ -1095,7 +1129,20 @@ declare module "godot" {
 declare module "godot.lib.api" {
     import type * as Godot from "godot";
     import type * as GodotJsb from "godot-jsb";
-    const api: typeof Godot & { jsb: GodotJsb };
+    const api: typeof Godot & {
+        jsb: typeof GodotJsb,
+        proxy: {
+            array_proxy: <T extends any[]>(arr: T) => T,
+            class_proxy: <T extends object>(target_class: T) => T,
+            enum_proxy: <T extends object>(target_enum: T) => T,
+            function_proxy: <T extends (...args: any[]) => any>(target_func: T) => T,
+            instance_proxy: <T extends object>(target_instance: T) => T,
+            key_only_proxy: <T extends object | ((...args: any[]) => any)>(obj: T) => T,
+            object_proxy: <T extends object>(obj: T, remap_properties?: boolean) => T,
+            proxy_wrap_value: <T>(value: T) => T,
+            proxy_unwrap_value: <T>(value: T) => T,
+        },
+    };
     /**
      * This is a starting point for writing GodotJS code that is camel-case binding agnostic at runtime.
      *
@@ -1109,4 +1156,193 @@ declare module "godot.lib.api" {
 declare module "jsb.editor.codegen" {
     import { GDictionary } from "godot";
     type TypeDescriptor = GDictionary<unknown>;
+}
+
+declare module "godot.annotations" {
+    type ClassBinder = (() =>
+        ((
+                target: GObjectConstructor,
+                context: ClassDecoratorContext
+            ) => void))
+        & {
+            tool: () =>
+            ((
+                    target: GObjectConstructor,
+                    _context: ClassDecoratorContext
+                ) => void);
+            icon: (
+                path: string
+            ) =>
+            ((
+                    target: GObjectConstructor,
+                    _context: ClassDecoratorContext
+                ) => void);
+            export: ((
+                    type: Godot.Variant.Type,
+                    options?: ExportOptions
+                ) =>
+                ClassMemberDecorator)
+                & {
+                    multiline: () =>
+                    ClassMemberDecorator;
+                    range: (
+                        min: number,
+                        max: number,
+                        step: number,
+                        ...extra_hints: string[]
+                    ) =>
+                    ClassMemberDecorator;
+                    range_int: (
+                        min: number,
+                        max: number,
+                        step: number,
+                        ...extra_hints: string[]
+                    ) =>
+                    ClassMemberDecorator;
+                    file: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    dir: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    global_file: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    global_dir: (
+                        filter: string
+                    ) =>
+                    ClassMemberDecorator;
+                    exp_easing: (
+                        hint?: ""
+                            | "attenuation"
+                            | "positive_only"
+                            | "attenuation,positive_only"
+                    ) =>
+                    ClassMemberDecorator;
+                    array: (
+                        clazz: ClassSpecifier
+                    ) =>
+                    ClassMemberDecorator;
+                    dictionary: (
+                        key_class: VariantConstructor,
+                        value_class: VariantConstructor
+                    ) =>
+                    ClassMemberDecorator;
+                    object: <
+                    Constructor extends GObjectConstructor>(
+                        clazz: Constructor
+                    ) =>
+                    ClassMemberDecorator<
+                        ClassValueMemberDecoratorContext<
+                                unknown,
+                                null
+                                    | InstanceType<
+                                    Constructor>
+                            >
+                        >;
+                    "enum": (
+                        enum_type: Record<
+                            string,
+                            string
+                                | number
+                        >
+                    ) =>
+                    ClassMemberDecorator;
+                    flags: (
+                        enum_type: Record<
+                            string,
+                            string
+                                | number
+                        >
+                    ) =>
+                    ClassMemberDecorator;
+                    cache: () =>
+                    ClassMemberDecorator<
+                            ClassAccessorDecoratorContext<
+                                Godot.Object>
+                                | ClassSetterDecoratorContext<
+                                Godot.Object>
+                        >;
+                };
+            signal: () =>
+            (<
+                Context extends ClassAccessorDecoratorContext<
+                        Godot.Object,
+                        Godot.Signal
+                    >
+                    | ClassGetterDecoratorContext<
+                        Godot.Object,
+                        Godot.Signal
+                    >
+                    | ClassFieldDecoratorContext<
+                        Godot.Object,
+                        Godot.Signal
+                    >>(
+                    _target: unknown,
+                    context: Context
+                ) =>
+                ClassMemberDecoratorReturn<
+                    Context>);
+            rpc: (
+                config?: RPCConfig
+            ) =>
+            ((
+                    _target: Function,
+                    context: string
+                        | ClassMethodDecoratorContext
+                ) => void);
+            onready: (
+                evaluator: string
+                    | GodotJsb.internal.OnReadyEvaluatorFunc
+            ) =>
+            ((
+                    _target: undefined,
+                    context: string
+                        | ClassMethodDecoratorContext
+                ) => void);
+            deprecated: (
+                message?: string
+            ) =>
+            Decorator<
+                    ClassDecoratorContext<
+                        GObjectConstructor>
+                        | ClassValueMemberDecoratorContext<
+                        GObjectConstructor>
+                >;
+            experimental: (
+                message?: string
+            ) =>
+            Decorator<
+                    ClassDecoratorContext<
+                        GObjectConstructor>
+                        | ClassValueMemberDecoratorContext<
+                        GObjectConstructor>
+                >;
+            help: (
+                message?: string
+            ) =>
+            Decorator<
+                    ClassDecoratorContext<
+                        GObjectConstructor>
+                        | ClassValueMemberDecoratorContext<
+                        GObjectConstructor>
+                >;
+        }
+
+    type ExportOptions = {
+        class?: ClassDescriptor,
+        hint?: Godot.PropertyHint,
+        hint_string?: string,
+        usage?: Godot.PropertyUsageFlags
+    }
+
+    interface RPCConfig {
+        mode?: Godot.MultiplayerApi.RpcMode;
+        sync?: "call_remote" | "call_local";
+        transfer_mode?: Godot.MultiplayerPeer.TransferMode;
+        transfer_channel?: number;
+    }
 }

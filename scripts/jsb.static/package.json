@@ -1,6 +1,11 @@
 {
+  "name": "@godot-js/jsb-static",
+  "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
   "devDependencies": {
     "@types/node": "^20.11.30",
-    "typescript": "^5.5.2"
+    "typescript": "^5.9.2"
   }
 }

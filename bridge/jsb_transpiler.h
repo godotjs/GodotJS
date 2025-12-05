@@ -6,25 +6,6 @@
 #include "jsb_type_convert.h"
 #include "jsb_object_handle.h"
 
-#define JSB_CLASS_BOILERPLATE() \
-    jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)\
-    {\
-        v8::Isolate* isolate = env->get_isolate();\
-        NativeClassInfoPtr class_info = env->get_native_class(class_id);\
-        class_info->finalizer = &finalizer;\
-        return impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor, *class_id);\
-    }
-
-#define JSB_CLASS_BOILERPLATE_ARGS() \
-    template<typename...TArgs>\
-    jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)\
-    {\
-        v8::Isolate* isolate = env->get_isolate();\
-        NativeClassInfoPtr class_info = env->get_native_class(class_id);\
-        class_info->finalizer = &finalizer;\
-        return impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor<TArgs...>, *class_id);\
-    }
-
 #define JSB_CONTEXT_BOILERPLATE() \
     v8::Isolate* isolate = info.GetIsolate();\
     v8::Local<v8::Context> context = isolate->GetCurrentContext();\
@@ -297,61 +278,17 @@ namespace jsb
 
     };
 
-    template<typename TSelf>
-    struct ClassTemplate
+    struct ObjectTemplate
     {
-        JSB_CLASS_BOILERPLATE()
-        JSB_CLASS_BOILERPLATE_ARGS()
-
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
+        jsb_force_inline static impl::ClassBuilder create(Environment* env, internal::Index32 class_id)
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(info.Data().As<v8::Uint32>()->Value());
-
-            TSelf* ptr = memnew(TSelf);
-            Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, NativeClassType::Custom, ptr, self, 0);
+            v8::Isolate* isolate = env->get_isolate();
+            NativeClassInfoPtr class_info = env->get_native_class(class_id);
+            class_info->finalizer = &finalizer;
+            return impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, class_info->name, &constructor, *class_id);
         }
 
-        template<typename P0, typename P1, typename P2>
-        static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* isolate = info.GetIsolate();
-            v8::HandleScope handle_scope(isolate);
-            v8::Isolate::Scope isolate_scope(isolate);
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            v8::Local<v8::Object> self = info.This();
-            internal::Index32 class_id(info.Data().As<v8::Uint32>()->Value());
-            if (info.Length() != 3)
-            {
-                jsb_throw(isolate, "bad args");
-                return;
-            }
-            P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);
-            P1 p1 = PrimitiveAccess<P1>::from(context, info[1]);
-            P2 p2 = PrimitiveAccess<P2>::from(context, info[2]);
-            TSelf* ptr = memnew(TSelf(p0, p1, p2));
-            Environment* runtime = Environment::wrap(isolate);
-            runtime->bind_pointer(class_id, NativeClassType::Custom, ptr, self, 0);
-        }
-
-        static void finalizer(Environment* runtime, void* pointer, FinalizationType p_finalize)
-        {
-            TSelf* self = (TSelf*) pointer;
-            if (p_finalize != FinalizationType::None)
-            {
-                memdelete(self);
-            }
-        }
-    };
-
-    template<>
-    struct ClassTemplate<Object>
-    {
-        JSB_CLASS_BOILERPLATE()
+    private:
 
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
@@ -367,47 +304,32 @@ namespace jsb
                 class_name = class_info->name;
             }
 
-            // We need to handle different cases of cross-binding here.
-            // 1. new SubClass() which defined in scripts
-            // 2. new CDO() from C++
-            // 3. new SubClass() from C++ ResourcesLoader which needs to cross-bind an existing godot object instance with a newly constructed script instance
+            // We need to handle different binding scenarios:
             //
-            // The currently used solution is unsafe if the end user overrides the default constructor of a script.
-            // super(...arguments) must be called if constructor is explicitly defined in a script class.
+            // 1. Instantiating only the script class instance, which is to be bound to an existing Godot Object.
+            // 2. Instantiating a new native Godot object along with the newly instantiated script class.
 
-            if (info.Length())
+            jsb_check(info.NewTarget()->IsFunction());
+            v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            const v8::Local<v8::Function> new_target = info.NewTarget().As<v8::Function>();
+
+            const v8::Local<v8::Object> self = info.This();
+
+            // 1. binding to an existing Godot object
+            v8::Local<v8::Value> bind_object_value;
+            if (new_target->Get(context, jsb_symbol(environment, ConstructorBindObject)).ToLocal(&bind_object_value) && bind_object_value->IsExternal())
             {
-                const v8::Local<v8::Value> identifier = info[0];
-
-                // (case-2) constructing CDO from C++ (nothing more to do, it's a pure javascript)
-                if (identifier == jsb_symbol(environment, CDO))
-                {
-                    JSB_LOG(Verbose, "constructing CDO from C++. %s(%d)", class_name, class_id);
-                    return;
-                }
-
-                // (case-3) constructing a cross-bind script object for the existing owner loaded from Resource. (nothing more to do)
-                if (identifier == jsb_symbol(environment, CrossBind))
-                {
-                    JSB_LOG(Verbose, "cross binding from C++. %s(%d)", class_name, class_id);
-                    return;
-                }
-
-                jsb_checkf(false, "unexpected identifier received. %s(%d)", class_name, class_id);
+                JSB_LOG(Verbose, "binding to JS instance to existing native object. %s(%d)", class_name, class_id);
+                environment->bind_godot_object(class_id, (Object*) bind_object_value.As<v8::External>()->Value(), self);
                 return;
             }
 
-            jsb_check(info.NewTarget()->IsObject());
-            v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const v8::Local<v8::Object> new_target = info.NewTarget().As<v8::Object>();
-
-            // (case-0) directly instantiate from an underlying native class (it's usually called from scripts)
+            // 2a. directly instantiating a Godot native object (via its corresponding JavaScript wrapper class)
             if (new_target->HasOwnProperty(context, jsb_symbol(environment, ClassId)).ToChecked())
             // if (class_info->clazz.NewTarget(isolate) == new_target)
             {
                 internal::StringNames& names = internal::StringNames::get_singleton();
                 const StringName original_name = names.get_original_name(class_name);
-                const v8::Local<v8::Object> self = info.This();
                 Object* gd_object = ClassDB::instantiate(original_name);
 
                 // IS IT A TRUTH that ref_count==1 after creation_func??
@@ -416,16 +338,15 @@ namespace jsb
                 return;
             }
 
-            // (case-1) new from scripts
-            v8::Local<v8::Value> cross_bind_sym;
-            if (new_target->Get(context, jsb_symbol(environment, CrossBind)).ToLocal(&cross_bind_sym) && cross_bind_sym->IsString())
+            // 2b. instantiating a sub-class of a native Godot object (JavaScript wrapper class)
+            v8::Local<v8::Value> module_id_value;
+            if (new_target->Get(context, jsb_symbol(environment, ClassModuleId)).ToLocal(&module_id_value) && module_id_value->IsString())
             {
-                const StringName script_module_id = environment->get_string_name(cross_bind_sym.As<v8::String>());
+                const StringName script_module_id = environment->get_string_name(module_id_value.As<v8::String>());
                 jsb_check(environment->get_module_cache().find(script_module_id));
                 JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
                     environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id,
                     class_name, class_id);
-                const v8::Local<v8::Object> self = info.This();
                 ScriptClassInfo::instantiate(environment, script_module_id, self);
                 return;
             }

@@ -15,7 +15,9 @@ namespace jsb::internal
 
 		static String snake_to_camel_case(const String &p_identifier, bool p_input_is_upper = false);
 
-		static List<StringName> get_exposed_class_list();
+		static List<StringName> get_exposed_original_class_list();
+
+		static bool is_original_class_exposed(const String& p_original_name);
 
 		static String get_class_name(const String& p_original_name)
 		{

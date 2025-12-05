@@ -147,11 +147,18 @@ jsb_force_inline StringName _scs_create(const char (&literal)[N], bool p_static)
 #include "scene/gui/popup_menu.h"
 
 #ifdef TOOLS_ENABLED
+#if GODOT_4_5_OR_NEWER
+#   include "editor/file_system/editor_file_system.h"
+#   include "editor/settings/project_settings_editor.h"
+#   include "editor/settings/editor_settings.h"
+#   include "editor/doc/editor_help.h"
+#else
 #   include "editor/editor_file_system.h"
-#   include "editor/editor_interface.h"
 #   include "editor/project_settings_editor.h"
 #   include "editor/editor_settings.h"
 #   include "editor/editor_help.h"
+#endif
+#   include "editor/editor_interface.h"
 #   include "editor/editor_node.h"
 #   include "editor/editor_string_names.h"
 #   include "editor/export/editor_export.h"
@@ -192,4 +199,3 @@ namespace jsb
 }
 
 #endif
-
