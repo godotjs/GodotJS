@@ -9,13 +9,16 @@ on:
         description: "Godot engine commit reference"
         required: true
         type: string
+      tests:
+        type: boolean
+        default: true
 
 # Global Settings
 env:
   # 4.4
   SCONSFLAGS: >-
-    module_text_server_fb_enabled=yes
-    strict_checks=yes
+    module_text_server_fb_enabled=yes 
+   strict_checks=yes
   # 4.5
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
@@ -143,6 +146,7 @@ jobs:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
           platform: macos
           target: ${{ matrix.target }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
 
       - name: Compilation [4.5+] (x86_64)
@@ -152,6 +156,7 @@ jobs:
           scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
           platform: macos
           target: ${{ matrix.target }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
 
       - name: Compilation [4.4] (arm64)
         if: inputs.version == '4.4'
@@ -160,6 +165,7 @@ jobs:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
           platform: macos
           target: ${{ matrix.target }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Compilation [4.5+] (arm64)
@@ -169,6 +175,7 @@ jobs:
           scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
           platform: macos
           target: ${{ matrix.target }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
@@ -192,6 +199,15 @@ jobs:
         uses: ./.github/actions/upload-artifact
         with:
           name: ${{ matrix.cache-name }}
+
+      - name: Unit tests
+        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        env:
+          BIN: ./bin/godot.macos.editor.universal
+        run: |
+          ${{ env.BIN }} --version
+          ${{ env.BIN }} --help
+          ${{ env.BIN }} --headless --test --test-case="[jsb]*" --force-colors
 
   build-macos-apps:
     needs:

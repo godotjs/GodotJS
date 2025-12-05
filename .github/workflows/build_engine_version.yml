@@ -36,6 +36,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
+      tests: ${{ github.event_name != 'release' }}
 
   macos-build:
     name: 🍎 macOS
@@ -43,6 +44,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
+      tests: ${{ github.event_name != 'release' }}
 
   windows-build:
     name: 🏁 Windows
@@ -50,6 +52,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
+      tests: ${{ github.event_name != 'release' }}
 
   web-build:
     name: 🌐 Web

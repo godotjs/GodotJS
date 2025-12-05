@@ -14,6 +14,7 @@ on:
 env:
   # 4.4
   SCONSFLAGS: >-
+    strict_checks=yes
     debug_symbols=no
     module_text_server_fb_enabled=yes
   # 4.5+
