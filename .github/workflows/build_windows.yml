@@ -178,6 +178,7 @@ jobs:
           scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
           platform: windows
           target: ${{ matrix.target }}
+          tests: ${{ inputs.tests && matrix.target == 'editor' }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
