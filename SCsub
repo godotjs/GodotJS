@@ -533,7 +533,8 @@ if is_defined("JSB_WITH_JAVASCRIPTCORE"):
 
 # Build JS files before generating
 if not os.path.exists("scripts/out"):
-    print(subprocess.check_output(["pnpm", "build"]))
+    print(subprocess.run(["pnpm", "install"], shell=True, check=True))
+    print(subprocess.run(["pnpm", "build"], shell=True, check=True))
 
 generate_code([\
         # presets for runtime

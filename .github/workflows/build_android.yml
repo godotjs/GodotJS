@@ -41,14 +41,14 @@ jobs:
       matrix:
         include:
           - name: Template (target=template_release, arch=arm64, v8)
-            cache-name: android-template-${{inputs.version}}-release-v8
+            cache-name: android-template-release-${{inputs.version}}-v8
             target: template_release
             tests: false
             sconsflags: ${{ inputs.version == '4.4' && 'deprecated=no ndk_platform=android-24 generate_apk=yes' || '' }}
             cache-limit: 1
 
           - name: Template (target=template_release, arch=arm64, qjs_ng)
-            cache-name: android-template-${{inputs.version}}-release-qjs-ng
+            cache-name: android-template-release-${{inputs.version}}-qjs-ng
             target: template_release
             tests: false
             sconsflags: use_quickjs_ng=yes

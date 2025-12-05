@@ -45,13 +45,13 @@ jobs:
             cache-limit: 2
 
           - name: Template release (target=template_release, v8)
-            cache-name: linux-template-${{inputs.version}}-release-v8
+            cache-name: linux-template-release-${{inputs.version}}-v8
             sconsflags: debug_symbols=no
             target: template_release
             cache-limit: 1
 
           - name: Template debug (target=template_debug, v8)
-            cache-name: linux-template-${{inputs.version}}-debug-v8
+            cache-name: linux-template-debug-${{inputs.version}}-v8
             sconsflags: debug_symbols=no
             target: template_debug
             bin: ./bin/godot.linuxbsd.template_debug.x86_64.v8
@@ -64,13 +64,13 @@ jobs:
             cache-limit: 2
 
           - name: Template release (target=template_release, qjs_ng)
-            cache-name: linux-template-${{inputs.version}}-release-qjs-ng
+            cache-name: linux-template-release-${{inputs.version}}-qjs-ng
             target: template_release
             sconsflags: use_quickjs_ng=yes debug_symbols=no
             cache-limit: 1
 
           - name: Template debug (target=template_debug, qjs_ng)
-            cache-name: linux-template-${{inputs.version}}-debug-qjs-ng
+            cache-name: linux-template-debug-${{inputs.version}}-qjs-ng
             target: template_debug
             sconsflags: use_quickjs_ng=yes debug_symbols=no
             cache-limit: 1
