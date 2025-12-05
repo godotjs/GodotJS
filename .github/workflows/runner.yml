@@ -44,9 +44,19 @@ jobs:
       version: ${{ matrix.version }}
       version_ref: ${{ matrix.version_ref }}
 
+  builds-done:
+    name: 🏁 Builds Done
+    needs: [ engine-version-build, environment ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏁 Check if all builds are done
+        run: |
+          echo "🏁 All builds done"
+        shell: bash
+
   release:
     name: 🦅 Release
-    needs: [ changesets, engine-version-build, environment ]
+    needs: [ changesets, engine-version-build, environment, builds-done ]
     if: needs.changesets.outputs.publish == 'true'
     permissions:
       contents: write
