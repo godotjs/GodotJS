@@ -1,5 +1,6 @@
 import { writeFileSync, readFileSync } from "node:fs";
 import { execSync } from "child_process";
+import { getVersion } from "./get-version.js";
 
 const releaseNotesPath = "release-notes.md";
 
@@ -33,7 +34,7 @@ function publishRelease(godotVersion, v8) {
     `Godot version: ${godotVersion}\n\nV8 version: ${v8}\n\n` + content,
   );
 
-  const version = `v${JSON.parse(execSync("pnpm pkg get version").toString().trim())}`;
+  const version = getVersion();
   console.log(`Found version:`, version);
 
   const releaseCommand = `gh release create "${version}" --target main --title "${version}" --notes-file "${releaseNotesPath}"`;
