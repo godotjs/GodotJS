@@ -67,9 +67,13 @@ jobs:
             os: windows
           - engine: browser
             os: web
+          - engine: browser
+            os: web-nothreads
         exclude:
           - engine: v8
             os: web
+          - engine: v8
+            os: web-nothreads
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v4

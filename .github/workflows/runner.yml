@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - "main"
-  schedule:
-    - cron: "2 0 * * 0" # Sunday after midnight to trigger a release
 
 concurrency:
   group: ${{ github.workflow }}|${{ github.ref_name }}
