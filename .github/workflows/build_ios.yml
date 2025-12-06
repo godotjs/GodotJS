@@ -37,12 +37,12 @@ jobs:
       matrix:
         include:
           - name: Template (target=template_release, v8)
-            cache-name: ios-template-${{inputs.version}}-release-v8
+            cache-name: ios-template-release-${{inputs.version}}-v8
             target: template_release
             cache-limit: 1
 
           - name: Template (target=template_release, qjs_ng)
-            cache-name: ios-template-${{inputs.version}}-release-qjs-ng
+            cache-name: ios-template-release-${{inputs.version}}-qjs-ng
             target: template_release
             sconsflags: use_quickjs_ng=yes
             cache-limit: 1

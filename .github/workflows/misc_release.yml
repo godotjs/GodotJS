@@ -55,19 +55,25 @@ jobs:
         include:
           - target: template-debug
             os: linux
-          - target: template-app
+          - target: editor
+            os: linux
+          - target: template-debug
+            os: macos
+          - target: editor
             os: macos
           - target: template-debug
             os: windows
           - target: editor
-            os: linux
-          - target: editor-app
-            os: macos
-          - target: editor
             os: windows
+          - engine: browser
+            os: web
+          - engine: browser
+            os: web-nothreads
         exclude:
-          - target: template-release
-            os: macos
+          - engine: v8
+            os: web
+          - engine: v8
+            os: web-nothreads
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v4

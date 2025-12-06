@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - "main"
-  schedule:
-    - cron: "2 0 * * 0" # Sunday after midnight to trigger a release
 
 concurrency:
   group: ${{ github.workflow }}|${{ github.ref_name }}
@@ -44,15 +42,31 @@ jobs:
       version: ${{ matrix.version }}
       version_ref: ${{ matrix.version_ref }}
 
+  builds-done:
+    name: 🏁 Builds Done
+    needs: [ engine-version-build, environment ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏁 Check if all builds are done
+        run: |
+          echo "🏁 All builds done"
+        shell: bash
+
   release:
     name: 🦅 Release
-    needs: [ changesets, engine-version-build, environment ]
+    needs: [ changesets, engine-version-build, environment, builds-done ]
     if: needs.changesets.outputs.publish == 'true'
     permissions:
       contents: write
       pull-requests: write
     uses: ./.github/workflows/misc_release.yml
     secrets: inherit
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - version: 4.4
+          - version: 4.5
     with:
-      version: ${{ needs.environment.outputs.version }}
+      version: ${{ matrix.version }}
       v8: ${{ needs.environment.outputs.v8 }}

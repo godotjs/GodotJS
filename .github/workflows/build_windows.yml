@@ -55,13 +55,13 @@ jobs:
             cache-limit: 2
 
           - name: Template (target=template_debug, v8)
-            cache-name: windows-template-${{inputs.version}}-debug-v8
+            cache-name: windows-template-debug-${{inputs.version}}-v8
             target: template_debug
             sconsflags: debug_symbols=no
             cache-limit: 2
 
           - name: Template (target=template_release, v8)
-            cache-name: windows-template-${{inputs.version}}-release-v8
+            cache-name: windows-template-release-${{inputs.version}}-v8
             target: template_release
             sconsflags: debug_symbols=no
             cache-limit: 2
@@ -80,7 +80,7 @@ jobs:
             engine: qjs_ng
 
           - name: Template (target=template_debug, qjs_ng)
-            cache-name: windows-template-${{inputs.version}}-debug-qjs-ng
+            cache-name: windows-template-debug-${{inputs.version}}-qjs-ng
             target: template_debug
             sconsflags: >-
               debug_symbols=no
@@ -89,7 +89,7 @@ jobs:
             engine: qjs_ng
 
           - name: Template (target=template_release, qjs_ng)
-            cache-name: windows-template-${{inputs.version}}-release-qjs-ng
+            cache-name: windows-template-release-${{inputs.version}}-qjs-ng
             target: template_release
             sconsflags: >-
               debug_symbols=no

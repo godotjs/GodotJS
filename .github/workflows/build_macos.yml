@@ -43,13 +43,13 @@ jobs:
             cache-limit: 1
 
           - name: Template (target=template_release, v8)
-            cache-name: macos-template-${{inputs.version}}-release-v8
+            cache-name: macos-template-release-${{inputs.version}}-v8
             target: template_release
             sconsflags: debug_symbols=no
             cache-limit: 1
 
           - name: Template (target=template_debug, v8)
-            cache-name: macos-template-${{inputs.version}}-debug-v8
+            cache-name: macos-template-debug-${{inputs.version}}-v8
             target: template_debug
             sconsflags: debug_symbols=no
             cache-limit: 1
@@ -61,7 +61,7 @@ jobs:
             cache-limit: 1
 
           - name: Template (target=template_release, qjs_ng)
-            cache-name: macos-template-${{inputs.version}}-release-qjs-ng
+            cache-name: macos-template-release-${{inputs.version}}-qjs-ng
             target: template_release
             sconsflags: >-
               debug_symbols=no
@@ -69,7 +69,7 @@ jobs:
             cache-limit: 1
 
           - name: Template (target=template_debug, qjs_ng)
-            cache-name: macos-template-${{inputs.version}}-debug-qjs-ng
+            cache-name: macos-template-debug-${{inputs.version}}-qjs-ng
             target: template_debug
             sconsflags: >-
               debug_symbols=no
@@ -248,22 +248,22 @@ jobs:
       - name: ⏬ Download template-release
         uses: actions/download-artifact@v4
         with:
-          name: macos-template-${{inputs.version}}-release-${{ matrix.engine }}
-          path: macos-template-${{inputs.version}}-release-${{ matrix.engine }}
+          name: macos-template-release-${{inputs.version}}-${{ matrix.engine }}
+          path: macos-template-release-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⏬ Download template-debug
         uses: actions/download-artifact@v4
         with:
-          name: macos-template-${{inputs.version}}-debug-${{ matrix.engine }}
-          path: macos-template-${{inputs.version}}-debug-${{ matrix.engine }}
+          name: macos-template-debug-${{inputs.version}}-${{ matrix.engine }}
+          path: macos-template-debug-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⚒️ Build Template App
         run: |
           mkdir template-app
           cp -r misc/dist/macos_template.app template-app/macos_template.app
           mkdir -p template-app/macos_template.app/Contents/MacOS
-          cp macos-template-${{inputs.version}}-release-${{ matrix.engine }}/godot.macos.template_release.universal template-app/macos_template.app/Contents/MacOS/godot_macos_release.universal
-          cp macos-template-${{inputs.version}}-debug-${{ matrix.engine }}/godot.macos.template_debug.universal template-app/macos_template.app/Contents/MacOS/godot_macos_debug.universal
+          cp macos-template-release-${{inputs.version}}-${{ matrix.engine }}/godot.macos.template_release.universal template-app/macos_template.app/Contents/MacOS/godot_macos_release.universal
+          cp macos-template-debug-${{inputs.version}}-${{ matrix.engine }}/godot.macos.template_debug.universal template-app/macos_template.app/Contents/MacOS/godot_macos_debug.universal
           chmod +x template-app/macos_template.app/Contents/MacOS/godot_macos*
 
       - name: ⏫ Upload template app

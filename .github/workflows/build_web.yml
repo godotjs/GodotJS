@@ -41,25 +41,25 @@ jobs:
       matrix:
         include:
           - name: Template w/ threads (target=template_release, threads=yes, browser)
-            cache-name: web-template-${{inputs.version}}-release-browser
+            cache-name: web-template-release-${{inputs.version}}-browser
             target: template_release
             engine: browser
             sconsflags: threads=yes
 
           - name: Template w/o threads (target=template_release, threads=no, browser)
-            cache-name: web-nothreads-template-${{inputs.version}}-release-browser
+            cache-name: web-nothreads-template-release-${{inputs.version}}-browser
             target: template_release
             engine: browser
             sconsflags: threads=no
 
           - name: Template w/ threads (target=template_release, threads=yes, qjs_ng)
-            cache-name: web-template-${{inputs.version}}-release-qjs-ng
+            cache-name: web-template-release-${{inputs.version}}-qjs-ng
             target: template_release
             engine: qjs-ng
             sconsflags: threads=yes use_quickjs_ng=yes
 
           - name: Template w/o threads (target=template_release, threads=no, qjs_ng)
-            cache-name: web-nothreads-template-${{inputs.version}}-release-qjs-ng
+            cache-name: web-nothreads-template-release-${{inputs.version}}-qjs-ng
             target: template_release
             engine: qjs-ng
             sconsflags: threads=no use_quickjs_ng=yes
