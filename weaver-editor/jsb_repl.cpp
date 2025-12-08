@@ -12,7 +12,7 @@ GodotJSREPL::GodotJSREPL()
 {
 #if GODOT_4_5_OR_NEWER
     sn_backlog_flush_ = StringName("_backlog_flush");
-#else GODOT_4_5_OR_NEWER
+#else
     sn_backlog_flush_ = _scs_create("_backlog_flush");
 #endif
     //TODO list all created realm instances in REPL, interact with the currently selected one.
