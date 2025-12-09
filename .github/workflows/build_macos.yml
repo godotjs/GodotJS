@@ -18,7 +18,7 @@ env:
   # 4.4
   SCONSFLAGS: >-
     module_text_server_fb_enabled=yes 
-   strict_checks=yes
+    strict_checks=yes
   # 4.5
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
