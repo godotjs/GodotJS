@@ -14,12 +14,12 @@ on:
 env:
   # 4.4
   SCONSFLAGS: >-
-    debug_symbols=no 
-    use_closure_compiler=yes 
-    strict_checks=yes 
-    deprecated=no 
-    lto=none 
-    use_assertions=no 
+    debug_symbols=no
+    use_closure_compiler=yes
+    strict_checks=yes
+    deprecated=no
+    lto=none
+    use_assertions=no
     use_safe_heap=yes
   # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.

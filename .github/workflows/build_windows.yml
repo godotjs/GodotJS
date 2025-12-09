@@ -18,10 +18,11 @@ on:
 env:
   # 4.4
   SCONSFLAGS: >-
-    module_text_server_fb_enabled=yes 
-    d3d12=yes 
-    strict_checks=yes 
-    "angle_libs=${{ github.workspace }}/"# 4.5+
+    module_text_server_fb_enabled=yes
+    d3d12=yes
+    strict_checks=yes
+    "angle_libs=${{ github.workspace }}/"
+  # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
     verbose=yes
@@ -71,10 +72,10 @@ jobs:
             target: editor
             # Skip debug symbols, they're way too big with MSVC.
             sconsflags: >-
-              debug_symbols=no 
-              vsproj=yes 
-              vsproj_gen_only=no 
-              windows_subsystem=console 
+              debug_symbols=no
+              vsproj=yes
+              vsproj_gen_only=no
+              windows_subsystem=console
               use_quickjs_ng=yes
             cache-limit: 2
             engine: qjs_ng
@@ -129,6 +130,13 @@ jobs:
         with:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
+
+      - name: Download tests/project
+        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-project
+          path: ${{github.workspace}}/tests/project/.godot/GodotJS
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps

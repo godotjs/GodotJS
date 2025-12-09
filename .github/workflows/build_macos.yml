@@ -17,7 +17,7 @@ on:
 env:
   # 4.4
   SCONSFLAGS: >-
-    module_text_server_fb_enabled=yes 
+    module_text_server_fb_enabled=yes
     strict_checks=yes
   # 4.5
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
@@ -139,6 +139,13 @@ jobs:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
 
+      - name: Download tests/project
+        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-project
+          path: ${{github.workspace}}/tests/project/.godot/GodotJS
+
       - name: Compilation [4.4] (x86_64)
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
@@ -183,11 +190,11 @@ jobs:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
-# TODO: The x86_64 build isn't working with `Forward+` projects see: https://github.com/godotengine/godot/issues/64471
-# Check why the official build is working:
-# - https://github.com/godotengine/godot-build-scripts/blob/main/build.sh#L147-L157
-# - https://github.com/godotengine/godot-build-scripts/blob/main/build-macos/build.sh#L7-L87
-# - https://github.com/godotengine/godot-build-scripts/blob/main/build-release.sh#L367-L375
+      # TODO: The x86_64 build isn't working with `Forward+` projects see: https://github.com/godotengine/godot/issues/64471
+      # Check why the official build is working:
+      # - https://github.com/godotengine/godot-build-scripts/blob/main/build.sh#L147-L157
+      # - https://github.com/godotengine/godot-build-scripts/blob/main/build-macos/build.sh#L7-L87
+      # - https://github.com/godotengine/godot-build-scripts/blob/main/build-release.sh#L367-L375
       - name: Prepare artifact
         run: |
           lipo -create ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64 -output ./bin/godot.macos.${{ matrix.target }}.universal
@@ -216,7 +223,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [ v8,qjs-ng ]
+        engine: [v8, qjs-ng]
     steps:
       - name: Checkout Godot
         uses: actions/checkout@v4

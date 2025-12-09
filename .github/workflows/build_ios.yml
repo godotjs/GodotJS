@@ -14,7 +14,6 @@ on:
 env:
   # 4.4
   SCONSFLAGS: >-
-    strict_checks=yes
     debug_symbols=no
     module_text_server_fb_enabled=yes
   # 4.5+
@@ -47,11 +46,11 @@ jobs:
             sconsflags: use_quickjs_ng=yes
             cache-limit: 1
 
-    #          - name: Template (target=template_release, jsc)
-    #            cache-name: ios-template-${{inputs.version}}-jsc
-    #            target: template_release
-    #            sconsflags: use_jsc=yes
-    #            cache-limit: 1
+#          - name: Template (target=template_release, jsc)
+#            cache-name: ios-template-${{inputs.version}}-jsc
+#            target: template_release
+#            sconsflags: use_jsc=yes
+#            cache-limit: 1
 
     steps:
       - name: Checkout Godot

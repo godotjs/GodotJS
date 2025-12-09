@@ -17,7 +17,7 @@ on:
 env:
   # 4.4
   SCONSFLAGS: >-
-    module_text_server_fb_enabled=yes 
+    module_text_server_fb_enabled=yes
     strict_checks=yes
   # 4.5
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
@@ -120,6 +120,14 @@ jobs:
         with:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
+
+
+      - name: Download tests/project
+        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-project
+          path: ${{github.workspace}}/tests/project/.godot/GodotJS
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps

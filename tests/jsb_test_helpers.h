@@ -113,10 +113,7 @@ namespace jsb::tests
             CHECK(FileAccess::exists("project.godot"));
             // MESSAGE("init GodotJSScriptLanguage on thread ", Thread::get_caller_id());
 
-        	install_npm();
-        	// Wait for 1 second until ./node_modules has been created
-        	std::this_thread::sleep_for(std::chrono::seconds(1));
-            compile_scripts();
+            check_required_files();
             ignore_directories();
             GodotJSScriptLanguage::get_singleton()->init();
         }
@@ -127,29 +124,11 @@ namespace jsb::tests
         }
 
     private:
-        void install_npm()
+        void check_required_files()
         {
-            CHECK(FileAccess::exists("./package.json"));
-            CHECK(FileAccess::exists("./tsconfig.json"));
-            List<String> args;
-            args.push_back("install");
-            const String exe_path = OS::get_singleton()->get_name() != "Windows" ? "npm" : "npm.cmd";
-            const Error err = OS::get_singleton()->create_process(exe_path, args);
-            CHECK(err == OK);
-        }
-
-        void compile_scripts()
-        {
-            CHECK(FileAccess::exists("./node_modules/typescript/bin/tsc"));
+        	CHECK(FileAccess::exists("./package.json"));
+        	CHECK(FileAccess::exists("./tsconfig.json"));
             CHECK(FileAccess::exists("./test_01.ts"));
-            List<String> args;
-            args.push_back("./node_modules/typescript/bin/tsc");
-
-            const String exe_path = OS::get_singleton()->get_name() != "Windows" ? "node" : "node.exe";
-            const Error err = OS::get_singleton()->create_process(exe_path, args);
-            CHECK(err == OK);
-			// Wait for 1 second until ./.godot has been created
-        	std::this_thread::sleep_for(std::chrono::seconds(1));
             CHECK(FileAccess::exists("./.godot/GodotJS/test_01.js"));
         }
 
