@@ -144,45 +144,59 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tests-project
-          path: ${{github.workspace}}/tests/project/.godot/GodotJS
+          path: ${{github.workspace}}/modules/GodotJS/tests/project/.godot/GodotJS
 
       - name: Compilation [4.4] (x86_64)
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
+          sconsflags: >-
+            ${{ env.SCONSFLAGS }} 
+            ${{ matrix.sconsflags }} 
+            arch=x86_64 
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
-          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
 
       - name: Compilation [4.5+] (x86_64)
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
-          platform: macos
+          sconsflags: >-
+            ${{ env.SCONSFLAGS }} 
+            ${{ matrix.sconsflags }} 
+            arch=x86_64 
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}platform: macos
           target: ${{ matrix.target }}
-          tests: ${{ inputs.tests && matrix.target == 'editor' }}
 
       - name: Compilation [4.4] (arm64)
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
+          sconsflags: >-
+            ${{ env.SCONS_FLAGS }} 
+            ${{ matrix.sconsflags }} 
+            arch=arm64 
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
-          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Compilation [4.5+] (arm64)
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
-          platform: macos
+          sconsflags: >-
+            ${{ env.SCONS_FLAGS }} 
+            ${{ matrix.sconsflags }} 
+            arch=arm64 
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}platform: macos
           target: ${{ matrix.target }}
-          tests: ${{ inputs.tests && matrix.target == 'editor' }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save

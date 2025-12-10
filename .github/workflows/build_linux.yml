@@ -127,7 +127,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tests-project
-          path: ${{github.workspace}}/tests/project/.godot/GodotJS
+          path: ${{github.workspace}}/modules/GodotJS/tests/project/.godot/GodotJS
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
@@ -149,19 +149,17 @@ jobs:
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
           target: ${{ matrix.target }}
-          tests: ${{ inputs.tests && matrix.target == 'editor' }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Compilation [4.5+]
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
-          tests: ${{ inputs.tests && matrix.target == 'editor' }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
