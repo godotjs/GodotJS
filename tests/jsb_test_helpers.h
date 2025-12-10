@@ -28,17 +28,6 @@ namespace jsb::tests
 
     struct Utils
     {
-        static void write_stub_file(const String& p_path)
-        {
-            if (FileAccess::exists(p_path)) return;
-            {
-                const Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE);
-                CHECK(f.is_valid());
-                f->store_8(0xd);
-                f->store_8(0xa);
-            }
-        }
-
         static void print_exception(const impl::TryCatch& try_catch)
         {
             if (try_catch.has_caught())
@@ -114,7 +103,6 @@ namespace jsb::tests
             // MESSAGE("init GodotJSScriptLanguage on thread ", Thread::get_caller_id());
 
             check_required_files();
-            ignore_directories();
             GodotJSScriptLanguage::get_singleton()->init();
         }
 
@@ -130,13 +118,6 @@ namespace jsb::tests
         	CHECK(FileAccess::exists("./tsconfig.json"));
             CHECK(FileAccess::exists("./test_01.ts"));
             CHECK(FileAccess::exists("./.godot/GodotJS/test_01.js"));
-        }
-
-        void ignore_directories()
-        {
-            CHECK(FileAccess::exists("./jslibs/.gdignore"));
-            Utils::write_stub_file("./node_modules/.gdignore");
-            Utils::write_stub_file("./.godot/.gdignore");
         }
     };
 

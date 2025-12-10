@@ -1,6 +1,8 @@
 # Godot 4+ specific ignores
+!.godot/.gdignore
+!node_modules/.gdignore
 .godot/
 node_modules/
-/.idea/workspace.xml
+.idea
 /gen/godot/.gdignore
 /gen/godot/test_01.ts.gen.ts
