@@ -34,35 +34,16 @@ env:
 jobs:
   web-template:
     runs-on: ubuntu-24.04
-    name: ${{ matrix.name }}
+    name: Web (${{ matrix.target }}, ${{ matrix.engine }}, threads=${{ matrix.threads }})
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Template w/ threads (target=template_release, threads=yes, browser)
-            cache-name: web-template-release-${{inputs.version}}-browser
-            target: template_release
-            engine: browser
-            sconsflags: threads=yes
-
-          - name: Template w/o threads (target=template_release, threads=no, browser)
-            cache-name: web-nothreads-template-release-${{inputs.version}}-browser
-            target: template_release
-            engine: browser
-            sconsflags: threads=no
-
-          - name: Template w/ threads (target=template_release, threads=yes, qjs_ng)
-            cache-name: web-template-release-${{inputs.version}}-qjs-ng
-            target: template_release
-            engine: qjs-ng
-            sconsflags: threads=yes use_quickjs_ng=yes
-
-          - name: Template w/o threads (target=template_release, threads=no, qjs_ng)
-            cache-name: web-nothreads-template-release-${{inputs.version}}-qjs-ng
-            target: template_release
-            engine: qjs-ng
-            sconsflags: threads=no use_quickjs_ng=yes
+        # QuickJS isn't working at the moment
+        #        engine: [ browser, qjs-ng ]
+        engine: [browser]
+        target: [template_release]
+        threads: [yes, no]
 
     steps:
       - name: Checkout Godot
@@ -116,7 +97,7 @@ jobs:
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: web-${{ matrix.threads }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
         continue-on-error: true
 
       - name: Setup Python and SCons
@@ -126,7 +107,9 @@ jobs:
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          sconsflags: >-
+            ${{ env.SCONSFLAGS }}             
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: web
           target: ${{ matrix.target }}
           scons-cache-limit: 0.5
@@ -135,17 +118,19 @@ jobs:
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          scons-flags: >-
+            ${{ env.SCONS_FLAGS }}             
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: web
           target: ${{ matrix.target }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: web-${{ matrix.threads }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
         continue-on-error: true
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
         with:
-          name: ${{ matrix.cache-name }}
+          name: web-${{ matrix.threads }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}

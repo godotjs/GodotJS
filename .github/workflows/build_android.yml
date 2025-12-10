@@ -34,25 +34,15 @@ env:
 jobs:
   build-android:
     runs-on: ubuntu-24.04
-    name: ${{ matrix.name }}
+    name: Android (${{ matrix.target }}, ${{ matrix.engine }})
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Template (target=template_release, arch=arm64, v8)
-            cache-name: android-template-release-${{inputs.version}}-v8
-            target: template_release
-            tests: false
-            sconsflags: ${{ inputs.version == '4.4' && 'deprecated=no ndk_platform=android-24 generate_apk=yes' || '' }}
-            cache-limit: 1
-
-          - name: Template (target=template_release, arch=arm64, qjs_ng)
-            cache-name: android-template-release-${{inputs.version}}-qjs-ng
-            target: template_release
-            tests: false
-            sconsflags: use_quickjs_ng=yes
-            cache-limit: 1
+        # QuickJS isn't working at the moment
+        #        engine: [ v8, qjs-ng ]
+        engine: [v8]
+        target: [template_release, template_debug]
 
     steps:
       - name: Checkout Godot
@@ -78,7 +68,7 @@ jobs:
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: android-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
         continue-on-error: true
 
       - name: Download deps artifact
@@ -111,24 +101,30 @@ jobs:
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          sconsflags: >-
+            ${{ env.SCONSFLAGS }}             
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
+            deprecated=no 
+            ndk_platform=android-24 
+            generate_apk=yes
           platform: android
           target: ${{ matrix.target }}
-          tests: ${{ matrix.tests }}
-          scons-cache-limit: ${{ matrix.cache-limit }}
+          scons-cache-limit: 1
 
       - name: Compilation [4.5+]
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          scons-flags: >-
+            ${{ env.SCONS_FLAGS }}             
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: android
           target: ${{ matrix.target }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: android-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
         continue-on-error: true
 
       - name: Generate Godot templates
@@ -142,5 +138,4 @@ jobs:
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
         with:
-          name: ${{ matrix.cache-name }}
-
+          name: android-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}

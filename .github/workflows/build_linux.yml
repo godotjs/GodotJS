@@ -36,46 +36,15 @@ jobs:
   build-linux:
     # Stay one LTS before latest to increase portability of Linux artifacts.
     runs-on: ubuntu-22.04
-    name: ${{ matrix.name }}
+    name: Linux (${{ matrix.target }}, ${{ matrix.engine }})
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Editor (target=editor, v8)
-            cache-name: linux-editor-${{inputs.version}}-v8
-            target: editor
-            cache-limit: 2
-
-          - name: Template release (target=template_release, v8)
-            cache-name: linux-template-release-${{inputs.version}}-v8
-            sconsflags: debug_symbols=no
-            target: template_release
-            cache-limit: 1
-
-          - name: Template debug (target=template_debug, v8)
-            cache-name: linux-template-debug-${{inputs.version}}-v8
-            sconsflags: debug_symbols=no
-            target: template_debug
-            cache-limit: 1
-
-          - name: Editor (target=editor, qjs_ng)
-            cache-name: linux-editor-${{inputs.version}}-qjs-ng
-            target: editor
-            sconsflags: use_quickjs_ng=yes
-            cache-limit: 2
-
-          - name: Template release (target=template_release, qjs_ng)
-            cache-name: linux-template-release-${{inputs.version}}-qjs-ng
-            target: template_release
-            sconsflags: use_quickjs_ng=yes debug_symbols=no
-            cache-limit: 1
-
-          - name: Template debug (target=template_debug, qjs_ng)
-            cache-name: linux-template-debug-${{inputs.version}}-qjs-ng
-            target: template_debug
-            sconsflags: use_quickjs_ng=yes debug_symbols=no
-            cache-limit: 1
+        # QuickJS isn't working at the moment
+        #        engine: [ v8, qjs-ng ]
+        engine: [v8]
+        target: [editor, template_release, template_debug]
 
     steps:
       - name: Checkout Godot
@@ -106,7 +75,7 @@ jobs:
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: linux-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
         continue-on-error: true
 
       - name: Download deps artifact
@@ -120,7 +89,6 @@ jobs:
         with:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
-
 
       - name: Download tests/project
         if: ${{ inputs.tests && matrix.target == 'editor' }}
@@ -149,22 +117,30 @@ jobs:
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+          sconsflags: >-
+            ${{ env.SCONSFLAGS }} 
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
+            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
           target: ${{ matrix.target }}
-          scons-cache-limit: ${{ matrix.cache-limit }}
+          scons-cache-limit: ${{ matrix.target == 'editor' && 2 || 1 }}
 
       - name: Compilation [4.5+]
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }} ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+          scons-flags: >-
+            ${{ env.SCONS_FLAGS }} 
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
+            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: linux-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
         continue-on-error: true
 
       - name: Prepare artifact
@@ -175,7 +151,7 @@ jobs:
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
         with:
-          name: ${{ matrix.cache-name }}
+          name: linux-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
 
       - name: Unit tests
         if: ${{ inputs.tests && matrix.target == 'editor' }}
