@@ -551,13 +551,13 @@ namespace jsb
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
             v8::Context::Scope context_scope(context);
 
-            const String filename_abs = p_reader.get_path_absolute();
+            const String source_url = p_reader.get_source_url();
             Vector<uint8_t> source;
             const size_t len = read_all_bytes_with_shebang(p_reader, source);
             jsb_check((size_t)(int)len == len);
 
             // source evaluator (the module protocol)
-            const v8::MaybeLocal<v8::Value> func_maybe = impl::Helper::compile_function(context, (const char*) source.ptr(), (int) len, filename_abs);
+            const v8::MaybeLocal<v8::Value> func_maybe = impl::Helper::compile_function(context, (const char*) source.ptr(), (int) len, source_url);
             if (func_maybe.IsEmpty())
             {
                 //NOTE an exception should have been thrown in _compile_run if MaybeLocal is empty

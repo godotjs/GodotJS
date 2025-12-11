@@ -2,6 +2,7 @@
 #define GODOTJS_V8_HELPER_H
 
 #include "jsb_v8_pch.h"
+#include "../../internal/jsb_settings.h"
 
 #define V8_VERSION_NEWER_THAN(major, minor, patch) GODOT_VERSION_COMPARE(V8_MAJOR_VERSION, major, GODOT_VERSION_COMPARE(V8_MINOR_VERSION, minor, GODOT_VERSION_COMPARE(V8_BUILD_VERSION, patch, false)))
 
@@ -152,37 +153,55 @@ namespace jsb::impl
          * \brief run  and return a value from source
          * \param p_source source bytes (utf-8 encoded)
          * \param p_source_len length of source
-         * \param p_filename SourceOrigin (compile the code snippet without ScriptOrigin if `p_filename` is empty)
+         * \param p_source_origin SourceOrigin (compile the code snippet without ScriptOrigin if `p_filename` is empty)
          * \return js rval
          */
-        static v8::MaybeLocal<v8::Value> compile_function(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_filename)
+        static v8::MaybeLocal<v8::Value> compile_function(const v8::Local<v8::Context>& context, const char* p_source, int p_source_len, const String& p_source_origin)
         {
             v8::Isolate* isolate = context->GetIsolate();
             v8::MaybeLocal<v8::Script> script;
             const v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, p_source, v8::NewStringType::kNormal, p_source_len).ToLocalChecked();
 
-            if (p_filename.is_empty())
+            if (p_source_origin.is_empty())
             {
                 script = v8::Script::Compile(context, source);
             }
             else
             {
 #if JSB_WITH_URI_SCRIPT_ORIGIN
-                const String prefixed = "file://" + p_filename;
-                const CharString filename = prefixed.utf8();
+                const int protocol_index = p_source_origin.find("://");
+                const String source_origin_path = protocol_index > -1 ? p_source_origin.substr(protocol_index + 1) : p_source_origin;
+                const String prefixed = "file://" + source_origin_path;
+                const String filename = prefixed;
 #else
+                const int protocol_index = p_source_origin.find("://");
+                const String source_origin_path = protocol_index > -1 ? p_source_origin.substr(protocol_index + 1) : p_source_origin;
 #ifdef WINDOWS_ENABLED
-                const CharString filename = p_filename.replace("/", "\\").utf8();
+                const String filename = p_source_origin.find("res://") == 0
+                    ? p_source_origin.substr(6).replace("/", "\\")
+                    : p_source_origin.replace("/", "\\");
 #else
-                const CharString filename = p_filename.utf8();
+                const String filename = p_source_origin.find("res://") == 0 ? p_source_origin.substr(6) : p_source_origin;
 #endif
 #endif
 
+                String source_map_base_url = jsb::internal::Settings::get_debugger_source_map_base_url();
+
+                v8::Local<v8::Value> filename_value = v8::String::NewFromUtf8(isolate, filename.utf8().ptr(), v8::NewStringType::kNormal, filename.length()).ToLocalChecked();
+                v8::Local<v8::Value> source_map_url_value;
+
+                if (source_map_base_url.length() > 0)
+                {
+                    String source_map_url = source_map_base_url + (source_map_base_url.ends_with("/") ? filename : '/' + filename) + ".map";
+                    source_map_url_value = v8::String::NewFromUtf8(isolate, source_map_url.utf8().ptr(), v8::NewStringType::kNormal, source_map_url.length()).ToLocalChecked();
+                }
+
 #if V8_VERSION_NEWER_THAN(12, 1, 139)
-                v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, filename.ptr(), v8::NewStringType::kNormal, filename.length()).ToLocalChecked());
+                v8::ScriptOrigin origin(filename_value, 0, 0, false, -1, source_map_url_value);
 #else
-                v8::ScriptOrigin origin(isolate, v8::String::NewFromUtf8(isolate, filename.ptr(), v8::NewStringType::kNormal, filename.length()).ToLocalChecked());
+                v8::ScriptOrigin origin(isolate, filename_value, 0, 0, false, -1, source_map_url_value);
 #endif
+
                 script = v8::Script::Compile(context, source, &origin);
             }
 

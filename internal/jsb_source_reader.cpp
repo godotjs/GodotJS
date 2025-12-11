@@ -8,6 +8,9 @@ namespace jsb::internal
     {
         file_ = FileAccess::open(p_file_name, FileAccess::READ);
         cached_length_ = file_.is_null() ? 0 : file_->get_length();
+
+        String path_absolute = file_->get_path_absolute();
+        source_url = path_absolute.is_empty() ? p_file_name : path_absolute;
     }
 
     StringSourceReader::StringSourceReader(const String& p_path, const String& p_absolute_path, const String& p_source)

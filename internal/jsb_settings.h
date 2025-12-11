@@ -10,6 +10,8 @@ namespace jsb::internal
     {
     public:
         static uint16_t get_debugger_port();
+        static String get_debugger_source_map_base_url();
+        static bool get_wait_for_debugger();
         static bool get_sourcemap_enabled();
 
         /**

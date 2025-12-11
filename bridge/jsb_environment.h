@@ -1,6 +1,7 @@
 #ifndef GODOTJS_ENVIRONMENT_H
 #define GODOTJS_ENVIRONMENT_H
 
+#include <future>
 #include "jsb_bridge_pch.h"
 #include "jsb_module.h"
 #include "jsb_message.h"
@@ -172,6 +173,9 @@ namespace jsb
 
 #if JSB_WITH_DEBUGGER
         JavaScriptDebugger debugger_;
+        std::promise<void> debugger_ready_promise_;
+        std::future<void> debugger_ready_future_;
+        bool wait_for_debugger_ = false;
 #endif
 
         internal::SourceMapCache source_map_cache_;
@@ -588,6 +592,22 @@ namespace jsb
         jsb_force_inline ScriptClassInfoPtr find_script_class(const ScriptClassID p_class_id) { return script_classes_.is_valid_index(p_class_id) ? script_classes_.get_value_scoped(p_class_id) : nullptr; }
 
         void get_statistics(Statistics& r_stats) const;
+
+#if JSB_WITH_DEBUGGER
+
+        void wait_for_debugger()
+        {
+            wait_for_debugger_ = true;
+        }
+
+        void debugger_ready()
+        {
+            wait_for_debugger_ = false;
+            debugger_ready_promise_ = {};
+            debugger_ready_promise_.set_value();
+        }
+
+#endif
 
         static std::shared_ptr<Environment> _access(void* p_runtime);
 
