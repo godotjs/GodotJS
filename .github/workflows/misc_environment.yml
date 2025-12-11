@@ -40,6 +40,13 @@ jobs:
           path: ${{github.workspace}}/scripts/out
           retention-days: 10
 
+      - name: ⬆️ Upload tests/project
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-project
+          path: ${{github.workspace}}/tests/project/.godot/GodotJS
+          retention-days: 10
+
       - name: ⬆️ Upload impl/web/js
         uses: actions/upload-artifact@v4
         with:

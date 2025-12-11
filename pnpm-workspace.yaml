@@ -2,3 +2,4 @@ packages:
   - .
   - scripts/*
   - impl/web/bridge
+  - tests/project

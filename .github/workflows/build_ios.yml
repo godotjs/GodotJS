@@ -30,27 +30,14 @@ jobs:
   ios-template:
     runs-on: macos-latest
     timeout-minutes: 60
-    name: Template (target=template_release)
+    name: iOS (${{ matrix.target }}, ${{ matrix.engine }})
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Template (target=template_release, v8)
-            cache-name: ios-template-release-${{inputs.version}}-v8
-            target: template_release
-            cache-limit: 1
-
-          - name: Template (target=template_release, qjs_ng)
-            cache-name: ios-template-release-${{inputs.version}}-qjs-ng
-            target: template_release
-            sconsflags: use_quickjs_ng=yes
-            cache-limit: 1
-
-#          - name: Template (target=template_release, jsc)
-#            cache-name: ios-template-${{inputs.version}}-jsc
-#            target: template_release
-#            sconsflags: use_jsc=yes
-#            cache-limit: 1
+        # QuickJS & JSC isn't working at the moment
+        #        engine: [ v8, qjs-ng, jsc ]
+        engine: [ v8 ]
+        target: [ template_release, template_debug ]
 
     steps:
       - name: Checkout Godot
@@ -70,6 +57,8 @@ jobs:
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         continue-on-error: true
+        with:
+          cache-name: ios-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
 
       - name: Download deps artifact
         uses: actions/download-artifact@v4
@@ -90,26 +79,30 @@ jobs:
         if: inputs.version == '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          sconsflags: >-
+            ${{ env.SCONSFLAGS }}             
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: ios
           target: ${{ matrix.target }}
-          scons-cache-limit: ${{ matrix.cache-limit }}
+          scons-cache-limit: 1
 
       - name: Compilation [4.5+]
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.sconsflags }}
+          scons-flags: >-
+            ${{ env.SCONS_FLAGS }}             
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: ios
           target: ${{ matrix.target }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: ios-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
         continue-on-error: true
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
         with:
-          name: ${{ matrix.cache-name }}
+          name: ios-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}

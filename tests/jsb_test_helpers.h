@@ -4,6 +4,9 @@
 #include "../weaver/jsb_script_language.h"
 #include "tests/test_macros.h"
 
+#include <chrono>
+#include <thread>
+
 #define JSB_TESTS_EXECUTION_SCOPE(env) const jsb::tests::V8ContextScope JSB_CONCAT(unique_, __COUNTER__)(env)
 
 namespace jsb::tests
@@ -25,17 +28,6 @@ namespace jsb::tests
 
     struct Utils
     {
-        static void write_stub_file(const String& p_path)
-        {
-            if (FileAccess::exists(p_path)) return;
-            {
-                const Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE);
-                CHECK(f.is_valid());
-                f->store_8(0xd);
-                f->store_8(0xa);
-            }
-        }
-
         static void print_exception(const impl::TryCatch& try_catch)
         {
             if (try_catch.has_caught())
@@ -110,9 +102,7 @@ namespace jsb::tests
             CHECK(FileAccess::exists("project.godot"));
             // MESSAGE("init GodotJSScriptLanguage on thread ", Thread::get_caller_id());
 
-            install_npm();
-            compile_scripts();
-            ignore_directories();
+            check_required_files();
             GodotJSScriptLanguage::get_singleton()->init();
         }
 
@@ -122,35 +112,12 @@ namespace jsb::tests
         }
 
     private:
-        void install_npm()
+        void check_required_files()
         {
-            CHECK(FileAccess::exists("./package.json"));
-            CHECK(FileAccess::exists("./tsconfig.json"));
-            List<String> args;
-            args.push_back("install");
-            const String exe_path = OS::get_singleton()->get_name() != "Windows" ? "npm" : "npm.cmd";
-            const Error err = OS::get_singleton()->create_process(exe_path, args);
-            CHECK(err == OK);
-        }
-
-        void compile_scripts()
-        {
-            CHECK(FileAccess::exists("./node_modules/typescript/bin/tsc"));
+        	CHECK(FileAccess::exists("./package.json"));
+        	CHECK(FileAccess::exists("./tsconfig.json"));
             CHECK(FileAccess::exists("./test_01.ts"));
-            List<String> args;
-            args.push_back("./node_modules/typescript/bin/tsc");
-
-            const String exe_path = OS::get_singleton()->get_name() != "Windows" ? "node" : "node.exe";
-            const Error err = OS::get_singleton()->create_process(exe_path, args);
-            CHECK(err == OK);
             CHECK(FileAccess::exists("./.godot/GodotJS/test_01.js"));
-        }
-
-        void ignore_directories()
-        {
-            CHECK(FileAccess::exists("./jslibs/.gdignore"));
-            Utils::write_stub_file("./node_modules/.gdignore");
-            Utils::write_stub_file("./.godot/.gdignore");
         }
     };
 

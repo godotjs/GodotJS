@@ -1,17 +1,37 @@
-import { Node, Variant } from "godot"
-import { tool, export_, help } from "jsb.core"
+import { Node, Signal, Variant } from "godot";
+import { createClassBinder } from "godot.annotations";
 
 export function call_me() {
-    return 123;
+  return 123;
 }
 
-@tool()
-@help("Just a test!")
+const bind = createClassBinder();
+
+@bind()
 export default class TestNode extends Node {
+  @bind.export(Variant.Type.TYPE_INT)
+  accessor useCooldownMs: number = 500;
 
-    @export_(Variant.Type.TYPE_STRING)
-    hello = "hello";
+  @bind.signal()
+  accessor no_arg!: Signal<() => void>;
 
-    _process(delta: number): void {
-    }
+  @bind.signal()
+  accessor test_signal!: Signal<(value: number) => void>;
+
+  constructor(identifier?: any) {
+    super(identifier);
+
+    // do other things you want
+    //...
+  }
+
+  async _ready() {
+    console.log("TestNode ready");
+
+    const result = await this.test_signal.as_promise();
+  }
+
+  test() {
+    console.log("TestNode test");
+  }
 }

@@ -18,7 +18,6 @@ jobs:
     uses: ./.github/workflows/misc_environment.yml
 
   changesets:
-    if: github.event_name != 'pull_request'
     permissions:
       contents: write
       pull-requests: write
@@ -27,7 +26,7 @@ jobs:
 
   engine-version-build:
     name: ⚙️ Build Godot Version with GodotJS
-    needs: environment
+    needs: [environment, changesets]
     strategy:
       fail-fast: false
       matrix:
@@ -41,10 +40,11 @@ jobs:
       v8: ${{ needs.environment.outputs.v8 }}
       version: ${{ matrix.version }}
       version_ref: ${{ matrix.version_ref }}
+      tests: ${{ needs.changesets.outputs.publish == 'false' }}
 
   builds-done:
     name: 🏁 Builds Done
-    needs: [ engine-version-build, environment ]
+    needs: [engine-version-build, environment]
     runs-on: ubuntu-latest
     steps:
       - name: 🏁 Check if all builds are done
@@ -54,7 +54,7 @@ jobs:
 
   release:
     name: 🦅 Release
-    needs: [ changesets, engine-version-build, environment, builds-done ]
+    needs: [changesets, engine-version-build, environment, builds-done]
     if: needs.changesets.outputs.publish == 'true'
     permissions:
       contents: write
