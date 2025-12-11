@@ -5,9 +5,6 @@ on:
       version:
         required: true
         type: string
-      v8:
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -38,7 +35,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pnpm ci:publish ${{ inputs.version }} ${{ inputs.v8 }}
+          pnpm ci:publish ${{ inputs.version }}
           RELEASE_ID=$(gh release view ${{ inputs.version }} --json id --jq ".id")          
           echo "id=$RELEASE_ID" >> $GITHUB_OUTPUT
 

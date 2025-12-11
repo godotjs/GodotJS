@@ -92,12 +92,6 @@ jobs:
           fi
         continue-on-error: true
 
-      - name: Download deps artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: V8
-          path: ${{github.workspace}}/modules/GodotJS/v8
-
       - name: Download scripts/out
         uses: actions/download-artifact@v4
         with:

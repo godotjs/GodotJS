@@ -10,10 +10,6 @@ on:
         description: "Godot engine commit reference"
         required: true
         type: string
-      v8:
-        description: "V8 version"
-        required: true
-        type: string
       tests:
         type: boolean
         default: true
