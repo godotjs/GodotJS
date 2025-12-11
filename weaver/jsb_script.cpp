@@ -656,9 +656,9 @@ Variant GodotJSScript::_new(const Variant** p_args, int p_argcount, Callable::Ca
     r_error.error = Callable::CallError::CALL_OK;
     Object *owner = ClassDB::instantiate(script_class_info_.native_class_name);
 
-    ScriptInstance *script_instance = instance_construct(owner, false, p_args, p_argcount);
+    ScriptInstance *instance = instance_construct(owner, false, p_args, p_argcount);
 
-    if (!script_instance)
+    if (!instance)
     {
         memdelete(owner);
         return Variant();
