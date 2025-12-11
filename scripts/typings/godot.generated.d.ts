@@ -3,8 +3,6 @@
 
 ///<reference path="godot.mix.d.ts" />
 
-import GodotJsb from "godot-jsb";
-
 declare module "godot" {
     import { TypeDescriptor } from "jsb.editor.codegen";
 

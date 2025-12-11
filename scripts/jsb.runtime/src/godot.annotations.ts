@@ -1086,7 +1086,7 @@ export function createClassBinder(): ClassBinder {
              * @param evaluator for now, only string is accepted
              */
             onready(evaluator: string | GodotJsb.internal.OnReadyEvaluatorFunc) {
-                return (_target: undefined, context: string | ClassMethodDecoratorContext) => {
+                return (_target: undefined, context: string | ClassFieldDecoratorContext) => {
                     if (typeof context !== "object") {
                         throw new Error(
                             "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
@@ -1106,7 +1106,10 @@ export function createClassBinder(): ClassBinder {
             // class or member decorators
 
             deprecated(message?: string) {
-                return function (target, context) {
+                return function (
+                    target: GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                ) {
                     if (typeof context !== "object") {
                         throw new Error(
                             "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
@@ -1125,12 +1128,13 @@ export function createClassBinder(): ClassBinder {
                     }
 
                     deprecated_map[name] = message ?? "";
-                } satisfies AnyDecorator as Decorator<
-                    ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
-                >;
+                };
             },
             experimental(message?: string) {
-                return function (target, context) {
+                return function (
+                    target: GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                ) {
                     if (typeof context !== "object") {
                         throw new Error(
                             "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
@@ -1149,12 +1153,13 @@ export function createClassBinder(): ClassBinder {
                     }
 
                     experimental_map[name] = message ?? "";
-                } satisfies AnyDecorator as Decorator<
-                    ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
-                >;
+                };
             },
             help(message?: string) {
-                return function (target, context) {
+                return function (
+                    target: GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                ) {
                     if (typeof context !== "object") {
                         throw new Error(
                             "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
@@ -1173,9 +1178,7 @@ export function createClassBinder(): ClassBinder {
                     }
 
                     help_map[name] = message ?? "";
-                } satisfies AnyDecorator as Decorator<
-                    ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
-                >;
+                };
             },
         }),
     );
