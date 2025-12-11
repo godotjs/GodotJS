@@ -131,7 +131,7 @@ jobs:
         if: inputs.version != '4.4'
         uses: ./.github/actions/godot-build
         with:
-          sconsflags: >-
+          scons-flags: >-
             ${{ env.SCONS_FLAGS }} 
             ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }} 
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
