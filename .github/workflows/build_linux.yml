@@ -155,3 +155,6 @@ jobs:
           ${{ env.BIN }} --version
           ${{ env.BIN }} --help
           ${{ env.BIN }} --headless --test --test-case="[jsb]*" --force-colors
+# Run test project
+          xvfb-run ${{ env.BIN }} --headless --path modules/GodotJS/tests/project 2>&1 | tee sanitizers_log.txt || true
+          misc/scripts/check_ci_log.py sanitizers_log.txt
