@@ -6,79 +6,106 @@
 declare module "godot" {
     import { TypeDescriptor } from "jsb.editor.codegen";
 
-    class Node<Map extends Record<string, Node> = any> extends Object { }
-    class Resource { }
-    class Script extends Resource { }
-    interface ResourceTypes { }
+    class Node<Map extends Record<string, Node> = any> extends Object {}
+    class Resource {}
+    class Script extends Resource {}
+    interface ResourceTypes {}
 
-    type GArrayCreateSource<T> = ReadonlyArray<T> | {
-        [Symbol.iterator](): IteratorObject<GDataStructureCreateValue<T>>;
-        [K: number]: GDataStructureCreateValue<T>;
-    }
+    type GArrayCreateSource<T> =
+        | ReadonlyArray<T>
+        | {
+              [Symbol.iterator](): IteratorObject<GDataStructureCreateValue<T>>;
+              [K: number]: GDataStructureCreateValue<T>;
+          };
 
-    type GDataStructureCreateValue<V> = V | (
-        V extends GArray<infer T>
-            ? [T] extends [any[]]
-                ? GArrayCreateSource<{ [I in keyof T]: GDataStructureCreateValue<T[I]> }>
-                : GArrayCreateSource<GDataStructureCreateValue<T>>
-            : V extends GDictionary<infer T>
+    type GDataStructureCreateValue<V> =
+        | V
+        | (V extends GArray<infer T>
+              ? [T] extends [any[]]
+                  ? GArrayCreateSource<{ [I in keyof T]: GDataStructureCreateValue<T[I]> }>
+                  : GArrayCreateSource<GDataStructureCreateValue<T>>
+              : V extends GDictionary<infer T>
                 ? { [K in keyof T]: GDataStructureCreateValue<T[K]> }
-                : never
-        )
+                : never);
 
     class GDictionary<T = Record<any, any>> {
-        static create<V extends { [key: number | string]: GWrappableValue }>(properties: V): GValueWrap<V>
-        static create<V extends GDictionary<any>>(properties: V extends GDictionary<infer T> ? { [K in keyof T]: GDataStructureCreateValue<T[K]> } : never): V
+        static create<V extends { [key: number | string]: GWrappableValue }>(properties: V): GValueWrap<V>;
+        static create<V extends GDictionary<any>>(
+            properties: V extends GDictionary<infer T> ? { [K in keyof T]: GDataStructureCreateValue<T[K]> } : never,
+        ): V;
         proxy<Write extends boolean = false>(): Write extends true ? GDictionaryProxy<T> : GDictionaryReadProxy<T>;
-        get<K extends keyof T>(key: K, default_: any = <any> {}): T[K]
-        get_keyed<K extends keyof T>(index: K): T[K]
-        set<K extends keyof T>(key: K, value: T[K]): boolean
-        keys(): GArray<keyof T>
-        erase(key: keyof T): boolean
-        has(key: keyof T): boolean
+        get<K extends keyof T>(key: K, default_: any = <any>{}): T[K];
+        get_keyed<K extends keyof T>(index: K): T[K];
+        set<K extends keyof T>(key: K, value: T[K]): boolean;
+        keys(): GArray<keyof T>;
+        erase(key: keyof T): boolean;
+        has(key: keyof T): boolean;
     }
     class GArray<T extends GAny | GAny[] = GAny | GAny[]> {
-        static create<A extends any[]>(elements: A): GValueWrap<A>
+        static create<A extends any[]>(elements: A): GValueWrap<A>;
         static create<A extends GArray<any>>(
             elements: A extends GArray<infer T>
                 ? [T] extends [any[]]
                     ? { [I in keyof T]: GDataStructureCreateValue<T[I]> }
                     : Array<GDataStructureCreateValue<T>>
-                : never
-        ): GValueWrap<A>
-        static create<E extends GAny>(elements: Array<GDataStructureCreateValue<E>>): GArray<E>
-        [Symbol.iterator](): IteratorObject<GArrayElement<T>>
-        proxy<Write extends boolean = false>(): Write extends true ? GArrayProxy<GArrayElement<T>> : GArrayReadProxy<GArrayElement<T>>
-        get_indexed<I extends int64>(index: I): GArrayElement<T, I>
-        get<I extends int64>(index: I): GArrayElement<T, I>
-        set<I extends int64>(index: I, value: GArrayElement<T, I>): void
-        size(): number
-        push_back(value: GArrayElement<T>): void
-        pop_back(): GArrayElement<T>
-        has(value: GArrayElement<T>): boolean
-        find(what: GArrayElement<T>, from: int64 = 0): int64
+                : never,
+        ): GValueWrap<A>;
+        static create<E extends GAny>(elements: Array<GDataStructureCreateValue<E>>): GArray<E>;
+        [Symbol.iterator](): IteratorObject<GArrayElement<T>>;
+        proxy<Write extends boolean = false>(): Write extends true
+            ? GArrayProxy<GArrayElement<T>>
+            : GArrayReadProxy<GArrayElement<T>>;
+        get_indexed<I extends int64>(index: I): GArrayElement<T, I>;
+        get<I extends int64>(index: I): GArrayElement<T, I>;
+        set<I extends int64>(index: I, value: GArrayElement<T, I>): void;
+        size(): number;
+        push_back(value: GArrayElement<T>): void;
+        pop_back(): GArrayElement<T>;
+        has(value: GArrayElement<T>): boolean;
+        find(what: GArrayElement<T>, from: int64 = 0): int64;
     }
-    type byte = number
-    type int32 = number
-    type uint32 = number
-    type int64 = number /* || bigint */
-    type float32 = number
-    type float64 = number
-    type StringName = string
+    type byte = number;
+    type int32 = number;
+    type uint32 = number;
+    type int64 = number; /* || bigint */
+    type float32 = number;
+    type float64 = number;
+    type StringName = string;
 
-    type GAny = undefined | null | boolean | int64 | float64 | string | Callable | Object | Signal | GDictionary | GArray | PackedByteArray | PackedStringArray
+    type GAny =
+        | undefined
+        | null
+        | boolean
+        | int64
+        | float64
+        | string
+        | Callable
+        | Object
+        | Signal
+        | GDictionary
+        | GArray
+        | PackedByteArray
+        | PackedStringArray;
 
-    class EditorSettings { get(path: StringName): any; }
-    class EditorInterface { static get_editor_settings(): EditorSettings; }
-    class ProjectSettings { static get_setting_with_override(path: StringName): any; }
+    class EditorSettings {
+        get(path: StringName): any;
+    }
+    class EditorInterface {
+        static get_editor_settings(): EditorSettings;
+    }
+    class ProjectSettings {
+        static get_setting_with_override(path: StringName): any;
+    }
 
     class OS {
-        static get_name(): string
-        static create_process(path: string, arguments_: PackedStringArray | string[], open_console?: boolean): int64
+        static get_name(): string;
+        static create_process(path: string, arguments_: PackedStringArray | string[], open_console?: boolean): int64;
     }
 
     // singleton
-    namespace Engine { function get_time_scale(): number; }
+    namespace Engine {
+        function get_time_scale(): number;
+    }
 
     namespace MultiplayerAPI {
         enum RPCMode {
@@ -117,12 +144,14 @@ declare module "godot" {
     }
 
     class PackedByteArray {
-        toArrayBuffer(): ArrayBuffer
-        get(index: int64): int64
-        set(index: int64, value: int64): void
+        toArrayBuffer(): ArrayBuffer;
+        get(index: int64): int64;
+        set(index: int64, value: int64): void;
     }
 
-    class PackedStringArray { append(value: string): boolean }
+    class PackedStringArray {
+        append(value: string): boolean;
+    }
 
     namespace FileAccess {
         enum ModeFlags {
@@ -134,15 +163,14 @@ declare module "godot" {
     }
 
     class FileAccess {
-
         static open(path: string, flags: number);
         static file_exists(path: string): boolean;
 
         store_line(str: string);
-        store_string(string_: string): boolean
+        store_string(string_: string): boolean;
         get_position(): number;
         flush(): void;
-        close() : void;
+        close(): void;
     }
 
     enum PropertyHint {
@@ -397,29 +425,30 @@ declare module "godot" {
         /**
          * Create godot Callable without a bound object.
          */
-        static create<F extends Function>(fn: F): Callable<F>
+        static create<F extends Function>(fn: F): Callable<F>;
         /**
          * Create godot Callable with a bound object `self`.
          */
-        static create<S extends Object, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>
-        is_null(): boolean
-        is_custom(): boolean
-        is_standard(): boolean
-        is_valid(): boolean
-        get_object()
-        get_object_id(): int64
-        get_method(): StringName
-        get_bound_arguments_count(): int64
-        get_bound_arguments()
-        hash(): int64
-        bind(...vargargs: any[]): AnyCallable
-        bindv(arguments_: GArray): AnyCallable
-        unbind(argcount: int64): AnyCallable
+        static create<S extends Object, F extends (this: S, ...args: any[]) => any>(self: S, fn: F): Callable<F>;
+        is_null(): boolean;
+        is_custom(): boolean;
+        is_standard(): boolean;
+        is_valid(): boolean;
+        get_object();
+        get_object_id(): int64;
+        get_method(): StringName;
+        get_bound_arguments_count(): int64;
+        get_bound_arguments();
+        hash(): int64;
+        bind(...vargargs: any[]): AnyCallable;
+        bindv(arguments_: GArray): AnyCallable;
+        unbind(argcount: int64): AnyCallable;
         call: T;
-        callv(arguments_: GArray)
-        call_deferred(...vargargs: any[]): void
-        static create(variant: any, method: StringName): AnyCallable
-    }``
+        callv(arguments_: GArray);
+        call_deferred(...vargargs: any[]): void;
+        static create(variant: any, method: StringName): AnyCallable;
+    }
+    ``;
 
     /**
      * GArray elements are exposed with a subset of JavaScript's standard Array API. Array indexes are exposed as
@@ -437,7 +466,10 @@ declare module "godot" {
          * @param callback A function that accepts up to three arguments. forEach calls the callback function one time for each element in the array.
          * @param thisArg An object to which the this keyword can refer in the callback function. If thisArg is omitted, undefined is used as the this value.
          */
-        forEach<S = GArrayProxy<T>>(callback: (this: GArrayProxy<T>, value: GProxyValueWrap<T>, index: number) => void, thisArg?: S): void;
+        forEach<S = GArrayProxy<T>>(
+            callback: (this: GArrayProxy<T>, value: GProxyValueWrap<T>, index: number) => void,
+            thisArg?: S,
+        ): void;
         /**
          * Removes the last element from an array and returns it.
          * If the array is empty, undefined is returned and the array is not modified.
@@ -472,21 +504,21 @@ declare module "godot" {
         [K in keyof T]: T[K] | GProxyValueWrap<T[K]>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
     };
 
-    type GProxyValueWrap<V> = V extends GArray<infer E>
-        ? GArrayProxy<E>
-        : V extends GDictionary<infer T>
-            ? GDictionaryProxy<T>
-            : V;
+    type GProxyValueWrap<V> =
+        V extends GArray<infer E> ? GArrayProxy<E> : V extends GDictionary<infer T> ? GDictionaryProxy<T> : V;
 
     /**
      * Semi-workaround for https://github.com/microsoft/TypeScript/issues/43826.
      * @see GReadProxyValueWrap
      */
-    type GArrayReadProxy<T> = Omit<GArrayProxy<T>, 'forEach'> & {
+    type GArrayReadProxy<T> = Omit<GArrayProxy<T>, "forEach"> & {
         [Symbol.iterator](): IteratorObject<GReadProxyValueWrap<T>>;
-        forEach<S = GArrayReadProxy<T>>(callback: (this: GArrayReadProxy<T>, value: GReadProxyValueWrap<T>, index: number) => void, thisArg?: S): void;
+        forEach<S = GArrayReadProxy<T>>(
+            callback: (this: GArrayReadProxy<T>, value: GReadProxyValueWrap<T>, index: number) => void,
+            thisArg?: S,
+        ): void;
         [n: number]: GReadProxyValueWrap<T>;
-    }
+    };
 
     /**
      * Semi-workaround for https://github.com/microsoft/TypeScript/issues/43826.
@@ -500,88 +532,84 @@ declare module "godot" {
     // indexers typed correctly for access i.e. return proxied types. The non-read interfaces have indexers accurate for
     // assignment and will accept both GArray/GDictionary and proxies. The read interfaces exist for convenience only,
     // you can safely cast between the two interfaces types as desired.
-    type GReadProxyValueWrap<V> = V extends GArray<infer E>
-        ? GArrayReadProxy<E>
-        : V extends GDictionary<infer T>
-            ? GDictionaryReadProxy<T>
-            : V;
+    type GReadProxyValueWrap<V> =
+        V extends GArray<infer E> ? GArrayReadProxy<E> : V extends GDictionary<infer T> ? GDictionaryReadProxy<T> : V;
 
     class Signal<T extends (...args: any[]) => void = (...args: any[]) => void> {
-        constructor()
-        constructor(from: Signal)
-        constructor(object: Object, signal: StringName)
-        isNull(): boolean
-        getObject(): Object
-        getObjectId(): int64
-        getName(): StringName
+        constructor();
+        constructor(from: Signal);
+        constructor(object: Object, signal: StringName);
+        isNull(): boolean;
+        getObject(): Object;
+        getObjectId(): int64;
+        getName(): StringName;
 
         /** Connects this signal to the specified [param callable]. Optional [param flags] can be also added to configure the connection's behavior (see [enum Object.ConnectFlags] constants). You can provide additional arguments to the connected [param callable] by using [method Callable.bind].
          *  A signal can only be connected once to the same [Callable]. If the signal is already connected, returns [constant ERR_INVALID_PARAMETER] and pushes an error message, unless the signal is connected with [constant Object.CONNECT_REFERENCE_COUNTED]. To prevent this, use [method is_connected] first to check for existing connections.
          *
          */
-        connect(callable: Callable<T>, flags: int64 = 0): int64
+        connect(callable: Callable<T>, flags: int64 = 0): int64;
 
         /** Disconnects this signal from the specified [Callable]. If the connection does not exist, generates an error. Use [method is_connected] to make sure that the connection exists. */
-        disconnect(callable: Callable<T>): void
-        isConnected(callable: Callable<T>): boolean
-        getConnections(): GArray
-        hasConnections(): boolean
+        disconnect(callable: Callable<T>): void;
+        isConnected(callable: Callable<T>): boolean;
+        getConnections(): GArray;
+        hasConnections(): boolean;
 
         /** Emits this signal. All [Callable]s connected to this signal will be triggered. This method supports a variable number of arguments, so parameters can be passed as a comma separated list. */
-        emit: T
-        static EQUAL(left: Signal, right: Signal): boolean
-        static NOT_EQUAL(left: Signal, right: Signal): boolean
+        emit: T;
+        static EQUAL(left: Signal, right: Signal): boolean;
+        static NOT_EQUAL(left: Signal, right: Signal): boolean;
     }
 
     function type_string(type: int64): string;
     function str(o: any): string;
 
-    class NodePath {
-    }
+    class NodePath {}
 
     class Object {
         /** Notification received when the object is initialized, before its script is attached. Used internally. */
-        static readonly NOTIFICATION_POSTINITIALIZE = 0
+        static readonly NOTIFICATION_POSTINITIALIZE = 0;
 
         /** Notification received when the object is about to be deleted. Can be used like destructors in object-oriented programming languages. */
-        static readonly NOTIFICATION_PREDELETE = 1
+        static readonly NOTIFICATION_PREDELETE = 1;
 
         /** Notification received when the object finishes hot reloading. This notification is only sent for extensions classes and derived. */
-        static readonly NOTIFICATION_EXTENSION_RELOADED = 2
-        constructor(identifier?: any)
+        static readonly NOTIFICATION_EXTENSION_RELOADED = 2;
+        constructor(identifier?: any);
 
         /** Deletes the object from memory. Pre-existing references to the object become invalid, and any attempt to access them will result in a run-time error. Checking the references with [method @GlobalScope.is_instance_valid] will return `false`. */
-        /* gdvirtual */ free(): void
+        /* gdvirtual */ free(): void;
 
         /** Called when the object's script is instantiated, oftentimes after the object is initialized in memory (through `Object.new()` in GDScript, or `new GodotObject` in C#). It can be also defined to take in parameters. This method is similar to a constructor in most programming languages.
          *
          *  **Note:** If [method _init] is defined with  *required*  parameters, the Object with script may only be created directly. If any other means (such as [method PackedScene.instantiate] or [method Node.duplicate]) are used, the script's initialization will fail.
          */
-        /* gdvirtual */ _init(): void
+        /* gdvirtual */ _init(): void;
 
         /** Override this method to customize the return value of [method to_string], and therefore the object's representation as a [String].
          *
          */
-        /* gdvirtual */ _to_string(): string
+        /* gdvirtual */ _to_string(): string;
 
         /** Called when the object receives a notification, which can be identified in [param what] by comparing it with a constant. See also [method notification].
          *
          *
          *  **Note:** The base [Object] defines a few notifications ([constant NOTIFICATION_POSTINITIALIZE] and [constant NOTIFICATION_PREDELETE]). Inheriting classes such as [Node] define a lot more notifications, which are also received by this method.
          */
-        /* gdvirtual */ _notification(what: int64): void
+        /* gdvirtual */ _notification(what: int64): void;
 
         /** Override this method to customize the behavior of [method set]. Should set the [param property] to [param value] and return `true`, or `false` if the [param property] should be handled normally. The  *exact*  way to set the [param property] is up to this method's implementation.
          *  Combined with [method _get] and [method _get_property_list], this method allows defining custom properties, which is particularly useful for editor plugins. Note that a property  *must*  be present in [method get_property_list], otherwise this method will not be called.
          *
          */
-        /* gdvirtual */ _set(property: StringName, value: any): boolean
+        /* gdvirtual */ _set(property: StringName, value: any): boolean;
 
         /** Override this method to customize the behavior of [method get]. Should return the given [param property]'s value, or `null` if the [param property] should be handled normally.
          *  Combined with [method _set] and [method _get_property_list], this method allows defining custom properties, which is particularly useful for editor plugins. Note that a property must be present in [method get_property_list], otherwise this method will not be called.
          *
          */
-        /* gdvirtual */ _get(property: StringName): any
+        /* gdvirtual */ _get(property: StringName): any;
 
         /** Override this method to provide a custom list of additional properties to handle by the engine.
          *  Should return a property list, as an [Array] of dictionaries. The result is added to the array of [method get_property_list], and should be formatted in the same way. Each [Dictionary] must at least contain the `name` and `type` entries.
@@ -593,24 +621,24 @@ declare module "godot" {
          *
          *  **Note:** If the object's script is not [annotation @GDScript.@tool], this method will not be called in the editor.
          */
-        /* gdvirtual */ _get_property_list(): GArray
+        /* gdvirtual */ _get_property_list(): GArray;
 
         /** Override this method to customize existing properties. Every property info goes through this method, except properties added with [method _get_property_list]. The dictionary contents is the same as in [method _get_property_list].
          *
          */
-        /* gdvirtual */ _validate_property(property: GDictionary): void
+        /* gdvirtual */ _validate_property(property: GDictionary): void;
 
         /** Override this method to customize the given [param property]'s revert behavior. Should return `true` if the [param property] has a custom default value and is revertible in the Inspector dock. Use [method _property_get_revert] to specify the [param property]'s default value.
          *
          *  **Note:** This method must return consistently, regardless of the current value of the [param property].
          */
-        /* gdvirtual */ _property_can_revert(property: StringName): boolean
+        /* gdvirtual */ _property_can_revert(property: StringName): boolean;
 
         /** Override this method to customize the given [param property]'s revert behavior. Should return the default value for the [param property]. If the default value differs from the [param property]'s current value, a revert icon is displayed in the Inspector dock.
          *
          *  **Note:** [method _property_can_revert] must also be overridden for this method to be called.
          */
-        /* gdvirtual */ _property_get_revert(property: StringName): any
+        /* gdvirtual */ _property_get_revert(property: StringName): any;
 
         /** Initializes the iterator. [param iter] stores the iteration state. Since GDScript does not support passing arguments by reference, a single-element array is used as a wrapper. Returns `true` so long as the iterator has not reached the end.
          *  Example:
@@ -618,47 +646,47 @@ declare module "godot" {
          *
          *  **Note:** Alternatively, you can ignore [param iter] and use the object's state instead, see [url=https://docs.godotengine.org/en/latest/tutorials/scripting/gdscript/gdscript_advanced.html#custom-iterators]online docs[/url] for an example. Note that in this case you will not be able to reuse the same iterator instance in nested loops. Also, make sure you reset the iterator state in this method if you want to reuse the same instance multiple times.
          */
-        /* gdvirtual */ _iter_init(iter: GArray): boolean
+        /* gdvirtual */ _iter_init(iter: GArray): boolean;
 
         /** Moves the iterator to the next iteration. [param iter] stores the iteration state. Since GDScript does not support passing arguments by reference, a single-element array is used as a wrapper. Returns `true` so long as the iterator has not reached the end. */
-        /* gdvirtual */ _iter_next(iter: GArray): boolean
+        /* gdvirtual */ _iter_next(iter: GArray): boolean;
 
         /** Returns the current iterable value. [param iter] stores the iteration state, but unlike [method _iter_init] and [method _iter_next] the state is supposed to be read-only, so there is no [Array] wrapper. */
-        /* gdvirtual */ _iter_get(iter: any): any
+        /* gdvirtual */ _iter_get(iter: any): any;
 
         /** Returns the object's built-in class name, as a [String]. See also [method is_class].
          *
          *  **Note:** This method ignores `class_name` declarations. If this object's script has defined a `class_name`, the base, built-in class name is returned instead.
          */
-        get_class(): string
+        get_class(): string;
 
         /** Returns `true` if the object inherits from the given [param class]. See also [method get_class].
          *
          *
          *  **Note:** This method ignores `class_name` declarations in the object's script.
          */
-        is_class(class_: string): boolean
+        is_class(class_: string): boolean;
 
         /** Assigns [param value] to the given [param property]. If the property does not exist or the given [param value]'s type doesn't match, nothing happens.
          *
          *
          *  **Note:** In C#, [param property] must be in snake_case when referring to built-in Godot properties. Prefer using the names exposed in the `PropertyName` class to avoid allocating a new [StringName] on each call.
          */
-        set(property: StringName, value: any): void
+        set(property: StringName, value: any): void;
 
         /** Returns the [Variant] value of the given [param property]. If the [param property] does not exist, this method returns `null`.
          *
          *
          *  **Note:** In C#, [param property] must be in snake_case when referring to built-in Godot properties. Prefer using the names exposed in the `PropertyName` class to avoid allocating a new [StringName] on each call.
          */
-        get(property: StringName): any
+        get(property: StringName): any;
 
         /** Assigns a new [param value] to the property identified by the [param property_path]. The path should be a [NodePath] relative to this object, and can use the colon character (`:`) to access nested properties.
          *
          *
          *  **Note:** In C#, [param property_path] must be in snake_case when referring to built-in Godot properties. Prefer using the names exposed in the `PropertyName` class to avoid allocating a new [StringName] on each call.
          */
-        set_indexed(property_path: NodePath | string, value: any): void
+        set_indexed(property_path: NodePath | string, value: any): void;
 
         /** Gets the object's property indexed by the given [param property_path]. The path should be a [NodePath] relative to the current object and can use the colon character (`:`) to access nested properties.
          *  **Examples:** `"position:x"` or `"material:next_pass:blend_mode"`.
@@ -668,7 +696,7 @@ declare module "godot" {
          *
          *  **Note:** This method does not support actual paths to nodes in the [SceneTree], only sub-property paths. In the context of nodes, use [method Node.get_node_and_resource] instead.
          */
-        get_indexed(property_path: NodePath | string): any
+        get_indexed(property_path: NodePath | string): any;
 
         /** Returns the object's property list as an [Array] of dictionaries. Each [Dictionary] contains the following entries:
          *  - `name` is the property's name, as a [String];
@@ -680,7 +708,7 @@ declare module "godot" {
          *
          *  **Note:** In GDScript, all class members are treated as properties. In C# and GDExtension, it may be necessary to explicitly mark class members as Godot properties using decorators or attributes.
          */
-        get_property_list(): GArray
+        get_property_list(): GArray;
 
         /** Returns this object's methods and their signatures as an [Array] of dictionaries. Each [Dictionary] contains the following entries:
          *  - `name` is the name of the method, as a [String];
@@ -692,42 +720,42 @@ declare module "godot" {
          *
          *  **Note:** The dictionaries of `args` and `return` are formatted identically to the results of [method get_property_list], although not all entries are used.
          */
-        get_method_list(): GArray
+        get_method_list(): GArray;
 
         /** Returns `true` if the given [param property] has a custom default value. Use [method property_get_revert] to get the [param property]'s default value.
          *
          *  **Note:** This method is used by the Inspector dock to display a revert icon. The object must implement [method _property_can_revert] to customize the default value. If [method _property_can_revert] is not implemented, this method returns `false`.
          */
-        property_can_revert(property: StringName): boolean
+        property_can_revert(property: StringName): boolean;
 
         /** Returns the custom default value of the given [param property]. Use [method property_can_revert] to check if the [param property] has a custom default value.
          *
          *  **Note:** This method is used by the Inspector dock to display a revert icon. The object must implement [method _property_get_revert] to customize the default value. If [method _property_get_revert] is not implemented, this method returns `null`.
          */
-        property_get_revert(property: StringName): any
+        property_get_revert(property: StringName): any;
 
         /** Sends the given [param what] notification to all classes inherited by the object, triggering calls to [method _notification], starting from the highest ancestor (the [Object] class) and going down to the object's script.
          *  If [param reversed] is `true`, the call order is reversed.
          *
          */
-        notification(what: int64, reversed?: boolean): void
+        notification(what: int64, reversed?: boolean): void;
 
         /** Returns a [String] representing the object. Defaults to `"<ClassName#RID>"`. Override [method _to_string] to customize the string representation of the object. */
-        to_string(): string
+        to_string(): string;
 
         /** Returns the object's unique instance ID. This ID can be saved in [EncodedObjectAsID], and can be used to retrieve this object instance with [method @GlobalScope.instance_from_id].
          *
          *  **Note:** This ID is only useful during the current session. It won't correspond to a similar object if the ID is sent over a network, or loaded from a file at a later time.
          */
-        get_instance_id(): int64
+        get_instance_id(): int64;
 
         /** Attaches [param script] to the object, and instantiates it. As a result, the script's [method _init] is called. A [Script] is used to extend the object's functionality.
          *  If a script already exists, its instance is detached, and its property values and state are lost. Built-in property values are still kept.
          */
-        set_script(script: any): void
+        set_script(script: any): void;
 
         /** Returns the object's [Script] instance, or `null` if no script is attached. */
-        get_script(): any
+        get_script(): any;
 
         /** Adds or changes the entry [param name] inside the object's metadata. The metadata [param value] can be any [Variant], although some types cannot be serialized correctly.
          *  If [param value] is `null`, the entry is removed. This is the equivalent of using [method remove_meta]. See also [method has_meta] and [method get_meta].
@@ -736,7 +764,7 @@ declare module "godot" {
          *
          *  **Note:** Metadata that has a name starting with an underscore (`_`) is considered editor-only. Editor-only metadata is not displayed in the Inspector and should not be edited, although it can still be found by this method.
          */
-        set_meta(name: StringName, value: any): void
+        set_meta(name: StringName, value: any): void;
 
         /** Removes the given entry [param name] from the object's metadata. See also [method has_meta], [method get_meta] and [method set_meta].
          *
@@ -744,7 +772,7 @@ declare module "godot" {
          *
          *  **Note:** Metadata that has a name starting with an underscore (`_`) is considered editor-only. Editor-only metadata is not displayed in the Inspector and should not be edited, although it can still be found by this method.
          */
-        remove_meta(name: StringName): void
+        remove_meta(name: StringName): void;
 
         /** Returns the object's metadata value for the given entry [param name]. If the entry does not exist, returns [param default]. If [param default] is `null`, an error is also generated.
          *
@@ -752,7 +780,7 @@ declare module "godot" {
          *
          *  **Note:** Metadata that has a name starting with an underscore (`_`) is considered editor-only. Editor-only metadata is not displayed in the Inspector and should not be edited, although it can still be found by this method.
          */
-        get_meta(name: StringName, default_?: any): any
+        get_meta(name: StringName, default_?: any): any;
 
         /** Returns `true` if a metadata entry is found with the given [param name]. See also [method get_meta], [method set_meta] and [method remove_meta].
          *
@@ -760,21 +788,21 @@ declare module "godot" {
          *
          *  **Note:** Metadata that has a name starting with an underscore (`_`) is considered editor-only. Editor-only metadata is not displayed in the Inspector and should not be edited, although it can still be found by this method.
          */
-        has_meta(name: StringName): boolean
+        has_meta(name: StringName): boolean;
 
         /** Returns the object's metadata entry names as an [Array] of [StringName]s. */
-        get_meta_list(): GArray
+        get_meta_list(): GArray;
 
         /** Adds a user-defined signal named [param signal]. Optional arguments for the signal can be added as an [Array] of dictionaries, each defining a `name` [String] and a `type` [int] (see [enum Variant.Type]). See also [method has_user_signal] and [method remove_user_signal].
          *
          */
-        add_user_signal(signal: string, arguments_?: GArray): void
+        add_user_signal(signal: string, arguments_?: GArray): void;
 
         /** Returns `true` if the given user-defined [param signal] name exists. Only signals added with [method add_user_signal] are included. See also [method remove_user_signal]. */
-        has_user_signal(signal: StringName): boolean
+        has_user_signal(signal: StringName): boolean;
 
         /** Removes the given user signal [param signal] from the object. See also [method add_user_signal] and [method has_user_signal]. */
-        remove_user_signal(signal: StringName): void
+        remove_user_signal(signal: StringName): void;
 
         /** Emits the given [param signal] by name. The signal must exist, so it should be a built-in signal of this class or one of its inherited classes, or a user-defined signal (see [method add_user_signal]). This method supports a variable number of arguments, so parameters can be passed as a comma separated list.
          *  Returns [constant ERR_UNAVAILABLE] if [param signal] does not exist or the parameters are invalid.
@@ -782,14 +810,14 @@ declare module "godot" {
          *
          *  **Note:** In C#, [param signal] must be in snake_case when referring to built-in Godot signals. Prefer using the names exposed in the `SignalName` class to avoid allocating a new [StringName] on each call.
          */
-        emit_signal(signal: StringName, ...vargargs: any[]): Error
+        emit_signal(signal: StringName, ...vargargs: any[]): Error;
 
         /** Calls the [param method] on the object and returns the result. This method supports a variable number of arguments, so parameters can be passed as a comma separated list.
          *
          *
          *  **Note:** In C#, [param method] must be in snake_case when referring to built-in Godot methods. Prefer using the names exposed in the `MethodName` class to avoid allocating a new [StringName] on each call.
          */
-        call(method: StringName, ...vargargs: any[]): any
+        call(method: StringName, ...vargargs: any[]): any;
 
         /** Calls the [param method] on the object during idle time. Always returns `null`, **not** the method's result.
          *  Idle time happens mainly at the end of process and physics frames. In it, deferred calls will be run until there are none left, which means you can defer calls from other deferred calls and they'll still be run in the current idle time cycle. This means you should not call a method deferred from itself (or from a method called by it), as this causes infinite recursion the same way as if you had called the method directly.
@@ -802,59 +830,59 @@ declare module "godot" {
          *  **Note:** If you're looking to delay the function call by a frame, refer to the [signal SceneTree.process_frame] and [signal SceneTree.physics_frame] signals.
          *
          */
-        call_deferred(method: StringName, ...vargargs: any[]): any
+        call_deferred(method: StringName, ...vargargs: any[]): any;
 
         /** Assigns [param value] to the given [param property], at the end of the current frame. This is equivalent to calling [method set] through [method call_deferred].
          *
          *
          *  **Note:** In C#, [param property] must be in snake_case when referring to built-in Godot properties. Prefer using the names exposed in the `PropertyName` class to avoid allocating a new [StringName] on each call.
          */
-        set_deferred(property: StringName, value: any): void
+        set_deferred(property: StringName, value: any): void;
 
         /** Calls the [param method] on the object and returns the result. Unlike [method call], this method expects all parameters to be contained inside [param arg_array].
          *
          *
          *  **Note:** In C#, [param method] must be in snake_case when referring to built-in Godot methods. Prefer using the names exposed in the `MethodName` class to avoid allocating a new [StringName] on each call.
          */
-        callv(method: StringName, arg_array: GArray): any
+        callv(method: StringName, arg_array: GArray): any;
 
         /** Returns `true` if the given [param method] name exists in the object.
          *
          *  **Note:** In C#, [param method] must be in snake_case when referring to built-in Godot methods. Prefer using the names exposed in the `MethodName` class to avoid allocating a new [StringName] on each call.
          */
-        has_method(method: StringName): boolean
+        has_method(method: StringName): boolean;
 
         /** Returns the number of arguments of the given [param method] by name.
          *
          *  **Note:** In C#, [param method] must be in snake_case when referring to built-in Godot methods. Prefer using the names exposed in the `MethodName` class to avoid allocating a new [StringName] on each call.
          */
-        get_method_argument_count(method: StringName): int64
+        get_method_argument_count(method: StringName): int64;
 
         /** Returns `true` if the given [param signal] name exists in the object.
          *
          *  **Note:** In C#, [param signal] must be in snake_case when referring to built-in Godot signals. Prefer using the names exposed in the `SignalName` class to avoid allocating a new [StringName] on each call.
          */
-        has_signal(signal: StringName): boolean
+        has_signal(signal: StringName): boolean;
 
         /** Returns the list of existing signals as an [Array] of dictionaries.
          *
          *  **Note:** Due of the implementation, each [Dictionary] is formatted very similarly to the returned values of [method get_method_list].
          */
-        get_signal_list(): GArray
+        get_signal_list(): GArray;
 
         /** Returns an [Array] of connections for the given [param signal] name. Each connection is represented as a [Dictionary] that contains three entries:
          *  - [code skip-lint]signal` is a reference to the [Signal];
          *  - `callable` is a reference to the connected [Callable];
          *  - `flags` is a combination of [enum ConnectFlags].
          */
-        get_signal_connection_list(signal: StringName): GArray
+        get_signal_connection_list(signal: StringName): GArray;
 
         /** Returns an [Array] of signal connections received by this object. Each connection is represented as a [Dictionary] that contains three entries:
          *  - `signal` is a reference to the [Signal];
          *  - `callable` is a reference to the [Callable];
          *  - `flags` is a combination of [enum ConnectFlags].
          */
-        get_incoming_connections(): GArray
+        get_incoming_connections(): GArray;
 
         /** Connects a [param signal] by name to a [param callable]. Optional [param flags] can be also added to configure the connection's behavior (see [enum ConnectFlags] constants).
          *  A signal can only be connected once to the same [Callable]. If the signal is already connected, this method returns [constant ERR_INVALID_PARAMETER] and pushes an error message, unless the signal is connected with [constant CONNECT_REFERENCE_COUNTED]. To prevent this, use [method is_connected] first to check for existing connections.
@@ -871,37 +899,37 @@ declare module "godot" {
          *  When calling [method emit_signal] or [method Signal.emit], the signal parameters can be also passed. The examples below show the relationship between these signal parameters and bound parameters.
          *
          */
-        connect(signal: StringName, callable: Callable, flags?: int64): Error
+        connect(signal: StringName, callable: Callable, flags?: int64): Error;
 
         /** Disconnects a [param signal] by name from a given [param callable]. If the connection does not exist, generates an error. Use [method is_connected] to make sure that the connection exists. */
-        disconnect(signal: StringName, callable: Callable): void
+        disconnect(signal: StringName, callable: Callable): void;
 
         /** Returns `true` if a connection exists between the given [param signal] name and [param callable].
          *
          *  **Note:** In C#, [param signal] must be in snake_case when referring to built-in Godot signals. Prefer using the names exposed in the `SignalName` class to avoid allocating a new [StringName] on each call.
          */
-        is_connected(signal: StringName, callable: Callable): boolean
+        is_connected(signal: StringName, callable: Callable): boolean;
 
         /** Returns `true` if any connection exists on the given [param signal] name.
          *
          *  **Note:** In C#, [param signal] must be in snake_case when referring to built-in Godot methods. Prefer using the names exposed in the `SignalName` class to avoid allocating a new [StringName] on each call.
          */
-        has_connections(signal: StringName): boolean
+        has_connections(signal: StringName): boolean;
 
         /** If set to `true`, the object becomes unable to emit signals. As such, [method emit_signal] and signal connections will not work, until it is set to `false`. */
-        set_block_signals(enable: boolean): void
+        set_block_signals(enable: boolean): void;
 
         /** Returns `true` if the object is blocking its signals from being emitted. See [method set_block_signals]. */
-        is_blocking_signals(): boolean
+        is_blocking_signals(): boolean;
 
         /** Emits the [signal property_list_changed] signal. This is mainly used to refresh the editor, so that the Inspector and editor plugins are properly updated. */
-        notify_property_list_changed(): void
+        notify_property_list_changed(): void;
 
         /** If set to `true`, allows the object to translate messages with [method tr] and [method tr_n]. Enabled by default. See also [method can_translate_messages]. */
-        set_message_translation(enable: boolean): void
+        set_message_translation(enable: boolean): void;
 
         /** Returns `true` if the object is allowed to translate messages with [method tr] and [method tr_n]. See also [method set_message_translation]. */
-        can_translate_messages(): boolean
+        can_translate_messages(): boolean;
 
         /** Translates a [param message], using the translation catalogs configured in the Project Settings. Further [param context] can be specified to help with the translation. Note that most [Control] nodes automatically translate their strings, so this method is mostly useful for formatted strings or custom drawn text.
          *  If [method can_translate_messages] is `false`, or no translation is available, this method returns the [param message] without changes. See [method set_message_translation].
@@ -909,7 +937,7 @@ declare module "godot" {
          *
          *  **Note:** This method can't be used without an [Object] instance, as it requires the [method can_translate_messages] method. To translate strings in a static context, use [method TranslationServer.translate].
          */
-        tr(message: StringName, context?: StringName): string
+        tr(message: StringName, context?: StringName): string;
 
         /** Translates a [param message] or [param plural_message], using the translation catalogs configured in the Project Settings. Further [param context] can be specified to help with the translation.
          *  If [method can_translate_messages] is `false`, or no translation is available, this method returns [param message] or [param plural_message], without changes. See [method set_message_translation].
@@ -920,28 +948,28 @@ declare module "godot" {
          *
          *  **Note:** This method can't be used without an [Object] instance, as it requires the [method can_translate_messages] method. To translate strings in a static context, use [method TranslationServer.translate_plural].
          */
-        tr_n(message: StringName, plural_message: StringName, n: int64, context?: StringName): string
+        tr_n(message: StringName, plural_message: StringName, n: int64, context?: StringName): string;
 
         /** Returns the name of the translation domain used by [method tr] and [method tr_n]. See also [TranslationServer]. */
-        get_translation_domain(): StringName
+        get_translation_domain(): StringName;
 
         /** Sets the name of the translation domain used by [method tr] and [method tr_n]. See also [TranslationServer]. */
-        set_translation_domain(domain: StringName): void
+        set_translation_domain(domain: StringName): void;
 
         /** Returns `true` if the [method Node.queue_free] method was called for the object. */
-        is_queued_for_deletion(): boolean
+        is_queued_for_deletion(): boolean;
 
         /** If this method is called during [constant NOTIFICATION_PREDELETE], this object will reject being freed and will remain allocated. This is mostly an internal function used for error handling to avoid the user from freeing objects when they are not intended to. */
-        cancel_free(): void
+        cancel_free(): void;
 
         /** Emitted when the object's script is changed.
          *
          *  **Note:** When this signal is emitted, the new script is not initialized yet. If you need to access the new script, defer connections to this signal with [constant CONNECT_DEFERRED].
          */
-        readonly script_changed: Signal<() => void>
+        readonly script_changed: Signal<() => void>;
 
         /** Emitted when [method notify_property_list_changed] is called. */
-        readonly property_list_changed: Signal<() => void>
+        readonly property_list_changed: Signal<() => void>;
     }
 
     enum Error {
@@ -1130,18 +1158,18 @@ declare module "godot.lib.api" {
     import type * as Godot from "godot";
     import type * as GodotJsb from "godot-jsb";
     const api: typeof Godot & {
-        jsb: typeof GodotJsb,
+        jsb: typeof GodotJsb;
         proxy: {
-            array_proxy: <T extends any[]>(arr: T) => T,
-            class_proxy: <T extends object>(target_class: T) => T,
-            enum_proxy: <T extends object>(target_enum: T) => T,
-            function_proxy: <T extends (...args: any[]) => any>(target_func: T) => T,
-            instance_proxy: <T extends object>(target_instance: T) => T,
-            key_only_proxy: <T extends object | ((...args: any[]) => any)>(obj: T) => T,
-            object_proxy: <T extends object>(obj: T, remap_properties?: boolean) => T,
-            proxy_wrap_value: <T>(value: T) => T,
-            proxy_unwrap_value: <T>(value: T) => T,
-        },
+            array_proxy: <T extends any[]>(arr: T) => T;
+            class_proxy: <T extends object>(target_class: T) => T;
+            enum_proxy: <T extends object>(target_enum: T) => T;
+            function_proxy: <T extends (...args: any[]) => any>(target_func: T) => T;
+            instance_proxy: <T extends object>(target_instance: T) => T;
+            key_only_proxy: <T extends object | ((...args: any[]) => any)>(obj: T) => T;
+            object_proxy: <T extends object>(obj: T, remap_properties?: boolean) => T;
+            proxy_wrap_value: <T>(value: T) => T;
+            proxy_unwrap_value: <T>(value: T) => T;
+        };
     };
     /**
      * This is a starting point for writing GodotJS code that is camel-case binding agnostic at runtime.
@@ -1159,185 +1187,67 @@ declare module "jsb.editor.codegen" {
 }
 
 declare module "godot.annotations" {
-    type ClassBinder = (() =>
-        ((
-                target: GObjectConstructor,
-                context: ClassDecoratorContext
-            ) => void))
-        & {
-            tool: () =>
-            ((
-                    target: GObjectConstructor,
-                    _context: ClassDecoratorContext
-                ) => void);
-            icon: (
-                path: string
-            ) =>
-            ((
-                    target: GObjectConstructor,
-                    _context: ClassDecoratorContext
-                ) => void);
-            export: ((
-                    type: Godot.Variant.Type,
-                    options?: ExportOptions
-                ) =>
-                ClassMemberDecorator)
-                & {
-                    multiline: () =>
-                    ClassMemberDecorator;
-                    range: (
-                        min: number,
-                        max: number,
-                        step: number,
-                        ...extra_hints: string[]
-                    ) =>
-                    ClassMemberDecorator;
-                    range_int: (
-                        min: number,
-                        max: number,
-                        step: number,
-                        ...extra_hints: string[]
-                    ) =>
-                    ClassMemberDecorator;
-                    file: (
-                        filter: string
-                    ) =>
-                    ClassMemberDecorator;
-                    dir: (
-                        filter: string
-                    ) =>
-                    ClassMemberDecorator;
-                    global_file: (
-                        filter: string
-                    ) =>
-                    ClassMemberDecorator;
-                    global_dir: (
-                        filter: string
-                    ) =>
-                    ClassMemberDecorator;
-                    exp_easing: (
-                        hint?: ""
-                            | "attenuation"
-                            | "positive_only"
-                            | "attenuation,positive_only"
-                    ) =>
-                    ClassMemberDecorator;
-                    array: (
-                        clazz: ClassSpecifier
-                    ) =>
-                    ClassMemberDecorator;
-                    dictionary: (
-                        key_class: VariantConstructor,
-                        value_class: VariantConstructor
-                    ) =>
-                    ClassMemberDecorator;
-                    object: <
-                    Constructor extends GObjectConstructor>(
-                        clazz: Constructor
-                    ) =>
-                    ClassMemberDecorator<
-                        ClassValueMemberDecoratorContext<
-                                unknown,
-                                null
-                                    | InstanceType<
-                                    Constructor>
-                            >
-                        >;
-                    "enum": (
-                        enum_type: Record<
-                            string,
-                            string
-                                | number
-                        >
-                    ) =>
-                    ClassMemberDecorator;
-                    flags: (
-                        enum_type: Record<
-                            string,
-                            string
-                                | number
-                        >
-                    ) =>
-                    ClassMemberDecorator;
-                    cache: () =>
-                    ClassMemberDecorator<
-                            ClassAccessorDecoratorContext<
-                                Godot.Object>
-                                | ClassSetterDecoratorContext<
-                                Godot.Object>
-                        >;
-                };
-            signal: () =>
-            (<
-                Context extends ClassAccessorDecoratorContext<
-                        Godot.Object,
-                        Godot.Signal
-                    >
-                    | ClassGetterDecoratorContext<
-                        Godot.Object,
-                        Godot.Signal
-                    >
-                    | ClassFieldDecoratorContext<
-                        Godot.Object,
-                        Godot.Signal
-                    >>(
-                    _target: unknown,
-                    context: Context
-                ) =>
-                ClassMemberDecoratorReturn<
-                    Context>);
-            rpc: (
-                config?: RPCConfig
-            ) =>
-            ((
-                    _target: Function,
-                    context: string
-                        | ClassMethodDecoratorContext
-                ) => void);
-            onready: (
-                evaluator: string
-                    | GodotJsb.internal.OnReadyEvaluatorFunc
-            ) =>
-            ((
-                    _target: undefined,
-                    context: string
-                        | ClassMethodDecoratorContext
-                ) => void);
-            deprecated: (
-                message?: string
-            ) =>
-            Decorator<
-                    ClassDecoratorContext<
-                        GObjectConstructor>
-                        | ClassValueMemberDecoratorContext<
-                        GObjectConstructor>
-                >;
-            experimental: (
-                message?: string
-            ) =>
-            Decorator<
-                    ClassDecoratorContext<
-                        GObjectConstructor>
-                        | ClassValueMemberDecoratorContext<
-                        GObjectConstructor>
-                >;
-            help: (
-                message?: string
-            ) =>
-            Decorator<
-                    ClassDecoratorContext<
-                        GObjectConstructor>
-                        | ClassValueMemberDecoratorContext<
-                        GObjectConstructor>
-                >;
-        }
+    type ClassBinder = (() => (target: GObjectConstructor, context: ClassDecoratorContext) => void) & {
+        tool: () => (target: GObjectConstructor, _context: ClassDecoratorContext) => void;
+        icon: (path: string) => (target: GObjectConstructor, _context: ClassDecoratorContext) => void;
+        export: ((type: Godot.Variant.Type, options?: ExportOptions) => ClassMemberDecorator) & {
+            multiline: () => ClassMemberDecorator;
+            range: (min: number, max: number, step: number, ...extra_hints: string[]) => ClassMemberDecorator;
+            range_int: (min: number, max: number, step: number, ...extra_hints: string[]) => ClassMemberDecorator;
+            file: (filter: string) => ClassMemberDecorator;
+            dir: (filter: string) => ClassMemberDecorator;
+            global_file: (filter: string) => ClassMemberDecorator;
+            global_dir: (filter: string) => ClassMemberDecorator;
+            exp_easing: (
+                hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only",
+            ) => ClassMemberDecorator;
+            array: (clazz: ClassSpecifier) => ClassMemberDecorator;
+            dictionary: (key_class: VariantConstructor, value_class: VariantConstructor) => ClassMemberDecorator;
+            object: <Constructor extends GObjectConstructor>(
+                clazz: Constructor,
+            ) => ClassMemberDecorator<ClassValueMemberDecoratorContext<unknown, null | InstanceType<Constructor>>>;
+            enum: (enum_type: Record<string, string | number>) => ClassMemberDecorator;
+            flags: (enum_type: Record<string, string | number>) => ClassMemberDecorator;
+            cache: () => ClassMemberDecorator<
+                ClassAccessorDecoratorContext<Godot.Object> | ClassSetterDecoratorContext<Godot.Object>
+            >;
+        };
+        signal: () => <
+            Context extends
+                | ClassAccessorDecoratorContext<Godot.Object, Godot.Signal>
+                | ClassGetterDecoratorContext<Godot.Object, Godot.Signal>
+                | ClassFieldDecoratorContext<Godot.Object, Godot.Signal>,
+        >(
+            _target: unknown,
+            context: Context,
+        ) => ClassMemberDecoratorReturn<Context>;
+        rpc: (config?: RPCConfig) => (_target: Function, context: string | ClassMethodDecoratorContext) => void;
+        onready: (
+            evaluator: string | GodotJsb.internal.OnReadyEvaluatorFunc,
+        ) => (_target: undefined, context: string | ClassMethodDecoratorContext) => void;
+        deprecated: (
+            message?: string,
+        ) => Decorator<
+            ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+        >;
+        experimental: (
+            message?: string,
+        ) => Decorator<
+            ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+        >;
+        help: (
+            message?: string,
+        ) => Decorator<
+            ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+        >;
+    };
 
     type ExportOptions = {
-        class?: ClassDescriptor,
-        hint?: Godot.PropertyHint,
-        hint_string?: string,
-        usage?: Godot.PropertyUsageFlags
-    }
+        class?: ClassDescriptor;
+        hint?: Godot.PropertyHint;
+        hint_string?: string;
+        usage?: Godot.PropertyUsageFlags;
+    };
 
     interface RPCConfig {
         mode?: Godot.MultiplayerApi.RpcMode;

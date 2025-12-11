@@ -2,11 +2,19 @@
 // JS implementation of essential primitive types with least binding code
 
 //interface Vector2 { x: number; y: number; }
-class Vector2 { x = 0; y = 0; constructor(x?: number, y?: number) { } }
-interface Vector3i { x: number; y: number; z: number; }
+class Vector2 {
+    x = 0;
+    y = 0;
+    constructor(x?: number, y?: number) {}
+}
+interface Vector3i {
+    x: number;
+    y: number;
+    z: number;
+}
 
-const UNIT_EPSILON = 0.001
-const CMP_EPSILON = 0.00001
+const UNIT_EPSILON = 0.001;
+const CMP_EPSILON = 0.00001;
 
 enum __Axis {
     AXIS_X = 0,
@@ -15,12 +23,12 @@ enum __Axis {
 }
 
 function CLAMP(m_a: number, m_min: number, m_max: number) {
-    return m_a < m_min ? m_min : (m_a > m_max ? m_max : m_a);
+    return m_a < m_min ? m_min : m_a > m_max ? m_max : m_a;
 }
 
 function fposmod(p_x: number, p_y: number) {
     let value = p_x % p_y;
-    if (((value < 0) && (p_y > 0)) || ((value > 0) && (p_y < 0))) {
+    if ((value < 0 && p_y > 0) || (value > 0 && p_y < 0)) {
         value += p_y;
     }
     value += 0.0;
@@ -61,61 +69,95 @@ export class Vector3 {
     z: number;
 
     /** Zero vector, a vector with all components set to `0`. */
-    static get ZERO(): Vector3 { return new Vector3(); }
+    static get ZERO(): Vector3 {
+        return new Vector3();
+    }
 
     /** One vector, a vector with all components set to `1`. */
-    static get ONE(): Vector3 { return new Vector3(1, 1, 1); }
+    static get ONE(): Vector3 {
+        return new Vector3(1, 1, 1);
+    }
 
     /** Infinity vector, a vector with all components set to [constant @GDScript.INF]. */
-    static get INF(): Vector3 { return new Vector3(Infinity, Infinity, Infinity); }
+    static get INF(): Vector3 {
+        return new Vector3(Infinity, Infinity, Infinity);
+    }
 
     /** Left unit vector. Represents the local direction of left, and the global direction of west. */
-    static get LEFT(): Vector3 { return new Vector3(-1, 0, 0); }
+    static get LEFT(): Vector3 {
+        return new Vector3(-1, 0, 0);
+    }
 
     /** Right unit vector. Represents the local direction of right, and the global direction of east. */
-    static get RIGHT(): Vector3 { return new Vector3(1, 0, 0); }
+    static get RIGHT(): Vector3 {
+        return new Vector3(1, 0, 0);
+    }
 
     /** Up unit vector. */
-    static get UP(): Vector3 { return new Vector3(0, 1, 0); }
+    static get UP(): Vector3 {
+        return new Vector3(0, 1, 0);
+    }
 
     /** Down unit vector. */
-    static get DOWN(): Vector3 { return new Vector3(0, -1, 0); }
+    static get DOWN(): Vector3 {
+        return new Vector3(0, -1, 0);
+    }
 
     /** Forward unit vector. Represents the local direction of forward, and the global direction of north. Keep in mind that the forward direction for lights, cameras, etc is different from 3D assets like characters, which face towards the camera by convention. Use [constant Vector3.MODEL_FRONT] and similar constants when working in 3D asset space. */
-    static get FORWARD(): Vector3 { return new Vector3(0, 0, -1); }
+    static get FORWARD(): Vector3 {
+        return new Vector3(0, 0, -1);
+    }
 
     /** Back unit vector. Represents the local direction of back, and the global direction of south. */
-    static get BACK(): Vector3 { return new Vector3(0, 0, 1); }
+    static get BACK(): Vector3 {
+        return new Vector3(0, 0, 1);
+    }
 
     /** Unit vector pointing towards the left side of imported 3D assets. */
-    static get MODEL_LEFT(): Vector3 { return new Vector3(1, 0, 0); }
+    static get MODEL_LEFT(): Vector3 {
+        return new Vector3(1, 0, 0);
+    }
 
     /** Unit vector pointing towards the right side of imported 3D assets. */
-    static get MODEL_RIGHT(): Vector3 { return new Vector3(-1, 0, 0); }
+    static get MODEL_RIGHT(): Vector3 {
+        return new Vector3(-1, 0, 0);
+    }
 
     /** Unit vector pointing towards the top side (up) of imported 3D assets. */
-    static get MODEL_TOP(): Vector3 { return new Vector3(0, 1, 0); }
+    static get MODEL_TOP(): Vector3 {
+        return new Vector3(0, 1, 0);
+    }
 
     /** Unit vector pointing towards the bottom side (down) of imported 3D assets. */
-    static get MODEL_BOTTOM(): Vector3 { return new Vector3(0, -1, 0); }
+    static get MODEL_BOTTOM(): Vector3 {
+        return new Vector3(0, -1, 0);
+    }
 
     /** Unit vector pointing towards the front side (facing forward) of imported 3D assets. */
-    static get MODEL_FRONT(): Vector3 { return new Vector3(0, 0, 1); }
+    static get MODEL_FRONT(): Vector3 {
+        return new Vector3(0, 0, 1);
+    }
 
     /** Unit vector pointing towards the rear side (back) of imported 3D assets. */
-    static get MODEL_REAR(): Vector3 { return new Vector3(0, 0, -1); }
+    static get MODEL_REAR(): Vector3 {
+        return new Vector3(0, 0, -1);
+    }
 
-    constructor()
-    constructor(from: Vector3 | Vector3i)
-    constructor(x: number, y: number, z: number)
+    constructor();
+    constructor(from: Vector3 | Vector3i);
+    constructor(x: number, y: number, z: number);
     constructor(vt?: any, y?: number, z?: number) {
         const len = arguments.length;
         if (len == 0) {
             this.x = this.y = this.z = 0;
         } else if (len == 1) {
-            this.x = vt.x; this.y = vt.y; this.z = vt.z;
+            this.x = vt.x;
+            this.y = vt.y;
+            this.z = vt.z;
         } else {
-            this.x = vt; this.y = y!; this.z = z!;
+            this.x = vt;
+            this.y = y!;
+            this.z = z!;
         }
     }
 
@@ -132,12 +174,24 @@ export class Vector3 {
 
     /** Returns the axis of the vector's lowest value. See `AXIS_*` constants. If all components are equal, this method returns [constant AXIS_Z]. */
     min_axis_index(): __Axis {
-        return this.x < this.y ? (this.x < this.z ? __Axis.AXIS_X : __Axis.AXIS_Z) : (this.y < this.z ? __Axis.AXIS_Y : __Axis.AXIS_Z);
+        return this.x < this.y
+            ? this.x < this.z
+                ? __Axis.AXIS_X
+                : __Axis.AXIS_Z
+            : this.y < this.z
+              ? __Axis.AXIS_Y
+              : __Axis.AXIS_Z;
     }
 
     /** Returns the axis of the vector's highest value. See `AXIS_*` constants. If all components are equal, this method returns [constant AXIS_X]. */
     max_axis_index(): __Axis {
-        return this.x < this.y ? (this.y < this.z ? __Axis.AXIS_Z : __Axis.AXIS_Y) : (this.x < this.z ? __Axis.AXIS_Z : __Axis.AXIS_X);
+        return this.x < this.y
+            ? this.y < this.z
+                ? __Axis.AXIS_Z
+                : __Axis.AXIS_Y
+            : this.x < this.z
+              ? __Axis.AXIS_Z
+              : __Axis.AXIS_X;
     }
 
     /** Returns the unsigned minimum angle to the given vector, in radians. */
@@ -150,7 +204,7 @@ export class Vector3 {
         let cross_to = this.cross(to);
         let unsigned_angle = Math.atan2(cross_to.length(), this.dot(to));
         let sign = cross_to.dot(axis);
-        return (sign < 0) ? -unsigned_angle : unsigned_angle;
+        return sign < 0 ? -unsigned_angle : unsigned_angle;
     }
 
     /** Returns the normalized vector pointing from this vector to [param to]. This is equivalent to using `(b - a).normalized()`. */
@@ -264,18 +318,12 @@ export class Vector3 {
 
     /** Returns a new vector with all components clamped between the components of [param min] and [param max], by running [method @GlobalScope.clamp] on each component. */
     clamp(min: Vector3, max: Vector3): Vector3 {
-        return new Vector3(
-            CLAMP(this.x, min.x, max.x),
-            CLAMP(this.y, min.y, max.y),
-            CLAMP(this.z, min.z, max.z));
+        return new Vector3(CLAMP(this.x, min.x, max.x), CLAMP(this.y, min.y, max.y), CLAMP(this.z, min.z, max.z));
     }
 
     /** Returns a new vector with all components clamped between [param min] and [param max], by running [method @GlobalScope.clamp] on each component. */
     clampf(min: number, max: number): Vector3 {
-        return new Vector3(
-            CLAMP(this.x, min, max),
-            CLAMP(this.y, min, max),
-            CLAMP(this.z, min, max));
+        return new Vector3(CLAMP(this.x, min, max), CLAMP(this.y, min, max), CLAMP(this.z, min, max));
     }
 
     snap(p_step: Vector3): this {
@@ -339,7 +387,7 @@ export class Vector3 {
      *  **Note:** `a.dot(b)` is equivalent to `b.dot(a)`.
      */
     dot(with_: Vector3): number {
-        return this.x * with_.x + this.y * with_.y + this.z * with_.z;;
+        return this.x * with_.x + this.y * with_.y + this.z * with_.z;
     }
 
     /** Returns the cross product of this vector and [param with].
@@ -347,32 +395,41 @@ export class Vector3 {
      */
     cross(with_: Vector3): Vector3 {
         return new Vector3(
-            (this.y * with_.z) - (this.z * with_.y),
-            (this.z * with_.x) - (this.x * with_.z),
-            (this.x * with_.y) - (this.y * with_.x));
+            this.y * with_.z - this.z * with_.y,
+            this.z * with_.x - this.x * with_.z,
+            this.x * with_.y - this.y * with_.x,
+        );
     }
 
     /** Returns the outer product with [param with]. */
     outer(with_: Vector3): never {
         throw new Error("NOT IMPLEMENTED");
         // let basis = new Basis();
-	    // basis.rows[0] = new Vector3(this.x * with_.x, this.x * with_.y, this.x * with_.z);
+        // basis.rows[0] = new Vector3(this.x * with_.x, this.x * with_.y, this.x * with_.z);
         // basis.rows[1] = new Vector3(this.y * with_.x, this.y * with_.y, this.y * with_.z);
         // basis.rows[2] = new Vector3(this.z * with_.x, this.z * with_.y, this.z * with_.z);
         // return basis;
     }
 
     /** Returns a new vector with all components in absolute values (i.e. positive). */
-    abs(): Vector3 { return new Vector3(Math.abs(this.x), Math.abs(this.y), Math.abs(this.z)) }
+    abs(): Vector3 {
+        return new Vector3(Math.abs(this.x), Math.abs(this.y), Math.abs(this.z));
+    }
 
     /** Returns a new vector with all components rounded down (towards negative infinity). */
-    floor(): Vector3 { return new Vector3(Math.floor(this.x), Math.floor(this.y), Math.floor(this.z)) }
+    floor(): Vector3 {
+        return new Vector3(Math.floor(this.x), Math.floor(this.y), Math.floor(this.z));
+    }
 
     /** Returns a new vector with all components rounded up (towards positive infinity). */
-    ceil(): Vector3 { return new Vector3(Math.ceil(this.x), Math.ceil(this.y), Math.ceil(this.z)) }
+    ceil(): Vector3 {
+        return new Vector3(Math.ceil(this.x), Math.ceil(this.y), Math.ceil(this.z));
+    }
 
     /** Returns a new vector with all components rounded to the nearest integer, with halfway cases rounded away from zero. */
-    round(): Vector3 { return new Vector3(Math.round(this.x), Math.round(this.y), Math.round(this.z)) }
+    round(): Vector3 {
+        return new Vector3(Math.round(this.x), Math.round(this.y), Math.round(this.z));
+    }
 
     /** Returns a vector composed of the [method @GlobalScope.fposmod] of this vector's components and [param mod]. */
     posmod(p_mod: number): Vector3 {
@@ -389,7 +446,7 @@ export class Vector3 {
      *  **Note:** If the vector [param b] is a zero vector, the components of the resulting new vector will be [constant @GDScript.NAN].
      */
     project(p_to: Vector3): Vector3 {
-        return Vector3.MULTIPLY(p_to, (this.dot(p_to) / p_to.length_squared()));
+        return Vector3.MULTIPLY(p_to, this.dot(p_to) / p_to.length_squared());
     }
 
     /** Returns a new vector resulting from sliding this vector along a plane with normal [param n]. The resulting new vector is perpendicular to [param n], and is equivalent to this vector minus its projection on [param n]. See also [method project].
@@ -413,11 +470,16 @@ export class Vector3 {
      *  **Note:** [method reflect] differs from what other engines and frameworks call [code skip-lint]reflect()`. In other engines, [code skip-lint]reflect()` returns the result of the vector reflected by the given plane. The reflection thus passes through the given normal. While in Godot the reflection passes through the plane and can be thought of as bouncing off the normal. See also [method bounce] which does what most engines call [code skip-lint]reflect()`.
      */
     reflect(p_normal: Vector3): Vector3 {
-        return Vector3.SUBTRACT(Vector3.MULTIPLY(Vector3.MULTIPLY(2.0, p_normal), this.dot(p_normal)), new Vector3(this));
+        return Vector3.SUBTRACT(
+            Vector3.MULTIPLY(Vector3.MULTIPLY(2.0, p_normal), this.dot(p_normal)),
+            new Vector3(this),
+        );
     }
 
     /** Returns a new vector with each component set to `1.0` if it's positive, `-1.0` if it's negative, and `0.0` if it's zero. The result is identical to calling [method @GlobalScope.sign] on each component. */
-    sign(): Vector3 { return new Vector3(Math.sign(this.x), Math.sign(this.y), Math.sign(this.z)); }
+    sign(): Vector3 {
+        return new Vector3(Math.sign(this.x), Math.sign(this.y), Math.sign(this.z));
+    }
 
     /** Returns the octahedral-encoded (oct32) form of this [Vector3] as a [Vector2]. Since a [Vector2] occupies 1/3 less memory compared to [Vector3], this form of compression can be used to pass greater amounts of [method normalized] [Vector3]s without increasing storage or memory requirements. See also [method octahedron_decode].
      *
@@ -441,16 +503,24 @@ export class Vector3 {
     }
 
     /** Returns the component-wise minimum of this and [param with], equivalent to `Vector3(minf(x, with.x), minf(y, with.y), minf(z, with.z))`. */
-    min(with_: Vector3): Vector3 { return new Vector3(Math.min(this.x, with_.x), Math.min(this.y, with_.y), Math.min(this.z, with_.z)); }
+    min(with_: Vector3): Vector3 {
+        return new Vector3(Math.min(this.x, with_.x), Math.min(this.y, with_.y), Math.min(this.z, with_.z));
+    }
 
     /** Returns the component-wise minimum of this and [param with], equivalent to `Vector3(minf(x, with), minf(y, with), minf(z, with))`. */
-    minf(with_: number): Vector3 { return new Vector3(Math.min(this.x, with_), Math.min(this.y, with_), Math.min(this.z, with_)); }
+    minf(with_: number): Vector3 {
+        return new Vector3(Math.min(this.x, with_), Math.min(this.y, with_), Math.min(this.z, with_));
+    }
 
     /** Returns the component-wise maximum of this and [param with], equivalent to `Vector3(maxf(x, with.x), maxf(y, with.y), maxf(z, with.z))`. */
-    max(with_: Vector3): Vector3 { return new Vector3(Math.max(this.x, with_.x), Math.max(this.y, with_.y), Math.max(this.z, with_.z)); }
+    max(with_: Vector3): Vector3 {
+        return new Vector3(Math.max(this.x, with_.x), Math.max(this.y, with_.y), Math.max(this.z, with_.z));
+    }
 
     /** Returns the component-wise maximum of this and [param with], equivalent to `Vector3(maxf(x, with), maxf(y, with), maxf(z, with))`. */
-    maxf(with_: number): Vector3 { return new Vector3(Math.max(this.x, with_), Math.max(this.y, with_), Math.max(this.z, with_)); }
+    maxf(with_: number): Vector3 {
+        return new Vector3(Math.max(this.x, with_), Math.max(this.y, with_), Math.max(this.z, with_));
+    }
 
     /** Returns the [Vector3] from an octahedral-compressed form created using [method octahedron_encode] (stored as a [Vector2]). */
     static octahedron_decode(p_oct: Vector2): Vector3 {
@@ -467,9 +537,9 @@ export class Vector3 {
     static SUBTRACT(left: Vector3, right: Vector3): Vector3 {
         return new Vector3(left.x - right.x, left.y - right.y, left.z - right.z);
     }
-    static MULTIPLY(left: number, right: Vector3): Vector3
-    static MULTIPLY(left: Vector3, right: Vector3): Vector3
-    static MULTIPLY(left: Vector3, right: number): Vector3
+    static MULTIPLY(left: number, right: Vector3): Vector3;
+    static MULTIPLY(left: Vector3, right: Vector3): Vector3;
+    static MULTIPLY(left: Vector3, right: number): Vector3;
     static MULTIPLY(left: Vector3 | number, right: number | Vector3): Vector3 {
         if (typeof left === "number") {
             return new Vector3(left * (right as Vector3).x, left * (right as Vector3).y, left * (right as Vector3).z);

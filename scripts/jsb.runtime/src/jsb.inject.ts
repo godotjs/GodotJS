@@ -3,7 +3,7 @@ import type * as GodotJsb from "godot-jsb";
 
 type GArrayProxy<T extends Godot.GAny> = Godot.GArrayProxy<T> & {
     [Godot.ProxyTarget]: Godot.GArray<T>;
-}
+};
 
 type GDictionaryProxy<T> = Godot.GDictionaryProxy<T> & {
     [Godot.ProxyTarget]: Godot.GDictionary<T>;
@@ -28,17 +28,15 @@ function get_helpers(): ProxyHelpers {
 
         helpers = {
             get_member,
-            proxy_wrap: function(value: any) {
+            proxy_wrap: function (value: any) {
                 if (typeof value !== "object" || value === null) {
                     return value;
                 }
 
                 const proto = Object.getPrototypeOf(value);
-                return proto && proxyable_prototypes.includes(proto)
-                  ? value.proxy()
-                  : value;
+                return proto && proxyable_prototypes.includes(proto) ? value.proxy() : value;
             },
-            proxy_unwrap: function(value: any) {
+            proxy_unwrap: function (value: any) {
                 if (typeof value !== "object" || value === null) {
                     return value;
                 }
@@ -62,8 +60,8 @@ function get_helpers(): ProxyHelpers {
 
                 return value;
             },
-            ProxyTarget: ProxyTarget as ProxyHelpers['ProxyTarget'],
-        }
+            ProxyTarget: ProxyTarget as ProxyHelpers["ProxyTarget"],
+        };
     }
 
     return helpers;
@@ -72,12 +70,12 @@ function get_helpers(): ProxyHelpers {
 require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
     const helpers = get_helpers();
     const { get_member, godot_wrap, proxy_unwrap, proxy_wrap } = helpers;
-    const ProxyTarget: ProxyHelpers['ProxyTarget'] = helpers.ProxyTarget;
+    const ProxyTarget: ProxyHelpers["ProxyTarget"] = helpers.ProxyTarget;
 
     proxyable_prototypes.push(type.prototype);
 
     type.prototype[Symbol.iterator] = function* (this: Godot.GArray) {
-        const get_indexed = Reflect.get(this, get_member('get_indexed'));
+        const get_indexed = Reflect.get(this, get_member("get_indexed"));
         for (let i = 0; i < this.size(); ++i) {
             yield get_indexed.call(this, i);
         }
@@ -85,8 +83,8 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
 
     // We're not going to try expose the whole Array API, we'll just be super minimalistic. If the user is after
     // something more complex, it'll likely be more performant to spread the GArray into a JS array anyway.
-    const pop_back_name = get_member('pop_back');
-    const push_back_name = get_member('push_back');
+    const pop_back_name = get_member("pop_back");
+    const push_back_name = get_member("push_back");
     const array_api = {
         forEach: function (this: GArrayProxy<any>, callback: (value: any, index: number) => void, thisArg?: any) {
             const target = this[ProxyTarget];
@@ -120,7 +118,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
             return [...this];
         },
         toString: function (this: GArrayProxy<any>, index?: number): any {
-            return [...this].map(v => v?.toString?.() ?? v).join(",");
+            return [...this].map((v) => v?.toString?.() ?? v).join(",");
         },
     } as const;
 
@@ -133,17 +131,13 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
     const handler: ProxyHandler<Godot.GArray> = {
         get(target, p, receiver) {
             if (typeof p !== "string") {
-                return p === ProxyTarget
-                  ? target
-                  : p === Symbol.iterator
-                    ? array_iterator
-                    : undefined;
+                return p === ProxyTarget ? target : p === Symbol.iterator ? array_iterator : undefined;
             }
 
             const num = Number.parseInt(p);
 
             if (!Number.isFinite(num)) {
-                if (p === 'length') {
+                if (p === "length") {
                     return target.size();
                 }
 
@@ -182,7 +176,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
             const num = Number.parseInt(p);
 
             if (!(num >= 0)) {
-                return p === 'length' || !!array_api[p as keyof typeof array_api];
+                return p === "length" || !!array_api[p as keyof typeof array_api];
             }
 
             return num >= 0 && num < target.size();
@@ -219,11 +213,11 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
         },
     };
 
-    type.prototype.proxy = function(this: any) {
+    type.prototype.proxy = function (this: any) {
         return new Proxy(this, handler);
     };
 
-    type.create = function(values: any[]) {
+    type.create = function (values: any[]) {
         const arr = new type();
         const proxy = arr.proxy();
         proxy.push.apply(proxy, values.map(godot_wrap));
@@ -234,19 +228,19 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
 require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
     const helpers = get_helpers();
     const { get_member, godot_wrap, proxy_unwrap, proxy_wrap } = helpers;
-    const ProxyTarget: ProxyHelpers['ProxyTarget'] = helpers.ProxyTarget;
+    const ProxyTarget: ProxyHelpers["ProxyTarget"] = helpers.ProxyTarget;
 
     proxyable_prototypes.push(type.prototype);
 
     type.prototype[Symbol.iterator] = function* (this: Godot.GDictionary) {
         const keys = this.keys();
-        const arr_get_indexed = keys[get_member('get_indexed')];
-        const dict_get_keyed = this[get_member('get_keyed')];
+        const arr_get_indexed = keys[get_member("get_indexed")];
+        const dict_get_keyed = this[get_member("get_keyed")];
         for (let i = 0; i < keys.size(); ++i) {
             const key = arr_get_indexed.call(keys, i);
             yield { key: key, value: dict_get_keyed.call(this, key) };
         }
-    }
+    };
 
     const handler: ProxyHandler<Godot.GDictionary> = {
         defineProperty(target, property, attributes) {
@@ -258,19 +252,17 @@ require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
         },
         get(target, p, receiver) {
             if (typeof p !== "string") {
-                return p === ProxyTarget
-                    ? target
-                    : undefined;
+                return p === ProxyTarget ? target : undefined;
             }
 
             const value = target.get(p);
             return value !== null
                 ? proxy_wrap(value)
                 : target.has(p)
-                    ? value
-                    : p === "toString"
-                        ? Object.prototype.toString
-                        : undefined;
+                  ? value
+                  : p === "toString"
+                    ? Object.prototype.toString
+                    : undefined;
         },
         getOwnPropertyDescriptor(target, p) {
             if (typeof p !== "string") {
@@ -318,11 +310,11 @@ require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
         },
     };
 
-    type.prototype.proxy = function(this: any) {
+    type.prototype.proxy = function (this: any) {
         return new Proxy(this, handler);
     };
 
-    type.create = function(entries: Record<string, any>) {
+    type.create = function (entries: Record<string, any>) {
         const dict = new type();
         const proxy = dict.proxy();
         for (const [key, value] of Object.entries(entries)) {
@@ -351,7 +343,7 @@ require("godot.typeloader").on_type_loaded("Callable", function (type: any) {
             return custom_cc(arguments[0], arguments[1]);
         }
         throw new Error("invalid arguments");
-    }
+    };
 });
 
 require("godot.typeloader").on_type_loaded("Signal", function (type: any) {
@@ -359,7 +351,7 @@ require("godot.typeloader").on_type_loaded("Signal", function (type: any) {
     const get_member = jsb.internal.names.get_member;
     const notify_microtasks_run = jsb.internal.notify_microtasks_run;
 
-    type.prototype[get_member('as_promise')] = function () {
+    type.prototype[get_member("as_promise")] = function () {
         let self = this;
         return new Promise(function (resolve, reject) {
             let fn = Callable.create(function () {
@@ -379,21 +371,21 @@ require("godot.typeloader").on_type_loaded("Signal", function (type: any) {
             self.connect(fn, Object.ConnectFlags.CONNECT_ONE_SHOT);
             self = undefined;
         });
-    }
+    };
 });
 
-(function() {
+(function () {
     Object.defineProperty(require("godot"), "GLOBAL_GET", {
         value: function (entry_path: string): any {
             return require("godot.lib.api").ProjectSettings.get_setting_with_override(entry_path);
-        }
-    })
+        },
+    });
 
     Object.defineProperty(require("godot"), "EDITOR_GET", {
         value: function (entry_path: string): any {
             return require("godot.lib.api").EditorInterface.get_editor_settings().get(entry_path);
-        }
+        },
     });
-}());
+})();
 
 console.debug("jsb.inject loaded successfully");

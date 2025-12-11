@@ -58,26 +58,29 @@ const object_handler = {
             return value;
         }
 
-        if (p[0]?.toUpperCase() === p[0]
-            && value
-            && typeof value === "object"
-            && is_basic_object(value)
-            && !Object.entries(value).find(([k, v]) => k[0].toUpperCase() !== k[0] || typeof v !== "number")) {
+        if (
+            p[0]?.toUpperCase() === p[0] &&
+            value &&
+            typeof value === "object" &&
+            is_basic_object(value) &&
+            !Object.entries(value).find(([k, v]) => k[0].toUpperCase() !== k[0] || typeof v !== "number")
+        ) {
             return enum_proxy(value);
         }
 
         return proxy_wrap_value(value);
     },
     getOwnPropertyDescriptor(target, p) {
-        return Reflect.getOwnPropertyDescriptor(target, typeof p === "string" ? get_member(p) : p)
-            ?? Reflect.getOwnPropertyDescriptor(target, p);
+        return (
+            Reflect.getOwnPropertyDescriptor(target, typeof p === "string" ? get_member(p) : p) ??
+            Reflect.getOwnPropertyDescriptor(target, p)
+        );
     },
     has(target, p) {
-        return Reflect.has(target, typeof p === "string" ? get_member(p) : p)
-            || Reflect.has(target, p);
+        return Reflect.has(target, typeof p === "string" ? get_member(p) : p) || Reflect.has(target, p);
     },
     ownKeys(target) {
-        return Reflect.ownKeys(target).map(key => typeof key === "string" && get_internal_mapping(key) || key);
+        return Reflect.ownKeys(target).map((key) => (typeof key === "string" && get_internal_mapping(key)) || key);
     },
     set(target, p, new_value, _receiver) {
         return Reflect.set(target, typeof p === "string" ? get_member(p) : p, new_value);
@@ -99,11 +102,13 @@ const object_properties_handler = {
 
         const value = Reflect.get(target, p !== "toString" ? get_member(p) : p);
 
-        if (p[0]?.toUpperCase() === p[0]
-            && value
-            && typeof value === "object"
-            && is_basic_object(value)
-            && !Object.entries(value).find(([k, v]) => k[0].toUpperCase() !== k[0] || typeof v !== "number")) {
+        if (
+            p[0]?.toUpperCase() === p[0] &&
+            value &&
+            typeof value === "object" &&
+            is_basic_object(value) &&
+            !Object.entries(value).find(([k, v]) => k[0].toUpperCase() !== k[0] || typeof v !== "number")
+        ) {
             return enum_proxy(value);
         }
 
@@ -120,7 +125,7 @@ function object_proxy<T extends object>(obj: T, remap_properties?: boolean): T {
 }
 
 const key_only_handler = {
-    apply: function(target, this_arg, args) {
+    apply: function (target, this_arg, args) {
         return target.apply(this_arg?.[ProxyTarget] ?? this_arg, args);
     },
     get(target, p, _receiver) {
@@ -170,7 +175,7 @@ const instance_handler = {
         return false;
     },
     ownKeys(target) {
-        return Reflect.ownKeys(target).map(key => typeof key === "string" && get_internal_mapping(key) || key);
+        return Reflect.ownKeys(target).map((key) => (typeof key === "string" && get_internal_mapping(key)) || key);
     },
     preventExtensions() {
         return true;
@@ -234,7 +239,7 @@ function class_proxy<T extends object>(target_class: T): T {
 
 const function_handler = {
     ...class_handler,
-    apply: function(target, this_arg, args) {
+    apply: function (target, this_arg, args) {
         return proxy_wrap_value(target.apply(this_arg?.[ProxyTarget] ?? this_arg, args.map(proxy_wrap_value)));
     },
 } satisfies ProxyHandler<any>;
@@ -271,7 +276,7 @@ const enum_handler = {
         return false;
     },
     ownKeys(target) {
-        return Reflect.ownKeys(target).map(key => typeof key === "string" ? pascal_to_upper_snake_case(key) : key);
+        return Reflect.ownKeys(target).map((key) => (typeof key === "string" ? pascal_to_upper_snake_case(key) : key));
     },
     preventExtensions() {
         return true;
@@ -292,79 +297,80 @@ function enum_proxy<T extends object>(target_enum: T): T {
     return new Proxy(target_enum, enum_handler);
 }
 
-const api_handler = (target: any) => ({
-    defineProperty() {
-        return false;
-    },
-    deleteProperty() {
-        return false;
-    },
-    get(_pseudo_target, p, _receiver) {
-        if (p === ProxyTarget) {
-            return target;
-        }
+const api_handler = (target: any) =>
+    ({
+        defineProperty() {
+            return false;
+        },
+        deleteProperty() {
+            return false;
+        },
+        get(_pseudo_target, p, _receiver) {
+            if (p === ProxyTarget) {
+                return target;
+            }
 
-        if (p in _pseudo_target) {
-            return _pseudo_target[p];
-        }
+            if (p in _pseudo_target) {
+                return _pseudo_target[p];
+            }
 
-        if (typeof p !== "string") {
-            return Reflect.get(target, p);
-        }
+            if (typeof p !== "string") {
+                return Reflect.get(target, p);
+            }
 
-        if (p === "toString") {
-            return proxy_wrap_value(Reflect.get(target, p));
-        }
+            if (p === "toString") {
+                return proxy_wrap_value(Reflect.get(target, p));
+            }
 
-        // Special case, see jsb_godot_module_loader.cpp
-        if (p === "Variant") {
-            return object_proxy(Reflect.get(target, p))
-        }
+            // Special case, see jsb_godot_module_loader.cpp
+            if (p === "Variant") {
+                return object_proxy(Reflect.get(target, p));
+            }
 
-        if (p[0]?.toUpperCase() !== p[0]) {
-            return proxy_wrap_value(Reflect.get(target, get_member(p)));
-        }
+            if (p[0]?.toUpperCase() !== p[0]) {
+                return proxy_wrap_value(Reflect.get(target, get_member(p)));
+            }
 
-        const value = Reflect.get(target, get_class(p));
+            const value = Reflect.get(target, get_class(p));
 
-        if (typeof value === "function") {
-            return class_proxy(value);
-        }
+            if (typeof value === "function") {
+                return class_proxy(value);
+            }
 
-        if (value == null || typeof value !== "object") {
-            return value;
-        }
+            if (value == null || typeof value !== "object") {
+                return value;
+            }
 
-        return is_basic_object(value) ? enum_proxy(value) : instance_proxy(value);
-    },
-    getOwnPropertyDescriptor(_pseudo_target, p) {
-        if (p in _pseudo_target) {
-            return Reflect.getOwnPropertyDescriptor(_pseudo_target, p);
-        }
+            return is_basic_object(value) ? enum_proxy(value) : instance_proxy(value);
+        },
+        getOwnPropertyDescriptor(_pseudo_target, p) {
+            if (p in _pseudo_target) {
+                return Reflect.getOwnPropertyDescriptor(_pseudo_target, p);
+            }
 
-        return Reflect.getOwnPropertyDescriptor(target, typeof p === "string" ? get_member(p) : p);
-    },
-    has(_pseudo_target, p) {
-        return Reflect.has(target, typeof p === "string" ? get_class(p) : p) || Reflect.has(_pseudo_target, p);
-    },
-    isExtensible() {
-        return false;
-    },
-    ownKeys(_pseudo_target) {
-        return Reflect.ownKeys(target)
-            .map(key => typeof key === "string" && get_internal_mapping(key) || key)
-            .concat(Reflect.ownKeys(_pseudo_target));
-    },
-    preventExtensions() {
-        return true;
-    },
-    set(_pseudo_target, p, new_value, _receiver) {
-        return Reflect.set(target, typeof p === "string" ? get_member(p) : p, new_value);
-    },
-    setPrototypeOf(_pseudo_target) {
-        return false;
-    },
-} satisfies ProxyHandler<any>);
+            return Reflect.getOwnPropertyDescriptor(target, typeof p === "string" ? get_member(p) : p);
+        },
+        has(_pseudo_target, p) {
+            return Reflect.has(target, typeof p === "string" ? get_class(p) : p) || Reflect.has(_pseudo_target, p);
+        },
+        isExtensible() {
+            return false;
+        },
+        ownKeys(_pseudo_target) {
+            return Reflect.ownKeys(target)
+                .map((key) => (typeof key === "string" && get_internal_mapping(key)) || key)
+                .concat(Reflect.ownKeys(_pseudo_target));
+        },
+        preventExtensions() {
+            return true;
+        },
+        set(_pseudo_target, p, new_value, _receiver) {
+            return Reflect.set(target, typeof p === "string" ? get_member(p) : p, new_value);
+        },
+        setPrototypeOf(_pseudo_target) {
+            return false;
+        },
+    }) satisfies ProxyHandler<any>;
 
 const proxy = {
     array_proxy,
@@ -381,13 +387,16 @@ const proxy = {
 type GodotLibApi = typeof Godot & {
     jsb: typeof GodotJsb;
     proxy: typeof proxy;
-}
+};
 
 const jsb = object_proxy(jsb_api) as typeof GodotJsb;
-const api = new Proxy({
-    jsb,
-    proxy,
-}, api_handler(godot_api)) as GodotLibApi;
+const api = new Proxy(
+    {
+        jsb,
+        proxy,
+    },
+    api_handler(godot_api),
+) as GodotLibApi;
 
 /**
  * This is a starting point for writing GodotJS code that is camel-case binding agnostic at runtime.

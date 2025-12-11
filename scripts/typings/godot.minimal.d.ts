@@ -50,7 +50,13 @@ declare module "godot-jsb" {
      * Set a callback function to handle the load of source code of asynchronous modules.
      * Only use this function if it's not set in C++.
      */
-    function set_async_module_loader(fn: (module_id: string, resolve: AsyncModuleSourceLoaderResolveFunc, reject: AsyncModuleSourceLoaderRejectFunc) => void): void;
+    function set_async_module_loader(
+        fn: (
+            module_id: string,
+            resolve: AsyncModuleSourceLoaderResolveFunc,
+            reject: AsyncModuleSourceLoaderRejectFunc,
+        ) => void,
+    ): void;
 
     interface MinimalCommonJSModule {
         exports: any;
@@ -102,24 +108,36 @@ declare module "godot-jsb" {
 
         function add_script_signal(prototype: GObject, name: string): void;
         function add_script_property(prototype: GObject, details: ScriptPropertyInfo): void;
-        function add_script_ready(prototype: GObject, details: {
-            name: string,
-            evaluator: string | OnReadyEvaluatorFunc
-        }): void;
+        function add_script_ready(
+            prototype: GObject,
+            details: {
+                name: string;
+                evaluator: string | OnReadyEvaluatorFunc;
+            },
+        ): void;
         function add_script_tool(constructor: GObjectConstructor): void;
         function add_script_icon(constructor: GObjectConstructor, path: string): void;
-        function add_script_rpc(prototype: GObject, property_key: string, config: {
-            rpc_mode?: MultiplayerAPI.RPCMode,
-            call_local?: boolean,
-            transfer_mode?: MultiplayerPeer.TransferMode,
-            channel?: number,
-        }): void;
+        function add_script_rpc(
+            prototype: GObject,
+            property_key: string,
+            config: {
+                rpc_mode?: MultiplayerAPI.RPCMode;
+                call_local?: boolean;
+                transfer_mode?: MultiplayerPeer.TransferMode;
+                channel?: number;
+            },
+        ): void;
 
         function create_script_signal_getter(name: string): (this: GObject) => Signal;
         function create_script_cached_property_updater(name: string): (this: GObject, value?: unknown) => void;
 
         // 0: deprecated, 1: experimental, 2: help
-        function set_script_doc(target: GObjectConstructor, property_key: undefined, field: 0 | 1 | 2, message: string): void;
+        function set_script_doc(
+            target: GObjectConstructor,
+            property_key: undefined,
+            field: 0 | 1 | 2,
+            message: string,
+        ): void;
         function set_script_doc(target: GObject, property_key: string, field: 0 | 1 | 2, message: string): void;
 
         function add_module(id: string, obj: any): void;
@@ -162,12 +180,12 @@ declare module "godot-jsb" {
         interface PrimitiveConstantInfo {
             name: string;
             type: Variant.Type;
-            value: number; /* only if type is literal */
+            value: number /* only if type is literal */;
         }
 
         interface ConstantInfo {
             name: string;
-            value: number; /** int64_t */
+            value: number /** int64_t */;
         }
 
         interface EnumInfo {
@@ -192,7 +210,7 @@ declare module "godot-jsb" {
             is_static: boolean;
             is_const: boolean;
             is_vararg: boolean;
-            argument_count: number; /** int32_t */
+            argument_count: number /** int32_t */;
 
             args_: Array<PropertyInfo>;
             default_arguments?: Array<DefaultArgumentInfo>;
@@ -228,7 +246,7 @@ declare module "godot-jsb" {
         }
 
         interface ConstructorInfo {
-            arguments: Array<ArgumentInfo>
+            arguments: Array<ArgumentInfo>;
         }
 
         interface OperatorInfo {

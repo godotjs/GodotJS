@@ -97,46 +97,46 @@ declare module "godot" {
     type Signal5<T1, T2, T3, T4, T5> = Signal<(v1: T1, v2: T2, v3: T3, v4: T4, v5: T5) => void>;
 
     type ExtractValueKeys<T, V> = { [K in keyof T]: T[K] extends V ? K : never }[keyof T];
-    type IfAny<T, Y, N> = 0 extends (1 & T) ? Y : N;
+    type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N;
 
     type UndefinedToNull<T> = T extends undefined ? null : T;
 
     // A bit convoluted, but written this way to mitigate type definitions circularly depending on themselves.
-    type GodotNames<T> = '__godotNameMap' extends keyof T
-        ? keyof T['__godotNameMap'] | Exclude<keyof T, T['__godotNameMap'][keyof T['__godotNameMap']]>
+    type GodotNames<T> = "__godotNameMap" extends keyof T
+        ? keyof T["__godotNameMap"] | Exclude<keyof T, T["__godotNameMap"][keyof T["__godotNameMap"]]>
         : keyof T;
     type ResolveGodotName<T, Name> = Name extends keyof T
         ? Name
-        : '__godotNameMap' extends keyof T
-            ? Name extends keyof T['__godotNameMap']
-                ? T['__godotNameMap'][Name]
-                : never
-            : never;
+        : "__godotNameMap" extends keyof T
+          ? Name extends keyof T["__godotNameMap"]
+              ? T["__godotNameMap"][Name]
+              : never
+          : never;
     type ResolveGodotNameValue<T, Name> = Name extends keyof T
         ? T[Name]
-        : '__godotNameMap' extends keyof T
-            ? Name extends keyof T['__godotNameMap']
-                ? T['__godotNameMap'][Name] extends keyof T
-                    ? T[T['__godotNameMap'][Name]]
-                    : never
-                : never
-            : never;
+        : "__godotNameMap" extends keyof T
+          ? Name extends keyof T["__godotNameMap"]
+              ? T["__godotNameMap"][Name] extends keyof T
+                  ? T[T["__godotNameMap"][Name]]
+                  : never
+              : never
+          : never;
     type ResolveGodotNameParameters<T, Name> = Name extends GodotDynamicDispatchName
         ? GAny[]
         : ResolveGodotName<T, Name> extends keyof T
-            ? T[ResolveGodotName<T, Name>] extends {
-                    bivarianceHack(...args: infer P extends GAny[]): void | GAny
-                }["bivarianceHack"]
-                ? P
-                : never
-            : never;
+          ? T[ResolveGodotName<T, Name>] extends {
+                bivarianceHack(...args: infer P extends GAny[]): void | GAny;
+            }["bivarianceHack"]
+              ? P
+              : never
+          : never;
     type ResolveGodotReturnType<T, Name> = Name extends GodotDynamicDispatchName
         ? void | GAny
         : ResolveGodotName<T, Name> extends keyof T
-            ? T[ResolveGodotName<T, Name>] extends (...args: any[]) => infer R
-                ? R
-                : never
-            : never;
+          ? T[ResolveGodotName<T, Name>] extends (...args: any[]) => infer R
+              ? R
+              : never
+          : never;
 
     /**
      * Godot has many APIs that are a form of dynamic dispatch, i.e., they take the name of a function or property and
@@ -147,11 +147,11 @@ declare module "godot" {
      * can use interface merging to insert additional method names.
      */
     interface GodotDynamicDispatchNames {
-        call: 'call';
-        callv: 'callv';
-        call_deferred: 'call_deferred';
-        add_do_method: 'add_do_method';
-        add_undo_method: 'add_undo_method';
+        call: "call";
+        callv: "callv";
+        call_deferred: "call_deferred";
+        add_do_method: "add_do_method";
+        add_undo_method: "add_undo_method";
     }
 
     type GodotDynamicDispatchName = GodotDynamicDispatchNames[keyof GodotDynamicDispatchNames];
@@ -160,8 +160,7 @@ declare module "godot" {
      * This namespace and the values within do not exist at runtime. They're declared here, for internal use only, as a
      * work-around for limitations of TypeScript's type system.
      */
-    namespace __PathMappableDummyKeys {
-    }
+    namespace __PathMappableDummyKeys {}
 
     type PathMappable<DummyKey extends symbol, Map extends PathMap = PathMap> = {
         [K in DummyKey]: Map;
@@ -173,31 +172,27 @@ declare module "godot" {
         Map extends PathMap,
         Permitted = any,
         DefaultKey extends string = never,
-        DummyKey extends symbol = typeof __PathMappableDummyKeys[keyof typeof __PathMappableDummyKeys]
+        DummyKey extends symbol = (typeof __PathMappableDummyKeys)[keyof typeof __PathMappableDummyKeys],
     > = IfAny<
         Map,
         string,
-        ExtractValueKeys<Map, Permitted> & string
-        | (
-        DummyKey extends any
-            ? (
-                (
-                    Map[DefaultKey] extends never
-                        ? never
-                        : (
-                            Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
-                                ? StaticPath<ChildMap, Permitted, DefaultKey>
-                                : never
-                            )
-                    )
-                | {
-                [K in Exclude<keyof Map, DefaultKey> & string]: Map[K] extends PathMappable<DummyKey, infer ChildMap>
-                    ? `${K}/${StaticPath<ChildMap, Permitted, DefaultKey>}`
-                    : never
-            }[Exclude<keyof Map, DefaultKey> & string]
-                )
-            : never
-        )
+        | (ExtractValueKeys<Map, Permitted> & string)
+        | (DummyKey extends any
+              ?
+                    | (Map[DefaultKey] extends never
+                          ? never
+                          : Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
+                            ? StaticPath<ChildMap, Permitted, DefaultKey>
+                            : never)
+                    | {
+                          [K in Exclude<keyof Map, DefaultKey> & string]: Map[K] extends PathMappable<
+                              DummyKey,
+                              infer ChildMap
+                          >
+                              ? `${K}/${StaticPath<ChildMap, Permitted, DefaultKey>}`
+                              : never;
+                      }[Exclude<keyof Map, DefaultKey> & string]
+              : never)
     >;
 
     type ResolvePath<
@@ -206,26 +201,24 @@ declare module "godot" {
         Default,
         Permitted,
         DefaultKey extends string = never,
-        DummyKey extends symbol = typeof __PathMappableDummyKeys[keyof typeof __PathMappableDummyKeys]
+        DummyKey extends symbol = (typeof __PathMappableDummyKeys)[keyof typeof __PathMappableDummyKeys],
     > = IfAny<
         Map,
         Permitted,
         DummyKey extends any
-            ? (
-                Path extends keyof Map
-                    ? [Map[Path]] extends [Permitted]
-                        ? [undefined] extends [Map[Path]]
-                            ? null | Exclude<Map[Path], undefined>
-                            : Map[Path]
-                        : Default
-                    : Path extends `${infer Key extends Exclude<keyof Map, DefaultKey> & string}/${infer SubPath}`
-                        ? Map[Key] extends PathMappable<DummyKey, infer ChildMap>
-                            ? ResolvePath<ChildMap, SubPath, Default, Permitted>
-                            : Default
-                        : Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
-                            ? ResolvePath<ChildMap, Path, Default, Permitted>
-                            : never
-                )
+            ? Path extends keyof Map
+                ? [Map[Path]] extends [Permitted]
+                    ? [undefined] extends [Map[Path]]
+                        ? null | Exclude<Map[Path], undefined>
+                        : Map[Path]
+                    : Default
+                : Path extends `${infer Key extends Exclude<keyof Map, DefaultKey> & string}/${infer SubPath}`
+                  ? Map[Key] extends PathMappable<DummyKey, infer ChildMap>
+                      ? ResolvePath<ChildMap, SubPath, Default, Permitted>
+                      : Default
+                  : Map[DefaultKey] extends PathMappable<DummyKey, infer ChildMap>
+                    ? ResolvePath<ChildMap, Path, Default, Permitted>
+                    : never
             : never
     >;
 
@@ -236,29 +229,52 @@ declare module "godot" {
     >;
 
     type NodePathMap = PathMap<undefined | Node>;
-    type StaticNodePath<Map extends NodePathMap, Permitted = Node> = StaticPath<Map, Permitted, never, typeof __PathMappableDummyKeys.Node>;
-    type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never, Permitted = Node> =
-        ResolvePath<Map, Path, Default, Permitted, never, typeof __PathMappableDummyKeys.Node>;
+    type StaticNodePath<Map extends NodePathMap, Permitted = Node> = StaticPath<
+        Map,
+        Permitted,
+        never,
+        typeof __PathMappableDummyKeys.Node
+    >;
+    type ResolveNodePath<Map extends NodePathMap, Path extends string, Default = never, Permitted = Node> = ResolvePath<
+        Map,
+        Path,
+        Default,
+        Permitted,
+        never,
+        typeof __PathMappableDummyKeys.Node
+    >;
     type ResolveNodePathMap<Map extends NodePathMap, Path extends string, Default = never> = Path extends keyof Map
         ? Map[Path] extends Node<infer ChildMap>
             ? ChildMap
             : Default
         : Path extends `${infer Key extends keyof Map & string}/${infer SubPath}`
-            ? Map[Key] extends Node<infer ChildMap>
-                ? ResolveNodePathMap<ChildMap, SubPath, Default>
-                : Default
-            : Default;
+          ? Map[Key] extends Node<infer ChildMap>
+              ? ResolveNodePathMap<ChildMap, SubPath, Default>
+              : Default
+          : Default;
     type NodePathMapChild<Map extends NodePathMap> = PathMapChild<Map, Node, Node>;
 
     type AnimationMixerPathMap = PathMap<AnimationLibrary>;
-    type StaticAnimationMixerPath<Map extends AnimationMixerPathMap> =
-        StaticPath<Map, Animation, "", typeof __PathMappableDummyKeys["AnimationLibrary" | "AnimationMixer"]>;
-    type ResolveAnimationMixerPath<Map extends AnimationMixerPathMap, Path extends string, Default = never> =
-        ResolvePath<Map, Path, Default, Animation, "", typeof __PathMappableDummyKeys["AnimationLibrary" | "AnimationMixer"]>;
+    type StaticAnimationMixerPath<Map extends AnimationMixerPathMap> = StaticPath<
+        Map,
+        Animation,
+        "",
+        (typeof __PathMappableDummyKeys)["AnimationLibrary" | "AnimationMixer"]
+    >;
+    type ResolveAnimationMixerPath<
+        Map extends AnimationMixerPathMap,
+        Path extends string,
+        Default = never,
+    > = ResolvePath<
+        Map,
+        Path,
+        Default,
+        Animation,
+        "",
+        (typeof __PathMappableDummyKeys)["AnimationLibrary" | "AnimationMixer"]
+    >;
 
-    type GArrayElement<T extends GAny | GAny[], I extends int64 = int64> = T extends any[]
-        ? T[I]
-        : T;
+    type GArrayElement<T extends GAny | GAny[], I extends int64 = int64> = T extends any[] ? T[I] : T;
 
     /**
      * GArray elements are exposed with a subset of JavaScript's standard Array API. Array indexes are exposed as
@@ -278,7 +294,10 @@ declare module "godot" {
          * @param callback A function that accepts up to three arguments. forEach calls the callback function one time for each element in the array.
          * @param thisArg An object to which the this keyword can refer in the callback function. If thisArg is omitted, undefined is used as the this value.
          */
-        forEach<S = GArrayProxy<T>>(callback: (this: GArrayProxy<T>, value: GProxyValueWrap<T>, index: number) => void, thisArg?: S): void;
+        forEach<S = GArrayProxy<T>>(
+            callback: (this: GArrayProxy<T>, value: GProxyValueWrap<T>, index: number) => void,
+            thisArg?: S,
+        ): void;
 
         /**
          * Removes the last element from an array and returns it.
@@ -321,17 +340,14 @@ declare module "godot" {
         [K in keyof T]: T[K] | GProxyValueWrap<T[K]>; // More accurate get type blocked by https://github.com/microsoft/TypeScript/issues/43826
     };
 
-    type GProxyValueWrap<V> = V extends GArray<infer T>
-        ? GArrayProxy<GArrayElement<T>>
-        : V extends GDictionary<infer T>
-            ? GDictionaryProxy<T>
-            : V;
+    type GProxyValueWrap<V> =
+        V extends GArray<infer T>
+            ? GArrayProxy<GArrayElement<T>>
+            : V extends GDictionary<infer T>
+              ? GDictionaryProxy<T>
+              : V;
 
-    type GProxyValueUnwrap<V> = V extends GArrayProxy<infer E>
-        ? E
-        : V extends GDictionaryProxy<infer T>
-            ? T
-            : V;
+    type GProxyValueUnwrap<V> = V extends GArrayProxy<infer E> ? E : V extends GDictionaryProxy<infer T> ? T : V;
 
     type GWrappableValue = GAny | GWrappableValue[] | { [key: number | string]: GWrappableValue };
     type GValueWrapUnchecked<V> = V extends any[]
@@ -339,21 +355,22 @@ declare module "godot" {
             ? GArray<GValueWrapUnchecked<V[number]>>
             : GArray<{ [I in keyof V]: GValueWrapUnchecked<V[I]> }>
         : V extends GAny
-            ? V
-            : GDictionary<{ [K in keyof V]: GValueWrapUnchecked<V[K]> }>;
+          ? V
+          : GDictionary<{ [K in keyof V]: GValueWrapUnchecked<V[K]> }>;
     type GValueWrap<V> = [keyof V] extends [never]
         ? GDictionary<{}>
         : [V] extends [GWrappableValue]
-            ? GValueWrapUnchecked<V>
-            : never;
+          ? GValueWrapUnchecked<V>
+          : never;
 
-    type GValueUnwrap<V> = V extends GArray<infer T>
-        ? T extends any[]
-            ? { [I in keyof T]: GValueUnwrap<T[I]> }
-            : Array<GValueUnwrap<T>>
-        : V extends GDictionary<infer T>
-            ? { [K in keyof T]: GValueUnwrap<T[K]> }
-            : V;
+    type GValueUnwrap<V> =
+        V extends GArray<infer T>
+            ? T extends any[]
+                ? { [I in keyof T]: GValueUnwrap<T[I]> }
+                : Array<GValueUnwrap<T>>
+            : V extends GDictionary<infer T>
+              ? { [K in keyof T]: GValueUnwrap<T[K]> }
+              : V;
 
     /**
      * Semi-workaround for https://github.com/microsoft/TypeScript/issues/43826.
@@ -361,9 +378,12 @@ declare module "godot" {
      */
     type GArrayReadProxy<T> = Omit<GArrayProxy<T>, "forEach"> & {
         [Symbol.iterator](): IteratorObject<GReadProxyValueWrap<T>>;
-        forEach<S = GArrayReadProxy<T>>(callback: (this: GArrayReadProxy<T>, value: GReadProxyValueWrap<T>, index: number) => void, thisArg?: S): void;
+        forEach<S = GArrayReadProxy<T>>(
+            callback: (this: GArrayReadProxy<T>, value: GReadProxyValueWrap<T>, index: number) => void,
+            thisArg?: S,
+        ): void;
         [n: number]: GReadProxyValueWrap<T>;
-    }
+    };
 
     /**
      * Semi-workaround for https://github.com/microsoft/TypeScript/issues/43826.
@@ -377,11 +397,8 @@ declare module "godot" {
     // indexers typed correctly for access i.e. return proxied types. The non-read interfaces have indexers accurate for
     // assignment and will accept both GArray/GDictionary and proxies. The read interfaces exist for convenience only,
     // you can safely cast between the two interfaces types as desired.
-    type GReadProxyValueWrap<V> = V extends GArray<infer E>
-        ? GArrayReadProxy<E>
-        : V extends GDictionary<infer T>
-            ? GDictionaryReadProxy<T>
-            : V;
+    type GReadProxyValueWrap<V> =
+        V extends GArray<infer E> ? GArrayReadProxy<E> : V extends GDictionary<infer T> ? GDictionaryReadProxy<T> : V;
 
     interface PropertyInfo {
         name: string;
@@ -392,8 +409,10 @@ declare module "godot" {
         usage: PropertyUsageFlags;
     }
 
-    type BindRight<F extends Function, B extends any[]> =
-        F extends (this: infer T, ...args: [...(infer A), ...B]) => infer R
-            ? (this: T, ...args: A) => R
-            : never;
+    type BindRight<F extends Function, B extends any[]> = F extends (
+        this: infer T,
+        ...args: [...infer A, ...B]
+    ) => infer R
+        ? (this: T, ...args: A) => R
+        : never;
 }

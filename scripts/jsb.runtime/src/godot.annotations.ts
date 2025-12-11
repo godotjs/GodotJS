@@ -4,27 +4,19 @@ import type { ClassBinder, ExportOptions, RPCConfig } from "godot.annotations"; 
 
 import lib_api = require("godot.lib.api");
 
-const {
-    jsb,
-    proxy,
-    FloatType,
-    IntegerType,
-    Node,
-    PropertyHint,
-    PropertyUsageFlags,
-    ProxyTarget,
-    Resource,
-    Variant,
-} = lib_api;
+const { jsb, proxy, FloatType, IntegerType, Node, PropertyHint, PropertyUsageFlags, ProxyTarget, Resource, Variant } =
+    lib_api;
 
-type VariantConstructor = abstract new(...args: any[]) => NonNullable<Godot.GAny> | Number | String | Boolean;
+type VariantConstructor = abstract new (...args: any[]) => NonNullable<Godot.GAny> | Number | String | Boolean;
 type GObjectConstructor = abstract new (...args: any[]) => Godot.Object;
 
 type ClassSpecifier = VariantConstructor | Symbol | EnumPlaceholder | TypePairPlaceholder;
 
 function legacy_decorators_check(context: undefined | string | DecoratorContext) {
     if (typeof context === "object") {
-        throw new Error(`Legacy decorators must be built with experimentalDecorators enabled. Use createClassBinder() instead.`);
+        throw new Error(
+            `Legacy decorators must be built with experimentalDecorators enabled. Use createClassBinder() instead.`,
+        );
     }
 }
 
@@ -64,6 +56,7 @@ class EnumPlaceholderImpl implements EnumPlaceholder {
 class TypePairPlaceholderImpl implements TypePairPlaceholder {
     key: VariantConstructor;
     value: VariantConstructor;
+
     constructor(key: any, value: any) {
         this.key = key;
         this.value = value;
@@ -80,7 +73,7 @@ export function TypePair(key: VariantConstructor, value: VariantConstructor): Ty
 
 /** @deprecated Use createClassBinder() instead. */
 export function signal() {
-    return function(target: any, name: string) {
+    return function (target: any, name: string) {
         legacy_decorators_check(name);
 
         if (typeof name !== "string") {
@@ -102,7 +95,13 @@ export function export_multiline() {
 /** @deprecated Use createClassBinder() instead. */
 export const ExportMultiline = export_multiline;
 
-function __export_range(type: Godot.Variant.Type, min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+function __export_range(
+    type: Godot.Variant.Type,
+    min: number,
+    max: number,
+    step: number = 1,
+    ...extra_hints: string[]
+) {
     let hint_string = `${min},${max},${step}`;
     if (typeof extra_hints !== "undefined") {
         hint_string += "," + extra_hints.join(",");
@@ -190,7 +189,7 @@ export const ExportDictionary = export_dictionary;
 function get_hint_string_for_enum(enum_type: Record<string, string | number>): string {
     const enum_vs: Array<string> = [];
     for (const [key, value] of Object.entries(enum_type)) {
-        if (typeof value === 'number' && value >= 0 && Number.isInteger(value)) {
+        if (typeof value === "number" && value >= 0 && Number.isInteger(value)) {
             enum_vs.push(`${key}:${value}`);
         }
     }
@@ -212,7 +211,10 @@ function get_hint_string(clazz: any): string {
 
         if (prototype instanceof Resource) {
             return `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_RESOURCE_TYPE}:${clazz.name}`;
-        } else if (prototype instanceof Node || ((clazz as any)[ProxyTarget] ?? clazz) === ((Node as any)[ProxyTarget] ?? Node)) {
+        } else if (
+            prototype instanceof Node ||
+            ((clazz as any)[ProxyTarget] ?? clazz) === ((Node as any)[ProxyTarget] ?? Node)
+        ) {
             return `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_NODE_TYPE}:${clazz.name}`;
         } else if (typeof prototype !== "undefined") {
             // other than Resource and Node, only primitive types and enum types are supported in gdscript
@@ -249,7 +251,7 @@ function get_hint_string(clazz: any): string {
             if (key_type.length === 0 || value_type.length === 0) {
                 throw new Error("the given parameters are not supported or not implemented");
             }
-            return key_type + ';' + value_type;
+            return key_type + ";" + value_type;
         }
     }
     return "";
@@ -267,11 +269,16 @@ export const ExportObject = export_object;
  * [low level export]
  * @deprecated Use createClassBinder() instead.
  * */
-export function export_(type: Godot.Variant.Type, details?: { class_?: ClassSpecifier, hint?: Godot.PropertyHint, hint_string?: string, usage?: Godot.PropertyUsageFlags }) {
-    return function(
-      target: any,
-      name: string
-    ) {
+export function export_(
+    type: Godot.Variant.Type,
+    details?: {
+        class_?: ClassSpecifier;
+        hint?: Godot.PropertyHint;
+        hint_string?: string;
+        usage?: Godot.PropertyUsageFlags;
+    },
+) {
+    return function (target: any, name: string) {
         legacy_decorators_check(name);
 
         if (typeof name !== "string") {
@@ -304,7 +311,10 @@ export function export_(type: Godot.Variant.Type, details?: { class_?: ClassSpec
                             ebd.hint = PropertyHint.PROPERTY_HINT_RESOURCE_TYPE;
                             ebd.hint_string = clazz.name;
                             ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
-                        } else if (prototype instanceof Node || ((clazz as any)[ProxyTarget] ?? clazz) === ((Node as any)[ProxyTarget] ?? Node)) {
+                        } else if (
+                            prototype instanceof Node ||
+                            ((clazz as any)[ProxyTarget] ?? clazz) === ((Node as any)[ProxyTarget] ?? Node)
+                        ) {
                             ebd.hint = PropertyHint.PROPERTY_HINT_NODE_TYPE;
                             ebd.hint_string = clazz.name;
                             ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
@@ -316,16 +326,19 @@ export function export_(type: Godot.Variant.Type, details?: { class_?: ClassSpec
                 }
                 let hint_string = get_hint_string(details.class_);
                 if (hint_string.length > 0) {
-                    ebd.hint = type === Variant.Type.TYPE_ARRAY
-                        ? PropertyHint.PROPERTY_HINT_ARRAY_TYPE
-                        : PropertyHint.PROPERTY_HINT_TYPE_STRING;
+                    ebd.hint =
+                        type === Variant.Type.TYPE_ARRAY
+                            ? PropertyHint.PROPERTY_HINT_ARRAY_TYPE
+                            : PropertyHint.PROPERTY_HINT_TYPE_STRING;
                     ebd.hint_string = hint_string;
                     ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
                 }
             } catch (e) {
                 if (ebd.hint === PropertyHint.PROPERTY_HINT_NONE) {
-                    console.warn("the given parameters are not supported or not implemented (you need to give hint/hint_string/usage manually)",
-                      `class:${guess_type_name(Object.getPrototypeOf(target))} prop:${name} type:${type} class_:${guess_type_name(details.class_)}`);
+                    console.warn(
+                        "the given parameters are not supported or not implemented (you need to give hint/hint_string/usage manually)",
+                        `class:${guess_type_name(Object.getPrototypeOf(target))} prop:${name} type:${type} class_:${guess_type_name(details.class_)}`,
+                    );
                 }
             }
         }
@@ -335,14 +348,22 @@ export function export_(type: Godot.Variant.Type, details?: { class_?: ClassSpec
 }
 
 /** @deprecated Use createClassBinder() instead. */
-export function Export(type: Godot.Variant.Type, details?: { class?: ClassSpecifier, hint?: Godot.PropertyHint, hintString?: string, usage?: Godot.PropertyUsageFlags }) {
-	const { hintString, class: cls, ...consistent } = details ?? {};
+export function Export(
+    type: Godot.Variant.Type,
+    details?: {
+        class?: ClassSpecifier;
+        hint?: Godot.PropertyHint;
+        hintString?: string;
+        usage?: Godot.PropertyUsageFlags;
+    },
+) {
+    const { hintString, class: cls, ...consistent } = details ?? {};
 
-	return export_(type, {
-		...consistent,
-		hint_string: hintString,
-		class_: cls,
-	});
+    return export_(type, {
+        ...consistent,
+        hint_string: hintString,
+        class_: cls,
+    });
 }
 
 /**
@@ -352,7 +373,15 @@ export function Export(type: Godot.Variant.Type, details?: { class?: ClassSpecif
  * Exporting is done by using the `@export_var` (or `@export_`) annotation.
  */
 /** @deprecated Use createClassBinder() instead. */
-export function export_var(type: Godot.Variant.Type, details?: { class_?: ClassSpecifier, hint?: Godot.PropertyHint, hint_string?: string, usage?: Godot.PropertyUsageFlags }) {
+export function export_var(
+    type: Godot.Variant.Type,
+    details?: {
+        class_?: ClassSpecifier;
+        hint?: Godot.PropertyHint;
+        hint_string?: string;
+        usage?: Godot.PropertyUsageFlags;
+    },
+) {
     return export_(type, details);
 }
 
@@ -367,7 +396,7 @@ export function export_enum(enum_type: Record<string, string | number>) {
     return function (target: any, name: string) {
         legacy_decorators_check(name);
 
-        if (typeof name !== 'string') {
+        if (typeof name !== "string") {
             throw new Error("Only properties with a string name/key can be exported");
         }
 
@@ -392,7 +421,7 @@ export function export_flags(enum_type: Record<string, string | number>) {
     return function (target: any, name: string) {
         legacy_decorators_check(name);
 
-        if (typeof name !== 'string') {
+        if (typeof name !== "string") {
             throw new Error("Only properties with a string name/key can be exported");
         }
 
@@ -422,14 +451,14 @@ export function rpc(config?: RPCConfig) {
     return function (target: any, name: string) {
         legacy_decorators_check(name);
 
-        if (typeof name !== 'string') {
+        if (typeof name !== "string") {
             throw new Error("Only methods with a string name can be registered for RPC");
         }
 
         if (typeof config !== "undefined") {
             jsb.internal.add_script_rpc(target, name, {
                 rpc_mode: config.mode,
-                call_local: typeof config.sync !== "undefined" ? (config.sync == "call_local") : undefined,
+                call_local: typeof config.sync !== "undefined" ? config.sync == "call_local" : undefined,
                 transfer_mode: config.transfer_mode,
                 channel: config.transfer_channel,
             });
@@ -451,7 +480,7 @@ export function onready(evaluator: string) {
     return function (target: any, name: string) {
         legacy_decorators_check(name);
 
-        if (typeof name !== 'string') {
+        if (typeof name !== "string") {
             throw new Error("Only methods with a string name can be registered as an onready callback");
         }
 
@@ -551,44 +580,55 @@ export function help(message?: string) {
 export const Help = help;
 
 export type ClassMemberDecorator<RestrictedContext extends ClassMemberDecoratorContext = ClassMemberDecoratorContext> =
-    <Context extends RestrictedContext>(target: ClassMemberDecoratorTarget<Context>, context: Context) => void | ClassMemberDecoratorReturn<Context>;
+    <Context extends RestrictedContext>(
+        target: ClassMemberDecoratorTarget<Context>,
+        context: Context,
+    ) => void | ClassMemberDecoratorReturn<Context>;
 export type ClassMemberDecoratorTarget<Context extends ClassMemberDecoratorContext> =
     Context extends ClassMethodDecoratorContext<infer _, infer Value>
         ? (...args: unknown[]) => Value
         : Context extends ClassGetterDecoratorContext<infer _, infer Value>
-            ? () => Value
-            : Context extends ClassSetterDecoratorContext<infer _, infer Value>
-                ? (value: Value) => void
-                : Context extends ClassFieldDecoratorContext
-                    ? undefined
-                    : Context extends ClassAccessorDecoratorContext<infer _, infer Value>
-                        ? { get: () => Value; set: (value: Value) => void; }
-                        : never;
+          ? () => Value
+          : Context extends ClassSetterDecoratorContext<infer _, infer Value>
+            ? (value: Value) => void
+            : Context extends ClassFieldDecoratorContext
+              ? undefined
+              : Context extends ClassAccessorDecoratorContext<infer _, infer Value>
+                ? { get: () => Value; set: (value: Value) => void }
+                : never;
 export type ClassMemberDecoratorReturn<Context extends ClassMemberDecoratorContext> =
     Context extends ClassMethodDecoratorContext<infer This, infer Value>
         ? (this: This, ...args: unknown[]) => Value
         : Context extends ClassGetterDecoratorContext<infer This, infer Value>
-            ? (this: This) => Value
-            : Context extends ClassSetterDecoratorContext<infer This, infer Value>
-                ? (this: This, value: Value) => void
-                : Context extends ClassFieldDecoratorContext<infer This, infer Value>
-                    ? (this: This, initialValue: Value) => Value
-                    : Context extends ClassAccessorDecoratorContext<infer This, infer Value>
-                        ? { get?(this: This): Value; set?(this: This, value: Value): void; init?(this: This, initialValue: Value): Value; }
-                        : never;
+          ? (this: This) => Value
+          : Context extends ClassSetterDecoratorContext<infer This, infer Value>
+            ? (this: This, value: Value) => void
+            : Context extends ClassFieldDecoratorContext<infer This, infer Value>
+              ? (this: This, initialValue: Value) => Value
+              : Context extends ClassAccessorDecoratorContext<infer This, infer Value>
+                ? {
+                      get?(this: This): Value;
+                      set?(this: This, value: Value): void;
+                      init?(this: This, initialValue: Value): Value;
+                  }
+                : never;
 
-export type ClassDecorator<This extends abstract new (...args: any) => any = abstract new (...args: any) => any> =
-    (target: This, context: ClassDecoratorContext<This>) => void;
-export type ClassDecoratorClass<Context extends ClassDecoratorContext> = Context extends ClassDecoratorContext<infer Class>
-    ? Class
-    : never;
+export type ClassDecorator<This extends abstract new (...args: any) => any = abstract new (...args: any) => any> = (
+    target: This,
+    context: ClassDecoratorContext<This>,
+) => void;
+export type ClassDecoratorClass<Context extends ClassDecoratorContext> =
+    Context extends ClassDecoratorContext<infer Class> ? Class : never;
 
 export type Decorator<RestrictedContext extends DecoratorContext = DecoratorContext> =
     RestrictedContext extends ClassDecoratorContext
         ? <Context extends RestrictedContext>(target: ClassDecoratorClass<Context>, context: Context) => void
         : RestrictedContext extends ClassMemberDecoratorContext
-            ? <Context extends RestrictedContext>(target: ClassMemberDecoratorTarget<Context>, context: Context) => void | ClassMemberDecoratorReturn<Context>
-            : never;
+          ? <Context extends RestrictedContext>(
+                target: ClassMemberDecoratorTarget<Context>,
+                context: Context,
+            ) => void | ClassMemberDecoratorReturn<Context>
+          : never;
 
 export type AnyDecorator = (value: unknown, context: DecoratorContext) => unknown;
 
@@ -613,7 +653,7 @@ export function createClassBinder(): ClassBinder {
 
     let executed = false;
 
-    const hint_string_name = jsb.internal.names.get_member('hint_string');
+    const hint_string_name = jsb.internal.names.get_member("hint_string");
 
     // primary class decorator
 
@@ -624,12 +664,11 @@ export function createClassBinder(): ClassBinder {
 
         executed = true;
 
-        return (
-            target: GObjectConstructor,
-            context: ClassDecoratorContext,
-        ) => {
+        return (target: GObjectConstructor, context: ClassDecoratorContext) => {
             if (typeof context !== "object") {
-                throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
+                throw new Error(
+                    "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                );
             }
 
             if (!context.name) {
@@ -649,7 +688,7 @@ export function createClassBinder(): ClassBinder {
             for (const [name, config] of Object.entries(rpc_map)) {
                 jsb.internal.add_script_rpc(proto, name, {
                     rpc_mode: config.mode,
-                    call_local: typeof config.sync !== "undefined" ? (config.sync == "call_local") : undefined,
+                    call_local: typeof config.sync !== "undefined" ? config.sync == "call_local" : undefined,
                     transfer_mode: config.transfer_mode,
                     channel: config.transfer_channel,
                 });
@@ -720,7 +759,10 @@ export function createClassBinder(): ClassBinder {
                             ebd.hint = PropertyHint.PROPERTY_HINT_RESOURCE_TYPE;
                             ebd.hint_string = clazz.name;
                             ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
-                        } else if (prototype instanceof Node || ((clazz as any)[ProxyTarget] ?? clazz) === ((Node as any)[ProxyTarget] ?? Node)) {
+                        } else if (
+                            prototype instanceof Node ||
+                            ((clazz as any)[ProxyTarget] ?? clazz) === ((Node as any)[ProxyTarget] ?? Node)
+                        ) {
                             ebd.hint = PropertyHint.PROPERTY_HINT_NODE_TYPE;
                             ebd.hint_string = clazz.name;
                             ebd.usage |= PropertyUsageFlags.PROPERTY_USAGE_SCRIPT_VARIABLE;
@@ -734,7 +776,8 @@ export function createClassBinder(): ClassBinder {
                 let hint_string = get_hint_string(options.class);
 
                 if (hint_string.length > 0) {
-                    ebd.hint = type === Variant.Type.TYPE_ARRAY
+                    ebd.hint =
+                        type === Variant.Type.TYPE_ARRAY
                             ? PropertyHint.PROPERTY_HINT_ARRAY_TYPE
                             : PropertyHint.PROPERTY_HINT_TYPE_STRING;
                     ebd.hint_string = hint_string;
@@ -742,8 +785,10 @@ export function createClassBinder(): ClassBinder {
                 }
             } catch (e) {
                 if (ebd.hint === PropertyHint.PROPERTY_HINT_NONE) {
-                    console.warn("the given parameters are not supported or not implemented (you need to give hint/hint_string/usage manually)",
-                        `prop:${name} type:${type} class_:${guess_type_name(options.class)}`);
+                    console.warn(
+                        "the given parameters are not supported or not implemented (you need to give hint/hint_string/usage manually)",
+                        `prop:${name} type:${type} class_:${guess_type_name(options.class)}`,
+                    );
                 }
             }
         }
@@ -754,7 +799,9 @@ export function createClassBinder(): ClassBinder {
     function bind_export(type: Godot.Variant.Type, options?: ExportOptions): ClassMemberDecorator {
         return (_target, context) => {
             if (typeof context !== "object") {
-                throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
+                throw new Error(
+                    "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                );
             }
 
             const name = context.name;
@@ -773,308 +820,363 @@ export function createClassBinder(): ClassBinder {
 
                 default: {
                     const _context: ClassMethodDecoratorContext = context; // Exhaustive check
-                    throw new Error(`The export decorator can not be used to decorate a ${context.kind}. Decorate an auto-accessor, setter or field.`);
+                    throw new Error(
+                        `The export decorator can not be used to decorate a ${context.kind}. Decorate an auto-accessor, setter or field.`,
+                    );
                 }
             }
         };
     }
 
-    function bind_range(type: Godot.Variant.Type, min: number, max: number, step: number = 1, ...extra_hints: string[]) {
+    function bind_range(
+        type: Godot.Variant.Type,
+        min: number,
+        max: number,
+        step: number = 1,
+        ...extra_hints: string[]
+    ) {
         return bind_export(type, {
             hint: PropertyHint.PROPERTY_HINT_RANGE,
             [hint_string_name]: [min, max, step, ...extra_hints].join(","),
         });
     }
 
-    return proxy.key_only_proxy(Object.assign(bind_class, {
-        // additional class decorators
+    return proxy.key_only_proxy(
+        Object.assign(bind_class, {
+            // additional class decorators
 
-        tool() {
-            return function(target: GObjectConstructor, _context: ClassDecoratorContext) {
-                jsb.internal.add_script_tool(target);
-            };
-        },
-        icon(path: string) {
-            return function (target: GObjectConstructor, _context: ClassDecoratorContext) {
-                jsb.internal.add_script_icon(target, path);
-            };
-        },
+            tool() {
+                return function (target: GObjectConstructor, _context: ClassDecoratorContext) {
+                    jsb.internal.add_script_tool(target);
+                };
+            },
+            icon(path: string) {
+                return function (target: GObjectConstructor, _context: ClassDecoratorContext) {
+                    jsb.internal.add_script_icon(target, path);
+                };
+            },
 
-        // member decorators
+            // member decorators
 
-        export: Object.assign(bind_export, {
-            multiline(): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_MULTILINE_TEXT });
-            },
-            range(min: number, max: number, step: number, ...extra_hints: string[]): ClassMemberDecorator {
-                return bind_range(Variant.Type.TYPE_FLOAT, min, max, step, ...extra_hints);
-            },
-            /** String as a path to a file, custom filter provided as hint. */
-            range_int(min: number, max: number, step: number, ...extra_hints: string[]): ClassMemberDecorator {
-                return bind_range(Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
-            },
-            file(filter: string): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_STRING, {
-                    hint: PropertyHint.PROPERTY_HINT_FILE,
-                    [hint_string_name]: filter,
-                });
-            },
-            dir(filter: string): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_STRING, {
-                    hint: PropertyHint.PROPERTY_HINT_DIR,
-                    [hint_string_name]: filter,
-                });
-            },
-            global_file(filter: string): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_STRING, {
-                    hint: PropertyHint.PROPERTY_HINT_GLOBAL_FILE,
-                    [hint_string_name]: filter,
-                });
-            },
-            global_dir(filter: string): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_STRING, {
-                    hint: PropertyHint.PROPERTY_HINT_GLOBAL_DIR,
-                    [hint_string_name]: filter,
-                });
-            },
-            exp_easing(hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only"): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_FLOAT, {
-                    hint: PropertyHint.PROPERTY_HINT_EXP_EASING,
-                    [hint_string_name]: hint,
-                });
-            },
-            /**
-             * A Shortcut for `export_(Variant.Type.TYPE_ARRAY, { class: clazz })`
-             */
-            array(clazz: ClassSpecifier): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_ARRAY, { class: clazz });
-            },
-            /**
-             * A Shortcut for exporting a dictionary { class: [key_class, value_class] })`
-             */
-            dictionary(key_class: VariantConstructor, value_class: VariantConstructor): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_DICTIONARY, { class: TypePair(key_class, value_class) });
-            },
-            object<Constructor extends GObjectConstructor>(clazz: Constructor): ClassMemberDecorator<ClassValueMemberDecoratorContext<unknown, null | InstanceType<Constructor>>>{
-                return bind_export(Variant.Type.TYPE_OBJECT, { class: clazz });
-            },
-            enum(enum_type: Record<string, string | number>): ClassMemberDecorator {
-                return bind_export(Variant.Type.TYPE_INT, {
-                    hint: PropertyHint.PROPERTY_HINT_ENUM,
-                    [hint_string_name]: get_hint_string_for_enum(enum_type),
-                    usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT,
-                });
-            },
-            flags(enum_type: Record<string, string | number>): ClassMemberDecorator {
-                const hints: Array<string> = [];
+            export: Object.assign(bind_export, {
+                multiline(): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_STRING, { hint: PropertyHint.PROPERTY_HINT_MULTILINE_TEXT });
+                },
+                range(min: number, max: number, step: number, ...extra_hints: string[]): ClassMemberDecorator {
+                    return bind_range(Variant.Type.TYPE_FLOAT, min, max, step, ...extra_hints);
+                },
+                /** String as a path to a file, custom filter provided as hint. */
+                range_int(min: number, max: number, step: number, ...extra_hints: string[]): ClassMemberDecorator {
+                    return bind_range(Variant.Type.TYPE_INT, min, max, step, ...extra_hints);
+                },
+                file(filter: string): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_STRING, {
+                        hint: PropertyHint.PROPERTY_HINT_FILE,
+                        [hint_string_name]: filter,
+                    });
+                },
+                dir(filter: string): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_STRING, {
+                        hint: PropertyHint.PROPERTY_HINT_DIR,
+                        [hint_string_name]: filter,
+                    });
+                },
+                global_file(filter: string): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_STRING, {
+                        hint: PropertyHint.PROPERTY_HINT_GLOBAL_FILE,
+                        [hint_string_name]: filter,
+                    });
+                },
+                global_dir(filter: string): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_STRING, {
+                        hint: PropertyHint.PROPERTY_HINT_GLOBAL_DIR,
+                        [hint_string_name]: filter,
+                    });
+                },
+                exp_easing(
+                    hint?: "" | "attenuation" | "positive_only" | "attenuation,positive_only",
+                ): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_FLOAT, {
+                        hint: PropertyHint.PROPERTY_HINT_EXP_EASING,
+                        [hint_string_name]: hint,
+                    });
+                },
+                /**
+                 * A Shortcut for `export_(Variant.Type.TYPE_ARRAY, { class: clazz })`
+                 */
+                array(clazz: ClassSpecifier): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_ARRAY, { class: clazz });
+                },
+                /**
+                 * A Shortcut for exporting a dictionary { class: [key_class, value_class] })`
+                 */
+                dictionary(key_class: VariantConstructor, value_class: VariantConstructor): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_DICTIONARY, { class: TypePair(key_class, value_class) });
+                },
+                object<Constructor extends GObjectConstructor>(
+                    clazz: Constructor,
+                ): ClassMemberDecorator<ClassValueMemberDecoratorContext<unknown, null | InstanceType<Constructor>>> {
+                    return bind_export(Variant.Type.TYPE_OBJECT, { class: clazz });
+                },
+                enum(enum_type: Record<string, string | number>): ClassMemberDecorator {
+                    return bind_export(Variant.Type.TYPE_INT, {
+                        hint: PropertyHint.PROPERTY_HINT_ENUM,
+                        [hint_string_name]: get_hint_string_for_enum(enum_type),
+                        usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT,
+                    });
+                },
+                flags(enum_type: Record<string, string | number>): ClassMemberDecorator {
+                    const hints: Array<string> = [];
 
-                for (const [key, value] of Object.entries(enum_type)) {
-                    if (typeof value === 'number' && value > 0 && Number.isInteger(value)) {
-                        hints.push(key + ":" + value);
+                    for (const [key, value] of Object.entries(enum_type)) {
+                        if (typeof value === "number" && value > 0 && Number.isInteger(value)) {
+                            hints.push(key + ":" + value);
+                        }
                     }
-                }
 
-                return bind_export(Variant.Type.TYPE_INT, {
-                    hint: PropertyHint.PROPERTY_HINT_FLAGS,
-                    [hint_string_name]: hints.join(","),
-                    usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT,
-                });
-            },
-            cache(): ClassMemberDecorator<ClassAccessorDecoratorContext<Godot.Object> | ClassSetterDecoratorContext<Godot.Object>> {
-                return (target, context) => {
+                    return bind_export(Variant.Type.TYPE_INT, {
+                        hint: PropertyHint.PROPERTY_HINT_FLAGS,
+                        [hint_string_name]: hints.join(","),
+                        usage: PropertyUsageFlags.PROPERTY_USAGE_DEFAULT,
+                    });
+                },
+                cache(): ClassMemberDecorator<
+                    ClassAccessorDecoratorContext<Godot.Object> | ClassSetterDecoratorContext<Godot.Object>
+                > {
+                    return (target, context) => {
+                        if (typeof context !== "object") {
+                            throw new Error(
+                                "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                            );
+                        }
+
+                        const name = context.name;
+
+                        if (typeof name !== "string") {
+                            throw new Error("Only properties with a string name/key can be cached");
+                        }
+
+                        const info = property_info_map[name];
+
+                        if (!info) {
+                            if (context.kind === "accessor") {
+                                throw new Error(
+                                    `Cache decorator must appear before the export decorator on accessor "${name}"`,
+                                );
+                            } else {
+                                throw new Error(
+                                    `Cache decorated setter must appear after the export decorated getter for property "${name}".`,
+                                );
+                            }
+                        }
+
+                        info.cache = true;
+
+                        const update_cached_value = proxy.proxy_unwrap_value(
+                            jsb.internal.create_script_cached_property_updater(name),
+                        );
+
+                        switch (context.kind) {
+                            case "accessor": {
+                                const set_value = (
+                                    target as ClassMemberDecoratorTarget<ClassAccessorDecoratorContext<Godot.Object>>
+                                ).set;
+
+                                return {
+                                    set: function (this: Godot.Object, value: unknown) {
+                                        set_value.call(this, value);
+                                        update_cached_value.call(this, value);
+                                    },
+                                } satisfies ClassMemberDecoratorReturn<ClassAccessorDecoratorContext> as any;
+                            }
+                            case "setter": {
+                                return function (this: any, value: unknown) {
+                                    (
+                                        target as ClassMemberDecoratorTarget<ClassSetterDecoratorContext<Godot.Object>>
+                                    ).call(this, value);
+                                    update_cached_value.call(this);
+                                };
+                            }
+
+                            default:
+                                throw new Error(
+                                    `The cache decorator can not be used to decorate a ${(context as ClassMemberDecoratorContext).kind}. Decorate an auto-accessor, setter or field.`,
+                                );
+                        }
+                    };
+                },
+            }),
+            signal() {
+                return <
+                    Context extends
+                        | ClassAccessorDecoratorContext<Godot.Object, Godot.Signal>
+                        | ClassGetterDecoratorContext<Godot.Object, Godot.Signal>
+                        | ClassFieldDecoratorContext<Godot.Object, Godot.Signal>,
+                >(
+                    _target: unknown,
+                    context: Context,
+                ): ClassMemberDecoratorReturn<Context> => {
                     if (typeof context !== "object") {
-                        throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    context = proxy.proxy_unwrap_value(context);
+
+                    const name = context.name;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only signals with a string name can be exported");
+                    }
+
+                    signal_names.push(name);
+
+                    if (context.kind === "accessor") {
+                        return {
+                            get: proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)),
+                            set: () => {
+                                throw new Error(
+                                    `Signal properties cannot be reassigned. Did you mean to .connect() a callback instead?`,
+                                );
+                            },
+                        } satisfies ClassMemberDecoratorReturn<
+                            ClassAccessorDecoratorContext<Godot.Object, Godot.Signal>
+                        > as any;
+                    } else if (context.kind === "field") {
+                        context.addInitializer(function (this: Godot.Object) {
+                            context.access.set(
+                                this,
+                                proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)).call(this),
+                            );
+                        });
+                        return undefined as any;
+                    } else if (context.kind === "getter") {
+                        return proxy.proxy_unwrap_value(
+                            jsb.internal.create_script_signal_getter(name),
+                        ) satisfies ClassMemberDecoratorReturn<
+                            ClassGetterDecoratorContext<Godot.Object, Godot.Signal>
+                        > as any;
+                    } else {
+                        throw new Error(
+                            `The signal decorator can not be used to decorate a ${(context as ClassMemberDecoratorContext).kind}. A \`readonly\` field is recommended.`,
+                        );
+                    }
+                };
+            },
+            rpc(config?: RPCConfig) {
+                return (_target: Function, context: string | ClassMethodDecoratorContext) => {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
                     }
 
                     const name = context.name;
 
                     if (typeof name !== "string") {
-                        throw new Error("Only properties with a string name/key can be cached");
+                        throw new Error("Only methods with a string name can be remote procedures");
                     }
 
-                    const info = property_info_map[name];
-
-                    if (!info) {
-                        if (context.kind === "accessor") {
-                            throw new Error(`Cache decorator must appear before the export decorator on accessor "${name}"`);
-                        } else {
-                            throw new Error(`Cache decorated setter must appear after the export decorated getter for property "${name}".`);
-                        }
-                    }
-
-                    info.cache = true;
-
-                    const update_cached_value = proxy.proxy_unwrap_value(jsb.internal.create_script_cached_property_updater(name));
-
-                    switch (context.kind) {
-                        case "accessor": {
-                            const set_value = (target as ClassMemberDecoratorTarget<ClassAccessorDecoratorContext<Godot.Object>>).set;
-
-                            return {
-                                set: function (this: Godot.Object, value: unknown) {
-                                    set_value.call(this, value);
-                                    update_cached_value.call(this, value);
-                                },
-                            } satisfies ClassMemberDecoratorReturn<ClassAccessorDecoratorContext> as any;
-                        }
-                        case "setter": {
-                            return function (this: any, value: unknown) {
-                                (target as ClassMemberDecoratorTarget<ClassSetterDecoratorContext<Godot.Object>>).call(this, value);
-                                update_cached_value.call(this);
-                            };
-                        }
-
-                        default:
-                            throw new Error(`The cache decorator can not be used to decorate a ${(context as ClassMemberDecoratorContext).kind}. Decorate an auto-accessor, setter or field.`);
-                    }
+                    rpc_map[name] = config ? proxy.object_proxy(config, true) : {};
                 };
-            }
+            },
+            /**
+             * auto initialized on ready (before _ready called)
+             * @param evaluator for now, only string is accepted
+             */
+            onready(evaluator: string | GodotJsb.internal.OnReadyEvaluatorFunc) {
+                return (_target: undefined, context: string | ClassMethodDecoratorContext) => {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    const name = context.name;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only methods with a string name can be registered as an onready callback");
+                    }
+
+                    onready_map[name] = evaluator;
+                };
+            },
+
+            // class or member decorators
+
+            deprecated(message?: string) {
+                return function (target, context) {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    if (context.kind === "class") {
+                        jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 0, message ?? "");
+                        return;
+                    }
+
+                    const name = typeof context === "object" ? context.name : context;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only methods/properties with a string name/key can be marked as deprecated");
+                    }
+
+                    deprecated_map[name] = message ?? "";
+                } satisfies AnyDecorator as Decorator<
+                    ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+                >;
+            },
+            experimental(message?: string) {
+                return function (target, context) {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    if (context.kind === "class") {
+                        jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 1, message ?? "");
+                        return;
+                    }
+
+                    const name = typeof context === "object" ? context.name : context;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only methods/properties with a string name/key can be marked as experimental");
+                    }
+
+                    experimental_map[name] = message ?? "";
+                } satisfies AnyDecorator as Decorator<
+                    ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+                >;
+            },
+            help(message?: string) {
+                return function (target, context) {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    if (context.kind === "class") {
+                        jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 2, message ?? "");
+                        return;
+                    }
+
+                    const name = typeof context === "object" ? context.name : context;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only methods/properties with a string name/key can be marked as help");
+                    }
+
+                    help_map[name] = message ?? "";
+                } satisfies AnyDecorator as Decorator<
+                    ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+                >;
+            },
         }),
-        signal() {
-            return <
-                Context extends ClassAccessorDecoratorContext<Godot.Object, Godot.Signal>
-                    | ClassGetterDecoratorContext<Godot.Object, Godot.Signal>
-                    | ClassFieldDecoratorContext<Godot.Object, Godot.Signal>
-            >(
-                _target: unknown,
-                context: Context,
-            ): ClassMemberDecoratorReturn<Context> => {
-                if (typeof context !== "object") {
-                    throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
-                }
-
-                context = proxy.proxy_unwrap_value(context);
-
-                const name = context.name;
-
-                if (typeof name !== "string") {
-                    throw new Error("Only signals with a string name can be exported");
-                }
-
-                signal_names.push(name);
-
-                if (context.kind === "accessor") {
-                    return {
-                        get: proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)),
-                        set: () => {
-                            throw new Error(`Signal properties cannot be reassigned. Did you mean to .connect() a callback instead?`);
-                        },
-                    } satisfies ClassMemberDecoratorReturn<ClassAccessorDecoratorContext<Godot.Object, Godot.Signal>> as any;
-                } else if (context.kind === "field") {
-                    context.addInitializer(function (this: Godot.Object) {
-                        context.access.set(this, proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)).call(this));
-                    });
-                    return undefined as any;
-                } else if (context.kind === "getter") {
-                    return proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)) satisfies
-                        ClassMemberDecoratorReturn<ClassGetterDecoratorContext<Godot.Object, Godot.Signal>> as any;
-                } else {
-                    throw new Error(`The signal decorator can not be used to decorate a ${(context as ClassMemberDecoratorContext).kind}. A \`readonly\` field is recommended.`);
-                }
-            };
-        },
-        rpc(config?: RPCConfig) {
-            return (
-                _target: Function,
-                context: string | ClassMethodDecoratorContext,
-            ) => {
-                if (typeof context !== "object") {
-                    throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
-                }
-
-                const name = context.name;
-
-                if (typeof name !== "string") {
-                    throw new Error("Only methods with a string name can be remote procedures");
-                }
-
-                rpc_map[name] = config ? proxy.object_proxy(config, true) : {};
-            };
-        },
-        /**
-         * auto initialized on ready (before _ready called)
-         * @param evaluator for now, only string is accepted
-         */
-        onready(evaluator: string | GodotJsb.internal.OnReadyEvaluatorFunc) {
-            return (
-                _target: undefined,
-                context: string | ClassMethodDecoratorContext,
-            ) => {
-                if (typeof context !== "object") {
-                    throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
-                }
-
-                const name = context.name;
-
-                if (typeof name !== "string") {
-                    throw new Error("Only methods with a string name can be registered as an onready callback");
-                }
-
-                onready_map[name] = evaluator;
-            };
-        },
-
-        // class or member decorators
-
-        deprecated(message?: string) {
-            return function(target, context) {
-                if (typeof context !== "object") {
-                    throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
-                }
-
-                if (context.kind === "class") {
-                    jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 0, message ?? "");
-                    return;
-                }
-
-                const name = typeof context === "object" ? context.name : context;
-
-                if (typeof name !== "string") {
-                    throw new Error("Only methods/properties with a string name/key can be marked as deprecated");
-                }
-
-                deprecated_map[name] = message ?? "";
-            } satisfies AnyDecorator as Decorator<ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>>;
-        },
-        experimental(message?: string) {
-            return function(target, context) {
-                if (typeof context !== "object") {
-                    throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
-                }
-
-                if (context.kind === "class") {
-                    jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 1, message ?? "");
-                    return;
-                }
-
-                const name = typeof context === "object" ? context.name : context;
-
-                if (typeof name !== "string") {
-                    throw new Error("Only methods/properties with a string name/key can be marked as experimental");
-                }
-
-                experimental_map[name] = message ?? "";
-            } satisfies AnyDecorator as Decorator<ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>>;
-        },
-        help(message?: string) {
-            return function(target, context) {
-                if (typeof context !== "object") {
-                    throw new Error("The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json");
-                }
-
-                if (context.kind === "class") {
-                    jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 2, message ?? "");
-                    return;
-                }
-
-                const name = typeof context === "object" ? context.name : context;
-
-                if (typeof name !== "string") {
-                    throw new Error("Only methods/properties with a string name/key can be marked as help");
-                }
-
-                help_map[name] = message ?? "";
-            } satisfies AnyDecorator as Decorator<ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>>;
-        },
-    }));
+    );
 }

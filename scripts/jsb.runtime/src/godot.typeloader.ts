@@ -1,4 +1,3 @@
-
 /**
  * @param type the loaded type or function in godot module
  */
@@ -13,7 +12,7 @@ class TypeProcessor {
 
     push(callback: TypeLoadedCallback) {
         if (this.locked) {
-            throw new Error('TypeProcessor is locked');
+            throw new Error("TypeProcessor is locked");
         }
         this.callbacks.push(callback);
         return this;
@@ -21,7 +20,7 @@ class TypeProcessor {
 
     exec(type: any): void {
         if (this.locked) {
-            throw new Error('TypeProcessor is locked');
+            throw new Error("TypeProcessor is locked");
         }
         this.locked = true;
         for (let cb of this.callbacks) {
@@ -37,11 +36,11 @@ class TypeProcessor {
 const type_processors = new Map<string, TypeProcessor>();
 
 function _on_type_loaded(type_name: string, callback: TypeLoadedCallback) {
-    if (typeof type_name !== 'string') {
-        throw new Error('type_name must be a string');
+    if (typeof type_name !== "string") {
+        throw new Error("type_name must be a string");
     }
 
-    if (typeof type_db[type_name] !== 'undefined') {
+    if (typeof type_db[type_name] !== "undefined") {
         callback(type_db[type_name]);
         return;
     }
@@ -56,42 +55,45 @@ function _on_type_loaded(type_name: string, callback: TypeLoadedCallback) {
 // callback on a godot type loaded by jsb_godot_module_loader.
 // each callback will be called only once.
 export function on_type_loaded(type_name: string | string[], callback: TypeLoadedCallback) {
-    if (typeof type_name === 'string') {
+    if (typeof type_name === "string") {
         _on_type_loaded(type_name, callback);
     } else if (Array.isArray(type_name)) {
         for (let name of type_name) {
             _on_type_loaded(name, callback);
         }
     } else {
-        throw new Error('type_name must be a string or an array of strings');
+        throw new Error("type_name must be a string or an array of strings");
     }
 }
 
 // callback on a godot type loaded by jsb_godot_module_loader
-exports._mod_proxy_ = function (builtin_symbols: { [key in string]?: symbol }, type_loader_func: (type_name: string) => any): any {
+exports._mod_proxy_ = function (
+    builtin_symbols: { [key in string]?: symbol },
+    type_loader_func: (type_name: string) => any,
+): any {
     return new Proxy(type_db, {
         set: function (target, prop_name, value) {
-            if (typeof prop_name !== 'string') {
+            if (typeof prop_name !== "string") {
                 throw new Error(`only string key is allowed`);
             }
-            if (typeof target[prop_name] !== 'undefined') {
-                console.warn('overwriting existing value', prop_name);
+            if (typeof target[prop_name] !== "undefined") {
+                console.warn("overwriting existing value", prop_name);
             }
             target[prop_name] = value;
             return true;
         },
-        get: function (target: any , prop_name) {
+        get: function (target: any, prop_name) {
             let o = target[prop_name];
-            if (typeof o === 'undefined' && typeof prop_name === 'string') {
+            if (typeof o === "undefined" && typeof prop_name === "string") {
                 o = target[prop_name] =
                     typeof builtin_symbols[prop_name] !== "undefined"
                         ? builtin_symbols[prop_name]
                         : type_loader_func(prop_name);
             }
             return o;
-        }
+        },
     });
-}
+};
 
 exports._post_bind_ = function (type_name: string, type: any): void {
     const processors = type_processors.get(type_name);
@@ -99,4 +101,4 @@ exports._post_bind_ = function (type_name: string, type: any): void {
         processors.exec(type);
         type_processors.delete(type_name);
     }
-}
+};
