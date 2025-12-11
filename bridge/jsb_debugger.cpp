@@ -1,5 +1,7 @@
 #include "jsb_debugger.h"
 #include "jsb_environment.h"
+#include "core/config/project_settings.h"
+#include "core/io/file_access.h"
 #include "core/io/tcp_server.h"
 
 #if JSB_WITH_DEBUGGER
@@ -122,7 +124,10 @@ namespace jsb
                 const impl::TryCatch try_catch(isolate);
 
                 v8_inspector::StringView message(recv_buffer_->get_data_array().ptr(), recv_buffer_->get_position());
-                session_->dispatchProtocolMessage(message);
+                if (session_)
+                {
+                    session_->dispatchProtocolMessage(message);
+                }
                 if (try_catch.has_caught())
                 {
                     JSB_DEBUGGER_LOG(Error, "dispatchProtocolMessage failed: %s", BridgeHelper::get_exception(try_catch));
@@ -305,12 +310,8 @@ namespace jsb
 
         virtual void runIfWaitingForDebugger(int contextGroupId) override
         {
-            JSB_DEBUGGER_LOG(Debug, "%d", contextGroupId);
-            //printf("runIfWaitingForDebugger %d\n", _state);
-            // if (_ctx && _ctx->_waitingForDebuggerCallback)
-            // {
-            //     _ctx->_waitingForDebuggerCallback(_ctx);
-            // }
+            Environment* environment = Environment::wrap(this->isolate_);
+            environment->debugger_ready();
         }
 
         void on_context_created(const v8::Local<v8::Context>& p_context)
@@ -320,6 +321,12 @@ namespace jsb
                 const CharString context_name = jsb_format("context.%d", ++context_index_).utf8();
                 v8_inspector::StringView name((const uint8_t*) context_name.ptr(), context_name.length());
                 inspector_->contextCreated(v8_inspector::V8ContextInfo(p_context, kContextGroupId, name));
+
+                if (jsb::internal::Settings::get_wait_for_debugger() && !Engine::get_singleton()->is_editor_hint())
+                {
+                    Environment* environment = Environment::wrap(this->isolate_);
+                    environment->wait_for_debugger();
+                }
             }
         }
 
@@ -408,38 +415,115 @@ namespace jsb
                     const String uri = get_uri(wsi, WSI_TOKEN_GET_URI);
                     if (uri == "/json" || uri == "/json/list")
                     {
+                        char host_buf[256];
+                        int hlen = lws_hdr_copy(wsi, host_buf, sizeof(host_buf), WSI_TOKEN_HOST);
+
+                        String host_authority;
+
+                        if (hlen > 0) {
+                            host_authority = String::utf8(host_buf);
+                        } else {
+                            host_authority = "localhost:" + itos(impl->port_);
+                        }
+
                         constexpr static char kJsonListFormat[] = \
                             "[{"
                             "\"description\": \"" JSB_MODULE_NAME_STRING "\","
                             "\"id\": \"0\","
                             "\"title\": \"" JSB_MODULE_NAME_STRING "\","
                             "\"type\": \"node\","
-                            "\"webSocketDebuggerUrl\" : \"ws://localhost:%d\""
+                            "\"webSocketDebuggerUrl\" : \"ws://%s\""
                             "}]";
 
-                        const CharString content = jsb_format(kJsonListFormat, impl->port_).utf8();
+                        const CharString content = jsb_format(kJsonListFormat, host_authority).utf8();
                         JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/list");
                         _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
                     }
                     else if (uri == "/json/version")
                     {
+                        char host_buf[256];
+                        int hlen = lws_hdr_copy(wsi, host_buf, sizeof(host_buf), WSI_TOKEN_HOST);
+
+                        String host_authority;
+
+                        if (hlen > 0) {
+                            host_authority = String::utf8(host_buf);
+                        } else {
+                            host_authority = "localhost:" + itos(impl->port_);
+                        }
+
                         constexpr static char kJsonVersionFormat[] = \
                             "{"
                             "    \"Browser\": \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
                             "    \"Protocol-Version\" : \"1.1\","
                             "    \"User-Agent\" : \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
                             "    \"V8-Version\" : \"" V8_VERSION_STRING "\","
-                            "    \"webSocketDebuggerUrl\" : \"ws://localhost:%d\""
+                            "    \"webSocketDebuggerUrl\" : \"ws://%s\""
                             "}";
-                        const CharString content = jsb_format(kJsonVersionFormat, impl->port_).utf8();
+                        const CharString content = jsb_format(kJsonVersionFormat, host_authority).utf8();
                         JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/version");
                         _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
+                    }
+                    else if (uri.ends_with(".map") || uri.ends_with(".ts") || uri.ends_with(".js"))
+                    {
+                        if (uri.find("..") != -1)
+                        {
+                             JSB_DEBUGGER_LOG(Warning, "Access denied for path with traversal: %s", uri);
+                             lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, "Access Denied");
+                             return -1;
+                        }
+
+                        String res_path = "res://" + uri.trim_prefix("/");
+
+                        if (!FileAccess::exists(res_path))
+                        {
+                            JSB_DEBUGGER_LOG(Verbose, "Source file not found: %s", res_path);
+                            lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, "Not Found");
+                            return -1;
+                        }
+
+                        String global_path = ProjectSettings::get_singleton()->globalize_path(res_path);
+
+                        const char* mime = "application/octet-stream";
+
+                        if (uri.ends_with(".map"))
+                        {
+                            mime = "application/json";
+                        }
+                        else if (uri.ends_with(".js"))
+                        {
+                            mime = "application/javascript";
+                        }
+                        else if (uri.ends_with(".ts"))
+                        {
+                            mime = "application/x-typescript";
+                        }
+
+                        JSB_DEBUGGER_LOG(Verbose, "Serving source file: %s", global_path);
+
+                        int serve_result = lws_serve_http_file(wsi, global_path.utf8().get_data(), mime, nullptr, 0);
+
+                        if (serve_result < 0)
+                        {
+                            // lws_serve_http_file raised an error
+                            return -1;
+                        }
+
+                        if (serve_result > 0 && lws_http_transaction_completed(wsi))
+                        {
+                            // Completed
+                            return -1;
+                        }
+
+                        // Still serving the file in chunks
+                        return 0;
                     }
                     else
                     {
                         JSB_DEBUGGER_LOG(VeryVerbose, "GET %s 404", uri);
                         lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, "<html><body>NOT FOUND</body></html>");
                     }
+
                     return -1;
                 }
             case LWS_CALLBACK_HTTP_BODY_COMPLETION:
