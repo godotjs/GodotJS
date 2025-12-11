@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://dunwora25dyme"]
+
+[ext_resource type="Script" uid="uid://er88q3l8k4jy" path="res://tests/papaparse/test-papaparse.ts" id="1_v7pjl"]
+
+[node name="Papaparse" type="Node2D"]
+script = ExtResource("1_v7pjl")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Papaparse"

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="GodotJS Integration Test Suite"
-run/main_scene="uid://baaikpotnb6e0"
+run/main_scene="res://tests/Start.tscn"
 config/features=PackedStringArray("4.5")
 
 [autoload]

@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://ban43tjoi6wqw"]
+
+[ext_resource type="Script" uid="uid://8xee6h5ok1i6" path="res://tests/extend/test-extend.ts" id="1_ug7yl"]
+
+[node name="Extend" type="Node2D"]
+script = ExtResource("1_ug7yl")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Extend"
