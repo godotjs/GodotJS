@@ -4,6 +4,7 @@ __pycache__
 *.obj
 *.o
 
+/lws
 /v8
 
 /scripts/jsb.*/node_modules

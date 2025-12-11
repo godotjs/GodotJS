@@ -384,7 +384,11 @@ namespace jsb
                 register_primitive_bindings(this);
             }
 
+#if JSB_WITH_DEBUGGER
+            debugger_ready_future_ = debugger_ready_promise_.get_future();
             //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
+#endif
+
             start_debugger(p_params.debugger_port);
         }
     }
@@ -442,7 +446,7 @@ namespace jsb
             .add_search_path("res://") // use the root directory as custom lib path by default
             .add_search_path("res://node_modules") // so far, it's the only supported path for node_modules in GodotJS
         ;
-        
+
         // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
         static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
         jsb_ensuref(AMDModuleLoader::load_source(this, GodotJSProjectPreset::get_source_rt(kRuntimeBundleFile)) == OK,
@@ -1371,6 +1375,28 @@ namespace jsb
     {
         JSB_BENCHMARK_SCOPE(JSRealm, load);
         this->check_internal_state();
+
+#if JSB_WITH_DEBUGGER
+        static const auto debugger_connection_pool_duration = std::chrono::milliseconds(50);
+
+        if (wait_for_debugger_)
+        {
+            JSB_LOG(Log, "Waiting for debugger to be ready...");
+
+            do
+            {
+                debugger_.update(); // process incoming debugger connections
+
+                std::future_status status = debugger_ready_future_.wait_for(debugger_connection_pool_duration);
+
+                if (status == std::future_status::ready)
+                {
+                    break;
+                }
+            } while (wait_for_debugger_);
+        }
+#endif
+
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);

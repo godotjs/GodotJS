@@ -25,6 +25,8 @@ namespace jsb::internal
     // use unnecessary first category layer (runtime and editor) to make the second layer shown as sections in project settings
 
     static constexpr char kRtDebuggerPort[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/debugger_port";
+    static constexpr char kRtDebuggerSourceMapBaseUrl[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/source_map_base_url";
+    static constexpr char kRtDebuggerWaitForDebugger[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/wait_for_debugger";
     static constexpr char kRtSourceMapEnabled[] = JSB_MODULE_NAME_STRING "/runtime/logger/source_map_enabled";
     static constexpr char kRtAdditionalSearchPaths[] = JSB_MODULE_NAME_STRING "/runtime/core/additional_search_paths";
     static constexpr char kRtEntryScriptPath[] = JSB_MODULE_NAME_STRING "/runtime/core/entry_script_path";
@@ -86,6 +88,8 @@ namespace jsb::internal
             ;
 
             _GLOBAL_DEF(kRtDebuggerPort, 9229, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtDebuggerSourceMapBaseUrl, "http://localhost:9230", JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtDebuggerWaitForDebugger, false, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtSourceMapEnabled, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtAdditionalSearchPaths, PackedStringArray(), JSB_SET_RESTART(false),  JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtCamelCaseBindingsEnabled, false, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
@@ -209,6 +213,18 @@ namespace jsb::internal
 #endif
         init_settings();
         return GLOBAL_GET(kRtDebuggerPort);
+    }
+
+    String Settings::get_debugger_source_map_base_url()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtDebuggerSourceMapBaseUrl);
+    }
+
+    bool Settings::get_wait_for_debugger()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtDebuggerWaitForDebugger);
     }
 
     bool Settings::get_sourcemap_enabled()

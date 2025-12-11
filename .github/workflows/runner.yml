@@ -37,7 +37,6 @@ jobs:
             version_ref: 4.5
     uses: ./.github/workflows/build_engine_version.yml
     with:
-      v8: ${{ needs.environment.outputs.v8 }}
       version: ${{ matrix.version }}
       version_ref: ${{ matrix.version_ref }}
       tests: ${{ needs.changesets.outputs.publish == 'false' }}
@@ -69,4 +68,3 @@ jobs:
           - version: 4.5
     with:
       version: ${{ matrix.version }}
-      v8: ${{ needs.environment.outputs.v8 }}
