@@ -149,11 +149,13 @@ jobs:
 
       - name: Unit tests
         if: ${{ inputs.tests && matrix.target == 'editor' }}
+        shell: sh
         env:
           BIN: ./bin/godot.linuxbsd.editor.x86_64
         run: |
           ${{ env.BIN }} --version
           ${{ env.BIN }} --help
           ${{ env.BIN }} --headless --test --test-case="[jsb]*" --force-colors
-          xvfb-run ${{ env.BIN }} --headless --path modules/GodotJS/tests/project 2>&1 | tee sanitizers_log.txt || true
+          xvfb-run ${{ env.BIN }} --audio-driver Dummy --headless --path modules/GodotJS/tests/project 2>&1 | tee sanitizers_log.txt || true
+          cat sanitizers_log.txt
           misc/scripts/check_ci_log.py sanitizers_log.txt
