@@ -43,8 +43,8 @@ jobs:
       matrix:
         # QuickJS isn't working at the moment
         #        engine: [ v8, qjs-ng ]
-        engine: [v8]
-        target: [editor, template_release, template_debug]
+        engine: [ v8 ]
+        target: [ editor, template_release, template_debug ]
 
     steps:
       - name: Checkout Godot
@@ -155,6 +155,5 @@ jobs:
           ${{ env.BIN }} --version
           ${{ env.BIN }} --help
           ${{ env.BIN }} --headless --test --test-case="[jsb]*" --force-colors
-# Run test project
           xvfb-run ${{ env.BIN }} --headless --path modules/GodotJS/tests/project 2>&1 | tee sanitizers_log.txt || true
           misc/scripts/check_ci_log.py sanitizers_log.txt
