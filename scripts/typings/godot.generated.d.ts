@@ -3,8 +3,6 @@
 
 ///<reference path="godot.mix.d.ts" />
 
-import GodotJsb from "godot-jsb";
-
 declare module "godot" {
     import { TypeDescriptor } from "jsb.editor.codegen";
 
@@ -1226,16 +1224,22 @@ declare module "godot.annotations" {
         rpc: (config?: RPCConfig) => (_target: Function, context: string | ClassMethodDecoratorContext) => void;
         onready: (
             evaluator: string | GodotJsb.internal.OnReadyEvaluatorFunc,
-        ) => (_target: undefined, context: string | ClassFieldDecoratorContext) => void;
+        ) => (_target: undefined, context: string | ClassMethodDecoratorContext) => void;
         deprecated: (
             message?: string,
-        ) => (target: GObjectConstructor, context: ClassDecoratorContext | ClassValueMemberDecoratorContext) => void;
+        ) => Decorator<
+            ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+        >;
         experimental: (
             message?: string,
-        ) => (target: GObjectConstructor, context: ClassDecoratorContext | ClassValueMemberDecoratorContext) => void;
+        ) => Decorator<
+            ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+        >;
         help: (
             message?: string,
-        ) => (target: GObjectConstructor, context: ClassDecoratorContext | ClassValueMemberDecoratorContext) => void;
+        ) => Decorator<
+            ClassDecoratorContext<GObjectConstructor> | ClassValueMemberDecoratorContext<GObjectConstructor>
+        >;
     };
 
     type ExportOptions = {
