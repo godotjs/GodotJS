@@ -154,6 +154,12 @@ void GodotJSScriptInstance::notification(int p_notification, bool p_reversed)
         return;
     }
 
+    // Check if environment is being disposed to avoid calling into a destroyed JS context
+    if (!env_ || env_->is_disposing())
+    {
+        return;
+    }
+
     // since `NOTIFICATION_READY` is not reversed, `notification` will be posted after `callp`.
     // so, we can't `call_prelude` here with `NOTIFICATION_READY`
 

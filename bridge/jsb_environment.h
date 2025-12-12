@@ -417,6 +417,7 @@ namespace jsb
         jsb_force_inline internal::SourceMapCache& get_source_map_cache() { return source_map_cache_; }
 
         jsb_force_inline void notify_microtasks_run() { flags_ |= EF_MicrotaskCheckpoint; }
+        jsb_force_inline bool is_disposing() const { return (flags_ & EF_PreDispose) != 0; }
 
         jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { jsb_check(p_templet.get_type() != Variant::OBJECT); return variant_allocator_.alloc(p_templet); }
         jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
