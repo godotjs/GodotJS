@@ -1,13 +1,22 @@
-; This is not an actual project.
-; This config only exists to properly set up the test environment.
-; It also helps for opening Godot to edit the scripts, but please don't
-; let the editor changes be saved.
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
 [application]
 
 config/name="GodotJS Integration Test Suite"
+run/main_scene="res://tests/Start.tscn"
+config/features=PackedStringArray("4.5")
+
+[autoload]
+
+_Config="*res://tests/singleton/config-singleton.ts"
 
 [input]
 
