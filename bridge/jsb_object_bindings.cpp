@@ -355,6 +355,7 @@ namespace jsb
         // prepare argv
         const int method_argc = method_bind->get_argument_count();
         const bool method_is_vararg = method_bind->is_vararg();
+
         if (!internal::VariantUtil::check_argc(method_is_vararg, argc, method_bind->get_default_argument_count(), method_argc))
         {
             const String error_message = jsb_errorf("Failed to call: %s. %d arguments are required", method_bind->get_name(), method_argc - method_bind->get_default_argument_count());
