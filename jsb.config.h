@@ -154,6 +154,7 @@
 #define JSB_TYPESCRIPT_EXT "ts"
 #define JSB_JAVASCRIPT_EXT "js"
 #define JSB_COMMONJS_EXT   "cjs"
+#define JSB_MODULE_EXT     "mjs"
 #define JSB_JSON_EXT       "json"
 
 // A helper version tag for the jsb.*.bundle.js scripts (which is embedded in .cpp source).

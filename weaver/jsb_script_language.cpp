@@ -317,6 +317,7 @@ void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions
 #endif
     p_extensions->push_back(JSB_JAVASCRIPT_EXT);
     p_extensions->push_back(JSB_COMMONJS_EXT);
+    p_extensions->push_back(JSB_MODULE_EXT);
 }
 
 

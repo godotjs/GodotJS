@@ -96,7 +96,7 @@ namespace jsb::internal
     String PathUtil::convert_javascript_path(const String& p_source_path)
     {
         bool is_js_extension = p_source_path.ends_with("." JSB_JAVASCRIPT_EXT);
-        if (is_js_extension || p_source_path.ends_with("." JSB_COMMONJS_EXT))
+        if (is_js_extension || p_source_path.ends_with("." JSB_COMMONJS_EXT) || p_source_path.ends_with("." JSB_MODULE_EXT))
         {
             int extension_length = is_js_extension ? 3 : 4;
             const String root_path = Settings::get_jsb_out_res_path();
@@ -111,7 +111,7 @@ namespace jsb::internal
 
     bool PathUtil::is_recognized_javascript_extension(const String& p_path)
     {
-        return p_path.ends_with("." JSB_JAVASCRIPT_EXT) || p_path.ends_with("." JSB_COMMONJS_EXT);
+        return p_path.ends_with("." JSB_JAVASCRIPT_EXT) || p_path.ends_with("." JSB_COMMONJS_EXT) || p_path.ends_with("." JSB_MODULE_EXT);
     }
 
     bool PathUtil::delete_file(const String& p_path)
