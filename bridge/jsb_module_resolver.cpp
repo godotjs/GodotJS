@@ -477,31 +477,7 @@ namespace jsb
             if (!package_name.is_empty())
             {
                 const String absolute_package_path = internal::PathUtil::combine(p_search_path, package_name);
-                String file_path = p_module_id.substr(package_name.length() + 1);
-
-				// if file_path.is_empty() it might be a module from node_module
-            	// it should check if there is a package.json under `absolute_package_path/package.json`
-            	// if this is the case it should read the package.json and use the  value under `main` as file_path
-            	/*if (file_path.is_empty())
-            	{
-            		const String package_json_path = internal::PathUtil::combine(absolute_package_path, "package.json");
-            		if (FileAccess::exists(package_json_path))
-            		{
-            			const Ref<FileAccess> file = FileAccess::open(package_json_path, FileAccess::READ);
-            			if (file.is_valid())
-            			{
-            				const Ref json = memnew(JSON);
-            				if (json->parse(file->get_as_utf8_string()) == OK)
-            				{
-            					const Dictionary& package_json = json->get_data();
-            					if (package_json.has("main"))
-            					{
-            						file_path = package_json["main"];
-            					}
-            				}
-            			}
-            		}
-            	}*/
+                const String file_path = p_module_id.substr(package_name.length() + 1);
 
                 if (check_package_file_path(absolute_package_path, file_path, o_source_info))
                 {
