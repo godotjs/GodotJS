@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://djdl5i3ngnaf8"]
+[gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" uid="uid://b8vs45u13ik5k" path="res://tests/resource/test-resource.ts" id="1_l2ela"]
-[ext_resource type="Resource" uid="uid://chya0ih66sy15" path="res://tests/resource/warrior.tres" id="2_g5y8w"]
-[ext_resource type="Resource" uid="uid://dcsweepm72lbh" path="res://tests/resource/mage.tres" id="3_4aau2"]
+[ext_resource type="Script" path="res://tests/resource/test-resource.ts" id="1_l2ela"]
+[ext_resource type="Resource" path="res://tests/resource/warrior.tres" id="2_g5y8w"]
+[ext_resource type="Resource" path="res://tests/resource/mage.tres" id="3_4aau2"]
 
 [node name="Resource" type="Node2D"]
 script = ExtResource("1_l2ela")

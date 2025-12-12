@@ -1,5 +1,5 @@
-import { FileAccess, Node } from "godot"; /*
-import Papa from "papaparse";*/
+import { FileAccess, Node } from "godot";
+import Papa from "papaparse";
 
 export default class TestPapaparse extends Node {
     _ready() {
@@ -13,10 +13,8 @@ export default class TestPapaparse extends Node {
             console.log("Read file:\n", fileContent);
             console.assert(fileContent.includes("TEST,test"));
 
-            // TODO: node_modules aren't working directly
-            /*
             const csvFile = Papa.parse(fileContent);
-            console.log(JSON.stringify(csvFile));*/
+            console.assert(csvFile.data.length > 1);
         }
     }
 }
