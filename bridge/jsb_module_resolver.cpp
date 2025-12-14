@@ -380,11 +380,11 @@ namespace jsb
                     {
                         const String dot = ".";
                         const String dot_slash = "./";
-                        const String& main = package_json[key_main];
+                        const String& main = package_exports[key_main];
 
                         // Transform main to equivalent exports
                         package_exports[dot] = main.begins_with(dot) ? main : internal::PathUtil::combine(dot, main);
-                        package_exports[dot_slash] = main.begins_with(dot_slash) ? main : internal::PathUtil::combine(dot_slash, main);
+                        package_exports[dot_slash] = dot_slash;
                     }
                 }
             }
