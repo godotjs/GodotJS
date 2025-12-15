@@ -124,6 +124,14 @@ namespace jsb
             return true;
         }
 
+        // try .mjs
+        const String mjs_path = internal::PathUtil::extends_with(p_module_id, "." JSB_MODULE_EXT);
+        if (FileAccess::exists(mjs_path))
+        {
+            o_path = mjs_path;
+            return true;
+        }
+
         // try .json
         const String json_path = internal::PathUtil::extends_with(p_module_id, "." JSB_JSON_EXT);
         if (FileAccess::exists(json_path))
