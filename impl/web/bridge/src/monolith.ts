@@ -69,7 +69,7 @@ interface jsbb_HandleEntry {
 type StackPosition = number;
 
 // a recommended stack size cap (not a limitation)
-const jsbb_kMaxStackSize = 512;
+const jsbb_kMaxStackSize = 1024;
 
 const jsbb_StackPos = {
     Undefined: 0,

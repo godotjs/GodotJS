@@ -545,6 +545,7 @@ namespace jsb
 
                 for (const Message& message : messages)
                 {
+                    v8::HandleScope message_handle_scope(isolate_);
                     _on_worker_message(context, message);
                 }
                 messages.clear();
