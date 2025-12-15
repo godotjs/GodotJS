@@ -1,0 +1,55 @@
+name: Upload Release Asset
+description: Download artifact, pack as zip, and upload to release
+inputs:
+  os:
+    required: true
+    description: Operating system
+  target:
+    required: true
+    description: Build target
+  version:
+    required: true
+    description: Version string
+  engine:
+    required: true
+    description: Engine type
+  release-id:
+    required: true
+    description: GitHub release ID
+  token:
+    required: true
+    description: GitHub token
+runs:
+  using: composite
+  steps:
+    - name: 🧬 Generate Name
+      id: name
+      run: |
+        echo "name=${{ inputs.os }}-${{ inputs.target }}-${{ inputs.version }}-${{ inputs.engine }}" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: ⏬ Download build
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ steps.name.outputs.name }}
+        path: ${{ steps.name.outputs.name }}
+
+    - name: 📦 Pack build as zip
+      run: zip -r ${{ steps.name.outputs.name }}.zip ${{ steps.name.outputs.name }}
+      shell: bash
+
+    - name: ⏫ Upload Release Asset
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.token }}
+        result-encoding: json
+        script: |
+          const FS = require('node:fs')
+          const { repo, owner } = context.repo;
+          return await github.rest.repos.uploadReleaseAsset({
+            owner,
+            repo,
+            release_id: ${{ inputs.release-id }},
+            name: '${{ steps.name.outputs.name }}.zip',
+            data: FS.readFileSync('${{ github.workspace }}/${{ steps.name.outputs.name }}.zip')
+          });
