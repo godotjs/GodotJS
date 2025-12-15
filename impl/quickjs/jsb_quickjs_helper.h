@@ -78,11 +78,14 @@ namespace jsb::impl
 #endif
         }
 
-        static v8::Local<v8::Function> new_noop_function(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
+        static v8::Local<v8::Function> new_noop_constructor(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
         {
-            const JSValue func_obj = JS_NewCFunction(isolate->ctx(),
+            const JSValue func_obj = JS_NewCFunction2(
+                isolate->ctx(),
                 QuickJS::NoopCallback,
                 nullptr,
+                0,
+                JS_CFUNC_constructor,
                 0);
 #if JSB_DEBUG
             JSContext* ctx = context->GetIsolate()->ctx();

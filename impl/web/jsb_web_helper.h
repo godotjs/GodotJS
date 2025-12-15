@@ -75,9 +75,9 @@ namespace jsb::impl
 #endif
         }
 
-        static v8::Local<v8::Function> new_noop_function(v8::Isolate* isolate, const v8::Local<v8::Context>& _context)
+        static v8::Local<v8::Function> new_noop_constructor(v8::Isolate* isolate, const v8::Local<v8::Context>& _context)
         {
-            const jsb::impl::StackPosition rval = jsbi_NewNoopFunction(isolate->rt());
+            const jsb::impl::StackPosition rval = jsbi_NewNoopConstructor(isolate->rt());
             return v8::Local<v8::Function>(v8::Data(isolate, rval));
         }
 

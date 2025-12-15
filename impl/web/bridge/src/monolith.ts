@@ -1095,7 +1095,7 @@ class jsbb_Engine {
 
     // [stack-based]
     // return: stack position of the wrapper function
-    NewNoopFunction(): StackPosition {
+    NewNoopConstructor(): StackPosition {
         return this._stack.Push(function () {
         });
     }
