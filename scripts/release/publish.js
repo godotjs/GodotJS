@@ -26,12 +26,12 @@ function extractChangelogContent(filePath) {
   return content.trim().replaceAll("###", "##"); // Remove trailing whitespace
 }
 
-function publishRelease(godotVersion) {
+function publishRelease(godotVersions) {
   const content = extractChangelogContent("CHANGELOG.md");
 
   writeFileSync(
     releaseNotesPath,
-    `Godot version: ${godotVersion}\n\n` + content,
+    `Godot version: ${godotVersions}\n\n` + content,
   );
 
   const version = getVersion();
@@ -49,9 +49,9 @@ function publishRelease(godotVersion) {
     );
   }
 }
-const [, , godotVersion] = process.argv;
-if (!godotVersion) {
-  console.error("Cannot find Godot version");
+const [, , godotVersions] = process.argv;
+if (!godotVersions) {
+  console.error("Cannot find Godot versions");
   process.exit(1);
 }
-publishRelease(godotVersion);
+publishRelease(godotVersions);

@@ -1,0 +1,93 @@
+name: 🦅 Upload Release Assets
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  upload-dektop:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
+    strategy:
+      fail-fast: false
+      matrix:
+# QuickJS isn't working at the moment
+#        engine: [ v8, qjs-ng ]
+        engine: [ v8 ]
+        os: [ linux, macos, windows ]
+        target: [ template_release, template_debug, editor ]
+        include:
+          - target: editor-app
+            os: macos
+            engine: v8
+          - target: template-app
+            os: macos
+            engine: v8
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Upload builds
+        uses: ./.github/actions/upload-asset
+        with:
+          os: ${{ matrix.os }}
+          target: ${{ matrix.target }}
+          engine: ${{ matrix.engine }}
+          version: ${{ inputs.version }}
+          release-id: ${{ github.event.release.id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-mobile:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
+    strategy:
+      fail-fast: false
+      matrix:
+# QuickJS isn't working at the moment
+#        engine: [ v8, qjs-ng ]
+        engine: [ v8 ]
+        os: [ android, ios ]
+        target: [ template_release ]
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Upload builds
+        uses: ./.github/actions/upload-asset
+        with:
+          os: ${{ matrix.os }}
+          target: ${{ matrix.target }}
+          engine: ${{ matrix.engine }}
+          version: ${{ inputs.version }}
+          release-id: ${{ github.event.release.id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-web:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
+    strategy:
+      fail-fast: false
+      matrix:
+# QuickJS isn't working at the moment
+#        engine: [ browser, qjs-ng ]
+        engine: [ browser ]
+        os: [ web-yes, web-no ]
+        target: [ template_release ]
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Upload builds
+        uses: ./.github/actions/upload-asset
+        with:
+          os: ${{ matrix.os }}
+          target: ${{ matrix.target }}
+          engine: ${{ matrix.engine }}
+          version: ${{ inputs.version }}
+          release-id: ${{ github.event.release.id }}
+          token: ${{ secrets.GITHUB_TOKEN }}

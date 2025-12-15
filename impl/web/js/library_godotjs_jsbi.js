@@ -35,7 +35,7 @@ const GodotJSBrowserInterface = {
     jsbi_StackSetInt32: function (engine_id, to_sp, value) { return _jsbb_.GetEngine(engine_id).StackSetInt32(to_sp, value); },
 
     jsbi_NewCFunction: function (engine_id, cb, data, func_name_ptr) { return _jsbb_.GetEngine(engine_id).NewCFunction(cb, data, func_name_ptr); },
-    jsbi_NewNoopFunction: function (engine_id) { return _jsbb_.GetEngine(engine_id).NewNoopFunction(); },
+    jsbi_NewNoopConstructor: function (engine_id) { return _jsbb_.GetEngine(engine_id).NewNoopConstructor(); },
     jsbi_NewSymbol: function (engine_id) { return _jsbb_.GetEngine(engine_id).NewSymbol(); },
     jsbi_NewMap: function (engine_id) { return _jsbb_.GetEngine(engine_id).NewMap(); },
     jsbi_NewArray: function (engine_id) { return _jsbb_.GetEngine(engine_id).NewArray(); },

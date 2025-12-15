@@ -545,6 +545,7 @@ namespace jsb
 
                 for (const Message& message : messages)
                 {
+                    v8::HandleScope message_handle_scope(isolate_);
                     _on_worker_message(context, message);
                 }
                 messages.clear();
@@ -1246,7 +1247,7 @@ namespace jsb
         const impl::TryCatch try_catch_run(isolate);
 
         v8::Local<v8::Value> class_prototype = class_obj->Get(context, jsb_name(this, prototype)).ToLocalChecked();
-        v8::Local<v8::Function> new_target = impl::Helper::new_noop_function(isolate_, context);
+        v8::Local<v8::Function> new_target = impl::Helper::new_noop_constructor(isolate_, context);
         new_target->Set(context, jsb_name(this, prototype), class_prototype).Check();
         new_target->Set(context, jsb_symbol(this, ConstructorBindObject), v8::External::New(isolate, p_this)).Check();
 

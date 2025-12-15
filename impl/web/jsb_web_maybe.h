@@ -8,7 +8,11 @@ namespace v8
     public:
         jsb_force_inline bool IsNothing() const { return !has_value_; }
         jsb_force_inline bool IsJust() const { return has_value_; }
-        void Check() const { }
+
+        void Check() const
+        {
+            jsb_check(IsJust());
+        }
 
         Maybe() = default;
         Maybe(T value) : has_value_(true), value_(value) { }

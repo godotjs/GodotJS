@@ -23,8 +23,12 @@ namespace v8
     Maybe<int32_t> Value::Int32Value(Local<Context> context) const
     {
         const JSValue val = (JSValue) *this;
-        if (JS_VALUE_GET_TAG(val) == JS_TAG_INT) return Maybe<int32_t>(JS_VALUE_GET_INT(val));
-        return Maybe<int32_t>();
+        int32_t result;
+        if (JS_ToInt32(isolate_->ctx(), &result, val) != 0)
+        {
+            return Maybe<int32_t>();
+        }
+        return Maybe<int32_t>(result);
     }
 
     bool Value::BooleanValue(Isolate* isolate) const

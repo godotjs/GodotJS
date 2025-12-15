@@ -135,6 +135,7 @@ namespace jsb
                                 for (const WorkerMessage& message : messages)
                                 {
                                     if (impl->interrupt_requested_.is_set()) break;
+                                    v8::HandleScope message_handle_scope(isolate);
                                     impl->_on_message(env, context, context_obj, message);
                                 }
                                 messages.clear();

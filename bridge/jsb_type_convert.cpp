@@ -153,10 +153,12 @@ namespace jsb
 #endif
         {
             v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(p_jval);
-            v8::MaybeLocal<v8::Value> target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
-            if (!target.IsEmpty())
+            v8::MaybeLocal<v8::Value> maybe_target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
+            v8::Local<v8::Value> target;
+
+            if (maybe_target.ToLocal(&target) && !target->IsUndefined())
             {
-                return js_to_gd_var(isolate, context, target.ToLocalChecked(), p_type, r_cvar);
+                return js_to_gd_var(isolate, context, target, p_type, r_cvar);
             }
         }
 
@@ -517,12 +519,16 @@ namespace jsb
 
 #if JSB_WITH_V8
             if (p_jval->IsProxy())
+#else
+            if (p_jval->IsObject())
 #endif
             {
-                v8::MaybeLocal<v8::Value> target = self->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
-                if (!target.IsEmpty())
+                v8::MaybeLocal<v8::Value> maybe_target = self->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
+                v8::Local<v8::Value> target;
+
+                if (maybe_target.ToLocal(&target) && !target->IsUndefined())
                 {
-                    return js_to_gd_var(isolate, context, target.ToLocalChecked(), r_cvar);
+                    return js_to_gd_var(isolate, context, target, r_cvar);
                 }
             }
 
@@ -660,10 +666,12 @@ namespace jsb
 #endif
         {
             v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(p_jval);
-            v8::MaybeLocal<v8::Value> target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
-            if (!target.IsEmpty())
+            v8::MaybeLocal<v8::Value> maybe_target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
+            v8::Local<v8::Value> target;
+
+            if (maybe_target.ToLocal(&target) && !target->IsUndefined())
             {
-                return js_to_gd_obj(isolate, context, target.ToLocalChecked(), r_godot_obj);
+                return js_to_gd_obj(isolate, context, target, r_godot_obj);
             }
         }
 

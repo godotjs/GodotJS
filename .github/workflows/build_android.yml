@@ -39,9 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # QuickJS isn't working at the moment
-        #        engine: [ v8, qjs-ng ]
-        engine: [v8]
+        engine: [v8, qjs-ng]
         target: [template_release, template_debug]
 
     steps:
