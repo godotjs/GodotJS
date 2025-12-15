@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Upload builds
-        uses: ./.github/actions/upload-assets
+        uses: ./.github/actions/upload-asset
         with:
           os: ${{ matrix.os }}
           target: ${{ matrix.target }}
@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Upload builds
-        uses: ./.github/actions/upload-assets
+        uses: ./.github/actions/upload-asset
         with:
           os: ${{ matrix.os }}
           target: ${{ matrix.target }}
@@ -83,7 +83,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Upload builds
-        uses: ./.github/actions/upload-assets
+        uses: ./.github/actions/upload-asset
         with:
           os: ${{ matrix.os }}
           target: ${{ matrix.target }}
