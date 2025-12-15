@@ -40,7 +40,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [browser, qjs-ng]
-        target: [template_release]
+        target: [template_release, editor]
         threads: [yes, no]
 
     steps:
