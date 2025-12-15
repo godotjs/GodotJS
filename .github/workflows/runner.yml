@@ -20,7 +20,7 @@ jobs:
     uses: ./.github/workflows/misc_environment.yml
 
   changesets:
-    if: github.event_name != 'release'
+    if: github.event_name != 'release' && github.event_name != 'pull_request'
     permissions:
       contents: write
       pull-requests: write
