@@ -35,7 +35,6 @@ jobs:
 
       - name: 🆚 Create and publish versions
         id: changesets
-        if: github.event_name != 'pull_request'
         uses: changesets/action@v1
         with:
           commit: "chore: update versions"

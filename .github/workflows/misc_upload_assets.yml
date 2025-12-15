@@ -1,0 +1,83 @@
+name: 🦅 Upload Release Assets
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  upload-assets:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
+    strategy:
+      fail-fast: false
+      matrix:
+# QuickJS isn't working at the moment
+#        engine: [ v8, qjs-ng ]
+        engine: [ v8 ]
+        os: [ android, ios, linux, macos, web-yes, web-no, windows ]
+        target: [ template_release ]
+        include:
+          - target: template_debug
+            os: linux
+          - target: editor
+            os: linux
+          - target: template_debug
+            os: macos
+          - target: editor
+            os: macos
+          - target: editor-app
+            os: macos
+          - target: template-app
+            os: macos
+          - target: template_debug
+            os: windows
+          - target: editor
+            os: windows
+          - engine: browser
+            os: web-yes
+          - engine: browser
+            os: web-no
+        exclude:
+          - engine: v8
+            os: web-yes
+          - engine: v8
+            os: web-no
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🧬 Generate Name
+        id: name
+        run: |
+          echo "name=${{ matrix.os }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}" >> $GITHUB_OUTPUT
+
+      - name: ⏬ Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.name.outputs.name }}
+          path: ${{ steps.name.outputs.name }}
+
+      - name: 📦 Pack build as zip
+        run: zip -r ${{ steps.name.outputs.name }}.zip ${{ steps.name.outputs.name }}
+        shell: bash
+
+      - name: ⏫ Upload Release Asset
+        id: upload-release-asset
+        uses: actions/github-script@v6
+        with:
+          result-encoding: json
+          script: |
+            const FS = require('node:fs')
+            const { repo, owner } = context.repo;
+            return await github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id: ${{ github.event.release.id }},
+              name: '${{ steps.name.outputs.name }}.zip',
+              data: FS.readFileSync('${{ github.workspace }}/${{ steps.name.outputs.name }}.zip')
+            });
