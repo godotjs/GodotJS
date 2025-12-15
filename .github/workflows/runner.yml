@@ -58,6 +58,8 @@ jobs:
     name: 🦅 Release
     needs: [changesets, builds-done]
     if: needs.changesets.outputs.publish == 'true'
+    permissions:
+      contents: write
     uses: ./.github/workflows/misc_release.yml
     secrets: inherit
     with:
@@ -69,7 +71,6 @@ jobs:
     if: github.event_name == 'release'
     permissions:
       contents: write
-      pull-requests: write
     uses: ./.github/workflows/misc_upload_assets.yml
     secrets: inherit
     strategy:
