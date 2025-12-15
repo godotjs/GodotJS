@@ -1,0 +1,41 @@
+name: 🔬 Test project
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  test-project:
+    # Stay one LTS before latest to increase portability of Linux artifacts.
+    runs-on: ubuntu-22.04
+    name: Test project
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [v8, qjs-ng]
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ pnpm and build
+        uses: ./.github/actions/pnpm-build
+
+      - name: 🧬 Generate Name
+        id: name
+        run: |
+          echo "name=linux-editor-${{ inputs.version }}-${{ matrix.engine }}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: ⏬ Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.name.outputs.name }}
+          path: ${{ steps.name.outputs.name }}
+
+      - name: Run tests
+        env:
+          BIN: ./${{ steps.name.outputs.name }}/godot.linuxbsd.editor.x86_64
+        run: |
+          pnpm ci:test-project ${{ env.BIN }}
