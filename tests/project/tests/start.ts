@@ -7,6 +7,7 @@ export default class Start extends Node {
             "res://tests/singleton/Singleton.tscn",
             "res://tests/extend/Extend.tscn",
             "res://tests/papaparse/Papaparse.tscn",
+            "res://tests/os-executor/OSExecutor.tscn",
         ];
 
         for (const scene of scenes) {

@@ -38,4 +38,5 @@ jobs:
         env:
           BIN: ./${{ steps.name.outputs.name }}/godot.linuxbsd.editor.x86_64
         run: |
+          chmod +x ${{ env.BIN }}
           pnpm ci:test-project ${{ env.BIN }}
