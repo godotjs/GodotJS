@@ -34,9 +34,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # QuickJS & JSC isn't working at the moment
+        # JSC isn't working at the moment
         #        engine: [ v8, qjs-ng, jsc ]
-        engine: [ v8 ]
+        engine: [ v8, qjs-ng ]
         target: [ template_release, template_debug ]
 
     steps:
