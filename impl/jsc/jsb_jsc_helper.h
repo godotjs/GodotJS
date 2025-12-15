@@ -63,10 +63,10 @@ namespace jsb::impl
 #endif
         }
 
-        static v8::Local<v8::Function> new_noop_function(v8::Isolate* isolate, const v8::Local<v8::Context>& _context)
+        static v8::Local<v8::Function> new_noop_constructor(v8::Isolate* isolate, const v8::Local<v8::Context>& _context)
         {
-            JSObjectRef empty_function = JSObjectMakeFunctionWithCallback(isolate->ctx(), NULL, NULL);
-            return v8::Local<v8::Function>(v8::Data(isolate, isolate->push_copy(empty_function)));
+            JSObjectRef empty_constructor = JSObjectMakeConstructor(isolate->ctx(), NULL, NULL);
+            return v8::Local<v8::Function>(v8::Data(isolate, isolate->push_copy(empty_constructor)));
         }
 
         template<size_t N>

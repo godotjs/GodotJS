@@ -48,7 +48,7 @@ namespace jsb::impl
             return v8::Function::New(context, callback, data).ToLocalChecked();
         }
 
-        static v8::Local<v8::Function> new_noop_function(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
+        static v8::Local<v8::Function> new_noop_constructor(v8::Isolate* isolate, const v8::Local<v8::Context>& context)
         {
             v8::Local<v8::FunctionTemplate> function_template = v8::FunctionTemplate::New(isolate);
             return function_template->GetFunction(context).ToLocalChecked();
