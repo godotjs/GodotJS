@@ -120,7 +120,6 @@ jobs:
         continue-on-error: true
 
       - name: Generate Godot templates
-        if: matrix.target == 'template_release'
         run: |
           cd platform/android/java
           ./gradlew generateGodotTemplates
