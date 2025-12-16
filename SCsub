@@ -466,6 +466,13 @@ module_obj = []
 print(f"godot engine: {version_info['major']}.{version_info['minor']}")
 check("regex" in env.module_list, "Currently, the 'regex' module is required for using GodotJS. Please rebuild the engine with it enabled.")
 
+# Build JS files before generating
+if not env["skip_js_runtime"]:
+    pnpm_resolved = shutil.which("pnpm")
+    pnpm_command = [pnpm_resolved] if env["tests"] else [pnpm_resolved, "--filter=!./tests/project"]
+    print(subprocess.run([*pnpm_command, "install"], check=True))
+    print(subprocess.run([*pnpm_command, "build"], check=True))
+
 if v8_support is not None:
     # it seems godot always links MT_StaticRelease even if env["dev_build"]
     # it seems v8_monolith must be compiled with `use_rtti=true` explicitly, or the linker will fail on `v8::ArrayBuffer::Allocator`
@@ -565,6 +572,8 @@ if quickjs_support is not None:
     env_jsb.add_source_files(module_obj, "impl/quickjs/*.cpp")
 
 if is_defined("JSB_WITH_WEB"):
+    check(os.path.exists("impl/web/js"), "impl/web/js (GodotJS web bridge) has not been built")
+
     print_warning("web.impl is experimental and may not work as expected")
 
     env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
@@ -583,10 +592,7 @@ if is_defined("JSB_WITH_JAVASCRIPTCORE"):
         if env.msvc and env["vsproj"]:
             env.Append(CPPPATH=[f"#modules/{module_name}/impl/jsc/_NOT_FOR_INCLUDE_"])
 
-# Build JS files before generating
-if not os.path.exists("scripts/out"):
-    print(subprocess.run(["pnpm", "install"], shell=True, check=True))
-    print(subprocess.run(["pnpm", "build"], shell=True, check=True))
+check(os.path.exists("scripts/out"), "scripts/out (GodotJS JavaScript runtime) has not been built")
 
 generate_code([\
         # presets for runtime

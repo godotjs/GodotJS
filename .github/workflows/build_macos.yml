@@ -19,6 +19,7 @@ env:
   SCONSFLAGS: >-
     module_text_server_fb_enabled=yes
     strict_checks=yes
+    skip_js_runtime=yes
   # 4.5
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
@@ -27,6 +28,7 @@ env:
     strict_checks=yes
     module_text_server_fb_enabled=yes
     "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
+    skip_js_runtime=yes
 
 jobs:
   build-macos:
@@ -108,11 +110,11 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           sconsflags: >-
-            ${{ env.SCONSFLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            arch=x86_64 
-            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ env.SCONSFLAGS }}
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
+            arch=x86_64
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
@@ -123,11 +125,11 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
-            ${{ env.SCONSFLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            arch=x86_64 
-            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ env.SCONSFLAGS }}
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
+            arch=x86_64
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
@@ -137,11 +139,11 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           sconsflags: >-
-            ${{ env.SCONS_FLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            arch=arm64 
-            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ env.SCONS_FLAGS }}
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
+            arch=arm64
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
@@ -152,11 +154,11 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
-            ${{ env.SCONS_FLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            arch=arm64 
-            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
+            ${{ env.SCONS_FLAGS }}
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
+            arch=arm64
+            vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
