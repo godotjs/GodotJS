@@ -19,6 +19,7 @@ env:
     debug_symbols=no
     module_text_server_fb_enabled=yes
     swappy=yes
+    skip_js_runtime=yes
   # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
@@ -29,6 +30,7 @@ env:
     module_text_server_fb_enabled=yes
     tests=no
     swappy=yes
+    skip_js_runtime=yes
 
 # We only build template release - most developers will use a desktop device for editor
 jobs:
@@ -94,10 +96,10 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           sconsflags: >-
-            ${{ env.SCONSFLAGS }}             
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            deprecated=no 
-            ndk_platform=android-24 
+            ${{ env.SCONSFLAGS }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
+            deprecated=no
+            ndk_platform=android-24
             generate_apk=yes
           platform: android
           target: ${{ matrix.target }}
@@ -108,7 +110,7 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
-            ${{ env.SCONS_FLAGS }}             
+            ${{ env.SCONS_FLAGS }}
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: android
           target: ${{ matrix.target }}

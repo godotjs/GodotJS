@@ -19,6 +19,7 @@ env:
   SCONSFLAGS: >-
     module_text_server_fb_enabled=yes
     strict_checks=yes
+    skip_js_runtime=yes
   # 4.5
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
@@ -27,6 +28,7 @@ env:
     strict_checks=yes
     module_text_server_fb_enabled=yes
     "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
+    skip_js_runtime=yes
 #  ASAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/asan.txt
 #  LSAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/lsan.txt
 #  TSAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/tsan.txt
@@ -110,9 +112,9 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           sconsflags: >-
-            ${{ env.SCONSFLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
+            ${{ env.SCONSFLAGS }}
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
           target: ${{ matrix.target }}
@@ -123,9 +125,9 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
-            ${{ env.SCONS_FLAGS }} 
-            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
+            ${{ env.SCONS_FLAGS }}
+            ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
 

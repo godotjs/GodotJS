@@ -23,6 +23,7 @@ env:
     strict_checks=yes
     debug_symbols=no
     "angle_libs=${{ github.workspace }}/"
+    skip_js_runtime=yes
   # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
@@ -34,6 +35,7 @@ env:
     d3d12=yes
     "angle_libs=${{ github.workspace }}/"
     "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
+    skip_js_runtime=yes
   SCONS_CACHE_MSVC_CONFIG: true
   PYTHONIOENCODING: utf8
 
@@ -117,9 +119,9 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           sconsflags: >-
-            ${{ env.SCONSFLAGS }} 
-            ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
+            ${{ env.SCONSFLAGS }}
+            ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: windows
           target: ${{ matrix.target }}
@@ -130,9 +132,9 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
-            ${{ env.SCONS_FLAGS }} 
-            ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
+            ${{ env.SCONS_FLAGS }}
+            ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }}
+            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
             ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: windows
           target: ${{ matrix.target }}

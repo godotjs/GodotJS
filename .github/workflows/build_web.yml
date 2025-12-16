@@ -21,6 +21,7 @@ env:
     lto=none
     use_assertions=no
     use_safe_heap=yes
+    skip_js_runtime=yes
   # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
@@ -30,6 +31,7 @@ env:
     tests=no
     debug_symbols=no
     use_closure_compiler=yes
+    skip_js_runtime=yes
 
 jobs:
   web-template:
@@ -106,7 +108,7 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           sconsflags: >-
-            ${{ env.SCONSFLAGS }}             
+            ${{ env.SCONSFLAGS }}
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: web
           target: ${{ matrix.target }}
@@ -117,7 +119,7 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
-            ${{ env.SCONS_FLAGS }}             
+            ${{ env.SCONS_FLAGS }}
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: web
           target: ${{ matrix.target }}
