@@ -1,10 +1,10 @@
 name: 🍏 iOS Builds
 on:
   workflow_call:
-    release:
-      required: true
-      type: boolean
     inputs:
+      release:
+        required: true
+        type: boolean
       version:
         required: true
         type: string

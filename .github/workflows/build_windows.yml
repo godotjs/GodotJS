@@ -1,10 +1,10 @@
 name: 🏁 Windows Builds
 on:
   workflow_call:
-    release:
-      required: true
-      type: boolean
     inputs:
+      release:
+        required: true
+        type: boolean
       version:
         required: true
         type: string
@@ -12,9 +12,6 @@ on:
         description: "Godot engine commit reference"
         required: true
         type: string
-      tests:
-        type: boolean
-        default: true
 
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment

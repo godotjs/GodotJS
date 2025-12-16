@@ -1,10 +1,10 @@
 name: 🍎 macOS Builds
 on:
   workflow_call:
-    release:
-      required: true
-      type: boolean
     inputs:
+      release:
+        required: true
+        type: boolean
       version:
         required: true
         type: string
@@ -12,9 +12,6 @@ on:
         description: "Godot engine commit reference"
         required: true
         type: string
-      tests:
-        type: boolean
-        default: true
 
 # Global Settings
 env:
@@ -233,17 +230,20 @@ jobs:
 
       - name: ⏬ Download template-release
         uses: actions/download-artifact@v4
+        if: ${{ inputs.release }}
         with:
           name: macos-template_release-${{inputs.version}}-${{ matrix.engine }}
           path: macos-template_release-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⏬ Download template-debug
         uses: actions/download-artifact@v4
+        if: ${{ inputs.release }}
         with:
           name: macos-template_debug-${{inputs.version}}-${{ matrix.engine }}
           path: macos-template_debug-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⚒️ Build Template App
+        if: ${{ inputs.release }}
         run: |
           mkdir template-app
           cp -r misc/dist/macos_template.app template-app/macos_template.app
@@ -253,6 +253,7 @@ jobs:
           chmod +x template-app/macos_template.app/Contents/MacOS/godot_macos*
 
       - name: ⏫ Upload template app
+        if: ${{ inputs.release }}
         uses: actions/upload-artifact@v4
         with:
           name: macos-template-app-${{inputs.version}}-${{ matrix.engine }}
