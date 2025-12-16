@@ -37,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [v8, qjs-ng]
-        target: ${{ inputs.release && fromJSON('["editor,template_release,template_debug"]') || fromJSON('["editor"]') }}
+        target: ${{ inputs.release && fromJSON('["editor","template_release","template_debug"]') || fromJSON('["editor"]') }}
     steps:
       - name: Select Xcode 16
         run: sudo xcode-select -s /Applications/Xcode_16.2.app

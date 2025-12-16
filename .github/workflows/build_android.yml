@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [ v8, qjs-ng ]
-        target: ${{ inputs.release && fromJSON('["template_release,template_debug"]') || fromJSON('["template_debug"]') }}
+        target: ${{ inputs.release && fromJSON('["template_release","template_debug"]') || fromJSON('["template_debug"]') }}
     steps:
       - name: Checkout Godot
         uses: actions/checkout@v4

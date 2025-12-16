@@ -43,9 +43,9 @@ jobs:
       fail-fast: false
       matrix:
         engine: [ browser, qjs-ng ]
-        target: ${{ inputs.release && fromJSON('["template_release,template_debug"]') || fromJSON('["template_debug"]') }}
-        threads: ${{ inputs.release && fromJSON('["yes,no"]') || fromJSON('["yes"]') }}
-        dlink: ${{ inputs.release && fromJSON('["yes,no"]') || fromJSON('["no"]') }}
+        target: ${{ inputs.release && fromJSON('["template_release","template_debug"]') || fromJSON('["template_debug"]') }}
+        threads: ${{ inputs.release && fromJSON('["yes","no"]') || fromJSON('["yes"]') }}
+        dlink: ${{ inputs.release && fromJSON('["yes","no"]') || fromJSON('["no"]') }}
     steps:
       - name: 🧬 Generate Name
         id: name
