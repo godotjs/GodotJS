@@ -1,6 +1,9 @@
 name: 🏁 Windows Builds
 on:
   workflow_call:
+    release:
+      required: true
+      type: boolean
     inputs:
       version:
         required: true
@@ -47,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [v8, qjs-ng]
-        target: [editor, template_release, template_debug]
+        target: ${{ inputs.release && fromJSON('["editor,template_release,template_debug"]') || fromJSON('["editor"]') }}
     steps:
       - name: Checkout Godot
         uses: actions/checkout@v4
@@ -76,7 +79,7 @@ jobs:
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
 
       - name: Download tests/project
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         uses: actions/download-artifact@v4
         with:
           name: tests-project
@@ -120,7 +123,7 @@ jobs:
             ${{ env.SCONSFLAGS }} 
             ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }} 
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: windows
           target: ${{ matrix.target }}
           scons-cache-limit: 2
@@ -133,7 +136,7 @@ jobs:
             ${{ env.SCONS_FLAGS }} 
             ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }} 
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: windows
           target: ${{ matrix.target }}
 
@@ -153,7 +156,7 @@ jobs:
           name: windows-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
 
       - name: Unit tests
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         env:
           BIN: ./bin/godot.windows.editor.x86_64.exe
         run: |

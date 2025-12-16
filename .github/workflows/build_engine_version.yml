@@ -10,9 +10,9 @@ on:
         description: "Godot engine commit reference"
         required: true
         type: string
-      tests:
+      release:
         type: boolean
-        default: true
+        default: false
 
 jobs:
   android-build:
@@ -21,6 +21,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
+      release: ${{ inputs.release }}
 
   ios-build:
     name: 🍏 iOS
@@ -28,6 +29,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
+      release: ${{ inputs.release }}
 
   linux-build:
     name: 🐧 Linux
@@ -35,7 +37,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
-      tests: ${{ inputs.tests }}
+      release: ${{ inputs.release }}
 
   macos-build:
     name: 🍎 macOS
@@ -43,7 +45,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
-      tests: ${{ inputs.tests }}
+      release: ${{ inputs.release }}
 
   windows-build:
     name: 🏁 Windows
@@ -51,7 +53,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
-      tests: ${{ inputs.tests }}
+      release: ${{ inputs.release }}
 
   web-build:
     name: 🌐 Web
@@ -59,6 +61,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       version_ref: ${{ inputs.version_ref }}
+      release: ${{ inputs.release }}
 
   checks-done:
     if: ${{ always() }}

@@ -1,6 +1,9 @@
 name: 🍎 macOS Builds
 on:
   workflow_call:
+    release:
+      required: true
+      type: boolean
     inputs:
       version:
         required: true
@@ -37,8 +40,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [v8, qjs-ng]
-        target: [editor, template_release, template_debug]
-
+        target: ${{ inputs.release && fromJSON('["editor,template_release,template_debug"]') || fromJSON('["editor"]') }}
     steps:
       - name: Select Xcode 16
         run: sudo xcode-select -s /Applications/Xcode_16.2.app
@@ -97,7 +99,7 @@ jobs:
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
 
       - name: Download tests/project
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         uses: actions/download-artifact@v4
         with:
           name: tests-project
@@ -113,7 +115,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=x86_64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
           scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
@@ -128,7 +130,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=x86_64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
 
@@ -142,7 +144,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=arm64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
           scons-cache-limit: ${{ matrix.target == 'editor' && 2 || 1 }}
@@ -157,7 +159,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=arm64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
 
@@ -185,7 +187,7 @@ jobs:
           name: macos-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
 
       - name: Unit tests
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         env:
           BIN: ./bin/godot.macos.editor.universal
         run: |
