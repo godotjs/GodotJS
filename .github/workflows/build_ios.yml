@@ -41,7 +41,7 @@ jobs:
         #        engine: [ v8, qjs-ng, jsc ]
         engine: [ v8, qjs-ng ]
         target: ${{ inputs.release && fromJSON('["template_release,template_debug"]') || fromJSON('["template_debug"]') }}
-      steps:
+    steps:
       - name: Checkout Godot
         uses: actions/checkout@v4
         with:
