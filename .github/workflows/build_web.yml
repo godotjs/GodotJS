@@ -39,9 +39,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [browser, qjs-ng]
-        target: [template_release]
-        threads: [yes, no]
+        engine: [ browser, qjs-ng ]
+        target: [ template_release, template_debug ]
+        threads: [ yes, no ]
 
     steps:
       - name: Checkout Godot
