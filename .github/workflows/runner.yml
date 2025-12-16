@@ -34,10 +34,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: 4.4
-            version_ref: 4.4
           - version: 4.5
             version_ref: 4.5
+          - version: 4.6dev
+            version_ref: master
     uses: ./.github/workflows/build_engine_version.yml
     with:
       version: ${{ matrix.version }}

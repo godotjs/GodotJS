@@ -16,14 +16,6 @@ on:
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  # 4.4
-  SCONSFLAGS: >-
-    module_text_server_fb_enabled=yes
-    d3d12=yes
-    strict_checks=yes
-    debug_symbols=no
-    "angle_libs=${{ github.workspace }}/"
-  # 4.5+
   # Ideally we'd use dev_mode=yes. Unfortunately, v8 headers contain warnings. So we manually set some dev_mode options.
   SCONS_FLAGS: >-
     verbose=yes
@@ -99,8 +91,7 @@ jobs:
       - name: Extract pre-built ANGLE static libraries
         run: Expand-Archive -Force angle/angle.zip ${{ github.workspace }}/
 
-      - name: Download pre-built AccessKit [4.5+]
-        if: inputs.version != '4.4'
+      - name: Download pre-built AccessKit
         uses: dsaltares/fetch-gh-release-asset@1.1.2
         with:
           repo: AccessKit/accesskit-c
@@ -108,25 +99,10 @@ jobs:
           file: accesskit-c-0.17.0.zip
           target: accesskit-c-0.17.0/accesskit_c.zip
 
-      - name: Extract pre-built AccessKit [4.5+]
-        if: inputs.version != '4.4'
+      - name: Extract pre-built AccessKit
         run: unzip -o accesskit-c-0.17.0/accesskit_c.zip
 
-      - name: Compilation (4.4)
-        if: inputs.version == '4.4'
-        uses: ./.github/actions/godot-build
-        with:
-          sconsflags: >-
-            ${{ env.SCONSFLAGS }} 
-            ${{ matrix.target == 'editor' && 'vsproj=yes vsproj_gen_only=no windows_subsystem=console' || '' }} 
-            ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
-          platform: windows
-          target: ${{ matrix.target }}
-          scons-cache-limit: 2
-
-      - name: Compilation (4.5+)
-        if: inputs.version != '4.4'
+      - name: Compilation
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
