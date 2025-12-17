@@ -2,6 +2,9 @@ name: 🐧 Linux Builds
 on:
   workflow_call:
     inputs:
+      release:
+        required: true
+        type: boolean
       version:
         required: true
         type: string
@@ -9,9 +12,6 @@ on:
         description: "Godot engine commit reference"
         required: true
         type: string
-      tests:
-        type: boolean
-        default: true
 
 # Global Settings
 env:
@@ -41,9 +41,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [v8, qjs-ng]
-        target: [ editor, template_release, template_debug ]
-
+        engine: [ v8, qjs-ng ]
+        target: ${{ inputs.release && fromJSON('[ "editor","template_release","template_debug "]') || fromJSON('["editor"]') }}
     steps:
       - name: Checkout Godot
         uses: actions/checkout@v4
@@ -83,7 +82,7 @@ jobs:
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
 
       - name: Download tests/project
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         uses: actions/download-artifact@v4
         with:
           name: tests-project
@@ -113,7 +112,7 @@ jobs:
             ${{ env.SCONSFLAGS }} 
             ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
           target: ${{ matrix.target }}
           scons-cache-limit: ${{ matrix.target == 'editor' && 2 || 1 }}
@@ -126,7 +125,7 @@ jobs:
             ${{ env.SCONS_FLAGS }} 
             ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }} 
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
 
       - name: Save Godot build cache
@@ -146,7 +145,7 @@ jobs:
           name: linux-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
 
       - name: Unit tests
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         shell: sh
         env:
           BIN: ./bin/godot.linuxbsd.editor.x86_64

@@ -42,7 +42,7 @@ jobs:
     with:
       version: ${{ matrix.version }}
       version_ref: ${{ matrix.version_ref }}
-      tests: ${{ github.event_name != 'release' }}
+      release: ${{ github.event_name == 'release' }}
 
   test-project:
     name: 🔬 Test project

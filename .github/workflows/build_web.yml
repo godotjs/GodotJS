@@ -2,6 +2,9 @@ name: 🌐 Web Builds
 on:
   workflow_call:
     inputs:
+      release:
+        required: true
+        type: boolean
       version:
         required: true
         type: string
@@ -34,16 +37,22 @@ env:
 jobs:
   web-template:
     runs-on: ubuntu-24.04
-    name: Web (${{ matrix.target }}, ${{ matrix.engine }}, threads=${{ matrix.threads }})
+    name: Web (${{ matrix.target }}, ${{ matrix.engine }}, threads=${{ matrix.threads }}, dlink=${{ matrix.dlink }})
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         engine: [ browser, qjs-ng ]
-        target: [ template_release, template_debug ]
-        threads: [ yes, no ]
-
+        target: ${{ inputs.release && fromJSON('["template_release","template_debug"]') || fromJSON('["template_debug"]') }}
+        threads: ${{ inputs.release && fromJSON('["yes","no"]') || fromJSON('["yes"]') }}
+        dlink: ${{ inputs.release && fromJSON('["yes","no"]') || fromJSON('["no"]') }}
     steps:
+      - name: 🧬 Generate Name
+        id: name
+        run: |
+          echo "name=web${{ matrix.dlink == 'yes' && '-dlink' || '' }}${{ matrix.threads == 'no' && '-nothreads' || '' }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Checkout Godot
         uses: actions/checkout@v4
         with:
@@ -95,7 +104,7 @@ jobs:
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         with:
-          cache-name: web-${{ matrix.threads }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
+          cache-name: ${{ steps.name.outputs.name }}
         continue-on-error: true
 
       - name: Setup Python and SCons
@@ -125,10 +134,10 @@ jobs:
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
         with:
-          cache-name: web-${{ matrix.threads }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
+          cache-name: ${{ steps.name.outputs.name }}
         continue-on-error: true
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
         with:
-          name: web-${{ matrix.threads }}-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
+          name: ${{ steps.name.outputs.name }}

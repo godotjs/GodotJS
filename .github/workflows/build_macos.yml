@@ -2,6 +2,9 @@ name: 🍎 macOS Builds
 on:
   workflow_call:
     inputs:
+      release:
+        required: true
+        type: boolean
       version:
         required: true
         type: string
@@ -9,9 +12,6 @@ on:
         description: "Godot engine commit reference"
         required: true
         type: string
-      tests:
-        type: boolean
-        default: true
 
 # Global Settings
 env:
@@ -37,8 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [v8, qjs-ng]
-        target: [editor, template_release, template_debug]
-
+        target: ${{ inputs.release && fromJSON('["editor","template_release","template_debug"]') || fromJSON('["editor"]') }}
     steps:
       - name: Select Xcode 16
         run: sudo xcode-select -s /Applications/Xcode_16.2.app
@@ -97,7 +96,7 @@ jobs:
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
 
       - name: Download tests/project
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         uses: actions/download-artifact@v4
         with:
           name: tests-project
@@ -113,7 +112,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=x86_64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
           scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
@@ -128,7 +127,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=x86_64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
 
@@ -142,7 +141,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=arm64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
           scons-cache-limit: ${{ matrix.target == 'editor' && 2 || 1 }}
@@ -157,7 +156,7 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }} 
             arch=arm64 
             vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} 
-            ${{ inputs.tests && matrix.target == 'editor' && 'tests=yes' || '' }}
+            ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: macos
           target: ${{ matrix.target }}
 
@@ -185,7 +184,7 @@ jobs:
           name: macos-${{ matrix.target }}-${{inputs.version}}-${{ matrix.engine }}
 
       - name: Unit tests
-        if: ${{ inputs.tests && matrix.target == 'editor' }}
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
         env:
           BIN: ./bin/godot.macos.editor.universal
         run: |
@@ -231,17 +230,20 @@ jobs:
 
       - name: ⏬ Download template-release
         uses: actions/download-artifact@v4
+        if: ${{ inputs.release }}
         with:
           name: macos-template_release-${{inputs.version}}-${{ matrix.engine }}
           path: macos-template_release-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⏬ Download template-debug
         uses: actions/download-artifact@v4
+        if: ${{ inputs.release }}
         with:
           name: macos-template_debug-${{inputs.version}}-${{ matrix.engine }}
           path: macos-template_debug-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⚒️ Build Template App
+        if: ${{ inputs.release }}
         run: |
           mkdir template-app
           cp -r misc/dist/macos_template.app template-app/macos_template.app
@@ -251,6 +253,7 @@ jobs:
           chmod +x template-app/macos_template.app/Contents/MacOS/godot_macos*
 
       - name: ⏫ Upload template app
+        if: ${{ inputs.release }}
         uses: actions/upload-artifact@v4
         with:
           name: macos-template-app-${{inputs.version}}-${{ matrix.engine }}
