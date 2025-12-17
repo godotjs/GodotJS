@@ -2,6 +2,9 @@ name: 🍏 iOS Builds
 on:
   workflow_call:
     inputs:
+      release:
+        required: true
+        type: boolean
       version:
         required: true
         type: string
@@ -37,8 +40,7 @@ jobs:
         # JSC isn't working at the moment
         #        engine: [ v8, qjs-ng, jsc ]
         engine: [ v8, qjs-ng ]
-        target: [ template_release, template_debug ]
-
+        target: ${{ inputs.release && fromJSON('["template_release","template_debug"]') || fromJSON('["template_debug"]') }}
     steps:
       - name: Checkout Godot
         uses: actions/checkout@v4
