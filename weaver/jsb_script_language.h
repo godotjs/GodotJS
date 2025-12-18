@@ -108,6 +108,8 @@ private:
 
     Ref<RegEx> ts_class_name_matcher_;
 
+    Ref<RegEx> ts_icon_matcher_;
+
     // [JS] export & declare in two lines, matches 'class ClassName extends BaseName' + 'exports.default = ClassName'
     Ref<RegEx> js_class_name_matcher2_;
 

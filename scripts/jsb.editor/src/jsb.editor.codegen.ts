@@ -1897,7 +1897,22 @@ const annotation_types = {
                         returns: {
                             type: DescriptorType.FunctionLiteral,
                             parameters: [
-                                { name: "target", type: { type: DescriptorType.Godot, name: "GObjectConstructor" } },
+                                {
+                                    name: "target",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObject",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObjectConstructor",
+                                            },
+                                        ],
+                                    },
+                                },
                                 {
                                     name: "context",
                                     type: {
@@ -1910,6 +1925,10 @@ const annotation_types = {
                                             {
                                                 type: DescriptorType.Godot,
                                                 name: "ClassValueMemberDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassMethodDecoratorContext",
                                             },
                                         ],
                                     },
@@ -1925,7 +1944,22 @@ const annotation_types = {
                         returns: {
                             type: DescriptorType.FunctionLiteral,
                             parameters: [
-                                { name: "target", type: { type: DescriptorType.Godot, name: "GObjectConstructor" } },
+                                {
+                                    name: "target",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObject",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObjectConstructor",
+                                            },
+                                        ],
+                                    },
+                                },
                                 {
                                     name: "context",
                                     type: {
@@ -1938,6 +1972,10 @@ const annotation_types = {
                                             {
                                                 type: DescriptorType.Godot,
                                                 name: "ClassValueMemberDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassMethodDecoratorContext",
                                             },
                                         ],
                                     },
@@ -1953,7 +1991,22 @@ const annotation_types = {
                         returns: {
                             type: DescriptorType.FunctionLiteral,
                             parameters: [
-                                { name: "target", type: { type: DescriptorType.Godot, name: "GObjectConstructor" } },
+                                {
+                                    name: "target",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObject",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObjectConstructor",
+                                            },
+                                        ],
+                                    },
+                                },
                                 {
                                     name: "context",
                                     type: {
@@ -1966,6 +2019,10 @@ const annotation_types = {
                                             {
                                                 type: DescriptorType.Godot,
                                                 name: "ClassValueMemberDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassMethodDecoratorContext",
                                             },
                                         ],
                                     },
