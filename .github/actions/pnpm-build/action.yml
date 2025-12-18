@@ -1,0 +1,19 @@
+name: PNPM Build
+description: Setup pnpm, install dependencies, and build
+runs:
+  using: composite
+  steps:
+    - name: 🛫 Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: 🦕❌ Setup node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: "pnpm"
+
+    - name: 🛠️ Install dependencies & build
+      run: |
+        pnpm install
+        pnpm build
+      shell: bash

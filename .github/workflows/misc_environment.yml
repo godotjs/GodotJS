@@ -10,22 +10,8 @@ jobs:
       - name: ⏬ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🛫 Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: 🦕❌ Setup node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: 🛠️ Install dependencies
-        run: |
-          pnpm install
-
-      - name: 🛠️ Build bundled JavaScript
-        run: |
-          pnpm build
+      - name: 🛠️ pnpm and build
+        uses: ./.github/actions/pnpm-build
 
       - name: ⬆️ Upload scripts/out
         uses: actions/upload-artifact@v4

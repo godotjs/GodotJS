@@ -9,6 +9,7 @@
     "changeset": "changeset",
     "ci:should-publish": "node scripts/release/should-publish.js",
     "ci:publish": "node scripts/release/publish.js",
+    "ci:test-project": "node scripts/release/test-project.js",
     "ci:version": "changeset version && node scripts/release/version.js"
   },
   "devDependencies": {

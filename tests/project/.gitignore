@@ -4,5 +4,3 @@
 .godot/
 node_modules/
 .idea
-/gen/godot/.gdignore
-/gen/godot/test_01.ts.gen.ts

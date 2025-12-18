@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [ v8, qjs-ng ]
-        target: ${{ inputs.release && fromJSON('["editor","template_release","template_debug"]') || fromJSON('["editor"]') }}
+        target: ${{ inputs.release && fromJSON('[ "editor","template_release","template_debug "]') || fromJSON('["editor"]') }}
     steps:
       - name: Checkout Godot
         uses: actions/checkout@v4
@@ -146,6 +146,7 @@ jobs:
 
       - name: Unit tests
         if: ${{ !inputs.release && matrix.target == 'editor' }}
+        shell: sh
         env:
           BIN: ./bin/godot.linuxbsd.editor.x86_64
         run: |

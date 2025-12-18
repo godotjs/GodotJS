@@ -19,19 +19,19 @@ export default class TestNode extends Node {
   accessor test_signal!: Signal<(value: number) => void>;
 
   constructor(identifier?: any) {
-    super(identifier);
+	super(identifier);
 
-    // do other things you want
-    //...
+	// do other things you want
+	//...
   }
 
   async _ready() {
-    console.log("TestNode ready");
+	console.log("TestNode ready");
 
-    const result = await this.test_signal.as_promise();
+	const result = await this.test_signal.as_promise();
   }
 
   test() {
-    console.log("TestNode test");
+	console.log("TestNode test");
   }
 }

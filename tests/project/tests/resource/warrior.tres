@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PlayerResource" load_steps=2 format=3 uid="uid://chya0ih66sy15"]
+
+[ext_resource type="Script" uid="uid://b7egpn5lklot3" path="res://tests/resource/player-resource.ts" id="1_rpmnh"]
+
+[resource]
+script = ExtResource("1_rpmnh")
+health = 10
+attack = 3
+metadata/_custom_type_script = "uid://b7egpn5lklot3"

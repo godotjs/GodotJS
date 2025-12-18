@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://0hnraiv8v2df"]
+
+[ext_resource type="Script" uid="uid://bm2ng673bhfut" path="res://tests/os-executor/test-os-executor.ts" id="1_bd3bg"]
+
+[node name="OsExecutor" type="Node2D"]
+script = ExtResource("1_bd3bg")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+text = "OSExecutor"

@@ -44,9 +44,22 @@ jobs:
       version_ref: ${{ matrix.version_ref }}
       release: ${{ github.event_name == 'release' }}
 
+  test-project:
+    name: 🔬 Test project
+    needs: [engine-version-build]
+    uses: ./.github/workflows/test_project.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 4.4
+          - version: 4.5
+    with:
+      version: ${{ matrix.version }}
+
   builds-done:
     name: 🏁 Builds Done
-    needs: [engine-version-build]
+    needs: [test-project]
     runs-on: ubuntu-latest
     steps:
       - name: 🏁 Check if all builds are done
@@ -67,7 +80,7 @@ jobs:
 
   upload-assets:
     name: 📁 Upload Assets
-    needs: [engine-version-build, builds-done]
+    needs: [builds-done]
     if: github.event_name == 'release'
     permissions:
       contents: write
