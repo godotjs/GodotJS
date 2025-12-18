@@ -114,6 +114,7 @@ namespace jsb
     struct ScriptClassDoc {};
     struct ScriptMethodDoc {};
     struct ScriptPropertyDoc {};
+    struct ScriptSignalDoc {};
 #endif
 
     namespace ScriptMethodFlags
