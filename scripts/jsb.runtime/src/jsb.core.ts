@@ -299,54 +299,6 @@ exports.icon = function (path: string) {
 
 /**
  * FOR BACKWARD COMPATIBILITY ONLY
- * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
- */
-exports.deprecated = function (message?: string) {
-    return function (target: any, propertyKey?: PropertyKey) {
-        if (typeof propertyKey === "undefined") {
-            jsb.internal.set_script_doc(target, undefined, 0, message ?? "");
-            return;
-        }
-        if (typeof propertyKey !== "string" || propertyKey.length == 0)
-            throw new Error("only string key is allowed for doc");
-        jsb.internal.set_script_doc(target, propertyKey, 0, message ?? "");
-    };
-};
-
-/**
- * FOR BACKWARD COMPATIBILITY ONLY
- * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
- */
-exports.experimental = function (message?: string) {
-    return function (target: any, propertyKey?: PropertyKey) {
-        if (typeof propertyKey === "undefined") {
-            jsb.internal.set_script_doc(target, undefined, 1, message ?? "");
-            return;
-        }
-        if (typeof propertyKey !== "string" || propertyKey.length == 0)
-            throw new Error("only string key is allowed for doc");
-        jsb.internal.set_script_doc(target, propertyKey, 1, message ?? "");
-    };
-};
-
-/**
- * FOR BACKWARD COMPATIBILITY ONLY
- * @deprecated [WARNING] This function is deprecated. Use the same function from `godot.annotations` instead.
- */
-exports.help = function (message?: string) {
-    return function (target: any, propertyKey?: PropertyKey) {
-        if (typeof propertyKey === "undefined") {
-            jsb.internal.set_script_doc(target, undefined, 2, message ?? "");
-            return;
-        }
-        if (typeof propertyKey !== "string" || propertyKey.length == 0)
-            throw new Error("only string key is allowed for doc");
-        jsb.internal.set_script_doc(target, propertyKey, 2, message ?? "");
-    };
-};
-
-/**
- * FOR BACKWARD COMPATIBILITY ONLY
  * @deprecated [WARNING] This function is deprecated. Use the same function from `godot` instead.
  */
 exports.GLOBAL_GET = function (entry_path: any): any {
