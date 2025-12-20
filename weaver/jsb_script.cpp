@@ -475,10 +475,12 @@ static bool _try_extract_enum(const String& p_declaration, const String& p_sourc
                 Dictionary enum_props, enum_methods, enum_signals, enum_constants, enum_enums;
                 _extract_member_docs(enum_body, enum_props, enum_methods, enum_signals, enum_constants, enum_enums);
                 
-                for (const KeyValue<Variant, Variant>& kv : enum_constants) {
-                    Dictionary const_doc = kv.value;
+                Array keys = enum_constants.keys();
+                for (int i = 0; i < keys.size(); i++) {
+                    Variant key = keys[i];
+                    Dictionary const_doc = enum_constants[key];
                     const_doc["enumeration"] = enum_name;
-                    r_constants[kv.key] = const_doc;
+                    r_constants[key] = const_doc;
                 }
             }
         }
@@ -745,32 +747,36 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
         _extract_member_docs(source, properties, methods, signals, constants, enums);
 
         Array properties_array;
-        for (const KeyValue<Variant, Variant>& kv : properties) {
-            properties_array.push_back(kv.value);
+        Array keys = properties.keys();
+        for (int i = 0; i < keys.size(); i++) {
+            properties_array.push_back(properties[keys[i]]);
         }
         if (!properties_array.is_empty()) {
             class_dict["properties"] = properties_array;
         }
 
         Array methods_array;
-        for (const KeyValue<Variant, Variant>& kv : methods) {
-            methods_array.push_back(kv.value);
+        keys = methods.keys();
+        for (int i = 0; i < keys.size(); i++) {
+            methods_array.push_back(methods[keys[i]]);
         }
         if (!methods_array.is_empty()) {
             class_dict["methods"] = methods_array;
         }
 
         Array signals_array;
-        for (const KeyValue<Variant, Variant>& kv : signals) {
-            signals_array.push_back(kv.value);
+        keys = signals.keys();
+        for (int i = 0; i < keys.size(); i++) {
+            signals_array.push_back(signals[keys[i]]);
         }
         if (!signals_array.is_empty()) {
             class_dict["signals"] = signals_array;
         }
 
         Array constants_array;
-        for (const KeyValue<Variant, Variant>& kv : constants) {
-            constants_array.push_back(kv.value);
+        keys = constants.keys();
+        for (int i = 0; i < keys.size(); i++) {
+            constants_array.push_back(constants[keys[i]]);
         }
         if (!constants_array.is_empty()) {
             class_dict["constants"] = constants_array;
