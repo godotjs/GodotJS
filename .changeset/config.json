@@ -8,7 +8,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@godot-js/jsb-static",
     "@godot-js/jsb-runtime",
     "@godot-js/jsb-editor",
     "@godot-js/web-bridge"
