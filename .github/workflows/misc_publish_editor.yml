@@ -1,10 +1,6 @@
 name: 📨 Publish editor
 on:
   workflow_call:
-    inputs:
-      versions:
-        required: true
-        type: string
 
 permissions:
   id-token: write  # Required for OIDC
