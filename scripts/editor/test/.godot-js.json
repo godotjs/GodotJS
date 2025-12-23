@@ -1,0 +1,5 @@
+{
+    "tsConfigPath": ".",
+    "rootPath": ".",
+    "buildPath": "./test-build"
+}

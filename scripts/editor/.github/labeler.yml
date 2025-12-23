@@ -1,0 +1,8 @@
+---
+repo:
+  - changed-files:
+      - any-glob-to-any-file: "*"
+
+cicd:
+  - changed-files:
+      - any-glob-to-any-file: [".github/*", ".github/**/*"]

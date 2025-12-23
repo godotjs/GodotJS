@@ -1,0 +1,47 @@
+name: 📨 Publish editor
+on:
+  workflow_call:
+    inputs:
+      versions:
+        required: true
+        type: string
+
+permissions:
+  id-token: write  # Required for OIDC
+  contents: write
+
+jobs:
+  publis-editor:
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.publish_release.outputs.id }}
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🛫 Setup pnpm
+        uses: ./.github/actions/pnpm-setup
+
+      - name: 🔄️ Install dependencies
+        run: pnpm install
+
+      - name: ⏬ Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: editor-dist
+          path: ${{github.workspace}}/scripts/editor/dist
+
+      - name: 📝 Update version for prerelease
+        if: github.event.release.prerelease
+        run: |
+          cd ${{github.workspace}}/scripts/editor
+          pnpm version ${{ github.event.release.tag_name }} --no-git-tag-version --allow-same-version
+
+      - name: 🚢 Publish release
+        run: |
+          cd ${{github.workspace}}/scripts/editor
+          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+            pnpm publish --tag next
+          else
+            pnpm publish
+          fi

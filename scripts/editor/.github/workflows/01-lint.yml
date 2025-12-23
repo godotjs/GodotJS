@@ -1,0 +1,19 @@
+---
+name: Validate
+
+on:
+  workflow_call:
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v6
+
+      - name: 🔄 Init Cache
+        uses: nmerget/npm-cache-action@main
+
+      - name: 🔬 Validate repo
+        run: npm run lint

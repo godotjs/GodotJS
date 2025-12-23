@@ -1,0 +1,33 @@
+name: Publish Pipeline
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  init:
+    uses: ./.github/workflows/00-init.yml
+
+  build:
+    uses: ./.github/workflows/01-build.yml
+    needs: [init]
+    secrets: inherit
+    with:
+      release: true
+
+  lint:
+    uses: ./.github/workflows/01-lint.yml
+    needs: [init]
+    secrets: inherit
+
+  test:
+    uses: ./.github/workflows/01-test.yml
+    needs: [init]
+    secrets: inherit
+
+  publish:
+    uses: ./.github/workflows/02-publish.yml
+    needs: [build, lint, test]
+    secrets: inherit
+    permissions:
+      id-token: write

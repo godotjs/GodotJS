@@ -3,94 +3,107 @@ name: 🔗 GHA
 # Only run pipeline on open pull_requests and main + releases
 # we don't need it on every push and some parameters are not available for push only
 on:
-  pull_request:
-  push:
-    branches:
-      - "main"
-  release:
-    types: [ published ]
+    pull_request:
+    push:
+        branches:
+            - "main"
+    release:
+        types: [published]
 
 concurrency:
-  group: ${{ github.workflow }}|${{ github.ref_name }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}|${{ github.ref_name }}
+    cancel-in-progress: true
 
 jobs:
-  environment:
-    name: 🌳 Set Environment
-    uses: ./.github/workflows/misc_environment.yml
+    environment:
+        name: 🌳 Set Environment
+        uses: ./.github/workflows/misc_environment.yml
 
-  changesets:
-    if: github.event_name != 'release' && github.event_name != 'pull_request'
-    permissions:
-      contents: write
-      pull-requests: write
-    name: 🔄 Changesets
-    uses: ./.github/workflows/misc_changesets.yml
+    changesets:
+        if: github.event_name != 'release' && github.event_name != 'pull_request'
+        permissions:
+            contents: write
+            pull-requests: write
+        name: 🔄 Changesets
+        uses: ./.github/workflows/misc_changesets.yml
 
-  engine-version-build:
-    name: ⚙️ Build Godot Version with GodotJS
-    needs: [environment]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - version: 4.4
-            version_ref: 4.4
-          - version: 4.5
-            version_ref: 4.5
-    uses: ./.github/workflows/build_engine_version.yml
-    with:
-      version: ${{ matrix.version }}
-      version_ref: ${{ matrix.version_ref }}
-      release: ${{ github.event_name == 'release' }}
+    test-editor:
+        name: 🔬 Test editor
+        uses: ./.github/workflows/test_editor.yml
 
-  test-project:
-    name: 🔬 Test project
-    needs: [engine-version-build]
-    uses: ./.github/workflows/test_project.yml
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - version: 4.4
-          - version: 4.5
-    with:
-      version: ${{ matrix.version }}
+    engine-version-build:
+        name: ⚙️ Build Godot Version with GodotJS
+        needs: [environment]
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - version: 4.4
+                      version_ref: 4.4
+                    - version: 4.5
+                      version_ref: 4.5
+        uses: ./.github/workflows/build_engine_version.yml
+        with:
+            version: ${{ matrix.version }}
+            version_ref: ${{ matrix.version_ref }}
+            release: ${{ github.event_name == 'release' }}
 
-  builds-done:
-    name: 🏁 Builds Done
-    needs: [test-project]
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🏁 Check if all builds are done
-        run: |
-          echo "🏁 All builds done"
-        shell: bash
+    test-project:
+        name: 🔬 Test project
+        needs: [engine-version-build]
+        uses: ./.github/workflows/test_project.yml
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - version: 4.4
+                    - version: 4.5
+        with:
+            version: ${{ matrix.version }}
 
-  release:
-    name: 🦅 Release
-    needs: [changesets, builds-done]
-    if: needs.changesets.outputs.publish == 'true'
-    permissions:
-      contents: write
-    uses: ./.github/workflows/misc_release.yml
-    secrets: inherit
-    with:
-      versions: '4.4, 4.5'
+    builds-done:
+        name: 🏁 Builds Done
+        needs: [test-project, test-editor]
+        runs-on: ubuntu-latest
+        steps:
+            - name: 🏁 Check if all builds are done
+              run: |
+                  echo "🏁 All builds done"
+              shell: bash
 
-  upload-assets:
-    name: 📁 Upload Assets
-    needs: [builds-done]
-    if: github.event_name == 'release'
-    permissions:
-      contents: write
-    uses: ./.github/workflows/misc_upload_assets.yml
-    secrets: inherit
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - version: 4.4
-          - version: 4.5
-    with:
-      version: ${{ matrix.version }}
+    release:
+        name: 🦅 Release
+        needs: [changesets, builds-done]
+        if: needs.changesets.outputs.publish == 'true'
+        permissions:
+            contents: write
+        uses: ./.github/workflows/misc_release.yml
+        secrets: inherit
+        with:
+            versions: "4.4, 4.5"
+
+    upload-assets:
+        name: 📁 Upload Assets
+        needs: [builds-done]
+        if: github.event_name == 'release'
+        permissions:
+            contents: write
+        uses: ./.github/workflows/misc_upload_assets.yml
+        secrets: inherit
+        strategy:
+            fail-fast: true
+            matrix:
+                include:
+                    - version: 4.4
+                    - version: 4.5
+        with:
+            version: ${{ matrix.version }}
+
+    publish-editor:
+        name: 📦 Publish Editor
+        needs: [upload-assets]
+        if: github.event_name == 'release'
+        permissions:
+            id-token: write  # Required for OIDC
+            contents: write
+        uses: ./.github/workflows/misc_publish_editor.yml

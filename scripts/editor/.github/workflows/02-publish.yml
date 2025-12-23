@@ -1,0 +1,40 @@
+---
+name: Publish
+
+on:
+  workflow_call:
+
+jobs:
+  validate:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v6
+
+      - name: 🔄 Init Cache
+        uses: nmerget/npm-cache-action@main
+
+      - name: ⏬ Download build
+        uses: actions/download-artifact@v7
+        with:
+          name: build
+          path: dist
+
+      - name: 🔀 Extract tag
+        shell: bash
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        id: extractTag
+
+      - name: 🔜 Publish to npm
+        env:
+          TAG: ${{ steps.extractTag.outputs.tag }}
+          NPM_TOKEN: ${{ secrets.NPM_GODOT_JS_TOKEN }}
+        run: |
+          SEMVER_VERSION=$(npx find-versions-cli "$TAG")
+          npm version --no-git-tag-version "$SEMVER_VERSION"
+          npm config set registry https://registry.npmjs.org/
+          npm set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          npm pkg delete scripts.prepare
+          npm pkg delete scripts.postinstall
+          npm publish --provenance

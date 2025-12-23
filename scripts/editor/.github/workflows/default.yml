@@ -1,0 +1,28 @@
+name: Default Pipeline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  init:
+    uses: ./.github/workflows/00-init.yml
+
+  build:
+    uses: ./.github/workflows/01-build.yml
+    needs: [init]
+    secrets: inherit
+    with:
+      release: false
+
+  lint:
+    uses: ./.github/workflows/01-lint.yml
+    needs: [init]
+    secrets: inherit
+
+  test:
+    uses: ./.github/workflows/01-test.yml
+    needs: [init]
+    secrets: inherit

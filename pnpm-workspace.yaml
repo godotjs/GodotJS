@@ -1,5 +1,6 @@
 packages:
   - .
+  - scripts/editor/test
   - scripts/*
   - impl/web/bridge
   - tests/project

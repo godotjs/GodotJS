@@ -27,6 +27,13 @@ jobs:
           path: ${{github.workspace}}/tests/project/.godot/GodotJS
           retention-days: 10
 
+      - name: ⬆️ Upload editor/dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-dist
+          path: ${{github.workspace}}/scripts/editor/dist
+          retention-days: 10
+
       - name: ⬆️ Upload impl/web/js
         uses: actions/upload-artifact@v4
         with:
