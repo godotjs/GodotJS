@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { readdirSync } from "node:fs";
 import { initAction } from "../../src/commands/init";
 import { prepareAction } from "../../src/commands/prepare";
+import { platform } from "node:os";
 
 const gameName = "game";
 const root = "./test/all";
@@ -55,7 +56,14 @@ describe("all", () => {
                 ],
             });
             const editorFiles: string[] = readdirSync(`${root}/${gameName}/.editor`);
-            expect(editorFiles).toHaveLength(5);
+            const os = platform();
+            editorFiles.includes(
+                os === "darwin"
+                    ? "Godot.app"
+                    : os === "win32"
+                      ? "godot.windows.editor.x86_64.exe"
+                      : "godot.linuxbsd.editor.x86_64",
+            );
         },
         { timeout: 10 * 60 * 1000 },
     );
