@@ -37,7 +37,7 @@ jobs:
         run: |
           cd ${{github.workspace}}/scripts/editor
           if [ "${{ github.event.release.prerelease }}" = "true" ]; then
-            pnpm publish --tag next
+            pnpm publish --tag next --no-git-checks
           else
-            pnpm publish
+            pnpm publish --no-git-checks
           fi
