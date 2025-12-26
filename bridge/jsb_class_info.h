@@ -93,27 +93,6 @@ namespace jsb
         };
     }
 
-#ifdef TOOLS_ENABLED
-    struct ScriptBaseDoc
-    {
-        String brief_description;
-
-        String deprecated_message;
-        String experimental_message;
-
-        bool is_deprecated = false;
-        bool is_experimental = false;
-
-    };
-
-    struct ScriptClassDoc : ScriptBaseDoc {};
-    struct ScriptMethodDoc : ScriptBaseDoc {};
-    struct ScriptPropertyDoc : ScriptBaseDoc {};
-#else
-    struct ScriptClassDoc {};
-    struct ScriptMethodDoc {};
-    struct ScriptPropertyDoc {};
-#endif
 
     namespace ScriptMethodFlags
     {
@@ -130,9 +109,6 @@ namespace jsb
 
     struct ScriptMethodInfo
     {
-        // only valid with TOOLS_ENABLED
-        ScriptMethodDoc doc;
-
         ScriptMethodFlags::Type flags = ScriptMethodFlags::None;
 
         // v8::Global<v8::Function> cache_;
@@ -153,8 +129,6 @@ namespace jsb
         StringName class_name;
 
         String hint_string;
-
-        ScriptPropertyDoc doc;
 
         // valid only if _Evaluated flag is set in ScriptClassInfo.flags
         Variant default_value;
@@ -200,9 +174,6 @@ namespace jsb
 
         // script icon path for showing in scene hierarchy
         String icon;
-
-        // only valid with TOOLS_ENABLED
-        ScriptClassDoc doc;
 
         Dictionary rpc_config;
 
