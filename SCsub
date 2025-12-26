@@ -184,7 +184,7 @@ if quickjs_support is None and jsc_support is None and is_library_supported(v8_p
         download_dependency("lws", deps_lws_version, "lws")
 
 v8_support = validate_library_support(v8_prebuilt_libs) if quickjs_support is None else None
-lws_support = validate_library_support(lws_prebuilt_libs) if v8_support is None else None
+lws_support = validate_library_support(lws_prebuilt_libs) if v8_support is not None else None
 
 jsb_defines = [
     CompileDefines("JSB_USE_TYPESCRIPT", 1 if env["use_typescript"] else 0),
