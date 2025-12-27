@@ -14,6 +14,10 @@ concurrency:
     group: ${{ github.workflow }}|${{ github.ref_name }}
     cancel-in-progress: true
 
+permissions:
+    id-token: write  # Required for OIDC
+    contents: read
+
 jobs:
     environment:
         name: 🌳 Set Environment
@@ -103,7 +107,4 @@ jobs:
         name: 📦 Publish Editor
         needs: [upload-assets]
         if: github.event_name == 'release'
-        permissions:
-            id-token: write  # Required for OIDC
-            contents: write
         uses: ./.github/workflows/misc_publish_editor.yml

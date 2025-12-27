@@ -2,10 +2,6 @@ name: 📨 Publish editor
 on:
   workflow_call:
 
-permissions:
-  id-token: write  # Required for OIDC
-  contents: write
-
 jobs:
   publis-editor:
     runs-on: ubuntu-latest
