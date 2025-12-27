@@ -109,10 +109,12 @@ namespace jsb
     struct ScriptClassDoc : ScriptBaseDoc {};
     struct ScriptMethodDoc : ScriptBaseDoc {};
     struct ScriptPropertyDoc : ScriptBaseDoc {};
+    struct ScriptSignalDoc : ScriptBaseDoc {};
 #else
     struct ScriptClassDoc {};
     struct ScriptMethodDoc {};
     struct ScriptPropertyDoc {};
+    struct ScriptSignalDoc {};
 #endif
 
     namespace ScriptMethodFlags
@@ -126,6 +128,8 @@ namespace jsb
 
     struct ScriptSignalInfo
     {
+    	// only valid with TOOLS_ENABLED
+    	ScriptSignalDoc doc;
     };
 
     struct ScriptMethodInfo

@@ -190,7 +190,15 @@ namespace jsb
                     v8::Local<v8::Value> signal_name_js = collection->Get(p_context, index).ToLocalChecked();
                     jsb_check(signal_name_js->IsString());
                     const StringName signal_name = environment->get_string_name_cache().get_string_name(isolate, signal_name_js.As<v8::String>());
-                    p_class_info->signals.insert(signal_name, {});
+
+                	ScriptSignalInfo signal_info = {};
+#ifdef TOOLS_ENABLED
+                	if (v8::Local<v8::Value> val; !doc_map.IsEmpty() && doc_map->Get(p_context, signal_name_js).ToLocal(&val) && val->IsObject())
+                	{
+                		_parse_script_doc(isolate, p_context, val, signal_info.doc);
+                	}
+#endif // TOOLS_ENABLED
+                	p_class_info->signals.insert(signal_name, signal_info);
 
                     // instantiate a fake Signal property
                     //NOTE: we use JS string representation of signal name for info.Data() to avoid persistent StringNameID requirement.

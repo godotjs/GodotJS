@@ -1107,8 +1107,8 @@ export function createClassBinder(): ClassBinder {
 
             deprecated(message?: string) {
                 return function (
-                    target: GObjectConstructor,
-                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                    target: Godot.Object | GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext | ClassMethodDecoratorContext,
                 ) {
                     if (typeof context !== "object") {
                         throw new Error(
@@ -1132,8 +1132,8 @@ export function createClassBinder(): ClassBinder {
             },
             experimental(message?: string) {
                 return function (
-                    target: GObjectConstructor,
-                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                    target: Godot.Object | GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext | ClassMethodDecoratorContext,
                 ) {
                     if (typeof context !== "object") {
                         throw new Error(
@@ -1157,8 +1157,8 @@ export function createClassBinder(): ClassBinder {
             },
             help(message?: string) {
                 return function (
-                    target: GObjectConstructor,
-                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                    target: Godot.Object | GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext | ClassMethodDecoratorContext,
                 ) {
                     if (typeof context !== "object") {
                         throw new Error(

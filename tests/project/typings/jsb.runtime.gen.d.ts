@@ -110,23 +110,32 @@ declare module "godot.annotations" {
                 ((
                     _target: undefined, 
                     context: string
-                        | ClassMethodDecoratorContext
+                        | ClassFieldDecoratorContext
                 ) => void);
             deprecated: (message?: string) => 
-                Decorator<
-                    ClassDecoratorContext<GObjectConstructor>
-                        | ClassValueMemberDecoratorContext<GObjectConstructor>
-                >;
+                ((
+                    target: GObject
+                        | GObjectConstructor, 
+                    context: ClassDecoratorContext
+                        | ClassValueMemberDecoratorContext
+                        | ClassMethodDecoratorContext
+                ) => void);
             experimental: (message?: string) => 
-                Decorator<
-                    ClassDecoratorContext<GObjectConstructor>
-                        | ClassValueMemberDecoratorContext<GObjectConstructor>
-                >;
+                ((
+                    target: GObject
+                        | GObjectConstructor, 
+                    context: ClassDecoratorContext
+                        | ClassValueMemberDecoratorContext
+                        | ClassMethodDecoratorContext
+                ) => void);
             help: (message?: string) => 
-                Decorator<
-                    ClassDecoratorContext<GObjectConstructor>
-                        | ClassValueMemberDecoratorContext<GObjectConstructor>
-                >;
+                ((
+                    target: GObject
+                        | GObjectConstructor, 
+                    context: ClassDecoratorContext
+                        | ClassValueMemberDecoratorContext
+                        | ClassMethodDecoratorContext
+                ) => void);
         }
     type ExportOptions = {
         "class"?: any;
