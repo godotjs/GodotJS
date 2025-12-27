@@ -9,7 +9,7 @@ export_presets.cfg
 # GodotJS-specific ignores
 !**/.gdignore
 !**/.gitkeep
-./editor
+.editor
 build
 dist/
 
