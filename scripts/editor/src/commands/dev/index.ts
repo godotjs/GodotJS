@@ -6,6 +6,7 @@ import { spawn } from "child_process";
 import { platform } from "node:os";
 import { getEditorPath, osMap } from "../../utils/os";
 import { join } from "node:path";
+import { chmodSync } from "node:fs";
 
 export const devAction = async (passedConfig: DevConfigType) => {
     const config = await startConfigProcess(CONFIG_NAME, passedConfig);
@@ -33,6 +34,10 @@ export const devAction = async (passedConfig: DevConfigType) => {
             console.error(`Failed to start tsc: ${err.message}`);
         });
 
+
+        if (platform() !== "win32") {
+            chmodSync(resolvedEditorPath, 0o755);
+        }
         const editor = spawn(resolvedEditorPath, ["--editor", "--path", rootPath], {
             stdio: "inherit",
         });

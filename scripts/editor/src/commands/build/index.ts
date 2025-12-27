@@ -48,7 +48,7 @@ export const buildAction = async (passedConfig: BuildConfigType) => {
         tsc.on("close", () => {
             console.log("tsc done");
             if (platform() !== "win32") {
-                chmodSync(editorPath, 0o755);
+                chmodSync(resolvedEditorPath, 0o755);
             }
 
             if (!existsSync(resolvedBuildPath)) {
