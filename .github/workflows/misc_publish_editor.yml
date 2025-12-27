@@ -26,6 +26,7 @@ jobs:
         run: |
           cd ${{github.workspace}}/scripts/editor
           pnpm version ${{ github.event.release.tag_name }} --no-git-tag-version --allow-same-version
+          pnpm build
 
       - name: 🚢 Publish release
         run: |
