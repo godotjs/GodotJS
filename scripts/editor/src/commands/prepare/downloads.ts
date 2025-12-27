@@ -15,7 +15,8 @@ export const getDownloads = ({
     os: string;
     exportTemplates?: ExportTemplateType[];
 } & PrepareDownloadType) => {
-    const downloadVersion = gitTag ? gitTag : `v${version}`;
+    let downloadVersion = gitTag ?? version;
+    if (!downloadVersion.startsWith("v")) downloadVersion = `v${downloadVersion}`;
 
     const downloads = [
         {
