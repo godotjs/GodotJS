@@ -260,6 +260,8 @@ public:
 private:
     std::shared_ptr<jsb::Environment> create_shadow_environment();
     void destroy_shadow_environment(const std::shared_ptr<jsb::Environment>& p_env);
+
+    void reload_scripts_internal(const Array& p_scripts, bool p_soft_reload);
 };
 
 #endif

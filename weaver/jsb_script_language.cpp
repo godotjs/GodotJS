@@ -287,9 +287,29 @@ Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguage::get_built_in_templ
 }
 
 #if GODOT_4_3_OR_NEWER
+struct GodotJSScriptDepSort {
+	//must support sorting so inheritance works properly (parent must be reloaded first)
+	bool operator()(const Ref<GodotJSScript> &A, const Ref<GodotJSScript> &B) const {
+		if (A == B) {
+			return false; //shouldn't happen but..
+		}
+		const GodotJSScript *I = static_cast<const GodotJSScript *>(B->get_base_script().ptr());
+		while (I) {
+			if (I == A.ptr()) {
+				// A is a base of B
+				return true;
+			}
+
+			I = static_cast<const GodotJSScript *>(I->get_base_script().ptr());
+		}
+
+		return false; //not a base
+	}
+};
+
 void GodotJSScriptLanguage::reload_scripts(const Array& p_scripts, bool p_soft_reload)
 {
-    JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_scripts] NOT IMPLEMENTED");
+    reload_scripts_internal(p_scripts, p_soft_reload);
 }
 
 void GodotJSScriptLanguage::profiling_set_save_native_calls(bool p_enable)
@@ -300,14 +320,35 @@ void GodotJSScriptLanguage::profiling_set_save_native_calls(bool p_enable)
 
 void GodotJSScriptLanguage::reload_all_scripts()
 {
-    //TODO temporarily ignored because it's only called from `RemoteDebugger`
-    JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_all_scripts] temporarily ignored because it's only called from `RemoteDebugger`");
+#ifdef DEBUG_ENABLED
+	print_verbose("GodotJSScript: Reloading all scripts");
+	Array scripts;
+	{
+		MutexLock lock(mutex_);
+
+		SelfList<GodotJSScript> *elem = script_list_.first();
+		while (elem) {
+			if (elem->self()->get_path().is_resource_file()) {
+				print_verbose("GodotJSScript: Found: " + elem->self()->get_path());
+				scripts.push_back(Ref<GodotJSScript>(elem->self())); //cast to gdscript to avoid being erased by accident
+			}
+			elem = elem->next();
+		}
+
+#ifdef TOOLS_ENABLED
+        // TODO: Implement global mechanism.
+#endif // TOOLS_ENABLED
+	}
+
+	reload_scripts_internal(scripts, true);
+#endif // DEBUG_ENABLED
 }
 
 void GodotJSScriptLanguage::reload_tool_script(const Ref<Script>& p_script, bool p_soft_reload)
 {
-    //TODO temporarily ignored because it's only called from `ResourceSaver` (we usually write typescripts in vscode)
-    JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_tool_script] temporarily ignored because it's only called from `ResourceSaver` (we usually write typescripts in vscode)");
+	Array scripts;
+    scripts.push_back(p_script);
+	reload_scripts_internal(scripts, p_soft_reload);
 }
 
 void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions) const
@@ -625,4 +666,143 @@ void GodotJSScriptLanguage::destroy_shadow_environment(const std::shared_ptr<jsb
     }
     jsb_checkf(found, "not a registered shadow environment");
     if (should_dispose) p_env->dispose();
+}
+
+void GodotJSScriptLanguage::reload_scripts_internal(const Array& p_scripts, bool p_soft_reload)
+{
+#ifdef DEBUG_ENABLED
+
+	List<Ref<GodotJSScript>> scripts;
+	{
+		MutexLock lock(mutex_);
+
+		SelfList<GodotJSScript> *elem = script_list_.first();
+		while (elem) {
+			// Scripts will reload all subclasses, so only reload root scripts.
+			if (elem->self()->is_root_script() && !elem->self()->get_path().is_empty()) {
+				scripts.push_back(Ref<GodotJSScript>(elem->self())); //cast to gdscript to avoid being erased by accident
+			}
+			elem = elem->next();
+		}
+	}
+
+	//when someone asks you why dynamically typed languages are easier to write....
+
+	HashMap<Ref<GodotJSScript>, HashMap<ObjectID, List<Pair<StringName, Variant>>>> to_reload;
+
+	//as scripts are going to be reloaded, must proceed without locking here
+
+	scripts.sort_custom<GodotJSScriptDepSort>(); //update in inheritance dependency order
+
+	for (Ref<GodotJSScript> &scr : scripts) {
+		bool reload = p_scripts.has(scr) || to_reload.has(scr->get_base_script());
+
+		if (!reload) {
+			continue;
+		}
+
+		to_reload.insert(scr, HashMap<ObjectID, List<Pair<StringName, Variant>>>());
+
+		if (!p_soft_reload) {
+			//save state and remove script from instances
+			HashMap<ObjectID, List<Pair<StringName, Variant>>> &map = to_reload[scr];
+
+			while (scr->instances_.front()) {
+				Object *obj = scr->instances_.front()->get();
+				//save instance info
+				List<Pair<StringName, Variant>> state;
+				if (obj->get_script_instance()) {
+					obj->get_script_instance()->get_property_state(state);
+					map[obj->get_instance_id()] = state;
+					obj->set_script(Variant());
+				}
+			}
+
+			//same thing for placeholders
+#ifdef TOOLS_ENABLED
+
+			while (scr->placeholders.size()) {
+				Object *obj = (*scr->placeholders.begin())->get_owner();
+
+				//save instance info
+				if (obj->get_script_instance()) {
+					map.insert(obj->get_instance_id(), List<Pair<StringName, Variant>>());
+					List<Pair<StringName, Variant>> &state = map[obj->get_instance_id()];
+					obj->get_script_instance()->get_property_state(state);
+					obj->set_script(Variant());
+				} else {
+					// no instance found. Let's remove it so we don't loop forever
+					scr->placeholders.erase(*scr->placeholders.begin());
+				}
+			}
+
+#endif // TOOLS_ENABLED
+
+			for (const KeyValue<ObjectID, List<Pair<StringName, Variant>>> &F : scr->pending_reload_state_) {
+				map[F.key] = F.value; //pending to reload, use this one instead
+			}
+		}
+	}
+
+	for (KeyValue<Ref<GodotJSScript>, HashMap<ObjectID, List<Pair<StringName, Variant>>>> &E : to_reload) {
+		Ref<GodotJSScript> scr = E.key;
+		print_verbose("GodotJSScript: Reloading: " + scr->get_path());
+		if (scr->is_built_in()) {
+			// TODO: It would be nice to do it more efficiently than loading the whole scene again.
+			Ref<PackedScene> scene = ResourceLoader::load(scr->get_path().get_slice("::", 0), "", ResourceFormatLoader::CACHE_MODE_IGNORE_DEEP);
+			ERR_CONTINUE(scene.is_null());
+
+			Ref<SceneState> state = scene->get_state();
+			Ref<GodotJSScript> fresh = state->get_sub_resource(scr->get_path());
+			ERR_CONTINUE(fresh.is_null());
+
+			scr->set_source_code(fresh->get_source_code());
+		} else {
+			scr->load_source_code(scr->get_path());
+		}
+		scr->reload(p_soft_reload);
+
+		//restore state if saved
+		for (KeyValue<ObjectID, List<Pair<StringName, Variant>>> &F : E.value) {
+			List<Pair<StringName, Variant>> &saved_state = F.value;
+
+			Object *obj = ObjectDB::get_instance(F.key);
+			if (!obj) {
+				continue;
+			}
+
+			if (!p_soft_reload) {
+				//clear it just in case (may be a pending reload state)
+				obj->set_script(Variant());
+			}
+			obj->set_script(scr);
+
+			ScriptInstance *script_inst = obj->get_script_instance();
+
+			if (!script_inst) {
+				//failed, save reload state for next time if not saved
+				if (!scr->pending_reload_state_.has(obj->get_instance_id())) {
+					scr->pending_reload_state_[obj->get_instance_id()] = saved_state;
+				}
+				continue;
+			}
+
+			if (script_inst->is_placeholder() && scr->is_placeholder_fallback_enabled()) {
+				PlaceHolderScriptInstance *placeholder = static_cast<PlaceHolderScriptInstance *>(script_inst);
+				for (List<Pair<StringName, Variant>>::Element *G = saved_state.front(); G; G = G->next()) {
+					placeholder->property_set_fallback(G->get().first, G->get().second);
+				}
+			} else {
+				for (List<Pair<StringName, Variant>>::Element *G = saved_state.front(); G; G = G->next()) {
+					script_inst->set(G->get().first, G->get().second);
+				}
+			}
+
+			scr->pending_reload_state_.erase(obj->get_instance_id()); //as it reloaded, remove pending state
+		}
+
+		//if instance states were saved, set them!
+	}
+
+#endif // DEBUG_ENABLED
 }
