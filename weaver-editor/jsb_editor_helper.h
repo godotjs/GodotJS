@@ -10,7 +10,7 @@ private:
 
     static bool _request_codegen(jsb::JSEnvironment& p_env, GodotJSScript* p_script, const Dictionary& p_request, Dictionary& p_result);
     static StringName _get_exposed_node_class_name(const StringName& class_name);
-    static Dictionary _build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, const String& p_scene_resource_path = String());
+    static Dictionary _build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, Dictionary& r_unique_name_nodes, const String& p_scene_resource_path = String());
     static void _log_load_error(const String &p_file, const String &p_type, Error p_error);
 
 protected:

@@ -110,7 +110,7 @@ StringName GodotJSEditorHelper::_get_exposed_node_class_name(const StringName& c
     return jsb::internal::NamingUtil::get_class_name(exposed_class_name);
 }
 
-Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, const String& p_scene_resource_path)
+Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, Dictionary& r_unique_name_nodes, const String& p_scene_resource_path)
 {
     Dictionary descriptor;
     Dictionary children;
@@ -119,7 +119,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
     for (int i = 0; i < child_count; i++)
     {
         Node* child = p_node->get_child(i, true);
-        children[child->get_name()] = _build_node_type_descriptor(p_env, child);
+        children[child->get_name()] = _build_node_type_descriptor(p_env, child, r_unique_name_nodes);
     }
 
     ScriptInstance* script_instance = p_node->get_script_instance();
@@ -253,6 +253,10 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
         }
     }
 
+    if (p_node->is_unique_name_in_owner())
+    {
+        r_unique_name_nodes["%" + p_node->get_name()] = descriptor;
+    }
     return descriptor;
 }
 
@@ -330,7 +334,8 @@ Dictionary GodotJSEditorHelper::get_resource_type_descriptor(const String& p_pat
         jsb::JSEnvironment env(instantiated_scene->get_scene_file_path(), true);
 
         Array generic_arguments;
-        generic_arguments.push_back(_build_node_type_descriptor(env, instantiated_scene, p_path));
+        Dictionary unique_name_nodes;
+        generic_arguments.push_back(_build_node_type_descriptor(env, instantiated_scene, unique_name_nodes, p_path));
 
         descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
         descriptor[jsb_string_name(name)] = "PackedScene";
@@ -407,16 +412,18 @@ Dictionary GodotJSEditorHelper::get_scene_nodes(const String& p_path)
     v8::HandleScope handle_scope(isolate);
 
     Dictionary nodes;
+    Dictionary unique_name_nodes;
     int child_count = instantiated_scene->get_child_count(true);
 
     for (int i = 0; i < child_count; i++)
     {
         Node* child = instantiated_scene->get_child(i, true);
-        nodes[child->get_name()] = _build_node_type_descriptor(env, child);
+        nodes[child->get_name()] = _build_node_type_descriptor(env, child, unique_name_nodes);
     }
 
     instantiated_scene->queue_free();
 
+    nodes.merge(unique_name_nodes);
     return nodes;
 }
 
