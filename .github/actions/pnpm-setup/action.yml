@@ -1,0 +1,14 @@
+name: PNPM Setup
+description: Setup pnpm and node.js
+runs:
+  using: composite
+  steps:
+    - name: 🛫 Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: 🦕❌ Setup node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        registry-url: 'https://registry.npmjs.org'
+        cache: "pnpm"
