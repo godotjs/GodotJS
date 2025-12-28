@@ -266,7 +266,7 @@ static Dictionary _parse_jsdoc_comment(const String& p_comment, bool p_is_class 
         if (line.begins_with("@tutorial")) {
             Dictionary tutorial;
             String tutorial_line = line.substr(9).strip_edges();
-            
+
             // Format: @tutorial(Title): URL or @tutorial(Title) or @tutorial URL
             if (tutorial_line.begins_with("(")) {
                 int close_paren = tutorial_line.find(")");
@@ -346,7 +346,7 @@ static Dictionary _extract_class_doc(const String& p_source, const String& p_cla
         while (search_pos > 0 && (p_source[search_pos] == ' ' || p_source[search_pos] == '\t' || p_source[search_pos] == '\n' || p_source[search_pos] == '\r')) {
             search_pos--;
         }
-        
+
         // Check if we found the end of a comment
         if (search_pos > 0 && p_source[search_pos] == '/' && search_pos > 0 && p_source[search_pos - 1] == '*') {
             int comment_end = search_pos;
@@ -360,7 +360,7 @@ static Dictionary _extract_class_doc(const String& p_source, const String& p_cla
             }
             break;
         }
-        
+
         // Check if this is a decorator line (starts with @)
         int line_start = search_pos;
         while (line_start > 0 && p_source[line_start - 1] != '\n' && p_source[line_start - 1] != '\r') {
@@ -382,10 +382,10 @@ static bool _try_extract_signal(const String& p_declaration, Dictionary& p_doc, 
     RegEx signal_regex;
     signal_regex.compile("@\\w+\\.signal\\(\\)");
     if (!signal_regex.search(p_declaration).is_valid()) return false;
-    
+
     int name_start = p_declaration.find("accessor");
     if (name_start == -1) return false;
-    
+
     name_start += 8;
     while (name_start < p_declaration.length() && (p_declaration[name_start] == ' ' || p_declaration[name_start] == '\t')) {
         name_start++;
@@ -405,14 +405,14 @@ static bool _try_extract_signal(const String& p_declaration, Dictionary& p_doc, 
 
 static bool _try_extract_constant(const String& p_declaration, Dictionary& p_doc, Dictionary& r_constants) {
     if (p_declaration.find("=") == -1 || p_declaration.find("{") != -1) return false;
-    
+
     int name_start = 0;
     if (p_declaration.begins_with("static readonly")) {
         name_start = p_declaration.find("readonly") + 8;
     } else if (p_declaration.begins_with("readonly")) {
         name_start = 8;
     }
-    
+
     while (name_start < p_declaration.length() && (p_declaration[name_start] == ' ' || p_declaration[name_start] == '\t')) {
         name_start++;
     }
@@ -422,13 +422,13 @@ static bool _try_extract_constant(const String& p_declaration, Dictionary& p_doc
     }
     if (name_end > name_start) {
         String const_name = p_declaration.substr(name_start, name_end - name_start);
-        
+
         if (const_name.is_empty() || !(const_name[0] >= 'A' && const_name[0] <= 'Z')) return false;
-        
+
         if (r_constants.has(const_name)) return false;
-        
+
         p_doc["name"] = const_name;
-        
+
         int value_start = p_declaration.find("=", name_end);
         if (value_start != -1) {
             value_start++;
@@ -443,7 +443,7 @@ static bool _try_extract_constant(const String& p_declaration, Dictionary& p_doc
                 p_doc["value"] = p_declaration.substr(value_start, value_end - value_start).strip_edges();
             }
         }
-        
+
         r_constants[const_name] = p_doc;
         return true;
     }
@@ -454,7 +454,7 @@ static void _extract_member_docs(const String& p_source, Dictionary& r_propertie
 
 static bool _try_extract_enum(const String& p_declaration, const String& p_source, int p_pos, Dictionary& p_doc, Dictionary& r_enums, Dictionary& r_constants) {
     if (!p_declaration.begins_with("enum ")) return false;
-    
+
     int name_start = 5;
     while (name_start < p_declaration.length() && (p_declaration[name_start] == ' ' || p_declaration[name_start] == '\t')) {
         name_start++;
@@ -466,7 +466,7 @@ static bool _try_extract_enum(const String& p_declaration, const String& p_sourc
     if (name_end > name_start) {
         String enum_name = p_declaration.substr(name_start, name_end - name_start);
         r_enums[enum_name] = p_doc;
-        
+
         int body_start = p_source.find("{", p_pos);
         if (body_start != -1) {
             int body_end = p_source.find("}", body_start);
@@ -474,7 +474,7 @@ static bool _try_extract_enum(const String& p_declaration, const String& p_sourc
                 String enum_body = p_source.substr(body_start + 1, body_end - body_start - 1);
                 Dictionary enum_props, enum_methods, enum_signals, enum_constants, enum_enums;
                 _extract_member_docs(enum_body, enum_props, enum_methods, enum_signals, enum_constants, enum_enums);
-                
+
                 Array keys = enum_constants.keys();
                 for (int i = 0; i < keys.size(); i++) {
                     Variant key = keys[i];
@@ -491,7 +491,7 @@ static bool _try_extract_enum(const String& p_declaration, const String& p_sourc
 
 static bool _try_extract_property(const String& p_declaration, Dictionary& p_doc, Dictionary& r_properties) {
     if (!(p_declaration.find("accessor") != -1 || (p_declaration.find(":") != -1 && p_declaration.find("(") == -1 && !p_declaration.begins_with("@")))) return false;
-    
+
     int name_start = p_declaration.find("accessor") != -1 ? p_declaration.find("accessor") + 8 : 0;
     while (name_start < p_declaration.length() && (p_declaration[name_start] == ' ' || p_declaration[name_start] == '\t')) {
         name_start++;
@@ -502,11 +502,11 @@ static bool _try_extract_property(const String& p_declaration, Dictionary& p_doc
     }
     if (name_end > name_start) {
         String prop_name = p_declaration.substr(name_start, name_end - name_start);
-        
+
         if (r_properties.has(prop_name)) return false;
-        
+
         p_doc["name"] = prop_name;
-        
+
         int type_start = p_declaration.find(":", name_end);
         if (type_start != -1) {
             type_start++;
@@ -521,7 +521,7 @@ static bool _try_extract_property(const String& p_declaration, Dictionary& p_doc
                 p_doc["type"] = p_declaration.substr(type_start, type_end - type_start).strip_edges();
             }
         }
-        
+
         // Parse default value after =
         int value_start = p_declaration.find("=", name_end);
         if (value_start != -1) {
@@ -537,7 +537,7 @@ static bool _try_extract_property(const String& p_declaration, Dictionary& p_doc
                 p_doc["default_value"] = p_declaration.substr(value_start, value_end - value_start).strip_edges();
             }
         }
-        
+
         r_properties[prop_name] = p_doc;
         return true;
     }
@@ -546,11 +546,11 @@ static bool _try_extract_property(const String& p_declaration, Dictionary& p_doc
 
 static bool _try_extract_method(const String& p_declaration, Dictionary& p_doc, Dictionary& r_methods) {
     if (p_declaration.find("(") == -1 || p_declaration.begins_with("@")) return false;
-    
+
     Dictionary method_doc = p_doc;
     String qualifiers;
     String return_type;
-    
+
     if (p_declaration.find("static ") != -1) {
         qualifiers = "static";
     }
@@ -558,7 +558,7 @@ static bool _try_extract_method(const String& p_declaration, Dictionary& p_doc, 
         if (!qualifiers.is_empty()) qualifiers += " ";
         qualifiers += "async";
     }
-    
+
     int return_start = p_declaration.find("):");
     if (return_start == -1) {
         return_start = p_declaration.find(") =>");
@@ -575,7 +575,7 @@ static bool _try_extract_method(const String& p_declaration, Dictionary& p_doc, 
             return_type = p_declaration.substr(return_start, return_end - return_start).strip_edges();
         }
     }
-    
+
     int name_end = p_declaration.find("(");
     int name_start = name_end - 1;
     while (name_start >= 0 && (p_declaration[name_start] == ' ' || p_declaration[name_start] == '\t')) {
@@ -597,7 +597,7 @@ static bool _try_extract_method(const String& p_declaration, Dictionary& p_doc, 
         } else {
             method_doc["return_type"] = "void";
         }
-        
+
         int args_start = p_declaration.find("(") + 1;
         int args_end = p_declaration.find(")");
         if (args_end > args_start) {
@@ -608,18 +608,18 @@ static bool _try_extract_method(const String& p_declaration, Dictionary& p_doc, 
                 for (int i = 0; i < params.size(); i++) {
                     String param = params[i].strip_edges();
                     if (param.is_empty()) continue;
-                    
+
                     Dictionary arg_doc;
                     String arg_name;
                     String arg_type;
                     String default_value;
-                    
+
                     int eq_pos = param.find("=");
                     if (eq_pos != -1) {
                         default_value = param.substr(eq_pos + 1).strip_edges();
                         param = param.substr(0, eq_pos).strip_edges();
                     }
-                    
+
                     int colon_pos = param.find(":");
                     if (colon_pos != -1) {
                         arg_name = param.substr(0, colon_pos).strip_edges();
@@ -628,11 +628,11 @@ static bool _try_extract_method(const String& p_declaration, Dictionary& p_doc, 
                         arg_name = param;
                         arg_type = "any";
                     }
-                    
+
                     if (arg_name.ends_with("?")) {
                         arg_name = arg_name.substr(0, arg_name.length() - 1);
                     }
-                    
+
                     arg_doc["name"] = arg_name;
                     arg_doc["type"] = arg_type;
                     if (!default_value.is_empty()) {
@@ -645,7 +645,7 @@ static bool _try_extract_method(const String& p_declaration, Dictionary& p_doc, 
                 }
             }
         }
-        
+
         r_methods[method_name] = method_doc;
         return true;
     }
@@ -671,11 +671,11 @@ static void _extract_member_docs(const String& p_source, Dictionary& r_propertie
         // Get multiple lines to handle decorators on separate lines
         String remaining = p_source.substr(next_pos, 400);
         PackedStringArray lines = remaining.split("\n");
-        
+
         // Check first line for decorator
         String first_line = lines.size() > 0 ? lines[0].strip_edges() : "";
         String declaration;
-        
+
         // If first line is a decorator, check the next line for the actual declaration
         if (first_line.begins_with("@")) {
             declaration = first_line;
@@ -713,81 +713,113 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
 
     String base_type;
     const String class_name = GodotJSScriptLanguage::get_singleton()->get_global_class_name(get_path(), &base_type);
-    
-    Dictionary class_dict;
-    class_dict["name"] = class_name;
-    class_dict["inherits"] = base_type.is_empty() ? "Object" : base_type;
-    class_dict["is_script_doc"] = true;
-    class_dict["script_path"] = get_path();
 
-    const String source = get_source_code();
-    if (!source.is_empty()) {
-        Dictionary class_doc = _extract_class_doc(source, class_name);
-        if (class_doc.has("brief_description")) {
-            class_dict["brief_description"] = class_doc["brief_description"];
-        }
-        if (class_doc.has("description")) {
-            class_dict["description"] = class_doc["description"];
-        }
-        if (class_doc.has("tutorials")) {
-            class_dict["tutorials"] = class_doc["tutorials"];
-        }
-        if (class_doc.has("deprecated")) {
-            class_dict["deprecated"] = class_doc["deprecated"];
-        }
-        if (class_doc.has("experimental")) {
-            class_dict["experimental"] = class_doc["experimental"];
-        }
+	DocData::ClassDoc class_doc_data;
 
-        Dictionary properties;
-        Dictionary methods;
-        Dictionary signals;
-        Dictionary constants;
-        Dictionary enums;
-        _extract_member_docs(source, properties, methods, signals, constants, enums);
+	if (jsb::internal::Settings::get_jsdoc_documentation_comments()) {
+		Dictionary class_dict;
+		class_dict["name"] = class_name;
+		class_dict["inherits"] = base_type.is_empty() ? "Object" : base_type;
+		class_dict["is_script_doc"] = true;
+		class_dict["script_path"] = get_path();
 
-        Array properties_array;
-        Array keys = properties.keys();
-        for (int i = 0; i < keys.size(); i++) {
-            properties_array.push_back(properties[keys[i]]);
-        }
-        if (!properties_array.is_empty()) {
-            class_dict["properties"] = properties_array;
-        }
+		const String source = get_source_code();
+		if (!source.is_empty()) {
+			Dictionary class_doc = _extract_class_doc(source, class_name);
+			if (class_doc.has("brief_description")) {
+				class_dict["brief_description"] = class_doc["brief_description"];
+			}
+			if (class_doc.has("description")) {
+				class_dict["description"] = class_doc["description"];
+			}
+			if (class_doc.has("tutorials")) {
+				class_dict["tutorials"] = class_doc["tutorials"];
+			}
+			if (class_doc.has("deprecated")) {
+				class_dict["deprecated"] = class_doc["deprecated"];
+			}
+			if (class_doc.has("experimental")) {
+				class_dict["experimental"] = class_doc["experimental"];
+			}
 
-        Array methods_array;
-        keys = methods.keys();
-        for (int i = 0; i < keys.size(); i++) {
-            methods_array.push_back(methods[keys[i]]);
-        }
-        if (!methods_array.is_empty()) {
-            class_dict["methods"] = methods_array;
-        }
+			Dictionary properties;
+			Dictionary methods;
+			Dictionary signals;
+			Dictionary constants;
+			Dictionary enums;
+			_extract_member_docs(source, properties, methods, signals, constants, enums);
 
-        Array signals_array;
-        keys = signals.keys();
-        for (int i = 0; i < keys.size(); i++) {
-            signals_array.push_back(signals[keys[i]]);
-        }
-        if (!signals_array.is_empty()) {
-            class_dict["signals"] = signals_array;
-        }
+			Array properties_array;
+			Array keys = properties.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				properties_array.push_back(properties[keys[i]]);
+			}
+			if (!properties_array.is_empty()) {
+				class_dict["properties"] = properties_array;
+			}
 
-        Array constants_array;
-        keys = constants.keys();
-        for (int i = 0; i < keys.size(); i++) {
-            constants_array.push_back(constants[keys[i]]);
-        }
-        if (!constants_array.is_empty()) {
-            class_dict["constants"] = constants_array;
-        }
+			Array methods_array;
+			keys = methods.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				methods_array.push_back(methods[keys[i]]);
+			}
+			if (!methods_array.is_empty()) {
+				class_dict["methods"] = methods_array;
+			}
 
-        if (!enums.is_empty()) {
-            class_dict["enums"] = enums;
-        }
-    }
+			Array signals_array;
+			keys = signals.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				signals_array.push_back(signals[keys[i]]);
+			}
+			if (!signals_array.is_empty()) {
+				class_dict["signals"] = signals_array;
+			}
 
-    DocData::ClassDoc class_doc_data = DocData::ClassDoc::from_dict(class_dict);
+			Array constants_array;
+			keys = constants.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				constants_array.push_back(constants[keys[i]]);
+			}
+			if (!constants_array.is_empty()) {
+				class_dict["constants"] = constants_array;
+			}
+
+			if (!enums.is_empty()) {
+				class_dict["enums"] = enums;
+			}
+		}
+
+		class_doc_data = DocData::ClassDoc::from_dict(class_dict);
+	}
+
+
+	class_doc_data.name = class_name;
+	class_doc_data.inherits = base_type.is_empty() ? "Object" : base_type;
+	class_doc_data.is_script_doc = true;
+	class_doc_data.brief_description = script_class_info_.doc.brief_description;
+	class_doc_data.is_deprecated = script_class_info_.doc.is_deprecated;
+	class_doc_data.is_experimental = script_class_info_.doc.is_experimental;
+#if GODOT_4_3_OR_NEWER
+	class_doc_data.deprecated_message = script_class_info_.doc.deprecated_message;
+	class_doc_data.experimental_message = script_class_info_.doc.experimental_message;
+#endif
+	class_doc_data.script_path = get_path();
+	for (const auto& item : script_class_info_.properties)
+	{
+		DocData::PropertyDoc property_doc_data;
+		property_doc_data.name = item.key;
+		property_doc_data.description = item.value.doc.brief_description;
+		property_doc_data.is_deprecated = item.value.doc.is_deprecated;
+		property_doc_data.is_experimental = item.value.doc.is_experimental;
+#if GODOT_4_3_OR_NEWER
+		property_doc_data.deprecated_message = item.value.doc.deprecated_message;
+		property_doc_data.experimental_message = item.value.doc.experimental_message;
+#endif
+		class_doc_data.properties.append(property_doc_data);
+	}
+
+
     return { class_doc_data };
 }
 

@@ -272,6 +272,83 @@ namespace jsb
                 impl::Helper::to_string_opt(isolate, evaluator->Get(context, jsb_name(environment, name))));
         }
 
+        // function set_script_doc(target: GObjectConstructor, property_key: undefined, field: 0 | 1 | 2, message: string): void;
+        // function set_script_doc(target: GObject, property_key: string, field: 0 | 1 | 2, message: string): void;
+        void _set_script_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+#ifdef TOOLS_ENABLED
+            constexpr int kTarget = 0; // constructor | prototype
+            constexpr int kProperty = 1; // undefined | string
+            constexpr int kField = 2; // int32: 0, 1, 2
+            constexpr int kMessage = 3; // undefined | string
+
+            v8::Isolate* isolate = info.GetIsolate();
+            v8::HandleScope handle_scope(isolate);
+            const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+            if (info.Length() != 4 || !info[kTarget]->IsObject() || !info[kField]->IsNumber())
+            {
+                jsb_throw(isolate, "bad param");
+                return;
+            }
+            Environment* environment = Environment::wrap(isolate);
+            const v8::Local<v8::Object> target = info[kTarget].As<v8::Object>();
+            const v8::Local<v8::Value> property = info[kProperty].As<v8::Object>();
+            const ScriptClassDocField::Type doc_item = (ScriptClassDocField::Type) info[kField].As<v8::Int32>()->Value();
+            const v8::Local<v8::String> message = info[kMessage]->IsString() ? info[kMessage].As<v8::String>() : v8::String::Empty(isolate);
+            v8::Local<v8::Object> doc;
+
+            // always set doc info on `prototype`
+            if (property->IsUndefined())
+            {
+                // doc for class
+                const v8::Local<v8::Object> prototype = target->Get(context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
+                jsb_check(prototype->IsObject());
+                if (v8::Local<v8::Value> val; !prototype->Get(context, jsb_symbol(environment, Doc)).ToLocal(&val) || !val->IsObject())
+                {
+                    doc = v8::Object::New(isolate);
+                    prototype->Set(context, jsb_symbol(environment, Doc), doc).Check();
+                }
+                else
+                {
+                    doc = val.As<v8::Object>();
+                }
+            }
+            else
+            {
+                // doc for member
+                jsb_check(property->IsString() && property.As<v8::String>()->Length() != 0);
+                v8::Local<v8::Map> member_doc_map;
+                if (v8::Local<v8::Value> val; !target->Get(context, jsb_symbol(environment, MemberDocMap)).ToLocal(&val) || !val->IsMap())
+                {
+                    member_doc_map = v8::Map::New(isolate);
+                    target->Set(context, jsb_symbol(environment, MemberDocMap), member_doc_map).Check();
+                }
+                else
+                {
+                    member_doc_map = val.As<v8::Map>();
+                }
+
+                if (v8::Local<v8::Value> val; !member_doc_map->Get(context, property).ToLocal(&val) || !val->IsObject())
+                {
+                    doc = v8::Object::New(isolate);
+                    jsb_ensure(!member_doc_map->Set(context, property, doc).IsEmpty());
+                }
+                else
+                {
+                    doc = val.As<v8::Object>();
+                }
+            }
+
+            switch (doc_item)
+            {
+            case ScriptClassDocField::Deprecated:   doc->Set(context, jsb_name(environment, deprecated), message).Check(); return;
+            case ScriptClassDocField::Experimental: doc->Set(context, jsb_name(environment, experimental), message).Check(); return;
+            case ScriptClassDocField::Help:         doc->Set(context, jsb_name(environment, help), message).Check(); return;
+            }
+            jsb_throw(isolate, "bad param");
+#endif
+        }
+
         // function add_script_property(prototype: GObject, details: ScriptPropertyInfo): void
         void _add_script_property(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
@@ -504,6 +581,7 @@ namespace jsb
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_tool"), JSB_NEW_FUNCTION(context, _add_script_tool, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_icon"), JSB_NEW_FUNCTION(context, _add_script_icon, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_rpc"), JSB_NEW_FUNCTION(context, _add_script_rpc, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "set_script_doc"), JSB_NEW_FUNCTION(context, _set_script_doc, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "notify_microtasks_run"), JSB_NEW_FUNCTION(context, _notify_microtasks_run, {})).Check();
 
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "create_script_cached_property_updater"), JSB_NEW_FUNCTION(context, _create_script_cached_property_updater, {})).Check();

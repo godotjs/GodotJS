@@ -12,6 +12,7 @@
 namespace jsb::internal
 {
 #ifdef TOOLS_ENABLED
+    static constexpr char kEdExperimentalJSDocDocumentationComments[] =     JSB_MODULE_NAME_STRING "/experimental/jsdoc_documentation_comments";
     static constexpr char kEdDebuggerPort[] =     JSB_MODULE_NAME_STRING "/debugger/editor_port";
     static constexpr char kEdIgnoredClasses[] =     JSB_MODULE_NAME_STRING "/codegen/ignored_classes";
     static constexpr char kEdAutogenPath[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_path";
@@ -61,7 +62,8 @@ namespace jsb::internal
             if (EditorSettings::get_singleton())
             {
                 inited = true;
-                _EDITOR_DEF(kEdDebuggerPort, 9230, true);
+                _EDITOR_DEF(kEdExperimentalJSDocDocumentationComments, false, true);
+            	_EDITOR_DEF(kEdDebuggerPort, 9230, true);
                 _EDITOR_DEF(kEdIgnoredClasses, PackedStringArray(), false);
                 _EDITOR_DEF(kEdAutogenPath, "gen/godot", false);
                 _EDITOR_DEF(kEdGenSceneDTS, true, false);
@@ -173,6 +175,12 @@ namespace jsb::internal
     {
         init_editor_settings();
         return EDITOR_GET(kEdCodegenUseProjectSettings);
+    }
+
+	bool Settings::get_jsdoc_documentation_comments()
+    {
+    	init_editor_settings();
+    	return EDITOR_GET(kEdExperimentalJSDocDocumentationComments);
     }
 #endif
 

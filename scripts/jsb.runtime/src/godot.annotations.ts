@@ -516,6 +516,69 @@ export function icon(path: string) {
 /** @deprecated Use createClassBinder() instead. */
 export const Icon = icon;
 
+/** @deprecated Use createClassBinder() instead. */
+export function deprecated(message?: string) {
+    return function (target: any, name?: string) {
+        legacy_decorators_check(name);
+
+        if (typeof name === "undefined") {
+            jsb.internal.set_script_doc(target, undefined, 0, message ?? "");
+            return;
+        }
+
+        if (typeof name !== "string" || !name) {
+            throw new Error("Only methods/properties with a string name/key can be marked as deprecated");
+        }
+
+        jsb.internal.set_script_doc(target, name, 0, message ?? "");
+    };
+}
+
+/** @deprecated Use createClassBinder() instead. */
+export const Deprecated = deprecated;
+
+/** @deprecated Use createClassBinder() instead. */
+export function experimental(message?: string) {
+    return function (target: any, name?: string) {
+        legacy_decorators_check(name);
+
+        if (typeof name === "undefined") {
+            jsb.internal.set_script_doc(target, undefined, 1, message ?? "");
+            return;
+        }
+
+        if (typeof name !== "string" || !name) {
+            throw new Error("Only methods/properties with a string name/key can be marked as experimental");
+        }
+
+        jsb.internal.set_script_doc(target, name, 1, message ?? "");
+    };
+}
+
+/** @deprecated Use createClassBinder() instead. */
+export const Experimental = experimental;
+
+/** @deprecated Use createClassBinder() instead. */
+export function help(message?: string) {
+    return function (target: any, name?: string) {
+        legacy_decorators_check(name);
+
+        if (typeof name === "undefined") {
+            jsb.internal.set_script_doc(target, undefined, 2, message ?? "");
+            return;
+        }
+
+        if (typeof name !== "string" || !name) {
+            throw new Error("Only methods/properties with a string name/key can be given a help string");
+        }
+
+        jsb.internal.set_script_doc(target, name, 2, message ?? "");
+    };
+}
+
+/** @deprecated Use createClassBinder() instead. */
+export const Help = help;
+
 export type ClassMemberDecorator<RestrictedContext extends ClassMemberDecoratorContext = ClassMemberDecoratorContext> =
     <Context extends RestrictedContext>(
         target: ClassMemberDecoratorTarget<Context>,
@@ -641,6 +704,18 @@ export function createClassBinder(): ClassBinder {
 
             if (icon_path) {
                 jsb.internal.add_script_icon(target, icon_path);
+            }
+
+            for (const [name, message] of Object.entries(deprecated_map)) {
+                jsb.internal.set_script_doc(proto, name, 0, message ?? "");
+            }
+
+            for (const [name, message] of Object.entries(experimental_map)) {
+                jsb.internal.set_script_doc(proto, name, 1, message ?? "");
+            }
+
+            for (const [name, message] of Object.entries(help_map)) {
+                jsb.internal.set_script_doc(proto, name, 2, message ?? "");
             }
         };
     }
@@ -1025,6 +1100,84 @@ export function createClassBinder(): ClassBinder {
                     }
 
                     onready_map[name] = evaluator;
+                };
+            },
+
+            // class or member decorators
+
+            deprecated(message?: string) {
+                return function (
+                    target: GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                ) {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    if (context.kind === "class") {
+                        jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 0, message ?? "");
+                        return;
+                    }
+
+                    const name = typeof context === "object" ? context.name : context;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only methods/properties with a string name/key can be marked as deprecated");
+                    }
+
+                    deprecated_map[name] = message ?? "";
+                };
+            },
+            experimental(message?: string) {
+                return function (
+                    target: GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                ) {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    if (context.kind === "class") {
+                        jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 1, message ?? "");
+                        return;
+                    }
+
+                    const name = typeof context === "object" ? context.name : context;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only methods/properties with a string name/key can be marked as experimental");
+                    }
+
+                    experimental_map[name] = message ?? "";
+                };
+            },
+            help(message?: string) {
+                return function (
+                    target: GObjectConstructor,
+                    context: ClassDecoratorContext | ClassValueMemberDecoratorContext,
+                ) {
+                    if (typeof context !== "object") {
+                        throw new Error(
+                            "The createClassBinder() requires modern decorator support. Disable legacy decorators (experimentalDecorators) in your tsconfig.json",
+                        );
+                    }
+
+                    if (context.kind === "class") {
+                        jsb.internal.set_script_doc(target as GObjectConstructor, undefined, 2, message ?? "");
+                        return;
+                    }
+
+                    const name = typeof context === "object" ? context.name : context;
+
+                    if (typeof name !== "string") {
+                        throw new Error("Only methods/properties with a string name/key can be marked as help");
+                    }
+
+                    help_map[name] = message ?? "";
                 };
             },
         }),

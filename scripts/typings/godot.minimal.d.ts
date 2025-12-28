@@ -131,6 +131,15 @@ declare module "godot-jsb" {
         function create_script_signal_getter(name: string): (this: GObject) => Signal;
         function create_script_cached_property_updater(name: string): (this: GObject, value?: unknown) => void;
 
+        // 0: deprecated, 1: experimental, 2: help
+        function set_script_doc(
+            target: GObjectConstructor,
+            property_key: undefined,
+            field: 0 | 1 | 2,
+            message: string,
+        ): void;
+        function set_script_doc(target: GObject, property_key: string, field: 0 | 1 | 2, message: string): void;
+
         function add_module(id: string, obj: any): void;
         function find_module(id: string): any;
         function notify_microtasks_run(): void;

@@ -1,10 +1,12 @@
 ---
-"@godot-js/editor": major
+"@godot-js/editor": minor
 ---
 
-feat: replaced @bind.help/experimental/deprecated with standard JS comments and JSDoc like annotations
+feat: additionally to @bind.help/experimental/deprecated add an editor setting to enable standard JS comments and JSDoc like annotations for documentation comments.
 
-Here is an example for more information checkout https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_documentation_comments.html:
+You need to enable the setting, set ``Editor -> Editor Settings -> GodotJS -> Experimental -> Jsdoc Documentation Comments `` to ``on``.
+
+Here is an example for more information see https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_documentation_comments.html:
 ````ts
 /**
  * A brief description of the class's role and functionality.

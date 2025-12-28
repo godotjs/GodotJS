@@ -1225,6 +1225,15 @@ declare module "godot.annotations" {
         onready: (
             evaluator: string | GodotJsb.internal.OnReadyEvaluatorFunc,
         ) => (_target: undefined, context: string | ClassFieldDecoratorContext) => void;
+        deprecated: (
+            message?: string,
+        ) => (target: GObjectConstructor, context: ClassDecoratorContext | ClassValueMemberDecoratorContext) => void;
+        experimental: (
+            message?: string,
+        ) => (target: GObjectConstructor, context: ClassDecoratorContext | ClassValueMemberDecoratorContext) => void;
+        help: (
+            message?: string,
+        ) => (target: GObjectConstructor, context: ClassDecoratorContext | ClassValueMemberDecoratorContext) => void;
     };
 
     type ExportOptions = {
