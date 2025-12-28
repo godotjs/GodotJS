@@ -1,16 +1,19 @@
 // meta-description: Classic movement for gravity games (platformer, ...)
 
-import { _BASE_, ProjectSettings, Input, move_toward, Variant } from "godot";
-import { export_ } from "jsb.core";
+import { _BASE_, ProjectSettings, Input, move_toward, Variant, Vector2 } from "godot";
+import { createClassBinder } from "godot.annotations";
 
 const jump_velocity = -400;
 
 // Get the gravity from the project settings to be synced with RigidBody nodes.
 const gravity = <number> ProjectSettings.get_setting("physics/2d/default_gravity");
 
+const bind = createClassBinder();
+
+@bind()
 export default class _CLASS_ extends _BASE_ {
-    @export_(Variant.Type.TYPE_FLOAT)
-    this.speed: number = 300;
+    @bind.export(Variant.Type.TYPE_FLOAT)
+    accessor speed: number = 300;
 
     _physics_process(delta: number): void {
         let velocity = this.velocity;
