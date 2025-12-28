@@ -31,7 +31,6 @@
         "postbuild": "tsc --emitDeclarationOnly",
         "generate:api-docs": "tsx src/api-docs.ts",
         "lint": "eslint *.ts",
-        "postinstall": "node src/utils/prepare.ts",
         "prebuild": "node src/utils/prepare.ts",
         "pretest": "node src/utils/prepare.ts",
         "test": "vitest run --no-file-parallelism"
