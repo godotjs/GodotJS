@@ -843,82 +843,84 @@ namespace jsb
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
         const String name = impl::Helper::to_string(isolate, info[0]);
-        if (const DocData::ClassDoc* ptr = EditorHelp::get_doc_data()->class_list.getptr(name))
-        {
-            const DocData::ClassDoc& class_doc = *ptr;
-            v8::Local<v8::Object> class_doc_obj = v8::Object::New(isolate);
 
-            // doc:class<brief>
-            set_field(isolate, context, class_doc_obj, JSB_GET_FIELD_NAME_PRESET(class_doc, brief_description));
+		if (DocTools *doc_tools = EditorHelp::get_doc_data()) {
+			if (const DocData::ClassDoc *ptr = doc_tools->class_list.getptr(name)){
+        		const DocData::ClassDoc& class_doc = *ptr;
+        		v8::Local<v8::Object> class_doc_obj = v8::Object::New(isolate);
 
-            // doc:constants
-            {
-                JSB_HANDLE_SCOPE(isolate);
+        		// doc:class<brief>
+        		set_field(isolate, context, class_doc_obj, JSB_GET_FIELD_NAME_PRESET(class_doc, brief_description));
 
-                v8::Local<v8::Object> constants_obj = v8::Object::New(isolate);
-                set_field(isolate, context, class_doc_obj, "constants", constants_obj);
-                for (const DocData::ConstantDoc& constant_doc : class_doc.constants)
-                {
-                    JSB_HANDLE_SCOPE(isolate);
-                    v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
-                    String constant_name = internal::NamingUtil::get_constant_name(constant_doc.name);
-                    constants_obj->Set(context, impl::Helper::new_string(isolate, constant_name), constant_obj).Check();
+        		// doc:constants
+        		{
+        			JSB_HANDLE_SCOPE(isolate);
 
-                    set_field(isolate, context, constant_obj, "description", constant_doc.description);
-                }
-            }
+        			v8::Local<v8::Object> constants_obj = v8::Object::New(isolate);
+        			set_field(isolate, context, class_doc_obj, "constants", constants_obj);
+        			for (const DocData::ConstantDoc& constant_doc : class_doc.constants)
+        			{
+        				JSB_HANDLE_SCOPE(isolate);
+        				v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
+        				String constant_name = internal::NamingUtil::get_constant_name(constant_doc.name);
+        				constants_obj->Set(context, impl::Helper::new_string(isolate, constant_name), constant_obj).Check();
 
-            // doc:methods
-            {
-                JSB_HANDLE_SCOPE(isolate);
+        				set_field(isolate, context, constant_obj, "description", constant_doc.description);
+        			}
+        		}
 
-                v8::Local<v8::Object> methods_obj = v8::Object::New(isolate);
-                set_field(isolate, context, class_doc_obj, "methods", methods_obj);
-                for (const DocData::MethodDoc& method_doc : class_doc.methods)
-                {
-                    JSB_HANDLE_SCOPE(isolate);
-                    v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
-                    String method_name = internal::NamingUtil::get_member_name(method_doc.name);
-                    methods_obj->Set(context, impl::Helper::new_string(isolate, method_name), method_obj).Check();
+        		// doc:methods
+        		{
+        			JSB_HANDLE_SCOPE(isolate);
 
-                    set_field(isolate, context, method_obj, "description", method_doc.description);
-                }
-            }
+        			v8::Local<v8::Object> methods_obj = v8::Object::New(isolate);
+        			set_field(isolate, context, class_doc_obj, "methods", methods_obj);
+        			for (const DocData::MethodDoc& method_doc : class_doc.methods)
+        			{
+        				JSB_HANDLE_SCOPE(isolate);
+        				v8::Local<v8::Object> method_obj = v8::Object::New(isolate);
+        				String method_name = internal::NamingUtil::get_member_name(method_doc.name);
+        				methods_obj->Set(context, impl::Helper::new_string(isolate, method_name), method_obj).Check();
 
-            // doc:properties
-            {
-                JSB_HANDLE_SCOPE(isolate);
-                v8::Local<v8::Object> properties_obj = v8::Object::New(isolate);
-                set_field(isolate, context, class_doc_obj, "properties", properties_obj);
-                for (const DocData::PropertyDoc& property_doc : class_doc.properties)
-                {
-                    JSB_HANDLE_SCOPE(isolate);
-                    v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
-                    String property_name = internal::NamingUtil::get_member_name(property_doc.name);
-                    properties_obj->Set(context, impl::Helper::new_string(isolate, property_name), property_obj).Check();
+        				set_field(isolate, context, method_obj, "description", method_doc.description);
+        			}
+        		}
 
-                    set_field(isolate, context, property_obj, "description", property_doc.description);
-                }
-            }
+        		// doc:properties
+        		{
+        			JSB_HANDLE_SCOPE(isolate);
+        			v8::Local<v8::Object> properties_obj = v8::Object::New(isolate);
+        			set_field(isolate, context, class_doc_obj, "properties", properties_obj);
+        			for (const DocData::PropertyDoc& property_doc : class_doc.properties)
+        			{
+        				JSB_HANDLE_SCOPE(isolate);
+        				v8::Local<v8::Object> property_obj = v8::Object::New(isolate);
+        				String property_name = internal::NamingUtil::get_member_name(property_doc.name);
+        				properties_obj->Set(context, impl::Helper::new_string(isolate, property_name), property_obj).Check();
 
-            // doc:signals
-            {
-                JSB_HANDLE_SCOPE(isolate);
+        				set_field(isolate, context, property_obj, "description", property_doc.description);
+        			}
+        		}
 
-                v8::Local<v8::Object> signals_obj = v8::Object::New(isolate);
-                set_field(isolate, context, class_doc_obj, "signals", signals_obj);
-                for (const DocData::MethodDoc& signal_doc : class_doc.signals)
-                {
-                    JSB_HANDLE_SCOPE(isolate);
-                    v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
-                    String signal_name = internal::NamingUtil::get_member_name(signal_doc.name);
-                    signals_obj->Set(context, impl::Helper::new_string(isolate, signal_name), signal_obj).Check();
+        		// doc:signals
+        		{
+        			JSB_HANDLE_SCOPE(isolate);
 
-                    set_field(isolate, context, signal_obj, "description", signal_doc.description);
-                }
-            }
+        			v8::Local<v8::Object> signals_obj = v8::Object::New(isolate);
+        			set_field(isolate, context, class_doc_obj, "signals", signals_obj);
+        			for (const DocData::MethodDoc& signal_doc : class_doc.signals)
+        			{
+        				JSB_HANDLE_SCOPE(isolate);
+        				v8::Local<v8::Object> signal_obj = v8::Object::New(isolate);
+        				String signal_name = internal::NamingUtil::get_member_name(signal_doc.name);
+        				signals_obj->Set(context, impl::Helper::new_string(isolate, signal_name), signal_obj).Check();
 
-            info.GetReturnValue().Set(class_doc_obj);
+        				set_field(isolate, context, signal_obj, "description", signal_doc.description);
+        			}
+        		}
+
+        		info.GetReturnValue().Set(class_doc_obj);
+        	}
         }
     }
 
