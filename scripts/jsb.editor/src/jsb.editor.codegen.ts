@@ -1882,7 +1882,7 @@ const annotation_types = {
                                                 type: DescriptorType.Godot,
                                                 name: "string",
                                             },
-                                            { type: DescriptorType.Godot, name: "ClassMethodDecoratorContext" },
+                                            { type: DescriptorType.Godot, name: "ClassFieldDecoratorContext" },
                                         ],
                                     },
                                 },
@@ -1895,23 +1895,43 @@ const annotation_types = {
                             { name: "message", type: { type: DescriptorType.Godot, name: "string" }, optional: true },
                         ],
                         returns: {
-                            type: DescriptorType.Godot,
-                            name: "Decorator",
-                            arguments: [
+                            type: DescriptorType.FunctionLiteral,
+                            parameters: [
                                 {
-                                    type: DescriptorType.Union,
-                                    types: [
-                                        {
-                                            type: DescriptorType.Godot,
-                                            name: "ClassDecoratorContext",
-                                            arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
-                                        },
-                                        {
-                                            type: DescriptorType.Godot,
-                                            name: "ClassValueMemberDecoratorContext",
-                                            arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
-                                        },
-                                    ],
+                                    name: "target",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObject",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObjectConstructor",
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    name: "context",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassValueMemberDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassMethodDecoratorContext",
+                                            },
+                                        ],
+                                    },
                                 },
                             ],
                         },
@@ -1922,23 +1942,43 @@ const annotation_types = {
                             { name: "message", type: { type: DescriptorType.Godot, name: "string" }, optional: true },
                         ],
                         returns: {
-                            type: DescriptorType.Godot,
-                            name: "Decorator",
-                            arguments: [
+                            type: DescriptorType.FunctionLiteral,
+                            parameters: [
                                 {
-                                    type: DescriptorType.Union,
-                                    types: [
-                                        {
-                                            type: DescriptorType.Godot,
-                                            name: "ClassDecoratorContext",
-                                            arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
-                                        },
-                                        {
-                                            type: DescriptorType.Godot,
-                                            name: "ClassValueMemberDecoratorContext",
-                                            arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
-                                        },
-                                    ],
+                                    name: "target",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObject",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObjectConstructor",
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    name: "context",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassValueMemberDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassMethodDecoratorContext",
+                                            },
+                                        ],
+                                    },
                                 },
                             ],
                         },
@@ -1949,23 +1989,43 @@ const annotation_types = {
                             { name: "message", type: { type: DescriptorType.Godot, name: "string" }, optional: true },
                         ],
                         returns: {
-                            type: DescriptorType.Godot,
-                            name: "Decorator",
-                            arguments: [
+                            type: DescriptorType.FunctionLiteral,
+                            parameters: [
                                 {
-                                    type: DescriptorType.Union,
-                                    types: [
-                                        {
-                                            type: DescriptorType.Godot,
-                                            name: "ClassDecoratorContext",
-                                            arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
-                                        },
-                                        {
-                                            type: DescriptorType.Godot,
-                                            name: "ClassValueMemberDecoratorContext",
-                                            arguments: [{ type: DescriptorType.Godot, name: "GObjectConstructor" }],
-                                        },
-                                    ],
+                                    name: "target",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObject",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "GObjectConstructor",
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    name: "context",
+                                    type: {
+                                        type: DescriptorType.Union,
+                                        types: [
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassValueMemberDecoratorContext",
+                                            },
+                                            {
+                                                type: DescriptorType.Godot,
+                                                name: "ClassMethodDecoratorContext",
+                                            },
+                                        ],
+                                    },
                                 },
                             ],
                         },

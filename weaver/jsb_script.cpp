@@ -268,6 +268,9 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
     class_doc_data.name = class_name;
     class_doc_data.inherits = base_type.is_empty() ? "Object" : base_type;
     class_doc_data.is_script_doc = true;
+    class_doc_data.script_path = get_path();
+
+	/* TODO: Can we read the source code and use JSDoc and ClassDoc.from_dict({...}) instead of annotations */
     class_doc_data.brief_description = script_class_info_.doc.brief_description;
     class_doc_data.is_deprecated = script_class_info_.doc.is_deprecated;
     class_doc_data.is_experimental = script_class_info_.doc.is_experimental;
@@ -275,7 +278,6 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
     class_doc_data.deprecated_message = script_class_info_.doc.deprecated_message;
     class_doc_data.experimental_message = script_class_info_.doc.experimental_message;
 #endif
-    class_doc_data.script_path = get_path();
     for (const auto& item : script_class_info_.properties)
     {
         DocData::PropertyDoc property_doc_data;
@@ -288,6 +290,32 @@ Vector<DocData::ClassDoc> GodotJSScript::get_documentation() const
         property_doc_data.experimental_message = item.value.doc.experimental_message;
 #endif
         class_doc_data.properties.append(property_doc_data);
+    }
+    for (const auto& item : script_class_info_.methods)
+    {
+        DocData::MethodDoc method_doc_data;
+        method_doc_data.name = item.key;
+        method_doc_data.description = item.value.doc.brief_description;
+        method_doc_data.is_deprecated = item.value.doc.is_deprecated;
+        method_doc_data.is_experimental = item.value.doc.is_experimental;
+#if GODOT_4_3_OR_NEWER
+        method_doc_data.deprecated_message = item.value.doc.deprecated_message;
+        method_doc_data.experimental_message = item.value.doc.experimental_message;
+#endif
+        class_doc_data.methods.append(method_doc_data);
+    }
+    for (const auto& item : script_class_info_.signals)
+    {
+        DocData::MethodDoc signals_doc_data;
+        signals_doc_data.name = item.key;
+        signals_doc_data.description = item.value.doc.brief_description;
+        signals_doc_data.is_deprecated = item.value.doc.is_deprecated;
+        signals_doc_data.is_experimental = item.value.doc.is_experimental;
+#if GODOT_4_3_OR_NEWER
+        signals_doc_data.deprecated_message = item.value.doc.deprecated_message;
+        signals_doc_data.experimental_message = item.value.doc.experimental_message;
+#endif
+        class_doc_data.signals.append(signals_doc_data);
     }
 
     return { class_doc_data };

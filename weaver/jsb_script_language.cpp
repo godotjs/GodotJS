@@ -56,6 +56,8 @@ GodotJSScriptLanguage::GodotJSScriptLanguage()
     js_class_name_matcher1_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*class\s*(\w+)\s+extends\s+(\w+))");
     js_class_name_matcher2_ = RegEx::create_from_string(R"(\s*exports.default\s*=\s*(\w+)\s*;?)");
     ts_class_name_matcher_ = RegEx::create_from_string(R"(\s*(@[tT]ool\s*\(\s*\)\s*\n*\s*)?export\s+default\s+class\s+(\w+)(\s*<)?[^\n]*(?:>|\s+)extends\s+(\w+))");
+	ts_icon_matcher_ = RegEx::create_from_string(R"(@(?:\w+\.)?[iI]con\([\"']([^\"']+)[\"']\))");
+
     jsb::internal::StringNames::create();
 }
 
@@ -380,6 +382,17 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
     {
         // hope it's a typescript file
         jsb_check(!ts_class_name_matcher_.is_null());
+
+#if TOOLS_ENABLED
+    	// Custom icons only appear in editor
+    	Ref<RegExMatch> icon_match =  ts_icon_matcher_->search(source);
+    	if (icon_match.is_valid()) {
+    		if (r_icon_path) {
+    			*r_icon_path = icon_match->get_string(1);
+    		}
+    	}
+#endif
+
 
         Ref<RegExMatch> match =  ts_class_name_matcher_->search(source);
         if (match.is_valid() && match->get_group_count() == 4)
