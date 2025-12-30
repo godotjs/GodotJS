@@ -542,6 +542,7 @@ namespace jsb
                 v8::Isolate::Scope isolate_scope(isolate_);
                 v8::HandleScope handle_scope(isolate_);
                 const v8::Local<v8::Context> context = context_.Get(isolate_);
+                v8::Context::Scope context_scope(context);
 
                 for (const Message& message : messages)
                 {
@@ -639,7 +640,7 @@ namespace jsb
         //TODO 0. HOW TO HANDLE COMPLICATED SITUATIONS? SUCH AS NESTED OBJECTS?
         jsb_nop();
 
-        transfer_in(*p_data);
+        transfer_in(p_context, *p_data);
 
         // call 'ontransfer'
         {
@@ -681,6 +682,13 @@ namespace jsb
         v8::Local<v8::Value> value;
         if (p_message)
         {
+            const std::vector<TransferData>& transfers = p_message->get_transfers();
+
+            for (const auto& transfer : transfers)
+            {
+                p_env->transfer_in(p_context, transfer);
+            }
+
 #if JSB_WITH_V8
             Serialization::VariantDeserializerDelegate delegate(p_env, p_message->get_transfers());
             v8::ValueDeserializer deserializer(isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size(), &delegate);
@@ -951,6 +959,8 @@ namespace jsb
         const NativeClassID class_id = object_handle->class_id;
         // hold it in a local variable to avoid gc too early
         v8::Global<v8::Object> obj_ref = std::move(object_handle->ref_);
+
+        // TODO: Look into if we ought to be calling obj->free_instance_binding(this)
 
         //TODO do not clear the internal field if calling from JS GC
         // if (p_finalize != FinalizationType::None)
@@ -1963,10 +1973,11 @@ namespace jsb
         return _call(isolate, context, js_func.object_.Get(isolate), v8::Undefined(isolate), p_args, p_argcount, r_error);
     }
 
-    void Environment::transfer_out(NativeObjectID p_worker_handle_id, int transfer_index, const Variant& p_variant, TransferData& r_transfer_data)
+    void Environment::prepare_transfer_out(NativeObjectID p_worker_handle_id, int transfer_index, const Variant& p_variant, TransferData& r_transfer_data)
     {
         r_transfer_data.source_worker_id = p_worker_handle_id;
         r_transfer_data.transfer_index = transfer_index;
+        r_transfer_data.variant = p_variant;
 
         if (p_variant.get_type() == Variant::OBJECT)
         {
@@ -1981,10 +1992,18 @@ namespace jsb
 
                 script_instance->get_property_state(r_transfer_data.state);
                 r_transfer_data.script_path = script->get_path();
-
-                obj->set_script_instance(nullptr);
             }
+        }
+    }
 
+    void Environment::finalize_transfer_out(const TransferData& p_transfer_data)
+    {
+        const Variant& variant = p_transfer_data.variant;
+
+        if (variant.get_type() == Variant::OBJECT)
+        {
+            Object* obj = variant;
+            obj->set_script_instance(nullptr);
             free_object(obj, FinalizationType::None);
         }
 
@@ -1992,11 +2011,9 @@ namespace jsb
         // copy-on-write semantics. Technically, it may be advantageous for us to (in future?) clear the variant in the
         // source environment since Godot has optimizations in place that will skip reallocation of the underlying data
         // upon mutation if there's a single reference to that data.
-
-        r_transfer_data.variant = p_variant;
     }
 
-    void Environment::transfer_in(const TransferData& p_data)
+    void Environment::transfer_in(const v8::Local<v8::Context>& p_context, const TransferData& p_data)
     {
         if (p_data.variant.get_type() == Variant::Type::OBJECT)
         {
@@ -2009,21 +2026,38 @@ namespace jsb
                 return;
             }
 
-            // restore the object state if it's a GodotJSScript
+            jsb_checkf(!object_db_.has_object(instance), "transferred in an object already registered in the environment");
+
+            if (!object_db_.has_object(instance))
+            {
+                v8::Local<v8::Object> obj;
+                jsb_check(TypeConvert::gd_obj_to_js(isolate_, p_context, instance, obj));
+
+                if (instance->is_ref_counted())
+                {
+                    RefCounted *reference = static_cast<RefCounted *>(instance);
+
+                    if (reference->unreference())
+                    {
+                        // Uh, we really shouldn't end up here. This can only occur if another thread is doing something it
+                        // really shouldn't be doing. I guess we don't want to be responsible for a leak, but this is bad.
+                        memdelete(reference);
+                        JSB_LOG(Error, "transferred object unexpectedly freed: %d", (uint64_t) object_id);
+                        return;
+                    }
+                }
+            }
+
             if (!p_data.script_path.is_empty())
             {
-                // 1. create a script and script instance
-                // 2. attach the script & script instance to the object
-                const Ref<GodotJSScript> script = ResourceLoader::load(p_data.script_path);
-                jsb_check(script.is_valid());
-                jsb_unused(script->can_instantiate());
-                ScriptInstance* script_instance = script->instance_construct(instance, false);
-                jsb_check(script_instance);
+                ScriptInstance *script_instance = instance->get_script_instance();
 
-                // 3. restore the object state
-                for (const Pair<StringName, Variant>& pair : p_data.state)
+                if (script_instance)
                 {
-                    script_instance->set(pair.first, pair.second);
+                    for (const Pair<StringName, Variant>& pair : p_data.state)
+                    {
+                        script_instance->set(pair.first, pair.second);
+                    }
                 }
             }
         }
@@ -2034,7 +2068,8 @@ namespace jsb
         if (p_variant.get_type() == Variant::OBJECT)
         {
             TransferData* transfer_data = memnew(TransferData);
-            p_from->transfer_out(p_worker_handle_id, 0, p_variant, *transfer_data);
+            p_from->prepare_transfer_out(p_worker_handle_id, 0, p_variant, *transfer_data);
+            p_from->finalize_transfer_out(*transfer_data);
             p_to->add_async_call(AsyncCall::TYPE_TRANSFER_, transfer_data);
         }
         else

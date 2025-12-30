@@ -322,8 +322,9 @@ namespace jsb
          */
         Variant call_script_method(ScriptClassID p_script_class_id, NativeObjectID p_object_id, const StringName& p_method, const Variant** p_argv, int p_argc, Callable::CallError& r_error);
 
-        void transfer_out(NativeObjectID p_worker_handle_id, int transfer_index, const Variant& p_variant, TransferData& r_transfer_data);
-        void transfer_in(const TransferData& p_data);
+        void prepare_transfer_out(NativeObjectID p_worker_handle_id, int transfer_index, const Variant& p_variant, TransferData& r_transfer_data);
+        void finalize_transfer_out(const TransferData& p_data);
+        void transfer_in(const v8::Local<v8::Context>& p_context, const TransferData& p_data);
 
         // [EXPERIMENTAL] transfer object between environments.
         // call this method of the source environment in the source environment thread.

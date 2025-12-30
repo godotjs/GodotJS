@@ -3130,7 +3130,12 @@ export class TypeDB {
     }
 
     make_classname(class_name: string, internal?: boolean): string {
+        if (class_name.length === 0) {
+            return "any";
+        }
+
         const types = this;
+        class_name = class_name.replace("-", "");
 
         if (class_name.indexOf(".") > 0) {
             const layers = class_name.split(".");
@@ -3426,7 +3431,7 @@ export class TSDCodeGen {
         return typeof name === "string" && typeof this._types.classes[name] !== "undefined";
     }
 
-    async emit() {
+    async emit(showToast: boolean = true) {
         await frame_step();
 
         const tasks = new CodegenTasks("Generating godot.d.ts");
@@ -3510,7 +3515,7 @@ export class TSDCodeGen {
             this.cleanup();
         });
 
-        return tasks.submit();
+        return tasks.submit(showToast);
     }
 
     private emit_utility(utility_func: GodotJsb.editor.MethodBind) {

@@ -130,6 +130,7 @@ namespace jsb
                                 v8::Isolate::Scope isolate_scope(isolate);
                                 v8::HandleScope handle_scope(isolate);
                                 const v8::Local<v8::Context> context = env->get_context();
+                                v8::Context::Scope context_scope(context);
                                 const v8::Local<v8::Object> context_obj = context_obj_handle.Get(isolate);
 
                                 for (const WorkerMessage& message : messages)
@@ -240,7 +241,7 @@ namespace jsb
 
                 for (const auto& transfer : p_message.get_transfers())
                 {
-                    p_env->transfer_in(transfer);
+                    p_env->transfer_in(p_context, transfer);
                 }
             }
 
@@ -685,21 +686,28 @@ namespace jsb
 
                     Variant variant;
 
-                    if (!TypeConvert::js_to_gd_var(isolate, context, item.As<v8::Object>(), Variant::Type::ARRAY, variant))
+                    if (!TypeConvert::js_to_gd_var(isolate, context, item.As<v8::Object>(), variant))
                     {
                         jsb_throw(isolate, "transfer list must contain Godot object/variant types only");
                         return {nullptr, 0};
                     }
 
                     TransferData transfer_data;
-                    from_env->transfer_out(NativeObjectID::none(), transfers.size(), variant, transfer_data);
+                    from_env->prepare_transfer_out(NativeObjectID::none(), transfers.size(), variant, transfer_data);
                     transfers.insert(variant, transfer_data);
                 }
             }
             else
             {
                 Variant transfer_var;
-                if (!TypeConvert::js_to_gd_var(isolate, context, transfer_arg.As<v8::Object>(), Variant::Type::ARRAY, transfer_var))
+
+                if (!TypeConvert::js_to_gd_var(isolate, context, transfer_arg.As<v8::Object>(), Variant::Type::OBJECT, transfer_var))
+                {
+                    jsb_throw(isolate, "transfer list must be an array");
+                    return std::pair<uint8_t*, size_t>();
+                }
+
+                if (!transfer_var.is_array())
                 {
                     jsb_throw(isolate, "transfer list must be an array");
                     return std::pair<uint8_t*, size_t>();
@@ -711,7 +719,7 @@ namespace jsb
                 {
                     Variant& variant = transfer_arr[i];
                     TransferData transfer_data;
-                    from_env->transfer_out(NativeObjectID::none(), i, variant, transfer_data);
+                    from_env->prepare_transfer_out(NativeObjectID::none(), i, variant, transfer_data);
                     transfers.insert(variant, transfer_data);
                 }
             }
@@ -734,6 +742,11 @@ namespace jsb
         if (write_result.IsNothing())
         {
             return {nullptr, 0};
+        }
+
+        for (const auto& entry : transfers)
+        {
+            from_env->finalize_transfer_out(entry.value);
         }
 
         return serializer.Release();
