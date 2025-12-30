@@ -4,3 +4,4 @@
 .godot/
 node_modules/
 .idea
+typings/*.gen.d.ts

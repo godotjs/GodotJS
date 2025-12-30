@@ -203,7 +203,7 @@ declare module "jsb.editor.codegen" {
         private split;
         private cleanup;
         has_class(name?: string): boolean;
-        emit(): Promise<void>;
+        emit(showToast?: boolean): Promise<void>;
         private emit_utility;
         private emit_global;
         private emit_aliases;

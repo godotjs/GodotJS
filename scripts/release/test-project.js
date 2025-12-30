@@ -15,6 +15,10 @@ const bin = process.argv[2] || defaultBin;
 const projectPath = join(__dirname, "../../tests/project");
 
 try {
+    const generateTypes = execSync(`${bin} -s generate-types.js --headless --path ${projectPath}`, {
+        encoding: "utf-8",
+    });
+    console.log(generateTypes);
     const output = execSync(`${bin} --audio-driver Dummy --headless --path ${projectPath}`, {
         encoding: "utf-8",
     });
