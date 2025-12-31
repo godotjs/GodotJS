@@ -42,6 +42,12 @@ private:
      */
     jsb::StatelessScriptClassInfo script_class_info_;
 
+#ifdef DEBUG_ENABLED
+	HashMap<ObjectID, List<Pair<StringName, Variant>>> pending_reload_state_;
+#endif
+
+    friend class GodotJSScriptLanguage;
+
 private:
     void load_module_immediately();
     jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately(); }
@@ -55,6 +61,8 @@ private:
 public:
     GodotJSScript();
     virtual ~GodotJSScript() override;
+
+	bool is_root_script() const { return get_base_script().is_null(); }
 
     StringName get_module_id() const { return script_class_info_.module_id; };
 
