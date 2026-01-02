@@ -3,7 +3,7 @@ import { startConfigProcess } from "../../utils/config-process";
 import { CONFIG_NAME } from "../../data";
 import { osMap } from "../../utils/os";
 import { platform } from "os";
-import { createWriteStream, existsSync, mkdirSync, unlinkSync, readdirSync, writeFileSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync, unlinkSync, readdirSync, writeFileSync, chmodSync } from "node:fs";
 import { get } from "node:https";
 import AdmZip from "adm-zip";
 import { getDownloads } from "./downloads";
@@ -135,6 +135,9 @@ export const prepareAction = async (passedConfig: PrepareConfigType) => {
                     writeFileSync(generateTypesPath, getGenerateTypesFile());
 
                     console.log("Generating types...");
+                    if (platform() !== "win32") {
+                        chmodSync(markerPath, 0o755);
+                    }
                     execSync(`"${markerPath}" -s generate-types.js --headless --path "${rootPath}"`, {
                         stdio: "inherit",
                     });
