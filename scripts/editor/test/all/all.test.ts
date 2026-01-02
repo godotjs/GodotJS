@@ -5,7 +5,7 @@ import { prepareAction } from "../../src/commands/prepare";
 import { platform } from "node:os";
 
 const gameName = "game";
-const root = "./test/all";
+const root = `./test/all/${gameName}`;
 
 const expectedFiles = [
     "node_modules",
@@ -34,20 +34,21 @@ describe("all", () => {
                 dry: false,
                 buildPath: "./build",
             });
-            const files: string[] = readdirSync(`${root}/${gameName}`);
+            const files: string[] = readdirSync(root);
             expect(files).toHaveLength(12);
             for (const file of expectedFiles) {
                 expect(files).toContain(file);
             }
 
             await prepareAction({
-                rootPath: `${root}/${gameName}`,
-                gitTag: "v1.1.0-web-dlink",
+                rootPath: root,
+                gitTag: "v1.1.0-generate-typings",
                 editorPath: ".editor",
                 templatesPath: ".editor/templates",
                 dry: false,
                 editorJSEngine: "v8",
                 godotVersion: "4.5",
+                generateInitialTypings: true,
                 exportTemplates: [
                     {
                         target: "web",
@@ -55,7 +56,7 @@ describe("all", () => {
                     },
                 ],
             });
-            const editorFiles: string[] = readdirSync(`${root}/${gameName}/.editor`);
+            const editorFiles: string[] = readdirSync(`${root}/.editor`);
             const os = platform();
             editorFiles.includes(
                 os === "darwin"

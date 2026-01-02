@@ -47,7 +47,6 @@ const writeIgnoreFolders = (projectDir: string, buildPath: string, editorPath: s
 
 const generateFiles = ({
     createNewProject,
-    name,
     root,
     forceDelete,
     filesToCreate,
@@ -56,7 +55,6 @@ const generateFiles = ({
     templatesPath,
 }: {
     createNewProject: boolean;
-    name: string;
     root: string;
     forceDelete: boolean;
     filesToCreate: Record<string, string>;
@@ -64,27 +62,22 @@ const generateFiles = ({
     editorPath: string;
     templatesPath: string;
 }) => {
-    let projectDir = join(root, name);
     if (createNewProject) {
-        if (existsSync(projectDir)) {
+        if (existsSync(root)) {
             if (forceDelete) {
-                rimrafSync(projectDir);
-                mkdirSync(projectDir);
-            } else {
-                throw Error(`${projectDir} exists already`);
+                rimrafSync(root);
+                mkdirSync(root, { recursive: true });
             }
         } else {
-            mkdirSync(projectDir);
+            mkdirSync(root, { recursive: true });
         }
-    } else {
-        projectDir = ".";
     }
 
-    writeIgnoreFolders(projectDir, buildPath, editorPath, templatesPath);
+    writeIgnoreFolders(root, buildPath, editorPath, templatesPath);
 
     for (const [fileName, content] of Object.entries(filesToCreate)) {
         try {
-            const path = join(projectDir, fileName);
+            const path = join(root, fileName);
             if (!existsSync(path)) {
                 writeFileSync(path, content, "utf8");
             }
@@ -95,7 +88,7 @@ const generateFiles = ({
 
     console.log("Generated files done, start by running:");
     if (createNewProject) {
-        console.log(`cd ${name}`);
+        console.log(`cd ${root}`);
     }
     console.log("npm install");
     console.log("npm run dev");
@@ -109,11 +102,13 @@ export const initAction = async (initConfig: InitConfigType) => {
     const { name, dry, out, forceDelete, buildPath, editorPath, templatesPath } = config;
 
     const filesToCreate: Record<string, string> = {};
-    const root = out.endsWith("/") ? out.slice(0, out.length - 1) : out;
-    const currentDir = readdirSync(root);
-
+    let root = out.endsWith("/") ? out.slice(0, out.length - 1) : out;
+    if (!root.endsWith(name)) {
+        root = join(root, name);
+    }
     let createNewProject = basename(resolve(root)) !== name;
-    if (currentDir.includes(GODOT_PROJECT_FILE)) {
+
+    if (existsSync(root) && readdirSync(root).includes(GODOT_PROJECT_FILE)) {
         createNewProject = false;
     } else {
         filesToCreate[GODOT_PROJECT_FILE] = getGodotProject(name);
@@ -136,7 +131,6 @@ export const initAction = async (initConfig: InitConfigType) => {
     } else {
         generateFiles({
             createNewProject,
-            name,
             root,
             forceDelete,
             filesToCreate,

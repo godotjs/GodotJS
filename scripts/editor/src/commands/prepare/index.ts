@@ -3,12 +3,14 @@ import { startConfigProcess } from "../../utils/config-process";
 import { CONFIG_NAME } from "../../data";
 import { osMap } from "../../utils/os";
 import { platform } from "os";
-import { createWriteStream, existsSync, mkdirSync, unlinkSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync, unlinkSync, readdirSync, writeFileSync } from "node:fs";
 import { get } from "node:https";
 import AdmZip from "adm-zip";
 import { getDownloads } from "./downloads";
 import { join } from "node:path";
 import type { IncomingMessage } from "node:http";
+import { execSync } from "node:child_process";
+import { getGenerateTypesFile } from "./generate-types";
 
 const downloadWithProgress = (
     response: IncomingMessage,
@@ -41,7 +43,17 @@ const downloadWithProgress = (
 
 export const prepareAction = async (passedConfig: PrepareConfigType) => {
     const config = await startConfigProcess(CONFIG_NAME, passedConfig);
-    const { dry, editorPath, templatesPath, editorJSEngine, godotVersion, rootPath, exportTemplates, gitTag } = config;
+    const {
+        dry,
+        editorPath,
+        templatesPath,
+        editorJSEngine,
+        godotVersion,
+        rootPath,
+        exportTemplates,
+        gitTag,
+        generateInitialTypings,
+    } = config;
 
     const os = osMap[platform()];
     if (!os) throw new Error(`Unsupported platform: ${platform()}`);
@@ -72,47 +84,63 @@ export const prepareAction = async (passedConfig: PrepareConfigType) => {
 
             if (existsSync(markerPath)) {
                 console.log(`Skipping ${name}: already exists`);
-                continue;
-            }
-
-            const output = join(targetDir, `${name}.zip`);
-
-            console.log(`Downloading ${name}: ${url}`);
-
-            await new Promise<void>((resolve, reject) => {
-                get(url, (response) => {
-                    if (response.statusCode === 302 || response.statusCode === 301) {
-                        get(response.headers.location!, (redirectResponse) => {
-                            downloadWithProgress(redirectResponse, output, resolve, reject);
-                        });
-                    } else {
-                        downloadWithProgress(response, output, resolve, reject);
-                    }
-                }).on("error", reject);
-            });
-
-            console.log(); // New line after progress
-
-            console.log(`Extracting: ${output}`);
-
-            const zip = new AdmZip(output);
-
-            if (name === "editor") {
-                const entries = zip.getEntries();
-                const rootDir = entries[0]?.entryName.split("/")[0];
-
-                for (const entry of entries) {
-                    if (entry.isDirectory) continue;
-                    const relativePath = rootDir ? entry.entryName.substring(rootDir.length + 1) : entry.entryName;
-                    if (relativePath) {
-                        zip.extractEntryTo(entry, targetDir, false, true, false, relativePath);
-                    }
-                }
             } else {
-                zip.extractAllTo(targetDir, true);
+                const output = join(targetDir, `${name}.zip`);
+
+                console.log(`Downloading ${name}: ${url}`);
+
+                await new Promise<void>((resolve, reject) => {
+                    get(url, (response) => {
+                        if (response.statusCode === 302 || response.statusCode === 301) {
+                            get(response.headers.location!, (redirectResponse) => {
+                                downloadWithProgress(redirectResponse, output, resolve, reject);
+                            });
+                        } else {
+                            downloadWithProgress(response, output, resolve, reject);
+                        }
+                    }).on("error", reject);
+                });
+
+                console.log(); // New line after progress
+
+                console.log(`Extracting: ${output}`);
+
+                const zip = new AdmZip(output);
+
+                if (name === "editor") {
+                    const entries = zip.getEntries();
+                    const rootDir = entries[0]?.entryName.split("/")[0];
+
+                    for (const entry of entries) {
+                        if (entry.isDirectory) continue;
+                        const relativePath = rootDir ? entry.entryName.substring(rootDir.length + 1) : entry.entryName;
+                        if (relativePath) {
+                            zip.extractEntryTo(entry, targetDir, false, true, false, relativePath);
+                        }
+                    }
+                } else {
+                    zip.extractAllTo(targetDir, true);
+                }
+
+                unlinkSync(output);
             }
 
-            unlinkSync(output);
+            if (name === "editor" && generateInitialTypings) {
+                const typingsPath = join(rootPath, "typings");
+                const hasGenFiles =
+                    existsSync(typingsPath) && readdirSync(typingsPath).some((f) => f.endsWith(".gen.d.ts"));
+
+                if (!hasGenFiles) {
+                    const generateTypesPath = join(rootPath, "generate-types.js");
+                    writeFileSync(generateTypesPath, getGenerateTypesFile());
+
+                    console.log("Generating types...");
+                    execSync(`"${markerPath}" -s generate-types.js --headless --path "${rootPath}"`, {
+                        stdio: "inherit",
+                    });
+                    unlinkSync(generateTypesPath);
+                }
+            }
         }
 
         console.log("Done: All files extracted");

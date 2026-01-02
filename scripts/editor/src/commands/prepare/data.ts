@@ -30,6 +30,7 @@ export type PrepareDownloadType = {
     editorJSEngine?: "v8" | "qjs_ng";
     exportTemplates?: ExportTemplateType[];
     gitTag?: string;
+    generateInitialTypings?: boolean;
 } & EditorPathConfigType &
     TemplatesPathConfigType &
     RootPathConfigType;
@@ -47,6 +48,11 @@ export const prepareOptions: ProgramOptionsType[] = [
         name: "editorJSEngine",
         defaultValue: "v8",
         description: "The version for the JavaScript engine",
+    },
+    {
+        name: "generateInitialTypings",
+        defaultValue: true,
+        description: "Enable initial typings generation",
     },
     {
         name: "exportTemplates",
