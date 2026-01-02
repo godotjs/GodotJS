@@ -1,0 +1,17 @@
+{
+    "name": "@godot-js/editor-test",
+    "scripts": {
+        "cli:help": "tsx ../src/cli.ts --help",
+        "cli:init": "tsx ../src/cli.ts init --name test --dry",
+        "cli:prepare": "tsx ../src/cli.ts prepare --rootPath ./game --dry",
+        "cli:build": "tsx ../src/cli.ts build --buildPath ./abc --rootPath ./game --dry",
+        "cli:dev": "tsx ../src/cli.ts dev --tsConfigPath ./xyz/tsconfig.json --rootPath ./game --dry",
+        "cli:build-test": "tsx ../src/cli.ts build --tsConfigPath ./all/game/tsconfig.json --rootPath ./all/game",
+        "cli:dev-test": "tsx ../src/cli.ts dev --tsConfigPath ./all/game/tsconfig.json --rootPath ./all/game",
+        "cli:build-config": "tsx ../src/cli.ts build --dry",
+        "cli:dev-config": "tsx ../src/cli.ts dev --dry"
+    },
+    "devDependencies": {
+        "tsx": "^4.21.0"
+    }
+}

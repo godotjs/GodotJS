@@ -1,0 +1,20 @@
+name: 🔬 Test editor
+on:
+  workflow_call:
+
+
+jobs:
+  test-editor:
+    name: 🔬 Test editor
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛫 Setup pnpm
+        uses: ./.github/actions/pnpm-setup
+
+      - name: 🛠️ Install dependencies
+        run: |
+          pnpm install
+          pnpm test

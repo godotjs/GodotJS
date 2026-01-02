@@ -1,0 +1,22 @@
+{
+    "include": ["./src/index.ts"],
+    "exclude": ["./src/commands/init/copy/example.ts"],
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "lib": ["ESNext"],
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "declaration": true,
+        "isolatedModules": true,
+        "skipLibCheck": true,
+        "moduleResolution": "bundler",
+        "experimentalDecorators": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "paths": {
+            "package.json": ["./package.json"]
+        }
+    }
+}

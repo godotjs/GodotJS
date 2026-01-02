@@ -1,18 +1,18 @@
 {
-  "name": "@godot-js/editor",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "packageManager": "pnpm@10.11.0+sha1.4048eeefd564ff1ab248fac3e2854d38245fe2f1",
-  "scripts": {
-    "build": "pnpm -r build",
-    "changeset": "changeset",
-    "ci:should-publish": "node scripts/release/should-publish.js",
-    "ci:publish": "node scripts/release/publish.js",
-    "ci:test-project": "node scripts/release/test-project.js",
-    "ci:version": "changeset version && node scripts/release/version.js"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.29.4"
-  }
+    "name": "@godot-js/godotjs",
+    "private": true,
+    "type": "module",
+    "packageManager": "pnpm@10.11.0+sha1.4048eeefd564ff1ab248fac3e2854d38245fe2f1",
+    "scripts": {
+        "build": "pnpm -r build",
+        "changeset": "changeset",
+        "ci:publish": "node scripts/release/publish.js",
+        "ci:should-publish": "node scripts/release/should-publish.js",
+        "ci:test-project": "node scripts/release/test-project.js",
+        "ci:version": "changeset version && node scripts/release/version.js",
+        "test": "pnpm -r test"
+    },
+    "devDependencies": {
+        "@changesets/cli": "^2.29.4"
+    }
 }
