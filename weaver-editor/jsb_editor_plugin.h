@@ -57,6 +57,9 @@ private:
     void _on_resource_saved(const Ref<Resource>& p_resource);
     void _generate_imported_resource_dts(const Vector<String>& p_resources);
 
+    static bool _is_path_matchn(const PackedStringArray& p_wildcards, const String& p_path);
+    static Vector<String> _filter_resource_paths(const PackedStringArray& p_exclude_wildcards, const PackedStringArray& p_include_wildcards, const Vector<String>& p_paths);
+
 protected:
     static void _bind_methods();
 

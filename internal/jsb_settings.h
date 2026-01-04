@@ -47,6 +47,11 @@ namespace jsb::internal
 
         static bool is_packaging_referenced_node_modules();
 
+        static PackedStringArray get_resource_dts_include_path_wildcards();
+        static PackedStringArray get_resource_dts_exclude_path_wildcards();
+        static PackedStringArray get_scene_dts_include_path_wildcards();
+        static PackedStringArray get_scene_dts_exclude_path_wildcards();
+
 #ifdef TOOLS_ENABLED
         // [EDITOR ONLY]
         static bool editor_settings_available();
