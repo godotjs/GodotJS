@@ -4,6 +4,11 @@
 #include "jsb_macros.h"
 #include "jsb_logger.h"
 
+#ifdef TOOLS_ENABLED
+#include "../weaver-editor/jsb_editor_helper.h"
+#include "core/templates/pair.h"
+#endif // TOOLS_ENABLED
+
 #define JSB_SET_RESTART(val) (val)
 #define JSB_SET_IGNORE_DOCS(val) (val)
 #define JSB_SET_BASIC(val) (val)
@@ -37,6 +42,8 @@ namespace jsb::internal
     static constexpr char kRtPackagingIncludeFiles[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_files";
     static constexpr char kRtPackagingIncludeDirectories[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_directories";
     static constexpr char kRtPackagingReferencedNodeModules[] = JSB_MODULE_NAME_STRING "/editor/packaging/referenced_node_modules";
+
+    static constexpr char kRtSceneDTSGenerateStrategic[] = JSB_MODULE_NAME_STRING "/codegen/scene_dts/generate_strategic";
 
 #ifdef TOOLS_ENABLED
     bool init_editor_settings()
@@ -124,6 +131,30 @@ namespace jsb::internal
             }
 
             _GLOBAL_DEF(kRtPackagingReferencedNodeModules, true, false);
+
+#ifdef TOOLS_ENABLED
+            {
+                PropertyInfo SceneDTSGenerateStrategic;
+                SceneDTSGenerateStrategic.type = Variant::INT;
+                SceneDTSGenerateStrategic.name = kRtSceneDTSGenerateStrategic;
+                SceneDTSGenerateStrategic.hint = PROPERTY_HINT_FLAGS;
+
+                // NOTE: Keep this map sync with GodotJSEditorHelper::SceneDTSGenerateStrategic
+                const LocalVector<Pair<String, GodotJSEditorHelper::SceneDTSGenerateStrategic>> scene_dts_generate_strategic_flags = {
+                    {"Origin Name Node", GodotJSEditorHelper::SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE},
+                    {"Unique Name Node", GodotJSEditorHelper::SCENE_DTS_GENERATE_STRATEGIC_UNIQUE_NAME_NODE}
+                };
+
+                Vector<String> flag_hints;
+                for (const auto &[name, value]: scene_dts_generate_strategic_flags)
+                {
+                    flag_hints.push_back(vformat("%s:%s", name, value));
+                }
+
+                SceneDTSGenerateStrategic.hint_string = String(",").join(flag_hints);
+                _GLOBAL_DEF(SceneDTSGenerateStrategic, BitField<GodotJSEditorHelper::SceneDTSGenerateStrategic>(GodotJSEditorHelper::SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            }
+#endif // TOOLS_ENABLED
         }
     }
 
@@ -200,6 +231,12 @@ namespace jsb::internal
     {
         init_settings();
         return GLOBAL_GET(kRtPackagingReferencedNodeModules);
+    }
+
+    int Settings::get_scene_dts_generate_strategic()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtSceneDTSGenerateStrategic);
     }
 
     uint16_t Settings::get_debugger_port()
