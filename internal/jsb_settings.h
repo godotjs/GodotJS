@@ -47,6 +47,8 @@ namespace jsb::internal
 
         static bool is_packaging_referenced_node_modules();
 
+        static int get_scene_dts_generate_strategic();
+
 #ifdef TOOLS_ENABLED
         // [EDITOR ONLY]
         static bool editor_settings_available();
