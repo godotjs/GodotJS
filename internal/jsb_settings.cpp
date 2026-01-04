@@ -38,6 +38,11 @@ namespace jsb::internal
     static constexpr char kRtPackagingIncludeDirectories[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_directories";
     static constexpr char kRtPackagingReferencedNodeModules[] = JSB_MODULE_NAME_STRING "/editor/packaging/referenced_node_modules";
 
+    static constexpr char kRtResourceDTSIncludePathWildcards[] = JSB_MODULE_NAME_STRING "/codegen/resource_dts/include_path_wildcards";
+    static constexpr char kRtResourceDTSExcludePathWildcards[] = JSB_MODULE_NAME_STRING "/codegen/resource_dts/exclude_path_wildcards";
+    static constexpr char kRtSceneDTSIncludePathWildcards[] = JSB_MODULE_NAME_STRING "/codegen/scene_dts/include_path_wildcards";
+    static constexpr char kRtSceneDTSExcludePathWildcards[] = JSB_MODULE_NAME_STRING "/codegen/scene_dts/exclude_path_wildcards";
+
 #ifdef TOOLS_ENABLED
     bool init_editor_settings()
     {
@@ -124,6 +129,42 @@ namespace jsb::internal
             }
 
             _GLOBAL_DEF(kRtPackagingReferencedNodeModules, true, false);
+
+            {
+                PropertyInfo ResourceDTSIncludePathWildcards;
+                ResourceDTSIncludePathWildcards.type = Variant::PACKED_STRING_ARRAY;
+                ResourceDTSIncludePathWildcards.name = kRtResourceDTSIncludePathWildcards;
+                ResourceDTSIncludePathWildcards.hint = PROPERTY_HINT_ARRAY_TYPE;
+                ResourceDTSIncludePathWildcards.hint_string = vformat("%s/%s:", Variant::STRING, PROPERTY_HINT_DIR);
+                _GLOBAL_DEF(ResourceDTSIncludePathWildcards, PackedStringArray{"res://"}, false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            }
+
+            {
+                PropertyInfo ResourceDTSExcludePathWildcards;
+                ResourceDTSExcludePathWildcards.type = Variant::PACKED_STRING_ARRAY;
+                ResourceDTSExcludePathWildcards.name = kRtResourceDTSExcludePathWildcards;
+                ResourceDTSExcludePathWildcards.hint = PROPERTY_HINT_ARRAY_TYPE;
+                ResourceDTSExcludePathWildcards.hint_string = vformat("%s/%s:", Variant::STRING, PROPERTY_HINT_DIR);
+                _GLOBAL_DEF(ResourceDTSExcludePathWildcards, PackedStringArray(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            }
+
+            {
+                PropertyInfo SceneDTSIncludePathWildcards;
+                SceneDTSIncludePathWildcards.type = Variant::PACKED_STRING_ARRAY;
+                SceneDTSIncludePathWildcards.name = kRtSceneDTSIncludePathWildcards;
+                SceneDTSIncludePathWildcards.hint = PROPERTY_HINT_ARRAY_TYPE;
+                SceneDTSIncludePathWildcards.hint_string = vformat("%s/%s:", Variant::STRING, PROPERTY_HINT_DIR);
+                _GLOBAL_DEF(SceneDTSIncludePathWildcards, PackedStringArray{"res://"}, false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            }
+
+            {
+                PropertyInfo SceneDTSExcludePathWildcards;
+                SceneDTSExcludePathWildcards.type = Variant::PACKED_STRING_ARRAY;
+                SceneDTSExcludePathWildcards.name = kRtSceneDTSExcludePathWildcards;
+                SceneDTSExcludePathWildcards.hint = PROPERTY_HINT_ARRAY_TYPE;
+                SceneDTSExcludePathWildcards.hint_string = vformat("%s/%s:", Variant::STRING, PROPERTY_HINT_DIR);
+                _GLOBAL_DEF(SceneDTSExcludePathWildcards, PackedStringArray(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            }
         }
     }
 
@@ -200,6 +241,30 @@ namespace jsb::internal
     {
         init_settings();
         return GLOBAL_GET(kRtPackagingReferencedNodeModules);
+    }
+
+    PackedStringArray Settings::get_resource_dts_include_path_wildcards()
+    {
+        init_settings();
+        return (PackedStringArray) GLOBAL_GET(kRtResourceDTSIncludePathWildcards);
+    }
+
+    PackedStringArray Settings::get_resource_dts_exclude_path_wildcards()
+    {
+        init_settings();
+        return (PackedStringArray) GLOBAL_GET(kRtResourceDTSExcludePathWildcards);
+    }
+
+    PackedStringArray Settings::get_scene_dts_include_path_wildcards()
+    {
+        init_settings();
+        return (PackedStringArray) GLOBAL_GET(kRtSceneDTSIncludePathWildcards);
+    }
+
+    PackedStringArray Settings::get_scene_dts_exclude_path_wildcards()
+    {
+        init_settings();
+        return (PackedStringArray) GLOBAL_GET(kRtSceneDTSExcludePathWildcards);
     }
 
     uint16_t Settings::get_debugger_port()
