@@ -488,7 +488,6 @@ namespace jsb
             function_refs_.clear();
             while (!function_bank_.is_empty())
                 function_bank_.remove_last();
-            // function_bank_.clear();
 
 #if JSB_WITH_DEBUGGER
             debugger_.on_context_destroyed(context);
