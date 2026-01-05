@@ -2,8 +2,8 @@
 #include "jsb_macros.h"
 
 #ifdef WINDOWS_ENABLED
-#   define WIN32_LEAN_AND_MEAN
-#   include <windows.h>
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
 #endif
 
 namespace jsb::internal
@@ -12,7 +12,7 @@ namespace jsb::internal
 #ifdef WINDOWS_ENABLED
     namespace
     {
-        typedef HRESULT (WINAPI *SetThreadDescriptionFunc)(HANDLE hThread, PCWSTR lpThreadDescription);
+        typedef HRESULT(WINAPI* SetThreadDescriptionFunc)(HANDLE hThread, PCWSTR lpThreadDescription);
 
         SetThreadDescriptionFunc GetSetThreadDescriptionFunc()
         {
@@ -22,7 +22,7 @@ namespace jsb::internal
             }
             return nullptr;
         }
-    }
+    } // namespace
 #endif
 
     void ThreadUtil::set_name(const String& p_name)
@@ -42,4 +42,4 @@ namespace jsb::internal
         ::Thread::set_name(p_name);
     }
 
-}
+} // namespace jsb::internal

@@ -8,5 +8,5 @@ namespace jsb
     {
         static void expose(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Object> jsb_obj);
     };
-}
+} // namespace jsb
 #endif

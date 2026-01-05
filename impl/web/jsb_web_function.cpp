@@ -35,4 +35,4 @@ namespace v8
     {
         return Local<Context>(Data(isolate_, 0));
     }
-}
+} // namespace v8

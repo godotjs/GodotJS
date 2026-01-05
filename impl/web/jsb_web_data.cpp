@@ -99,4 +99,4 @@ namespace v8
         return jsbi_stack_eq(isolate_->rt(), stack_pos_, other.stack_pos_);
     }
 
-}
+} // namespace v8

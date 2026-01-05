@@ -25,6 +25,6 @@ namespace jsb
             memfree(data);
         }
     };
-}
+} // namespace jsb
 
 #endif

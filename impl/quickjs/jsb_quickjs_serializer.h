@@ -6,13 +6,13 @@ namespace v8
 {
     class Isolate;
 
-    template<typename T>
+    template <typename T>
     class Local;
 
-    template<typename T>
+    template <typename T>
     class Maybe;
 
-    template<typename T>
+    template <typename T>
     class MaybeLocal;
 
     class Context;
@@ -41,5 +41,5 @@ namespace v8
         Maybe<bool> ReadHeader(Local<Context> context);
         MaybeLocal<Value> ReadValue(Local<Context> context);
     };
-}
+} // namespace v8
 #endif

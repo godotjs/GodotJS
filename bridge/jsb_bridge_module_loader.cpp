@@ -10,12 +10,11 @@ namespace jsb
     {
         jsb_deprecated(
             "free function '_to_array_buffer' is deprecated and will be removed in a future version, "
-            "use 'PackedByteArray.to_array_buffer()' instead")
-        void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)
+            "use 'PackedByteArray.to_array_buffer()' instead") void _to_array_buffer(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             JSB_LOG(Warning,
-                "free function '_to_array_buffer' is deprecated and will be removed in a future version, "
-                "use 'PackedByteArray.to_array_buffer()' instead");
+                    "free function '_to_array_buffer' is deprecated and will be removed in a future version, "
+                    "use 'PackedByteArray.to_array_buffer()' instead");
             v8::Isolate* isolate = info.GetIsolate();
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             Variant var;
@@ -46,18 +45,18 @@ namespace jsb
                 func_arg_index = 0;
                 break;
             case 2:
+            {
+                Variant obj_var;
+                if (!TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::OBJECT, obj_var) || obj_var.is_null())
                 {
-                    Variant obj_var;
-                    if (!TypeConvert::js_to_gd_var(isolate, context, info[0], Variant::OBJECT, obj_var) || obj_var.is_null())
-                    {
-                        jsb_throw(isolate, "bad object");
-                        return;
-                    }
-
-                    caller_id = ((Object*) obj_var)->get_instance_id();
-                    func_arg_index = 1;
+                    jsb_throw(isolate, "bad object");
+                    return;
                 }
-                break;
+
+                caller_id = ((Object*) obj_var)->get_instance_id();
+                func_arg_index = 1;
+            }
+            break;
             default:
                 jsb_throw(isolate, "bad parameter");
                 return;
@@ -95,8 +94,7 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
             const v8::Local<v8::Object> target = info[0].As<v8::Object>();
             target->Set(context, jsb_symbol(environment, ClassToolScript), v8::Boolean::New(isolate, true)).Check();
-            JSB_LOG(VeryVerbose, "script %s (tool)",
-                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))));
+            JSB_LOG(VeryVerbose, "script %s (tool)", impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))));
         }
 
         template <typename Lambda>
@@ -119,57 +117,50 @@ namespace jsb
         void _get_class_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Variant identifier;
-            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
-                return internal::NamingUtil::get_class_name(identifier);
-            });
+            _return_result(info, Variant::STRING, identifier, [](const Variant& identifier)
+                           { return internal::NamingUtil::get_class_name(identifier); });
         }
 
         void _get_enum_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Variant identifier;
-            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
-                return internal::NamingUtil::get_enum_name(identifier);
-            });
+            _return_result(info, Variant::STRING, identifier, [](const Variant& identifier)
+                           { return internal::NamingUtil::get_enum_name(identifier); });
         }
 
         void _get_enum_value_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Variant identifier;
-            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
-                return internal::NamingUtil::get_enum_value_name(identifier);
-            });
+            _return_result(info, Variant::STRING, identifier, [](const Variant& identifier)
+                           { return internal::NamingUtil::get_enum_value_name(identifier); });
         }
 
         void _get_internal_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Variant identifier;
-            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
-                return internal::StringNames::get_singleton().get_original_name(identifier);
-            });
+            _return_result(info, Variant::STRING, identifier, [](const Variant& identifier)
+                           { return internal::StringNames::get_singleton().get_original_name(identifier); });
         }
 
         void _get_member_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Variant identifier;
-            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
-                return internal::NamingUtil::get_member_name(identifier);
-            });
+            _return_result(info, Variant::STRING, identifier, [](const Variant& identifier)
+                           { return internal::NamingUtil::get_member_name(identifier); });
         }
 
         void _get_parameter_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Variant identifier;
-            _return_result(info, Variant::STRING, identifier, [](const Variant &identifier) {
-                return internal::NamingUtil::get_parameter_name(identifier);
-            });
+            _return_result(info, Variant::STRING, identifier, [](const Variant& identifier)
+                           { return internal::NamingUtil::get_parameter_name(identifier); });
         }
 
         void _get_variant_type_name(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             Variant type;
-            _return_result(info, Variant::INT, type, [](const Variant &type) {
-                return internal::VariantUtil::get_type_name((Variant::Type)(int) type);
-            });
+            _return_result(info, Variant::INT, type, [](const Variant& type)
+                           { return internal::VariantUtil::get_type_name((Variant::Type)(int) type); });
         }
 
         void _notify_microtasks_run(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -210,9 +201,7 @@ namespace jsb
             }
 
             rpc_config_map->Set(context, info[1], info[2]);
-            JSB_LOG(VeryVerbose, "script %s (rpc) %s",
-                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                impl::Helper::to_string(isolate, info[1]));
+            JSB_LOG(VeryVerbose, "script %s (rpc) %s", impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))), impl::Helper::to_string(isolate, info[1]));
         }
 
         // function add_script_icon(constructor: GObjectConstructor, path: string): void;
@@ -229,9 +218,7 @@ namespace jsb
             Environment* environment = Environment::wrap(isolate);
             v8::Local<v8::Object> target = info[0].As<v8::Object>();
             target->Set(context, jsb_symbol(environment, ClassIcon), info[1]).Check();
-            JSB_LOG(VeryVerbose, "script %s (icon) %s",
-                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                impl::Helper::to_string(isolate, info[1]));
+            JSB_LOG(VeryVerbose, "script %s (icon) %s", impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))), impl::Helper::to_string(isolate, info[1]));
         }
 
         // function add_script_ready(prototype: GObject, details: { name: string, evaluator: string | OnReadyEvaluatorFunc }): void;
@@ -267,9 +254,7 @@ namespace jsb
             }
 
             collection->Set(context, index, evaluator).Check();
-            JSB_LOG(VeryVerbose, "script %s define property(onready) %s",
-                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                impl::Helper::to_string_opt(isolate, evaluator->Get(context, jsb_name(environment, name))));
+            JSB_LOG(VeryVerbose, "script %s define property(onready) %s", impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))), impl::Helper::to_string_opt(isolate, evaluator->Get(context, jsb_name(environment, name))));
         }
 
         // function set_script_doc(target: GObjectConstructor, property_key: undefined, field: 0 | 1 | 2, message: string): void;
@@ -277,10 +262,10 @@ namespace jsb
         void _set_script_doc(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
 #ifdef TOOLS_ENABLED
-            constexpr int kTarget = 0; // constructor | prototype
+            constexpr int kTarget = 0;   // constructor | prototype
             constexpr int kProperty = 1; // undefined | string
-            constexpr int kField = 2; // int32: 0, 1, 2
-            constexpr int kMessage = 3; // undefined | string
+            constexpr int kField = 2;    // int32: 0, 1, 2
+            constexpr int kMessage = 3;  // undefined | string
 
             v8::Isolate* isolate = info.GetIsolate();
             v8::HandleScope handle_scope(isolate);
@@ -341,9 +326,15 @@ namespace jsb
 
             switch (doc_item)
             {
-            case ScriptClassDocField::Deprecated:   doc->Set(context, jsb_name(environment, deprecated), message).Check(); return;
-            case ScriptClassDocField::Experimental: doc->Set(context, jsb_name(environment, experimental), message).Check(); return;
-            case ScriptClassDocField::Help:         doc->Set(context, jsb_name(environment, help), message).Check(); return;
+            case ScriptClassDocField::Deprecated:
+                doc->Set(context, jsb_name(environment, deprecated), message).Check();
+                return;
+            case ScriptClassDocField::Experimental:
+                doc->Set(context, jsb_name(environment, experimental), message).Check();
+                return;
+            case ScriptClassDocField::Help:
+                doc->Set(context, jsb_name(environment, help), message).Check();
+                return;
             }
             jsb_throw(isolate, "bad param");
 #endif
@@ -386,9 +377,7 @@ namespace jsb
             }
 
             collection->Set(context, index, details).Check();
-            JSB_LOG(VeryVerbose, "script %s define property(export) %s",
-                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                impl::Helper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
+            JSB_LOG(VeryVerbose, "script %s define property(export) %s", impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))), impl::Helper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
         }
 
         // TODO: Cache for our cache functions?:
@@ -523,13 +512,11 @@ namespace jsb
             }
 
             collection->Set(context, index, signal).Check();
-            JSB_LOG(VeryVerbose, "script %s define signal %s",
-                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                impl::Helper::to_string(isolate, signal));
+            JSB_LOG(VeryVerbose, "script %s define signal %s", impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))), impl::Helper::to_string(isolate, signal));
 
             info.GetReturnValue().Set(JSB_NEW_FUNCTION(context, ObjectReflectBindingUtil::_godot_object_signal_get, signal));
         }
-    }
+    } // namespace
 
     bool BridgeModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
     {
@@ -610,4 +597,4 @@ namespace jsb
         p_module.exports.Reset(isolate, jsb_obj);
         return true;
     }
-}
+} // namespace jsb

@@ -6,13 +6,13 @@ namespace jsb::internal
     StringNames::StringNames()
     {
 #pragma push_macro("DEF")
-#   undef DEF
-#   if GODOT_4_5_OR_NEWER
-#       define DEF(KeyName) sn_##KeyName = StringName(#KeyName);
-#   else
-#       define DEF(KeyName) sn_##KeyName = _scs_create(#KeyName);
-#   endif
-#   include "jsb_string_names.def.h"
+#undef DEF
+#if GODOT_4_5_OR_NEWER
+    #define DEF(KeyName) sn_##KeyName = StringName(#KeyName);
+#else
+    #define DEF(KeyName) sn_##KeyName = _scs_create(#KeyName);
+#endif
+#include "jsb_string_names.def.h"
 #pragma pop_macro("DEF")
 #if GODOT_4_5_OR_NEWER
         sn_godot_typeloader = StringName("godot.typeloader");
@@ -25,4 +25,4 @@ namespace jsb::internal
         ignored_.insert(sn_name);
     }
 
-}
+} // namespace jsb::internal

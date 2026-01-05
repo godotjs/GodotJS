@@ -4,8 +4,8 @@
 
 namespace v8
 {
-    //NOTE Avoid using ArrayBuffer in 'bridge' layer.
-    //     It has no direct alternative implementation in web.impl (for simplicity).
+    // NOTE Avoid using ArrayBuffer in 'bridge' layer.
+    //      It has no direct alternative implementation in web.impl (for simplicity).
     class ArrayBuffer : public Object
     {
     public:
@@ -27,5 +27,5 @@ namespace v8
     private:
         static void _deallocator(void* bytes, void* deallocatorContext);
     };
-}
+} // namespace v8
 #endif

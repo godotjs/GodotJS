@@ -13,4 +13,4 @@ namespace v8
         return Local<Value>(Data(isolate_, reason_sp_));
     }
 
-}
+} // namespace v8

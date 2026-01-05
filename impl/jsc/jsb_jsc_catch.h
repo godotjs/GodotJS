@@ -15,7 +15,8 @@ namespace jsb::impl
     public:
         v8::Isolate* isolate_;
 
-        TryCatch(v8::Isolate* isolate) : isolate_(isolate) {}
+        TryCatch(v8::Isolate* isolate)
+            : isolate_(isolate) {}
         ~TryCatch() = default;
 
         v8::Isolate* get_isolate() const { return isolate_; }
@@ -23,5 +24,5 @@ namespace jsb::impl
         bool has_caught() const;
         void get_message(String* r_message, String* r_stacktrace = nullptr) const;
     };
-}
+} // namespace jsb::impl
 #endif

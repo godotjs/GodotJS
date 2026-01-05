@@ -4,8 +4,8 @@
 
 namespace v8
 {
-    //NOTE Avoid using ArrayBuffer in 'bridge' layer.
-    //     It has no direct alternative implementation in web.impl (for simplicity).
+    // NOTE Avoid using ArrayBuffer in 'bridge' layer.
+    //      It has no direct alternative implementation in web.impl (for simplicity).
     class ArrayBuffer : public Object
     {
     public:
@@ -25,7 +25,7 @@ namespace v8
         static Local<ArrayBuffer> New(Isolate* isolate, size_t length);
 
     private:
-        static void _free(JSRuntime *rt, void *opaque, void *ptr);
+        static void _free(JSRuntime* rt, void* opaque, void* ptr);
     };
-}
+} // namespace v8
 #endif

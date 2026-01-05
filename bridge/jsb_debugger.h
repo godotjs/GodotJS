@@ -25,7 +25,7 @@ namespace jsb
 
         friend class Environment;
     };
-}
+} // namespace jsb
 #endif // JSB_WITH_DEBUGGER
 
 #endif

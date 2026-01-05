@@ -4,8 +4,8 @@ namespace jsb
 {
     bool InternalModuleLoader::load(Environment* p_env, JavaScriptModule& p_module)
     {
-        //TODO evaluate source from presets with file_name_
+        // TODO evaluate source from presets with file_name_
         return true;
     }
 
-}
+} // namespace jsb

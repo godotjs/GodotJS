@@ -25,7 +25,7 @@ namespace jsb
 #if JSB_DEBUG
         // The raw pointer to the native object.
         // It must be a unique pointer which implies that different objects have different addresses.
-        //NOTE it's useless at runtime now. we hold it here to validate the object binding for debugging only.
+        // NOTE it's useless at runtime now. we hold it here to validate the object binding for debugging only.
         void* pointer;
 #endif
 
@@ -34,6 +34,6 @@ namespace jsb
         v8::Global<v8::Object> ref_;
     };
 
-}
+} // namespace jsb
 
 #endif

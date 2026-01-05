@@ -7,8 +7,8 @@
 #include "../internal/jsb_double_buffered.h"
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
-#define JSB_WORKER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSWorker, Severity, Format, ##__VA_ARGS__)
-#define JSB_WORKER_MODULE_NAME "godot.worker"
+    #define JSB_WORKER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSWorker, Severity, Format, ##__VA_ARGS__)
+    #define JSB_WORKER_MODULE_NAME "godot.worker"
 
 namespace jsb
 {
@@ -31,7 +31,7 @@ namespace jsb
 
     public:
         WorkerImpl(Environment* p_master, const String& p_path, NativeObjectID p_handle)
-        : token_(p_master), path_(p_path), handle_(p_handle)
+            : token_(p_master), path_(p_path), handle_(p_handle)
         {
         }
 
@@ -76,7 +76,9 @@ namespace jsb
 
                     JavaScriptModule* module = nullptr;
                     jsb_ensuref(env->load(JSB_WORKER_MODULE_NAME, &module) == OK,
-                        "failed to load '%s' module in worker thread %d", JSB_WORKER_MODULE_NAME, impl->get_id());
+                                "failed to load '%s' module in worker thread %d",
+                                JSB_WORKER_MODULE_NAME,
+                                impl->get_id());
 
                     v8::Isolate* isolate = env->get_isolate();
                     v8::Isolate::Scope isolate_scope(isolate);
@@ -93,25 +95,21 @@ namespace jsb
 
                     impl::Helper::set_as_interruptible(isolate);
                     context_obj->Set(context,
-                        jsb_name(env, transfer),
-                        v8::Function::New(context, &worker_transfer, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
-                        )
-                    .Check();
+                                     jsb_name(env, transfer),
+                                     v8::Function::New(context, &worker_transfer, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked())
+                        .Check();
                     context_obj->Set(context,
-                        jsb_name(env, postMessage),
-                        v8::Function::New(context, &worker_post_message, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
-                        )
-                    .Check();
+                                     jsb_name(env, postMessage),
+                                     v8::Function::New(context, &worker_post_message, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked())
+                        .Check();
                     context_obj->Set(context,
-                        jsb_name(env, close),
-                        v8::Function::New(context, &worker_close, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked()
-                        )
-                    .Check();
+                                     jsb_name(env, close),
+                                     v8::Function::New(context, &worker_close, v8::Uint32::NewFromUnsigned(isolate, *impl->id_)).ToLocalChecked())
+                        .Check();
                     context_obj->Set(context,
-                        jsb_name(env, onmessage),
-                        v8::Null(isolate)
-                        )
-                    .Check();
+                                     jsb_name(env, onmessage),
+                                     v8::Null(isolate))
+                        .Check();
                 }
 
                 if (env->load(impl->path_) == OK)
@@ -169,7 +167,7 @@ namespace jsb
             JSB_WORKER_LOG(VeryVerbose, "starting Worker %d", p_id);
             Thread::Settings settings;
             settings.priority = Thread::PRIORITY_LOW;
-            thread_.start(_run, this,  settings);
+            thread_.start(_run, this, settings);
         }
 
         // call from main thread
@@ -245,13 +243,13 @@ namespace jsb
                 }
             }
 
-#if JSB_WITH_V8
+    #if JSB_WITH_V8
             Serialization::VariantDeserializerDelegate delegate(worker_env, p_message.get_transfers());
             v8::ValueDeserializer deserializer(isolate, p_message.get_data().ptr(), p_message.get_data().size(), &delegate);
             delegate.SetSerializer(&deserializer);
-#else
+    #else
             v8::ValueDeserializer deserializer(isolate, p_message.get_data().ptr(), p_message.get_data().size());
-#endif
+    #endif
 
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
@@ -434,7 +432,6 @@ namespace jsb
             exports->Set(context, jsb_name(p_env, JSWorker), class_info->clazz.Get(isolate));
             return true;
         }
-
     };
 
     // construct a Worker object (called from master thread)
@@ -546,7 +543,7 @@ namespace jsb
 
         // on_thread_exit is the only way which is safe to delete all WorkerImpl objects in any cases,
         // the side effect is Error prompt in ~Thread().
-        //TODO the error printed by Thread::~Thread() is not a real ERROR
+        // TODO the error printed by Thread::~Thread() is not a real ERROR
     }
 
     void Worker::finalizer(Environment*, void* pointer, FinalizationType /* p_finalize */)
@@ -728,13 +725,13 @@ namespace jsb
         Vector<TransferData> transferred;
 
         // TODO: Transfer support non-V8.
-#if JSB_WITH_V8
+    #if JSB_WITH_V8
         Serialization::VariantSerializerDelegate delegate(from_env, transfers);
         v8::ValueSerializer serializer(isolate, &delegate);
         delegate.SetSerializer(&serializer);
-#else
+    #else
         v8::ValueSerializer serializer(isolate);
-#endif
+    #endif
 
         serializer.WriteHeader();
         v8::Maybe<bool> write_result = serializer.WriteValue(context, info[0]);
@@ -751,6 +748,6 @@ namespace jsb
 
         return serializer.Release();
     }
-}
+} // namespace jsb
 
 #endif

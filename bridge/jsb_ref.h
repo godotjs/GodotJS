@@ -8,12 +8,18 @@ namespace jsb
     /**
      * a javascript object reference (weak)
      * @note it can be used as key of `std:unordered_map`, but can not be used as key of `HashMap` since `move` is not supported by `HashMap`
-    */
-    template<typename T = v8::Object>
+     */
+    template <typename T = v8::Object>
     struct TWeakRef
     {
-        struct hasher { jsb_force_inline size_t operator()(const TWeakRef& obj) const noexcept { return obj.hash(); } };
-        struct equaler { jsb_force_inline bool operator()(const TWeakRef& lhs, const TWeakRef& rhs) const { return lhs == rhs; } };
+        struct hasher
+        {
+            jsb_force_inline size_t operator()(const TWeakRef& obj) const noexcept { return obj.hash(); }
+        };
+        struct equaler
+        {
+            jsb_force_inline bool operator()(const TWeakRef& lhs, const TWeakRef& rhs) const { return lhs == rhs; }
+        };
 
         int hash_;
         v8::Global<T> object_;
@@ -58,17 +64,24 @@ namespace jsb
         }
     };
 
-    template<typename T = v8::Object>
+    template <typename T = v8::Object>
     struct TStrongRef
     {
-        struct hasher { jsb_force_inline size_t operator()(const TStrongRef& obj) const noexcept { return obj.hash(); } };
-        struct equaler { jsb_force_inline bool operator()(const TStrongRef& lhs, const TStrongRef& rhs) const { return lhs == rhs; } };
+        struct hasher
+        {
+            jsb_force_inline size_t operator()(const TStrongRef& obj) const noexcept { return obj.hash(); }
+        };
+        struct equaler
+        {
+            jsb_force_inline bool operator()(const TStrongRef& lhs, const TStrongRef& rhs) const { return lhs == rhs; }
+        };
 
         int hash_;
         v8::Global<T> object_;
         int ref_count_;
 
-        TStrongRef() : hash_(0), object_(), ref_count_(1) {}
+        TStrongRef()
+            : hash_(0), object_(), ref_count_(1) {}
         TStrongRef(v8::Isolate* p_isolate, const v8::Local<T>& p_object)
         {
             hash_ = p_object->GetIdentityHash();
@@ -85,7 +98,11 @@ namespace jsb
 
         jsb_force_inline explicit operator bool() const { return !object_.IsEmpty(); }
 
-        void ref() { jsb_check(ref_count_ > 0); ++ref_count_; }
+        void ref()
+        {
+            jsb_check(ref_count_ > 0);
+            ++ref_count_;
+        }
         bool unref()
         {
             jsb_check(ref_count_ > 0);
@@ -108,6 +125,6 @@ namespace jsb
             return (uint32_t) hash_;
         }
     };
-}
+} // namespace jsb
 
 #endif

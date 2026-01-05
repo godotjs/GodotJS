@@ -40,8 +40,11 @@ namespace v8
     public:
         Local() = default;
 
-        template<typename S>
-        Local(Local<S> other): data_(other.data_) {}
+        template <typename S>
+        Local(Local<S> other)
+            : data_(other.data_)
+        {
+        }
 
         bool IsEmpty() const { return !data_.isolate_; }
 
@@ -53,9 +56,13 @@ namespace v8
         }
 
         template <typename S>
-        Local<S> As() const { return Local<S>(data_); }
+        Local<S> As() const
+        {
+            return Local<S>(data_);
+        }
 
-        Local(const Data data): data_(data) {}
+        Local(const Data data)
+            : data_(data) {}
 
         template <typename S>
         bool operator==(const Local<S>& other) const
@@ -79,7 +86,7 @@ namespace v8
         Data data_;
     };
 
-    template<typename T>
+    template <typename T>
     class MaybeLocal
     {
         template <typename S>
@@ -87,13 +94,20 @@ namespace v8
 
     public:
         MaybeLocal() = default;
-        MaybeLocal(const Data data): data_(data) {}
+        MaybeLocal(const Data data)
+            : data_(data) {}
 
-        template<typename S>
-        MaybeLocal(MaybeLocal<S> other) : data_(other.data_) {}
+        template <typename S>
+        MaybeLocal(MaybeLocal<S> other)
+            : data_(other.data_)
+        {
+        }
 
-        template<typename S>
-        MaybeLocal(Local<S> other) : data_(other.data_) {}
+        template <typename S>
+        MaybeLocal(Local<S> other)
+            : data_(other.data_)
+        {
+        }
 
         bool IsEmpty() const { return !data_.isolate_; }
         Local<T> ToLocalChecked()
@@ -118,16 +132,21 @@ namespace v8
         kInternalFields,
     };
 
-    template<typename T>
+    template <typename T>
     class WeakCallbackInfo
     {
     public:
         using Callback = void (*)(const WeakCallbackInfo& data);
 
-        WeakCallbackInfo(Isolate* isolate, T* parameter, void** internal_fields): isolate_(isolate), parameter_(parameter), internal_fields_(internal_fields) {}
+        WeakCallbackInfo(Isolate* isolate, T* parameter, void** internal_fields)
+            : isolate_(isolate), parameter_(parameter), internal_fields_(internal_fields) {}
         Isolate* GetIsolate() const { return isolate_; }
         T* GetParameter() const { return parameter_; }
-        void* GetInternalField(int index) const { jsb_check(index == 0 || index == 1); return internal_fields_[index]; }
+        void* GetInternalField(int index) const
+        {
+            jsb_check(index == 0 || index == 1);
+            return internal_fields_[index];
+        }
 
     private:
         Isolate* isolate_;
@@ -135,11 +154,16 @@ namespace v8
         void** internal_fields_;
     };
 
-    //TODO use JSWeakRef (JSWeakPrivate.h)
+    // TODO use JSWeakRef (JSWeakPrivate.h)
     template <typename T>
     class Global
     {
-        enum WeakType { kStrong, kWeak, kWeakCallback, };
+        enum WeakType
+        {
+            kStrong,
+            kWeak,
+            kWeakCallback,
+        };
 
         // clear all fields silently after moved
         void _clear()
@@ -193,24 +217,25 @@ namespace v8
             switch (weak_type_)
             {
             case WeakType::kStrong:
-                {
-                    // release if strong referenced
-                    const JSContextRef ctx = jsb::impl::Broker::ctx(isolate_);
-                    JSValueUnprotect(ctx, value_);
-                    value_ = nullptr;
-                    break;
-                }
+            {
+                // release if strong referenced
+                const JSContextRef ctx = jsb::impl::Broker::ctx(isolate_);
+                JSValueUnprotect(ctx, value_);
+                value_ = nullptr;
+                break;
+            }
             case WeakType::kWeak:
             case WeakType::kWeakCallback:
-                {
-                    // clear callback
-                    const JSContextGroupRef rt = jsb::impl::Broker::rt(isolate_);
-                    jsb::impl::Broker::SetWeak(isolate_, JSWeakGetObject(shadow_), nullptr, nullptr);
-                    JSWeakRelease(rt, shadow_);
-                    shadow_ = nullptr;
-                    break;
-                }
-            default: break;
+            {
+                // clear callback
+                const JSContextGroupRef rt = jsb::impl::Broker::rt(isolate_);
+                jsb::impl::Broker::SetWeak(isolate_, JSWeakGetObject(shadow_), nullptr, nullptr);
+                JSWeakRelease(rt, shadow_);
+                shadow_ = nullptr;
+                break;
+            }
+            default:
+                break;
             }
 
             jsb::impl::Broker::_remove_reference(isolate_);
@@ -278,7 +303,7 @@ namespace v8
             value_ = nullptr;
         }
 
-        template<typename S>
+        template <typename S>
         void SetWeak(S* parameter, typename WeakCallbackInfo<S>::Callback callback, v8::WeakCallbackType type)
         {
             jsb_check(isolate_ && weak_type_ == WeakType::kStrong);
@@ -300,7 +325,7 @@ namespace v8
         Local<T> Get(Isolate* isolate) const
         {
             jsb_check(isolate_ == isolate && isolate_ && is_alive());
-            return Local<T>(Data(isolate_, jsb::impl::Broker::push_copy(isolate_, (JSValueRef) *this)));
+            return Local<T>(Data(isolate_, jsb::impl::Broker::push_copy(isolate_, (JSValueRef) * this)));
         }
 
         explicit operator JSValueRef() const
@@ -314,8 +339,8 @@ namespace v8
         bool operator==(const Global<S>& other) const
         {
             return jsb::impl::Broker::IsStrictEqual(isolate_,
-                weak_type_ != WeakType::kStrong ? JSWeakGetObject(shadow_) : value_,
-                other.weak_type_ != WeakType::kStrong ? JSWeakGetObject(other.shadow_) : other.value_);
+                                                    weak_type_ != WeakType::kStrong ? JSWeakGetObject(shadow_) : value_,
+                                                    other.weak_type_ != WeakType::kStrong ? JSWeakGetObject(other.shadow_) : other.value_);
         }
 
         template <typename S>
@@ -366,6 +391,6 @@ namespace v8
         return !operator==(other);
     }
 
-}
+} // namespace v8
 
 #endif

@@ -27,7 +27,10 @@ private:
 
     Vector<OutputLine> lines_;
 
-    enum { kMaxHistoryCount = 10 };
+    enum
+    {
+        kMaxHistoryCount = 10
+    };
     Vector<String> history_;
 
     jsb::internal::DoubleBuffered<String> output_backlog_;

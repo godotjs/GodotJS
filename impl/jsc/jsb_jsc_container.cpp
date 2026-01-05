@@ -15,14 +15,14 @@ namespace v8
 
     uint32_t Array::Length() const
     {
-        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) * this);
         const JSValueRef rval = isolate_->_GetProperty(this_obj, jsb::impl::JS_ATOM_length);
         return rval ? JSValueToUInt32(isolate_->ctx(), rval, nullptr) : 0;
     }
 
     MaybeLocal<Map> Map::Set(Local<Context> context, Local<Value> key, Local<Value> value)
     {
-        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSObjectRef this_obj = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) * this);
         JSValueRef error = nullptr;
         JSObjectSetPropertyForKey(isolate_->ctx(), this_obj, (JSValueRef) key, (JSValueRef) value, kJSPropertyAttributeNone, &error);
         if (jsb_unlikely(error))
@@ -38,4 +38,4 @@ namespace v8
         return Local<Array>(Data(isolate, isolate->push_map()));
     }
 
-}
+} // namespace v8

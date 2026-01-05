@@ -7,7 +7,7 @@
 namespace jsb::impl
 {
     // Offset positions based on the current scope
-    //NOTE be cautious to always keep sync with NewCFunction in monolith.ts `NativeAPI.ccall(self._opaque, cb, rval_pos, argc);`
+    // NOTE be cautious to always keep sync with NewCFunction in monolith.ts `NativeAPI.ccall(self._opaque, cb, rval_pos, argc);`
     namespace FunctionStackBase
     {
         enum
@@ -22,7 +22,7 @@ namespace jsb::impl
     }
 
     // absolute stack position for common values
-    //NOTE be cautious to always keep sync with jsbb_StackPos in monolith.ts
+    // NOTE be cautious to always keep sync with jsbb_StackPos in monolith.ts
     namespace StackBase
     {
         enum
@@ -46,19 +46,32 @@ namespace jsb::impl
         JS_ATOM_stack = 1,
         JS_ATOM_name = 2,
     };
-}
+} // namespace jsb::impl
 
 namespace v8
 {
-    enum GCType { kGCTypeAll = 0 };
-    enum GCCallbackFlags {};
+    enum GCType
+    {
+        kGCTypeAll = 0
+    };
+    enum GCCallbackFlags
+    {
+    };
     enum GarbageCollectionType
     {
         kFullGarbageCollection,
         kMinorGarbageCollection
     };
-    enum class NewStringType { kNormal, kInternalized };
-    enum class KeyCollectionMode { kOwnOnly, kIncludePrototypes };
+    enum class NewStringType
+    {
+        kNormal,
+        kInternalized
+    };
+    enum class KeyCollectionMode
+    {
+        kOwnOnly,
+        kIncludePrototypes
+    };
     enum PropertyFilter
     {
         ALL_PROPERTIES = 0,
@@ -68,8 +81,17 @@ namespace v8
         SKIP_STRINGS = 8,
         SKIP_SYMBOLS = 16
     };
-    enum class IndexFilter { kIncludeIndices, kSkipIndices };
-    enum class KeyConversionMode { kConvertToString, kKeepNumbers, kNoNumbers };
+    enum class IndexFilter
+    {
+        kIncludeIndices,
+        kSkipIndices
+    };
+    enum class KeyConversionMode
+    {
+        kConvertToString,
+        kKeepNumbers,
+        kNoNumbers
+    };
     enum PromiseRejectEvent
     {
         kPromiseRejectWithNoHandler = 0,
@@ -95,13 +117,13 @@ namespace v8
 
     class Isolate;
 
-    template<typename T>
+    template <typename T>
     class FunctionCallbackInfo;
 
-    template<typename T>
+    template <typename T>
     class PropertyCallbackInfo;
 
-    template<typename T>
+    template <typename T>
     class Local;
 
     class Value;
@@ -111,7 +133,6 @@ namespace v8
     using GCCallback = void (*)(Isolate* isolate, GCType type, GCCallbackFlags flags);
     using AccessorNameGetterCallback = void (*)(Local<Name> property, const PropertyCallbackInfo<Value>& info);
 
-}
+} // namespace v8
 
 #endif
-

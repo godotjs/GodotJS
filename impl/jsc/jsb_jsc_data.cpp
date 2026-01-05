@@ -7,7 +7,7 @@ namespace v8
     int Data::GetIdentityHash() const
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);
-        //TODO improve jsc value hash
+        // TODO improve jsc value hash
 
         if (!JSValueIsObject(isolate_->ctx(), val))
         {
@@ -20,7 +20,7 @@ namespace v8
 #elif INTPTR_MAX >= INT32_MAX
         return (int) ptr;
 #else
-        #error "jsc.impl does not support on the current arch"
+    #error "jsc.impl does not support on the current arch"
 #endif
     }
 
@@ -94,7 +94,7 @@ namespace v8
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);
 
-        //TODO JSC, not strict int32 check
+        // TODO JSC, not strict int32 check
         return JSValueIsNumber(isolate_->ctx(), val);
     }
 
@@ -102,7 +102,7 @@ namespace v8
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);
 
-        //TODO JSC, not strict int32 check
+        // TODO JSC, not strict int32 check
         return JSValueIsNumber(isolate_->ctx(), val);
     }
 
@@ -143,4 +143,4 @@ namespace v8
         return JSValueIsStrictEqual(isolate_->ctx(), val1, val2);
     }
 
-}
+} // namespace v8

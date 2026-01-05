@@ -13,12 +13,12 @@ namespace jsb
         String script_path;
         List<Pair<StringName, Variant>> state;
 
-        TransferData() : transfer_index(0)
+        TransferData()
+            : transfer_index(0)
         {
         }
 
-        TransferData(NativeObjectID p_source_worker_id, uint32_t p_transfer_index, const Variant& p_variant,
-                     const String& p_script_path = {}, const List<Pair<StringName, Variant>>& p_state = {})
+        TransferData(NativeObjectID p_source_worker_id, uint32_t p_transfer_index, const Variant& p_variant, const String& p_script_path = {}, const List<Pair<StringName, Variant>>& p_state = {})
             : source_worker_id(p_source_worker_id), transfer_index(p_transfer_index), variant(p_variant),
               script_path(p_script_path), state(p_state)
         {
@@ -40,7 +40,7 @@ namespace jsb
             // worker message
             TYPE_MESSAGE,
 
-            //TODO worker error (NOT IMPLEMENTED YET)
+            // TODO worker error (NOT IMPLEMENTED YET)
             TYPE_ERROR,
         };
 
@@ -53,8 +53,7 @@ namespace jsb
         Message(Message&&) noexcept = default;
         Message& operator=(Message&&) noexcept = default;
 
-        Message(Type p_type, NativeObjectID p_id, Buffer&& p_buffer = Buffer(),
-            std::vector<TransferData>&& p_transfers = std::vector<TransferData>())
+        Message(Type p_type, NativeObjectID p_id, Buffer&& p_buffer = Buffer(), std::vector<TransferData>&& p_transfers = std::vector<TransferData>())
             : type_(p_type), id_(p_id), buffer_(std::move(p_buffer)), transfers(std::move(p_transfers))
         {
         }
@@ -75,5 +74,5 @@ namespace jsb
         std::vector<TransferData> transfers;
     };
 
-}
+} // namespace jsb
 #endif

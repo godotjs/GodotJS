@@ -6,7 +6,10 @@
 #include "../bridge/jsb_type_convert.h"
 
 #define JSB_TESTS_OPTION_ENABLED(OptionName) kOption_##OptionName
-#define JSB_TESTS_OPTION_DEFINE(OptionName, IsEnabled) enum { kOption_##OptionName = IsEnabled };
+#define JSB_TESTS_OPTION_DEFINE(OptionName, IsEnabled) enum \
+{                                                           \
+    kOption_##OptionName = IsEnabled                        \
+};
 
 // universal test cases for any runtime
 namespace jsb::tests
@@ -47,9 +50,15 @@ namespace jsb::tests
             CHECK(s1 != s2);
             s1->Set(context, prop, v8::Uint32::NewFromUnsigned(isolate, 123)).Check();
             v8::Local<v8::Object> c2 = s2
-                ->Get(context, impl::Helper::new_string(isolate, "prototype")).ToLocalChecked().As<v8::Object>()
-                ->Get(context, impl::Helper::new_string(isolate, "__proto__")).ToLocalChecked().As<v8::Object>() // the base class prototype
-                ->Get(context, impl::Helper::new_string(isolate, "constructor")).ToLocalChecked().As<v8::Object>();
+                                           ->Get(context, impl::Helper::new_string(isolate, "prototype"))
+                                           .ToLocalChecked()
+                                           .As<v8::Object>()
+                                           ->Get(context, impl::Helper::new_string(isolate, "__proto__"))
+                                           .ToLocalChecked()
+                                           .As<v8::Object>() // the base class prototype
+                                           ->Get(context, impl::Helper::new_string(isolate, "constructor"))
+                                           .ToLocalChecked()
+                                           .As<v8::Object>();
             CHECK(c2 == s1);
             v8::Local<v8::Value> v2 = c2->Get(context, prop).ToLocalChecked();
             CHECK(v2->IsNumber());
@@ -171,8 +180,10 @@ namespace jsb::tests
                     CHECK(value.As<v8::Int32>()->Value() == i);
                     for (int j = 0; j < 10; j++)
                     {
-                        if (i == j) CHECK(items[i] == items[j]);
-                        else CHECK(items[i] != items[j]);
+                        if (i == j)
+                            CHECK(items[i] == items[j]);
+                        else
+                            CHECK(items[i] != items[j]);
                     }
                 }
             }
@@ -192,11 +203,11 @@ namespace jsb::tests
                 class1 = builder1.Build();
                 context->Global()->Set(context, impl::Helper::new_string(isolate, "B1"), class1.Get(isolate)).Check();
                 Essentials::register_(context, context->Global());
-            // }
-            // {
-            //     v8::HandleScope scope_1(isolate);
-            //     v8::Local<v8::Context> context = context_v.Get(isolate);
-            //     const v8::Context::Scope context_scope(context);
+                // }
+                // {
+                //     v8::HandleScope scope_1(isolate);
+                //     v8::Local<v8::Context> context = context_v.Get(isolate);
+                //     const v8::Context::Scope context_scope(context);
 
                 impl::ClassBuilder builder2 = impl::ClassBuilder::New<IF_ObjectFieldCount>(isolate, "B2", StubBindings::constructor, 0);
                 builder2.Inherit(class1);
@@ -407,7 +418,8 @@ console.assert(gd.Node.prototype.__proto__.constructor.name == gd.Object.name, `
 console.assert(node instanceof gd.Object);
 node.free();
 console.assert(!gd.is_instance_valid(node));
-)--", err);
+)--",
+                                                            err);
         CHECK(err == OK);
     }
 
@@ -427,7 +439,8 @@ console.assert(gd.is_instance_valid(inst));
 console.assert(inst instanceof gd.Node);
 inst.free();
 console.assert(!gd.is_instance_valid(inst));
-)--", err);
+)--",
+                                                            err);
         CHECK(err == OK);
     }
 
@@ -500,7 +513,8 @@ console.assert(!gd.is_instance_valid(inst));
                 GodotJSScriptLanguage::get_singleton()->eval_source(R"--(
 file.store_string("hello");
 file = undefined;
-)--", err);
+)--",
+                                                                    err);
                 CHECK(err == OK);
             }
         }
@@ -508,7 +522,6 @@ file = undefined;
         CHECK(weak_ref->get_ref().is_null());
         memdelete(weak_ref);
     }
-}
+} // namespace jsb::tests
 
 #endif
-

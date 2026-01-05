@@ -3,7 +3,7 @@
 #include "weaver/jsb_weaver.h"
 
 #ifdef TOOLS_ENABLED
-#include "weaver-editor/jsb_weaver_editor.h"
+    #include "weaver-editor/jsb_weaver_editor.h"
 #endif
 
 static Ref<ResourceFormatLoaderGodotJSScript> resource_loader_js;
@@ -47,7 +47,7 @@ void jsb_uninitialize_module(ModuleInitializationLevel p_level)
         ResourceSaver::remove_resource_format_saver(resource_saver_js);
         resource_saver_js.unref();
 
-        GodotJSScriptLanguage *script_language_js = GodotJSScriptLanguage::get_singleton();
+        GodotJSScriptLanguage* script_language_js = GodotJSScriptLanguage::get_singleton();
         jsb_check(script_language_js);
         ScriptServer::unregister_language(script_language_js);
         memdelete(script_language_js);

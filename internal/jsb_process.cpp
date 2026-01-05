@@ -4,19 +4,19 @@
 #include "jsb_thread_util.h"
 
 #if defined(WINDOWS_ENABLED) || (JSB_GDEXTENSION && defined(WIN32))
-#define WIN32_LEAN_AND_MEAN
-#include <dwrite.h>
-#include <dwrite_2.h>
-#include <windows.h>
-#include <windowsx.h>
+    #define WIN32_LEAN_AND_MEAN
+    #include <dwrite.h>
+    #include <dwrite_2.h>
+    #include <windows.h>
+    #include <windowsx.h>
 #endif // WINDOWS_ENABLED
 
 #if defined(UNIX_ENABLED)
 
-#include <errno.h>
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
+    #include <errno.h>
+    #include <signal.h>
+    #include <sys/wait.h>
+    #include <unistd.h>
 
 #endif // UNIX_ENABLED
 
@@ -27,7 +27,8 @@ namespace jsb::internal
 #if defined(WINDOWS_ENABLED)
     class ProcessImpl : public Process
     {
-        struct ProcessInfo {
+        struct ProcessInfo
+        {
             STARTUPINFO si;
             PROCESS_INFORMATION pi;
         } pi = {};
@@ -42,7 +43,8 @@ namespace jsb::internal
         // OS::ProcessID pid = 0;
         // HANDLE pipe[] = { nullptr, nullptr };
     public:
-        ProcessImpl(): Process()
+        ProcessImpl()
+            : Process()
         {
         }
 
@@ -76,11 +78,11 @@ namespace jsb::internal
                 }
             }
 
-#if GODOT_4_5_OR_NEWER || JSB_GDEXTENSION
+    #if GODOT_4_5_OR_NEWER || JSB_GDEXTENSION
             const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr());
-#else
+    #else
             const String output = buffer.is_empty() ? String::utf8(rd_line.ptr(), rd_line.size()) : String(buffer.ptr(), num);
-#endif
+    #endif
             if (!output.is_empty())
             {
                 JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, output);
@@ -92,8 +94,8 @@ namespace jsb::internal
         {
             const String path = p_path.replace("/", "\\");
             String command = _quote_command_line_argument(path);
-            HANDLE pipe[2] = { nullptr, nullptr };
-            for (const String &E : p_arguments)
+            HANDLE pipe[2] = {nullptr, nullptr};
+            for (const String& E : p_arguments)
             {
                 command += " " + _quote_command_line_argument(E);
             }
@@ -102,7 +104,7 @@ namespace jsb::internal
             ZeroMemory(&pi.si, sizeof(pi.si));
             pi.si.cb = sizeof(pi.si);
             ZeroMemory(&pi.pi, sizeof(pi.pi));
-            LPSTARTUPINFOW si_w = (LPSTARTUPINFOW)&pi.si;
+            LPSTARTUPINFOW si_w = (LPSTARTUPINFOW) &pi.si;
 
             {
                 SECURITY_ATTRIBUTES sa;
@@ -119,7 +121,7 @@ namespace jsb::internal
             }
             // constexpr DWORD creation_flags = IDLE_PRIORITY_CLASS | CREATE_NO_WINDOW;
             constexpr DWORD creation_flags = NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW;
-            int ret = CreateProcessW(nullptr, (LPWSTR)(command.utf16().ptrw()), nullptr, nullptr, true, creation_flags, nullptr, nullptr, si_w, &pi.pi);
+            int ret = CreateProcessW(nullptr, (LPWSTR) (command.utf16().ptrw()), nullptr, nullptr, true, creation_flags, nullptr, nullptr, si_w, &pi.pi);
             if (!ret)
             {
                 CloseHandle(pipe[0]); // Cleanup pipe handles.
@@ -130,7 +132,7 @@ namespace jsb::internal
             rd_pipe = pipe[0];
             proc_name = p_name;
             {
-                //TODO use async io instead of threading
+                // TODO use async io instead of threading
                 Thread::Settings settings;
                 settings.priority = Thread::PRIORITY_LOW;
                 thread.start(&ProcessImpl::_thread_run, this, settings);
@@ -170,7 +172,7 @@ namespace jsb::internal
                     else if (start_state == 1)
                     {
                         start_state = 2;
-                        if (buffer[i] == 'c')  { continue; }
+                        if (buffer[i] == 'c') { continue; }
                     }
 
                     if (buffer[i] == '\n' || buffer[i] == '\r')
@@ -219,18 +221,19 @@ namespace jsb::internal
         }
     };
 #elif defined(UNIX_ENABLED) && !defined(__EMSCRIPTEN__)
-    //TODO not tested on linux
+    // TODO not tested on linux
     class ProcessImpl : public Process
     {
         String proc_name;
-        int pipefd[2] = { 0, 0 };
+        int pipefd[2] = {0, 0};
         pid_t child_id_ = -1;
         Thread thread;
         bool is_closing = false;
         Vector<char> rd_line;
 
     public:
-        ProcessImpl(): Process() {}
+        ProcessImpl()
+            : Process() {}
 
         virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) override
         {
@@ -307,7 +310,7 @@ namespace jsb::internal
                         else if (start_state == 1)
                         {
                             start_state = 2;
-                            if (buffer[i] == 'c')  { continue; }
+                            if (buffer[i] == 'c') { continue; }
                         }
 
                         if (buffer[i] == '\n' || buffer[i] == '\r')
@@ -337,11 +340,11 @@ namespace jsb::internal
         {
             if (rd_line.is_empty()) return;
             String line;
-#if GODOT_4_5_OR_NEWER
+    #if GODOT_4_5_OR_NEWER
             if (line.append_utf8(rd_line.ptr()) == OK) JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, line);
-#else
+    #else
             if (line.parse_utf8(rd_line.ptr()) == OK) JSB_PROCESS_LOG(Log, "[%s] %s", proc_name, line);
-#endif
+    #endif
             rd_line.clear();
         }
 
@@ -376,11 +379,12 @@ namespace jsb::internal
     class ProcessImpl : public Process
     {
     public:
-        ProcessImpl(): Process() {}
+        ProcessImpl()
+            : Process() {}
 
         virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) override { return OK; }
         virtual bool _is_running() const override { return false; }
-        virtual void on_stop() override { }
+        virtual void on_stop() override {}
     };
 #endif
 
@@ -411,4 +415,4 @@ namespace jsb::internal
         on_start(p_name, p_path, p_arguments);
     }
 
-}
+} // namespace jsb::internal

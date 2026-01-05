@@ -13,4 +13,4 @@ namespace v8
         jsbi_StackExit(isolate_->rt());
     }
 
-}
+} // namespace v8

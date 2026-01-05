@@ -27,11 +27,11 @@
 #define JSBase_h
 
 #ifndef __cplusplus
-#include <stdbool.h>
+    #include <stdbool.h>
 #endif
 
 #ifdef __OBJC__
-#import <Foundation/Foundation.h>
+    #import <Foundation/Foundation.h>
 #endif
 
 /* JavaScript engine interface */
@@ -72,7 +72,7 @@ typedef struct OpaqueJSValue* JSObjectRef;
 /* https://clang.llvm.org/docs/LanguageExtensions.html#has-declspec-attribute */
 
 #ifndef __has_declspec_attribute
-#define __has_declspec_attribute(x) 0
+    #define __has_declspec_attribute(x) 0
 #endif
 
 /* JavaScript symbol exports */
@@ -80,64 +80,65 @@ typedef struct OpaqueJSValue* JSObjectRef;
 
 #undef JS_EXPORT
 #if defined(JS_NO_EXPORT)
-#define JS_EXPORT
+    #define JS_EXPORT
 #elif defined(WIN32) || defined(_WIN32) || defined(__CC_ARM) || defined(__ARMCC__) || (__has_declspec_attribute(dllimport) && __has_declspec_attribute(dllexport))
-#if defined(BUILDING_JavaScriptCore) || defined(STATICALLY_LINKED_WITH_JavaScriptCore)
-#define JS_EXPORT __declspec(dllexport)
-#else
-#define JS_EXPORT __declspec(dllimport)
-#endif
+    #if defined(BUILDING_JavaScriptCore) || defined(STATICALLY_LINKED_WITH_JavaScriptCore)
+        #define JS_EXPORT __declspec(dllexport)
+    #else
+        #define JS_EXPORT __declspec(dllimport)
+    #endif
 #elif defined(__GNUC__)
-#define JS_EXPORT __attribute__((visibility("default")))
+    #define JS_EXPORT __attribute__((visibility("default")))
 #else /* !defined(JS_NO_EXPORT) */
-#define JS_EXPORT
+    #define JS_EXPORT
 #endif /* defined(JS_NO_EXPORT) */
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/* Script Evaluation */
+    /* Script Evaluation */
 
-/*!
-@function JSEvaluateScript
-@abstract Evaluates a string of JavaScript.
-@param ctx The execution context to use.
-@param script A JSString containing the script to evaluate.
-@param thisObject The object to use as "this," or NULL to use the global object as "this."
-@param sourceURL A JSString containing a URL for the script's source file. This is used by debuggers and when reporting exceptions. Pass NULL if you do not care to include source file information.
-@param startingLineNumber An integer value specifying the script's starting line number in the file located at sourceURL. This is only used when reporting exceptions. The value is one-based, so the first line is line 1 and invalid values are clamped to 1.
-@param exception A pointer to a JSValueRef in which to store an exception, if any. Pass NULL if you do not care to store an exception.
-@result The JSValue that results from evaluating script, or NULL if an exception is thrown.
-*/
-JS_EXPORT JSValueRef JSEvaluateScript(JSContextRef ctx, JSStringRef script, JSObjectRef thisObject, JSStringRef sourceURL, int startingLineNumber, JSValueRef* exception);
+    /*!
+    @function JSEvaluateScript
+    @abstract Evaluates a string of JavaScript.
+    @param ctx The execution context to use.
+    @param script A JSString containing the script to evaluate.
+    @param thisObject The object to use as "this," or NULL to use the global object as "this."
+    @param sourceURL A JSString containing a URL for the script's source file. This is used by debuggers and when reporting exceptions. Pass NULL if you do not care to include source file information.
+    @param startingLineNumber An integer value specifying the script's starting line number in the file located at sourceURL. This is only used when reporting exceptions. The value is one-based, so the first line is line 1 and invalid values are clamped to 1.
+    @param exception A pointer to a JSValueRef in which to store an exception, if any. Pass NULL if you do not care to store an exception.
+    @result The JSValue that results from evaluating script, or NULL if an exception is thrown.
+    */
+    JS_EXPORT JSValueRef JSEvaluateScript(JSContextRef ctx, JSStringRef script, JSObjectRef thisObject, JSStringRef sourceURL, int startingLineNumber, JSValueRef* exception);
 
-/*!
-@function JSCheckScriptSyntax
-@abstract Checks for syntax errors in a string of JavaScript.
-@param ctx The execution context to use.
-@param script A JSString containing the script to check for syntax errors.
-@param sourceURL A JSString containing a URL for the script's source file. This is only used when reporting exceptions. Pass NULL if you do not care to include source file information in exceptions.
-@param startingLineNumber An integer value specifying the script's starting line number in the file located at sourceURL. This is only used when reporting exceptions. The value is one-based, so the first line is line 1 and invalid values are clamped to 1.
-@param exception A pointer to a JSValueRef in which to store a syntax error exception, if any. Pass NULL if you do not care to store a syntax error exception.
-@result true if the script is syntactically correct, otherwise false.
-*/
-JS_EXPORT bool JSCheckScriptSyntax(JSContextRef ctx, JSStringRef script, JSStringRef sourceURL, int startingLineNumber, JSValueRef* exception);
+    /*!
+    @function JSCheckScriptSyntax
+    @abstract Checks for syntax errors in a string of JavaScript.
+    @param ctx The execution context to use.
+    @param script A JSString containing the script to check for syntax errors.
+    @param sourceURL A JSString containing a URL for the script's source file. This is only used when reporting exceptions. Pass NULL if you do not care to include source file information in exceptions.
+    @param startingLineNumber An integer value specifying the script's starting line number in the file located at sourceURL. This is only used when reporting exceptions. The value is one-based, so the first line is line 1 and invalid values are clamped to 1.
+    @param exception A pointer to a JSValueRef in which to store a syntax error exception, if any. Pass NULL if you do not care to store a syntax error exception.
+    @result true if the script is syntactically correct, otherwise false.
+    */
+    JS_EXPORT bool JSCheckScriptSyntax(JSContextRef ctx, JSStringRef script, JSStringRef sourceURL, int startingLineNumber, JSValueRef* exception);
 
-/*!
-@function JSGarbageCollect
-@abstract Performs a JavaScript garbage collection.
-@param ctx The execution context to use.
-@discussion JavaScript values that are on the machine stack, in a register,
- protected by JSValueProtect, set as the global object of an execution context,
- or reachable from any such value will not be collected.
+    /*!
+    @function JSGarbageCollect
+    @abstract Performs a JavaScript garbage collection.
+    @param ctx The execution context to use.
+    @discussion JavaScript values that are on the machine stack, in a register,
+     protected by JSValueProtect, set as the global object of an execution context,
+     or reachable from any such value will not be collected.
 
- During JavaScript execution, you are not required to call this function; the
- JavaScript engine will garbage collect as needed. JavaScript values created
- within a context group are automatically destroyed when the last reference
- to the context group is released.
-*/
-JS_EXPORT void JSGarbageCollect(JSContextRef ctx);
+     During JavaScript execution, you are not required to call this function; the
+     JavaScript engine will garbage collect as needed. JavaScript values created
+     within a context group are automatically destroyed when the last reference
+     to the context group is released.
+    */
+    JS_EXPORT void JSGarbageCollect(JSContextRef ctx);
 
 #ifdef __cplusplus
 }
@@ -145,41 +146,42 @@ JS_EXPORT void JSGarbageCollect(JSContextRef ctx);
 
 /* Enable the Objective-C API for platforms with a modern runtime. NOTE: This is duplicated in VM.h. */
 #if !defined(JSC_OBJC_API_ENABLED)
-#if (defined(__clang__) && defined(__APPLE__) && (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)))
-#define JSC_OBJC_API_ENABLED 1
-#else
-#define JSC_OBJC_API_ENABLED 0
-#endif
-#endif
-
-#if JSC_OBJC_API_ENABLED
-#define JSC_CF_ENUM(enumName, ...)       \
-    typedef CF_ENUM(uint32_t, enumName) { \
-        __VA_ARGS__                       \
-    }
-#else
-#define JSC_CF_ENUM(enumName, ...) \
-    typedef enum {                  \
-        __VA_ARGS__                 \
-    } enumName
+    #if (defined(__clang__) && defined(__APPLE__) && (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)))
+        #define JSC_OBJC_API_ENABLED 1
+    #else
+        #define JSC_OBJC_API_ENABLED 0
+    #endif
 #endif
 
 #if JSC_OBJC_API_ENABLED
-#define JSC_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
-#define JSC_ASSUME_NONNULL_END _Pragma("clang assume_nonnull end")
+    #define JSC_CF_ENUM(enumName, ...)        \
+        typedef CF_ENUM(uint32_t, enumName) { \
+            __VA_ARGS__                       \
+        }
 #else
-#define JSC_ASSUME_NONNULL_BEGIN
-#define JSC_ASSUME_NONNULL_END
+    #define JSC_CF_ENUM(enumName, ...) \
+        typedef enum                   \
+        {                              \
+            __VA_ARGS__                \
+        } enumName
 #endif
 
 #if JSC_OBJC_API_ENABLED
-#define JSC_NULL_UNSPECIFIED _Null_unspecified
-#define JSC_NULLABLE _Nullable
-#define JSC_NONNULL _Nonnull
+    #define JSC_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
+    #define JSC_ASSUME_NONNULL_END _Pragma("clang assume_nonnull end")
 #else
-#define JSC_NULL_UNSPECIFIED
-#define JSC_NULLABLE
-#define JSC_NONNULL
+    #define JSC_ASSUME_NONNULL_BEGIN
+    #define JSC_ASSUME_NONNULL_END
+#endif
+
+#if JSC_OBJC_API_ENABLED
+    #define JSC_NULL_UNSPECIFIED _Null_unspecified
+    #define JSC_NULLABLE _Nullable
+    #define JSC_NONNULL _Nonnull
+#else
+    #define JSC_NULL_UNSPECIFIED
+    #define JSC_NULLABLE
+    #define JSC_NONNULL
 #endif
 
 #endif /* JSBase_h */

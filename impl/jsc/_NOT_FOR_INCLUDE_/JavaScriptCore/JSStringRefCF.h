@@ -20,7 +20,7 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef JSStringRefCF_h
@@ -30,28 +30,29 @@
 #include <JavaScriptCore/JSBase.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/* CFString convenience methods */
+    /* CFString convenience methods */
 
-/*!
-@function
-@abstract         Creates a JavaScript string from a CFString.
-@discussion       This function is optimized to take advantage of cases when 
- CFStringGetCharactersPtr returns a valid pointer.
-@param string     The CFString to copy into the new JSString.
-@result           A JSString containing string. Ownership follows the Create Rule.
-*/
-JS_EXPORT JSStringRef JSStringCreateWithCFString(CFStringRef string);
-/*!
-@function
-@abstract         Creates a CFString from a JavaScript string.
-@param alloc      The alloc parameter to pass to CFStringCreate.
-@param string     The JSString to copy into the new CFString.
-@result           A CFString containing string. Ownership follows the Create Rule.
-*/
-JS_EXPORT CFStringRef JSStringCopyCFString(CFAllocatorRef alloc, JSStringRef string) CF_RETURNS_RETAINED;
+    /*!
+    @function
+    @abstract         Creates a JavaScript string from a CFString.
+    @discussion       This function is optimized to take advantage of cases when
+     CFStringGetCharactersPtr returns a valid pointer.
+    @param string     The CFString to copy into the new JSString.
+    @result           A JSString containing string. Ownership follows the Create Rule.
+    */
+    JS_EXPORT JSStringRef JSStringCreateWithCFString(CFStringRef string);
+    /*!
+    @function
+    @abstract         Creates a CFString from a JavaScript string.
+    @param alloc      The alloc parameter to pass to CFStringCreate.
+    @param string     The JSString to copy into the new CFString.
+    @result           A CFString containing string. Ownership follows the Create Rule.
+    */
+    JS_EXPORT CFStringRef JSStringCopyCFString(CFAllocatorRef alloc, JSStringRef string) CF_RETURNS_RETAINED;
 
 #ifdef __cplusplus
 }

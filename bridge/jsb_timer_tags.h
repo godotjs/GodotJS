@@ -11,5 +11,5 @@ namespace jsb
     {
         typename internal::TypeGen<TStrongRef<v8::String>, T>::UnorderedMap tags;
     };
-}
+} // namespace jsb
 #endif

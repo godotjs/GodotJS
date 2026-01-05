@@ -5,9 +5,9 @@
 
 #include "../shared/jsb_custom_field.h"
 #if JSB_PREFER_QUICKJS_NG
-#include "../../quickjs-ng/quickjs.h"
+    #include "../../quickjs-ng/quickjs.h"
 #else
-#include "../../quickjs/quickjs.h"
+    #include "../../quickjs/quickjs.h"
 #endif
 #include "../../internal/jsb_internal.h"
 

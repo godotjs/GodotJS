@@ -8,8 +8,8 @@
 #include <v8-version-string.h>
 
 #if JSB_V8_CPPGC
-#   include <v8-cppgc.h>
-#   include <cppgc/default-platform.h>
+    #include <v8-cppgc.h>
+    #include <cppgc/default-platform.h>
 #endif
 
 #include "../../internal/jsb_logger.h"

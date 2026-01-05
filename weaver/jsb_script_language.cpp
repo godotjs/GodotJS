@@ -10,7 +10,7 @@
 #include "jsb_script.h"
 
 #ifdef TOOLS_ENABLED
-#include "../weaver-editor/templates/templates.gen.h"
+    #include "../weaver-editor/templates/templates.gen.h"
 #endif
 
 GodotJSScriptLanguage* GodotJSScriptLanguage::singleton_ = nullptr;
@@ -46,7 +46,7 @@ namespace jsb
             GodotJSScriptLanguage::get_singleton()->destroy_shadow_environment(target_);
         }
     }
-}
+} // namespace jsb
 
 GodotJSScriptLanguage::GodotJSScriptLanguage()
 {
@@ -65,7 +65,7 @@ GodotJSScriptLanguage::~GodotJSScriptLanguage()
     jsb_check(singleton_ == this);
     singleton_ = nullptr;
 
-    //TODO manage script list in a safer way (access and ref with script.id)
+    // TODO manage script list in a safer way (access and ref with script.id)
     MutexLock lock(mutex_);
     while (SelfList<GodotJSScript>* script_el = script_list_.first())
     {
@@ -165,11 +165,23 @@ struct JavaScriptControlFlowKeywords
     jsb_force_inline JavaScriptControlFlowKeywords()
     {
         constexpr static const char* _keywords[] =
-        {
-            "if", "else", "switch", "case", "do", "while", "for", "foreach",
-            "return", "break", "continue",
-            "try", "throw", "catch", "finally",
-        };
+            {
+                "if",
+                "else",
+                "switch",
+                "case",
+                "do",
+                "while",
+                "for",
+                "foreach",
+                "return",
+                "break",
+                "continue",
+                "try",
+                "throw",
+                "catch",
+                "finally",
+            };
         for (size_t index = 0; index < ::std::size(_keywords); ++index)
         {
             values.insert(_keywords[index]);
@@ -185,12 +197,54 @@ bool GodotJSScriptLanguage::is_control_flow_keyword(ConstStringRefCompat p_keywo
 
 Vector<String> GodotJSScriptLanguage::get_reserved_words() const
 {
-    return Vector<String> {
-        "return", "function", "interface", "class", "let", "break", "as", "any", "switch", "case", "if", "enum",
-        "throw", "else", "var", "number", "string", "get", "module", "instanceof", "typeof", "public", "private",
-        "while", "void", "null", "super", "this", "new", "in", "await", "async", "extends", "static",
-        "package", "implements", "interface", "continue", "yield", "const", "export", "finally", "for",
-        "import", "byte", "delete", "goto",
+    return Vector<String>{
+        "return",
+        "function",
+        "interface",
+        "class",
+        "let",
+        "break",
+        "as",
+        "any",
+        "switch",
+        "case",
+        "if",
+        "enum",
+        "throw",
+        "else",
+        "var",
+        "number",
+        "string",
+        "get",
+        "module",
+        "instanceof",
+        "typeof",
+        "public",
+        "private",
+        "while",
+        "void",
+        "null",
+        "super",
+        "this",
+        "new",
+        "in",
+        "await",
+        "async",
+        "extends",
+        "static",
+        "package",
+        "implements",
+        "interface",
+        "continue",
+        "yield",
+        "const",
+        "export",
+        "finally",
+        "for",
+        "import",
+        "byte",
+        "delete",
+        "goto",
         "default",
     };
 }
@@ -198,17 +252,17 @@ Vector<String> GodotJSScriptLanguage::get_reserved_words() const
 #if GODOT_4_5_OR_NEWER
 Vector<String> GodotJSScriptLanguage::get_doc_comment_delimiters() const
 {
-    return Vector<String> { "///" };
+    return Vector<String>{"///"};
 }
 
 Vector<String> GodotJSScriptLanguage::get_comment_delimiters() const
 {
-    return Vector<String> { "//", "/* */" };
+    return Vector<String>{"//", "/* */"};
 }
 
 Vector<String> GodotJSScriptLanguage::get_string_delimiters() const
 {
-    return Vector<String> { "' '", "\" \"", "` `" };
+    return Vector<String>{"' '", "\" \"", "` `"};
 }
 #else
 void GodotJSScriptLanguage::get_reserved_words(List<String>* p_words) const
@@ -238,7 +292,7 @@ void GodotJSScriptLanguage::get_string_delimiters(List<String>* p_delimiters) co
 }
 #endif
 
-//TODO this virtual method seems never used in godot?
+// TODO this virtual method seems never used in godot?
 Script* GodotJSScriptLanguage::create_script() const
 {
     return memnew(GodotJSScript);
@@ -251,7 +305,7 @@ bool GodotJSScriptLanguage::validate(const String& p_script, const String& p_pat
         return true;
     }
 
-    //TODO parse error info
+    // TODO parse error info
     ScriptError err;
     err.line = 0;
     err.column = 0;
@@ -266,9 +320,9 @@ Ref<Script> GodotJSScriptLanguage::make_template(const String& p_template, const
     spt.instantiate();
     String processed_template = p_template;
     processed_template = processed_template.replace("_BASE_", p_base_class_name)
-                                 .replace("_CLASS_SNAKE_CASE_", jsb::internal::VariantUtil::to_snake_case_id(p_class_name))
-                                 .replace("_CLASS_", jsb::internal::VariantUtil::to_pascal_case_id(p_class_name))
-                                 .replace("_TS_", jsb::internal::Settings::get_indentation());
+                             .replace("_CLASS_SNAKE_CASE_", jsb::internal::VariantUtil::to_snake_case_id(p_class_name))
+                             .replace("_CLASS_", jsb::internal::VariantUtil::to_pascal_case_id(p_class_name))
+                             .replace("_TS_", jsb::internal::Settings::get_indentation());
     spt->set_source_code(processed_template);
     return spt;
 }
@@ -277,8 +331,10 @@ Vector<ScriptLanguage::ScriptTemplate> GodotJSScriptLanguage::get_built_in_templ
 {
     Vector<ScriptTemplate> templates;
 #ifdef TOOLS_ENABLED
-    for (int i = 0; i < TEMPLATES_ARRAY_SIZE; i++) {
-        if (TEMPLATES[i].inherit == p_object) {
+    for (int i = 0; i < TEMPLATES_ARRAY_SIZE; i++)
+    {
+        if (TEMPLATES[i].inherit == p_object)
+        {
             templates.append(TEMPLATES[i]);
         }
     }
@@ -300,13 +356,13 @@ void GodotJSScriptLanguage::profiling_set_save_native_calls(bool p_enable)
 
 void GodotJSScriptLanguage::reload_all_scripts()
 {
-    //TODO temporarily ignored because it's only called from `RemoteDebugger`
+    // TODO temporarily ignored because it's only called from `RemoteDebugger`
     JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_all_scripts] temporarily ignored because it's only called from `RemoteDebugger`");
 }
 
 void GodotJSScriptLanguage::reload_tool_script(const Ref<Script>& p_script, bool p_soft_reload)
 {
-    //TODO temporarily ignored because it's only called from `ResourceSaver` (we usually write typescripts in vscode)
+    // TODO temporarily ignored because it's only called from `ResourceSaver` (we usually write typescripts in vscode)
     JSB_LOG(Verbose, "TODO [GodotJSScriptLanguage::reload_tool_script] temporarily ignored because it's only called from `ResourceSaver` (we usually write typescripts in vscode)");
 }
 
@@ -322,7 +378,7 @@ void GodotJSScriptLanguage::get_recognized_extensions(List<String>* p_extensions
 
 
 #if GODOT_4_4_OR_NEWER
-String GodotJSScriptLanguage::get_global_class_name(const String &p_path, String *r_base_type, String *r_icon_path, bool *r_is_abstract, bool *r_is_tool) const
+String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path, bool* r_is_abstract, bool* r_is_tool) const
 #else
 String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String* r_base_type, String* r_icon_path) const
 #endif
@@ -381,7 +437,7 @@ String GodotJSScriptLanguage::get_global_class_name(const String& p_path, String
         // hope it's a typescript file
         jsb_check(!ts_class_name_matcher_.is_null());
 
-        Ref<RegExMatch> match =  ts_class_name_matcher_->search(source);
+        Ref<RegExMatch> match = ts_class_name_matcher_->search(source);
         if (match.is_valid() && match->get_group_count() == 4)
         {
 #if GODOT_4_4_OR_NEWER
@@ -477,7 +533,7 @@ void GodotJSScriptLanguage::add_script_call_profile_info(const String& p_path, c
 #endif
 }
 
-bool GodotJSScriptLanguage::is_global_class_generic(const String &p_path) const
+bool GodotJSScriptLanguage::is_global_class_generic(const String& p_path) const
 {
     Error err;
     const Ref<FileAccess> file_access = FileAccess::open(p_path, FileAccess::READ, &err);
@@ -495,7 +551,7 @@ bool GodotJSScriptLanguage::is_global_class_generic(const String &p_path) const
 
     jsb_check(!ts_class_name_matcher_.is_null());
 
-    Ref<RegExMatch> match =  ts_class_name_matcher_->search(source);
+    Ref<RegExMatch> match = ts_class_name_matcher_->search(source);
     return match.is_valid() && match->get_group_count() == 4 && match->get_string(3).length() > 0;
 }
 
@@ -506,7 +562,7 @@ namespace
         // path :: line :: class :: method
         return jsb_format("%s::0::%s::%s", p_path, p_class, p_method);
     }
-}
+} // namespace
 
 int GodotJSScriptLanguage::profiling_get_accumulated_data(ProfilingInfo* p_info_arr, int p_info_max)
 {
@@ -588,10 +644,7 @@ std::shared_ptr<jsb::Environment> GodotJSScriptLanguage::create_shadow_environme
     params.thread_id = Thread::UNASSIGNED_ID;
 
     std::shared_ptr<jsb::Environment> env = std::make_shared<jsb::Environment>(params);
-    JSB_LOG(Log, "creating a shadow Environment on thread %d for %s [env %s]",
-        Thread::get_caller_id(),
-        jsb_typename(GodotJSScript),
-        (uintptr_t) env->id());
+    JSB_LOG(Log, "creating a shadow Environment on thread %d for %s [env %s]", Thread::get_caller_id(), jsb_typename(GodotJSScript), (uintptr_t) env->id());
     env->init();
     {
         MutexLock shadow_lock(shadow_mutex_);
@@ -608,8 +661,8 @@ void GodotJSScriptLanguage::destroy_shadow_environment(const std::shared_ptr<jsb
         MutexLock shadow_lock(shadow_mutex_);
         const size_t num = shadow_environments_.size();
         for (auto it = shadow_environments_.begin();
-            it != shadow_environments_.end();
-            ++it)
+             it != shadow_environments_.end();
+             ++it)
         {
             if (it->holder == p_env)
             {

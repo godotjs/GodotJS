@@ -3,9 +3,9 @@
 
 #include "jsb_quickjs_pch.h"
 #if JSB_PREFER_QUICKJS_NG
-#   define JSB_IMPL_VERSION_STRING "quickjs-ng-"  JSB_STRINGIFY(QJS_VERSION_MAJOR) "." JSB_STRINGIFY(QJS_VERSION_MINOR) "." JSB_STRINGIFY(QJS_VERSION_PATCH) QJS_VERSION_SUFFIX
+    #define JSB_IMPL_VERSION_STRING "quickjs-ng-" JSB_STRINGIFY(QJS_VERSION_MAJOR) "." JSB_STRINGIFY(QJS_VERSION_MINOR) "." JSB_STRINGIFY(QJS_VERSION_PATCH) QJS_VERSION_SUFFIX
 #else
-#   define JSB_IMPL_VERSION_STRING "quickjs-" QUICKJS_CONFIG_VERSION
+    #define JSB_IMPL_VERSION_STRING "quickjs-" QUICKJS_CONFIG_VERSION
 #endif
 
 namespace jsb::impl
@@ -28,35 +28,48 @@ namespace jsb::impl
     {
         __JS_ATOM_NULL = JS_ATOM_NULL,
 #pragma push_macro("DEF")
-#   undef DEF
-#   define DEF(name, str) JS_ATOM_ ## name,
-#   if JSB_PREFER_QUICKJS_NG
-#       include "../../quickjs-ng/quickjs-atom.h"
-#   else
-#       include "../../quickjs/quickjs-atom.h"
-#   endif
+#undef DEF
+#define DEF(name, str) JS_ATOM_##name,
+#if JSB_PREFER_QUICKJS_NG
+    #include "../../quickjs-ng/quickjs-atom.h"
+#else
+    #include "../../quickjs/quickjs-atom.h"
+#endif
 #pragma pop_macro("DEF")
         JS_ATOM_END,
     };
 
-    //TODO do not know whether it works properly or not
+    // TODO do not know whether it works properly or not
     enum
     {
         JS_TAG_EXTERNAL = JS_TAG_FLOAT64 + 1,
     };
-}
+} // namespace jsb::impl
 
 namespace v8
 {
-    enum GCType { kGCTypeAll = 0 };
-    enum GCCallbackFlags {};
+    enum GCType
+    {
+        kGCTypeAll = 0
+    };
+    enum GCCallbackFlags
+    {
+    };
     enum GarbageCollectionType
     {
         kFullGarbageCollection,
         kMinorGarbageCollection
     };
-    enum class NewStringType { kNormal, kInternalized };
-    enum class KeyCollectionMode { kOwnOnly, kIncludePrototypes };
+    enum class NewStringType
+    {
+        kNormal,
+        kInternalized
+    };
+    enum class KeyCollectionMode
+    {
+        kOwnOnly,
+        kIncludePrototypes
+    };
     enum PropertyFilter
     {
         ALL_PROPERTIES = 0,
@@ -66,8 +79,17 @@ namespace v8
         SKIP_STRINGS = 8,
         SKIP_SYMBOLS = 16
     };
-    enum class IndexFilter { kIncludeIndices, kSkipIndices };
-    enum class KeyConversionMode { kConvertToString, kKeepNumbers, kNoNumbers };
+    enum class IndexFilter
+    {
+        kIncludeIndices,
+        kSkipIndices
+    };
+    enum class KeyConversionMode
+    {
+        kConvertToString,
+        kKeepNumbers,
+        kNoNumbers
+    };
     enum PromiseRejectEvent
     {
         kPromiseRejectWithNoHandler = 0,
@@ -93,13 +115,13 @@ namespace v8
 
     class Isolate;
 
-    template<typename T>
+    template <typename T>
     class FunctionCallbackInfo;
 
-    template<typename T>
+    template <typename T>
     class PropertyCallbackInfo;
 
-    template<typename T>
+    template <typename T>
     class Local;
 
     class Value;
@@ -109,7 +131,6 @@ namespace v8
     using GCCallback = void (*)(Isolate* isolate, GCType type, GCCallbackFlags flags);
     using AccessorNameGetterCallback = void (*)(Local<Name> property, const PropertyCallbackInfo<Value>& info);
 
-}
+} // namespace v8
 
 #endif
-

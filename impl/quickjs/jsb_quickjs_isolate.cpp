@@ -46,9 +46,9 @@ namespace v8
 
         static void* js_realloc(void* opaque, void* ptr, size_t size)
         {
-            //TODO JSObject would never be reallocated, true?
-            //     (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
-            // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
+            // TODO JSObject would never be reallocated, true?
+            //      (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
+            //  jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
             return ::realloc(ptr, size);
         }
 
@@ -76,29 +76,29 @@ namespace v8
 
         static void* js_realloc(JSMallocState* s, void* ptr, size_t size)
         {
-            //TODO JSObject would never be reallocated, true?
-            //     (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
-            // jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
+            // TODO JSObject would never be reallocated, true?
+            //      (otherwise, we need an indirect way to map it in Global handle, and remap it in Isolate on it reallocated)
+            //  jsb_check(!((Isolate*) s->opaque)->_has_phantom(ptr));
             return memrealloc(ptr, size);
         }
 #endif
-
     };
 
     using details = IsolateInternalFunctions;
 
-    Isolate *Isolate::New(const CreateParams &params)
+    Isolate* Isolate::New(const CreateParams& params)
     {
         Isolate* isolate = memnew(Isolate);
         return isolate;
     }
 
-    Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr), stack_pos_(0)
+    Isolate::Isolate()
+        : ref_count_(1), disposed_(false), handle_scope_(nullptr), stack_pos_(0)
     {
 #if JSB_PREFER_QUICKJS_NG
-        const JSMallocFunctions mf = { details::js_calloc, details::js_malloc, details::js_free, details::js_realloc, details::js_malloc_usable_size };
+        const JSMallocFunctions mf = {details::js_calloc, details::js_malloc, details::js_free, details::js_realloc, details::js_malloc_usable_size};
 #else
-        const JSMallocFunctions mf = { details::js_malloc, details::js_free, details::js_realloc, nullptr };
+        const JSMallocFunctions mf = {details::js_malloc, details::js_free, details::js_realloc, nullptr};
 #endif
         rt_ = JS_NewRuntime2(&mf, this);
         ctx_ = JS_NewContext(rt_);
@@ -114,8 +114,8 @@ namespace v8
         JS_SetContextOpaque(ctx_, this);
         JS_SetHostPromiseRejectionTracker(rt_, _promise_rejection_tracker, this);
 
-        //TODO dead loop checker
-        // JS_SetInterruptHandler
+        // TODO dead loop checker
+        //  JS_SetInterruptHandler
 
         jsb_ensure(emplace_(JS_UNDEFINED) == jsb::impl::StackPos::Undefined);
         jsb_ensure(emplace_(JS_NULL) == jsb::impl::StackPos::Null);
@@ -271,10 +271,9 @@ namespace v8
 
             HandleScope handle_scope(isolate);
             const PromiseRejectMessage message(isolate,
-                kPromiseRejectWithNoHandler,
-                isolate->push_copy(promise),
-                isolate->push_copy(reason)
-            );
+                                               kPromiseRejectWithNoHandler,
+                                               isolate->push_copy(promise),
+                                               isolate->push_copy(reason));
             isolate->promise_reject_(message);
         }
     }
@@ -289,4 +288,4 @@ namespace v8
         JS_RunGC(rt_);
     }
 
-}
+} // namespace v8

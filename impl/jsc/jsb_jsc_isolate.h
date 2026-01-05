@@ -29,13 +29,13 @@ namespace jsb::impl
     struct WeakCallbackInfo
     {
         void* parameter = nullptr;
-        void* callback = nullptr;  // WeakCallbackInfo::Callback
+        void* callback = nullptr; // WeakCallbackInfo::Callback
     };
 
     struct InternalData
     {
-        //NOTE store pointer of isolate on every UniversalBridgeClass object because we do not find any viable solution to get JSContext from JSObjectRef.
-        //     a workaround is static global registry, but lock is needed for thread-safety which is not desired at present.
+        // NOTE store pointer of isolate on every UniversalBridgeClass object because we do not find any viable solution to get JSContext from JSObjectRef.
+        //      a workaround is static global registry, but lock is needed for thread-safety which is not desired at present.
         void* isolate;
 
         // Support only one callback at a time.
@@ -44,7 +44,7 @@ namespace jsb::impl
         WeakCallbackInfo weak;
 
         uint8_t internal_field_count = 0;
-        void* internal_fields[2] = { nullptr, nullptr };
+        void* internal_fields[2] = {nullptr, nullptr};
     };
 
     typedef jsb::internal::Index32 CapturedValueID;
@@ -63,7 +63,10 @@ namespace jsb::impl
         uint32_t class_payload;
     };
 
-    enum { kMaxStackSize = 1024 };
+    enum
+    {
+        kMaxStackSize = 1024
+    };
 
     namespace StackPos
     {
@@ -84,7 +87,7 @@ namespace jsb::impl
 
             Num,
         };
-    }
+    } // namespace StackPos
 
     // id for JSClassRef registry in isolate
     namespace ClassID
@@ -99,13 +102,16 @@ namespace jsb::impl
 
     class Helper;
     class Broker;
-}
+} // namespace jsb::impl
 
 namespace v8
 {
-    template<typename T> class Global;
-    template<typename T> class Local;
-    template<typename T> class FunctionCallbackInfo;
+    template <typename T>
+    class Global;
+    template <typename T>
+    class Local;
+    template <typename T>
+    class FunctionCallbackInfo;
     class Context;
     class Value;
 
@@ -115,14 +121,21 @@ namespace v8
         friend class jsb::impl::Broker;
         friend class Context;
 
-        template<typename T> friend class Global;
-        template<typename T> friend class Local;
-        template<typename T> friend class FunctionCallbackInfo;
+        template <typename T>
+        friend class Global;
+        template <typename T>
+        friend class Local;
+        template <typename T>
+        friend class FunctionCallbackInfo;
 
         friend class HandleScope;
 
     public:
-        class Scope { public: Scope(Isolate* isolate) {} };
+        class Scope
+        {
+        public:
+            Scope(Isolate* isolate) {}
+        };
 
         struct CreateParams
         {
@@ -132,7 +145,11 @@ namespace v8
         static Isolate* New(const CreateParams& params);
         void Dispose();
 
-        void* GetData(int index) const { jsb_check(index == 0); return embedder_data_; }
+        void* GetData(int index) const
+        {
+            jsb_check(index == 0);
+            return embedder_data_;
+        }
         void SetData(int index, void* data);
         void PerformMicrotaskCheckpoint();
         void LowMemoryNotification();
@@ -309,7 +326,7 @@ namespace v8
 
         jsb::internal::SArray<JSValueRef, jsb::impl::CapturedValueID> captured_values_;
         RingBuffer<jsb::impl::CapturedValueID> pending_delete_;
-        RingBuffer<jsb::impl::InternalData*> pending_finalize_; //TODO improve
+        RingBuffer<jsb::impl::InternalData*> pending_finalize_; // TODO improve
 
         uint16_t stack_pos_;
         JSValueRef stack_[jsb::impl::kMaxStackSize];
@@ -320,6 +337,6 @@ namespace v8
 
         SafeFlag interrupted_ = SafeFlag(false);
     };
-}
+} // namespace v8
 
 #endif

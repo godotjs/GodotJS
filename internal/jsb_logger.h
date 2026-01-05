@@ -12,7 +12,7 @@ namespace jsb::internal
     class Logger
     {
     public:
-        template<ELogSeverity::Type p_severity, typename... TArgs>
+        template <ELogSeverity::Type p_severity, typename... TArgs>
         static void error(const char* p_file, int p_line, const char* p_func, const char* p_format, TArgs... p_args)
         {
             const String str = format(p_format, p_args...);
@@ -21,7 +21,7 @@ namespace jsb::internal
             _print_error(p_func, p_file, p_line, str, true, /* is_warning: */ false);
         }
 
-        template<ELogSeverity::Type p_severity, typename... TArgs>
+        template <ELogSeverity::Type p_severity, typename... TArgs>
         static void warn(const char* p_file, int p_line, const char* p_func, const char* p_format, TArgs... p_args)
         {
             const String str = format(p_format, p_args...);
@@ -30,7 +30,7 @@ namespace jsb::internal
             _print_error(p_func, p_file, p_line, str, false, /* is_warning: */ true);
         }
 
-        template<ELogSeverity::Type p_severity, typename... TArgs>
+        template <ELogSeverity::Type p_severity, typename... TArgs>
         static void info(const char* p_file, int p_line, const char* p_func, const char* p_format, TArgs... p_args)
         {
             const String str = format(p_format, p_args...);
@@ -43,7 +43,7 @@ namespace jsb::internal
 #endif
         }
 
-        template<ELogSeverity::Type p_severity, typename... TArgs>
+        template <ELogSeverity::Type p_severity, typename... TArgs>
         static void verbose(const char* p_file, int p_line, const char* p_func, const char* p_format, TArgs... p_args)
         {
 #if !JSB_VERBOSE_ENABLED
@@ -58,7 +58,7 @@ namespace jsb::internal
         }
 
         typedef void (*_print_line_callback)(const String& p_str);
-        typedef void (*_print_error_callback)(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, bool p_is_warning);
+        typedef void (*_print_error_callback)(const char* p_function, const char* p_file, int p_line, const String& p_error, bool p_editor_notify, bool p_is_warning);
 
         static void set_callbacks(_print_line_callback verbose_cb, _print_line_callback line_cb, _print_error_callback error_callback)
         {
@@ -76,7 +76,11 @@ namespace jsb::internal
             if (!_print_error) _print_error = _default_print_error;
         }
 
-        static void set_default_callbacks() { static Logger logger; jsb_unused(logger); }
+        static void set_default_callbacks()
+        {
+            static Logger logger;
+            jsb_unused(logger);
+        }
 
         static _print_line_callback _print_line;
         static _print_line_callback _print_verbose;
@@ -84,19 +88,19 @@ namespace jsb::internal
 
         static void _default_print_verbose(const String& p_str)
         {
-            //TODO cache messages from background threads to avoid messing up the output
+            // TODO cache messages from background threads to avoid messing up the output
             jsb_ext_print_rich(p_str.utf8().get_data());
         }
 
         static void _default_print_line(const String& p_str)
         {
-            //TODO cache messages from background threads to avoid messing up the output
+            // TODO cache messages from background threads to avoid messing up the output
             jsb_ext_print_line(p_str);
         }
 
-        static void _default_print_error(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, bool p_is_warning)
+        static void _default_print_error(const char* p_function, const char* p_file, int p_line, const String& p_error, bool p_editor_notify, bool p_is_warning)
         {
-            //TODO cache messages from background threads to avoid messing up the output
+            // TODO cache messages from background threads to avoid messing up the output
             jsb_ext_print_error(p_function, p_file, p_line, p_error, p_editor_notify, p_is_warning);
         }
 
@@ -104,9 +108,10 @@ namespace jsb::internal
         static const char* simplify_file_name(const char* p_path)
         {
             const char* file_name = p_path;
-            while (const char ch = *p_path++) if (ch == '\\' || ch == '/') file_name = p_path;
+            while (const char ch = *p_path++)
+                if (ch == '\\' || ch == '/') file_name = p_path;
             return file_name;
         }
     };
-}
+} // namespace jsb::internal
 #endif

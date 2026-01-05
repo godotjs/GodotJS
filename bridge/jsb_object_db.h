@@ -8,8 +8,8 @@
 namespace jsb
 {
 #if JSB_THREADING
-#   define JSB_OBJECT_DB_HANDLE(Type, Ptr) Type(&lock_, Ptr)
-#   define JSB_OBJECT_DB_STATEMENT(Statement) Statement
+    #define JSB_OBJECT_DB_HANDLE(Type, Ptr) Type(&lock_, Ptr)
+    #define JSB_OBJECT_DB_STATEMENT(Statement) Statement
 
     struct ObjectHandlePtr
     {
@@ -18,9 +18,10 @@ namespace jsb
         internal::SArray<ObjectHandle, NativeObjectID>::Pointer ptr_;
 
     public:
-        ObjectHandlePtr(const ObjectHandlePtr& ) = delete;
+        ObjectHandlePtr(const ObjectHandlePtr&) = delete;
 
-        ObjectHandlePtr(): lock_(nullptr) {}
+        ObjectHandlePtr()
+            : lock_(nullptr) {}
         ObjectHandlePtr(RWLock* p_lock, internal::SArray<ObjectHandle, NativeObjectID>::Pointer&& p_ptr)
             : lock_(p_lock), ptr_(std::move(p_ptr))
         {
@@ -68,9 +69,10 @@ namespace jsb
         internal::SArray<ObjectHandle, NativeObjectID>::ConstPointer ptr_;
 
     public:
-        ObjectHandleConstPtr(const ObjectHandleConstPtr& ) = delete;
+        ObjectHandleConstPtr(const ObjectHandleConstPtr&) = delete;
 
-        ObjectHandleConstPtr(): lock_(nullptr) {}
+        ObjectHandleConstPtr()
+            : lock_(nullptr) {}
         ObjectHandleConstPtr(const RWLock* p_lock, internal::SArray<ObjectHandle, NativeObjectID>::ConstPointer&& p_ptr)
             : lock_(p_lock), ptr_(std::move(p_ptr))
         {
@@ -110,8 +112,8 @@ namespace jsb
         }
     };
 #else
-#   define JSB_OBJECT_DB_HANDLE(Type, Ptr) (sizeof(Type), Ptr)
-#   define JSB_OBJECT_DB_STATEMENT(Statement) (void) 0
+    #define JSB_OBJECT_DB_HANDLE(Type, Ptr) (sizeof(Type), Ptr)
+    #define JSB_OBJECT_DB_STATEMENT(Statement) (void) 0
 
     typedef internal::SArray<ObjectHandle, NativeObjectID>::Pointer ObjectHandlePtr;
     typedef internal::SArray<ObjectHandle, NativeObjectID>::ConstPointer ObjectHandleConstPtr;
@@ -216,8 +218,10 @@ namespace jsb
             const NativeObjectID object_id = objects_.add({});
             objects_index_.insert(p_pointer, object_id);
 
-            if (o_handle) *o_handle = JSB_OBJECT_DB_HANDLE(ObjectHandlePtr, objects_.get_value_scoped(object_id));
-            else JSB_OBJECT_DB_STATEMENT(lock_.write_unlock());
+            if (o_handle)
+                *o_handle = JSB_OBJECT_DB_HANDLE(ObjectHandlePtr, objects_.get_value_scoped(object_id));
+            else
+                JSB_OBJECT_DB_STATEMENT(lock_.write_unlock());
             return object_id;
         }
 
@@ -232,7 +236,6 @@ namespace jsb
             JSB_OBJECT_DB_STATEMENT(lock_.write_unlock());
         }
     };
-}
+} // namespace jsb
 
 #endif
-

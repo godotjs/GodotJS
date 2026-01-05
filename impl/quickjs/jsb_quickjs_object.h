@@ -31,14 +31,17 @@ namespace v8
         MaybeLocal<Value> Get(Local<Context> context, uint32_t index) const;
 
         Maybe<bool> DefineOwnProperty(
-            Local<Context> context, Local<Name> key, Local<Value> value,
+            Local<Context> context,
+            Local<Name> key,
+            Local<Value> value,
             PropertyAttribute attributes = None);
 
         MaybeLocal<Value> GetOwnPropertyDescriptor(Local<Context> context, Local<Name> key) const;
         Maybe<bool> HasOwnProperty(Local<Context> context, Local<Name> key) const;
 
         MaybeLocal<Array> GetOwnPropertyNames(
-            Local<Context> context, PropertyFilter filter,
+            Local<Context> context,
+            PropertyFilter filter,
             KeyConversionMode key_conversion = KeyConversionMode::kKeepNumbers);
 
         Maybe<bool> SetPrototype(Local<Context> context, Local<Value> prototype);
@@ -47,13 +50,14 @@ namespace v8
         void SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter = Local<FunctionTemplate>(), Local<FunctionTemplate> setter = Local<FunctionTemplate>());
 
         Maybe<bool> SetLazyDataProperty(
-            Local<Context> context, Local<Name> name,
+            Local<Context> context,
+            Local<Name> name,
             AccessorNameGetterCallback getter);
 
         static Local<Object> New(Isolate* isolate);
 
     private:
-        static JSValue _lazy(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
+        static JSValue _lazy(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic, JSValue* func_data);
     };
 
     class Promise : public Object
@@ -61,18 +65,24 @@ namespace v8
     public:
         class Resolver : public Object
         {
-            enum : uint32_t { kHolderIndexResolve, kHolderIndexReject, kHolderIndexPromise, kHolderIndexCount };
-            
+            enum : uint32_t
+            {
+                kHolderIndexResolve,
+                kHolderIndexReject,
+                kHolderIndexPromise,
+                kHolderIndexCount
+            };
+
         public:
             static MaybeLocal<Resolver> New(Local<Context> context);
 
             Local<Promise> GetPromise();
-            
+
             Maybe<bool> Resolve(Local<Context> context, Local<Value> value);
 
             Maybe<bool> Reject(Local<Context> context, Local<Value> value);
         };
     };
 
-}
+} // namespace v8
 #endif

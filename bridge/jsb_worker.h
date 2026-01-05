@@ -31,8 +31,8 @@ namespace jsb
         WorkerMessage(WorkerMessage&&) noexcept = default;
         WorkerMessage& operator=(WorkerMessage&&) noexcept = default;
 
-        WorkerMessage(Buffer&& p_data, std::vector<TransferData>&& p_transfers) :
-            data(std::move(p_data)), transfers(std::move(p_transfers))
+        WorkerMessage(Buffer&& p_data, std::vector<TransferData>&& p_transfers)
+            : data(std::move(p_data)), transfers(std::move(p_transfers))
         {
         }
 
@@ -40,7 +40,6 @@ namespace jsb
         const std::vector<TransferData>& get_transfers() const { return transfers; }
 
     private:
-
         Buffer data;
         std::vector<TransferData> transfers;
     };
@@ -90,7 +89,7 @@ namespace jsb
         // shared master <-> worker postMessage logic
         static std::pair<uint8_t*, size_t> handle_post_message(const v8::FunctionCallbackInfo<v8::Value>& info, internal::ReferentialVariantMap<TransferData>& transfers);
     };
-}
+} // namespace jsb
 #endif
 
 #endif

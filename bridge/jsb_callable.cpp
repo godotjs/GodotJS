@@ -4,7 +4,7 @@ namespace jsb
 {
     String JSCallable::get_as_text() const
     {
-        //TODO a human readable string, but OK if empty
+        // TODO a human readable string, but OK if empty
         return String();
     }
 
@@ -31,4 +31,4 @@ namespace jsb
         Object* object_ptr = object_id_.is_null() ? nullptr : jsb::compat::ObjectDB::get_instance(object_id_);
         env->call_function(object_ptr, callback_id_, p_arguments, p_argcount, r_call_error);
     }
-}
+} // namespace jsb

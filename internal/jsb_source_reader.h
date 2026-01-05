@@ -18,7 +18,7 @@ namespace jsb::internal
         virtual String get_path_absolute() const = 0;
         virtual String get_source_url() const = 0;
         virtual uint64_t get_length() const = 0;
-        virtual uint64_t get_buffer(uint8_t *p_dst, uint64_t p_length) const = 0;
+        virtual uint64_t get_buffer(uint8_t* p_dst, uint64_t p_length) const = 0;
 
 
         virtual uint64_t get_time_modified() const { return 0; }
@@ -41,7 +41,7 @@ namespace jsb::internal
         virtual String get_path_absolute() const override { return file_->get_path_absolute(); }
         virtual String get_source_url() const override { return source_url; }
         virtual uint64_t get_length() const override { return cached_length_; }
-        virtual uint64_t get_buffer(uint8_t *p_dst, uint64_t p_length) const override { return file_->get_buffer(p_dst, p_length); }
+        virtual uint64_t get_buffer(uint8_t* p_dst, uint64_t p_length) const override { return file_->get_buffer(p_dst, p_length); }
 
 #if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
         virtual uint64_t get_time_modified() const override { return FileAccess::get_modified_time(file_->get_path()); }
@@ -64,7 +64,7 @@ namespace jsb::internal
         virtual String get_path_absolute() const override { return absolute_path_; }
         virtual String get_source_url() const override { return absolute_path_; }
         virtual uint64_t get_length() const override { return buffer_.size(); }
-        virtual uint64_t get_buffer(uint8_t *p_dst, uint64_t p_length) const override;
+        virtual uint64_t get_buffer(uint8_t* p_dst, uint64_t p_length) const override;
     };
-}
+} // namespace jsb::internal
 #endif
