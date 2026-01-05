@@ -57,7 +57,6 @@ namespace jsb
         void on_load(v8::Isolate* isolate, const v8::Local<v8::Context>& context);
         bool mark_as_reloading();
         void mark_as_reloaded();
-
     };
 
     struct JavaScriptModuleCache
@@ -93,7 +92,7 @@ namespace jsb
 
         jsb_force_inline JavaScriptModule* find(const StringName& p_name) const
         {
-            JavaScriptModule* const * it = modules_.getptr(p_name);
+            JavaScriptModule* const* it = modules_.getptr(p_name);
             return it ? *it : nullptr;
         }
 
@@ -115,6 +114,6 @@ namespace jsb
         JavaScriptModule& insert(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& p_name, bool p_main_candidate, bool p_init_loaded);
     };
 
-}
+} // namespace jsb
 
 #endif

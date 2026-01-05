@@ -6,13 +6,14 @@
 
 namespace v8
 {
-    Isolate *Isolate::New(const CreateParams &params)
+    Isolate* Isolate::New(const CreateParams& params)
     {
         Isolate* isolate = memnew(Isolate);
         return isolate;
     }
 
-    Isolate::Isolate() : ref_count_(1), disposed_(false), handle_scope_(nullptr)
+    Isolate::Isolate()
+        : ref_count_(1), disposed_(false), handle_scope_(nullptr)
     {
         rt_ = jsbi_NewEngine(this);
     }
@@ -57,4 +58,4 @@ namespace v8
         return Local<Context>(Data(this, 0));
     }
 
-}
+} // namespace v8

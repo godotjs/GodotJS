@@ -7,11 +7,16 @@ namespace jsb::impl
 {
     namespace FuncPayload
     {
-        enum { kCallback, kData, kNum, };
+        enum
+        {
+            kCallback,
+            kData,
+            kNum,
+        };
     }
 
     class Helper;
-}
+} // namespace jsb::impl
 
 namespace v8
 {
@@ -23,19 +28,21 @@ namespace v8
     public:
         MaybeLocal<Value> Call(
             Local<Context> context,
-            Local<Value> recv, int argc,
+            Local<Value> recv,
+            int argc,
             Local<Value> argv[]);
 
         static MaybeLocal<Function> New(
-            Local<Context> context, FunctionCallback callback,
+            Local<Context> context,
+            FunctionCallback callback,
             Local<Value> data = Local<Value>(),
             int length = 0);
 
         Local<Context> GetCreationContextChecked() const;
 
     private:
-        static JSValue _function_call(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
+        static JSValue _function_call(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic, JSValue* func_data);
     };
 
-}
+} // namespace v8
 #endif

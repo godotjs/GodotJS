@@ -29,8 +29,14 @@
 
 namespace jsb
 {
-    enum : uint32_t { kIsolateEmbedderData = 0, };
-    enum : uint32_t { kContextEmbedderData = 0, };
+    enum : uint32_t
+    {
+        kIsolateEmbedderData = 0,
+    };
+    enum : uint32_t
+    {
+        kContextEmbedderData = 0,
+    };
 
     // pre-allocated Symbols which usually used as key of Object to store some hidden info on it.
     namespace Symbols
@@ -47,8 +53,8 @@ namespace jsb
             Doc,
             MemberDocMap,
 
-            ClassModuleId,           // provides quick access from a class' constructor to its corresponding module ID
-            ConstructorBindObject,   // indicates a constructor invocation is binding to an existing Godot native object
+            ClassModuleId,         // provides quick access from a class' constructor to its corresponding module ID
+            ConstructorBindObject, // indicates a constructor invocation is binding to an existing Godot native object
 
             // Exposed as properties on the `godot` module
             FloatType,
@@ -88,7 +94,8 @@ namespace jsb
 
             AsyncCall(Type p_type, void* p_binding)
                 : type_(p_type), binding_(p_binding)
-            {}
+            {
+            }
             ~AsyncCall() = default;
 
             AsyncCall(AsyncCall&&) noexcept = default;
@@ -110,7 +117,7 @@ namespace jsb
         friend struct ClassRegister;
         friend struct EnvironmentStore;
 
-        //TODO remove this later
+        // TODO remove this later
         friend struct ScriptClassInfo;
 
         // symbol for class_id on FunctionTemplate of native class
@@ -129,11 +136,11 @@ namespace jsb
 #if JSB_THREADING
         internal::DoubleBuffered<AsyncCall> async_calls_;
 #endif
-        
+
 #if JSB_V8_CPPGC
         std::unique_ptr<v8::CppHeap> cpp_heap_;
 #endif
-        
+
         // indirect lookup
         // only godot object classes are mapped
         HashMap<StringName, NativeClassID> godot_classes_index_;
@@ -148,8 +155,8 @@ namespace jsb
         // pending class post bind classes and execute them when it's safe to do so.
         Vector<Pair<StringName, v8::Local<v8::Function>>> deferred_class_post_binds_;
 
-        //TODO all exported default classes inherit native godot class (directly or indirectly)
-        // they're only collected on a module loaded
+        // TODO all exported default classes inherit native godot class (directly or indirectly)
+        //  they're only collected on a module loaded
         internal::SArray<ScriptClassInfo, ScriptClassID> script_classes_;
 
         StringNameCache string_name_cache_;
@@ -233,9 +240,10 @@ namespace jsb
             bool previous_execution_deferred_;
 
         public:
-            explicit ExecutionDeferredScope(Environment* p_env) : env_(p_env),
-                                                                    previous_execution_deferred_(
-                                                                        env_->_execution_deferred)
+            explicit ExecutionDeferredScope(Environment* p_env)
+                : env_(p_env),
+                  previous_execution_deferred_(
+                      env_->_execution_deferred)
             {
                 env_->_execution_deferred = true;
             }
@@ -304,10 +312,10 @@ namespace jsb
             String name = internal::NamingUtil::get_class_name(p_type_name);
             jsb_check(internal::VariantUtil::is_valid_name(name));
             jsb_check(!class_register_map_.has(name));
-            class_register_map_.insert(name, { {}, p_func });
+            class_register_map_.insert(name, {{}, p_func});
         }
 
-        //TODO temp, get C++ function pointer (include class methods)
+        // TODO temp, get C++ function pointer (include class methods)
         jsb_force_inline static uint8_t* get_function_pointer(const v8::Local<v8::Context>& p_context, uint32_t p_offset)
         {
             return wrap(p_context)->function_pointers_[p_offset];
@@ -315,7 +323,7 @@ namespace jsb
 
         ObjectCacheID get_cached_function(const v8::Local<v8::Function>& p_func);
         bool release_function(ObjectCacheID p_func_id);
-        Variant call_function(void* p_pointer, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError &r_error);
+        Variant call_function(void* p_pointer, ObjectCacheID p_func_id, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
 
         /**
          * This method will not throw any JS exception.
@@ -352,8 +360,8 @@ namespace jsb
          */
         AsyncModuleManager& get_async_module_manager();
 
-        //NOTE AVOID USING THIS CALL, CONSIDERING REMOVING IT.
-        //     eval from source
+        // NOTE AVOID USING THIS CALL, CONSIDERING REMOVING IT.
+        //      eval from source
         JSValueMove eval_source(const char* p_source, int p_length, const String& p_filename, Error& r_err);
 
         /**
@@ -364,7 +372,7 @@ namespace jsb
          */
         Error load(const String& p_name, JavaScriptModule** r_module = nullptr);
 
-        //TODO is there a simple way to compile (validate) the script without any side effect?
+        // TODO is there a simple way to compile (validate) the script without any side effect?
         bool validate_script(const String& p_path);
 
         NativeObjectID crossbind(Object* p_this, ScriptClassID p_class_id, const Variant** p_args, int p_argcount);
@@ -420,7 +428,11 @@ namespace jsb
         jsb_force_inline void notify_microtasks_run() { flags_ |= EF_MicrotaskCheckpoint; }
         jsb_force_inline bool is_disposing() const { return (flags_ & EF_PreDispose) != 0; }
 
-        jsb_force_inline Variant* alloc_variant(const Variant& p_templet) { jsb_check(p_templet.get_type() != Variant::OBJECT); return variant_allocator_.alloc(p_templet); }
+        jsb_force_inline Variant* alloc_variant(const Variant& p_templet)
+        {
+            jsb_check(p_templet.get_type() != Variant::OBJECT);
+            return variant_allocator_.alloc(p_templet);
+        }
         jsb_force_inline Variant* alloc_variant() { return variant_allocator_.alloc(); }
         jsb_force_inline void dealloc_variant(Variant* p_var) { variant_allocator_.free(p_var); }
 
@@ -518,7 +530,7 @@ namespace jsb
             return nullptr;
         }
 
-        template<typename T, typename... ArgumentTypes>
+        template <typename T, typename... ArgumentTypes>
         T& add_module_loader(const StringName& p_module_id, ArgumentTypes&&... p_args)
         {
             if (const HashMap<StringName, IModuleLoader*>::Iterator& it = module_loaders_.find(p_module_id))
@@ -545,7 +557,7 @@ namespace jsb
             return nullptr;
         }
 
-        template<typename T, typename... ArgumentTypes>
+        template <typename T, typename... ArgumentTypes>
         T& add_module_resolver(ArgumentTypes... p_args)
         {
             T* resolver = memnew(T(p_args...));
@@ -636,8 +648,7 @@ namespace jsb
         void _execute_class_post_bind(const StringName& p_class_name, const v8::Local<v8::Function>& p_class);
         void _execute_deferred();
 
-        Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func,
-            const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
+        Variant _call(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Function>& p_func, const v8::Local<v8::Value>& p_self, const Variant** p_args, int p_argcount, Callable::CallError& r_error);
 
         /**
          * Setup `onready` fields (this method must be called before `_ready`).
@@ -675,9 +686,7 @@ namespace jsb
                 type == Variant::CALLABLE || type == Variant::ARRAY || type == Variant::DICTIONARY)
             {
                 env->variant_allocator_.free_safe(variant);
-                JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) thread:%s",
-                    Variant::get_type_name(type), (uintptr_t) variant,
-                    uitos(Thread::get_caller_id()));
+                JSB_LOG(VeryVerbose, "deleting possibly reference-based variant (%s:%d) thread:%s", Variant::get_type_name(type), (uintptr_t) variant, uitos(Thread::get_caller_id()));
                 return;
             }
             else
@@ -713,10 +722,10 @@ namespace jsb
 
         public:
             VariantSerializerDelegate(
-                    Environment* p_from_env,
-                    internal::ReferentialVariantMap<TransferData>& p_transfers) :
-                    from_env_(p_from_env),
-                    transfers(p_transfers)
+                Environment* p_from_env,
+                internal::ReferentialVariantMap<TransferData>& p_transfers)
+                : from_env_(p_from_env),
+                  transfers(p_transfers)
             {
                 clone_map.reserve(transfers.size());
 
@@ -788,10 +797,10 @@ namespace jsb
 
         public:
             VariantDeserializerDelegate(
-                    Environment* p_to_env,
-                    const std::vector<TransferData>& p_transferred) :
-                    to_env_(p_to_env),
-                    transferred_(p_transferred) {}
+                Environment* p_to_env,
+                const std::vector<TransferData>& p_transferred)
+                : to_env_(p_to_env),
+                  transferred_(p_transferred) {}
 
             void SetSerializer(v8::ValueDeserializer* deserializer)
             {
@@ -807,7 +816,7 @@ namespace jsb
                     return v8::MaybeLocal<v8::Object>();
                 }
 
-                if (bytes[0] != (uint8_t)SerializationTag::kGodotVariantTransfer)
+                if (bytes[0] != (uint8_t) SerializationTag::kGodotVariantTransfer)
                 {
                     return v8::MaybeLocal<v8::Object>();
                 }
@@ -818,7 +827,7 @@ namespace jsb
                     return v8::MaybeLocal<v8::Object>();
                 }
 
-                jsb_check(transfer_id < (uint32_t)transferred_.size());
+                jsb_check(transfer_id < (uint32_t) transferred_.size());
 
                 v8::Local<v8::Value> js_value;
 
@@ -830,8 +839,8 @@ namespace jsb
                 return js_value.As<v8::Object>();
             }
         };
-    }
+    } // namespace Serialization
 #endif
-}
+} // namespace jsb
 
 #endif

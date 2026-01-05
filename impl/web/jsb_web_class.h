@@ -15,7 +15,7 @@ namespace jsb::impl
         // in web, it's the prototype object.
         v8::Global<v8::Object> prototype_;
 
-        //TODO may unnecessary, should be identical with prototype.constructor?
+        // TODO may unnecessary, should be identical with prototype.constructor?
         v8::Global<v8::Function> constructor_;
 
     public:
@@ -39,7 +39,7 @@ namespace jsb::impl
             return v8::Local<v8::Object>(v8::Data(isolate, constructor_.Get(isolate)->stack_pos_));
         }
 
-        //NOTE NewInstance should not trigger the underlying native constructor of this class
+        // NOTE NewInstance should not trigger the underlying native constructor of this class
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
         {
             v8::Isolate* isolate = context->GetIsolate();
@@ -53,7 +53,6 @@ namespace jsb::impl
             prototype_.Reset(isolate, proto);
             constructor_.Reset(isolate, constructor);
         }
-
     };
-}
+} // namespace jsb::impl
 #endif

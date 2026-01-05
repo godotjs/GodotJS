@@ -38,7 +38,7 @@ namespace v8
         {
             return MaybeLocal<Map>();
         }
-        const int res = JS_SetProperty(ctx, (JSValue) *this, key_atom, JS_DupValue(ctx, (JSValue) value));
+        const int res = JS_SetProperty(ctx, (JSValue) * this, key_atom, JS_DupValue(ctx, (JSValue) value));
         if (res == -1)
         {
             jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
@@ -53,4 +53,4 @@ namespace v8
         return Local<Array>(Data(isolate, isolate->push_map()));
     }
 
-}
+} // namespace v8

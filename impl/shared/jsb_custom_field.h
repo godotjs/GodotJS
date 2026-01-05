@@ -79,5 +79,5 @@ namespace jsb::impl
             return cf;
         }
     };
-}
+} // namespace jsb::impl
 #endif

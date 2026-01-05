@@ -10,7 +10,15 @@ namespace jsb
     {
     }
 #else
-    namespace InternalTimerType { enum Type : uint8_t { Interval, Timeout, Immediate, }; }
+    namespace InternalTimerType
+    {
+        enum Type : uint8_t
+        {
+            Interval,
+            Timeout,
+            Immediate,
+        };
+    }
 
     static void _generate_stacktrace(v8::Isolate* isolate, String& r_stacktrace, internal::SourcePosition& r_source_position)
     {
@@ -22,7 +30,7 @@ namespace jsb
         }
     }
 
-    template<internal::ELogSeverity::Type ActiveSeverity>
+    template <internal::ELogSeverity::Type ActiveSeverity>
     void _print(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         if constexpr (ActiveSeverity < internal::ELogSeverity::JSB_MIN_LOG_LEVEL) return;
@@ -82,9 +90,7 @@ namespace jsb
 
             internal::IConsoleOutput::internal_write(ActiveSeverity, text);
             _err_print_error(
-                func_str.get_data(), filename_str.get_data(), source_position.line,
-                text_str.get_data(),
-                false, ERR_HANDLER_WARNING);
+                func_str.get_data(), filename_str.get_data(), source_position.line, text_str.get_data(), false, ERR_HANDLER_WARNING);
             return;
         }
         if constexpr (ActiveSeverity == internal::ELogSeverity::Error)
@@ -96,9 +102,7 @@ namespace jsb
 
             internal::IConsoleOutput::internal_write(ActiveSeverity, text);
             _err_print_error(
-                func_str.get_data(), filename_str.get_data(), source_position.line,
-                text_str.get_data(),
-                true, ERR_HANDLER_ERROR);
+                func_str.get_data(), filename_str.get_data(), source_position.line, text_str.get_data(), true, ERR_HANDLER_ERROR);
             return;
         }
         if constexpr (ActiveSeverity == internal::ELogSeverity::Trace)
@@ -122,7 +126,7 @@ namespace jsb
         }
     }
 
-    template<InternalTimerType::Type TimerType>
+    template <InternalTimerType::Type TimerType>
     void _set_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
@@ -160,12 +164,16 @@ namespace jsb
                 action.store(index - extra_arg_index, v8::Global<v8::Value>(isolate, info[index]));
             }
             Environment::wrap(isolate)->get_timer_manager().set_timer(handle,
-                std::move(action), rate, loop);
+                                                                      std::move(action),
+                                                                      rate,
+                                                                      loop);
         }
         else
         {
             Environment::wrap(isolate)->get_timer_manager().set_timer(handle,
-                JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0), rate > 0 ? rate : 0, loop);
+                                                                      JavaScriptTimerAction(v8::Global<v8::Function>(isolate, func), 0),
+                                                                      rate > 0 ? rate : 0,
+                                                                      loop);
         }
         // TODO: V8 update. Once we update V8 past 12.6.221 we can skip the cast to double
         info.GetReturnValue().Set((double) (int64_t) handle);
@@ -217,9 +225,7 @@ namespace jsb
         if (it != timer_tags.tags.end())
         {
             timer_tags.tags.erase(it);
-            JSB_LOG(Info, "%s: %dms - timer ended",
-                impl::Helper::to_string(isolate, label),
-                (now - it->second) / 1000UL);
+            JSB_LOG(Info, "%s: %dms - timer ended", impl::Helper::to_string(isolate, label), (now - it->second) / 1000UL);
         }
         else
         {
@@ -247,7 +253,7 @@ namespace jsb
             console_obj->Set(context, impl::Helper::new_string_ascii(isolate, "timeEnd"), JSB_NEW_FUNCTION(context, _time_end, {})).Check();
         }
 
-        //TODO the root 'import' function (async module loading?)
+        // TODO the root 'import' function (async module loading?)
         {
         }
 
@@ -263,4 +269,4 @@ namespace jsb
     }
 #endif
 
-}
+} // namespace jsb

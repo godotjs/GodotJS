@@ -78,7 +78,7 @@ namespace jsb::impl
         {
             if (JS_VALUE_GET_TAG(a) != JS_VALUE_GET_TAG(b)) return false;
 
-            //TODO unsafe eq check
+            // TODO unsafe eq check
             if (JS_VALUE_GET_PTR(a) != JS_VALUE_GET_PTR(b)) return false;
             return true;
         }
@@ -88,15 +88,16 @@ namespace jsb::impl
             if (!JS_VALUE_HAS_REF_COUNT(value)) return 0;
 #if JSB_PREFER_QUICKJS_NG
             // unsafe
-            typedef struct JSRefCountHeader {
+            typedef struct JSRefCountHeader
+            {
                 int ref_count;
             } JSRefCountHeader;
 #endif
-            const JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(value);
+            const JSRefCountHeader* p = (JSRefCountHeader*) JS_VALUE_GET_PTR(value);
             return p ? p->ref_count : 0;
         }
 
         static JSValue NoopCallback(JSContext* _ctx, JSValueConst _this_val, int _argc, JSValueConst* _argv);
     };
-}
+} // namespace jsb::impl
 #endif

@@ -17,5 +17,5 @@ namespace v8
             virtual void Free(void* data, size_t length) = 0;
         };
     };
-}
+} // namespace v8
 #endif

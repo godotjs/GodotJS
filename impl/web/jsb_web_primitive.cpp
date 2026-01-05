@@ -121,4 +121,4 @@ namespace v8
         return Local<String>(Data(isolate, jsbi_NewBigInt64(isolate->rt(), &value)));
     }
 
-}
+} // namespace v8

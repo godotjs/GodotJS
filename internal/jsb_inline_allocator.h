@@ -9,7 +9,10 @@ namespace jsb::internal
     template <size_t ElementNum>
     struct InlineAllocator
     {
-        enum { kInitialElementNum = ElementNum };
+        enum
+        {
+            kInitialElementNum = ElementNum
+        };
 
         template <size_t MemorySize>
         struct ByteCompat
@@ -20,7 +23,10 @@ namespace jsb::internal
         template <typename TElementType>
         struct ForType
         {
-            enum { kByteSize = ElementNum * sizeof(TElementType) };
+            enum
+            {
+                kByteSize = ElementNum * sizeof(TElementType)
+            };
 
             ForType() = default;
             ~ForType() = default;
@@ -47,14 +53,14 @@ namespace jsb::internal
                 if (p_num > p_last_num)
                 {
                     const size_t added_count = p_num - p_last_num;
-                    memset((void *)(get_data() + p_last_num), 0, added_count * sizeof(TElementType));
+                    memset((void*) (get_data() + p_last_num), 0, added_count * sizeof(TElementType));
                     num = p_num;
                 }
             }
 
             TElementType* get_data() const
             {
-                return (TElementType*)(void*)compat.data;
+                return (TElementType*) (void*) compat.data;
             }
 
             constexpr size_t capacity() const { return num; }
@@ -63,7 +69,6 @@ namespace jsb::internal
             size_t num = 0;
         };
     };
-}
+} // namespace jsb::internal
 
 #endif
-

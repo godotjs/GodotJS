@@ -7,10 +7,7 @@ namespace jsb::impl
     {
         const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) JS_GetOpaque(value, isolate->get_class_id());
         const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
-        JSB_QUICKJS_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)",
-            (uintptr_t) JS_VALUE_GET_PTR(value), index,
-            (uintptr_t) parameter, (uintptr_t) callback,
-            (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
+        JSB_QUICKJS_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)", (uintptr_t) JS_VALUE_GET_PTR(value), index, (uintptr_t) parameter, (uintptr_t) callback, (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
         jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
         data->weak.parameter = (void*) parameter;
         data->weak.callback = (void*) callback;
@@ -48,12 +45,12 @@ namespace jsb::impl
 
     void Broker::_add_reference(v8::Isolate* isolate)
     {
-        isolate->_add_reference();;
+        isolate->_add_reference();
     }
 
     void Broker::_remove_reference(v8::Isolate* isolate)
     {
-        isolate->_remove_reference();;
+        isolate->_remove_reference();
     }
 
     JSValue Broker::_dup(v8::Isolate* isolate, JSValueConst value)
@@ -71,4 +68,4 @@ namespace jsb::impl
         isolate->free_value(value);
     }
 
-}
+} // namespace jsb::impl

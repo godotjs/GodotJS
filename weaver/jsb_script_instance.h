@@ -40,8 +40,6 @@ public:
     virtual Ref<Script> get_script() const override { return script_; }
     virtual ScriptLanguage* get_language() override { return script_->get_language(); }
 #pragma endregion
-
-
 };
 
 // A runtime placeholder for the script instances which instantiated by async resource loader request.

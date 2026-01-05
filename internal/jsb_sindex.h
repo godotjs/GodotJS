@@ -6,7 +6,7 @@
 
 namespace jsb::internal
 {
-    template<typename UnderlyingType, uint8_t TMaskBit = 6, UnderlyingType TMask = 0x3f>
+    template <typename UnderlyingType, uint8_t TMaskBit = 6, UnderlyingType TMask = 0x3f>
     struct TIndex
     {
         typedef uint32_t RevisionType;
@@ -19,20 +19,22 @@ namespace jsb::internal
             return index;
         }
 
-        TIndex(): packed_(0) {}
+        TIndex()
+            : packed_(0) {}
 
-        TIndex(int32_t index, RevisionType revision):
-            packed_(((UnderlyingType)index << kRevisionBits) | ((UnderlyingType)revision & kRevisionMask))
+        TIndex(int32_t index, RevisionType revision)
+            : packed_(((UnderlyingType) index << kRevisionBits) | ((UnderlyingType) revision & kRevisionMask))
         {
             // index overflow check
             jsb_check(!((UnderlyingType) index >> (sizeof(UnderlyingType) * 8 - kRevisionBits)));
         }
 
-        explicit TIndex(UnderlyingType p_value) : packed_(p_value)
+        explicit TIndex(UnderlyingType p_value)
+            : packed_(p_value)
         {
         }
 
-        UnderlyingType operator *() const { return packed_; }
+        UnderlyingType operator*() const { return packed_; }
         String to_string() const { return uitos(packed_); }
 
         TIndex(const TIndex& other) = default;
@@ -85,5 +87,5 @@ namespace jsb::internal
 
     // index(0, 67_108_863) revision(1, 63)
     typedef TIndex<uint32_t, 6, 0x3f> Index32;
-}
+} // namespace jsb::internal
 #endif

@@ -2,7 +2,7 @@
 #define GODOTJS_QUICKJS_MAYBE_H
 namespace v8
 {
-    template<typename T>
+    template <typename T>
     class Maybe
     {
     public:
@@ -15,7 +15,8 @@ namespace v8
         }
 
         Maybe() = default;
-        Maybe(T value) : has_value_(true), value_(value) { }
+        Maybe(T value)
+            : has_value_(true), value_(value) {}
 
         T ToChecked() const
         {
@@ -42,5 +43,5 @@ namespace v8
         bool has_value_ = false;
         T value_;
     };
-}
+} // namespace v8
 #endif

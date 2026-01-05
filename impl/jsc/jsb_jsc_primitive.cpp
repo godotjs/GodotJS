@@ -16,34 +16,34 @@ namespace v8
 
     MaybeLocal<String> Value::ToDetailString(Local<Context> context) const
     {
-        //TODO no equivalent implementation
+        // TODO no equivalent implementation
         return ToString(context);
     }
 
     Maybe<int32_t> Value::Int32Value(Local<Context> context) const
     {
         JSValueRef error = nullptr;
-        const int32_t rval = JSValueToInt32(isolate_->ctx(), (JSValueRef) *this, &error);
+        const int32_t rval = JSValueToInt32(isolate_->ctx(), (JSValueRef) * this, &error);
         if (jsb_unlikely(error)) return Maybe<int32_t>();
         return Maybe<int32_t>(rval);
     }
 
     bool Value::BooleanValue(Isolate* isolate) const
     {
-        return JSValueToBoolean(isolate_->ctx(), (JSValueRef) *this);
+        return JSValueToBoolean(isolate_->ctx(), (JSValueRef) * this);
     }
 
     Maybe<double> Value::NumberValue(Local<Context> context) const
     {
         JSValueRef error = nullptr;
-        const double rval = JSValueToNumber(isolate_->ctx(), (JSValueRef) *this, &error);
+        const double rval = JSValueToNumber(isolate_->ctx(), (JSValueRef) * this, &error);
         if (jsb_unlikely(error)) return Maybe<double>();
         return Maybe<double>(rval);
     }
 
     MaybeLocal<String> Value::ToString(Local<Context> context) const
     {
-        if (const JSStringRef str = JSValueToStringCopy(isolate_->ctx(), (JSValueRef) *this, nullptr))
+        if (const JSStringRef str = JSValueToStringCopy(isolate_->ctx(), (JSValueRef) * this, nullptr))
         {
             const JSValueRef val = JSValueMakeString(isolate_->ctx(), str);
             return MaybeLocal<String>(Data(isolate_, isolate_->push_copy(val)));
@@ -53,9 +53,9 @@ namespace v8
 
     void* External::Value() const
     {
-        const JSValueRef val = (JSValueRef) *this;
+        const JSValueRef val = (JSValueRef) * this;
         jsb_check(isolate_->_IsExternal(val));
-        //TODO we know val must be an instance of External. uncertain whether it's reasonable not using `JSValueToObject` here?
+        // TODO we know val must be an instance of External. uncertain whether it's reasonable not using `JSValueToObject` here?
         return JSObjectGetPrivate((JSObjectRef) val);
     }
 
@@ -75,11 +75,11 @@ namespace v8
 
     int String::Length() const
     {
-        jsb_check(JSValueIsString(isolate_->ctx(), (JSValueRef) *this));
-        if (const JSStringRef str = JSValueToStringCopy(isolate_->ctx(), (JSValueRef) *this, nullptr))
+        jsb_check(JSValueIsString(isolate_->ctx(), (JSValueRef) * this));
+        if (const JSStringRef str = JSValueToStringCopy(isolate_->ctx(), (JSValueRef) * this, nullptr))
         {
             const size_t len = JSStringGetLength(str);
-            jsb_check((size_t)(int) len == len);
+            jsb_check((size_t) (int) len == len);
             return (int) len;
         }
         return 0;
@@ -106,7 +106,7 @@ namespace v8
 
     double Number::Value() const
     {
-        return JSValueToNumber(isolate_->ctx(), (JSValueRef) *this, nullptr);
+        return JSValueToNumber(isolate_->ctx(), (JSValueRef) * this, nullptr);
     }
 
     Local<Number> Number::New(Isolate* isolate, double value)
@@ -118,17 +118,17 @@ namespace v8
 
     int32_t Int32::Value() const
     {
-        return JSValueToInt32(isolate_->ctx(), (JSValueRef) *this, nullptr);
+        return JSValueToInt32(isolate_->ctx(), (JSValueRef) * this, nullptr);
     }
 
     uint32_t Uint32::Value() const
     {
-        return JSValueToUInt32(isolate_->ctx(), (JSValueRef) *this, nullptr);
+        return JSValueToUInt32(isolate_->ctx(), (JSValueRef) * this, nullptr);
     }
 
     bool Boolean::Value() const
     {
-        return JSValueToBoolean(isolate_->ctx(), (JSValueRef) *this);
+        return JSValueToBoolean(isolate_->ctx(), (JSValueRef) * this);
     }
 
     Local<Boolean> Boolean::New(Isolate* isolate, bool value)
@@ -138,7 +138,7 @@ namespace v8
 
     int64_t BigInt::Int64Value(bool* lossless) const
     {
-        return JSValueToInt64(isolate_->ctx(), (JSValueRef) *this, nullptr);
+        return JSValueToInt64(isolate_->ctx(), (JSValueRef) * this, nullptr);
     }
 
     Local<BigInt> BigInt::New(Isolate* isolate, int64_t value)
@@ -149,4 +149,4 @@ namespace v8
         return Local<String>(Data(isolate, stack_pos));
     }
 
-}
+} // namespace v8

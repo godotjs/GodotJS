@@ -1,61 +1,65 @@
 #include "jsb_primitive_bindings_reflect.h"
 #if !JSB_WITH_STATIC_BINDINGS
-#include "jsb_reflect_binding_util.h"
-#include "jsb_class_register.h"
-#include "jsb_class_info.h"
-#include "jsb_transpiler.h"
-#include "jsb_bridge_helper.h"
-#include "jsb_type_convert.h"
-#include "../internal/jsb_variant_info.h"
-#include "../internal/jsb_variant_util.h"
+    #include "jsb_reflect_binding_util.h"
+    #include "jsb_class_register.h"
+    #include "jsb_class_info.h"
+    #include "jsb_transpiler.h"
+    #include "jsb_bridge_helper.h"
+    #include "jsb_type_convert.h"
+    #include "../internal/jsb_variant_info.h"
+    #include "../internal/jsb_variant_util.h"
 
-#define JSB_DEFINE_OPERATOR2(op_code) class_builder.Static().\
-    Method(JSB_OPERATOR_NAME(op_code), BinaryOperator::invoke, (int32_t) Variant::OP_##op_code);\
-    JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+    #define JSB_DEFINE_OPERATOR2(op_code)                                                                                   \
+        class_builder.Static().Method(JSB_OPERATOR_NAME(op_code), BinaryOperator::invoke, (int32_t) Variant::OP_##op_code); \
+        JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
-#define JSB_DEFINE_OPERATOR1(op_code) class_builder.Static().\
-    Method(JSB_OPERATOR_NAME(op_code), UnaryOperator::invoke, (int32_t) Variant::OP_##op_code);\
-    JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
+    #define JSB_DEFINE_OPERATOR1(op_code)                                                                                  \
+        class_builder.Static().Method(JSB_OPERATOR_NAME(op_code), UnaryOperator::invoke, (int32_t) Variant::OP_##op_code); \
+        JSB_LOG(VeryVerbose, "generate %d: %s", Variant::OP_##op_code, JSB_OPERATOR_NAME(op_code));
 
-#if JSB_FAST_REFLECTION
-#define JSB_DEFINE_FAST_GETSET(ForMemberVariantType, ForMemberCppType, PropName) \
-    if (TReflectGetSetPointerCall<T, ForMemberCppType>::is_supported(ForMemberVariantType))\
-    {\
-        class_builder.Instance().Property(PropName,\
-            TReflectGetSetPointerCall<T, ForMemberCppType>::_getter, (void*) Variant::get_member_ptr_getter(TYPE, PropName),\
-            TReflectGetSetPointerCall<T, ForMemberCppType>::_setter, (void*) Variant::get_member_ptr_setter(TYPE, PropName)\
-        );\
-        continue;\
-    } (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForCppType, ClassID, ClassName) \
-    if constexpr (ReflectConstructorCall<ForCppType>::is_supported(TYPE))\
-    {\
-        return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, (ClassName), &ReflectConstructorCall<ForCppType>::constructor, *(ClassID));\
-    } (void) 0
-#else
-#define JSB_DEFINE_FAST_GETSET(ForMemberVariantType, ForMemberCppType, PropName) (void) 0
-#define JSB_DEFINE_FAST_CONSTRUCTOR(ForCppType, ClassID, ClassName) (void) 0
-#endif
+    #if JSB_FAST_REFLECTION
+        #define JSB_DEFINE_FAST_GETSET(ForMemberVariantType, ForMemberCppType, PropName)                   \
+            if (TReflectGetSetPointerCall<T, ForMemberCppType>::is_supported(ForMemberVariantType))        \
+            {                                                                                              \
+                class_builder.Instance().Property(PropName,                                                \
+                                                  TReflectGetSetPointerCall<T, ForMemberCppType>::_getter, \
+                                                  (void*) Variant::get_member_ptr_getter(TYPE, PropName),  \
+                                                  TReflectGetSetPointerCall<T, ForMemberCppType>::_setter, \
+                                                  (void*) Variant::get_member_ptr_setter(TYPE, PropName)); \
+                continue;                                                                                  \
+            }                                                                                              \
+            (void) 0
+        #define JSB_DEFINE_FAST_CONSTRUCTOR(ForCppType, ClassID, ClassName)                                                                                     \
+            if constexpr (ReflectConstructorCall<ForCppType>::is_supported(TYPE))                                                                               \
+            {                                                                                                                                                   \
+                return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate, (ClassName), &ReflectConstructorCall<ForCppType>::constructor, *(ClassID)); \
+            }                                                                                                                                                   \
+            (void) 0
+    #else
+        #define JSB_DEFINE_FAST_GETSET(ForMemberVariantType, ForMemberCppType, PropName) (void) 0
+        #define JSB_DEFINE_FAST_CONSTRUCTOR(ForCppType, ClassID, ClassName) (void) 0
+    #endif
 
-#define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
-#define JSB_DEFINE_OVERLOADED_BINARY_END()
+    #define JSB_DEFINE_OVERLOADED_BINARY_BEGIN(op_code) JSB_DEFINE_OPERATOR2(op_code)
+    #define JSB_DEFINE_OVERLOADED_BINARY_END()
 
-#define JSB_DEFINE_BINARY_OVERLOAD(R, A, B)
-#define JSB_DEFINE_UNARY(op_code) JSB_DEFINE_OPERATOR1(op_code)
-#define JSB_DEFINE_COMPARATOR(op_code) JSB_DEFINE_OPERATOR2(op_code)
+    #define JSB_DEFINE_BINARY_OVERLOAD(R, A, B)
+    #define JSB_DEFINE_UNARY(op_code) JSB_DEFINE_OPERATOR1(op_code)
+    #define JSB_DEFINE_COMPARATOR(op_code) JSB_DEFINE_OPERATOR2(op_code)
 
-#define JSB_TYPE_BEGIN(InType) \
-    template<>\
-    struct OperatorRegister<InType>\
-    {\
-        typedef InType CurrentType;\
-        static void generate(impl::ClassBuilder& class_builder)\
-        {\
-            JSB_LOG(VeryVerbose, "expose primitive type " #InType);
+    #define JSB_TYPE_BEGIN(InType)                                  \
+        template <>                                                 \
+        struct OperatorRegister<InType>                             \
+        {                                                           \
+            typedef InType CurrentType;                             \
+            static void generate(impl::ClassBuilder& class_builder) \
+            {                                                       \
+                JSB_LOG(VeryVerbose, "expose primitive type " #InType);
 
-#define JSB_TYPE_END() \
-        }\
-    };
+    #define JSB_TYPE_END() \
+        }                  \
+        }                  \
+        ;
 
 namespace jsb
 {
@@ -152,7 +156,7 @@ namespace jsb
         }
     };
 
-    template<typename TypeName>
+    template <typename TypeName>
     struct OperatorRegister
     {
         static void generate(impl::ClassBuilder& class_builder) {}
@@ -213,15 +217,18 @@ namespace jsb
                     {
                         // revert all constructors
                         const String error_message = jsb_errorf("bad argument: %d", argument_index);
-                        while (argument_index >= 0) { args[argument_index--].~Variant(); }
+                        while (argument_index >= 0)
+                        {
+                            args[argument_index--].~Variant();
+                        }
                         impl::Helper::throw_error(isolate, error_message);
                         return;
                     }
 
                     jsb_checkf(Variant::can_convert_strict(args[argument_index].get_type(), argument_type),
-                        "Realm::can_convert_strict returned inconsistent type %s while %s is expected",
-                        Variant::get_type_name(args[argument_index].get_type()),
-                        Variant::get_type_name(argument_type));
+                               "Realm::can_convert_strict returned inconsistent type %s while %s is expected",
+                               Variant::get_type_name(args[argument_index].get_type()),
+                               Variant::get_type_name(argument_type));
                 }
 
                 // we only need to alloc a dummy instance here because the validated constructor will cast it to the expected type by itself
@@ -243,7 +250,7 @@ namespace jsb
         }
     };
 
-    template<typename T>
+    template <typename T>
     struct VariantConstructor
     {
         jsb_force_inline static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -252,7 +259,7 @@ namespace jsb
         }
     };
 
-    template<typename T>
+    template <typename T>
     struct VariantBind
     {
         static constexpr Variant::Type TYPE = GetTypeInfo<T>::VARIANT_TYPE;
@@ -274,7 +281,7 @@ namespace jsb
             info.GetReturnValue().Set(rval);
         }
 
-        //NOTE should never be called any more, since all valuetype bindings exist without a normal gc callback (object_gc_callback)
+        // NOTE should never be called any more, since all valuetype bindings exist without a normal gc callback (object_gc_callback)
         static void finalizer(Environment* environment, void* pointer, FinalizationType p_finalize)
         {
             jsb_check(false);
@@ -289,13 +296,13 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(TypeConvert::is_variant(info.This()));
-            const Variant* p_self = (Variant*)info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
+            const Variant* p_self = (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer);
             const internal::FGetSetInfo& getset = GetVariantInfoCollection(Environment::wrap(context)).getsets[info.Data().As<v8::Int32>()->Value()];
 
             Variant value;
             internal::VariantUtil::construct_variant(value, getset.type);
 
-            //NOTE the getter function will not touch the type of `Variant`, so we must set it properly before use in the above code
+            // NOTE the getter function will not touch the type of `Variant`, so we must set it properly before use in the above code
             getset.getter_func(p_self, &value);
             v8::Local<v8::Value> rval;
             if (!TypeConvert::gd_var_to_js(isolate, context, value, rval))
@@ -329,8 +336,7 @@ namespace jsb
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             jsb_check(TypeConvert::is_variant(info.This()));
             const Variant::Type element_type = Variant::get_indexed_element_type(TYPE);
-            if (info.Length() != 2
-                || !info[0]->IsNumber() // loose int32 check
+            if (info.Length() != 2 || !info[0]->IsNumber() // loose int32 check
                 || !TypeConvert::can_convert_strict(isolate, context, info[1], element_type))
             {
                 jsb_throw(isolate, "bad params");
@@ -394,11 +400,10 @@ namespace jsb
                 return;
             }
 
-            //TODO it's restricted since we don't know anything about the type
+            // TODO it's restricted since we don't know anything about the type
             Variant key;
             Variant value;
-            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], key)
-                || !TypeConvert::js_to_gd_var(isolate, context, info[1], value))
+            if (!TypeConvert::js_to_gd_var(isolate, context, info[0], key) || !TypeConvert::js_to_gd_var(isolate, context, info[1], value))
             {
                 jsb_throw(isolate, "bad value");
                 return;
@@ -446,10 +451,8 @@ namespace jsb
             info.GetReturnValue().Set(r_val);
         }
 
-        template<bool HasReturnValueT>
-        static void call_builtin_function(Variant* self, const internal::FBuiltinMethodInfo& method_info,
-            const v8::FunctionCallbackInfo<v8::Value>& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context,
-            const bool utility = false)
+        template <bool HasReturnValueT>
+        static void call_builtin_function(Variant* self, const internal::FBuiltinMethodInfo& method_info, const v8::FunctionCallbackInfo<v8::Value>& info, v8::Isolate* isolate, const v8::Local<v8::Context>& context, const bool utility = false)
         {
             const int argc = utility ? info.Length() - 1 : info.Length();
             if (!method_info.check_argc(argc))
@@ -497,7 +500,10 @@ namespace jsb
 
                 // revert all constructors
                 const String error_message = jsb_errorf("bad argument: %d", utility ? index + 1 : index);
-                while (index >= 0) { args[index--].~Variant(); }
+                while (index >= 0)
+                {
+                    args[index--].~Variant();
+                }
                 impl::Helper::throw_error(isolate, error_message);
                 return;
             }
@@ -532,19 +538,18 @@ namespace jsb
                 {
                     args[index].~Variant();
                 }
-
             }
         }
 
-        template<bool HasReturnValueT>
+        template <bool HasReturnValueT>
         static void _instance_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
             const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
             Variant* self = TypeConvert::is_variant(info.This())
-                ? (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer)
-                : nullptr;
+                                ? (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer)
+                                : nullptr;
             if (!self)
             {
                 jsb_throw(isolate, "no bound this");
@@ -554,7 +559,7 @@ namespace jsb
             call_builtin_function<HasReturnValueT>(self, method_info, info, isolate, context);
         }
 
-        template<bool HasReturnValueT>
+        template <bool HasReturnValueT>
         static void _static_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -564,7 +569,7 @@ namespace jsb
             call_builtin_function<HasReturnValueT>(nullptr, method_info, info, isolate, context);
         }
 
-        template<Variant::Type VariantT, bool HasReturnValueT>
+        template <Variant::Type VariantT, bool HasReturnValueT>
         static void _utility_method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -605,11 +610,11 @@ namespace jsb
                 GetVariantInfoCollection(p_env.env).constructors.append({});
                 internal::FConstructorInfo& constructor_info = GetVariantInfoCollection(p_env.env).constructors.write[constructor_index];
                 const int count = Variant::get_constructor_count(TYPE);
-#if GODOT_4_5_OR_NEWER
+    #if GODOT_4_5_OR_NEWER
                 constructor_info.variants.resize_initialized(count);
-#else
+    #else
                 constructor_info.variants.resize_zeroed(count);
-#endif
+    #endif
                 for (int index = 0; index < count; ++index)
                 {
                     internal::FConstructorVariantInfo& variant_info = constructor_info.variants.write[index];
@@ -622,9 +627,9 @@ namespace jsb
                     }
                 }
                 return impl::ClassBuilder::New<IF_VariantFieldCount>(p_env.isolate,
-                    p_class_name,
-                    &VariantConstructor<T>::constructor,
-                    constructor_index);
+                                                                     p_class_name,
+                                                                     &VariantConstructor<T>::constructor,
+                                                                     constructor_index);
             }
         }
 
@@ -654,10 +659,9 @@ namespace jsb
 
                     // fallback to reflection invocation
                     const int collection_index = (int) GetVariantInfoCollection(p_env.env).getsets.size();
-                    GetVariantInfoCollection(p_env.env).getsets.append({
-                       Variant::get_member_validated_setter(TYPE, name),
-                       Variant::get_member_validated_getter(TYPE, name),
-                       member_type});
+                    GetVariantInfoCollection(p_env.env).getsets.append({Variant::get_member_validated_setter(TYPE, name),
+                                                                        Variant::get_member_validated_getter(TYPE, name),
+                                                                        member_type});
 
                     class_builder.Instance().Property(internal::NamingUtil::get_member_name(name), _getter, _setter, collection_index);
                 }
@@ -688,10 +692,10 @@ namespace jsb
                     const Variant::Type return_type = Variant::get_builtin_method_return_type(TYPE, name);
                     const String member_name = internal::NamingUtil::get_member_name(name);
 
-#if JSB_FAST_REFLECTION
+    #if JSB_FAST_REFLECTION
                     if (!Variant::is_builtin_method_vararg(TYPE, name))
                     {
-                        //TODO hardcoded branches for fast method reflection wrapper
+                        // TODO hardcoded branches for fast method reflection wrapper
                         if (has_return_value)
                         {
                             if (ReflectBuiltinMethodPointerCall<T, real_t>::is_supported(return_type))
@@ -703,12 +707,14 @@ namespace jsb
                                     if (Variant::is_builtin_method_static(TYPE, name))
                                     {
                                         class_builder.Static().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, real_t>::template call<false>, func_ptr);
+                                                                      ReflectBuiltinMethodPointerCall<T, real_t>::template call<false>,
+                                                                      func_ptr);
                                     }
                                     else
                                     {
                                         class_builder.Instance().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, real_t>::template call<true>, func_ptr);
+                                                                        ReflectBuiltinMethodPointerCall<T, real_t>::template call<true>,
+                                                                        func_ptr);
                                     }
                                     continue;
                                 }
@@ -722,12 +728,14 @@ namespace jsb
                                         if (Variant::is_builtin_method_static(TYPE, name))
                                         {
                                             class_builder.Static().Method(member_name,
-                                                ReflectBuiltinMethodPointerCall<T, real_t, real_t>::template call<false>, func_ptr);
+                                                                          ReflectBuiltinMethodPointerCall<T, real_t, real_t>::template call<false>,
+                                                                          func_ptr);
                                         }
                                         else
                                         {
                                             class_builder.Instance().Method(member_name,
-                                                ReflectBuiltinMethodPointerCall<T, real_t, real_t>::template call<true>, func_ptr);
+                                                                            ReflectBuiltinMethodPointerCall<T, real_t, real_t>::template call<true>,
+                                                                            func_ptr);
                                         }
                                         continue;
                                     }
@@ -742,12 +750,14 @@ namespace jsb
                                     if (Variant::is_builtin_method_static(TYPE, name))
                                     {
                                         class_builder.Static().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, int32_t>::template call<false>, func_ptr);
+                                                                      ReflectBuiltinMethodPointerCall<T, int32_t>::template call<false>,
+                                                                      func_ptr);
                                     }
                                     else
                                     {
                                         class_builder.Instance().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, int32_t>::template call<true>, func_ptr);
+                                                                        ReflectBuiltinMethodPointerCall<T, int32_t>::template call<true>,
+                                                                        func_ptr);
                                     }
                                     continue;
                                 }
@@ -761,12 +771,14 @@ namespace jsb
                                     if (Variant::is_builtin_method_static(TYPE, name))
                                     {
                                         class_builder.Static().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, bool>::template call<false>, func_ptr);
+                                                                      ReflectBuiltinMethodPointerCall<T, bool>::template call<false>,
+                                                                      func_ptr);
                                     }
                                     else
                                     {
                                         class_builder.Instance().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, bool>::template call<true>, func_ptr);
+                                                                        ReflectBuiltinMethodPointerCall<T, bool>::template call<true>,
+                                                                        func_ptr);
                                     }
                                     continue;
                                 }
@@ -781,12 +793,14 @@ namespace jsb
                                 if (Variant::is_builtin_method_static(TYPE, name))
                                 {
                                     class_builder.Static().Method(member_name,
-                                        ReflectBuiltinMethodPointerCall<T, void>::template call<false>, func_ptr);
+                                                                  ReflectBuiltinMethodPointerCall<T, void>::template call<false>,
+                                                                  func_ptr);
                                 }
                                 else
                                 {
                                     class_builder.Instance().Method(member_name,
-                                        ReflectBuiltinMethodPointerCall<T, void>::template call<true>, func_ptr);
+                                                                    ReflectBuiltinMethodPointerCall<T, void>::template call<true>,
+                                                                    func_ptr);
                                 }
                                 continue;
                             }
@@ -800,19 +814,21 @@ namespace jsb
                                     if (Variant::is_builtin_method_static(TYPE, name))
                                     {
                                         class_builder.Static().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, void, real_t>::template call<false>, func_ptr);
+                                                                      ReflectBuiltinMethodPointerCall<T, void, real_t>::template call<false>,
+                                                                      func_ptr);
                                     }
                                     else
                                     {
                                         class_builder.Instance().Method(member_name,
-                                            ReflectBuiltinMethodPointerCall<T, void, real_t>::template call<true>, func_ptr);
+                                                                        ReflectBuiltinMethodPointerCall<T, void, real_t>::template call<true>,
+                                                                        func_ptr);
                                     }
                                     continue;
                                 }
                             }
                         }
                     }
-#endif
+    #endif
 
                     // convert method info, and store
                     const int collection_index = (int) GetVariantInfoCollection(p_env.env).methods.size();
@@ -822,11 +838,11 @@ namespace jsb
                     method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, name);
                     method_info.return_type = return_type;
                     method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
-#if GODOT_4_5_OR_NEWER
+    #if GODOT_4_5_OR_NEWER
                     method_info.argument_types.resize_initialized(argument_count);
-#else
+    #else
                     method_info.argument_types.resize_zeroed(argument_count);
-#endif
+    #endif
                     method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, name);
                     for (int argument_index = 0; argument_index < argument_count; ++argument_index)
                     {
@@ -967,11 +983,11 @@ namespace jsb
                     method_info.builtin_func = Variant::get_validated_builtin_method(TYPE, name);
                     method_info.return_type = return_type;
                     method_info.default_arguments = Variant::get_builtin_method_default_arguments(TYPE, name);
-#if GODOT_4_5_OR_NEWER
+    #if GODOT_4_5_OR_NEWER
                     method_info.argument_types.resize_initialized(argument_count);
-#else
+    #else
                     method_info.argument_types.resize_zeroed(argument_count);
-#endif
+    #endif
                     method_info.is_vararg = Variant::is_builtin_method_vararg(TYPE, name);
                     for (int argument_index = 0; argument_index < argument_count; ++argument_index)
                     {
@@ -1004,39 +1020,39 @@ namespace jsb
                 ReflectAdditionalMethodRegister<T>::register_(class_builder);
             }
 
-             // enums
-             HashSet<StringName> enum_constants;
-             {
-                 List<StringName> enums;
-                 Variant::get_enums_for_type(TYPE, &enums);
-                 for (const StringName& enum_name : enums)
-                 {
-                     String exposed_enum_name = internal::NamingUtil::get_enum_name(enum_name);
-                     auto enum_decl = static_builder.Enum(exposed_enum_name);
-                     List<StringName> enumerations;
-                     Variant::get_enumerations_for_enum(TYPE, enum_name, &enumerations);
-                     for (const StringName& enumeration : enumerations)
-                     {
-                         bool r_valid;
-                         const int enum_value = Variant::get_enum_value(TYPE, enum_name, enumeration, &r_valid);
-                         jsb_check(r_valid);
-                         enum_decl.Value(internal::NamingUtil::get_enum_value_name(enumeration), enum_value);
-                         enum_constants.insert(enumeration);
-                     }
-                 }
-             }
+            // enums
+            HashSet<StringName> enum_constants;
+            {
+                List<StringName> enums;
+                Variant::get_enums_for_type(TYPE, &enums);
+                for (const StringName& enum_name : enums)
+                {
+                    String exposed_enum_name = internal::NamingUtil::get_enum_name(enum_name);
+                    auto enum_decl = static_builder.Enum(exposed_enum_name);
+                    List<StringName> enumerations;
+                    Variant::get_enumerations_for_enum(TYPE, enum_name, &enumerations);
+                    for (const StringName& enumeration : enumerations)
+                    {
+                        bool r_valid;
+                        const int enum_value = Variant::get_enum_value(TYPE, enum_name, enumeration, &r_valid);
+                        jsb_check(r_valid);
+                        enum_decl.Value(internal::NamingUtil::get_enum_value_name(enumeration), enum_value);
+                        enum_constants.insert(enumeration);
+                    }
+                }
+            }
 
-             // constants
-             {
-                 List<StringName> constants;
-                 Variant::get_constants_for_type(TYPE, &constants);
-                 for (const StringName& constant : constants)
-                 {
-                     // exclude all enum constants
-                     if (enum_constants.has(constant)) continue;
-                     static_builder.LazyProperty(internal::NamingUtil::get_constant_name(constant), _get_constant_value_lazy);
-                 }
-             }
+            // constants
+            {
+                List<StringName> constants;
+                Variant::get_constants_for_type(TYPE, &constants);
+                for (const StringName& constant : constants)
+                {
+                    // exclude all enum constants
+                    if (enum_constants.has(constant)) continue;
+                    static_builder.LazyProperty(internal::NamingUtil::get_constant_name(constant), _get_constant_value_lazy);
+                }
+            }
 
             {
                 if (r_class_id) *r_class_id = class_id;
@@ -1051,15 +1067,14 @@ namespace jsb
 
     void register_primitive_bindings_reflect(Environment* p_env)
     {
-#pragma push_macro("DEF")
-#   undef   DEF
-#   define  DEF(TypeName) p_env->add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind);
-#   include "jsb_primitive_types.def.h"
-#pragma pop_macro("DEF")
+    #pragma push_macro("DEF")
+    #undef DEF
+    #define DEF(TypeName) p_env->add_class_register(GetTypeInfo<TypeName>::VARIANT_TYPE, &VariantBind<TypeName>::reflect_bind);
+    #include "jsb_primitive_types.def.h"
+    #pragma pop_macro("DEF")
 
         p_env->add_class_register(GetTypeInfo<String>::VARIANT_TYPE, &VariantBind<String>::reflect_bind_utilities);
     }
-}
+} // namespace jsb
 
 #endif
-

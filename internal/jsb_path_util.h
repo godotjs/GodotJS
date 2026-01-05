@@ -15,7 +15,7 @@ namespace jsb::internal
                 return p_base + p_add;
             }
 #if JSB_GDEXTENSION
-            //TODO it must be a bug of godot-cpp codegen: string.hpp operator+ is not const
+            // TODO it must be a bug of godot-cpp codegen: string.hpp operator+ is not const
             return p_base.is_empty() ? p_add : const_cast<String&>(p_base) + '/' + p_add;
 #else
             return p_base.is_empty() ? p_add : p_base + '/' + p_add;
@@ -64,6 +64,6 @@ namespace jsb::internal
         static bool delete_file(const String& p_path);
     };
 
-}
+} // namespace jsb::internal
 
 #endif

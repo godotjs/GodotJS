@@ -1,0 +1,23 @@
+name: 🫷 Lint
+
+on:
+  workflow_call:
+
+jobs:
+  clang-format:
+    name: 🫷 Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: ⏬ Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: ♻️ Run clang-format
+      run: find . -iname '*.h' -o -iname '*.cpp' | grep -v -E '(quickjs|quickjs-ng|lws)/' | xargs clang-format -i
+    
+    - name: 🔎 Check for formatting changes
+      run: |
+        if ! git diff --exit-code; then
+          echo "Code formatting issues found. Please run clang-format."
+          exit 1
+        fi

@@ -52,7 +52,7 @@ namespace v8
 
         return Local<String>(Data(isolate_, name_sp));
     }
-    
+
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
         const jsb::impl::ResultValue res = jsbi_SetPropertyUint32(isolate_->rt(), stack_pos_, index, value->stack_pos_);
@@ -171,12 +171,12 @@ namespace v8
         if ((attributes & DontDelete) == 0) flags |= jsb::impl::PropertyFlags::CONFIGURABLE;
 
         const jsb::impl::ResultValue res = jsbi_DefineProperty(isolate_->rt(),
-            /* obj */   stack_pos_,
-            /* prop */  key->stack_pos_,
-            /* value */ value->stack_pos_,
-            /* get */   jsb::impl::StackBase::Undefined,
-            /* set */   jsb::impl::StackBase::Undefined,
-            flags);
+                                                               /* obj */ stack_pos_,
+                                                               /* prop */ key->stack_pos_,
+                                                               /* value */ value->stack_pos_,
+                                                               /* get */ jsb::impl::StackBase::Undefined,
+                                                               /* set */ jsb::impl::StackBase::Undefined,
+                                                               flags);
 
         if (res != -1)
         {
@@ -187,17 +187,17 @@ namespace v8
 
     void Object::SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter, Local<FunctionTemplate> setter)
     {
-        int flags = jsb::impl::PropertyFlags::ENUMERABLE | jsb::impl::PropertyFlags::CONFIGURABLE; //TODO consider remove 'configurable' flags
+        int flags = jsb::impl::PropertyFlags::ENUMERABLE | jsb::impl::PropertyFlags::CONFIGURABLE; // TODO consider remove 'configurable' flags
         if (!getter.IsEmpty()) flags |= jsb::impl::PropertyFlags::GET;
         if (!setter.IsEmpty()) flags |= jsb::impl::PropertyFlags::SET;
 
         const jsb::impl::ResultValue res = jsbi_DefineProperty(isolate_->rt(),
-            /* obj */   stack_pos_,
-            /* prop */  name->stack_pos_,
-            /* value */ jsb::impl::StackBase::Undefined,
-            (jsb::impl::StackPosition) getter,
-            (jsb::impl::StackPosition) setter,
-            flags);
+                                                               /* obj */ stack_pos_,
+                                                               /* prop */ name->stack_pos_,
+                                                               /* value */ jsb::impl::StackBase::Undefined,
+                                                               (jsb::impl::StackPosition) getter,
+                                                               (jsb::impl::StackPosition) setter,
+                                                               flags);
 
         jsb_check(res >= 0);
     }
@@ -212,4 +212,4 @@ namespace v8
         return MaybeLocal<Array>(Data(isolate_, rval));
     }
 
-}
+} // namespace v8

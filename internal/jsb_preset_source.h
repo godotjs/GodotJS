@@ -14,9 +14,9 @@ namespace jsb::internal
         // identical to uncompressed_data_.size
         // we need this because it's lazily uncompressed
         size_t uncompressed_size_;
-        
+
         // uncompressed source (if raw source is not static)
-        Vector<uint8_t> uncompressed_data_; 
+        Vector<uint8_t> uncompressed_data_;
 
         // raw source (raw source is static, do not free it)
         size_t data_size_;
@@ -26,24 +26,16 @@ namespace jsb::internal
 
     public:
         bool is_valid() const { return !filename_.is_empty() && data_ != nullptr && data_size_ != 0; }
-        
+
         PresetSource()
-            : filename_()
-            , uncompressed_size_(0)
-            , uncompressed_data_()
-            , data_size_(0)
-            , data_(nullptr)
-            , is_zero_terminated_(false) 
-        {}
+            : filename_(), uncompressed_size_(0), uncompressed_data_(), data_size_(0), data_(nullptr), is_zero_terminated_(false)
+        {
+        }
 
         PresetSource(const String& p_filename, const char* p_data, size_t p_size, size_t p_uncompressed_size, bool p_is_zero_terminated)
-            : filename_(p_filename)
-            , uncompressed_size_(p_uncompressed_size)
-            , uncompressed_data_()
-            , data_size_(p_size)
-            , data_(p_data)
-            , is_zero_terminated_(p_is_zero_terminated) 
-        {}
+            : filename_(p_filename), uncompressed_size_(p_uncompressed_size), uncompressed_data_(), data_size_(p_size), data_(p_data), is_zero_terminated_(p_is_zero_terminated)
+        {
+        }
 
         PresetSource(PresetSource&& p_other) noexcept { *this = std::move(p_other); }
         PresetSource(const PresetSource& p_other) noexcept { *this = p_other; }
@@ -106,12 +98,12 @@ namespace jsb::internal
     private:
         void uncompress()
         {
-            jsb_check((size_t)(int) uncompressed_size_ == uncompressed_size_);
-            jsb_check((size_t)(int) data_size_ == data_size_);
+            jsb_check((size_t) (int) uncompressed_size_ == uncompressed_size_);
+            jsb_check((size_t) (int) data_size_ == data_size_);
             uncompressed_data_.resize((int) uncompressed_size_);
             const int ret = Compression::decompress(uncompressed_data_.ptrw(), (int) uncompressed_size_, (const uint8_t*) data_, (int) data_size_, Compression::MODE_DEFLATE);
             jsb_ensure(ret != -1);
         }
     };
-}
+} // namespace jsb::internal
 #endif

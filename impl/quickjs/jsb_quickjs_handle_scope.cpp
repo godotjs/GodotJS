@@ -28,4 +28,4 @@ namespace v8
         JSB_QUICKJS_LOG(VeryVerbose, "leave stack frame %d", stack_);
     }
 
-}
+} // namespace v8

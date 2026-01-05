@@ -32,7 +32,7 @@ namespace jsb::weaver
         __underlying_type(ECategoryHint) hint;
     };
 
-}
+} // namespace jsb::weaver
 
 class InstallGodotJSPresetConfirmationDialog : public ConfirmationDialog
 {

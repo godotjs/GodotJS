@@ -10,11 +10,13 @@
 #include "scene/resources/packed_scene.h"
 
 // The following enums must be kept in sync with jsb.editor.codegen.ts
-enum class CodeGenType {
+enum class CodeGenType
+{
     ScriptNodeTypeDescriptor,
     ScriptResourceTypeDescriptor,
 };
-enum class DescriptorType {
+enum class DescriptorType
+{
     Godot,
     User,
     FunctionLiteral,
@@ -77,7 +79,7 @@ bool GodotJSEditorHelper::_request_codegen(jsb::JSEnvironment& p_env, GodotJSScr
 
     jsb::impl::TryCatch try_catch(isolate);
 
-    v8::Local<v8::Value> argv[] = { codegen_request_val };
+    v8::Local<v8::Value> argv[] = {codegen_request_val};
     const v8::MaybeLocal<v8::Value> maybe_result = codegen_func->Call(context, v8::Undefined(isolate), std::size(argv), argv);
 
     if (try_catch.has_caught())
@@ -143,10 +145,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
         // By default, only scene (and sub-scene) roots are typed with a user defined type. This ensures that classes are
         // able to use SceneNodes in their type declaration without illegally referencing their own type. Users can use
         // codegen to override this behavior.
-        if (script == nullptr
-            || p_node->get_scene_file_path().is_empty()
-            || GodotJSScriptLanguage::get_singleton()->is_global_class_generic(script->get_path())
-            || script->get_global_name().is_empty())
+        if (script == nullptr || p_node->get_scene_file_path().is_empty() || GodotJSScriptLanguage::get_singleton()->is_global_class_generic(script->get_path()) || script->get_global_name().is_empty())
         {
             Dictionary object_literal;
             object_literal[jsb_string_name(type)] = (int32_t) DescriptorType::ObjectLiteral;
@@ -155,7 +154,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
             Array generic_arguments;
             generic_arguments.push_back(object_literal);
 
-            AnimationMixer *animation_mixer = Object::cast_to<AnimationMixer>(p_node);
+            AnimationMixer* animation_mixer = Object::cast_to<AnimationMixer>(p_node);
 
             if (animation_mixer)
             {
@@ -167,7 +166,7 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
                 animation_libraries_object_literal[jsb_string_name(type)] = (int32_t) DescriptorType::ObjectLiteral;
                 animation_libraries_object_literal[jsb_string_name(properties)] = animation_libraries_properties;
 
-                for (const StringName &library_name : library_names)
+                for (const StringName& library_name : library_names)
                 {
                     Ref<AnimationLibrary> library = animation_mixer->get_animation_library(library_name);
 
@@ -257,42 +256,42 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
 }
 
 // Similar logic to EditorNode::_dialog_display_load_error.
-void GodotJSEditorHelper::_log_load_error(const String &p_file, const String &p_type, Error p_error)
+void GodotJSEditorHelper::_log_load_error(const String& p_file, const String& p_type, Error p_error)
 {
     if (p_error)
     {
         switch (p_error)
         {
-            case ERR_CANT_OPEN:
-            {
-                JSB_LOG(Error, "Can't open file '%s'. The file could have been moved or deleted.", p_file.get_file());
-                break;
-            }
-            case ERR_PARSE_ERROR:
-            {
-                JSB_LOG(Error, "Error while parsing file '%s'.", p_file.get_file());
-                break;
-            }
-            case ERR_FILE_CORRUPT:
-            {
-                JSB_LOG(Error, "%s file '%s' appears to be invalid/corrupt.", p_type, p_file.get_file());
-                break;
-            }
-            case ERR_FILE_NOT_FOUND:
-            {
-                JSB_LOG(Error, "Missing file '%s' or one of its dependencies.", p_file.get_file());
-                break;
-            }
-            case ERR_FILE_UNRECOGNIZED:
-            {
-                JSB_LOG(Error, "File '%s' is saved in a format that is newer than the formats supported by this version of Godot, so it can't be opened.", p_file.get_file());
-                break;
-            }
-            default:
-            {
-                JSB_LOG(Error, "Error while loading file '%s'.", p_file.get_file());
-                break;
-            }
+        case ERR_CANT_OPEN:
+        {
+            JSB_LOG(Error, "Can't open file '%s'. The file could have been moved or deleted.", p_file.get_file());
+            break;
+        }
+        case ERR_PARSE_ERROR:
+        {
+            JSB_LOG(Error, "Error while parsing file '%s'.", p_file.get_file());
+            break;
+        }
+        case ERR_FILE_CORRUPT:
+        {
+            JSB_LOG(Error, "%s file '%s' appears to be invalid/corrupt.", p_type, p_file.get_file());
+            break;
+        }
+        case ERR_FILE_NOT_FOUND:
+        {
+            JSB_LOG(Error, "Missing file '%s' or one of its dependencies.", p_file.get_file());
+            break;
+        }
+        case ERR_FILE_UNRECOGNIZED:
+        {
+            JSB_LOG(Error, "File '%s' is saved in a format that is newer than the formats supported by this version of Godot, so it can't be opened.", p_file.get_file());
+            break;
+        }
+        default:
+        {
+            JSB_LOG(Error, "Error while loading file '%s'.", p_file.get_file());
+            break;
+        }
         }
     }
 }
@@ -316,7 +315,7 @@ Dictionary GodotJSEditorHelper::get_resource_type_descriptor(const String& p_pat
         return descriptor;
     }
 
-	PackedScene* scene = Object::cast_to<PackedScene>(resource.ptr());
+    PackedScene* scene = Object::cast_to<PackedScene>(resource.ptr());
 
     if (scene)
     {
@@ -364,8 +363,8 @@ Dictionary GodotJSEditorHelper::get_resource_type_descriptor(const String& p_pat
     else
     {
         String class_name = script->is_valid()
-            ? static_cast<String>(script->get_global_name())
-            : ResourceLoader::get_resource_script_class(p_path);
+                                ? static_cast<String>(script->get_global_name())
+                                : ResourceLoader::get_resource_script_class(p_path);
 
         if (class_name.is_empty())
         {

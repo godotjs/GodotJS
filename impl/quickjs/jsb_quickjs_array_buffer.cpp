@@ -6,7 +6,7 @@ namespace v8
     void* ArrayBuffer::Data() const
     {
         size_t size;
-        const uint8_t* ptr = JS_GetArrayBuffer(isolate_->ctx(), &size, (JSValue) *this);
+        const uint8_t* ptr = JS_GetArrayBuffer(isolate_->ctx(), &size, (JSValue) * this);
         jsb_check(ptr);
         return (void*) ptr;
     }
@@ -14,7 +14,7 @@ namespace v8
     size_t ArrayBuffer::ByteLength() const
     {
         size_t size;
-        const uint8_t* ptr = JS_GetArrayBuffer(isolate_->ctx(), &size, (JSValue) *this);
+        const uint8_t* ptr = JS_GetArrayBuffer(isolate_->ctx(), &size, (JSValue) * this);
         jsb_check(ptr);
         return size;
     }
@@ -30,4 +30,4 @@ namespace v8
         memfree(ptr);
     }
 
-}
+} // namespace v8

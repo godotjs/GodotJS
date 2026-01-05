@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #ifdef WEB_ENABLED
-#include <emscripten/emscripten.h>
+    #include <emscripten/emscripten.h>
 #endif
 
 #include "jsb_web_isolate.h"
@@ -12,16 +12,15 @@
 
 #ifdef __EMSCRIPTEN__
 
-#define JSNATIVE_API extern "C"
+    #define JSNATIVE_API extern "C"
 
 JSNATIVE_API EMSCRIPTEN_KEEPALIVE void jsni_unhandled_rejection(v8::Isolate* isolate, v8::PromiseRejectCallback cb, jsb::impl::StackPosition promise_sp, jsb::impl::StackPosition reason_sp)
 {
     v8::HandleScope handle_scope(isolate);
     const v8::PromiseRejectMessage message(isolate,
-        v8::kPromiseRejectWithNoHandler,
-        promise_sp,
-        reason_sp
-    );
+                                           v8::kPromiseRejectWithNoHandler,
+                                           promise_sp,
+                                           reason_sp);
     cb(message);
 }
 
@@ -59,7 +58,7 @@ JSNATIVE_API EMSCRIPTEN_KEEPALIVE void jsni_call_accessor(v8::Isolate* isolate, 
 JSNATIVE_API EMSCRIPTEN_KEEPALIVE void* jsni_generate_internal_data(v8::Isolate* isolate, int internal_field_count)
 {
     const jsb::impl::InternalDataID index = isolate->add_internal_data(internal_field_count);
-    return (void*)(uintptr_t) *index;
+    return (void*) (uintptr_t) *index;
 }
 
 static void _custom_print_verbose(const String& p_str)
@@ -74,16 +73,19 @@ static void _custom_print_line(const String& p_str)
     jsbi_log(str8.get_data());
 }
 
-static void _custom_print_error(const char *p_function, const char *p_file, int p_line, const String &p_error, bool p_editor_notify, bool p_is_warning)
+static void _custom_print_error(const char* p_function, const char* p_file, int p_line, const String& p_error, bool p_editor_notify, bool p_is_warning)
 {
     const String str = jsb::internal::format("[%s] %s [at %s %s:%d]",
-        p_is_warning ? "WARN" : "ERROR", p_error, p_function,
-        p_file, p_line);
+                                             p_is_warning ? "WARN" : "ERROR",
+                                             p_error,
+                                             p_function,
+                                             p_file,
+                                             p_line);
     const CharString str8 = str.utf8();
     jsbi_error(str8.get_data());
 }
 
-#define JSNI_FUNC(name) (jsb::impl::FunctionPointer) jsni_##name
+    #define JSNI_FUNC(name) (jsb::impl::FunctionPointer) jsni_##name
 
 namespace jsb::impl
 {
@@ -104,13 +106,13 @@ namespace jsb::impl
         jsb_unused(global_initialize);
     }
 
-}
+} // namespace jsb::impl
 
 #else
 
 namespace jsb::impl
 {
     void GlobalInitialize::init() {}
-}
+} // namespace jsb::impl
 
 #endif

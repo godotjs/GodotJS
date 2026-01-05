@@ -14,6 +14,6 @@ namespace jsb
         virtual bool load(Environment* p_env, JavaScriptModule& p_module) override;
     };
 
-}
+} // namespace jsb
 
 #endif

@@ -22,5 +22,5 @@ namespace v8
         HandleScope(const HandleScope&) = delete;
         HandleScope& operator=(const HandleScope&) = delete;
     };
-}
+} // namespace v8
 #endif

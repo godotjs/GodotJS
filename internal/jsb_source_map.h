@@ -32,7 +32,11 @@ namespace jsb::internal
             int source_column = 0;
             int _reserved = 0; // name index
 
-            jsb_force_inline int& operator[](uint8_t index) { jsb_check(index < 5); return *((int*)this + index); }
+            jsb_force_inline int& operator[](uint8_t index)
+            {
+                jsb_check(index < 5);
+                return *((int*) this + index);
+            }
         };
 
         struct InternalLine
@@ -54,7 +58,7 @@ namespace jsb::internal
 
         // input: js source position [line, column]
         // output: ts source position
-        //NOTE line & column are both zero-based
+        // NOTE line & column are both zero-based
         bool find(int p_line, int p_column, IndexedSourcePosition& r_pos) const;
 
         const String& get_source_root() const;
@@ -64,5 +68,5 @@ namespace jsb::internal
         void decode(int p_line, const char* p_token, const char* p_end, InternalPosition& r_pos, int& r_aline, int& r_acol);
         InternalLine& operator[](int p_line);
     };
-}
+} // namespace jsb::internal
 #endif

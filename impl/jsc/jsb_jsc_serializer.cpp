@@ -9,7 +9,6 @@ namespace v8
 {
     ValueSerializer::ValueSerializer(Isolate* isolate)
     {
-
     }
 
     void ValueSerializer::WriteHeader()
@@ -18,13 +17,13 @@ namespace v8
 
     Maybe<bool> ValueSerializer::WriteValue(Local<Context> context, Local<Value> value)
     {
-        //TODO serialize with JSON as a workaround?
+        // TODO serialize with JSON as a workaround?
         return Maybe<bool>();
     }
 
     std::pair<uint8_t*, size_t> ValueSerializer::Release()
     {
-        std::pair<uint8_t*, size_t> rval = { buffer_, size_ };
+        std::pair<uint8_t*, size_t> rval = {buffer_, size_};
         buffer_ = nullptr;
         size_ = 0;
         return rval;
@@ -42,8 +41,8 @@ namespace v8
 
     MaybeLocal<Value> ValueDeserializer::ReadValue(Local<Context> context)
     {
-        //TODO deserialize with JSON as a workaround?
+        // TODO deserialize with JSON as a workaround?
         return MaybeLocal<Value>();
     }
 
-}
+} // namespace v8

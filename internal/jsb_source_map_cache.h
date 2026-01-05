@@ -36,6 +36,6 @@ namespace jsb::internal
         HashMap<String, SourceMap> cached_source_maps_;
 #endif
     };
-}
+} // namespace jsb::internal
 
 #endif

@@ -8,4 +8,4 @@ namespace v8
         return Local<Function>(Function::New(isolate->GetCurrentContext(), callback, data).ToLocalChecked());
     }
 
-}
+} // namespace v8

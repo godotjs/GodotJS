@@ -6,7 +6,7 @@ namespace jsb
 {
     namespace
     {
-        template<bool is_fulfilled>
+        template <bool is_fulfilled>
         void js_on_finish(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -17,7 +17,7 @@ namespace jsb
             const AsyncModuleToken token(info.Data().As<v8::Uint32>()->Value());
             env->get_async_module_manager()._mark_as_handled(context, token, is_fulfilled, info[0]);
         }
-    }
+    } // namespace
 
     bool AsyncModuleHandle::is_valid() const
     {
@@ -35,7 +35,7 @@ namespace jsb
     {
         if (const auto env = Environment::_access(env_))
         {
-            //TODO env -> enqueue async call
+            // TODO env -> enqueue async call
             jsb_not_implemented(true, "resolve from handle is not implemented yet");
         }
         return false;
@@ -45,7 +45,7 @@ namespace jsb
     {
         if (const auto env = Environment::_access(env_))
         {
-            //TODO env -> enqueue async call
+            // TODO env -> enqueue async call
             jsb_not_implemented(true, "reject from handle is not implemented yet");
         }
         return false;
@@ -65,15 +65,15 @@ namespace jsb
         const v8::Local<v8::String> module_id = p_env.get_string_value(p_module_id);
         const v8::Local<v8::Value> data = v8::Uint32::NewFromUnsigned(isolate, *p_handle.token());
         v8::Local<v8::Value> args[] =
-        {
-            module_id,
-            /* resolve */ v8::Function::New(context, js_on_finish<true>,  data, 1).ToLocalChecked(),
-            /* reject  */ v8::Function::New(context, js_on_finish<false>, data, 1).ToLocalChecked(), 
-        };
-        //TODO JS try catch
+            {
+                module_id,
+                /* resolve */ v8::Function::New(context, js_on_finish<true>, data, 1).ToLocalChecked(),
+                /* reject  */ v8::Function::New(context, js_on_finish<false>, data, 1).ToLocalChecked(),
+            };
+        // TODO JS try catch
         v8::MaybeLocal<v8::Value> ret = func->Call(context, v8::Undefined(isolate), std::size(args), args).ToLocalChecked();
         jsb_unused(ret);
         jsb_check(!ret.IsEmpty() && ret.ToLocalChecked()->IsUndefined());
     }
 
-}
+} // namespace jsb

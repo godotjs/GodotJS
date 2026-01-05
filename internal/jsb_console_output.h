@@ -21,6 +21,6 @@ namespace jsb
         protected:
             void remove_from_output_list();
         };
-    }
-}
+    } // namespace internal
+} // namespace jsb
 #endif

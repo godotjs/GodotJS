@@ -19,5 +19,5 @@ namespace v8
     {
     public:
     };
-}
+} // namespace v8
 #endif
