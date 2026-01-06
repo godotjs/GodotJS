@@ -492,6 +492,62 @@ void GodotJSEditorPlugin::_generate_imported_resource_dts(const Vector<String>& 
     generate_resource_types(p_resource);
 }
 
+bool GodotJSEditorPlugin::_is_path_matchn(const PackedStringArray& p_wildcards, const String& p_path)
+{
+    for (const String& wildcard: p_wildcards)
+    {
+        if ((wildcard.contains_char('*') || wildcard.contains_char('?')) && p_path.match(wildcard))
+        {
+            return true;
+        }
+        else
+        {
+            const String& lower_case_path = p_path.to_lower();
+            String lower_case_wildcard = wildcard.to_lower();
+            if (lower_case_path == lower_case_wildcard){
+                return true; // Exact match file.
+            }
+            else
+            {
+                if (!lower_case_wildcard.ends_with("/"))
+                {
+                    // Cheat as directory.
+                    lower_case_wildcard += "/";
+                }
+
+                if (lower_case_path.begins_with(lower_case_wildcard))
+                {
+                    return true; // Match directory.
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+Vector<String> GodotJSEditorPlugin::_filter_resource_paths(const PackedStringArray& p_exclude_wildcards, const PackedStringArray& p_include_wildcards, const Vector<String>& p_paths)
+{
+    Vector<String> filtered_paths;
+    if (!p_include_wildcards.is_empty())
+    {
+        for (const String& path: p_paths)
+        {
+            if (!p_exclude_wildcards.is_empty() && _is_path_matchn(p_exclude_wildcards, path))
+            {
+                continue;
+            }
+    
+            if (_is_path_matchn(p_include_wildcards, path))
+            {
+                filtered_paths.push_back(path);
+            }
+        }
+    }
+
+    return filtered_paths;
+}
+
 void GodotJSEditorPlugin::generate_godot_dts()
 {
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
@@ -568,6 +624,14 @@ void GodotJSEditorPlugin::generate_scene_nodes_types(const Vector<String>& p_pat
         return;
     }
 
+    PackedStringArray exclude_wildcards = jsb::internal::Settings::get_scene_dts_exclude_path_wildcards();
+    PackedStringArray include_wildcards = jsb::internal::Settings::get_scene_dts_include_path_wildcards();
+    Vector<String> filtered_paths = _filter_resource_paths(exclude_wildcards, include_wildcards, p_paths);
+    if (filtered_paths.is_empty())
+    {
+        return;
+    }
+
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
@@ -575,7 +639,7 @@ void GodotJSEditorPlugin::generate_scene_nodes_types(const Vector<String>& p_pat
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.SceneTSDCodeGen("%s", ["%s"])).emit();})())--",
         "./" + jsb::internal::Settings::get_autogen_path(),
-        String("\", \"").join(p_paths)
+        String("\", \"").join(filtered_paths)
     );
     lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
@@ -591,6 +655,14 @@ void GodotJSEditorPlugin::generate_resource_types(const Vector<String>& p_paths)
         return;
     }
 
+    PackedStringArray exclude_wildcards = jsb::internal::Settings::get_resource_dts_exclude_path_wildcards();
+    PackedStringArray include_wildcards = jsb::internal::Settings::get_resource_dts_include_path_wildcards();
+    Vector<String> filtered_paths = _filter_resource_paths(exclude_wildcards, include_wildcards, p_paths);
+    if (filtered_paths.is_empty())
+    {
+        return;
+    }
+
     GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton();
     jsb_check(lang);
     Error err;
@@ -598,7 +670,7 @@ void GodotJSEditorPlugin::generate_resource_types(const Vector<String>& p_paths)
     const String code = jsb_format(
         R"--((function(){const mod = require("jsb.editor.codegen"); (new mod.ResourceTSDCodeGen("%s", ["%s"])).emit();})())--",
         "./" + jsb::internal::Settings::get_autogen_path(),
-        String("\", \"").join(p_paths)
+        String("\", \"").join(filtered_paths)
     );
     lang->eval_source(code, err).ignore();
     ERR_FAIL_COND_MSG(err != OK, "failed to evaluate jsb.editor.codegen");
