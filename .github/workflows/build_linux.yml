@@ -8,6 +8,9 @@ on:
       version:
         required: true
         type: string
+      version_mm:
+        required: true
+        type: string
       version_ref:
         description: "Godot engine commit reference"
         required: true
@@ -21,7 +24,7 @@ env:
     warnings=extra
     strict_checks=yes
     module_text_server_fb_enabled=yes
-    "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
+    "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.${{ inputs.version_mm == '4.5' && '17' || '18' }}.0/"
     skip_js_runtime=yes
 #  ASAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/asan.txt
 #  LSAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/lsan.txt
@@ -54,10 +57,13 @@ jobs:
           lfs: true
           submodules: recursive
 
-      # TODO: Figure out somehow how to embed this one.
-      - name: wayland-scanner dependency
+      - name: Setup Godot dependencies
         run: |
-          sudo apt-get install libwayland-bin
+          sudo apt-get update
+          sudo apt-get install libwayland-bin # TODO: Figure out somehow how to embed this one.
+          if [ "${{ !inputs.release && matrix.target || '' }}" == "editor" ]; then
+            sudo apt-get install mesa-vulkan-drivers
+          fi
 
       - name: Free disk space on runner
         run: |
@@ -87,7 +93,8 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Download pre-built AccessKit
+      - name: Download pre-built AccessKit v17 [4.5]
+        if: inputs.version_mm == '4.5'
         uses: dsaltares/fetch-gh-release-asset@1.1.2
         with:
           repo: AccessKit/accesskit-c
@@ -95,8 +102,22 @@ jobs:
           file: accesskit-c-0.17.0.zip
           target: accesskit-c-0.17.0/accesskit_c.zip
 
-      - name: Extract pre-built AccessKit
+      - name: Extract pre-built AccessKit v17 [4.5]
+        if: inputs.version_mm == '4.5'
         run: unzip -o accesskit-c-0.17.0/accesskit_c.zip
+
+      - name: Download pre-built AccessKit v18 [4.6]
+        if: inputs.version_mm == '4.6'
+        uses: dsaltares/fetch-gh-release-asset@1.1.2
+        with:
+          repo: AccessKit/accesskit-c
+          version: tags/0.18.0
+          file: accesskit-c-0.18.0.zip
+          target: accesskit-c-0.18.0/accesskit_c.zip
+
+      - name: Extract pre-built AccessKit v18 [4.6]
+        if: inputs.version_mm == '4.6'
+        run: unzip -o accesskit-c-0.18.0/accesskit_c.zip
 
       - name: Compilation
         uses: ./.github/actions/godot-build

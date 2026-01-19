@@ -8,6 +8,9 @@ on:
       version:
         required: true
         type: string
+      version_mm:
+        required: true
+        type: string
       version_ref:
         description: "Godot engine commit reference"
         required: true
@@ -21,7 +24,7 @@ env:
     warnings=extra
     strict_checks=yes
     module_text_server_fb_enabled=yes
-    "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.17.0/"
+    "accesskit_sdk_path=${{ github.workspace }}/accesskit-c-0.${{ inputs.version_mm == '4.5' && '17' || '18' }}.0/"
     skip_js_runtime=yes
 
 jobs:
@@ -61,7 +64,8 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Download pre-built AccessKit
+      - name: Download pre-built AccessKit v17 [4.5]
+        if: inputs.version_mm == '4.5'
         uses: dsaltares/fetch-gh-release-asset@1.1.2
         with:
           repo: AccessKit/accesskit-c
@@ -69,8 +73,22 @@ jobs:
           file: accesskit-c-0.17.0.zip
           target: accesskit-c-0.17.0/accesskit_c.zip
 
-      - name: Extract pre-built AccessKit
+      - name: Extract pre-built AccessKit v17 [4.5]
+        if: inputs.version_mm == '4.5'
         run: unzip -o accesskit-c-0.17.0/accesskit_c.zip
+
+      - name: Download pre-built AccessKit v18 [4.6]
+        if: inputs.version_mm == '4.6'
+        uses: dsaltares/fetch-gh-release-asset@1.1.2
+        with:
+          repo: AccessKit/accesskit-c
+          version: tags/0.18.0
+          file: accesskit-c-0.18.0.zip
+          target: accesskit-c-0.18.0/accesskit_c.zip
+
+      - name: Extract pre-built AccessKit v18 [4.6]
+        if: inputs.version_mm == '4.6'
+        run: unzip -o accesskit-c-0.18.0/accesskit_c.zip
 
       - name: Setup Vulkan SDK
         id: vulkan-sdk

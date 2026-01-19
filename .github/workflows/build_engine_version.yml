@@ -6,6 +6,10 @@ on:
         description: "Godot engine version"
         required: true
         type: string
+      version_mm:
+        description: "Godot engine version (major.minor only)"
+        required: true
+        type: string
       version_ref:
         description: "Godot engine commit reference"
         required: true
@@ -20,6 +24,7 @@ jobs:
     uses: ./.github/workflows/build_android.yml
     with:
       version: ${{ inputs.version }}
+      version_mm: ${{ inputs.version_mm }}
       version_ref: ${{ inputs.version_ref }}
       release: ${{ inputs.release }}
 
@@ -28,6 +33,7 @@ jobs:
     uses: ./.github/workflows/build_ios.yml
     with:
       version: ${{ inputs.version }}
+      version_mm: ${{ inputs.version_mm }}
       version_ref: ${{ inputs.version_ref }}
       release: ${{ inputs.release }}
 
@@ -36,6 +42,7 @@ jobs:
     uses: ./.github/workflows/build_linux.yml
     with:
       version: ${{ inputs.version }}
+      version_mm: ${{ inputs.version_mm }}
       version_ref: ${{ inputs.version_ref }}
       release: ${{ inputs.release }}
 
@@ -44,6 +51,7 @@ jobs:
     uses: ./.github/workflows/build_macos.yml
     with:
       version: ${{ inputs.version }}
+      version_mm: ${{ inputs.version_mm }}
       version_ref: ${{ inputs.version_ref }}
       release: ${{ inputs.release }}
 
@@ -52,6 +60,7 @@ jobs:
     uses: ./.github/workflows/build_windows.yml
     with:
       version: ${{ inputs.version }}
+      version_mm: ${{ inputs.version_mm }}
       version_ref: ${{ inputs.version_ref }}
       release: ${{ inputs.release }}
 
@@ -60,6 +69,7 @@ jobs:
     uses: ./.github/workflows/build_web.yml
     with:
       version: ${{ inputs.version }}
+      version_mm: ${{ inputs.version_mm }}
       version_ref: ${{ inputs.version_ref }}
       release: ${{ inputs.release }}
 
@@ -71,19 +81,19 @@ jobs:
       - name: 🎉 Checks done
         run: |
           resultWebBuild="${{ needs.web-build.result }}"
-          resultWindowsBuild="${{ needs.windows-build.result }}"          
+          resultWindowsBuild="${{ needs.windows-build.result }}"
           resultMacosBuild="${{ needs.macos-build.result }}"
           resultLinuxBuild="${{ needs.linux-build.result }}"
           resultIosBuild="${{ needs.ios-build.result }}"
           resultAndroidBuild="${{ needs.android-build.result }}"
-          if [[ 
-            $resultWebBuild == "success" && 
-            $resultWindowsBuild == "success" && 
-            $resultMacosBuild == "success" && 
-            $resultLinuxBuild == "success" && 
-            $resultIosBuild == "success" && 
-            $resultAndroidBuild == "success" 
-          ]]; 
+          if [[
+            $resultWebBuild == "success" &&
+            $resultWindowsBuild == "success" &&
+            $resultMacosBuild == "success" &&
+            $resultLinuxBuild == "success" &&
+            $resultIosBuild == "success" &&
+            $resultAndroidBuild == "success"
+          ]];
           then
             echo "🎉 All builds were successful."
             exit 0
