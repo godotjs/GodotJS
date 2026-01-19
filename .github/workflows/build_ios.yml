@@ -8,6 +8,9 @@ on:
       version:
         required: true
         type: string
+      version_mm:
+        required: true
+        type: string
       version_ref:
         description: "Godot engine commit reference"
         required: true
