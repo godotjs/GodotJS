@@ -118,7 +118,7 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           scons-flags: >-
-            ${{ env.SCONSFLAGS }}
+            ${{ env.SCONS_FLAGS }}
             ${{ matrix.target != 'editor' && 'debug_symbols=no' || '' }}
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
             arch=x86_64
