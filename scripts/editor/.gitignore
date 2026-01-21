@@ -1,0 +1,20 @@
+# Dependency directory
+node_modules
+bower_components
+
+# Editors
+.idea
+*.iml
+
+# Ignore built ts files
+dist/**/*
+
+# ignore yarn.lock
+yarn.lock
+
+## Genrated files
+test/**/*.mjs
+test/**/*.js
+test/generate/**/*.ts
+test/all/game
+/src/commands/init/generated.ts
