@@ -7,7 +7,7 @@ namespace jsb
 {
     namespace
     {
-        // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood 
+        // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood
         PackedStringArray get_dynamic_search_paths()
         {
 #ifdef TOOLS_ENABLED
@@ -17,8 +17,8 @@ namespace jsb
             return dynamic_search_paths;
 #endif
         }
-    }
-    
+    } // namespace
+
     bool IModuleResolver::load_as_json(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const Vector<uint8_t>& p_bytes, size_t p_len)
     {
         v8::Isolate* isolate = p_env->get_isolate();
@@ -66,8 +66,8 @@ namespace jsb
         module_obj->Set(context, jsb_name(p_env, filename), argv[kIndexFileName]).Check();
         module_obj->Set(context, jsb_name(p_env, path), argv[kIndexPath]).Check();
 
-        //TODO set `require.cache`
-        // ...
+        // TODO set `require.cache`
+        //  ...
 
         if (const v8::MaybeLocal<v8::Value> result = p_elevator->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
             result.IsEmpty())
@@ -93,11 +93,9 @@ namespace jsb
         jsb_check(!p_reader.is_null());
         const size_t file_len = p_reader.get_length();
         jsb_check(file_len);
-        o_bytes.resize((int) (
-            file_len +
-            ::std::size(header) + ::std::size(footer) - 2
-            + 1 // zero_terminated anyway
-        ));
+        o_bytes.resize((int) (file_len +
+                              ::std::size(header) + ::std::size(footer) - 2 + 1 // zero_terminated anyway
+                              ));
 
         memcpy(o_bytes.ptrw(), header, ::std::size(header) - 1);
         p_reader.get_buffer(o_bytes.ptrw() + ::std::size(header) - 1, file_len);
@@ -105,7 +103,7 @@ namespace jsb
         return o_bytes.size() - 1;
     }
 
-    //NOTE !!! we use FileAccess::exists instead of access->file_exists because access->file_exists does not consider files from packages (res://)
+    // NOTE !!! we use FileAccess::exists instead of access->file_exists because access->file_exists does not consider files from packages (res://)
     bool DefaultModuleResolver::check_implicit_source_path(const String& p_module_id, String& o_path)
     {
         // try .js
@@ -147,86 +145,86 @@ namespace jsb
     {
         switch (p_value.get_type())
         {
-            case Variant::STRING:
-            {
-                const String resolved_value = p_value;
+        case Variant::STRING:
+        {
+            const String resolved_value = p_value;
 
-                if (!resolved_value.begins_with("./"))
+            if (!resolved_value.begins_with("./"))
+            {
+                // Not a file path. It's protocol based resolution which is unsupported (not seen in practice).
+                JSB_LOG(VeryVerbose, "Unable to resolve package.json export: %s", p_value);
+                return String();
+            }
+
+            return p_wildcard
+                       ? resolved_value.replace("*", p_subpath)
+                       : resolved_value + p_subpath;
+        }
+
+        case Variant::DICTIONARY:
+        {
+            const Dictionary condition_dict = p_value;
+
+            if (!p_condition.is_empty() && condition_dict.has(p_condition))
+            {
+                const Variant& condition_target = condition_dict[p_condition];
+                const String resolved_path = resolve_package_export_value(condition_target, p_condition, p_subpath, p_wildcard);
+
+                if (!resolved_path.is_empty())
                 {
-                    // Not a file path. It's protocol based resolution which is unsupported (not seen in practice).
-                    JSB_LOG(VeryVerbose, "Unable to resolve package.json export: %s", p_value);
+                    return resolved_path;
+                }
+
+                if (condition_target.get_type() == Variant::NIL)
+                {
+                    // Further resolution explicitly disabled i.e. don't fall back to "default"
                     return String();
                 }
-
-                return p_wildcard
-                    ? resolved_value.replace("*", p_subpath)
-                    : resolved_value + p_subpath;
             }
 
-            case Variant::DICTIONARY:
+            const String key_default = "default";
+
+            if (condition_dict.has(key_default))
             {
-                const Dictionary condition_dict = p_value;
+                const String resolved_path = resolve_package_export_value(condition_dict[key_default], p_condition, p_subpath, p_wildcard);
 
-                if (!p_condition.is_empty() && condition_dict.has(p_condition))
+                if (!resolved_path.is_empty())
                 {
-                    const Variant& condition_target = condition_dict[p_condition];
-                    const String resolved_path = resolve_package_export_value(condition_target, p_condition, p_subpath, p_wildcard);
-
-                    if (!resolved_path.is_empty())
-                    {
-                        return resolved_path;
-                    }
-
-                    if (condition_target.get_type() == Variant::NIL)
-                    {
-                        // Further resolution explicitly disabled i.e. don't fall back to "default"
-                        return String();
-                    }
+                    return resolved_path;
                 }
-
-                const String key_default = "default";
-
-                if (condition_dict.has(key_default))
-                {
-                    const String resolved_path = resolve_package_export_value(condition_dict[key_default], p_condition, p_subpath, p_wildcard);
-
-                    if (!resolved_path.is_empty())
-                    {
-                        return resolved_path;
-                    }
-                }
-
-                return String(); // No match
             }
 
-            case Variant::ARRAY:
+            return String(); // No match
+        }
+
+        case Variant::ARRAY:
+        {
+            const Array alternatives = p_value;
+            for (int i = 0; i < alternatives.size(); ++i)
             {
-                const Array alternatives = p_value;
-                for (int i = 0; i < alternatives.size(); ++i)
+                const Variant& alternative = alternatives[i];
+                const String resolved_path = resolve_package_export_value(alternative, p_condition, p_subpath, p_wildcard);
+
+                if (!resolved_path.is_empty())
                 {
-                    const Variant& alternative = alternatives[i];
-                    const String resolved_path = resolve_package_export_value(alternative, p_condition, p_subpath, p_wildcard);
-
-                    if (!resolved_path.is_empty())
-                    {
-                        return resolved_path;
-                    }
-
-                    if (alternative.get_type() == Variant::NIL)
-                    {
-                        return String(); // Further resolution explicitly disabled. Used when nested in conditions.
-                    }
+                    return resolved_path;
                 }
 
-                return String(); // No matches
+                if (alternative.get_type() == Variant::NIL)
+                {
+                    return String(); // Further resolution explicitly disabled. Used when nested in conditions.
+                }
             }
 
-            case Variant::NIL:
-                return String(); // Resolution explicitly disabled
+            return String(); // No matches
+        }
 
-            default:
-                JSB_LOG(Warning, "invalid package.json exports value. Expected string, object, string[] or null. Encountered value: %s", p_value);
-                return String();
+        case Variant::NIL:
+            return String(); // Resolution explicitly disabled
+
+        default:
+            JSB_LOG(Warning, "invalid package.json exports value. Expected string, object, string[] or null. Encountered value: %s", p_value);
+            return String();
         }
     }
 
@@ -234,8 +232,8 @@ namespace jsb
     String DefaultModuleResolver::resolve_package_export(const Dictionary& p_exports, const String& p_condition, const String& p_module_id)
     {
         String lookup_key = p_module_id.is_empty() || p_module_id == "."
-            ? "."
-            : "./" + p_module_id;
+                                ? "."
+                                : "./" + p_module_id;
 
         String longest_match_key;
         String longest_match_subpath;
@@ -251,14 +249,14 @@ namespace jsb
 
             if (lookup_key.begins_with(effective_key) && (effective_key.ends_with("/") || effective_key == lookup_key))
             {
-                 const int current_match_len = effective_key.length();
-                 if (current_match_len > longest_match_length)
-                 {
-                     longest_match_length = current_match_len;
-                     longest_match_key = key;
-                     longest_match_subpath = lookup_key.substr(current_match_len);
-                     longest_match_has_wildcard = wildcard_index >= 0;
-                 }
+                const int current_match_len = effective_key.length();
+                if (current_match_len > longest_match_length)
+                {
+                    longest_match_length = current_match_len;
+                    longest_match_key = key;
+                    longest_match_subpath = lookup_key.substr(current_match_len);
+                    longest_match_has_wildcard = wildcard_index >= 0;
+                }
             }
         }
 
@@ -425,7 +423,7 @@ namespace jsb
     }
 
     // early and simple validation: check source file existence
-    bool DefaultModuleResolver::get_source_info(const String &p_module_id, ModuleSourceInfo& r_source_info)
+    bool DefaultModuleResolver::get_source_info(const String& p_module_id, ModuleSourceInfo& r_source_info)
     {
         JSB_LOG(VeryVerbose, "resolving path %s", p_module_id);
 
@@ -521,7 +519,7 @@ namespace jsb
         internal::FileAccessSourceReader reader(p_asset_path);
         return load(p_env, p_asset_path, reader, p_module);
     }
-    
+
     bool DefaultModuleResolver::load(Environment* p_env, const String& p_asset_path, const internal::ISourceReader& p_reader, JavaScriptModule& p_module)
     {
         if (p_reader.is_null() || p_reader.get_length() == 0)
@@ -562,13 +560,13 @@ namespace jsb
             const String source_url = p_reader.get_source_url();
             Vector<uint8_t> source;
             const size_t len = read_all_bytes_with_shebang(p_reader, source);
-            jsb_check((size_t)(int)len == len);
+            jsb_check((size_t) (int) len == len);
 
             // source evaluator (the module protocol)
             const v8::MaybeLocal<v8::Value> func_maybe = impl::Helper::compile_function(context, (const char*) source.ptr(), (int) len, source_url);
             if (func_maybe.IsEmpty())
             {
-                //NOTE an exception should have been thrown in _compile_run if MaybeLocal is empty
+                // NOTE an exception should have been thrown in _compile_run if MaybeLocal is empty
                 return false;
             }
 
@@ -583,4 +581,4 @@ namespace jsb
         }
     }
 
-}
+} // namespace jsb

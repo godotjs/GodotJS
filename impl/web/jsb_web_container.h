@@ -21,5 +21,5 @@ namespace v8
 
         static Local<Map> New(Isolate* isolate);
     };
-}
+} // namespace v8
 #endif

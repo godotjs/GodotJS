@@ -44,12 +44,15 @@ private:
 
 private:
     void load_module_immediately();
-    jsb_force_inline void ensure_module_loaded() const { if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately(); }
+    jsb_force_inline void ensure_module_loaded() const
+    {
+        if (jsb_unlikely(!loaded_)) const_cast<GodotJSScript*>(this)->load_module_immediately();
+    }
     jsb_force_inline bool _is_valid() const { return jsb::internal::VariantUtil::is_valid_name(script_class_info_.module_id); }
 
-    Variant _new(const Variant** p_args, int p_argcount, Callable::CallError &r_error);
+    Variant _new(const Variant** p_args, int p_argcount, Callable::CallError& r_error);
 
-    bool _update_exports(PlaceHolderScriptInstance *p_instance_to_update);
+    bool _update_exports(PlaceHolderScriptInstance* p_instance_to_update);
     void _update_exports_values(List<PropertyInfo>& r_props, HashMap<StringName, Variant>& r_values);
 
 public:
@@ -59,7 +62,7 @@ public:
     StringName get_module_id() const { return script_class_info_.module_id; };
 
     // Error attach_source(const String& p_path, bool p_take_over);
-    Error load_source_code(const String &p_path);
+    Error load_source_code(const String& p_path);
     void load_module_if_missing();
 
     // Creates a ScriptInstance (for an existing Godot native object) and associates the ScriptInstance with an existing JS object (instance of the script's JS class).
@@ -69,7 +72,7 @@ public:
     ScriptInstance* instance_and_native_object_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed);
 
     // Creates a ScriptInstance and associates it with a newly constructed JS object (instance of script's class).
-    ScriptInstance* instance_construct(Object* p_this, bool p_is_temp_allowed, const Variant **p_args = nullptr, int p_argcount = 0);
+    ScriptInstance* instance_construct(Object* p_this, bool p_is_temp_allowed, const Variant** p_args = nullptr, int p_argcount = 0);
 
 #pragma region Script Implementation
     virtual bool can_instantiate() const override;
@@ -87,13 +90,13 @@ public:
     virtual bool has_source_code() const override { return !source_.is_empty(); }
     virtual String get_source_code() const override { return source_; }
     virtual void set_source_code(const String& p_code) override;
-    virtual void set_path(const String &p_path, bool p_take_over) override;
+    virtual void set_path(const String& p_path, bool p_take_over) override;
     virtual Error reload(bool p_keep_state = false) override;
 
 #ifdef TOOLS_ENABLED
-#if GODOT_4_4_OR_NEWER
-	virtual StringName get_doc_class_name() const override;
-#endif
+    #if GODOT_4_4_OR_NEWER
+    virtual StringName get_doc_class_name() const override;
+    #endif
     virtual Vector<DocData::ClassDoc> get_documentation() const override;
     virtual String get_class_icon_path() const override;
     virtual PropertyInfo get_class_category() const override;
@@ -108,7 +111,11 @@ public:
     // we expect Godot calling this after loaded_?
     // is_valid() will ensure the module is loaded.
     // [INTERNAL] if it's not expected, call `_is_valid` instead.
-    virtual bool is_valid() const override { ensure_module_loaded(); return _is_valid(); }
+    virtual bool is_valid() const override
+    {
+        ensure_module_loaded();
+        return _is_valid();
+    }
     virtual bool is_tool() const override { return is_valid() && script_class_info_.is_tool(); }
     virtual bool is_abstract() const override { return is_valid() && script_class_info_.is_abstract(); }
 
@@ -122,7 +129,7 @@ public:
 
     virtual void update_exports() override;
 
-    //editor tool
+    // editor tool
     virtual void get_script_method_list(List<MethodInfo>* p_list) const override;
     virtual void get_script_property_list(List<PropertyInfo>* p_list) const override;
 
@@ -153,13 +160,12 @@ protected:
     virtual void _placeholder_erased(PlaceHolderScriptInstance* p_placeholder) override;
 #endif
 
-    //TODO -- begin -- auto reload outside of internal ScriptEditor by intercepting proper callbacks?
+    // TODO -- begin -- auto reload outside of internal ScriptEditor by intercepting proper callbacks?
     virtual bool editor_can_reload_from_file() override { return true; }
     virtual void reload_from_file() override;
-    //TODO -- end   -- auto reload outside of internal ScriptEditor by intercepting proper callbacks?
+    // TODO -- end   -- auto reload outside of internal ScriptEditor by intercepting proper callbacks?
 
 #pragma endregion
-
 };
 
 #endif

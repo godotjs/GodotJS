@@ -34,7 +34,6 @@ namespace jsb
             {
                 argv[index].~LocalValue();
             }
-
         }
         else
         {
@@ -55,4 +54,4 @@ namespace jsb
             JSB_LOG(Error, "timer error %s", BridgeHelper::get_exception(try_catch));
         }
     }
-}
+} // namespace jsb

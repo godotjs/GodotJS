@@ -11,15 +11,21 @@
 
 namespace jsb::internal
 {
-    //NOTE some types (like std::function) are not supported because copy/move on resizing is not implemented for now.
+    // NOTE some types (like std::function) are not supported because copy/move on resizing is not implemented for now.
     template <typename T, typename IndexType = Index64, typename TAllocator = AnsiAllocator>
     class SArray
     {
         using RevisionType = typename IndexType::RevisionType;
         using ElementTypeTypedef = std::remove_pointer_t<T>;
 
-        enum { INDEX_NONE = -1 };
-        enum { kInitialRevision = 1 };
+        enum
+        {
+            INDEX_NONE = -1
+        };
+        enum
+        {
+            kInitialRevision = 1
+        };
 
         struct Slot
         {
@@ -32,8 +38,16 @@ namespace jsb::internal
             bool has_value_;
             void reset_value() { has_value_ = false; }
             bool has_value() const { return has_value_; }
-            void set_value(T&& p_value) { has_value_ = true; value = std::move(p_value); }
-            void set_value(const T& p_value) { has_value_ = true; value = p_value; }
+            void set_value(T&& p_value)
+            {
+                has_value_ = true;
+                value = std::move(p_value);
+            }
+            void set_value(const T& p_value)
+            {
+                has_value_ = true;
+                value = p_value;
+            }
 #else
             void reset_value() {}
             void set_value(T&& p_value) { value = std::move(p_value); }
@@ -53,7 +67,7 @@ namespace jsb::internal
 
         Slot* get_data() const
         {
-            return (Slot*)allocator.get_data();
+            return (Slot*) allocator.get_data();
         }
 
     public:
@@ -61,13 +75,21 @@ namespace jsb::internal
         {
             SArray* container_;
 
-            AddressScope(SArray* p_container) : container_(p_container) { container_->lock_address(); }
-            ~AddressScope() { if (container_) container_->unlock_address(); }
+            AddressScope(SArray* p_container)
+                : container_(p_container) { container_->lock_address(); }
+            ~AddressScope()
+            {
+                if (container_) container_->unlock_address();
+            }
 
             AddressScope(const AddressScope&) = delete;
             AddressScope& operator=(const AddressScope&) = delete;
 
-            AddressScope(AddressScope&& p_other) noexcept { container_ = p_other.container_; p_other.container_ = nullptr; }
+            AddressScope(AddressScope&& p_other) noexcept
+            {
+                container_ = p_other.container_;
+                p_other.container_ = nullptr;
+            }
 
             AddressScope& operator=(AddressScope&& p_other) noexcept
             {
@@ -81,7 +103,7 @@ namespace jsb::internal
             }
         };
 
-        template<typename S>
+        template <typename S>
         struct TScopedPointer
         {
         private:
@@ -89,18 +111,25 @@ namespace jsb::internal
             S* ptr_;
 
         public:
-            TScopedPointer() : container_(nullptr), ptr_(nullptr) { }
-            TScopedPointer(std::nullptr_t) : container_(nullptr), ptr_(nullptr) { }
-            TScopedPointer(SArray* p_container, S* p_ptr) : container_(p_container), ptr_(p_ptr)
+            TScopedPointer()
+                : container_(nullptr), ptr_(nullptr) {}
+            TScopedPointer(std::nullptr_t)
+                : container_(nullptr), ptr_(nullptr) {}
+            TScopedPointer(SArray* p_container, S* p_ptr)
+                : container_(p_container), ptr_(p_ptr)
             {
                 if (container_)
                 {
                     container_->lock_address();
                 }
             }
-            ~TScopedPointer() { if (container_) container_->unlock_address(); }
+            ~TScopedPointer()
+            {
+                if (container_) container_->unlock_address();
+            }
 
-            TScopedPointer(const TScopedPointer& p_other): container_(p_other.container_), ptr_(p_other.ptr_)
+            TScopedPointer(const TScopedPointer& p_other)
+                : container_(p_other.container_), ptr_(p_other.ptr_)
             {
                 container_->lock_address();
             }
@@ -192,7 +221,8 @@ namespace jsb::internal
             }
 
         private:
-            LowLevelAccess(SArray& p_container) : container(p_container)
+            LowLevelAccess(SArray& p_container)
+                : container(p_container)
             {
             }
 
@@ -363,7 +393,7 @@ namespace jsb::internal
             return true;
         }
 
-        template<typename TArg = T>
+        template <typename TArg = T>
         IndexType add(TArg&& value)
         {
             grow_if_needed(1);
@@ -788,11 +818,11 @@ namespace jsb::internal
                 container.try_get_linked_index(p_index, previous, next);
             }
 
-            Iterator(const Iterator& other):
-                container(other.container),
-                index(other.index),
-                previous(other.previous),
-                next(other.next)
+            Iterator(const Iterator& other)
+                : container(other.container),
+                  index(other.index),
+                  previous(other.previous),
+                  next(other.next)
             {
             }
 
@@ -850,18 +880,12 @@ namespace jsb::internal
 
             friend bool operator==(const Iterator& lhs, const Iterator& rhs)
             {
-                return &lhs.container == &rhs.container
-                    && lhs.index == rhs.index
-                    && lhs.previous == rhs.previous
-                    && lhs.next == rhs.next;
+                return &lhs.container == &rhs.container && lhs.index == rhs.index && lhs.previous == rhs.previous && lhs.next == rhs.next;
             }
 
             friend bool operator!=(const Iterator& lhs, const Iterator& rhs)
             {
-                return &lhs.container != &rhs.container
-                    || lhs.index != rhs.index
-                    || lhs.previous != rhs.previous
-                    || lhs.next != rhs.next;
+                return &lhs.container != &rhs.container || lhs.index != rhs.index || lhs.previous != rhs.previous || lhs.next != rhs.next;
             }
 
             void remove()
@@ -953,7 +977,11 @@ namespace jsb::internal
 
     private:
         jsb_force_inline void lock_address() { ++_address_locked; }
-        jsb_force_inline void unlock_address() { jsb_check(_address_locked > 0); --_address_locked; }
+        jsb_force_inline void unlock_address()
+        {
+            jsb_check(_address_locked > 0);
+            --_address_locked;
+        }
 
 #if JSB_SARRAY_CONSISTENCY_CHECK
         bool is_consistent() const
@@ -974,7 +1002,7 @@ namespace jsb::internal
                 while (index != INDEX_NONE)
                 {
                     const Slot& slot = get_data()[index];
-                    jsb_check(is_valid_index({ index, slot.revision }));
+                    jsb_check(is_valid_index({index, slot.revision}));
                     if (index == _first_index)
                     {
                         jsb_check(slot.previous == INDEX_NONE);
@@ -1022,9 +1050,9 @@ namespace jsb::internal
             }
             else
             {
-                memset((void *)&p_value, 0, sizeof(T));
+                memset((void*) &p_value, 0, sizeof(T));
             }
         }
     };
-}
+} // namespace jsb::internal
 #endif

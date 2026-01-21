@@ -6,19 +6,25 @@
 #include "jsb_type_convert.h"
 #include "jsb_object_handle.h"
 
-#define JSB_CONTEXT_BOILERPLATE() \
-    v8::Isolate* isolate = info.GetIsolate();\
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();\
-    Functor& func = *(Functor*) Environment::get_function_pointer(context, info.Data().As<v8::Uint32>()->Value());\
+#define JSB_CONTEXT_BOILERPLATE()                                                                                  \
+    v8::Isolate* isolate = info.GetIsolate();                                                                      \
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();                                                 \
+    Functor& func = *(Functor*) Environment::get_function_pointer(context, info.Data().As<v8::Uint32>()->Value()); \
     (void) 0
 
 namespace jsb
 {
-    template<typename> struct PrimitiveAccess {};
+    template <typename>
+    struct PrimitiveAccess
+    {
+    };
 
-    template<typename> struct VariantCaster {};
+    template <typename>
+    struct VariantCaster
+    {
+    };
 
-    template<typename T>
+    template <typename T>
     struct PrimitiveAccessBoilerplate
     {
         static T from(const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_val)
@@ -27,7 +33,7 @@ namespace jsb
             return *VariantCaster<T>::from(context, p_val);
         }
 
-        //TODO test
+        // TODO test
         static bool return_(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::FunctionCallbackInfo<v8::Value>& info, const T& val)
         {
             Environment* environment = Environment::wrap(isolate);
@@ -45,10 +51,10 @@ namespace jsb
     };
 
     // call with return
-    template<typename TReturn>
+    template <typename TReturn>
     struct SpecializedReturn
     {
-        template<typename TSelf>
+        template <typename TSelf>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)();
@@ -62,7 +68,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf, typename P0>
+        template <typename TSelf, typename P0>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)(P0);
@@ -77,7 +83,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf, typename P0, typename P1>
+        template <typename TSelf, typename P0, typename P1>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1);
@@ -93,7 +99,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf, typename P0, typename P1, typename P2>
+        template <typename TSelf, typename P0, typename P1, typename P2>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2);
@@ -110,7 +116,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf, typename P0, typename P1, typename P2, typename P3>
+        template <typename TSelf, typename P0, typename P1, typename P2, typename P3>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3);
@@ -128,7 +134,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4>
+        template <typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3, P4);
@@ -147,7 +153,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
+        template <typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3, P4, P5);
@@ -167,7 +173,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+        template <typename TSelf, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (TSelf::*Functor)(P0, P1, P2, P3, P4, P5, P6);
@@ -200,7 +206,7 @@ namespace jsb
             }
         }
 
-        template<typename P0>
+        template <typename P0>
         static void function(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (*Functor)(P0);
@@ -213,7 +219,7 @@ namespace jsb
             }
         }
 
-        template<typename TSelf>
+        template <typename TSelf>
         static void getter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef TReturn (*Functor)(TSelf*);
@@ -229,10 +235,10 @@ namespace jsb
     };
 
     // call without return
-    template<>
+    template <>
     struct SpecializedReturn<void>
     {
-        template<typename TSelf>
+        template <typename TSelf>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef void (TSelf::*Functor)();
@@ -242,7 +248,7 @@ namespace jsb
             (p_self->*func)();
         }
 
-        template<typename TSelf, typename P0>
+        template <typename TSelf, typename P0>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef void (TSelf::*Functor)(P0);
@@ -253,7 +259,7 @@ namespace jsb
             (p_self->*func)(p0);
         }
 
-        template<typename TSelf, typename P0, typename P1>
+        template <typename TSelf, typename P0, typename P1>
         static void method(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef void (TSelf::*Functor)(P0, P1);
@@ -265,7 +271,7 @@ namespace jsb
             (p_self->*func)(p0, p1);
         }
 
-        template<typename TSelf, typename P0>
+        template <typename TSelf, typename P0>
         static void setter(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             typedef void (*Functor)(TSelf*, P0);
@@ -275,7 +281,6 @@ namespace jsb
             P0 p0 = PrimitiveAccess<P0>::from(context, info[0]);
             (*func)(p_self, p0);
         }
-
     };
 
     struct ObjectTemplate
@@ -289,7 +294,6 @@ namespace jsb
         }
 
     private:
-
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -344,17 +348,12 @@ namespace jsb
             {
                 const StringName script_module_id = environment->get_string_name(module_id_value.As<v8::String>());
                 jsb_check(environment->get_module_cache().find(script_module_id));
-                JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script",
-                    environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id,
-                    class_name, class_id);
+                JSB_LOG(Verbose, "(newbind) constructing %s(%s) which extends %s(%d) from script", environment->get_script_class(environment->get_module_cache().find(script_module_id)->script_class_id)->js_class_name, script_module_id, class_name, class_id);
                 ScriptClassInfo::instantiate(environment, script_module_id, self);
                 return;
             }
 
-            impl::Helper::throw_error(isolate, jsb_format(
-                "unexpected 'new.target', you may be instantiating a script class which is not exported as default. class: %s [native: %s (%d)]",
-                impl::Helper::to_string_opt(isolate, new_target->Get(context, jsb_name(environment, name))),
-                class_name, class_id));
+            impl::Helper::throw_error(isolate, jsb_format("unexpected 'new.target', you may be instantiating a script class which is not exported as default. class: %s [native: %s (%d)]", impl::Helper::to_string_opt(isolate, new_target->Get(context, jsb_name(environment, name))), class_name, class_id));
         }
 
         static void finalizer(Environment* runtime, void* pointer, FinalizationType p_finalize)
@@ -419,8 +418,8 @@ namespace jsb
         // {
         //     prototype->Set(impl::Helper::new_string(p_env.isolate, name), v8::FunctionTemplate::New(p_env.isolate, &SpecializedReturn<TReturn>::template method<TSelf, TArgs...>, v8::Uint32::NewFromUnsigned(p_env.isolate, p_env.add_free_function(func))));
         // }
-    }
+    } // namespace bind
 
-}
+} // namespace jsb
 
 #endif

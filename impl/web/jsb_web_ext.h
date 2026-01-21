@@ -24,5 +24,5 @@ namespace jsb::impl
             return String();
         }
     };
-}
+} // namespace jsb::impl
 #endif

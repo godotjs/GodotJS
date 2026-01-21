@@ -8,7 +8,7 @@ namespace jsb::impl
     {
 #if JSB_V8_CPPGC
         std::unique_ptr<cppgc::DefaultPlatform> platform = std::make_unique<cppgc::DefaultPlatform>();
-#else 
+#else
         std::unique_ptr<v8::Platform> platform = v8::platform::NewDefaultPlatform();
 #endif
 
@@ -18,18 +18,18 @@ namespace jsb::impl
             constexpr char args[] = "--expose-gc";
             v8::V8::SetFlagsFromString(args, std::size(args) - 1);
 #endif
-            
+
 #if JSB_V8_CPPGC
             v8::V8::InitializePlatform(platform->GetV8Platform());
             cppgc::InitializeProcess(platform->GetPageAllocator());
-#else 
+#else
             v8::V8::InitializePlatform(platform.get());
 #endif
-            
+
             v8::V8::Initialize();
         }
 
-        //NOTE never called in the current implementation
+        // NOTE never called in the current implementation
         ~GlobalInitialize()
         {
 #if JSB_V8_CPPGC
@@ -53,5 +53,5 @@ namespace jsb::impl
         }
     };
 
-}
+} // namespace jsb::impl
 #endif

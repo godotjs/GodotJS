@@ -7,7 +7,7 @@ namespace v8
 {
     void* ArrayBuffer::Data() const
     {
-        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) * this);
         JSValueRef error = nullptr;
         void* ptr = JSObjectGetArrayBufferBytesPtr(isolate_->ctx(), self, &error);
         if (error)
@@ -21,7 +21,7 @@ namespace v8
 
     size_t ArrayBuffer::ByteLength() const
     {
-        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) * this);
         JSValueRef error = nullptr;
         const size_t size = JSObjectGetArrayBufferByteLength(isolate_->ctx(), self, &error);
         if (error)
@@ -37,9 +37,11 @@ namespace v8
         JSValueRef error = nullptr;
         uint8_t* buf = (uint8_t*) memalloc(length);
         const JSObjectRef obj = JSObjectMakeArrayBufferWithBytesNoCopy(isolate->ctx(),
-            buf, length,
-            _deallocator, /* deallocatorContext */ nullptr,
-            &error);
+                                                                       buf,
+                                                                       length,
+                                                                       _deallocator,
+                                                                       /* deallocatorContext */ nullptr,
+                                                                       &error);
         return Local<ArrayBuffer>(v8::Data(isolate, isolate->push_copy(obj)));
     }
 
@@ -48,4 +50,4 @@ namespace v8
         memfree(bytes);
     }
 
-}
+} // namespace v8

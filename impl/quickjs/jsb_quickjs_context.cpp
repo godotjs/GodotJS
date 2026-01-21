@@ -28,4 +28,4 @@ namespace v8
         return Local<Object>(Data(isolate_, isolate_->push_steal(val)));
     }
 
-}
+} // namespace v8

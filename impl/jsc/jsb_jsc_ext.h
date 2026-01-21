@@ -51,7 +51,7 @@ namespace jsb::impl
             }
         }
 
-        template<bool kProtected>
+        template <bool kProtected>
         static JSValueRef MakeUTF8String(JSContextRef ctx, const char* p_str)
         {
             const JSStringRef str = JSStringCreateWithUTF8CString(p_str);
@@ -74,12 +74,12 @@ namespace jsb::impl
                     char* buf = (char*) memalloc(cap);
                     const size_t len = JSStringGetUTF8CString(str, buf, cap);
                     JSStringRelease(str);
-                    jsb_check(len > 0 && (size_t)(int) len == len);
+                    jsb_check(len > 0 && (size_t) (int) len == len);
                     return String(buf, (int) (len - 1));
                 }
             }
             return String();
         }
     };
-}
+} // namespace jsb::impl
 #endif

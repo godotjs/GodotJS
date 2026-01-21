@@ -14,7 +14,7 @@ namespace jsb
         static String stringify(v8::Isolate* isolate, const v8::Local<v8::Value>& p_val);
 
         // return enum typed p_val as int32
-        template<typename TEnum>
+        template <typename TEnum>
         static TEnum to_enum(const v8::Local<v8::Context>& context, v8::MaybeLocal<v8::Value> p_val, const TEnum p_default_value)
         {
             int32_t value;
@@ -50,5 +50,5 @@ namespace jsb
         // Get stacktrace info from exception
         static String get_stacktrace(const impl::TryCatch& p_catch, internal::SourcePosition& r_position);
     };
-}
+} // namespace jsb
 #endif

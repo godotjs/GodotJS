@@ -10,33 +10,41 @@
 
 namespace jsb
 {
-    template<typename ForType>
+    template <typename ForType>
     struct TransitionNumber;
 
     /**
-     * Godot represents int32_t with int64_t in pointer function calls 
+     * Godot represents int32_t with int64_t in pointer function calls
      * see variant_setget.h
      * SETGET_NUMBER_STRUCT(Vector2i, int64_t, x)
      */
-    template<> struct TransitionNumber<int32_t> { using Type = int64_t; };
-    
+    template <>
+    struct TransitionNumber<int32_t>
+    {
+        using Type = int64_t;
+    };
+
     /**
      * Godot represents float with double in pointer function calls
      * see variant_setget.h
      * SETGET_NUMBER_STRUCT(Vector2, double, x)
      */
-    template<> struct TransitionNumber<float> { using Type = double; };
+    template <>
+    struct TransitionNumber<float>
+    {
+        using Type = double;
+    };
 
-    template<typename T>
+    template <typename T>
     using GDTransitionNumber = typename TransitionNumber<T>::Type;
-    
-    template<typename ForType>
+
+    template <typename ForType>
     struct ReflectAdditionalMethodRegister
     {
         static void register_(impl::ClassBuilder& class_builder) {}
     };
 
-    template<>
+    template <>
     struct ReflectAdditionalMethodRegister<PackedByteArray>
     {
         static void register_(impl::ClassBuilder& class_builder)
@@ -60,7 +68,7 @@ namespace jsb
     };
 
     // fallback version of get_opaque_pointer for any Variant
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct TVariantOpaquePointer
     {
         static void* from(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -69,14 +77,14 @@ namespace jsb
         }
     };
 
-#define JSB_DEFINE_VARIANT_OPAQUE_POINTER(OwnerT, FuncName) \
-    template<>\
-    struct TVariantOpaquePointer<OwnerT>\
-    {\
-        jsb_force_inline static void* from(const v8::FunctionCallbackInfo<v8::Value>& info)\
-        {\
-            return VariantInternal::FuncName((Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer));\
-        }\
+#define JSB_DEFINE_VARIANT_OPAQUE_POINTER(OwnerT, FuncName)                                                           \
+    template <>                                                                                                       \
+    struct TVariantOpaquePointer<OwnerT>                                                                              \
+    {                                                                                                                 \
+        jsb_force_inline static void* from(const v8::FunctionCallbackInfo<v8::Value>& info)                           \
+        {                                                                                                             \
+            return VariantInternal::FuncName((Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer)); \
+        }                                                                                                             \
     };
 
     // all specialized versions of get_opaque_pointer (no variant.get_type() check)
@@ -115,37 +123,39 @@ namespace jsb
     JSB_DEFINE_VARIANT_OPAQUE_POINTER(PackedVector4Array, get_vector4_array)
 
     // not supported
-    template<typename OwnerT, typename ReturnT, typename... Ts>
+    template <typename OwnerT, typename ReturnT, typename... Ts>
     struct ReflectBuiltinMethodPointerCall
     {
         static constexpr bool is_supported(Variant::Type return_type) { return false; }
 
-        template<bool IsInstanceCallT>
+        template <bool IsInstanceCallT>
         static void call(const v8::FunctionCallbackInfo<v8::Value>& info);
     };
 
     // specialized for: void call();
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct ReflectBuiltinMethodPointerCall<OwnerT, void>
     {
         static constexpr bool is_supported(Variant::Type return_type) { return true; }
 
-        template<bool IsInstanceCallT>
+        template <bool IsInstanceCallT>
         static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
-            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, nullptr, 0);
-            else func(nullptr, nullptr, nullptr, 0);
+            if constexpr (IsInstanceCallT)
+                func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, nullptr, 0);
+            else
+                func(nullptr, nullptr, nullptr, 0);
         }
     };
 
     // specialized for: void call(real_t);
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct ReflectBuiltinMethodPointerCall<OwnerT, void, real_t>
     {
         static constexpr bool is_supported(Variant::Type return_type) { return true; }
-        
-        template<bool IsInstanceCallT>
+
+        template <bool IsInstanceCallT>
         static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -156,73 +166,81 @@ namespace jsb
                 return;
             }
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
-            const void* args[] = { &loc_0 };
-            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), args, nullptr, 0);
-            else func(nullptr, args, nullptr, 0);
+            const void* args[] = {&loc_0};
+            if constexpr (IsInstanceCallT)
+                func(TVariantOpaquePointer<OwnerT>::from(info), args, nullptr, 0);
+            else
+                func(nullptr, args, nullptr, 0);
         }
     };
 
     // specialized for: real_t call();
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct ReflectBuiltinMethodPointerCall<OwnerT, real_t>
     {
         static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::FLOAT == return_type; }
 
-        template<bool IsInstanceCallT>
+        template <bool IsInstanceCallT>
         static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
             GDTransitionNumber<real_t> value = 0;
-            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
-            else func(nullptr, nullptr, &value, 0);
+            if constexpr (IsInstanceCallT)
+                func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
+            else
+                func(nullptr, nullptr, &value, 0);
             info.GetReturnValue().Set(v8::Number::New(isolate, value));
         }
     };
 
     // specialized for: int32_t call();
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct ReflectBuiltinMethodPointerCall<OwnerT, int32_t>
     {
         static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::INT == return_type; }
 
-        template<bool IsInstanceCallT>
+        template <bool IsInstanceCallT>
         static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
             GDTransitionNumber<int32_t> value = 0;
-            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
-            else func(nullptr, nullptr, &value, 0);
+            if constexpr (IsInstanceCallT)
+                func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
+            else
+                func(nullptr, nullptr, &value, 0);
             info.GetReturnValue().Set(impl::Helper::new_integer(isolate, value));
         }
     };
 
     // specialized for: bool call();
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct ReflectBuiltinMethodPointerCall<OwnerT, bool>
     {
         static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::BOOL == return_type; }
 
-        template<bool IsInstanceCallT>
+        template <bool IsInstanceCallT>
         static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
             bool value = false;
-            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
-            else func(nullptr, nullptr, &value, 0);
+            if constexpr (IsInstanceCallT)
+                func(TVariantOpaquePointer<OwnerT>::from(info), nullptr, &value, 0);
+            else
+                func(nullptr, nullptr, &value, 0);
             info.GetReturnValue().Set(v8::Boolean::New(isolate, value));
         }
     };
 
     // specialized for: real_t call(real_t);
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct ReflectBuiltinMethodPointerCall<OwnerT, real_t, real_t>
     {
         static constexpr bool is_supported(Variant::Type return_type) { return Variant::Type::FLOAT == return_type; }
 
-        template<bool IsInstanceCallT>
+        template <bool IsInstanceCallT>
         static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -233,24 +251,26 @@ namespace jsb
                 return;
             }
             const Variant::PTRBuiltInMethod func = (const Variant::PTRBuiltInMethod) info.Data().As<v8::External>()->Value();
-            const void* args[] = { &loc_0 };
+            const void* args[] = {&loc_0};
             GDTransitionNumber<real_t> value = 0;
-            if constexpr (IsInstanceCallT) func(TVariantOpaquePointer<OwnerT>::from(info), args, &value, 0);
-            else func(nullptr, args, &value, 0);
+            if constexpr (IsInstanceCallT)
+                func(TVariantOpaquePointer<OwnerT>::from(info), args, &value, 0);
+            else
+                func(nullptr, args, &value, 0);
             info.GetReturnValue().Set(v8::Number::New(isolate, value));
         }
     };
 
-    template<typename OwnerT, typename PropertyT>
+    template <typename OwnerT, typename PropertyT>
     struct TReflectGetSetPointerCall
     {
         static constexpr bool is_supported(Variant::Type member_type) { return false; }
 
-        static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info);  // no use
-        static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info);  // no use
+        static void _getter(const v8::FunctionCallbackInfo<v8::Value>& info); // no use
+        static void _setter(const v8::FunctionCallbackInfo<v8::Value>& info); // no use
     };
 
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct TReflectGetSetPointerCall<OwnerT, real_t>
     {
         static constexpr bool is_supported(Variant::Type member_type) { return Variant::Type::FLOAT == member_type; }
@@ -261,7 +281,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRGetter getter_func = (const Variant::PTRGetter) info.Data().As<v8::External>()->Value();
 
-            GDTransitionNumber<real_t> value[] = { 0 };
+            GDTransitionNumber<real_t> value[] = {0};
             getter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
             info.GetReturnValue().Set(v8::Number::New(isolate, value[0]));
         }
@@ -279,10 +299,9 @@ namespace jsb
             }
             setter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
         }
-
     };
 
-    template<typename OwnerT>
+    template <typename OwnerT>
     struct TReflectGetSetPointerCall<OwnerT, int32_t>
     {
         static constexpr bool is_supported(Variant::Type member_type) { return member_type == Variant::Type::INT; }
@@ -292,7 +311,7 @@ namespace jsb
             v8::Isolate* isolate = info.GetIsolate();
             const Variant::PTRGetter getter_func = (const Variant::PTRGetter) info.Data().As<v8::External>()->Value();
 
-            GDTransitionNumber<int32_t> value[] = { 0 };
+            GDTransitionNumber<int32_t> value[] = {0};
             getter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
             info.GetReturnValue().Set(impl::Helper::new_integer(isolate, value[0]));
         }
@@ -308,17 +327,16 @@ namespace jsb
             const Variant::PTRSetter setter_func = (const Variant::PTRSetter) info.Data().As<v8::External>()->Value();
             setter_func(TVariantOpaquePointer<OwnerT>::from(info), &value);
         }
-
     };
 
-    template<typename>
+    template <typename>
     struct ReflectConstructorCall
     {
         static constexpr bool is_supported(Variant::Type type) { return false; }
         static void constructor(const v8::FunctionCallbackInfo<v8::Value>& info);
     };
 
-    template<typename TStruct>
+    template <typename TStruct>
     struct ReflectConstructorCallValueBinder
     {
         jsb_force_inline static void bind_valuetype(v8::Isolate* isolate, const v8::Local<v8::Object>& p_object, const TStruct& p_value)
@@ -340,7 +358,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Vector2> : ReflectConstructorCallValueBinder<Vector2>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR2; }
@@ -355,8 +373,8 @@ namespace jsb
             }
             const v8::Local<v8::Object> self = info.This();
             const int v8_argc = info.Length();
-            //TODO ClassID temporarily not used for possibly better performance in constructor (by avoiding info.Data())
-            // const NativeClassID class_id = (NativeClassID) info.Data().As<v8::Uint32>()->Value();
+            // TODO ClassID temporarily not used for possibly better performance in constructor (by avoiding info.Data())
+            //  const NativeClassID class_id = (NativeClassID) info.Data().As<v8::Uint32>()->Value();
 
             if (v8_argc == 0)
             {
@@ -409,7 +427,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Vector2i> : ReflectConstructorCallValueBinder<Vector2i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR2I; }
@@ -475,7 +493,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Vector3> : ReflectConstructorCallValueBinder<Vector3>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR3; }
@@ -547,7 +565,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Vector3i> : ReflectConstructorCallValueBinder<Vector3i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR3I; }
@@ -619,7 +637,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Vector4> : ReflectConstructorCallValueBinder<Vector4>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR4; }
@@ -697,7 +715,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Vector4i> : ReflectConstructorCallValueBinder<Vector4i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::VECTOR4I; }
@@ -775,7 +793,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Rect2> : ReflectConstructorCallValueBinder<Rect2>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::RECT2; }
@@ -871,7 +889,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct ReflectConstructorCall<Rect2i> : ReflectConstructorCallValueBinder<Rect2i>
     {
         static constexpr bool is_supported(Variant::Type type) { return type == Variant::Type::RECT2I; }
@@ -967,5 +985,5 @@ namespace jsb
         }
     };
 
-}
+} // namespace jsb
 #endif

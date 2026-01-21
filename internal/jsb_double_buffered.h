@@ -6,7 +6,7 @@
 
 namespace jsb::internal
 {
-    template<typename T>
+    template <typename T>
     struct DoubleBuffered
     {
     private:
@@ -34,12 +34,14 @@ namespace jsb::internal
         DoubleBuffered(const DoubleBuffered&) = delete;
         DoubleBuffered& operator=(const DoubleBuffered&) = delete;
 
-        template<typename E>
+        template <typename E>
         void add(E&& p_buffer)
         {
             spin_lock_.lock();
-            if (use_front_) front_.push_back(std::forward<E>(p_buffer));
-            else back_.push_back(std::forward<E>(p_buffer));
+            if (use_front_)
+                front_.push_back(std::forward<E>(p_buffer));
+            else
+                back_.push_back(std::forward<E>(p_buffer));
             spin_lock_.unlock();
         }
 
@@ -58,6 +60,6 @@ namespace jsb::internal
         }
     };
 
-}
+} // namespace jsb::internal
 
 #endif

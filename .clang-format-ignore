@@ -1,0 +1,4 @@
+# Ignore specific folders
+quickjs/
+quickjs-ng/
+lws/

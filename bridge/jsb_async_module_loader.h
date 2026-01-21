@@ -5,7 +5,7 @@
 namespace jsb
 {
     class Environment;
-    
+
     typedef internal::Index32 AsyncModuleToken;
 
     /** a handle for pending async module */
@@ -18,8 +18,9 @@ namespace jsb
     public:
         AsyncModuleHandle(EnvironmentID p_env, AsyncModuleToken p_token)
             : env_(p_env), token_(p_token)
-        {}
-        
+        {
+        }
+
         /** return false if env or token is invalid to call resolve/reject */
         bool is_valid() const;
 
@@ -31,15 +32,15 @@ namespace jsb
          * return false if the token is invalid
          * call it on a token which is already `Requested` will return false.
          * [threaded]
-        */
+         */
         bool resolve(const String& p_source);
-        
+
         /**
          * mark an async module as failed.
          * return false if the token is invalid.
          * call it on a token which is already `Requested` will return false.
          * [threaded]
-        */
+         */
         bool reject(const String& p_error);
     };
 
@@ -58,7 +59,7 @@ namespace jsb
          * called by AsyncModuleManager if an async module is import().
          * return false if not handled by this loader.
          */
-        virtual void import(Environment& p_env, const StringName& p_module_id, AsyncModuleHandle p_handle) = 0; 
+        virtual void import(Environment& p_env, const StringName& p_module_id, AsyncModuleHandle p_handle) = 0;
     };
 
     /**
@@ -67,9 +68,10 @@ namespace jsb
     class ScriptableAsyncModuleLoader : public IAsyncModuleLoader
     {
         v8::Global<v8::Function> func_;
-        
+
     public:
-        ScriptableAsyncModuleLoader(v8::Global<v8::Function>&& p_func) : func_(std::move(p_func)) {}
+        ScriptableAsyncModuleLoader(v8::Global<v8::Function>&& p_func)
+            : func_(std::move(p_func)) {}
         virtual ~ScriptableAsyncModuleLoader() override {}
 
         virtual void on_attached() override {}
@@ -98,9 +100,9 @@ namespace jsb
      *          });
      *     }
      * };
-     * 
+     *
      * env->set_async_module_loader(std::make_shared<CppAsyncModuleLoader>());
-     * ``` 
+     * ```
      */
-}
+} // namespace jsb
 #endif

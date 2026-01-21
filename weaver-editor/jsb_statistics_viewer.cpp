@@ -30,13 +30,14 @@ GodotJSStatisticsViewer::GodotJSStatisticsViewer()
 
 GodotJSStatisticsViewer::~GodotJSStatisticsViewer()
 {
-
 }
 
 void GodotJSStatisticsViewer::activate(bool p_active)
 {
-    if (p_active) timer->start();
-    else timer->stop();
+    if (p_active)
+        timer->start();
+    else
+        timer->stop();
 }
 
 void GodotJSStatisticsViewer::on_timer()
@@ -85,7 +86,7 @@ namespace
         if (p_hint & jsb::impl::CustomField::HINT_SIZE) return String::humanize_size(p_size);
         return uitos(p_size);
     }
-}
+} // namespace
 
 void GodotJSStatisticsViewer::add_row(int p_index, const jsb::impl::CustomField& p_field)
 {
@@ -98,14 +99,10 @@ void GodotJSStatisticsViewer::add_row(int p_index, const jsb::impl::CustomField&
         add_row(p_index, p_field.name, humanized(p_field.u.u64, p_field.hint));
         break;
     case jsb::impl::CustomField::Type::TYPE_INT_CAP:
-        add_row(p_index, p_field.name, jsb_format("%s / %s (%s %%)",
-            humanized(p_field.u.i64_cap[0], p_field.hint), humanized(p_field.u.i64_cap[1], p_field.hint),
-            to_percentage(p_field.u.i64_cap[0], p_field.u.i64_cap[1])));
+        add_row(p_index, p_field.name, jsb_format("%s / %s (%s %%)", humanized(p_field.u.i64_cap[0], p_field.hint), humanized(p_field.u.i64_cap[1], p_field.hint), to_percentage(p_field.u.i64_cap[0], p_field.u.i64_cap[1])));
         break;
     case jsb::impl::CustomField::Type::TYPE_UINT_CAP:
-        add_row(p_index, p_field.name, jsb_format("%s / %s (%s %%)",
-            humanized(p_field.u.u64_cap[0], p_field.hint), humanized(p_field.u.u64_cap[1], p_field.hint),
-            to_percentage(p_field.u.u64_cap[0], p_field.u.u64_cap[1])));
+        add_row(p_index, p_field.name, jsb_format("%s / %s (%s %%)", humanized(p_field.u.u64_cap[0], p_field.hint), humanized(p_field.u.u64_cap[1], p_field.hint), to_percentage(p_field.u.u64_cap[0], p_field.u.u64_cap[1])));
         break;
     default:
         JSB_LOG(Error, "unhandled custom field type %d", p_field.type);

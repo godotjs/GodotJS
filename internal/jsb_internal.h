@@ -27,5 +27,3 @@
 #include "jsb_variant_allocator.h"
 
 #endif
-
-

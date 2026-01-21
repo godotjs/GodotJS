@@ -17,8 +17,9 @@ namespace jsb
 
     public:
         AMDModuleLoader(const Vector<String>& p_deps, v8::Global<v8::Function>&& p_evaluator)
-        : deps_(p_deps), evaluator_(std::move(p_evaluator))
-        {}
+            : deps_(p_deps), evaluator_(std::move(p_evaluator))
+        {
+        }
 
         virtual ~AMDModuleLoader() override { evaluator_.Reset(); }
 
@@ -33,5 +34,5 @@ namespace jsb
         static void load_source(Environment* p_env, const char* p_source, int p_len, const String& p_name, bool p_internal = false);
     };
 
-}
+} // namespace jsb
 #endif

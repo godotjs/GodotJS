@@ -17,5 +17,5 @@ namespace jsb::impl
 
         static JSRuntime get_engine(v8::Isolate* isolate);
     };
-}
+} // namespace jsb::impl
 #endif

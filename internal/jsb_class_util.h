@@ -17,7 +17,6 @@ namespace jsb::internal
         //     jsb_check(p_class_info.inherits_ptr);
         //     return get_method_info_recursively(*p_class_info.inherits_ptr, method_name);
         // }
-
     };
-}
+} // namespace jsb::internal
 #endif

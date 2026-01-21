@@ -6,19 +6,20 @@
 
 namespace jsb
 {
-    template<int kMaxCacheSize>
+    template <int kMaxCacheSize>
     struct TStringNameCache
     {
     private:
         static_assert(kMaxCacheSize <= 0 || kMaxCacheSize > 32, "StringNameCache: max size must be 0 or > 32");
-        
+
         struct Slot
         {
             StringName name_;
             TStrongRef<v8::String> ref_;
 
             Slot() = default;
-            Slot(const StringName& p_name) : name_(p_name), ref_() {}
+            Slot(const StringName& p_name)
+                : name_(p_name), ref_() {}
             Slot(const Slot&) = default;
             Slot& operator=(const Slot&) = default;
             Slot(Slot&& other) noexcept = default;
@@ -42,7 +43,7 @@ namespace jsb
             // jsb_check(max_size_ <= 0 || max_size_ > 32);
             values_.reserve(kMaxCacheSize);
         }
-        
+
         void clear()
         {
             name_index.clear();
@@ -50,19 +51,19 @@ namespace jsb
             values_.clear();
         }
 
-        // [reserved] only called on low memory. 
+        // [reserved] only called on low memory.
         void shrink() {}
 
         jsb_force_inline int size() const { return values_.size(); }
 
-        bool try_get_string_name(v8::Isolate* isolate, const v8::Local<v8::Value>& p_value, StringName& r_string_name) const 
+        bool try_get_string_name(v8::Isolate* isolate, const v8::Local<v8::Value>& p_value, StringName& r_string_name) const
         {
             if (p_value->IsString()) return try_get_string_name(isolate, p_value.As<v8::String>(), r_string_name);
             r_string_name = {};
             return false;
         }
 
-        bool try_get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value, StringName& r_string_name) const 
+        bool try_get_string_name(v8::Isolate* isolate, const v8::Local<v8::String>& p_value, StringName& r_string_name) const
         {
             if (const auto& it = value_index_.find(TStrongRef(isolate, p_value)); it != value_index_.end())
             {
@@ -75,7 +76,7 @@ namespace jsb
             return false;
         }
 
-        bool is_string_value_cached(v8::Isolate* isolate, const v8::Local<v8::String>& p_value) const 
+        bool is_string_value_cached(v8::Isolate* isolate, const v8::Local<v8::String>& p_value) const
         {
             StringName unused;
             return try_get_string_name(isolate, p_value, unused);
@@ -87,7 +88,7 @@ namespace jsb
             {
                 const StringNameID id = it->second;
                 const StringName name = values_[id].name_;
-                
+
                 mark_as_used(id);
                 return name;
             }
@@ -123,9 +124,9 @@ namespace jsb
             }
             return slot.ref_.object_.Get(isolate);
         }
-        
+
     private:
-        void mark_as_used(const StringNameID id)  
+        void mark_as_used(const StringNameID id)
         {
             if constexpr (kMaxCacheSize <= 0) return;
 
@@ -133,13 +134,13 @@ namespace jsb
             jsb_check(values_.is_valid_index(id));
             jsb_check(values_.get_last_index() == id);
         }
-        
-        
+
+
         void remove_the_least_used(v8::Isolate* isolate)
         {
             if constexpr (kMaxCacheSize <= 0) return;
             if (values_.size() < kMaxCacheSize) return;
-            
+
             const StringNameID id = values_.get_first_index();
             const Slot& slot = values_[id];
             value_index_.erase(slot.ref_);
@@ -149,7 +150,7 @@ namespace jsb
             jsb_unused(removed_id);
             JSB_LOG(VeryVerbose, "remove the least used string name %s %d [slots: %d]", slot.name_, id, values_.size());
         }
-        
+
         StringNameID get_string_id(v8::Isolate* isolate, const StringName& p_string_name)
         {
             if (const HashMap<StringName, StringNameID>::Iterator& it = name_index.find(p_string_name); it)
@@ -157,16 +158,15 @@ namespace jsb
                 mark_as_used(it->value);
                 return it->value;
             }
-            
+
             remove_the_least_used(isolate);
             const StringNameID id = values_.add(Slot(p_string_name));
             name_index.insert(p_string_name, id);
             JSB_LOG(VeryVerbose, "new string name (plain) %s %d [slots:%d]", p_string_name, id, values_.size());
             return id;
         }
-
     };
 
     typedef TStringNameCache<JSB_STRING_NAME_CACHE_SIZE> StringNameCache;
-}
+} // namespace jsb
 #endif

@@ -9,5 +9,5 @@ namespace jsb::internal
     {
         static void set_name(const String& p_name);
     };
-}
+} // namespace jsb::internal
 #endif

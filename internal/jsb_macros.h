@@ -19,63 +19,74 @@
 #define JSB_LOG_FORMAT(CategoryName, Severity, Format) "[" #CategoryName "][" #Severity "] " Format
 #define JSB_LOG_SEVERITY(Severity) ::jsb::internal::ELogSeverity::Severity
 
-#define JSB_LOG_IMPL(CategoryName, Severity, Format, ...) \
-    if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(JSB_MIN_LOG_LEVEL))\
-    {\
-        if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(Error)) ::jsb::internal::Logger::error<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
-        else if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(Warning)) ::jsb::internal::Logger::warn<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
-        else if constexpr (JSB_LOG_SEVERITY(Severity) > JSB_LOG_SEVERITY(Verbose)) ::jsb::internal::Logger::info<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
-        else ::jsb::internal::Logger::verbose<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);\
-    } (void) 0
+#define JSB_LOG_IMPL(CategoryName, Severity, Format, ...)                                                                                                                  \
+    if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(JSB_MIN_LOG_LEVEL))                                                                                       \
+    {                                                                                                                                                                      \
+        if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(Error))                                                                                               \
+            ::jsb::internal::Logger::error<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);   \
+        else if constexpr (JSB_LOG_SEVERITY(Severity) >= JSB_LOG_SEVERITY(Warning))                                                                                        \
+            ::jsb::internal::Logger::warn<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);    \
+        else if constexpr (JSB_LOG_SEVERITY(Severity) > JSB_LOG_SEVERITY(Verbose))                                                                                         \
+            ::jsb::internal::Logger::info<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__);    \
+        else                                                                                                                                                               \
+            ::jsb::internal::Logger::verbose<JSB_LOG_SEVERITY(Severity)>(__FILE__, __LINE__, __FUNCTION__, JSB_LOG_FORMAT(CategoryName, Severity, Format), ##__VA_ARGS__); \
+    }                                                                                                                                                                      \
+    (void) 0
 
 #define JSB_LOG(Severity, Format, ...) JSB_LOG_IMPL(jsb, Severity, Format, ##__VA_ARGS__)
 
 // similar to assert() in C, jsb_check() will be thoroughly omitted if not JSB_WITH_CHECK, otherwise it traps the execution on false evaluation
 #if JSB_WITH_CHECK
-#   define jsb_check(Condition) CRASH_COND(!(Condition))
-#   define jsb_checkf(Condition, Format, ...) CRASH_COND_MSG(!(Condition), jsb_format(Format, ##__VA_ARGS__))
+    #define jsb_check(Condition) CRASH_COND(!(Condition))
+    #define jsb_checkf(Condition, Format, ...) CRASH_COND_MSG(!(Condition), jsb_format(Format, ##__VA_ARGS__))
 #else
-#   define jsb_check(Condition) (void) 0
-#   define jsb_checkf(Condition, Format, ...) (void) 0
+    #define jsb_check(Condition) (void) 0
+    #define jsb_checkf(Condition, Format, ...) (void) 0
 #endif
 
 // only check if compiling with QuickJS impl
 #if JSB_WITH_QUICKJS
-#   define jsb_quickjs_check(Condition) jsb_check(Condition)
-#   define jsb_quickjs_checkf(Condition, Format, ...) jsb_checkf(Condition, Format, ...)
+    #define jsb_quickjs_check(Condition) jsb_check(Condition)
+    #define jsb_quickjs_checkf(Condition, Format, ...) jsb_checkf(Condition, Format, ...)
 #else
-#   define jsb_quickjs_check(Condition) (void) 0
-#   define jsb_quickjs_checkf(Condition, Format, ...) (void) 0
+    #define jsb_quickjs_check(Condition) (void) 0
+    #define jsb_quickjs_checkf(Condition, Format, ...) (void) 0
 #endif
 
 // only check if compiling with v8 impl
 #if JSB_WITH_V8
-#   define jsb_v8_check(Condition) jsb_check(Condition)
-#   define jsb_v8_checkf(Condition, Format, ...) jsb_checkf(Condition, Format, ...)
+    #define jsb_v8_check(Condition) jsb_check(Condition)
+    #define jsb_v8_checkf(Condition, Format, ...) jsb_checkf(Condition, Format, ...)
 #else
-#   define jsb_v8_check(Condition) (void) 0
-#   define jsb_v8_checkf(Condition, Format, ...) (void) 0
+    #define jsb_v8_check(Condition) (void) 0
+    #define jsb_v8_checkf(Condition, Format, ...) (void) 0
 #endif
 
 // jsb_ensure() is always evaluated, but only trap the execution if JSB_DEBUG
 #if JSB_DEBUG
-#   define jsb_ensure(Condition) (jsb_likely(Condition) || ([] { JSB_LOG(Error, "ensure(%s) failed", #Condition); GENERATE_TRAP(); } (), false))
-#   define jsb_ensuref(Condition, Format, ...) (jsb_likely(Condition) || ([=] { JSB_LOG(Error, Format, ##__VA_ARGS__); GENERATE_TRAP(); } (), false))
+    #define jsb_ensure(Condition) (jsb_likely(Condition) || ([] { JSB_LOG(Error, "ensure(%s) failed", #Condition); GENERATE_TRAP(); }(), false))
+    #define jsb_ensuref(Condition, Format, ...) (jsb_likely(Condition) || ([=] { JSB_LOG(Error, Format, ##__VA_ARGS__); GENERATE_TRAP(); }(), false))
 #else
-#   define jsb_ensure(Condition) (!!(Condition))
-#   define jsb_ensuref(Condition, Format, ...) (!!(Condition))
+    #define jsb_ensure(Condition) (!!(Condition))
+    #define jsb_ensuref(Condition, Format, ...) (!!(Condition))
 #endif
 
 #if JSB_DEBUG
-#   define jsb_notice(Condition, Format, ...) if (jsb_unlikely(!(Condition))) { JSB_LOG(Warning, Format, ##__VA_ARGS__); } (void) 0
+    #define jsb_notice(Condition, Format, ...)                                       \
+        if (jsb_unlikely(!(Condition))) { JSB_LOG(Warning, Format, ##__VA_ARGS__); } \
+        (void) 0
 #else
-#   define jsb_notice(Condition, Format, ...) (void) 0
+    #define jsb_notice(Condition, Format, ...) (void) 0
 #endif
 
 #if JSB_DEBUG
-#   define jsb_verify_int64(Value64, Format, ...) { if (Value64 != (int64_t) (int32_t) Value64) { JSB_LOG(Warning, "(lossy conversion) " Format, ##__VA_ARGS__); } } (void) 0
+    #define jsb_verify_int64(Value64, Format, ...)                                                                         \
+        {                                                                                                                  \
+            if (Value64 != (int64_t) (int32_t) Value64) { JSB_LOG(Warning, "(lossy conversion) " Format, ##__VA_ARGS__); } \
+        }                                                                                                                  \
+        (void) 0
 #else
-#   define jsb_verify_int64(Value64, Format, ...) (void) 0
+    #define jsb_verify_int64(Value64, Format, ...) (void) 0
 #endif
 
 #define jsb_likely(Expression) likely(Expression)
@@ -95,12 +106,12 @@
 
 // help to trace the location of the throwing error in C++ code.
 #if JSB_DEBUG
-#   define jsb_throw(isolate, literal) impl::Helper::throw_error((isolate), "[" __FILE__ ":" JSB_STRINGIFY(__LINE__) "] " literal)
+    #define jsb_throw(isolate, literal) impl::Helper::throw_error((isolate), "[" __FILE__ ":" JSB_STRINGIFY(__LINE__) "] " literal)
 #else
-#   define jsb_throw(isolate, literal) impl::Helper::throw_error((isolate), (literal))
+    #define jsb_throw(isolate, literal) impl::Helper::throw_error((isolate), (literal))
 #endif
 
-#define jsb_underlying_value(enum_type, enum_value) (__underlying_type(enum_type) (enum_value))
+#define jsb_underlying_value(enum_type, enum_value) (__underlying_type(enum_type)(enum_value))
 
 #define jsb_format(Format, ...) ::jsb::internal::format(Format, ##__VA_ARGS__)
 

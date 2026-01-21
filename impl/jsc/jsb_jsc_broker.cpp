@@ -8,10 +8,7 @@ namespace jsb::impl
         if (!value) return;
         if (jsb::impl::InternalData* data = (jsb::impl::InternalData*) JSObjectGetPrivate(value))
         {
-            JSB_JSC_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)",
-                (uintptr_t) value, (uintptr_t) data,
-                (uintptr_t) parameter, (uintptr_t) callback,
-                (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
+            JSB_JSC_LOG(VeryVerbose, "update internal data JSObject:%s id:%s pc:%s,%s (last:%s,%s)", (uintptr_t) value, (uintptr_t) data, (uintptr_t) parameter, (uintptr_t) callback, (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
             jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
             data->weak.parameter = (void*) parameter;
             data->weak.callback = (void*) callback;
@@ -35,12 +32,12 @@ namespace jsb::impl
 
     void Broker::_add_reference(v8::Isolate* isolate)
     {
-        isolate->_add_reference();;
+        isolate->_add_reference();
     }
 
     void Broker::_remove_reference(v8::Isolate* isolate)
     {
-        isolate->_remove_reference();;
+        isolate->_remove_reference();
     }
 
     bool Broker::IsStrictEqual(v8::Isolate* isolate, JSValueRef a, JSValueRef b)
@@ -58,4 +55,4 @@ namespace jsb::impl
         return isolate->rt();
     }
 
-}
+} // namespace jsb::impl

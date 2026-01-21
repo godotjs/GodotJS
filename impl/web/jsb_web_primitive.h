@@ -10,7 +10,7 @@ namespace v8
     class String;
     class Context;
 
-    template<typename T>
+    template <typename T>
     class Maybe;
 
     class Value : public Data
@@ -32,8 +32,12 @@ namespace v8
         static Local<External> New(Isolate* isolate, void* value);
     };
 
-    class Primitive: public Value {};
-    class Name : public Primitive {};
+    class Primitive : public Value
+    {
+    };
+    class Name : public Primitive
+    {
+    };
 
     class String : public Name
     {
@@ -53,7 +57,7 @@ namespace v8
     {
     public:
         bool Value() const;
-        
+
         static Local<Boolean> New(Isolate* isolate, bool value);
     };
 
@@ -96,5 +100,5 @@ namespace v8
 
     Local<Primitive> Undefined(Isolate* isolate);
     Local<Primitive> Null(Isolate* isolate);
-}
+} // namespace v8
 #endif

@@ -22,7 +22,7 @@ namespace v8
         void* GetAlignedPointerFromInternalField(int slot) const;
 
         Local<String> GetConstructorName();
-        
+
         Maybe<bool> Set(Local<Context> context, Local<Value> key, Local<Value> value);
         Maybe<bool> Set(Local<Context> context, uint32_t index, Local<Value> value);
 
@@ -30,14 +30,17 @@ namespace v8
         MaybeLocal<Value> Get(Local<Context> context, uint32_t index) const;
 
         Maybe<bool> DefineOwnProperty(
-            Local<Context> context, Local<Name> key, Local<Value> value,
+            Local<Context> context,
+            Local<Name> key,
+            Local<Value> value,
             PropertyAttribute attributes = None);
 
         MaybeLocal<Value> GetOwnPropertyDescriptor(Local<Context> context, Local<Name> key) const;
         Maybe<bool> HasOwnProperty(Local<Context> context, Local<Name> key) const;
 
         MaybeLocal<Array> GetOwnPropertyNames(
-            Local<Context> context, PropertyFilter filter,
+            Local<Context> context,
+            PropertyFilter filter,
             KeyConversionMode key_conversion = KeyConversionMode::kKeepNumbers);
 
         Maybe<bool> SetPrototype(Local<Context> context, Local<Value> prototype);
@@ -46,11 +49,11 @@ namespace v8
         void SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter = Local<FunctionTemplate>(), Local<FunctionTemplate> setter = Local<FunctionTemplate>());
 
         Maybe<bool> SetLazyDataProperty(
-            Local<Context> context, Local<Name> name,
+            Local<Context> context,
+            Local<Name> name,
             AccessorNameGetterCallback getter);
 
         static Local<Object> New(Isolate* isolate);
-
     };
 
     class Promise : public Object
@@ -58,5 +61,5 @@ namespace v8
     public:
     };
 
-}
+} // namespace v8
 #endif

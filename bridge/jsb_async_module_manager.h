@@ -5,8 +5,8 @@
 
 namespace jsb
 {
-    //TODO handle parent module id in AsyncModuleManager?
-    
+    // TODO handle parent module id in AsyncModuleManager?
+
     /** a simple async module manager implementation */
     class AsyncModuleManager
     {
@@ -31,30 +31,29 @@ namespace jsb
          * This map is only used to accelerate the lookup of the module id.
          */
         HashMap<StringName, AsyncModuleToken> tokens_;
-        
+
         std::shared_ptr<IAsyncModuleLoader> loader_;
-        
+
         internal::SArray<ModuleInfo, AsyncModuleToken> modules_;
 
     public:
         AsyncModuleManager() = default;
         ~AsyncModuleManager();
-        
+
         /** [threaded] */
         bool is_valid(AsyncModuleToken p_token) const;
 
         /** call by IAsyncModuleLoader */
         void _mark_as_handled(const v8::Local<v8::Context>& p_context, AsyncModuleToken p_token, bool p_is_fulfill, const v8::Local<v8::Value>& p_value);
-        
+
         /** exposed JS function */
         static void _set_async_module_loader(const v8::FunctionCallbackInfo<v8::Value>& info);
-        
+
         /** exposed JS function */
         static void _import(const v8::FunctionCallbackInfo<v8::Value>& info);
 
         /** */
         void set_loader(const std::shared_ptr<IAsyncModuleLoader>& p_loader);
-        
     };
-}
+} // namespace jsb
 #endif

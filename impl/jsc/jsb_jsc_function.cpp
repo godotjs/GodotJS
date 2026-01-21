@@ -6,7 +6,7 @@ namespace v8
 {
     MaybeLocal<Value> Function::Call(Local<Context> context, Local<Value> recv, int argc, Local<Value> argv[])
     {
-        const JSObjectRef func = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) *this);
+        const JSObjectRef func = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) * this);
         const JSObjectRef self = jsb::impl::JavaScriptCore::AsObject(isolate_->ctx(), (JSValueRef) recv);
         JSValueRef* vargv = jsb_stackalloc(JSValueRef, argc);
         for (int i = 0; i < argc; i++)
@@ -77,4 +77,4 @@ namespace v8
     {
         return Local<Context>(Data(isolate_, 0));
     }
-}
+} // namespace v8

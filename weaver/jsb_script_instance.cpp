@@ -2,7 +2,7 @@
 #include "jsb_script_language.h"
 
 GodotJSScriptInstanceBase::ScriptCallProfilingScope::ScriptCallProfilingScope(const ScriptProfilingInfo& p_info, const StringName& p_method)
-            : info_(p_info), method_(p_method)
+    : info_(p_info), method_(p_method)
 {
     start_time_ = OS::get_singleton()->get_ticks_usec();
 }
@@ -105,18 +105,18 @@ Variant::Type GodotJSScriptInstance::get_property_type(const StringName& p_name,
 
 void GodotJSScriptInstance::validate_property(PropertyInfo& p_property) const
 {
-    //TODO
+    // TODO
 }
 
 bool GodotJSScriptInstance::property_can_revert(const StringName& p_name) const
 {
-    //TODO
+    // TODO
     return false;
 }
 
 bool GodotJSScriptInstance::property_get_revert(const StringName& p_name, Variant& r_ret) const
 {
-    //TODO
+    // TODO
     return false;
 }
 
@@ -146,8 +146,7 @@ Variant GodotJSScriptInstance::callp(const StringName& p_method, const Variant**
 void GodotJSScriptInstance::notification(int p_notification, bool p_reversed)
 {
     if (p_reversed &&
-        (p_notification == Object::NOTIFICATION_PREDELETE
-        || p_notification == Object::NOTIFICATION_PREDELETE_CLEANUP))
+        (p_notification == Object::NOTIFICATION_PREDELETE || p_notification == Object::NOTIFICATION_PREDELETE_CLEANUP))
     {
         // the JS counterpart is garbage collected (which finally caused Godot Object deleting)
         // so, some of the reversed notifications can not be handled by script instances
@@ -163,8 +162,8 @@ void GodotJSScriptInstance::notification(int p_notification, bool p_reversed)
     // since `NOTIFICATION_READY` is not reversed, `notification` will be posted after `callp`.
     // so, we can't `call_prelude` here with `NOTIFICATION_READY`
 
-    //TODO find the method named `_notification`, cal it with `p_notification` as `argv`
-    //TODO call it at all type levels? @seealso `GDScriptInstance::notification`
+    // TODO find the method named `_notification`, cal it with `p_notification` as `argv`
+    // TODO call it at all type levels? @seealso `GDScriptInstance::notification`
     Variant value = p_notification;
     const Variant* argv[] = {&value};
     Callable::CallError error;

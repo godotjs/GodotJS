@@ -20,8 +20,8 @@ namespace jsb
 #if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
         if (!is_reloadable()) return false;
 
-        //TODO reload all related modules (search the module graph) ?
-        //TODO inconsistent implementation, since the original time modified is read in module resolvers (SourceReader)
+        // TODO reload all related modules (search the module graph) ?
+        // TODO inconsistent implementation, since the original time modified is read in module resolvers (SourceReader)
         const uint64_t latest_time = FileAccess::get_modified_time(source_info.source_filepath);
         if (latest_time && latest_time != time_modified)
         {
@@ -78,4 +78,4 @@ namespace jsb
         return *module;
     }
 
-}
+} // namespace jsb

@@ -13,7 +13,8 @@ namespace jsb::impl
         v8::TryCatch try_catch_;
 
     public:
-        TryCatch(v8::Isolate* isolate) : isolate_(isolate), try_catch_(isolate) {}
+        TryCatch(v8::Isolate* isolate)
+            : isolate_(isolate), try_catch_(isolate) {}
 
         TryCatch(const TryCatch&) = delete;
         TryCatch& operator=(const TryCatch&) = delete;
@@ -50,5 +51,5 @@ namespace jsb::impl
             }
         }
     };
-}
+} // namespace jsb::impl
 #endif

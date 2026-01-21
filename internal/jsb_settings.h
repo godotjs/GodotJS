@@ -59,6 +59,6 @@ namespace jsb::internal
         static bool get_codegen_use_project_settings();
 #endif
     };
-}
+} // namespace jsb::internal
 
 #endif

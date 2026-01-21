@@ -6,7 +6,7 @@ namespace v8
 {
     MaybeLocal<Value> Function::Call(Local<Context> context, Local<Value> recv, int argc, Local<Value> argv[])
     {
-        const JSValue func = (JSValue) *this;
+        const JSValue func = (JSValue) * this;
         const JSValue self = (JSValue) recv;
         JSValue* vargv = jsb_stackalloc(JSValue, argc);
         for (int i = 0; i < argc; i++)
@@ -71,15 +71,14 @@ namespace v8
 
         static_assert(sizeof(callback) == sizeof(void*));
         static_assert(jsb::impl::FuncPayload::kNum == ::std::size(payload));
-        return MaybeLocal<Function>(Data(isolate, isolate->push_steal(JS_NewCFunctionData(isolate->ctx(),
-            _function_call,
-            length,
-            /* magic */ 0,
-            ::std::size(payload), payload))));
+        return MaybeLocal<Function>(Data(isolate, isolate->push_steal(JS_NewCFunctionData(isolate->ctx(), _function_call, length,
+                                                                                          /* magic */ 0,
+                                                                                          ::std::size(payload),
+                                                                                          payload))));
     }
 
     Local<Context> Function::GetCreationContextChecked() const
     {
         return Local<Context>(Data(isolate_, 0));
     }
-}
+} // namespace v8

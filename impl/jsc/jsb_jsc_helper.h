@@ -13,7 +13,7 @@ namespace jsb::impl
     {
     public:
         // deleter for valuetype optimization (no ObjectHandle needed)
-        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
+        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void* deleter_data)
         {
             JSObjectRef obj = JavaScriptCore::AsObject(value.data_.isolate_->ctx(), (JSValueRef) value);
             Broker::SetWeak(value.data_.isolate_, obj, deleter_data, (void*) callback);
@@ -69,7 +69,7 @@ namespace jsb::impl
             return v8::Local<v8::Function>(v8::Data(isolate, isolate->push_copy(empty_constructor)));
         }
 
-        template<size_t N>
+        template <size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])
         {
             const JSStringRef str_ref = JSStringCreateWithUTF8CString(literal);
@@ -96,7 +96,7 @@ namespace jsb::impl
 
         static v8::MaybeLocal<v8::Value> parse_json(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const uint8_t* p_ptr, size_t p_len)
         {
-            jsb_check((size_t)(int) p_len == p_len);
+            jsb_check((size_t) (int) p_len == p_len);
             jsb_check(p_ptr[p_len] == '\0');
             const JSStringRef str_ref = JSStringCreateWithUTF8CString(p_ptr);
             const JSValueRef val_ref = JSValueMakeString(isolate->ctx(), str_ref);
@@ -139,7 +139,7 @@ namespace jsb::impl
             return String();
         }
 
-        template<int N>
+        template <int N>
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const char (&message)[N])
         {
             isolate->throw_error(message);
@@ -156,10 +156,22 @@ namespace jsb::impl
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
         {
-            if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }
-            if (p_val->IsNumber()) { r_val = (int64_t) p_val.As<v8::Number>()->Value(); return true; }
+            if (p_val->IsInt32())
+            {
+                r_val = p_val.As<v8::Int32>()->Value();
+                return true;
+            }
+            if (p_val->IsNumber())
+            {
+                r_val = (int64_t) p_val.As<v8::Number>()->Value();
+                return true;
+            }
 #if JSB_WITH_BIGINT
-            if (p_val->IsBigInt()) { r_val = p_val.As<v8::BigInt>()->Int64Value(); return true; }
+            if (p_val->IsBigInt())
+            {
+                r_val = p_val.As<v8::BigInt>()->Int64Value();
+                return true;
+            }
 #endif
             return false;
         }
@@ -186,7 +198,7 @@ namespace jsb::impl
             jsb_checkf(p_source[p_source_len] == '\0', "JS_Eval needs a zero-terminated string as input to evaluate");
             v8::Isolate* isolate = context->GetIsolate();
             const JSContextRef ctx = isolate->ctx();
-            const CharString filename_cs =  p_filename.utf8();
+            const CharString filename_cs = p_filename.utf8();
             const JSStringRef filename_ref = JSStringCreateWithUTF8CString(filename_cs.get_data());
             const JSStringRef code = JSStringCreateWithUTF8CString(p_source);
 
@@ -211,7 +223,7 @@ namespace jsb::impl
 
         jsb_force_inline static void free(uint8_t* data)
         {
-            //NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
+            // NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
             memfree(data);
         }
 
@@ -220,8 +232,6 @@ namespace jsb::impl
             JSB_JSC_LOG(Error, "set_as_interruptible is not supported by JSC");
         }
     };
-}
+} // namespace jsb::impl
 
 #endif
-
-

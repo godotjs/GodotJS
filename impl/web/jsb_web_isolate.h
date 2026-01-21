@@ -12,7 +12,7 @@ namespace jsb::impl
     struct WeakCallbackInfo
     {
         void* parameter = nullptr;
-        void* callback = nullptr;  // WeakCallbackInfo::Callback
+        void* callback = nullptr; // WeakCallbackInfo::Callback
     };
 
     struct InternalData
@@ -23,7 +23,7 @@ namespace jsb::impl
         WeakCallbackInfo weak;
 
         uint8_t internal_field_count = 0;
-        void* internal_fields[2] = { nullptr, nullptr };
+        void* internal_fields[2] = {nullptr, nullptr};
     };
 
 #if INTPTR_MAX >= INT64_MAX
@@ -39,13 +39,16 @@ namespace jsb::impl
 
     class Helper;
     class Broker;
-}
+} // namespace jsb::impl
 
 namespace v8
 {
-    template<typename T> class Global;
-    template<typename T> class Local;
-    template<typename T> class FunctionCallbackInfo;
+    template <typename T>
+    class Global;
+    template <typename T>
+    class Local;
+    template <typename T>
+    class FunctionCallbackInfo;
     class HeapStatistics;
     class Context;
     class Value;
@@ -57,14 +60,21 @@ namespace v8
         friend class Context;
         friend struct IsolateInternalFunctions;
 
-        template<typename T> friend class Global;
-        template<typename T> friend class Local;
-        template<typename T> friend class FunctionCallbackInfo;
+        template <typename T>
+        friend class Global;
+        template <typename T>
+        friend class Local;
+        template <typename T>
+        friend class FunctionCallbackInfo;
 
         friend class HandleScope;
 
     public:
-        class Scope { public: Scope(Isolate* isolate) {} };
+        class Scope
+        {
+        public:
+            Scope(Isolate* isolate) {}
+        };
 
         struct CreateParams
         {
@@ -74,7 +84,11 @@ namespace v8
         static Isolate* New(const CreateParams& params);
         void Dispose();
 
-        void* GetData(int index) const { jsb_check(index == 0); return embedder_data_; }
+        void* GetData(int index) const
+        {
+            jsb_check(index == 0);
+            return embedder_data_;
+        }
         void SetData(int index, void* data);
         void PerformMicrotaskCheckpoint() {}
         void LowMemoryNotification() {}
@@ -86,9 +100,9 @@ namespace v8
         void AddGCEpilogueCallback(GCCallback callback) {}
         void SetPromiseRejectCallback(PromiseRejectCallback callback) { jsbi_SetHostPromiseRejectionTracker(rt_, (jsb::impl::FunctionPointer) callback); }
 
-        void set_as_interruptible() { }
+        void set_as_interruptible() {}
         bool IsExecutionTerminating() const { return false; }
-        void TerminateExecution() { }
+        void TerminateExecution() {}
 
         jsb_force_inline jsb::impl::JSRuntime rt() const { return rt_; }
 
@@ -104,7 +118,7 @@ namespace v8
 
         jsb::impl::InternalDataID add_internal_data(const uint8_t internal_field_count)
         {
-            return internal_data_.add(jsb::impl::InternalData {  { nullptr, nullptr }, internal_field_count, { nullptr, nullptr }});
+            return internal_data_.add(jsb::impl::InternalData{{nullptr, nullptr}, internal_field_count, {nullptr, nullptr}});
         }
 
         ~Isolate();
@@ -126,7 +140,7 @@ namespace v8
             JSB_WEB_LOG(VeryVerbose, "_remove_reference %s", ref_count_);
         }
 
-        template<int N>
+        template <int N>
         jsb_force_inline void throw_error(const char (&message)[N])
         {
             const ::String str = (::String) message;
@@ -154,6 +168,6 @@ namespace v8
         void* embedder_data_ = nullptr;
         void* context_embedder_data_ = nullptr;
     };
-}
+} // namespace v8
 
 #endif

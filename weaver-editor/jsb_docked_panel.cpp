@@ -7,7 +7,7 @@ namespace
 {
     static constexpr int kTabREPL = 0;
     static constexpr int kTabViewer = 1;
-}
+} // namespace
 
 GodotJSDockedPanel::GodotJSDockedPanel()
 {
@@ -31,7 +31,6 @@ GodotJSDockedPanel::GodotJSDockedPanel()
 
 GodotJSDockedPanel::~GodotJSDockedPanel()
 {
-
 }
 
 void GodotJSDockedPanel::on_tab_changed(int p_tab_index)

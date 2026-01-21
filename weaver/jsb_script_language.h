@@ -43,11 +43,19 @@ namespace jsb
 
         jsb_no_discard bool is_shadow() const { return is_shadow_; }
 
-        jsb::Environment* operator->() { init(); return target_.get(); }
+        jsb::Environment* operator->()
+        {
+            init();
+            return target_.get();
+        }
 
-        operator std::shared_ptr<jsb::Environment>() { init(); return target_; }
+        operator std::shared_ptr<jsb::Environment>()
+        {
+            init();
+            return target_;
+        }
     };
-}
+} // namespace jsb
 
 class GodotJSScriptLanguage : public ScriptLanguage
 {
@@ -132,9 +140,9 @@ public:
 
     void add_script_call_profile_info(const String& p_path, const StringName& p_class, const StringName& p_method, uint64_t p_time);
 
-    bool is_global_class_generic(const String &p_path) const;
+    bool is_global_class_generic(const String& p_path) const;
 
-    template<size_t N>
+    template <size_t N>
     jsb::JSValueMove eval_source(const char (&p_code)[N], Error& r_err)
     {
         return environment_->eval_source(p_code, (int) N - 1, "eval", r_err);
@@ -250,7 +258,7 @@ public:
     virtual bool handles_global_class_type(const String& p_type) const override;
 
 #if GODOT_4_4_OR_NEWER
-    virtual String get_global_class_name(const String &p_path, String *r_base_type = nullptr, String *r_icon_path = nullptr, bool *r_is_abstract = nullptr, bool *r_is_tool = nullptr) const override;
+    virtual String get_global_class_name(const String& p_path, String* r_base_type = nullptr, String* r_icon_path = nullptr, bool* r_is_abstract = nullptr, bool* r_is_tool = nullptr) const override;
 #else
     virtual String get_global_class_name(const String& p_path, String* r_base_type = nullptr, String* r_icon_path = nullptr) const override;
 #endif

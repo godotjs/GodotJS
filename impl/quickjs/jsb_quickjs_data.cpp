@@ -15,7 +15,7 @@ namespace v8
 #elif INTPTR_MAX >= INT32_MAX
         return (int) ptr;
 #else
-        #error "quickjs.impl does not support on the current arch"
+    #error "quickjs.impl does not support on the current arch"
 #endif
     }
 
@@ -64,7 +64,7 @@ namespace v8
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
 
-        //NOTE quickjs source modified
+        // NOTE quickjs source modified
         return JS_IsMap(val);
     }
 
@@ -90,7 +90,7 @@ namespace v8
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
 
-        //TODO we can not determine whether it's int32 or uint32
+        // TODO we can not determine whether it's int32 or uint32
         return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
     }
 
@@ -98,7 +98,7 @@ namespace v8
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
 
-        //TODO we can not determine whether it's int32 or uint32
+        // TODO we can not determine whether it's int32 or uint32
         return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
     }
 
@@ -139,4 +139,4 @@ namespace v8
         return jsb::impl::QuickJS::Equals(val1, val2);
     }
 
-}
+} // namespace v8

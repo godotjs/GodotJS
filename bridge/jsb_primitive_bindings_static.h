@@ -9,6 +9,6 @@ namespace jsb
 
     void register_primitive_bindings_static(Environment* p_env);
 #endif
-}
+} // namespace jsb
 
 #endif

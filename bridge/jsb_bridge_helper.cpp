@@ -82,4 +82,4 @@ namespace jsb
         stacktrace = Environment::wrap(p_catch.get_isolate())->get_source_map_cache().process_source_position(stacktrace, &r_position);
         return stacktrace;
     }
-}
+} // namespace jsb

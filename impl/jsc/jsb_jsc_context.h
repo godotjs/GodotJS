@@ -80,8 +80,7 @@ namespace v8
 
     private:
         Isolate* isolate_ = nullptr;
-
     };
-}
+} // namespace v8
 
 #endif

@@ -13,7 +13,7 @@ class GodotJSEditorProgress : public Object
 private:
     String state_name_;
 
-    //TODO alternative implementation of Progress in gdextension
+    // TODO alternative implementation of Progress in gdextension
     EditorProgress* progress_ = nullptr;
 
 protected:

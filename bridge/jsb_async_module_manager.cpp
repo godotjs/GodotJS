@@ -10,7 +10,7 @@ namespace jsb
             loader_->on_attached();
         }
     }
-    
+
     bool AsyncModuleManager::is_valid(AsyncModuleToken p_token) const
     {
         MutexLock lock(modules_mutex_);
@@ -62,16 +62,16 @@ namespace jsb
         const v8::Local<v8::Context> context = isolate->GetCurrentContext();
         AsyncModuleManager& manager = env->get_async_module_manager();
         const StringName module_id = env->get_string_name(arg0);
-        
+
         MutexLock lock(manager.modules_mutex_);
         jsb_check(!manager.tokens_.getptr(module_id));
 #if JSB_SUPPORT_ASYNC_MODULE_LOADER
         if (!!manager.loader_)
         {
             const v8::Local<v8::Promise::Resolver> resolver = v8::Promise::Resolver::New(context).ToLocalChecked();
-            const AsyncModuleToken token = manager.modules_.add({ module_id, v8::Global<v8::Promise::Resolver>(isolate, resolver) });
+            const AsyncModuleToken token = manager.modules_.add({module_id, v8::Global<v8::Promise::Resolver>(isolate, resolver)});
             const AsyncModuleHandle handle(env->id(), token);
-            
+
             manager.loader_->import(*env, module_id, handle);
             info.GetReturnValue().Set(resolver->GetPromise());
             return;
@@ -105,7 +105,7 @@ namespace jsb
             JavaScriptModuleCache& module_cache = env->get_module_cache();
             JavaScriptModule* module = module_cache.find(module_id);
             v8::Local<v8::Object> module_obj;
-            
+
             if (!module)
             {
                 module = &module_cache.insert(isolate, p_context, module_id, false, false);
@@ -133,13 +133,13 @@ namespace jsb
                 resolver->Reject(p_context, impl::Helper::new_string(isolate, err)).Check();
                 return;
             }
-            //TODO module tree needed?
-            //TODO GodotJS script needed?
+            // TODO module tree needed?
+            // TODO GodotJS script needed?
             jsb_nop();
 
             const v8::Local<v8::Value> updated_exports = module_obj->Get(p_context, jsb_name(env, exports)).ToLocalChecked();
             module->exports.Reset(isolate, updated_exports);
-            
+
             module->on_load(isolate, p_context);
             resolver->Resolve(p_context, module->module.Get(isolate)).Check();
         }
@@ -148,11 +148,11 @@ namespace jsb
             // p_value is the error message (string)
             resolver->Reject(p_context, p_value).Check();
         }
-        
+
         env->notify_microtasks_run();
 #else
         jsb_not_implemented(true, "not implemented yet");
 #endif
     }
 
-}
+} // namespace jsb

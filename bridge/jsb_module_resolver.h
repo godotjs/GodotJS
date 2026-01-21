@@ -56,7 +56,6 @@ namespace jsb
         static bool check_implicit_source_path(const String& p_module_id, String& o_path);
 
     private:
-
         Dictionary package_exports_cache;
 
         // Helper function for recursive resolution of exports target values
@@ -68,6 +67,6 @@ namespace jsb
 
         Vector<String> search_paths_;
     };
-}
+} // namespace jsb
 
 #endif

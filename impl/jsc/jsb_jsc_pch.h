@@ -7,14 +7,14 @@
 
 #include "../../compat/jsb_ring_buffer.h"
 
-//TODO WARNING: ONLY FOR DEV, NOT SUPPORTED TO BUILD. REMOVE IT AFTER jsc.impl IS READY.
+// TODO WARNING: ONLY FOR DEV, NOT SUPPORTED TO BUILD. REMOVE IT AFTER jsc.impl IS READY.
 #if !defined(API_AVAILABLE) && !defined(MACOS_ENABLED) && !defined(IOS_ENABLED)
-#define API_AVAILABLE(...)
+    #define API_AVAILABLE(...)
 #endif
 
 #include <JavaScriptCore/JavaScriptCore.h>
 
-//NOTE the header file for WeakRef is private in webkit, we copy it here. hope it's a viable plan :)
+// NOTE the header file for WeakRef is private in webkit, we copy it here. hope it's a viable plan :)
 #include "JSWeakPrivate.h"
 
 #include <memory>

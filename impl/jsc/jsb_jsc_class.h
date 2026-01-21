@@ -13,11 +13,11 @@ namespace jsb::impl
         // strong reference.
         // the counterpart of exposed C++ class.
         // in quickjs, it's the prototype object.
-        //NOTE template_.GetFunction() returns the `constructor`,
-        //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
+        // NOTE template_.GetFunction() returns the `constructor`,
+        // NOTE `constructor == info.NewTarget()` only if directly creating a class instance
         v8::Global<v8::Object> prototype_;
 
-        //TODO may unnecessary, should be identical with prototype.constructor?
+        // TODO may unnecessary, should be identical with prototype.constructor?
         v8::Global<v8::Function> constructor_;
 
         uint8_t internal_field_count_ = 0;
@@ -45,18 +45,17 @@ namespace jsb::impl
             return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_copy(constructor)));
         }
 
-        //NOTE NewInstance should not trigger the underlying native constructor of this class
+        // NOTE NewInstance should not trigger the underlying native constructor of this class
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
         {
             v8::Isolate* isolate = context->GetIsolate();
-            return v8::Local<v8::Object>(v8::Data(isolate,isolate->push_copy(
-                _NewObject(isolate, (JSValueRef) prototype_, internal_field_count_))));
+            return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_copy(_NewObject(isolate, (JSValueRef) prototype_, internal_field_count_))));
         }
 
     private:
         Class(v8::Isolate* isolate, uint8_t internal_field_count, const v8::Local<v8::Object> proto, const v8::Local<v8::Function> constructor)
         {
-            internal_field_count_= internal_field_count;
+            internal_field_count_ = internal_field_count;
             prototype_.Reset(isolate, proto);
             constructor_.Reset(isolate, constructor);
         }
@@ -72,8 +71,8 @@ namespace jsb::impl
             return this_val;
         }
 
-        //NOTE JS_CFUNC_constructor_magic DO NOT support func_data
-        template<uint8_t InternalFieldCount>
+        // NOTE JS_CFUNC_constructor_magic DO NOT support func_data
+        template <uint8_t InternalFieldCount>
         static JSObjectRef _constructor(JSContextRef ctx, JSObjectRef new_target, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
         {
             v8::Isolate* isolate = (v8::Isolate*) jsb::impl::JavaScriptCore::GetContextOpaque(ctx);
@@ -121,7 +120,6 @@ namespace jsb::impl
 
             return this_val;
         }
-
     };
-}
+} // namespace jsb::impl
 #endif

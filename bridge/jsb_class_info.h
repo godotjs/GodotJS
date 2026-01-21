@@ -20,19 +20,19 @@ namespace jsb
 
     namespace NativeClassType
     {
-        //NOTE the enum value of Type must be a even number, since it's stored as AlignedPointerInternalField
+        // NOTE the enum value of Type must be a even number, since it's stored as AlignedPointerInternalField
         enum Type : uint8_t
         {
             // never used
             None = 0,
 
-            //TODO a FASTPATH implementation? avoid unnecessary Variant wrapping for special builtin primitives (from Vector2 to Color)
-            //     But a VALUE still can not be binded as VALUE itself, it seems impossible to avoid thread-safe TYPED pools. Is it worth to implement?
-            // [BEGIN] RESERVED FOR FUTURE USE
-            // Vector2 = 2,
-            // Vector3 = 10,
-            // Color = 32,
-            // [END  ] RESERVED FOR FUTURE USE
+            // TODO a FASTPATH implementation? avoid unnecessary Variant wrapping for special builtin primitives (from Vector2 to Color)
+            //      But a VALUE still can not be binded as VALUE itself, it seems impossible to avoid thread-safe TYPED pools. Is it worth to implement?
+            //  [BEGIN] RESERVED FOR FUTURE USE
+            //  Vector2 = 2,
+            //  Vector3 = 10,
+            //  Color = 32,
+            //  [END  ] RESERVED FOR FUTURE USE
             _RESERVED = 32,
 
             // Godot Variant classes (valuetype).
@@ -52,7 +52,7 @@ namespace jsb
             // reserved for future use
             Custom = 64,
         };
-    }
+    } // namespace NativeClassType
 
     struct NativeBindingInfo
     {
@@ -66,7 +66,7 @@ namespace jsb
         // it's called when a JS value with this class type garbage collected by JS runtime
         FinalizerFunc finalizer;
 
-        //TODO RESERVED FOR FUTURE USE
+        // TODO RESERVED FOR FUTURE USE
         NativeClassType::Type type;
 
         // *only if type == GodotObject*
@@ -103,16 +103,27 @@ namespace jsb
 
         bool is_deprecated = false;
         bool is_experimental = false;
-
     };
 
-    struct ScriptClassDoc : ScriptBaseDoc {};
-    struct ScriptMethodDoc : ScriptBaseDoc {};
-    struct ScriptPropertyDoc : ScriptBaseDoc {};
+    struct ScriptClassDoc : ScriptBaseDoc
+    {
+    };
+    struct ScriptMethodDoc : ScriptBaseDoc
+    {
+    };
+    struct ScriptPropertyDoc : ScriptBaseDoc
+    {
+    };
 #else
-    struct ScriptClassDoc {};
-    struct ScriptMethodDoc {};
-    struct ScriptPropertyDoc {};
+    struct ScriptClassDoc
+    {
+    };
+    struct ScriptMethodDoc
+    {
+    };
+    struct ScriptPropertyDoc
+    {
+    };
 #endif
 
     namespace ScriptMethodFlags
@@ -138,7 +149,6 @@ namespace jsb
         // v8::Global<v8::Function> cache_;
 
         jsb_force_inline bool is_static() const { return flags & ScriptMethodFlags::Static; }
-
     };
 
     struct ScriptPropertyInfo
@@ -149,7 +159,7 @@ namespace jsb
 
         StringName name;
 
-        //TODO class_name is needed if type is OBJECT
+        // TODO class_name is needed if type is OBJECT
         StringName class_name;
 
         String hint_string;
@@ -163,7 +173,7 @@ namespace jsb
 
         explicit operator PropertyInfo() const
         {
-            return { type, name, hint, hint_string, usage, class_name };
+            return {type, name, hint, hint_string, usage, class_name};
         }
     };
 
@@ -173,7 +183,7 @@ namespace jsb
         {
             None = 0,
 
-            //TODO we have no idea about it with javascript itself. maybe we can decorate the abstract class and check here?
+            // TODO we have no idea about it with javascript itself. maybe we can decorate the abstract class and check here?
             Abstract = 1 << 0,
             Tool = 1 << 1,
 
@@ -192,7 +202,7 @@ namespace jsb
         StringName js_class_name;
 
         // a fastpath to read the name of native class (the GodotJS class inherits from).
-        //NOTE it's a redundant field only for performance. evaluated from 'native_class_id' and must be a godot object class.
+        // NOTE it's a redundant field only for performance. evaluated from 'native_class_id' and must be a godot object class.
         StringName native_class_name;
 
         // [EXPERIMENTAL] module fastpath for getting script class of base
@@ -212,7 +222,7 @@ namespace jsb
 
         ScriptClassFlags::Type flags = ScriptClassFlags::None;
 
-        //TODO whether the internal class object alive or not
+        // TODO whether the internal class object alive or not
         jsb_force_inline bool is_valid() const { return true; }
 
         jsb_force_inline bool is_tool() const { return flags & ScriptClassFlags::Tool; }
@@ -237,13 +247,12 @@ namespace jsb
         static void instantiate(Environment* p_env, const StringName& p_module_id, const v8::Local<v8::Object>& p_self);
 
         static bool _parse_script_class(const v8::Local<v8::Context>& p_context, JavaScriptModule& p_module);
-
     };
 
     // Safe pointer of ScriptClassInfo
     typedef internal::SArray<ScriptClassInfo, ScriptClassID>::Pointer ScriptClassInfoPtr;
     typedef internal::SArray<ScriptClassInfo, ScriptClassID>::ConstPointer ScriptClassInfoConstPtr;
 
-}
+} // namespace jsb
 
 #endif

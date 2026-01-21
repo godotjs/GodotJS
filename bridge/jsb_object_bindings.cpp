@@ -20,10 +20,9 @@ namespace jsb
 
         // construct type template
         {
-
             impl::ClassBuilder class_builder = ObjectTemplate::create(p_env, class_id);
 
-            //NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
+            // NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
             const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);
             auto static_builder = is_singleton_class ? class_builder.Instance() : class_builder.Static();
 
@@ -48,16 +47,19 @@ namespace jsb
                     p_env->get_variant_info_collection().properties2.append(property_info2);
 
                     class_builder.Instance().Property(property_name,
-                        getset_info._getptr ? _godot_object_get2 : nullptr,
-                        getset_info._setptr ? _godot_object_set2 : nullptr, remap_index);
+                                                      getset_info._getptr ? _godot_object_get2 : nullptr,
+                                                      getset_info._setptr ? _godot_object_set2 : nullptr,
+                                                      remap_index);
                     // we do not exclude get/set methods in this case, because the method may not be covered by all properties
                 }
                 else
                 {
                     // not using `property_collection_` in this case due to lower memory cost
                     class_builder.Instance().Property(property_name,
-                        getset_info._getptr ? _godot_object_method : nullptr, (void*) getset_info._getptr,
-                        getset_info._setptr ? _godot_object_method : nullptr, (void*) getset_info._setptr);
+                                                      getset_info._getptr ? _godot_object_method : nullptr,
+                                                      (void*) getset_info._getptr,
+                                                      getset_info._setptr ? _godot_object_method : nullptr,
+                                                      (void*) getset_info._setptr);
 
 #if JSB_EXCLUDE_GETSET_METHODS
                     if (internal::VariantUtil::is_valid_name(getset_info.getter)) omitted_methods.insert(getset_info.getter);
@@ -85,48 +87,48 @@ namespace jsb
                 }
             }
 
-             if (p_class_info->name == jsb_string_name(Object))
-             {
-                 // class: special methods
-                 class_builder.Instance().Method(jsb_literal(free), _godot_object_free);
-             }
+            if (p_class_info->name == jsb_string_name(Object))
+            {
+                // class: special methods
+                class_builder.Instance().Method(jsb_literal(free), _godot_object_free);
+            }
 
-             // class: signals
-             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
-             {
-                 v8::HandleScope handle_scope_for_signal(isolate);
-                 String signal_name = internal::NamingUtil::get_member_name(pair.key);
-                 const v8::Local<v8::String> signal_name_js = p_env->get_string_name_cache().get_string_value(isolate, pair.key);
-                 class_builder.Instance().Property(signal_name, _godot_object_signal_get, signal_name_js.As<v8::Value>());
-             }
+            // class: signals
+            for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
+            {
+                v8::HandleScope handle_scope_for_signal(isolate);
+                String signal_name = internal::NamingUtil::get_member_name(pair.key);
+                const v8::Local<v8::String> signal_name_js = p_env->get_string_name_cache().get_string_value(isolate, pair.key);
+                class_builder.Instance().Property(signal_name, _godot_object_signal_get, signal_name_js.As<v8::Value>());
+            }
 
-             HashSet<StringName> enum_consts;
+            HashSet<StringName> enum_consts;
 
-             // class: enum (nested in class)
-             for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
-             {
-                 v8::HandleScope handle_scope_for_enum(isolate);
-                 impl::ClassBuilder::EnumDeclaration enumeration = static_builder.Enum(internal::NamingUtil::get_enum_name(pair.key));
-                 for (const StringName& enum_value_name : pair.value.constants)
-                 {
-                     const String& js_enum_name = internal::NamingUtil::get_enum_value_name(enum_value_name);
-                     jsb_not_implemented(js_enum_name.contains("."), "hierarchically nested definition is currently not supported");
-                     const auto& const_it = p_class_info->constant_map.find(enum_value_name);
-                     jsb_check(const_it);
-                     enumeration.Value(js_enum_name, const_it->value);
-                     enum_consts.insert(enum_value_name);
-                 }
-             }
+            // class: enum (nested in class)
+            for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
+            {
+                v8::HandleScope handle_scope_for_enum(isolate);
+                impl::ClassBuilder::EnumDeclaration enumeration = static_builder.Enum(internal::NamingUtil::get_enum_name(pair.key));
+                for (const StringName& enum_value_name : pair.value.constants)
+                {
+                    const String& js_enum_name = internal::NamingUtil::get_enum_value_name(enum_value_name);
+                    jsb_not_implemented(js_enum_name.contains("."), "hierarchically nested definition is currently not supported");
+                    const auto& const_it = p_class_info->constant_map.find(enum_value_name);
+                    jsb_check(const_it);
+                    enumeration.Value(js_enum_name, const_it->value);
+                    enum_consts.insert(enum_value_name);
+                }
+            }
 
-             // class: constants
-             for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
-             {
-                 if (enum_consts.has(pair.key)) continue;
-                 const String& js_const_name = (String) internal::NamingUtil::get_constant_name(pair.key);
-                 jsb_not_implemented(js_const_name.contains("."), "hierarchically nested definition is currently not supported");
+            // class: constants
+            for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
+            {
+                if (enum_consts.has(pair.key)) continue;
+                const String& js_const_name = (String) internal::NamingUtil::get_constant_name(pair.key);
+                jsb_not_implemented(js_const_name.contains("."), "hierarchically nested definition is currently not supported");
 
-                 static_builder.Value(pair.key, pair.value);
-             }
+                static_builder.Value(pair.key, pair.value);
+            }
 
             // set `class_id` on the exposed godot native class for the convenience when finding it from any subclasses in javascript.
             class_builder.Static().Value(jsb_symbol(p_env, ClassId), *class_id);
@@ -298,14 +300,17 @@ namespace jsb
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
             if (index < known_argc
-                ? !TypeConvert::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
-                : !TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
+                    ? !TypeConvert::js_to_gd_var(isolate, context, info[index], method_info.argument_types[index], args[index])
+                    : !TypeConvert::js_to_gd_var(isolate, context, info[index], args[index]))
             {
                 // revert all constructors
                 const String error_message = index < known_argc
-                    ? jsb_errorf("Bad argument: %d. Unable to convert JS %s to Godot %s", index, TypeConvert::js_debug_typeof(isolate, info[index]), Variant::get_type_name(method_info.argument_types[index]))
-                    : jsb_errorf("Bad argument: %d. Unable to convert JS %s", index, TypeConvert::js_debug_typeof(isolate, info[index]));
-                while (index >= 0) { args[index--].~Variant(); }
+                                                 ? jsb_errorf("Bad argument: %d. Unable to convert JS %s to Godot %s", index, TypeConvert::js_debug_typeof(isolate, info[index]), Variant::get_type_name(method_info.argument_types[index]))
+                                                 : jsb_errorf("Bad argument: %d. Unable to convert JS %s", index, TypeConvert::js_debug_typeof(isolate, info[index]));
+                while (index >= 0)
+                {
+                    args[index--].~Variant();
+                }
                 impl::Helper::throw_error(isolate, error_message);
                 return;
             }
@@ -369,8 +374,8 @@ namespace jsb
             memnew_placement(&args[index], Variant);
             argv[index] = &args[index];
             const Variant::Type type = index >= method_argc
-                ? Variant::Type::NIL
-                : method_bind->get_argument_type(index);
+                                           ? Variant::Type::NIL
+                                           : method_bind->get_argument_type(index);
 
             const v8::Local<v8::Value>& argument = info[index];
 
@@ -382,7 +387,10 @@ namespace jsb
             {
                 // revert all constructors
                 const String error_message = jsb_errorf("Failed to call: %s. Bad argument: %d. Unable to convert JS %s to Godot %s", method_bind->get_name(), index, TypeConvert::js_debug_typeof(isolate, info[index]), Variant::get_type_name(type));
-                while (index >= 0) { args[index--].~Variant(); }
+                while (index >= 0)
+                {
+                    args[index--].~Variant();
+                }
                 impl::Helper::throw_error(isolate, error_message);
                 return;
             }
@@ -444,8 +452,8 @@ namespace jsb
             return;
         }
 
-        Variant args[] = { property_info.index };
-        const Variant* argv[] = { &args[0] };
+        Variant args[] = {property_info.index};
+        const Variant* argv[] = {&args[0]};
 
         // call godot method
         Callable::CallError error;
@@ -466,7 +474,8 @@ namespace jsb
             return;
         }
         const String error_message = jsb_errorf("Failed to get property: %s. Failed to translate returned Godot %s to a JS value",
-            property_info.getter_func->get_name(), Variant::get_type_name(crval.get_type()));
+                                                property_info.getter_func->get_name(),
+                                                Variant::get_type_name(crval.get_type()));
         impl::Helper::throw_error(isolate, error_message);
     }
 
@@ -498,14 +507,15 @@ namespace jsb
         if (!TypeConvert::js_to_gd_var(isolate, context, info[0], property_info.setter_func->get_argument_type(1), cvar))
         {
             const String error_message = jsb_errorf("Failed to set property: %s. Unable to convert provided JS %s to Godot %s",
-                property_info.setter_func->get_name(), TypeConvert::js_debug_typeof(isolate, info[0]),
-                Variant::get_type_name(property_info.setter_func->get_argument_type(1)));
+                                                    property_info.setter_func->get_name(),
+                                                    TypeConvert::js_debug_typeof(isolate, info[0]),
+                                                    Variant::get_type_name(property_info.setter_func->get_argument_type(1)));
             impl::Helper::throw_error(isolate, error_message);
             return;
         }
 
-        Variant args[] = { property_info.index, cvar };
-        const Variant* argv[] = { &args[0], &args[1] };
+        Variant args[] = {property_info.index, cvar};
+        const Variant* argv[] = {&args[0], &args[1]};
 
         // call godot method
         Callable::CallError error;
@@ -519,4 +529,4 @@ namespace jsb
         }
     }
 
-}
+} // namespace jsb

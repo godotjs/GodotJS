@@ -18,7 +18,6 @@ namespace jsb
         static void _godot_object_signal_get(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_object_cached_export_update(const v8::FunctionCallbackInfo<v8::Value>& info);
         static void _godot_utility_func(const v8::FunctionCallbackInfo<v8::Value>& info);
-
     };
-}
+} // namespace jsb
 #endif

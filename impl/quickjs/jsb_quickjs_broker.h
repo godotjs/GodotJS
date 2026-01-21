@@ -34,5 +34,5 @@ namespace jsb::impl
         static void _add_reference(v8::Isolate* isolate);
         static void _remove_reference(v8::Isolate* isolate);
     };
-}
+} // namespace jsb::impl
 #endif

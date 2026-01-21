@@ -123,10 +123,10 @@ namespace v8
 
     Maybe<bool> Object::HasOwnProperty(Local<Context> context, Local<Name> key) const
     {
-        //TODO unsure
+        // TODO unsure
         JSContext* ctx = isolate_->ctx();
         const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
-        const int res = JS_GetOwnProperty(ctx, nullptr, (JSValue) *this, prop);
+        const int res = JS_GetOwnProperty(ctx, nullptr, (JSValue) * this, prop);
 
         if (res == -1)
         {
@@ -139,7 +139,7 @@ namespace v8
     Maybe<bool> Object::SetPrototype(Local<Context> context, Local<Value> prototype)
     {
         JSContext* ctx = isolate_->ctx();
-        const int res = JS_SetPrototype(ctx, (JSValue) *this, (JSValue) prototype);
+        const int res = JS_SetPrototype(ctx, (JSValue) * this, (JSValue) prototype);
         if (res == -1)
         {
             jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
@@ -151,7 +151,7 @@ namespace v8
     Local<Value> Object::GetPrototype()
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue prototype = JS_GetPrototype(ctx, (JSValue) *this);
+        const JSValue prototype = JS_GetPrototype(ctx, (JSValue) * this);
         if (JS_IsException(prototype))
         {
             jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
@@ -163,7 +163,7 @@ namespace v8
     MaybeLocal<Value> Object::CallAsConstructor(Local<Context> context, int argc, Local<Value> argv[])
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue self = (JSValue) *this;
+        const JSValue self = (JSValue) * this;
         JSValue* argvv = jsb_stackalloc(JSValue, argc);
         for (int i = 0; i < argc; ++i)
         {
@@ -191,7 +191,7 @@ namespace v8
         JSContext* ctx = isolate_->ctx();
         JSPropertyDescriptor desc;
 
-        const JSValue self = (JSValue) *this;
+        const JSValue self = (JSValue) * this;
         const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
         const int res = JS_GetOwnProperty(ctx, &desc, self, prop);
 
@@ -250,7 +250,7 @@ namespace v8
             const jsb::impl::QuickJS::Atom prop(ctx, func_data[0]);
             constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_VALUE;
 
-            //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+            // NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
             const int res = JS_DefineProperty(ctx, this_val, prop, rvo, JS_UNDEFINED, JS_UNDEFINED, flags);
             jsb_check(res >= 0);
             jsb_unused(res);
@@ -262,15 +262,15 @@ namespace v8
     Maybe<bool> Object::SetLazyDataProperty(Local<Context> context, Local<Name> name, AccessorNameGetterCallback getter)
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
+        const JSValue this_obj = (JSValue) * this;
         constexpr int flags = JS_PROP_HAS_CONFIGURABLE | JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_GET;
-        JSValue lazy_data[] = { JS_DupValue(ctx, (JSValue) name), JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void *) getter) };
+        JSValue lazy_data[] = {JS_DupValue(ctx, (JSValue) name), JS_MKPTR(jsb::impl::JS_TAG_EXTERNAL, (void*) getter)};
         const JSValue lazy = JS_NewCFunctionData(ctx, _lazy, /* length */ 0, /* magic */ 0, ::std::size(lazy_data), lazy_data);
 
         const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) name);
         const int res = JS_DefineProperty(ctx, this_obj, prop, JS_UNDEFINED, lazy, JS_UNDEFINED, flags);
 
-        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+        // NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         JS_FreeValue(ctx, lazy);
 
         if (res == -1)
@@ -284,7 +284,7 @@ namespace v8
     Maybe<bool> Object::DefineOwnProperty(Local<Context> context, Local<Name> key, Local<Value> value, PropertyAttribute attributes)
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
+        const JSValue this_obj = (JSValue) * this;
         const JSValue val = (JSValue) value;
         int flags = JS_PROP_HAS_VALUE;
         if ((attributes & DontEnum) == 0) flags |= JS_PROP_HAS_ENUMERABLE;
@@ -292,7 +292,7 @@ namespace v8
         if ((attributes & DontDelete) == 0) flags |= JS_PROP_HAS_CONFIGURABLE;
 
         const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) key);
-        //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+        // NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
         const int res = JS_DefineProperty(ctx, this_obj, prop, val, JS_UNDEFINED, JS_UNDEFINED, flags);
 
         if (res == -1)
@@ -306,17 +306,16 @@ namespace v8
     void Object::SetAccessorProperty(Local<Name> name, Local<FunctionTemplate> getter, Local<FunctionTemplate> setter)
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue this_obj = (JSValue) *this;
-        int flags = JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_CONFIGURABLE; //TODO consider remove 'configurable' flags
+        const JSValue this_obj = (JSValue) * this;
+        int flags = JS_PROP_HAS_ENUMERABLE | JS_PROP_HAS_CONFIGURABLE; // TODO consider remove 'configurable' flags
         if (!getter.IsEmpty()) flags |= JS_PROP_HAS_GET;
         if (!setter.IsEmpty()) flags |= JS_PROP_HAS_SET | JS_PROP_HAS_WRITABLE;
 
         const jsb::impl::QuickJS::Atom prop(ctx, (JSValue) name);
-        const int res = JS_DefineProperty(ctx, this_obj, prop,
-            JS_UNDEFINED,
-            (JSValue) getter, //NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
-            (JSValue) setter,
-            flags);
+        const int res = JS_DefineProperty(ctx, this_obj, prop, JS_UNDEFINED,
+                                          (JSValue) getter, // NOTE !!! JS_DefineProperty DOES NOT CONSUME THE REFERENCE !!!
+                                          (JSValue) setter,
+                                          flags);
         jsb_check(res >= 0);
         jsb_unused(res);
     }
@@ -324,7 +323,7 @@ namespace v8
     MaybeLocal<Array> Object::GetOwnPropertyNames(Local<Context> context, PropertyFilter filter, KeyConversionMode key_conversion)
     {
         JSContext* ctx = isolate_->ctx();
-        JSPropertyEnum *tab;
+        JSPropertyEnum* tab;
         uint32_t len;
 
         int flags = 0;
@@ -334,7 +333,7 @@ namespace v8
         // key_conversion is not available in quickjs.impl
         jsb_check(key_conversion == v8::KeyConversionMode::kNoNumbers);
 
-        int res = JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) *this, flags);
+        int res = JS_GetOwnPropertyNames(ctx, &tab, &len, (JSValue) * this, flags);
         if (res == -1)
         {
             jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
@@ -344,7 +343,7 @@ namespace v8
         // build the name table
         const JSValue array = JS_NewArray(ctx);
 
-        for(uint32_t i = 0; i < len; ++i)
+        for (uint32_t i = 0; i < len; ++i)
         {
             res = JS_SetPropertyUint32(ctx, array, i, JS_AtomToValue(ctx, tab[i].atom));
             jsb_check(res >= 0);
@@ -361,26 +360,26 @@ namespace v8
     {
         Isolate* isolate = context->isolate_;
         JSContext* ctx = isolate->ctx();
-        JSValue resolvers[] = { JS_UNDEFINED, JS_UNDEFINED };
+        JSValue resolvers[] = {JS_UNDEFINED, JS_UNDEFINED};
         const JSValue promise = JS_NewPromiseCapability(ctx, resolvers);
         if (JS_IsException(promise))
         {
             jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
             return MaybeLocal<Promise::Resolver>();
         }
-        
+
         // need an object to hold all three elements at the same time to represent it as a Resolver.
         // we don't want to break the simplicity of the implementations of `Data` class and `Global` handle.
-        // so use an indirect array to hold all of them. 
+        // so use an indirect array to hold all of them.
         const JSValue holder = JS_NewArray(ctx);
         jsb_ensure(!JS_IsException(holder));
         jsb_check(JS_IsArray(ctx, holder));
 
         // these references are consumed by SetProperty, no additional FreeValue is needed
         JS_SetPropertyUint32(ctx, holder, kHolderIndexResolve, resolvers[0]); // resolve
-        JS_SetPropertyUint32(ctx, holder, kHolderIndexReject,  resolvers[1]); // reject
-        JS_SetPropertyUint32(ctx, holder, kHolderIndexPromise, promise); 
-        
+        JS_SetPropertyUint32(ctx, holder, kHolderIndexReject, resolvers[1]);  // reject
+        JS_SetPropertyUint32(ctx, holder, kHolderIndexPromise, promise);
+
         return MaybeLocal<Promise::Resolver>(Data(isolate, isolate->push_steal(holder)));
     }
 
@@ -397,33 +396,33 @@ namespace v8
             jsb_unused(failed);
             return length;
         }
-    }
+    } // namespace
 
     Local<Promise> Promise::Resolver::GetPromise()
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue holder = (JSValue) *this;
+        const JSValue holder = (JSValue) * this;
         jsb_check(JS_IsArray(ctx, holder));
         jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
-        
+
         const JSValue obj = JS_GetPropertyUint32(ctx, holder, kHolderIndexPromise);
         jsb_check(JS_IsPromise(obj));
         return Local<Promise>(Data(isolate_, isolate_->push_steal(obj)));
     }
-            
+
     Maybe<bool> Promise::Resolver::Resolve(Local<Context> context, Local<Value> value)
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue holder = (JSValue) *this;
+        const JSValue holder = (JSValue) * this;
         jsb_check(JS_IsArray(ctx, holder));
         jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
 
-        // unpack the resolve function 
+        // unpack the resolve function
         const JSValue obj = JS_GetPropertyUint32(ctx, holder, kHolderIndexResolve);
         jsb_check(JS_IsFunction(ctx, obj));
 
         // call the resolve function
-        JSValue args[] = { (JSValue) value };
+        JSValue args[] = {(JSValue) value};
         const JSValue rval = JS_Call(ctx, obj, JS_UNDEFINED, std::size(args), args);
         JS_FreeValue(ctx, obj);
         if (JS_IsException(rval))
@@ -438,16 +437,16 @@ namespace v8
     Maybe<bool> Promise::Resolver::Reject(Local<Context> context, Local<Value> value)
     {
         JSContext* ctx = isolate_->ctx();
-        const JSValue holder = (JSValue) *this;
+        const JSValue holder = (JSValue) * this;
         jsb_check(JS_IsArray(ctx, holder));
         jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
 
-        // unpack the reject function 
+        // unpack the reject function
         const JSValue obj = JS_GetPropertyUint32(ctx, holder, kHolderIndexReject);
         jsb_check(JS_IsFunction(ctx, obj));
-        
+
         // call the reject function
-        JSValue args[] = { (JSValue) value };
+        JSValue args[] = {(JSValue) value};
         const JSValue rval = JS_Call(ctx, obj, JS_UNDEFINED, std::size(args), args);
         JS_FreeValue(ctx, obj);
         if (JS_IsException(rval))
@@ -458,4 +457,4 @@ namespace v8
         JS_FreeValue(ctx, rval);
         return Maybe<bool>(true);
     }
-}
+} // namespace v8

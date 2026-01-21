@@ -16,15 +16,15 @@ namespace jsb
         static bool _compare_equal(const CallableCustom* p_a, const CallableCustom* p_b)
         {
             // types are already ensured by `Callable::operator==` with the comparator function pointers before calling
-            const JSCallable* js_cc_a = (const JSCallable*)p_a;
-            const JSCallable* js_cc_b = (const JSCallable*)p_b;
+            const JSCallable* js_cc_a = (const JSCallable*) p_a;
+            const JSCallable* js_cc_b = (const JSCallable*) p_b;
             return js_cc_a->callback_id_ == js_cc_b->callback_id_;
         }
 
         static bool _compare_less(const CallableCustom* p_a, const CallableCustom* p_b)
         {
-            const JSCallable* js_cc_a = (const JSCallable*)p_a;
-            const JSCallable* js_cc_b = (const JSCallable*)p_b;
+            const JSCallable* js_cc_a = (const JSCallable*) p_a;
+            const JSCallable* js_cc_b = (const JSCallable*) p_b;
             return js_cc_a->callback_id_ < js_cc_b->callback_id_;
             // return !_compare_equal(p_a, p_b) && p_a < p_b;
         }
@@ -50,6 +50,6 @@ namespace jsb
         virtual CompareLessFunc get_compare_less_func() const override { return _compare_less; }
         virtual uint32_t hash() const override { return callback_id_.hash(); }
     };
-}
+} // namespace jsb
 
 #endif

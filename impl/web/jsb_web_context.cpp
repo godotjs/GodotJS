@@ -26,4 +26,4 @@ namespace v8
         return Local<Object>(Data(isolate_, jsbi_GetGlobalObject(isolate_->rt())));
     }
 
-}
+} // namespace v8

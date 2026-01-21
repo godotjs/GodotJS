@@ -12,4 +12,4 @@ DEF(Warning) //
 DEF(Error)   // unexpected but not critical
 DEF(Assert)  // 'console.assert', print only if assertion failed
 
-DEF(Fatal)   // critial errors
+DEF(Fatal) // critial errors

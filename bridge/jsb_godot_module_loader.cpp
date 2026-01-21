@@ -27,12 +27,13 @@ namespace jsb
         if (internal::StringNames::get_singleton().is_replaced_name(p_type_name))
         {
             JSB_LOG(Warning,
-                "please use replaced name '%s' for '%s' in scripts (regenerate d.ts files)",
-                p_type_name, internal::StringNames::get_singleton().get_replaced_name(p_type_name));
+                    "please use replaced name '%s' for '%s' in scripts (regenerate d.ts files)",
+                    p_type_name,
+                    internal::StringNames::get_singleton().get_replaced_name(p_type_name));
         }
         const StringName original_name = internal::StringNames::get_singleton().get_original_name(p_type_name);
 
-        //NOTE do not break the order in `GDScriptLanguage::init()`
+        // NOTE do not break the order in `GDScriptLanguage::init()`
 
         // (1) singletons have the top priority (in GDScriptLanguage::init, singletons will overwrite the globals slot even if a type/const has the same name)
         //     check before getting to avoid error prints in `get_singleton_object`
@@ -56,7 +57,7 @@ namespace jsb
         // (2) (global) utility functions.
         if (Variant::has_utility_function(original_name))
         {
-            //TODO check static bindings at first, and dynamic bindings as a fallback
+            // TODO check static bindings at first, and dynamic bindings as a fallback
 
             // dynamic binding:
             static_assert(sizeof(Variant::ValidatedUtilityFunction) == sizeof(void*));
@@ -70,8 +71,8 @@ namespace jsb
             {
                 method_info.argument_types.write[index] = Variant::get_utility_function_argument_type(original_name, index);
             }
-            //NOTE currently, utility functions have no default argument.
-            // method_info.default_arguments = ...
+            // NOTE currently, utility functions have no default argument.
+            //  method_info.default_arguments = ...
             method_info.return_type = Variant::get_utility_function_return_type(original_name);
             method_info.is_vararg = Variant::is_utility_function_vararg(original_name);
             method_info.set_debug_name(internal::NamingUtil::get_member_name(original_name));
@@ -156,7 +157,7 @@ namespace jsb
             builtin_symbols->Set(context, impl::Helper::new_string_ascii(isolate, "FloatType"), p_env->get_symbol(Symbols::FloatType));
             builtin_symbols->Set(context, impl::Helper::new_string_ascii(isolate, "IntegerType"), p_env->get_symbol(Symbols::IntegerType));
             builtin_symbols->Set(context, impl::Helper::new_string_ascii(isolate, "ProxyTarget"), p_env->get_symbol(Symbols::ProxyTarget));
-            v8::Local<v8::Value> argv[] = { builtin_symbols, JSB_NEW_FUNCTION(context, _load_godot_object_class, {}) };
+            v8::Local<v8::Value> argv[] = {builtin_symbols, JSB_NEW_FUNCTION(context, _load_godot_object_class, {})};
             const v8::MaybeLocal<v8::Value> result = proxy_func->Call(context, v8::Undefined(isolate), std::size(argv), argv);
 
             if (v8::Local<v8::Value> proxy; result.ToLocal(&proxy))
@@ -193,4 +194,4 @@ namespace jsb
         return true;
     }
 
-}
+} // namespace jsb

@@ -79,7 +79,7 @@ namespace jsb
         size_t len;
         const char* str = p_source.get_data(len);
         if (!str) return ERR_FILE_NOT_FOUND;
-        jsb_check(len == (size_t)(int) len);
+        jsb_check(len == (size_t) (int) len);
         load_source(p_env, str, (int) len, p_source.get_filename(), true);
         return OK;
     }
@@ -110,7 +110,7 @@ namespace jsb
         }
 
         v8::Local<v8::Boolean> internal = v8::Boolean::New(isolate, p_internal);
-        v8::Local<v8::Value> argv[] = { JSB_NEW_FUNCTION(context, Builtins::_define, internal) };
+        v8::Local<v8::Value> argv[] = {JSB_NEW_FUNCTION(context, Builtins::_define, internal)};
         const v8::MaybeLocal<v8::Value> result = func.As<v8::Function>()->Call(context, v8::Undefined(isolate), ::std::size(argv), argv);
         if (try_catch.has_caught())
         {
@@ -120,4 +120,4 @@ namespace jsb
         jsb_unused(result);
     }
 
-}
+} // namespace jsb

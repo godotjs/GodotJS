@@ -6,10 +6,10 @@
 
 #if JSB_GDEXTENSION
 
-#include "jsb_engine_compat.h"
+    #include "jsb_engine_compat.h"
 
-#include <type_traits>
-#include <typeinfo>
+    #include <type_traits>
+    #include <typeinfo>
 
 template <typename T, bool thread_safe = false, uint32_t DEFAULT_PAGE_SIZE = 4096>
 class PagedAllocator
@@ -37,11 +37,11 @@ public:
             uint32_t pages_used = pages_allocated;
 
             pages_allocated++;
-            page_pool = (T**)memrealloc(page_pool, sizeof(T *) * pages_allocated);
-            available_pool = (T***)memrealloc(available_pool, sizeof(T **) * pages_allocated);
+            page_pool = (T**) memrealloc(page_pool, sizeof(T*) * pages_allocated);
+            available_pool = (T***) memrealloc(available_pool, sizeof(T**) * pages_allocated);
 
-            page_pool[pages_used] = (T*)memalloc(sizeof(T) * page_size);
-            available_pool[pages_used] = (T**)memalloc(sizeof(T *) * page_size);
+            page_pool[pages_used] = (T*) memalloc(sizeof(T) * page_size);
+            available_pool[pages_used] = (T**) memalloc(sizeof(T*) * page_size);
 
             for (uint32_t i = 0; i < page_size; i++)
             {
@@ -76,7 +76,10 @@ public:
     }
 
     template <typename... Args>
-    T* new_allocation(Args&&... p_args) { return alloc(p_args...); }
+    T* new_allocation(Args&&... p_args)
+    {
+        return alloc(p_args...);
+    }
     void delete_allocation(T* p_mem) { free(p_mem); }
 
 private:
@@ -180,7 +183,7 @@ public:
 };
 #else
 
-#include "core/templates/paged_allocator.h"
+    #include "core/templates/paged_allocator.h"
 
 #endif // JSB_GDEXTENSION
 

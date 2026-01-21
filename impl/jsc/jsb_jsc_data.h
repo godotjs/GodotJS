@@ -10,7 +10,8 @@ namespace v8
     {
     public:
         Data() = default;
-        Data(Isolate* isolate, uint16_t stack_pos): isolate_(isolate), stack_pos_(stack_pos) {}
+        Data(Isolate* isolate, uint16_t stack_pos)
+            : isolate_(isolate), stack_pos_(stack_pos) {}
 
         Isolate* isolate_ = nullptr;
         uint16_t stack_pos_ = 0;
@@ -46,5 +47,5 @@ namespace v8
     private:
         bool strict_eq(const Data& other) const;
     };
-}
+} // namespace v8
 #endif

@@ -12,4 +12,3 @@ namespace jsb::tests
 #endif
 
 #endif
-

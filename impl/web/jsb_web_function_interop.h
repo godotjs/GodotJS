@@ -10,7 +10,8 @@ namespace v8
     class ReturnValue
     {
     public:
-        ReturnValue(const Data& data) : data_(data) {}
+        ReturnValue(const Data& data)
+            : data_(data) {}
 
         template <typename S>
         void Set(const Local<S>& value) const
@@ -43,7 +44,7 @@ namespace v8
     {
     public:
         FunctionCallbackInfo(Isolate* isolate, bool is_constructor, jsb::impl::StackPosition base_sp, int argc)
-        : isolate_(isolate), is_constructor_(is_constructor), base_sp_(base_sp), argc_(argc)
+            : isolate_(isolate), is_constructor_(is_constructor), base_sp_(base_sp), argc_(argc)
         {
         }
 
@@ -94,7 +95,8 @@ namespace v8
     class PropertyCallbackInfo
     {
     public:
-        PropertyCallbackInfo(Isolate* isolate, jsb::impl::StackPosition stack_pos) : isolate_(isolate), stack_pos_(stack_pos) {}
+        PropertyCallbackInfo(Isolate* isolate, jsb::impl::StackPosition stack_pos)
+            : isolate_(isolate), stack_pos_(stack_pos) {}
         Isolate* GetIsolate() const { return isolate_; }
         ReturnValue<T> GetReturnValue() const
         {
@@ -105,5 +107,5 @@ namespace v8
         Isolate* isolate_;
         jsb::impl::StackPosition stack_pos_;
     };
-}
+} // namespace v8
 #endif

@@ -4,14 +4,16 @@
 
 #include "jsb_type_convert.h"
 
-#define DEF_VARIANT_THIS_UTIL(Type, ReaderFunc) \
-    template<>\
-    struct PrimitiveInstanceUtil<Type> {\
-        static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& p_input, Type*& r_value) {\
-            if (!TypeConvert::is_variant(p_input)) return false;\
-            r_value = VariantInternal::ReaderFunc((Variant*) p_input->GetAlignedPointerFromInternalField(IF_Pointer));\
-            return true;\
-        }\
+#define DEF_VARIANT_THIS_UTIL(Type, ReaderFunc)                                                                                            \
+    template <>                                                                                                                            \
+    struct PrimitiveInstanceUtil<Type>                                                                                                     \
+    {                                                                                                                                      \
+        static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Object>& p_input, Type*& r_value) \
+        {                                                                                                                                  \
+            if (!TypeConvert::is_variant(p_input)) return false;                                                                           \
+            r_value = VariantInternal::ReaderFunc((Variant*) p_input->GetAlignedPointerFromInternalField(IF_Pointer));                     \
+            return true;                                                                                                                   \
+        }                                                                                                                                  \
     }
 
 // #define DEF_VARIANT_THIS_UTIL_CONST(Type, ReaderFunc) \
@@ -24,7 +26,7 @@
 
 namespace jsb
 {
-    template<typename T>
+    template <typename T>
     struct PrimitiveInstanceUtil
     {
         // no implementation
@@ -79,7 +81,7 @@ namespace jsb
 #endif
 
     // fallback to Variant transpiler
-    template<typename T>
+    template <typename T>
     struct StaticBindingUtil
     {
         static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, T& r_value)
@@ -100,7 +102,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct StaticBindingUtil<Object*>
     {
         static bool get(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& p_input, Object*& r_value)
@@ -120,7 +122,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct StaticBindingUtil<float>
     {
         static bool get(const v8::Local<v8::Value>& p_input, float& r_value)
@@ -150,7 +152,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct StaticBindingUtil<double>
     {
         static bool get(const v8::Local<v8::Value>& p_input, double& r_value)
@@ -180,7 +182,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct StaticBindingUtil<int64_t>
     {
         // for hardcoded call
@@ -202,7 +204,7 @@ namespace jsb
         }
     };
 
-    template<>
+    template <>
     struct StaticBindingUtil<int32_t>
     {
         static bool get(const v8::Local<v8::Value>& p_input, int32_t& r_value)
@@ -231,6 +233,6 @@ namespace jsb
             return true;
         }
     };
-}
+} // namespace jsb
 
 #endif

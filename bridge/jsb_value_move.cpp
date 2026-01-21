@@ -42,4 +42,4 @@ namespace jsb
 
         return BridgeHelper::stringify(isolate, value_.Get(isolate));
     }
-}
+} // namespace jsb

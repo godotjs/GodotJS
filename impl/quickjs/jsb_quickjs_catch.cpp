@@ -17,7 +17,7 @@ namespace jsb::impl
 
         // reset current exception
         isolate_->set_stack_copy(StackPos::Exception, StackPos::Null);
-        
+
         if (JS_IsError(ctx, ex))
         {
             const JSValue err_message = JS_GetProperty(ctx, ex, JS_ATOM_message);
@@ -46,4 +46,4 @@ namespace jsb::impl
     }
 
 
-}
+} // namespace jsb::impl

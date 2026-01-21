@@ -9,7 +9,6 @@ namespace v8
 {
     ValueSerializer::ValueSerializer(Isolate* isolate)
     {
-
     }
 
     void ValueSerializer::WriteHeader()
@@ -25,7 +24,7 @@ namespace v8
 
     std::pair<uint8_t*, size_t> ValueSerializer::Release()
     {
-        std::pair<uint8_t*, size_t> rval = { buffer_, size_ };
+        std::pair<uint8_t*, size_t> rval = {buffer_, size_};
         buffer_ = nullptr;
         size_ = 0;
         return rval;
@@ -55,4 +54,4 @@ namespace v8
         return MaybeLocal<Value>(Data(isolate, isolate->push_steal(rval)));
     }
 
-}
+} // namespace v8

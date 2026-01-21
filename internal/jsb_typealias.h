@@ -13,5 +13,5 @@ namespace jsb
 
     typedef internal::Index32 ObjectCacheID;
 
-}
+} // namespace jsb
 #endif

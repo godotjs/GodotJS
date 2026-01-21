@@ -4,13 +4,13 @@
 #include <cstdint>
 
 #ifdef WEB_ENABLED
-#include <emscripten/emscripten.h>
+    #include <emscripten/emscripten.h>
 #endif
 
 #ifdef __cplusplus
-#define JSBROWSER_API extern "C"
+    #define JSBROWSER_API extern "C"
 #else
-#define JSBROWSER_API
+    #define JSBROWSER_API
 #endif
 
 // type placeholder
@@ -44,7 +44,7 @@ namespace jsb::impl
             VALUE = 1 << 5,
         };
     }
-}
+} // namespace jsb::impl
 
 // global init
 JSBROWSER_API void jsbi_init(
@@ -73,15 +73,15 @@ JSBROWSER_API bool jsbi_HasError(jsb::impl::JSRuntime engine_id);
 
 JSBROWSER_API void jsbi_SetHostPromiseRejectionTracker(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb);
 
-JSBROWSER_API void  jsbi_StackEnter(jsb::impl::JSRuntime engine_id);
-JSBROWSER_API void  jsbi_StackExit(jsb::impl::JSRuntime engine_id);
+JSBROWSER_API void jsbi_StackEnter(jsb::impl::JSRuntime engine_id);
+JSBROWSER_API void jsbi_StackExit(jsb::impl::JSRuntime engine_id);
 JSBROWSER_API void* jsbi_GetOpaque(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API jsb::impl::StackPosition jsbi_GetGlobalObject(jsb::impl::JSRuntime engine_id);
 JSBROWSER_API jsb::impl::StackPosition jsbi_StackDup(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API void jsbi_StackSet(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition to_sp, jsb::impl::StackPosition from_sp);
 JSBROWSER_API void jsbi_StackSetInt32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition to_sp, int32_t value);
 
-JSBROWSER_API jsb::impl::StackPosition jsbi_NewCFunction(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb, jsb::impl::StackPosition data_sp, const char *func_name_ptr);
+JSBROWSER_API jsb::impl::StackPosition jsbi_NewCFunction(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb, jsb::impl::StackPosition data_sp, const char* func_name_ptr);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewNoopConstructor(jsb::impl::JSRuntime engine_id);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewSymbol(jsb::impl::JSRuntime engine_id);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewMap(jsb::impl::JSRuntime engine_id);
@@ -118,19 +118,19 @@ JSBROWSER_API jsb::impl::StackPosition jsbi_NewArrayBuffer(jsb::impl::JSRuntime 
 // return nullptr if stackval is not External
 JSBROWSER_API void* jsbi_GetExternal(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 // return 0 if stackval is not Array
-JSBROWSER_API int   jsbi_GetArrayLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API int jsbi_GetArrayLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 // return 0 if stackval is not String
-JSBROWSER_API int   jsbi_GetStringLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API int jsbi_GetStringLength(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API char* jsbi_ToCStringLen(jsb::impl::JSRuntime engine_id, int32_t* o_size, jsb::impl::StackPosition str_sp);
 JSBROWSER_API jsb::impl::StackPosition jsbi_ToString(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API double jsbi_NumberValue(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool   jsbi_BooleanValue(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API int32_t  jsbi_Int32Value(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_BooleanValue(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API int32_t jsbi_Int32Value(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API uint32_t jsbi_Uint32Value(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_Int64Value(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos, int64_t* o_value);
+JSBROWSER_API bool jsbi_Int64Value(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos, int64_t* o_value);
 
-JSBROWSER_API int   jsbi_hash(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_stack_eq(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos1, jsb::impl::StackPosition stack_pos2);
+JSBROWSER_API int jsbi_hash(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_stack_eq(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos1, jsb::impl::StackPosition stack_pos2);
 
 // GLOBAL HANDLE MANAGEMENT
 JSBROWSER_API bool jsbi_handle_eq(jsb::impl::JSRuntime engine_id, jsb::impl::HandleID handle1, jsb::impl::StackPosition handle2);
@@ -143,24 +143,24 @@ JSBROWSER_API jsb::impl::HandleID jsbi_handle_New(jsb::impl::JSRuntime engine_id
 JSBROWSER_API jsb::impl::StackPosition jsbi_handle_PushStack(jsb::impl::JSRuntime engine_id, jsb::impl::HandleID handle);
 
 // JS VALUE TYPE CHECKING
-JSBROWSER_API bool  jsbi_IsNullOrUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsNull(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsExternal(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsObject(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsSymbol(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsString(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsFunction(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsBoolean(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsNumber(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsBigInt(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsNullOrUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsNull(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsUndefined(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsExternal(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsObject(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsSymbol(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsString(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsFunction(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsBoolean(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsNumber(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsBigInt(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 
-JSBROWSER_API bool  jsbi_IsInt32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsUint32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsInt32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsUint32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 
-JSBROWSER_API bool  jsbi_IsPromise(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsArray(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsMap(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
-JSBROWSER_API bool  jsbi_IsArrayBuffer(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsPromise(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsArray(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsMap(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool jsbi_IsArrayBuffer(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 
 #endif

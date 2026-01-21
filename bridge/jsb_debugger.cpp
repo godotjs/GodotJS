@@ -5,10 +5,10 @@
 #include "core/io/tcp_server.h"
 
 #if JSB_WITH_DEBUGGER
-#if JSB_WITH_LWS && JSB_WITH_V8
-#include "libwebsockets.h"
+    #if JSB_WITH_LWS && JSB_WITH_V8
+        #include "libwebsockets.h"
 
-#define JSB_DEBUGGER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSDebugger, Severity, Format, ##__VA_ARGS__)
+        #define JSB_DEBUGGER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSDebugger, Severity, Format, ##__VA_ARGS__)
 
 namespace jsb
 {
@@ -61,7 +61,7 @@ namespace jsb
             }
             return 0;
         }
-    }
+    } // namespace
 
     class JSInspectorChannel : public v8_inspector::V8Inspector::Channel
     {
@@ -74,7 +74,7 @@ namespace jsb
 
     public:
         JSInspectorChannel(lws* p_wsi, v8::Isolate* p_isolate, v8_inspector::V8Inspector& p_inspector)
-        : isolate_(p_isolate), wsi_(p_wsi)
+            : isolate_(p_isolate), wsi_(p_wsi)
         {
             v8_inspector::StringView state;
             v8_inspector::V8Inspector::ClientTrustLevel trust_level = v8_inspector::V8Inspector::ClientTrustLevel::kFullyTrusted;
@@ -100,7 +100,7 @@ namespace jsb
         bool on_received(const unsigned char* p_buf, size_t p_len)
         {
             jsb_check(session_);
-            jsb_check(p_len < (size_t)kMaxRecvBufSize);
+            jsb_check(p_len < (size_t) kMaxRecvBufSize);
             if (lws_is_first_fragment(wsi_))
             {
                 recv_buffer_->seek(0);
@@ -147,7 +147,7 @@ namespace jsb
             if (!_send_queue.is_empty())
             {
                 Ref<StreamPeerBuffer> buffer = _send_queue[0];
-                const int len =  buffer->get_position() - LWS_PRE;
+                const int len = buffer->get_position() - LWS_PRE;
                 const int sent = lws_write(wsi_, buffer->get_data_array().ptrw() + LWS_PRE, len, LWS_WRITE_TEXT);
                 if (sent != len)
                 {
@@ -218,7 +218,7 @@ namespace jsb
         std::unique_ptr<v8_inspector::V8Inspector> inspector_;
         uint16_t port_;
 
-        lws_protocols protocols_[2] = { {}, {} };
+        lws_protocols protocols_[2] = {{}, {}};
         lws_context* wss_;
         std::unique_ptr<JSInspectorChannel> channel_;
 
@@ -227,9 +227,7 @@ namespace jsb
 
     public:
         JavaScriptDebuggerImpl(v8::Isolate* p_isolate, uint16_t p_port)
-            : isolate_(p_isolate), port_(p_port)
-            , wss_(nullptr)
-            , state_(ECS_NONE), context_index_(0)
+            : isolate_(p_isolate), port_(p_port), wss_(nullptr), state_(ECS_NONE), context_index_(0)
         {
         }
 
@@ -247,14 +245,14 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate);
             v8::HandleScope handle_scope(isolate);
 
-            //lws_set_log_level(LLL_USER | LLL_DEBUG | LLL_NOTICE | LLL_ERR | LLL_WARN | LLL_INFO | LLL_CLIENT | LLL_THREAD, _lws_log_callback);
+            // lws_set_log_level(LLL_USER | LLL_DEBUG | LLL_NOTICE | LLL_ERR | LLL_WARN | LLL_INFO | LLL_CLIENT | LLL_THREAD, _lws_log_callback);
             lws_set_log_level(LLL_USER | LLL_ERR | LLL_WARN, _lws_log_callback);
 
             jsb_check(std::size(protocols_) >= 2);
             protocols_[0].name = "binary";
             protocols_[0].callback = _v8_protocol_callback;
             protocols_[0].per_session_data_size = 0;
-            protocols_[0].rx_buffer_size = (size_t)kMaxProtocolBufSize;
+            protocols_[0].rx_buffer_size = (size_t) kMaxProtocolBufSize;
 
             if (port_ != 0)
             {
@@ -364,7 +362,7 @@ namespace jsb
         static int _v8_protocol_callback(lws* wsi, lws_callback_reasons reason, void* user, void* in, size_t len)
         {
             lws_context* ctx = lws_get_context(wsi);
-            JavaScriptDebuggerImpl* impl = (JavaScriptDebuggerImpl*)lws_context_user(ctx);
+            JavaScriptDebuggerImpl* impl = (JavaScriptDebuggerImpl*) lws_context_user(ctx);
 
             switch (reason)
             {
@@ -411,121 +409,127 @@ namespace jsb
                 impl->_on_lws_close(wsi);
                 return -1;
             case LWS_CALLBACK_HTTP:
+            {
+                const String uri = get_uri(wsi, WSI_TOKEN_GET_URI);
+                if (uri == "/json" || uri == "/json/list")
                 {
-                    const String uri = get_uri(wsi, WSI_TOKEN_GET_URI);
-                    if (uri == "/json" || uri == "/json/list")
+                    char host_buf[256];
+                    int hlen = lws_hdr_copy(wsi, host_buf, sizeof(host_buf), WSI_TOKEN_HOST);
+
+                    String host_authority;
+
+                    if (hlen > 0)
                     {
-                        char host_buf[256];
-                        int hlen = lws_hdr_copy(wsi, host_buf, sizeof(host_buf), WSI_TOKEN_HOST);
-
-                        String host_authority;
-
-                        if (hlen > 0) {
-                            host_authority = String::utf8(host_buf);
-                        } else {
-                            host_authority = "localhost:" + itos(impl->port_);
-                        }
-
-                        constexpr static char kJsonListFormat[] = \
-                            "[{"
-                            "\"description\": \"" JSB_MODULE_NAME_STRING "\","
-                            "\"id\": \"0\","
-                            "\"title\": \"" JSB_MODULE_NAME_STRING "\","
-                            "\"type\": \"node\","
-                            "\"webSocketDebuggerUrl\" : \"ws://%s\""
-                            "}]";
-
-                        const CharString content = jsb_format(kJsonListFormat, host_authority).utf8();
-                        JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/list");
-                        _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
-                    }
-                    else if (uri == "/json/version")
-                    {
-                        char host_buf[256];
-                        int hlen = lws_hdr_copy(wsi, host_buf, sizeof(host_buf), WSI_TOKEN_HOST);
-
-                        String host_authority;
-
-                        if (hlen > 0) {
-                            host_authority = String::utf8(host_buf);
-                        } else {
-                            host_authority = "localhost:" + itos(impl->port_);
-                        }
-
-                        constexpr static char kJsonVersionFormat[] = \
-                            "{"
-                            "    \"Browser\": \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
-                            "    \"Protocol-Version\" : \"1.1\","
-                            "    \"User-Agent\" : \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
-                            "    \"V8-Version\" : \"" V8_VERSION_STRING "\","
-                            "    \"webSocketDebuggerUrl\" : \"ws://%s\""
-                            "}";
-                        const CharString content = jsb_format(kJsonVersionFormat, host_authority).utf8();
-                        JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/version");
-                        _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
-                    }
-                    else if (uri.ends_with(".map") || uri.ends_with(".ts") || uri.ends_with(".js"))
-                    {
-                        if (uri.find("..") != -1)
-                        {
-                             JSB_DEBUGGER_LOG(Warning, "Access denied for path with traversal: %s", uri);
-                             lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, "Access Denied");
-                             return -1;
-                        }
-
-                        String res_path = "res://" + uri.trim_prefix("/");
-
-                        if (!FileAccess::exists(res_path))
-                        {
-                            JSB_DEBUGGER_LOG(Verbose, "Source file not found: %s", res_path);
-                            lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, "Not Found");
-                            return -1;
-                        }
-
-                        String global_path = ProjectSettings::get_singleton()->globalize_path(res_path);
-
-                        const char* mime = "application/octet-stream";
-
-                        if (uri.ends_with(".map"))
-                        {
-                            mime = "application/json";
-                        }
-                        else if (uri.ends_with(".js"))
-                        {
-                            mime = "application/javascript";
-                        }
-                        else if (uri.ends_with(".ts"))
-                        {
-                            mime = "application/x-typescript";
-                        }
-
-                        JSB_DEBUGGER_LOG(Verbose, "Serving source file: %s", global_path);
-
-                        int serve_result = lws_serve_http_file(wsi, global_path.utf8().get_data(), mime, nullptr, 0);
-
-                        if (serve_result < 0)
-                        {
-                            // lws_serve_http_file raised an error
-                            return -1;
-                        }
-
-                        if (serve_result > 0 && lws_http_transaction_completed(wsi))
-                        {
-                            // Completed
-                            return -1;
-                        }
-
-                        // Still serving the file in chunks
-                        return 0;
+                        host_authority = String::utf8(host_buf);
                     }
                     else
                     {
-                        JSB_DEBUGGER_LOG(VeryVerbose, "GET %s 404", uri);
-                        lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, "<html><body>NOT FOUND</body></html>");
+                        host_authority = "localhost:" + itos(impl->port_);
                     }
 
-                    return -1;
+                    constexpr static char kJsonListFormat[] =
+                        "[{"
+                        "\"description\": \"" JSB_MODULE_NAME_STRING "\","
+                        "\"id\": \"0\","
+                        "\"title\": \"" JSB_MODULE_NAME_STRING "\","
+                        "\"type\": \"node\","
+                        "\"webSocketDebuggerUrl\" : \"ws://%s\""
+                        "}]";
+
+                    const CharString content = jsb_format(kJsonListFormat, host_authority).utf8();
+                    JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/list");
+                    _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
                 }
+                else if (uri == "/json/version")
+                {
+                    char host_buf[256];
+                    int hlen = lws_hdr_copy(wsi, host_buf, sizeof(host_buf), WSI_TOKEN_HOST);
+
+                    String host_authority;
+
+                    if (hlen > 0)
+                    {
+                        host_authority = String::utf8(host_buf);
+                    }
+                    else
+                    {
+                        host_authority = "localhost:" + itos(impl->port_);
+                    }
+
+                    constexpr static char kJsonVersionFormat[] =
+                        "{"
+                        "    \"Browser\": \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
+                                                                                                                             "    \"Protocol-Version\" : \"1.1\","
+                                                                                                                             "    \"User-Agent\" : \"" JSB_MODULE_NAME_STRING "/" V8_S(JSB_MAJOR_VERSION) "." V8_S(JSB_MINOR_VERSION) "\","
+                                                                                                                                                                                                                                      "    \"V8-Version\" : \"" V8_VERSION_STRING "\","
+                                                                                                                                                                                                                                      "    \"webSocketDebuggerUrl\" : \"ws://%s\""
+                                                                                                                                                                                                                                      "}";
+                    const CharString content = jsb_format(kJsonVersionFormat, host_authority).utf8();
+                    JSB_DEBUGGER_LOG(VeryVerbose, "GET /json/version");
+                    _response_json(wsi, HTTP_STATUS_OK, content.ptr(), content.length());
+                }
+                else if (uri.ends_with(".map") || uri.ends_with(".ts") || uri.ends_with(".js"))
+                {
+                    if (uri.find("..") != -1)
+                    {
+                        JSB_DEBUGGER_LOG(Warning, "Access denied for path with traversal: %s", uri);
+                        lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, "Access Denied");
+                        return -1;
+                    }
+
+                    String res_path = "res://" + uri.trim_prefix("/");
+
+                    if (!FileAccess::exists(res_path))
+                    {
+                        JSB_DEBUGGER_LOG(Verbose, "Source file not found: %s", res_path);
+                        lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, "Not Found");
+                        return -1;
+                    }
+
+                    String global_path = ProjectSettings::get_singleton()->globalize_path(res_path);
+
+                    const char* mime = "application/octet-stream";
+
+                    if (uri.ends_with(".map"))
+                    {
+                        mime = "application/json";
+                    }
+                    else if (uri.ends_with(".js"))
+                    {
+                        mime = "application/javascript";
+                    }
+                    else if (uri.ends_with(".ts"))
+                    {
+                        mime = "application/x-typescript";
+                    }
+
+                    JSB_DEBUGGER_LOG(Verbose, "Serving source file: %s", global_path);
+
+                    int serve_result = lws_serve_http_file(wsi, global_path.utf8().get_data(), mime, nullptr, 0);
+
+                    if (serve_result < 0)
+                    {
+                        // lws_serve_http_file raised an error
+                        return -1;
+                    }
+
+                    if (serve_result > 0 && lws_http_transaction_completed(wsi))
+                    {
+                        // Completed
+                        return -1;
+                    }
+
+                    // Still serving the file in chunks
+                    return 0;
+                }
+                else
+                {
+                    JSB_DEBUGGER_LOG(VeryVerbose, "GET %s 404", uri);
+                    lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, "<html><body>NOT FOUND</body></html>");
+                }
+
+                return -1;
+            }
             case LWS_CALLBACK_HTTP_BODY_COMPLETION:
                 JSB_DEBUGGER_LOG(VeryVerbose, "LWS_CALLBACK_HTTP_BODY_COMPLETION");
                 lws_return_http_status(wsi, 200, nullptr);
@@ -544,8 +548,8 @@ namespace jsb
             }
         }
     };
-}
-#else
+} // namespace jsb
+    #else
 namespace jsb
 {
     class JavaScriptDebuggerImpl
@@ -559,14 +563,15 @@ namespace jsb
 
         void on_context_created(const v8::Local<v8::Context>& p_context) {}
         void on_context_destroyed(const v8::Local<v8::Context>& p_context) {}
-
     };
-}
-#endif
+} // namespace jsb
+    #endif
 namespace jsb
 {
-    JavaScriptDebugger::JavaScriptDebugger() : impl(nullptr)
-    {}
+    JavaScriptDebugger::JavaScriptDebugger()
+        : impl(nullptr)
+    {
+    }
 
     JavaScriptDebugger::~JavaScriptDebugger()
     {
@@ -603,5 +608,5 @@ namespace jsb
     {
         if (impl) impl->on_context_destroyed(p_context);
     }
-}
+} // namespace jsb
 #endif

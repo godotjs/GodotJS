@@ -10,25 +10,26 @@ namespace jsb
         uint8_t* ptr_ = nullptr;
         size_t size_ = 0;
 
-        Buffer(uint8_t* p_ptr, size_t p_size) : ptr_(p_ptr), size_(p_size) {}
+        Buffer(uint8_t* p_ptr, size_t p_size)
+            : ptr_(p_ptr), size_(p_size) {}
 
-        //NOTE only free the memory, ptr_ itself won't be changed.
-        jsb_force_inline void drop() 
-        { 
-            if (ptr_) impl::Helper::free(ptr_); 
+        // NOTE only free the memory, ptr_ itself won't be changed.
+        jsb_force_inline void drop()
+        {
+            if (ptr_) impl::Helper::free(ptr_);
         }
 
     public:
         static Buffer steal(uint8_t* p_ptr, size_t p_size)
         {
-            return { p_ptr, p_size };
+            return {p_ptr, p_size};
         }
 
         static Buffer copy(const uint8_t* p_ptr, size_t p_size)
         {
             uint8_t* ptr = (uint8_t*) memalloc(p_size);
             memcpy(ptr, p_ptr, p_size);
-            return { ptr, p_size };
+            return {ptr, p_size};
         }
 
         Buffer() = default;
@@ -62,5 +63,5 @@ namespace jsb
         jsb_force_inline uint8_t* ptr() { return ptr_; }
     };
 
-}
+} // namespace jsb
 #endif

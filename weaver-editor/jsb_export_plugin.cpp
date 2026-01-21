@@ -4,14 +4,15 @@
 
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 
-HashSet<String> GodotJSExportPlugin::ignored_paths_ {
+HashSet<String> GodotJSExportPlugin::ignored_paths_{
     String("res://jsconfig.json"),
     String("res://tsconfig.json"),
     String("res://package.json"),
     String("res://package-lock.json"),
 };
 
-GodotJSExportPlugin::GodotJSExportPlugin() : super()
+GodotJSExportPlugin::GodotJSExportPlugin()
+    : super()
 {
     env_ = GodotJSScriptLanguage::get_singleton()->get_environment();
     jsb_check(env_);
@@ -26,7 +27,7 @@ PackedStringArray GodotJSExportPlugin::_get_export_features(const Ref<EditorExpo
     return {};
 }
 
-void GodotJSExportPlugin::export_raw_files(const PackedStringArray &p_paths, bool p_permit_typescript)
+void GodotJSExportPlugin::export_raw_files(const PackedStringArray& p_paths, bool p_permit_typescript)
 {
     for (const String& file_path : p_paths)
     {
@@ -45,7 +46,7 @@ void GodotJSExportPlugin::export_raw_files(const PackedStringArray &p_paths, boo
     }
 }
 
-void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<String> &r_list, bool p_is_node_module)
+void GodotJSExportPlugin::get_script_resources(const String& p_dir, Vector<String>& r_list, bool p_is_node_module)
 {
     Ref<DirAccess> dir = DirAccess::open(p_dir);
 
@@ -190,7 +191,7 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path, bool p_re
 
     // export dependent files.
     // force module loading. ensure the module hierarchy available.
-    if (jsb::JavaScriptModule* module; env_->load(p_path, &module) == OK)
+    if (jsb::JavaScriptModule * module; env_->load(p_path, &module) == OK)
     {
         v8::Isolate* isolate = env_->get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -231,7 +232,7 @@ bool GodotJSExportPlugin::export_compiled_script(const String& p_path, bool p_re
 
 void GodotJSExportPlugin::_export_file(const String& p_path, const String& p_type, const HashSet<String>& p_features)
 {
-    //TODO when exporting for web.impl, need to reorganize all scripts into a monolithic script (like webpack)? and preload it before everything get run.
+    // TODO when exporting for web.impl, need to reorganize all scripts into a monolithic script (like webpack)? and preload it before everything get run.
 
     if (p_path.ends_with("." JSB_TYPESCRIPT_EXT))
     {
@@ -249,11 +250,11 @@ void GodotJSExportPlugin::_export_file(const String& p_path, const String& p_typ
             JSB_EXPORTER_LOG(Verbose, "ignored: %s", p_path);
         }
 
-        //TODO handle module deps if it's a .js file ?
-        // if (p_path.ends_with("." JSB_JAVASCRIPT_EXT))
-        // {
-        //     export_compiled_script(p_path);
-        // }
+        // TODO handle module deps if it's a .js file ?
+        //  if (p_path.ends_with("." JSB_JAVASCRIPT_EXT))
+        //  {
+        //      export_compiled_script(p_path);
+        //  }
     }
 }
 
@@ -264,7 +265,7 @@ String GodotJSExportPlugin::get_name() const
 
 bool GodotJSExportPlugin::supports_platform(const Ref<EditorExportPlatform>& p_export_platform) const
 {
-    //TODO
+    // TODO
     JSB_EXPORTER_LOG(VeryVerbose, "GodotJSExportPlugin::supports_platform( %s )", p_export_platform.is_valid() ? p_export_platform->get_name() : String("null"));
     return true;
 }

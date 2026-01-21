@@ -4,17 +4,17 @@
 #include "jsb.gen.h"
 
 #if __has_include(<gdextension_interface.h>)
-#define JSB_GDEXTENSION 1
+    #define JSB_GDEXTENSION 1
 #else
-#define JSB_GDEXTENSION 0
+    #define JSB_GDEXTENSION 0
 #endif
 
 #ifndef JSB_DEBUG
-#   if defined(DEBUG_ENABLED)
-#       define JSB_DEBUG 1
-#   else
-#       define JSB_DEBUG 0
-#   endif
+    #if defined(DEBUG_ENABLED)
+        #define JSB_DEBUG 1
+    #else
+        #define JSB_DEBUG 0
+    #endif
 #endif
 
 #define JSB_WITH_ESSENTIALS !JSB_WITH_WEB
@@ -28,16 +28,16 @@
 // lower log levels are completely skipped (at compile-time)
 // see `internal/jsb_log_severity.def.h`
 #ifndef JSB_MIN_LOG_LEVEL
-#   if JSB_DEBUG
-#       define JSB_MIN_LOG_LEVEL Verbose
-#   else
-#       define JSB_MIN_LOG_LEVEL Warning
-#   endif
+    #if JSB_DEBUG
+        #define JSB_MIN_LOG_LEVEL Verbose
+    #else
+        #define JSB_MIN_LOG_LEVEL Warning
+    #endif
 #endif // JSB_MIN_LOG_LEVEL
 
 // enable jsb_check
 #ifndef JSB_WITH_CHECK
-#define JSB_WITH_CHECK JSB_DEBUG
+    #define JSB_WITH_CHECK JSB_DEBUG
 #endif
 
 // output verbose log anyway even if `OS::get_singleton()->is_stdout_verbose()` is false
@@ -47,7 +47,7 @@
 #define JSB_BENCHMARK 1
 
 // [EXPERIMENTAL] enable auto-complete feature in the input field of REPL.
-//NOTE this feature introduces side effects since it will try to evaluate the input string before you submit.
+// NOTE this feature introduces side effects since it will try to evaluate the input string before you submit.
 #define JSB_REPL_AUTO_COMPLETE 1
 
 // (only available when using v8)
@@ -95,7 +95,7 @@
 // use `BigInt` if a value from godot greater than JSB_MAX_SAFE_INTEGER which can not represented as Integer(Number).
 // used only if `JSB_WITH_BIGINT` is enabled.
 // DO NOT CHANGE THIS VALUE.
-#define JSB_MAX_SAFE_INTEGER (((int64_t)1 << 53) - 1) // 9007199254740991
+#define JSB_MAX_SAFE_INTEGER (((int64_t) 1 << 53) - 1) // 9007199254740991
 
 // [EXPERIMENTAL] use optimized wrapper function calls if possible
 #define JSB_FAST_REFLECTION 1
@@ -119,9 +119,9 @@
 
 // [EXPERIMENTAL] DONT CHANGE IT, AND NEED CLANG TOOLSET IF USING MSVC
 #if !defined(_MSC_VER) || defined(__clang__)
-#   define JSB_V8_CPPGC 0 // 1
-#else 
-#   define JSB_V8_CPPGC 0
+    #define JSB_V8_CPPGC 0 // 1
+#else
+    #define JSB_V8_CPPGC 0
 #endif
 
 #define JSB_SHADOW_ENVIRONMENT_AS_PARSER 1
@@ -129,7 +129,7 @@
 
 // size limitation for string name cache.
 // all least recently used item will be removed if the cache size exceeds this value.
-// 0 or negative values means unlimited cache size. 
+// 0 or negative values means unlimited cache size.
 #define JSB_STRING_NAME_CACHE_SIZE 512
 
 // slots for object/script/class info is reallocated on heap (as a whole block of memory)
@@ -150,12 +150,12 @@
 // they usually used for testing (like mocha, jest, etc).
 #define JSB_EXCLUDE_TEST_RES_SCRIPTS 1
 
-#define JSB_DTS_EXT        "d.ts"
+#define JSB_DTS_EXT "d.ts"
 #define JSB_TYPESCRIPT_EXT "ts"
 #define JSB_JAVASCRIPT_EXT "js"
-#define JSB_COMMONJS_EXT   "cjs"
-#define JSB_MODULE_EXT     "mjs"
-#define JSB_JSON_EXT       "json"
+#define JSB_COMMONJS_EXT "cjs"
+#define JSB_MODULE_EXT "mjs"
+#define JSB_JSON_EXT "json"
 
 // A helper version tag for the jsb.*.bundle.js scripts (which is embedded in .cpp source).
 // It could ensure your engine built with the expected version of the jsb bundle scripts.

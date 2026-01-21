@@ -12,21 +12,21 @@
 namespace jsb::internal
 {
 #ifdef TOOLS_ENABLED
-    static constexpr char kEdDebuggerPort[] =     JSB_MODULE_NAME_STRING "/debugger/editor_port";
-    static constexpr char kEdIgnoredClasses[] =     JSB_MODULE_NAME_STRING "/codegen/ignored_classes";
-    static constexpr char kEdAutogenPath[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_path";
-    static constexpr char kEdAutogenSceneDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_scene_dts_on_save";
-    static constexpr char kEdGenSceneDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_scene_dts";
-    static constexpr char kEdAutogenResourceDTSOnSave[] =     JSB_MODULE_NAME_STRING "/codegen/autogen_resource_dts_on_save";
-    static constexpr char kEdGenResourceDTS[] =     JSB_MODULE_NAME_STRING "/codegen/generate_resource_dts";
-    static constexpr char kEdCodegenUseProjectSettings[] =     JSB_MODULE_NAME_STRING "/codegen/use_project_settings";
+    static constexpr char kEdDebuggerPort[] = JSB_MODULE_NAME_STRING "/debugger/editor_port";
+    static constexpr char kEdIgnoredClasses[] = JSB_MODULE_NAME_STRING "/codegen/ignored_classes";
+    static constexpr char kEdAutogenPath[] = JSB_MODULE_NAME_STRING "/codegen/autogen_path";
+    static constexpr char kEdAutogenSceneDTSOnSave[] = JSB_MODULE_NAME_STRING "/codegen/autogen_scene_dts_on_save";
+    static constexpr char kEdGenSceneDTS[] = JSB_MODULE_NAME_STRING "/codegen/generate_scene_dts";
+    static constexpr char kEdAutogenResourceDTSOnSave[] = JSB_MODULE_NAME_STRING "/codegen/autogen_resource_dts_on_save";
+    static constexpr char kEdGenResourceDTS[] = JSB_MODULE_NAME_STRING "/codegen/generate_resource_dts";
+    static constexpr char kEdCodegenUseProjectSettings[] = JSB_MODULE_NAME_STRING "/codegen/use_project_settings";
 #endif
 
     // use unnecessary first category layer (runtime and editor) to make the second layer shown as sections in project settings
 
-    static constexpr char kRtDebuggerPort[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/debugger_port";
-    static constexpr char kRtDebuggerSourceMapBaseUrl[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/source_map_base_url";
-    static constexpr char kRtDebuggerWaitForDebugger[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/wait_for_debugger";
+    static constexpr char kRtDebuggerPort[] = JSB_MODULE_NAME_STRING "/runtime/debugger/debugger_port";
+    static constexpr char kRtDebuggerSourceMapBaseUrl[] = JSB_MODULE_NAME_STRING "/runtime/debugger/source_map_base_url";
+    static constexpr char kRtDebuggerWaitForDebugger[] = JSB_MODULE_NAME_STRING "/runtime/debugger/wait_for_debugger";
     static constexpr char kRtSourceMapEnabled[] = JSB_MODULE_NAME_STRING "/runtime/logger/source_map_enabled";
     static constexpr char kRtAdditionalSearchPaths[] = JSB_MODULE_NAME_STRING "/runtime/core/additional_search_paths";
     static constexpr char kRtEntryScriptPath[] = JSB_MODULE_NAME_STRING "/runtime/core/entry_script_path";
@@ -83,16 +83,16 @@ namespace jsb::internal
             inited = true;
             static constexpr char filter[] = "*." JSB_JAVASCRIPT_EXT ",*." JSB_COMMONJS_EXT ",*." JSB_MODULE_EXT
 #if JSB_USE_TYPESCRIPT
-                                            ",*." JSB_TYPESCRIPT_EXT
+                                             ",*." JSB_TYPESCRIPT_EXT
 #endif
-            ;
+                ;
 
             _GLOBAL_DEF(kRtDebuggerPort, 9229, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
             _GLOBAL_DEF(kRtDebuggerSourceMapBaseUrl, "http://localhost:9230", JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(false), JSB_SET_INTERNAL(false));
-            _GLOBAL_DEF(kRtDebuggerWaitForDebugger, false, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
-            _GLOBAL_DEF(kRtSourceMapEnabled, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
-            _GLOBAL_DEF(kRtAdditionalSearchPaths, PackedStringArray(), JSB_SET_RESTART(false),  JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
-            _GLOBAL_DEF(kRtCamelCaseBindingsEnabled, false, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtDebuggerWaitForDebugger, false, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true), JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtSourceMapEnabled, true, JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true), JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtAdditionalSearchPaths, PackedStringArray(), JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true), JSB_SET_INTERNAL(false));
+            _GLOBAL_DEF(kRtCamelCaseBindingsEnabled, false, JSB_SET_RESTART(true), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true), JSB_SET_INTERNAL(false));
 
             {
                 PropertyInfo EntryScriptPath;
@@ -100,7 +100,7 @@ namespace jsb::internal
                 EntryScriptPath.name = kRtEntryScriptPath;
                 EntryScriptPath.hint = PROPERTY_HINT_FILE;
                 EntryScriptPath.hint_string = filter;
-                _GLOBAL_DEF(EntryScriptPath, String(), JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+                _GLOBAL_DEF(EntryScriptPath, String(), JSB_SET_RESTART(false), JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true), JSB_SET_INTERNAL(false));
             }
 
             _GLOBAL_DEF(kRtPackagingWithSourceMap, true, false);
@@ -111,7 +111,7 @@ namespace jsb::internal
                 PackagingIncludeFiles.name = kRtPackagingIncludeFiles;
                 PackagingIncludeFiles.hint = PROPERTY_HINT_ARRAY_TYPE;
                 PackagingIncludeFiles.hint_string = vformat("%s/%s:%s", Variant::STRING, PROPERTY_HINT_FILE, filter);
-                _GLOBAL_DEF(PackagingIncludeFiles, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+                _GLOBAL_DEF(PackagingIncludeFiles, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true), JSB_SET_INTERNAL(false));
             }
 
             {
@@ -120,7 +120,7 @@ namespace jsb::internal
                 PackagingIncludeDirectories.name = kRtPackagingIncludeDirectories;
                 PackagingIncludeDirectories.hint = PROPERTY_HINT_ARRAY_TYPE;
                 PackagingIncludeDirectories.hint_string = vformat("%s/%s:%s", Variant::STRING, PROPERTY_HINT_DIR, filter);
-                _GLOBAL_DEF(PackagingIncludeDirectories, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true),  JSB_SET_INTERNAL(false));
+                _GLOBAL_DEF(PackagingIncludeDirectories, Array(), false, JSB_SET_IGNORE_DOCS(false), JSB_SET_BASIC(true), JSB_SET_INTERNAL(false));
             }
 
             _GLOBAL_DEF(kRtPackagingReferencedNodeModules, true, false);
@@ -290,4 +290,4 @@ namespace jsb::internal
         return "\t";
     }
 
-}
+} // namespace jsb::internal

@@ -8,7 +8,7 @@ namespace jsb::internal
     {
     public:
         virtual ~Process();
-        static std::shared_ptr<Process> create(const String& p_name, const String &p_path, const List<String>& p_arguments);
+        static std::shared_ptr<Process> create(const String& p_name, const String& p_path, const List<String>& p_arguments);
 
         void stop();
         bool is_running() const;
@@ -20,8 +20,6 @@ namespace jsb::internal
         virtual Error on_start(const String& p_name, const String& p_path, const List<String>& p_arguments) = 0;
         virtual void on_stop() = 0;
         virtual bool _is_running() const = 0;
-
     };
-}
+} // namespace jsb::internal
 #endif
-

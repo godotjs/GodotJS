@@ -14,14 +14,37 @@ namespace jsb::impl
 {
     namespace impl_private
     {
-        template<typename T> struct Data {};
+        template <typename T>
+        struct Data
+        {
+        };
 
-        template<> struct Data<int32_t> { static v8::Local<v8::Value> New(v8::Isolate* isolate, int32_t value) { return v8::Int32::New(isolate, value); } };
-        template<> struct Data<int64_t> { static v8::Local<v8::Value> New(v8::Isolate* isolate, int64_t value) { return Helper::new_integer(isolate, value); } };
-        template<> struct Data<uint32_t> { static v8::Local<v8::Value> New(v8::Isolate* isolate, uint32_t value) { return v8::Uint32::NewFromUnsigned(isolate, value); } };
-        template<> struct Data<void*> { static v8::Local<v8::Value> New(v8::Isolate* isolate, void* value) { return v8::External::New(isolate, value); } };
-        template<> struct Data<v8::Local<v8::Value>> { static v8::Local<v8::Value> New(v8::Isolate* isolate, v8::Local<v8::Value> value) { return value; } };
-    }
+        template <>
+        struct Data<int32_t>
+        {
+            static v8::Local<v8::Value> New(v8::Isolate* isolate, int32_t value) { return v8::Int32::New(isolate, value); }
+        };
+        template <>
+        struct Data<int64_t>
+        {
+            static v8::Local<v8::Value> New(v8::Isolate* isolate, int64_t value) { return Helper::new_integer(isolate, value); }
+        };
+        template <>
+        struct Data<uint32_t>
+        {
+            static v8::Local<v8::Value> New(v8::Isolate* isolate, uint32_t value) { return v8::Uint32::NewFromUnsigned(isolate, value); }
+        };
+        template <>
+        struct Data<void*>
+        {
+            static v8::Local<v8::Value> New(v8::Isolate* isolate, void* value) { return v8::External::New(isolate, value); }
+        };
+        template <>
+        struct Data<v8::Local<v8::Value>>
+        {
+            static v8::Local<v8::Value> New(v8::Isolate* isolate, v8::Local<v8::Value> value) { return value; }
+        };
+    } // namespace impl_private
 
     class ClassBuilder
     {
@@ -37,12 +60,14 @@ namespace jsb::impl
         struct EnumDeclaration
         {
             EnumDeclaration(ClassBuilder* builder, bool is_instance_method, const v8::Local<v8::Name> name)
-            : builder_(builder), enumeration_(v8::Object::New(builder_->isolate_))
+                : builder_(builder), enumeration_(v8::Object::New(builder_->isolate_))
             {
                 jsb_check(!builder_->closed_);
 
-                if (is_instance_method) builder_->prototype_template_->Set(builder_->GetContext(), name, enumeration_);
-                else builder_->template_->Set(builder_->GetContext(), name, enumeration_);
+                if (is_instance_method)
+                    builder_->prototype_template_->Set(builder_->GetContext(), name, enumeration_);
+                else
+                    builder_->template_->Set(builder_->GetContext(), name, enumeration_);
             }
 
             EnumDeclaration& Value(const String& name, int64_t data)
@@ -72,14 +97,15 @@ namespace jsb::impl
 
         struct MemberDeclaration
         {
-            MemberDeclaration(ClassBuilder* builder, bool is_instance_method) : builder_(builder), is_instance_method(is_instance_method) {}
+            MemberDeclaration(ClassBuilder* builder, bool is_instance_method)
+                : builder_(builder), is_instance_method(is_instance_method) {}
 
             EnumDeclaration Enum(const String& name)
             {
                 return EnumDeclaration(builder_, is_instance_method, Helper::new_string(builder_->isolate_, name));
             }
 
-            template<size_t N>
+            template <size_t N>
             void Method(const char (&name)[N], const v8::FunctionCallback callback)
             {
                 jsb_check(!builder_->closed_);
@@ -88,8 +114,10 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, callback, {});
 
-                if (is_instance_method) builder_->prototype_template_->Set(builder_->GetContext(), key, value);
-                else builder_->template_->Set(builder_->GetContext(), key, value);
+                if (is_instance_method)
+                    builder_->prototype_template_->Set(builder_->GetContext(), key, value);
+                else
+                    builder_->template_->Set(builder_->GetContext(), key, value);
             }
 
             void Method(const String& name, const v8::FunctionCallback callback)
@@ -100,11 +128,13 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, callback, {});
 
-                if (is_instance_method) builder_->prototype_template_->Set(builder_->GetContext(), key, value);
-                else builder_->template_->Set(builder_->GetContext(), key, value);
+                if (is_instance_method)
+                    builder_->prototype_template_->Set(builder_->GetContext(), key, value);
+                else
+                    builder_->template_->Set(builder_->GetContext(), key, value);
             }
 
-            template<typename T>
+            template <typename T>
             void Method(const String& name, const v8::FunctionCallback callback, T data)
             {
                 jsb_check(!builder_->closed_);
@@ -113,12 +143,14 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
                 const v8::Local<v8::FunctionTemplate> value = JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, callback, impl_private::Data<T>::New(builder_->isolate_, data));
 
-                if (is_instance_method) builder_->prototype_template_->Set(builder_->GetContext(), key, value);
-                else builder_->template_->Set(builder_->GetContext(), key, value);
+                if (is_instance_method)
+                    builder_->prototype_template_->Set(builder_->GetContext(), key, value);
+                else
+                    builder_->template_->Set(builder_->GetContext(), key, value);
             }
 
             // getter/setter with common data payload
-            template<typename T>
+            template <typename T>
             void Property(const String& name, const v8::FunctionCallback getter_cb, const v8::FunctionCallback setter_cb, T data)
             {
                 jsb_check(!builder_->closed_);
@@ -126,48 +158,55 @@ namespace jsb::impl
 
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
                 const v8::Local<v8::Value> payload = impl_private::Data<T>::New(builder_->isolate_, data);
-                const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, getter_cb, payload)
-                    : v8::Local<v8::FunctionTemplate>();
-                const v8::Local<v8::FunctionTemplate> setter = setter_cb \
-                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, setter_cb, payload)
-                    : v8::Local<v8::FunctionTemplate>();;
+                const v8::Local<v8::FunctionTemplate> getter = getter_cb
+                                                                   ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, getter_cb, payload)
+                                                                   : v8::Local<v8::FunctionTemplate>();
+                const v8::Local<v8::FunctionTemplate> setter = setter_cb
+                                                                   ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, setter_cb, payload)
+                                                                   : v8::Local<v8::FunctionTemplate>();
+                ;
 
-                if (is_instance_method) builder_->prototype_template_->SetAccessorProperty(key, getter, setter);
-                else builder_->template_->SetAccessorProperty(key, getter, setter);
+                if (is_instance_method)
+                    builder_->prototype_template_->SetAccessorProperty(key, getter, setter);
+                else
+                    builder_->template_->SetAccessorProperty(key, getter, setter);
             }
 
-            template<typename GetterDataT, typename SetterDataT>
+            template <typename GetterDataT, typename SetterDataT>
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data, const v8::FunctionCallback setter_cb, SetterDataT setter_data)
             {
                 jsb_check(!builder_->closed_);
                 v8::HandleScope handle_scope(builder_->isolate_);
 
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
-                const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, getter_cb, impl_private::Data<GetterDataT>::New(builder_->isolate_, getter_data))
-                    : v8::Local<v8::FunctionTemplate>();
-                const v8::Local<v8::FunctionTemplate> setter = setter_cb \
-                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, setter_cb, impl_private::Data<SetterDataT>::New(builder_->isolate_, setter_data))
-                    : v8::Local<v8::FunctionTemplate>();
+                const v8::Local<v8::FunctionTemplate> getter = getter_cb
+                                                                   ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, getter_cb, impl_private::Data<GetterDataT>::New(builder_->isolate_, getter_data))
+                                                                   : v8::Local<v8::FunctionTemplate>();
+                const v8::Local<v8::FunctionTemplate> setter = setter_cb
+                                                                   ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, setter_cb, impl_private::Data<SetterDataT>::New(builder_->isolate_, setter_data))
+                                                                   : v8::Local<v8::FunctionTemplate>();
 
-                if (is_instance_method) builder_->prototype_template_->SetAccessorProperty(key, getter, setter);
-                else builder_->template_->SetAccessorProperty(key, getter, setter);
+                if (is_instance_method)
+                    builder_->prototype_template_->SetAccessorProperty(key, getter, setter);
+                else
+                    builder_->template_->SetAccessorProperty(key, getter, setter);
             }
 
-            template<typename GetterDataT>
+            template <typename GetterDataT>
             void Property(const String& name, const v8::FunctionCallback getter_cb, GetterDataT getter_data)
             {
                 jsb_check(!builder_->closed_);
                 v8::HandleScope handle_scope(builder_->isolate_);
 
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
-                const v8::Local<v8::FunctionTemplate> getter = getter_cb \
-                    ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, getter_cb, impl_private::Data<GetterDataT>::New(builder_->isolate_, getter_data))
-                    : v8::Local<v8::FunctionTemplate>();
+                const v8::Local<v8::FunctionTemplate> getter = getter_cb
+                                                                   ? JSB_NEW_FUNCTION_TEMPLATE(builder_->isolate_, name, getter_cb, impl_private::Data<GetterDataT>::New(builder_->isolate_, getter_data))
+                                                                   : v8::Local<v8::FunctionTemplate>();
 
-                if (is_instance_method) builder_->prototype_template_->SetAccessorProperty(key, getter);
-                else builder_->template_->SetAccessorProperty(key, getter);
+                if (is_instance_method)
+                    builder_->prototype_template_->SetAccessorProperty(key, getter);
+                else
+                    builder_->template_->SetAccessorProperty(key, getter);
             }
 
             void LazyProperty(const String& name, const v8::AccessorNameGetterCallback getter)
@@ -177,23 +216,27 @@ namespace jsb::impl
 
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
 
-                if (is_instance_method) builder_->prototype_template_->SetLazyDataProperty(builder_->GetContext(), key, getter);
-                else builder_->template_->SetLazyDataProperty(builder_->GetContext(), key, getter);
+                if (is_instance_method)
+                    builder_->prototype_template_->SetLazyDataProperty(builder_->GetContext(), key, getter);
+                else
+                    builder_->template_->SetLazyDataProperty(builder_->GetContext(), key, getter);
             }
 
-            template<typename T>
+            template <typename T>
             void Value(const v8::Local<v8::Name> key, T val)
             {
                 jsb_check(!builder_->closed_);
                 v8::HandleScope handle_scope(builder_->isolate_);
 
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_->isolate_, val);
-                if (is_instance_method) builder_->prototype_template_->Set(builder_->GetContext(), key, value);
-                else builder_->template_->Set(builder_->GetContext(), key, value);
+                if (is_instance_method)
+                    builder_->prototype_template_->Set(builder_->GetContext(), key, value);
+                else
+                    builder_->template_->Set(builder_->GetContext(), key, value);
             }
 
             // generic set
-            template<typename T>
+            template <typename T>
             void Value(const String& name, T val)
             {
                 jsb_check(!builder_->closed_);
@@ -202,8 +245,10 @@ namespace jsb::impl
                 const v8::Local<v8::Name> key = Helper::new_string(builder_->isolate_, name);
                 const v8::Local<v8::Value> value = impl_private::Data<T>::New(builder_->isolate_, val);
 
-                if (is_instance_method) builder_->prototype_template_->Set(builder_->GetContext(), key, value);
-                else builder_->template_->Set(builder_->GetContext(), key, value);
+                if (is_instance_method)
+                    builder_->prototype_template_->Set(builder_->GetContext(), key, value);
+                else
+                    builder_->template_->Set(builder_->GetContext(), key, value);
             }
 
         private:
@@ -235,11 +280,11 @@ namespace jsb::impl
             return Class(isolate_, prototype_template_, template_);
         }
 
-        template<uint8_t InternalFieldCount>
+        template <uint8_t InternalFieldCount>
         static ClassBuilder New(v8::Isolate* isolate, const StringName& name, const v8::FunctionCallback constructor, const uint32_t class_payload)
         {
-            //NOTE do not use HandleScope here, because prototype/constructor Local handles are temporarily saved
-            //     in member fields of builder.
+            // NOTE do not use HandleScope here, because prototype/constructor Local handles are temporarily saved
+            //      in member fields of builder.
 
             ClassBuilder builder;
             const String str = name;
@@ -250,11 +295,10 @@ namespace jsb::impl
             builder.isolate_ = isolate;
             builder.prototype_template_ = v8::Local<v8::ObjectTemplate>(v8::Data(isolate, jsbi_NewObject(isolate->rt())));
             builder.template_ = v8::Local<v8::FunctionTemplate>(v8::Data(isolate, jsbi_NewClass(isolate->rt(),
-                /* callback */ (jsb::impl::FunctionPointer) constructor,
-                /* data */ jsbi_NewUint32(isolate->rt(), class_payload),
-                (int) InternalFieldCount,
-                str8.get_data()
-                )));
+                                                                                                /* callback */ (jsb::impl::FunctionPointer) constructor,
+                                                                                                /* data */ jsbi_NewUint32(isolate->rt(), class_payload),
+                                                                                                (int) InternalFieldCount,
+                                                                                                str8.get_data())));
 
             return builder;
         }
@@ -270,5 +314,5 @@ namespace jsb::impl
         ClassBuilder() {}
     };
 
-}
+} // namespace jsb::impl
 #endif

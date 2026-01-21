@@ -31,5 +31,5 @@ namespace jsb
         Variant to_variant() const;
         // Vector<String> to_strings() const;
     };
-}
+} // namespace jsb
 #endif

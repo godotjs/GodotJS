@@ -6,7 +6,10 @@
 // all internal::SArray test cases
 namespace jsb::tests
 {
-    inline String get_test_name() { return "xxx.yyy.zzz.000"; }
+    inline String get_test_name()
+    {
+        return "xxx.yyy.zzz.000";
+    }
 
     struct Movable
     {
@@ -15,9 +18,12 @@ namespace jsb::tests
 
         ~Movable() { MESSAGE("Movable destructor"); }
         Movable() { MESSAGE("Movable default constructor"); }
-        Movable(int p_anything) : anything(p_anything), ptr(nullptr) { MESSAGE("Movable int constructor");}
-        Movable(int p_anything, void* p_ptr) : anything(p_anything), ptr(p_ptr) { MESSAGE("Movable full constructor"); }
-        Movable(Movable&& other) noexcept : anything(other.anything), ptr(other.ptr)
+        Movable(int p_anything)
+            : anything(p_anything), ptr(nullptr) { MESSAGE("Movable int constructor"); }
+        Movable(int p_anything, void* p_ptr)
+            : anything(p_anything), ptr(p_ptr) { MESSAGE("Movable full constructor"); }
+        Movable(Movable&& other) noexcept
+            : anything(other.anything), ptr(other.ptr)
         {
             MESSAGE("Movable move constructor");
             other.anything = 0;
@@ -35,8 +41,11 @@ namespace jsb::tests
             }
             return *this;
         }
-        Movable(const Movable& other) : anything(other.anything), ptr(other.ptr)
-        { MESSAGE("Movable copy constructor"); }
+        Movable(const Movable& other)
+            : anything(other.anything), ptr(other.ptr)
+        {
+            MESSAGE("Movable copy constructor");
+        }
         Movable& operator=(const Movable& other)
         {
             if (this != &other)
@@ -55,7 +64,8 @@ namespace jsb::tests
         Movable anything;
 
         Slot() = default;
-        Slot(const StringName& p_name, int p_anything) : name(p_name), anything(p_anything) {}
+        Slot(const StringName& p_name, int p_anything)
+            : name(p_name), anything(p_anything) {}
         Slot(Slot&& other) noexcept = default;
         Slot& operator=(Slot&& other) noexcept = default;
         Slot(const Slot& other) = default;
@@ -66,7 +76,10 @@ namespace jsb::tests
     {
         internal::SArray<Movable> sarray;
         static constexpr int kCount = 10;
-        for (int i = 0; i < kCount; ++i) { sarray.add(i); }
+        for (int i = 0; i < kCount; ++i)
+        {
+            sarray.add(i);
+        }
         CHECK(sarray.size() == kCount);
         for (int i = 0; i < 5; ++i)
         {
@@ -106,24 +119,23 @@ namespace jsb::tests
         MESSAGE("STEP ----");
         sarray.add(4);
     }
-    
+
     TEST_CASE("[jsb.internal] SArray StringName test")
     {
         internal::SArray<Slot> sarray;
         {
             const StringName name = get_test_name();
             HashMap<StringName, Slot> map;
-            map.insert(get_test_name(), { name, 0 });
-            sarray.add({ get_test_name(), 1});
+            map.insert(get_test_name(), {name, 0});
+            sarray.add({get_test_name(), 1});
         }
         {
             const StringName name = get_test_name();
-            sarray.add({ get_test_name(), 1});
-            sarray.add({ name, 2});
+            sarray.add({get_test_name(), 1});
+            sarray.add({name, 2});
             sarray.clear();
         }
     }
-}
+} // namespace jsb::tests
 
 #endif
-

@@ -13,7 +13,7 @@ namespace jsb::impl
     {
     public:
         // deleter for valuetype optimization (no ObjectHandle needed)
-        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
+        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void* deleter_data)
         {
             Broker::SetWeak(value.data_.isolate_, (JSValue) value, deleter_data, (void*) callback);
         }
@@ -50,10 +50,11 @@ namespace jsb::impl
             static_assert(sizeof(callback) == sizeof(void*));
             static_assert(jsb::impl::FuncPayload::kNum == ::std::size(payload));
             const JSValue func_obj = JS_NewCFunctionData(isolate->ctx(),
-                v8::Function::_function_call,
-                /* length */ 0,
-                /* magic */ 0,
-                ::std::size(payload), payload);
+                                                         v8::Function::_function_call,
+                                                         /* length */ 0,
+                                                         /* magic */ 0,
+                                                         ::std::size(payload),
+                                                         payload);
 #if JSB_DEBUG
             JSContext* ctx = context->GetIsolate()->ctx();
             jsb_check(JS_IsFunction(ctx, func_obj));
@@ -94,7 +95,7 @@ namespace jsb::impl
             return v8::Local<v8::Function>(v8::Data(isolate, isolate->push_steal(func_obj)));
         }
 
-        template<size_t N>
+        template <size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])
         {
             const uint16_t stack_pos = isolate->push_steal(JS_NewStringLen(isolate->ctx(), literal, N - 1));
@@ -160,7 +161,7 @@ namespace jsb::impl
             return String();
         }
 
-        template<int N>
+        template <int N>
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const char (&message)[N])
         {
             isolate->throw_error(message);
@@ -202,10 +203,22 @@ namespace jsb::impl
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
         {
-            if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }
-            if (p_val->IsNumber()) { r_val = (int64_t) p_val.As<v8::Number>()->Value(); return true; }
+            if (p_val->IsInt32())
+            {
+                r_val = p_val.As<v8::Int32>()->Value();
+                return true;
+            }
+            if (p_val->IsNumber())
+            {
+                r_val = (int64_t) p_val.As<v8::Number>()->Value();
+                return true;
+            }
 #if JSB_WITH_BIGINT
-            if (p_val->IsBigInt()) { r_val = p_val.As<v8::BigInt>()->Int64Value(); return true; }
+            if (p_val->IsBigInt())
+            {
+                r_val = p_val.As<v8::BigInt>()->Int64Value();
+                return true;
+            }
 #endif
             return false;
         }
@@ -252,7 +265,7 @@ namespace jsb::impl
         {
             // js_free(context->GetIsolate()->ctx(), data);
 
-            //NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
+            // NOTE not a good practice, just for the simplicity of Buffer (to move/free by Buffer)
 #if JSB_PREFER_QUICKJS_NG
             ::free(data);
 #else
@@ -265,8 +278,6 @@ namespace jsb::impl
             isolate->set_as_interruptible();
         }
     };
-}
+} // namespace jsb::impl
 
 #endif
-
-

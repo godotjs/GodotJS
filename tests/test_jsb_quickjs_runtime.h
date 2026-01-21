@@ -41,8 +41,7 @@ namespace jsb::tests
         JS_FreeContext(ctx);
         JS_FreeRuntime(rt);
     }
-}
+} // namespace jsb::tests
 #endif
 
 #endif
-

@@ -9,31 +9,27 @@ namespace
     {
         return false
 #if JSB_EXCLUDE_WORKER_RES_SCRIPTS
-#   if JSB_USE_TYPESCRIPT
-        || p_path.ends_with(".worker." JSB_TYPESCRIPT_EXT)
-#   endif
-        || p_path.ends_with(".worker." JSB_JAVASCRIPT_EXT)
-        || p_path.ends_with(".worker." JSB_COMMONJS_EXT)
-        || p_path.ends_with(".worker." JSB_MODULE_EXT)
+    #if JSB_USE_TYPESCRIPT
+               || p_path.ends_with(".worker." JSB_TYPESCRIPT_EXT)
+    #endif
+               || p_path.ends_with(".worker." JSB_JAVASCRIPT_EXT) || p_path.ends_with(".worker." JSB_COMMONJS_EXT) || p_path.ends_with(".worker." JSB_MODULE_EXT)
 #endif
-        ;
+            ;
     }
 
     bool is_test_script(const String& p_path)
     {
         return false
 #if JSB_EXCLUDE_TEST_RES_SCRIPTS
-#   if JSB_USE_TYPESCRIPT
-        || p_path.ends_with(".test." JSB_TYPESCRIPT_EXT)
-#   endif
-        || p_path.ends_with(".test." JSB_JAVASCRIPT_EXT)
-        || p_path.ends_with(".test." JSB_COMMONJS_EXT)
-        || p_path.ends_with(".test." JSB_MODULE_EXT)
+    #if JSB_USE_TYPESCRIPT
+               || p_path.ends_with(".test." JSB_TYPESCRIPT_EXT)
+    #endif
+               || p_path.ends_with(".test." JSB_JAVASCRIPT_EXT) || p_path.ends_with(".test." JSB_COMMONJS_EXT) || p_path.ends_with(".test." JSB_MODULE_EXT)
 #endif
-        ;
+            ;
     }
 
-}
+} // namespace
 
 Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, const String& p_original_path, Error* r_error, bool p_use_sub_threads, float* r_progress, CacheMode p_cache_mode)
 {
@@ -92,26 +88,26 @@ Ref<Resource> ResourceFormatLoaderGodotJSScript::load(const String& p_path, cons
     // we can't immediately compile the script here since it's possibly loaded from resource loading threads
     switch (p_cache_mode)
     {
-        case CACHE_MODE_IGNORE:
-        case CACHE_MODE_IGNORE_DEEP:
-            // the ResourceCache warning is really annoying,
-            // we just ignore it here and let it behave like REUSE.
-            // seems safe because GodotJSScript is stateless now (but must get script class info in a proper thread).
-        case CACHE_MODE_REUSE:
-            {
-                if (const Ref<Resource> existing = ResourceCache::get_ref(p_path);
-                    existing.is_valid())
-                {
-                    jsb_check(existing->get_class_name() == jsb_typename(GodotJSScript));
-                    jsb_check(existing->get_path() == p_path);
-                    if (r_error) *r_error = OK;
-                    return existing;
-                }
-            }
-            break;
-        case CACHE_MODE_REPLACE:
-        case CACHE_MODE_REPLACE_DEEP:
-            break;
+    case CACHE_MODE_IGNORE:
+    case CACHE_MODE_IGNORE_DEEP:
+        // the ResourceCache warning is really annoying,
+        // we just ignore it here and let it behave like REUSE.
+        // seems safe because GodotJSScript is stateless now (but must get script class info in a proper thread).
+    case CACHE_MODE_REUSE:
+    {
+        if (const Ref<Resource> existing = ResourceCache::get_ref(p_path);
+            existing.is_valid())
+        {
+            jsb_check(existing->get_class_name() == jsb_typename(GodotJSScript));
+            jsb_check(existing->get_path() == p_path);
+            if (r_error) *r_error = OK;
+            return existing;
+        }
+    }
+    break;
+    case CACHE_MODE_REPLACE:
+    case CACHE_MODE_REPLACE_DEEP:
+        break;
     }
 
     Ref<GodotJSScript> spt = Ref(memnew(GodotJSScript));
@@ -153,13 +149,13 @@ String ResourceFormatLoaderGodotJSScript::get_resource_type(const String& p_path
 #endif // JSB_USE_TYPESCRIPT
     {
         return !is_worker_script(p_path) && !is_test_script(p_path)
-            ? jsb_typename(GodotJSScript)
-            : "";
+                   ? jsb_typename(GodotJSScript)
+                   : "";
     }
     return "";
 }
 
 void ResourceFormatLoaderGodotJSScript::get_dependencies(const String& p_path, List<String>* p_dependencies, bool p_add_types)
 {
-    //TODO
+    // TODO
 }

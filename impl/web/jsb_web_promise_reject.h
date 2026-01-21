@@ -5,7 +5,7 @@
 
 namespace v8
 {
-    template<typename T>
+    template <typename T>
     class Local;
 
     class Promise;
@@ -15,8 +15,9 @@ namespace v8
     {
     public:
         PromiseRejectMessage(Isolate* isolate, PromiseRejectEvent event, jsb::impl::StackPosition promise_sp, jsb::impl::StackPosition reason_sp)
-        : isolate_(isolate), event_(event), promise_sp_(promise_sp), reason_sp_(reason_sp)
-        {}
+            : isolate_(isolate), event_(event), promise_sp_(promise_sp), reason_sp_(reason_sp)
+        {
+        }
 
         PromiseRejectEvent GetEvent() const { return event_; }
 
@@ -31,6 +32,6 @@ namespace v8
     };
 
     using PromiseRejectCallback = void (*)(PromiseRejectMessage);
-}
+} // namespace v8
 
 #endif

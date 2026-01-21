@@ -13,17 +13,14 @@ namespace jsb::impl
     {
     public:
         // deleter for valuetype optimization (no ObjectHandle needed)
-        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void *deleter_data)
+        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> value, const v8::WeakCallbackInfo<void>::Callback callback, void* deleter_data)
         {
-            //TODO [web.impl] SetDeleter: not tested
+            // TODO [web.impl] SetDeleter: not tested
             v8::Isolate* isolate = value->GetIsolate();
             const jsb::impl::StackPosition sp = value->stack_pos_;
             const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) jsbi_GetOpaque(isolate->rt(), sp);
             const jsb::impl::InternalDataPtr data = isolate->get_internal_data(index);
-            JSB_WEB_LOG(VeryVerbose, "update internal data JSObject:%d id:%d pc:%d,%d (last:%d,%d)",
-                sp, index,
-                (uintptr_t) deleter_data, (uintptr_t) callback,
-                (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
+            JSB_WEB_LOG(VeryVerbose, "update internal data JSObject:%d id:%d pc:%d,%d (last:%d,%d)", sp, index, (uintptr_t) deleter_data, (uintptr_t) callback, (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
             jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
             data->weak.parameter = (void*) deleter_data;
             data->weak.callback = (void*) callback;
@@ -43,7 +40,7 @@ namespace jsb::impl
             return packed;
         }
 
-        //TODO copy from HEAP?
+        // TODO copy from HEAP?
         static v8::Local<v8::ArrayBuffer> to_array_buffer(v8::Isolate* isolate, const Vector<uint8_t>& packed)
         {
             return v8::Local<v8::ArrayBuffer>(v8::Data(isolate, jsbi_NewArrayBuffer(isolate->rt(), packed.ptr(), packed.size())));
@@ -81,7 +78,7 @@ namespace jsb::impl
             return v8::Local<v8::Function>(v8::Data(isolate, rval));
         }
 
-        template<size_t N>
+        template <size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])
         {
             return v8::Local<v8::String>(v8::Data(isolate, jsbi_NewString(isolate->rt(), literal, N - 1)));
@@ -146,7 +143,7 @@ namespace jsb::impl
             return String();
         }
 
-        template<int N>
+        template <int N>
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const char (&message)[N])
         {
             const String str = message;
@@ -175,10 +172,22 @@ namespace jsb::impl
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
         {
-            if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }
-            if (p_val->IsNumber()) { r_val = (int64_t) p_val.As<v8::Number>()->Value(); return true; }
+            if (p_val->IsInt32())
+            {
+                r_val = p_val.As<v8::Int32>()->Value();
+                return true;
+            }
+            if (p_val->IsNumber())
+            {
+                r_val = (int64_t) p_val.As<v8::Number>()->Value();
+                return true;
+            }
 #if JSB_WITH_BIGINT
-            if (p_val->IsBigInt()) { r_val = p_val.As<v8::BigInt>()->Int64Value(); return true; }
+            if (p_val->IsBigInt())
+            {
+                r_val = p_val.As<v8::BigInt>()->Int64Value();
+                return true;
+            }
 #endif
             return false;
         }
@@ -239,8 +248,6 @@ namespace jsb::impl
             isolate->set_as_interruptible();
         }
     };
-}
+} // namespace jsb::impl
 
 #endif
-
-

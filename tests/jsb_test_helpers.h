@@ -68,18 +68,14 @@ namespace jsb::tests
 
     public:
         V8ContextScope(v8::Isolate* isolate)
-        : isolate_(isolate)
-        , handle_scope_(isolate)
-        , context_(isolate->GetCurrentContext())
-        , context_scope_(isolate->GetCurrentContext())
-        {}
+            : isolate_(isolate), handle_scope_(isolate), context_(isolate->GetCurrentContext()), context_scope_(isolate->GetCurrentContext())
+        {
+        }
 
         V8ContextScope(jsb::Environment* env)
-        : isolate_(env->get_isolate())
-        , handle_scope_(env->get_isolate())
-        , context_(env->get_context())
-        , context_scope_(env->get_context())
-        {}
+            : isolate_(env->get_isolate()), handle_scope_(env->get_isolate()), context_(env->get_context()), context_scope_(env->get_context())
+        {
+        }
 
         ~V8ContextScope() = default;
 
@@ -89,7 +85,8 @@ namespace jsb::tests
     struct GodotJSScriptLanguageIniter
     {
     public:
-        GodotJSScriptLanguageIniter() : GodotJSScriptLanguageIniter("modules/" JSB_MODULE_NAME_STRING "/tests/project")
+        GodotJSScriptLanguageIniter()
+            : GodotJSScriptLanguageIniter("modules/" JSB_MODULE_NAME_STRING "/tests/project")
         {
         }
 
@@ -114,13 +111,12 @@ namespace jsb::tests
     private:
         void check_required_files()
         {
-        	CHECK(FileAccess::exists("./package.json"));
-        	CHECK(FileAccess::exists("./tsconfig.json"));
+            CHECK(FileAccess::exists("./package.json"));
+            CHECK(FileAccess::exists("./tsconfig.json"));
             CHECK(FileAccess::exists("./test_01.ts"));
             CHECK(FileAccess::exists("./.godot/GodotJS/test_01.js"));
         }
     };
 
-}
+} // namespace jsb::tests
 #endif
-

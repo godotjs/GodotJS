@@ -9,7 +9,7 @@ namespace jsb::internal
 #if JSB_WITH_SOURCEMAP
     bool SourceMapCache::match(const String& p_line, MatchResult& r_result)
     {
-#if JSB_WITH_QUICKJS
+    #if JSB_WITH_QUICKJS
         if (source_map_match1_.is_null()) source_map_match1_ = RegEx::create_from_string(R"(\s+at\s(.+)\s\((.+\.js):(\d+)\))"); // e.g. at xxx (file.js:1)
         const Ref<RegEx>& regex = source_map_match1_;
         const Ref<RegExMatch> match = regex->search(p_line);
@@ -21,12 +21,12 @@ namespace jsb::internal
         r_result.line = (int) match->get_string(group_index + 2).to_int();
         r_result.col = 0;
         return true;
-#else
+    #else
         if (source_map_match1_.is_null()) source_map_match1_ = RegEx::create_from_string(R"(\s+at\s(.+)\s\((.+\.js):(\d+):(\d+)\))"); // e.g. at xxx (file.js:1:2)
-        if (source_map_match2_.is_null()) source_map_match2_ = RegEx::create_from_string(R"(\s+at\s(.+\.js):(\d+):(\d+))"); // e.g. at file.js:1:2
+        if (source_map_match2_.is_null()) source_map_match2_ = RegEx::create_from_string(R"(\s+at\s(.+\.js):(\d+):(\d+))");           // e.g. at file.js:1:2
         const Ref<RegEx>& regex = p_line.contains("(") && p_line.contains(")")
-            ? source_map_match1_
-            : source_map_match2_;
+                                      ? source_map_match1_
+                                      : source_map_match2_;
 
         const Ref<RegExMatch> match = regex->search(p_line);
         if (!match.is_valid()) return false;
@@ -36,7 +36,7 @@ namespace jsb::internal
         r_result.line = (int) match->get_string(group_index + 2).to_int();
         r_result.col = (int) match->get_string(group_index + 3).to_int();
         return true;
-#endif
+    #endif
     }
 
     String SourceMapCache::process_source_position(const String& p_stacktrace, SourcePosition* r_position)
@@ -58,8 +58,10 @@ namespace jsb::internal
             const String& source_root = map->get_source_root();
             const String original_path = PathUtil::to_platform_specific_path(PathUtil::combine("res://", source_root, source));
 
-            if (result.function.is_empty()) st_line = jsb_format("    at %s:%d:%d", original_path, position.line, position.column);
-            else st_line = jsb_format("    at %s (%s:%d:%d)", result.function, original_path, position.line, position.column);
+            if (result.function.is_empty())
+                st_line = jsb_format("    at %s:%d:%d", original_path, position.line, position.column);
+            else
+                st_line = jsb_format("    at %s (%s:%d:%d)", result.function, original_path, position.line, position.column);
 
             if (!is_position_set)
             {
@@ -119,7 +121,10 @@ namespace jsb::internal
         return &map;
     }
 #else
-    String SourceMapCache::process_source_position(const String& p_stacktrace) { return p_stacktrace; }
+    String SourceMapCache::process_source_position(const String& p_stacktrace)
+    {
+        return p_stacktrace;
+    }
     void SourceMapCache::invalidate(const String& p_filename) {}
 #endif
-}
+} // namespace jsb::internal

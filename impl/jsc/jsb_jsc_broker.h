@@ -31,7 +31,6 @@ namespace jsb::impl
 
         // strict eq check
         static bool IsStrictEqual(v8::Isolate* isolate, JSValueRef a, JSValueRef b);
-
     };
-}
+} // namespace jsb::impl
 #endif

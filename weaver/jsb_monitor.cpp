@@ -2,25 +2,25 @@
 #include "jsb_script_language.h"
 #include "../internal/jsb_internal.h"
 
-#define JSB_NEW_MONITOR(MonitorName) \
-    monitor_names_.push_back(JSB_MODULE_NAME_STRING "/" # MonitorName);\
-    jsb::compat::Performance::get_singleton()->add_custom_monitor(monitor_names_[monitor_names_.size() - 1], callable_mp(this, &GodotJSMonitor::get_value_## MonitorName), {})
+#define JSB_NEW_MONITOR(MonitorName)                                   \
+    monitor_names_.push_back(JSB_MODULE_NAME_STRING "/" #MonitorName); \
+    jsb::compat::Performance::get_singleton()->add_custom_monitor(monitor_names_[monitor_names_.size() - 1], callable_mp(this, &GodotJSMonitor::get_value_##MonitorName), {})
 
 #define JSB_BIND_MONITOR(MonitorName) \
-    ClassDB::bind_method(D_METHOD("get_value_" #MonitorName), &GodotJSMonitor::get_value_ ## MonitorName)
+    ClassDB::bind_method(D_METHOD("get_value_" #MonitorName), &GodotJSMonitor::get_value_##MonitorName)
 
-#define JSB_DEFINE_MONITOR(MonitorName) \
-    Variant GodotJSMonitor::get_value_ ## MonitorName()\
-    {\
-        flush();\
-        return stats_.MonitorName;\
+#define JSB_DEFINE_MONITOR(MonitorName)               \
+    Variant GodotJSMonitor::get_value_##MonitorName() \
+    {                                                 \
+        flush();                                      \
+        return stats_.MonitorName;                    \
     }
 
-#define JSB_DEFINE_CUSTOM_MONITOR(MonitorName, Accessor) \
-    Variant GodotJSMonitor::get_value_ ## MonitorName()\
-    {\
-        flush();\
-        return stats_.get_custom_field(#MonitorName).Accessor;\
+#define JSB_DEFINE_CUSTOM_MONITOR(MonitorName, Accessor)       \
+    Variant GodotJSMonitor::get_value_##MonitorName()          \
+    {                                                          \
+        flush();                                               \
+        return stats_.get_custom_field(#MonitorName).Accessor; \
     }
 
 GodotJSMonitor::GodotJSMonitor()
@@ -61,9 +61,9 @@ JSB_DEFINE_MONITOR(persistent_objects);
 JSB_DEFINE_MONITOR(allocated_variants);
 
 #if JSB_WITH_V8
-    JSB_DEFINE_CUSTOM_MONITOR(heap_size, u.u64_cap[0]);
+JSB_DEFINE_CUSTOM_MONITOR(heap_size, u.u64_cap[0]);
 #elif JSB_WITH_QUICKJS
-    JSB_DEFINE_CUSTOM_MONITOR(memory_used_size, u.i64);
+JSB_DEFINE_CUSTOM_MONITOR(memory_used_size, u.i64);
 #endif
 
 GodotJSMonitor::~GodotJSMonitor()

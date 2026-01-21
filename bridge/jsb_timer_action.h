@@ -10,11 +10,13 @@ namespace jsb
      */
     struct JavaScriptTimerAction
     {
-        jsb_force_inline JavaScriptTimerAction(): function_(nullptr), argc_(0), argv_(nullptr)
+        jsb_force_inline JavaScriptTimerAction()
+            : function_(nullptr), argc_(0), argv_(nullptr)
         {
         }
 
-        jsb_force_inline JavaScriptTimerAction(v8::Global<v8::Function>&& p_func, int p_argc) : argc_(p_argc)
+        jsb_force_inline JavaScriptTimerAction(v8::Global<v8::Function>&& p_func, int p_argc)
+            : argc_(p_argc)
         {
             function_ = new v8::Global<v8::Function>(std::move(p_func));
 
@@ -81,5 +83,5 @@ namespace jsb
         int argc_;
         v8::Global<v8::Value>* argv_;
     };
-}
+} // namespace jsb
 #endif

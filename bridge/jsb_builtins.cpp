@@ -38,7 +38,8 @@ namespace jsb
                 return;
             }
 
-            const String item_str = impl::Helper::to_string(isolate, item);;
+            const String item_str = impl::Helper::to_string(isolate, item);
+            ;
             if (item_str.is_empty())
             {
                 jsb_throw(isolate, "bad param");
@@ -48,7 +49,8 @@ namespace jsb
         }
         JSB_LOG(VeryVerbose, "new AMD module loader %s deps: %s", module_id_str, String(", ").join(deps));
         AMDModuleLoader& loader = env->add_module_loader<AMDModuleLoader>(module_id_str,
-            deps, v8::Global<v8::Function>(isolate, info[2].As<v8::Function>()));
+                                                                          deps,
+                                                                          v8::Global<v8::Function>(isolate, info[2].As<v8::Function>()));
 
         if (info.Data()->IsBoolean())
         {
@@ -92,4 +94,4 @@ namespace jsb
         JSB_LOG(Error, "can not load module '%s' (with parent '%s')", module_id, parent_id);
     }
 
-}
+} // namespace jsb

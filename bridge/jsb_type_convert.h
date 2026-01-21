@@ -61,8 +61,7 @@ namespace jsb
             if (!is_object(p_obj)) return false;
             return (NativeClassType::Type)(uintptr_t) p_obj->GetAlignedPointerFromInternalField(IF_ClassType) == p_type;
         }
-
     };
-}
+} // namespace jsb
 
 #endif

@@ -2,14 +2,13 @@
 #include "jsb_object_bindings.h"
 #include "jsb_type_convert.h"
 
-//TODO it breaks the isolation of 'bridge'
+// TODO it breaks the isolation of 'bridge'
 #include "../weaver/jsb_script.h"
 
 namespace jsb
 {
 #ifdef TOOLS_ENABLED
-    void _parse_script_doc(v8::Isolate* isolate, const v8::Local<v8::Context>& context,
-        const v8::MaybeLocal<v8::Value> holder, ScriptBaseDoc& r_doc)
+    void _parse_script_doc(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::MaybeLocal<v8::Value> holder, ScriptBaseDoc& r_doc)
     {
         if (v8::Local<v8::Value> tv; holder.IsEmpty() || !holder.ToLocal(&tv) || !tv->IsObject())
         {
@@ -53,13 +52,13 @@ namespace jsb
     }
 #endif
 
-    //NOTE ensure the address of p_class_info being locked during this procedure
+    // NOTE ensure the address of p_class_info being locked during this procedure
     void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, const ScriptClassInfoPtr& p_class_info, const v8::Local<v8::Object>& class_obj)
     {
         v8::Isolate* isolate = p_context->GetIsolate();
         Environment* environment = Environment::wrap(isolate);
 
-        //TODO collect methods/signals/properties
+        // TODO collect methods/signals/properties
         const v8::Local<v8::Object> prototype = class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
 
         jsb_check(prototype->IsObject());
@@ -117,7 +116,7 @@ namespace jsb
                     v8::Local<v8::Value> prop_val;
                     if (prop_descriptor.As<v8::Object>()->Get(p_context, jsb_name(environment, value)).ToLocal(&prop_val) && prop_val->IsFunction())
                     {
-                        //TODO property categories
+                        // TODO property categories
                         ScriptMethodInfo method_info = {};
 #ifdef TOOLS_ENABLED
                         if (v8::Local<v8::Value> val; !doc_map.IsEmpty() && doc_map->Get(p_context, prop_name).ToLocal(&val) && val->IsObject())
@@ -133,7 +132,7 @@ namespace jsb
                         {
                             v8::Local<v8::Object> rpc_obj = rpc_val.As<v8::Object>();
                             Dictionary rpc_config;
-                            
+
                             // for `rpc_config[name]`, a StringName has an identical hash of it's underlying String
                             // and returns true for equality check. So, it's safe to use jsb_string_name here
                             if (v8::Local<v8::Value> config_val; rpc_obj->Get(p_context, jsb_name(environment, rpc_mode)).ToLocal(&config_val))
@@ -166,7 +165,7 @@ namespace jsb
             const bool is_tool = class_obj->HasOwnProperty(p_context, jsb_symbol(environment, ClassToolScript)).FromMaybe(false);
             if (is_tool)
             {
-                p_class_info->flags = (ScriptClassFlags::Type) (p_class_info->flags | ScriptClassFlags::Tool);
+                p_class_info->flags = (ScriptClassFlags::Type)(p_class_info->flags | ScriptClassFlags::Tool);
             }
         }
 
@@ -193,7 +192,7 @@ namespace jsb
                     p_class_info->signals.insert(signal_name, {});
 
                     // instantiate a fake Signal property
-                    //NOTE: we use JS string representation of signal name for info.Data() to avoid persistent StringNameID requirement.
+                    // NOTE: we use JS string representation of signal name for info.Data() to avoid persistent StringNameID requirement.
                     //      therefore any cached string name could be cleaned up on demand (e.g. on memory low) without additional lifetime control.
                     v8::Local<v8::Function> signal_func = JSB_NEW_FUNCTION(p_context, ObjectReflectBindingUtil::_godot_object_signal_get, signal_name_js);
                     prototype->SetAccessorProperty(signal_name_js.As<v8::Name>(), signal_func);
@@ -218,7 +217,7 @@ namespace jsb
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     ScriptPropertyInfo property_info;
                     v8::Local<v8::Value> prop_name = obj->Get(context, jsb_name(environment, name)).ToLocalChecked();
-                    property_info.name = impl::Helper::to_string(isolate, prop_name); // string
+                    property_info.name = impl::Helper::to_string(isolate, prop_name);                                                                      // string
                     property_info.type = (Variant::Type) obj->Get(context, jsb_name(environment, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
                     property_info.hint = BridgeHelper::to_enum<PropertyHint>(context, obj->Get(context, jsb_name(environment, hint)), PROPERTY_HINT_NONE);
                     property_info.hint_string = impl::Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
@@ -265,8 +264,7 @@ namespace jsb
             return false;
         }
         // only classes in files of godot package system could be used as godot js script
-        if (!p_module.source_info.source_filepath.begins_with("res://")
-            || p_module.source_info.source_filepath.begins_with("res://node_modules"))
+        if (!p_module.source_info.source_filepath.begins_with("res://") || p_module.source_info.source_filepath.begins_with("res://node_modules"))
         {
             JSB_LOG(VeryVerbose, "(script-parser) non-res module %s", p_module.source_info.source_filepath);
             return false;
@@ -280,8 +278,7 @@ namespace jsb
         }
         Environment* environment = Environment::wrap(isolate);
         v8::Local<v8::Value> default_val;
-        if (!exports.As<v8::Object>()->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val)
-            || !default_val->IsObject())
+        if (!exports.As<v8::Object>()->Get(p_context, jsb_name(environment, default)).ToLocal(&default_val) || !default_val->IsObject())
         {
 #if JSB_WITH_WEB
             JSB_LOG(VeryVerbose, "(script-parser) no default object %s exports(%d)", p_module.source_info.source_filepath, p_module.exports.get_internal_id());
@@ -305,7 +302,7 @@ namespace jsb
         const NativeClassID native_class_id = (NativeClassID) class_id_val.As<v8::Uint32>()->Value();
         jsb_check(internal::VariantUtil::is_valid_name(environment->get_native_class(native_class_id)->name));
 
-        //TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
+        // TODO maybe we should always add new GodotJS class instead of refreshing the existing one (for simpler reloading flow, such as directly replacing prototype of a existing instance javascript object)
         ScriptClassInfoPtr existed_class_info = environment->find_script_class(p_module.script_class_id);
         if (!existed_class_info)
         {
@@ -320,15 +317,20 @@ namespace jsb
 
         const v8::Local<v8::Object> dt_base_obj =
             class_obj
-            ->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
-            ->Get(p_context, jsb_name(environment, __proto__)).ToLocalChecked().As<v8::Object>() // the base class prototype
-            ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
+                ->Get(p_context, jsb_name(environment, prototype))
+                .ToLocalChecked()
+                .As<v8::Object>()
+                ->Get(p_context, jsb_name(environment, __proto__))
+                .ToLocalChecked()
+                .As<v8::Object>() // the base class prototype
+                ->Get(p_context, jsb_name(environment, constructor))
+                .ToLocalChecked()
+                .As<v8::Object>();
         jsb_check(class_obj != dt_base_obj);
 
         const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, ClassModuleId)).ToLocalChecked();
         existed_class_info->base_script_module_id = dt_base_tag->IsString() ? environment->get_string_name(dt_base_tag.As<v8::String>()) : StringName();
-        JSB_LOG(Verbose, "%s script %d inherits script module %s native: %d",
-            p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_module_id, *native_class_id);
+        JSB_LOG(Verbose, "%s script %d inherits script module %s native: %d", p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_module_id, *native_class_id);
 
         jsb_check(existed_class_info->base_script_module_id != p_module.id);
         jsb_check(existed_class_info->module_id == p_module.id);
@@ -338,4 +340,4 @@ namespace jsb
         return true;
     }
 
-}
+} // namespace jsb

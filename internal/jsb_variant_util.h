@@ -8,9 +8,14 @@ namespace jsb::internal
     template <typename T>
     struct Hasher
     {
-        struct hasher  { jsb_force_inline size_t operator()(const T& obj) const noexcept      { return obj.hash(); } };
-        struct equaler { jsb_force_inline bool   operator()(const T& lhs, const T& rhs) const { return lhs == rhs; } };
-
+        struct hasher
+        {
+            jsb_force_inline size_t operator()(const T& obj) const noexcept { return obj.hash(); }
+        };
+        struct equaler
+        {
+            jsb_force_inline bool operator()(const T& lhs, const T& rhs) const { return lhs == rhs; }
+        };
     };
 
     template <typename K, typename V>
@@ -21,8 +26,10 @@ namespace jsb::internal
         typedef typename UnorderedMap::const_iterator UnorderedMapConstIt;
     };
 
-    struct VariantReferentialComparator {
-        static bool compare(const Variant& p_a, const Variant& p_b) {
+    struct VariantReferentialComparator
+    {
+        static bool compare(const Variant& p_a, const Variant& p_b)
+        {
             return p_a.identity_compare(p_b);
         }
     };
@@ -33,69 +40,87 @@ namespace jsb::internal
      * equality not structural. This takes advantage of the fact that our JS
      * runtime passes variants around in way that is essentially by reference.
      */
-    struct VariantReferentialHasher {
-        static uint32_t hash(const Variant& p_variant) {
-            switch (p_variant.get_type()) {
-                case Variant::Type::OBJECT: {
-                    Object* object = p_variant;
-                    return HashMapHasherDefault::hash(object);
-                }
-                case Variant::Type::DICTIONARY: {
-                    const Dictionary& d = p_variant;
-                    return HashMapHasherDefault::hash(d.id());
-                }
-                case Variant::Type::ARRAY: {
-                    const Array& a = p_variant;
-                    return HashMapHasherDefault::hash(a.id());
-                }
-                case Variant::Type::STRING: {
-                    const String& s = p_variant;
-                    return HashMapHasherDefault::hash(s.ptr());
-                }
-                case Variant::Type::PACKED_BYTE_ARRAY: {
-                    const PackedByteArray& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_INT32_ARRAY: {
-                    const PackedInt32Array& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_INT64_ARRAY: {
-                    const PackedInt64Array& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_FLOAT32_ARRAY: {
-                    const PackedFloat32Array& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_FLOAT64_ARRAY: {
-                    const PackedFloat64Array& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_STRING_ARRAY: {
-                    const PackedStringArray& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_VECTOR2_ARRAY: {
-                    const PackedVector2Array& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_VECTOR3_ARRAY: {
-                    const PackedVector3Array& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_COLOR_ARRAY: {
-                    const PackedColorArray& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                case Variant::Type::PACKED_VECTOR4_ARRAY: {
-                    const PackedVector4Array& arr = p_variant;
-                    return HashMapHasherDefault::hash(arr.ptr());
-                }
-                default: {
-                    // Primitives use the standard value-based hash.
-                    return p_variant.hash();
-                }
+    struct VariantReferentialHasher
+    {
+        static uint32_t hash(const Variant& p_variant)
+        {
+            switch (p_variant.get_type())
+            {
+            case Variant::Type::OBJECT:
+            {
+                Object* object = p_variant;
+                return HashMapHasherDefault::hash(object);
+            }
+            case Variant::Type::DICTIONARY:
+            {
+                const Dictionary& d = p_variant;
+                return HashMapHasherDefault::hash(d.id());
+            }
+            case Variant::Type::ARRAY:
+            {
+                const Array& a = p_variant;
+                return HashMapHasherDefault::hash(a.id());
+            }
+            case Variant::Type::STRING:
+            {
+                const String& s = p_variant;
+                return HashMapHasherDefault::hash(s.ptr());
+            }
+            case Variant::Type::PACKED_BYTE_ARRAY:
+            {
+                const PackedByteArray& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_INT32_ARRAY:
+            {
+                const PackedInt32Array& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_INT64_ARRAY:
+            {
+                const PackedInt64Array& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_FLOAT32_ARRAY:
+            {
+                const PackedFloat32Array& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_FLOAT64_ARRAY:
+            {
+                const PackedFloat64Array& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_STRING_ARRAY:
+            {
+                const PackedStringArray& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_VECTOR2_ARRAY:
+            {
+                const PackedVector2Array& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_VECTOR3_ARRAY:
+            {
+                const PackedVector3Array& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_COLOR_ARRAY:
+            {
+                const PackedColorArray& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            case Variant::Type::PACKED_VECTOR4_ARRAY:
+            {
+                const PackedVector4Array& arr = p_variant;
+                return HashMapHasherDefault::hash(arr.ptr());
+            }
+            default:
+            {
+                // Primitives use the standard value-based hash.
+                return p_variant.hash();
+            }
             }
         }
     };
@@ -148,17 +173,17 @@ namespace jsb::internal
         jsb_force_inline static Variant::Type get_element_type(Variant::Type p_type)
         {
             static Variant::Type mappings[] = {
-                Variant::INT,       // PACKED_BYTE_ARRAY
-                Variant::INT,       // PACKED_INT32_ARRAY
-                Variant::INT,       // PACKED_INT64_ARRAY
-                Variant::FLOAT,     // PACKED_FLOAT32_ARRAY
-                Variant::FLOAT,     // PACKED_FLOAT64_ARRAY
-                Variant::STRING,    // PACKED_STRING_ARRAY
-                Variant::VECTOR2,   // PACKED_VECTOR2_ARRAY
-                Variant::VECTOR3,   // PACKED_VECTOR3_ARRAY
-                Variant::COLOR,     // PACKED_COLOR_ARRAY
+                Variant::INT,     // PACKED_BYTE_ARRAY
+                Variant::INT,     // PACKED_INT32_ARRAY
+                Variant::INT,     // PACKED_INT64_ARRAY
+                Variant::FLOAT,   // PACKED_FLOAT32_ARRAY
+                Variant::FLOAT,   // PACKED_FLOAT64_ARRAY
+                Variant::STRING,  // PACKED_STRING_ARRAY
+                Variant::VECTOR2, // PACKED_VECTOR2_ARRAY
+                Variant::VECTOR3, // PACKED_VECTOR3_ARRAY
+                Variant::COLOR,   // PACKED_COLOR_ARRAY
 #if GODOT_4_3_OR_NEWER
-                Variant::VECTOR4,   // PACKED_VECTOR4_ARRAY
+                Variant::VECTOR4, // PACKED_VECTOR4_ARRAY
 #endif
             };
             static_assert(Variant::VARIANT_MAX - Variant::PACKED_BYTE_ARRAY == std::size(mappings));
@@ -187,5 +212,5 @@ namespace jsb::internal
 
         static Variant structured_clone(const Variant& p_variant, ReferentialVariantMap<Variant>& p_clone_map, bool& r_valid, int p_recursion_count = 0);
     };
-}
+} // namespace jsb::internal
 #endif

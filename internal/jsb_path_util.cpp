@@ -11,10 +11,10 @@
 
 // for windows api (like 'DeleteFileW')
 #ifdef WINDOWS_ENABLED
-#   define WIN32_LEAN_AND_MEAN
-#   include <windows.h>
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
 #else
-#   include <unistd.h>
+    #include <unistd.h>
 #endif
 
 namespace jsb::internal
@@ -86,8 +86,7 @@ namespace jsb::internal
         {
             jsb_checkf(p_source_path.begins_with("res://"), "can not proceed typescript sources not under the project directory");
             const String replaced = Settings::get_jsb_out_res_path().path_join(
-                p_source_path.substr(std::size("res://") - 1, p_source_path.length() - (int) std::size("res://") - 1)
-                + JSB_JAVASCRIPT_EXT);
+                p_source_path.substr(std::size("res://") - 1, p_source_path.length() - (int) std::size("res://") - 1) + JSB_JAVASCRIPT_EXT);
             return replaced;
         }
         return p_source_path;
@@ -102,8 +101,7 @@ namespace jsb::internal
             const String root_path = Settings::get_jsb_out_res_path();
             jsb_checkf(p_source_path.begins_with(root_path), "can not proceed javascript sources not under the project data directory");
             const String replaced = String("res://").path_join(
-                p_source_path.substr(root_path.length() + 1, p_source_path.length() - root_path.length() - extension_length)
-                + JSB_TYPESCRIPT_EXT);
+                p_source_path.substr(root_path.length() + 1, p_source_path.length() - root_path.length() - extension_length) + JSB_TYPESCRIPT_EXT);
             return replaced;
         }
         return p_source_path;
@@ -133,4 +131,4 @@ namespace jsb::internal
         return true;
     }
 
-}
+} // namespace jsb::internal

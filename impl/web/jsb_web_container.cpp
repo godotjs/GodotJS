@@ -13,7 +13,7 @@ namespace v8
     uint32_t Array::Length() const
     {
         const int len = jsbi_GetArrayLength(isolate_->rt(), stack_pos_);
-        return (uint32_t)len;
+        return (uint32_t) len;
     }
 
     MaybeLocal<Map> Map::Set(Local<Context> context, Local<Value> key, Local<Value> value)
@@ -31,4 +31,4 @@ namespace v8
         return Local<Array>(Data(isolate, jsbi_NewMap(isolate->rt())));
     }
 
-}
+} // namespace v8

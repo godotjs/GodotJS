@@ -10,25 +10,42 @@ namespace jsb::internal
         jsb_force_inline TimerHandle() = default;
         jsb_force_inline ~TimerHandle() = default;
 
-        jsb_force_inline TimerHandle(const IndexSafe64& p_index): id(p_index) {}
-        jsb_force_inline TimerHandle& operator=(const IndexSafe64& p_index) { id = p_index; return *this; }
+        jsb_force_inline TimerHandle(const IndexSafe64& p_index)
+            : id(p_index) {}
+        jsb_force_inline TimerHandle& operator=(const IndexSafe64& p_index)
+        {
+            id = p_index;
+            return *this;
+        }
 
-        jsb_force_inline TimerHandle(const TimerHandle& p_other): id(p_other.id) {}
-        jsb_force_inline TimerHandle& operator=(const TimerHandle& p_other) { id = p_other.id; return *this; }
+        jsb_force_inline TimerHandle(const TimerHandle& p_other)
+            : id(p_other.id) {}
+        jsb_force_inline TimerHandle& operator=(const TimerHandle& p_other)
+        {
+            id = p_other.id;
+            return *this;
+        }
 
-        jsb_force_inline TimerHandle(TimerHandle&& p_other) noexcept: id(p_other.id) {}
-        jsb_force_inline TimerHandle& operator=(TimerHandle&& p_other) noexcept { id = p_other.id; p_other.id = {}; return *this; }
+        jsb_force_inline TimerHandle(TimerHandle&& p_other) noexcept
+            : id(p_other.id) {}
+        jsb_force_inline TimerHandle& operator=(TimerHandle&& p_other) noexcept
+        {
+            id = p_other.id;
+            p_other.id = {};
+            return *this;
+        }
 
         jsb_force_inline explicit operator int64_t() const { return (int64_t) *id; }
         jsb_force_inline explicit operator IndexSafe64() const { return id; }
         jsb_force_inline explicit operator bool() const { return id != IndexSafe64::none(); }
 
-        jsb_force_inline explicit TimerHandle(const int64_t p_index): id((int64_t) p_index) {}
+        jsb_force_inline explicit TimerHandle(const int64_t p_index)
+            : id((int64_t) p_index) {}
 
     private:
         IndexSafe64 id;
 
-        template<typename, uint8_t, uint8_t, uint64_t>
+        template <typename, uint8_t, uint8_t, uint64_t>
         friend class TTimerManager;
     };
 
@@ -40,7 +57,7 @@ namespace jsb::internal
      * @tparam kWheelSlotNum number of slots in each wheel
      * @tparam kJiffies the minimum time resolution (in milliseconds)
      */
-    template<typename TFunction, uint8_t kWheelNum = 12, uint8_t kWheelSlotNum = 6, uint64_t kJiffies = 10>
+    template <typename TFunction, uint8_t kWheelNum = 12, uint8_t kWheelSlotNum = 6, uint64_t kJiffies = 10>
     class TTimerManager
     {
     public:
@@ -100,7 +117,7 @@ namespace jsb::internal
             uint64_t add(uint64_t p_delay, const IndexSafe64& p_timer_index)
             {
                 const uint64_t offset = p_delay >= interval ? (p_delay / interval) - 1 : p_delay / interval;
-                const uint64_t slot_index = (uint64_t)((index + offset) % (uint64_t)kWheelSlotNum);
+                const uint64_t slot_index = (uint64_t) ((index + offset) % (uint64_t) kWheelSlotNum);
                 slots[slot_index].append(p_timer_index);
                 return slot_index;
             }
@@ -153,8 +170,9 @@ namespace jsb::internal
             for (uint8_t i = 0; i < kWheelNum; ++i)
             {
                 uint32_t interval = 1;
-                for (uint8_t j = 0; j < i; j++) interval *= kWheelSlotNum;
-                _wheels[i].init(i, (uint64_t)kJiffies * interval);
+                for (uint8_t j = 0; j < i; j++)
+                    interval *= kWheelSlotNum;
+                _wheels[i].init(i, (uint64_t) kJiffies * interval);
             }
         }
 
@@ -162,22 +180,21 @@ namespace jsb::internal
         static constexpr uint64_t get_max_range()
         {
             uint64_t interval = 1;
-            for (uint8_t j = 0; j < kWheelNum - 1; j++) interval *= kWheelSlotNum;
+            for (uint8_t j = 0; j < kWheelNum - 1; j++)
+                interval *= kWheelSlotNum;
             return kJiffies * interval * kWheelSlotNum;
         }
 
         jsb_force_inline uint64_t now() const { return _elapsed; }
 
-        TimerHandle add_timer(TFunction&& p_fn, uint64_t p_rate, bool p_is_loop = false,
-                              uint64_t p_first_delay = 0)
+        TimerHandle add_timer(TFunction&& p_fn, uint64_t p_rate, bool p_is_loop = false, uint64_t p_first_delay = 0)
         {
             TimerHandle handle;
             set_timer(handle, std::forward<TFunction>(p_fn), p_rate, p_is_loop, p_first_delay);
             return handle;
         }
 
-        void set_timer(TimerHandle& inout_handle, TFunction&& p_fn, uint64_t p_rate,
-                       bool p_is_loop = false, uint64_t p_first_delay = 0)
+        void set_timer(TimerHandle& inout_handle, TFunction&& p_fn, uint64_t p_rate, bool p_is_loop = false, uint64_t p_first_delay = 0)
         {
             jsb_check(!!p_fn);
             check_internal_state();
@@ -280,7 +297,7 @@ namespace jsb::internal
             return !_activated_timers.empty();
         }
 
-        template<typename TContext>
+        template <typename TContext>
         bool invoke_timers(TContext* ctx)
         {
             if (_activated_timers.empty()) return false;
@@ -336,6 +353,6 @@ namespace jsb::internal
             _wheels[kWheelNum - 1].add(p_delay, p_timer_id);
         }
     };
-}
+} // namespace jsb::internal
 
 #endif

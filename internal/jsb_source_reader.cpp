@@ -14,9 +14,7 @@ namespace jsb::internal
     }
 
     StringSourceReader::StringSourceReader(const String& p_path, const String& p_absolute_path, const String& p_source)
-        : path_(p_path)
-        , absolute_path_(p_absolute_path)
-        , buffer_(p_source.to_utf8_buffer())
+        : path_(p_path), absolute_path_(p_absolute_path), buffer_(p_source.to_utf8_buffer())
     {
     }
 
@@ -27,4 +25,4 @@ namespace jsb::internal
         return len;
     }
 
-}
+} // namespace jsb::internal

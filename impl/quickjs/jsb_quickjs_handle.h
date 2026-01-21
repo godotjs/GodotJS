@@ -40,8 +40,11 @@ namespace v8
     public:
         Local() = default;
 
-        template<typename S>
-        Local(Local<S> other): data_(other.data_) {}
+        template <typename S>
+        Local(Local<S> other)
+            : data_(other.data_)
+        {
+        }
 
         bool IsEmpty() const { return !data_.isolate_; }
 
@@ -53,12 +56,19 @@ namespace v8
         }
 
         template <typename S>
-        static Local<T> Cast(Local<S> that) { return Local<T>(that); }
+        static Local<T> Cast(Local<S> that)
+        {
+            return Local<T>(that);
+        }
 
         template <typename S>
-        Local<S> As() const { return Local<S>(data_); }
+        Local<S> As() const
+        {
+            return Local<S>(data_);
+        }
 
-        Local(const Data data): data_(data) {}
+        Local(const Data data)
+            : data_(data) {}
 
         template <typename S>
         bool operator==(const Local<S>& other) const
@@ -82,7 +92,7 @@ namespace v8
         Data data_;
     };
 
-    template<typename T>
+    template <typename T>
     class MaybeLocal
     {
         template <typename S>
@@ -90,13 +100,20 @@ namespace v8
 
     public:
         MaybeLocal() = default;
-        MaybeLocal(const Data data): data_(data) {}
+        MaybeLocal(const Data data)
+            : data_(data) {}
 
-        template<typename S>
-        MaybeLocal(MaybeLocal<S> other) : data_(other.data_) {}
+        template <typename S>
+        MaybeLocal(MaybeLocal<S> other)
+            : data_(other.data_)
+        {
+        }
 
-        template<typename S>
-        MaybeLocal(Local<S> other) : data_(other.data_) {}
+        template <typename S>
+        MaybeLocal(Local<S> other)
+            : data_(other.data_)
+        {
+        }
 
         bool IsEmpty() const { return !data_.isolate_; }
         Local<T> ToLocalChecked()
@@ -121,16 +138,21 @@ namespace v8
         kInternalFields,
     };
 
-    template<typename T>
+    template <typename T>
     class WeakCallbackInfo
     {
     public:
         using Callback = void (*)(const WeakCallbackInfo& data);
 
-        WeakCallbackInfo(Isolate* isolate, T* parameter, void** internal_fields): isolate_(isolate), parameter_(parameter), internal_fields_(internal_fields) {}
+        WeakCallbackInfo(Isolate* isolate, T* parameter, void** internal_fields)
+            : isolate_(isolate), parameter_(parameter), internal_fields_(internal_fields) {}
         Isolate* GetIsolate() const { return isolate_; }
         T* GetParameter() const { return parameter_; }
-        void* GetInternalField(int index) const { jsb_check(index == 0 || index == 1); return internal_fields_[index]; }
+        void* GetInternalField(int index) const
+        {
+            jsb_check(index == 0 || index == 1);
+            return internal_fields_[index];
+        }
 
     private:
         Isolate* isolate_;
@@ -141,7 +163,12 @@ namespace v8
     template <typename T>
     class Global
     {
-        enum WeakType { kStrong, kWeak, kWeakCallback, };
+        enum WeakType
+        {
+            kStrong,
+            kWeak,
+            kWeakCallback,
+        };
 
         // clear all fields silently after moved
         void _clear()
@@ -195,22 +222,23 @@ namespace v8
             switch (weak_type_)
             {
             case WeakType::kStrong:
-                {
-                    // release if strong referenced
-                    jsb_check(is_alive());
-                    jsb::impl::Broker::_free_delayed(isolate_, value_);
-                    break;
-                }
+            {
+                // release if strong referenced
+                jsb_check(is_alive());
+                jsb::impl::Broker::_free_delayed(isolate_, value_);
+                break;
+            }
             case WeakType::kWeakCallback:
+            {
+                // clear callback
+                if (is_alive())
                 {
-                    // clear callback
-                    if (is_alive())
-                    {
-                        jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
-                    }
-                    break;
+                    jsb::impl::Broker::SetWeak(isolate_, value_, nullptr, nullptr);
                 }
-            default: break;
+                break;
+            }
+            default:
+                break;
             }
 
             jsb::impl::Broker::remove_phantom(isolate_, shadow_);
@@ -268,7 +296,7 @@ namespace v8
             jsb::impl::Broker::_free_delayed(isolate_, value_);
         }
 
-        template<typename S>
+        template <typename S>
         void SetWeak(S* parameter, typename WeakCallbackInfo<S>::Callback callback, v8::WeakCallbackType type)
         {
             jsb_check(isolate_ && weak_type_ == WeakType::kStrong && is_alive());
@@ -348,6 +376,6 @@ namespace v8
         return !operator==(other);
     }
 
-}
+} // namespace v8
 
 #endif

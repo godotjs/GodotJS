@@ -8,16 +8,20 @@ namespace jsb::internal
 {
     struct AnsiAllocator
     {
-        enum { kInitialElementNum = 8 };
+        enum
+        {
+            kInitialElementNum = 8
+        };
 
         struct AnyType
         {
         };
 
-        template<size_t kSizeOfElement>
+        template <size_t kSizeOfElement>
         struct AnyTypeAllocator
         {
-            AnyTypeAllocator() : data(nullptr), num(0)
+            AnyTypeAllocator()
+                : data(nullptr), num(0)
             {
             }
 
@@ -51,11 +55,10 @@ namespace jsb::internal
 
             void resize(size_t p_last_num, size_t p_num)
             {
-                data = (AnyType*)memrealloc(data, next_power_of_2((unsigned int) (p_num * kSizeOfElement)));
+                data = (AnyType*) memrealloc(data, next_power_of_2((unsigned int) (p_num * kSizeOfElement)));
                 jsb_check(data);
                 const size_t added_count = p_num - p_last_num;
-                memset((void *)((unsigned char*) data + p_last_num * kSizeOfElement), 0,
-                            added_count * kSizeOfElement);
+                memset((void*) ((unsigned char*) data + p_last_num * kSizeOfElement), 0, added_count * kSizeOfElement);
                 num = p_num;
             }
 
@@ -79,5 +82,5 @@ namespace jsb::internal
             }
         };
     };
-}
+} // namespace jsb::internal
 #endif

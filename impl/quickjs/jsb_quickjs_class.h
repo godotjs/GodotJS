@@ -13,11 +13,11 @@ namespace jsb::impl
         // strong reference.
         // the counterpart of exposed C++ class.
         // in quickjs, it's the prototype object.
-        //NOTE template_.GetFunction() returns the `constructor`,
-        //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
+        // NOTE template_.GetFunction() returns the `constructor`,
+        // NOTE `constructor == info.NewTarget()` only if directly creating a class instance
         v8::Global<v8::Object> prototype_;
 
-        //TODO may unnecessary, should be identical with prototype.constructor?
+        // TODO may unnecessary, should be identical with prototype.constructor?
         v8::Global<v8::Function> constructor_;
 
         uint8_t internal_field_count_ = 0;
@@ -45,7 +45,7 @@ namespace jsb::impl
             return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(constructor)));
         }
 
-        //NOTE NewInstance should not trigger the underlying native constructor of this class
+        // NOTE NewInstance should not trigger the underlying native constructor of this class
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
         {
             v8::Isolate* isolate = context->GetIsolate();
@@ -53,14 +53,13 @@ namespace jsb::impl
             // const JSValue inst = JS_CallConstructor(ctx, (JSValue) constructor_, 0, nullptr);
             // jsb_check(!JS_IsException(inst));
             // return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(inst)));
-            return v8::Local<v8::Object>(v8::Data(isolate,isolate->push_steal(
-                _NewObject(isolate, ctx, (JSValue) prototype_, internal_field_count_))));
+            return v8::Local<v8::Object>(v8::Data(isolate, isolate->push_steal(_NewObject(isolate, ctx, (JSValue) prototype_, internal_field_count_))));
         }
 
     private:
         Class(v8::Isolate* isolate, uint8_t internal_field_count, const v8::Local<v8::Object> proto, const v8::Local<v8::Function> constructor)
         {
-            internal_field_count_= internal_field_count;
+            internal_field_count_ = internal_field_count;
             prototype_.Reset(isolate, proto);
             constructor_.Reset(isolate, constructor);
         }
@@ -70,13 +69,13 @@ namespace jsb::impl
             const JSValue this_val = JS_NewObjectProtoClass(ctx, (JSValue) prototype, isolate->get_class_id());
             jsb_check(JS_IsObject(this_val));
             const jsb::impl::InternalDataID internal_data_id = isolate->add_internal_data(internal_field_count);
-            JS_SetOpaque(this_val, (void*)(uintptr_t) *internal_data_id);
+            JS_SetOpaque(this_val, (void*) (uintptr_t) *internal_data_id);
             JSB_QUICKJS_LOG(VeryVerbose, "allocating internal data JSObject:%s id:%s", (uintptr_t) JS_VALUE_GET_PTR(this_val), internal_data_id);
             return this_val;
         }
 
-        //NOTE JS_CFUNC_constructor_magic DO NOT support func_data
-        template<uint8_t InternalFieldCount>
+        // NOTE JS_CFUNC_constructor_magic DO NOT support func_data
+        template <uint8_t InternalFieldCount>
         static JSValue _constructor(JSContext* ctx, JSValueConst new_target, int argc, JSValueConst* argv, int magic)
         {
             v8::Isolate* isolate = (v8::Isolate*) JS_GetContextOpaque(ctx);
@@ -123,7 +122,6 @@ namespace jsb::impl
 
             return this_val;
         }
-
     };
-}
+} // namespace jsb::impl
 #endif

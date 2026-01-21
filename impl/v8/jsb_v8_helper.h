@@ -14,13 +14,13 @@ namespace jsb::impl
         Helper() = delete;
 
         // deleter for valuetype optimization (no ObjectHandle needed)
-        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> p_object, v8::BackingStore::DeleterCallback callback, void *deleter_data)
+        static void SetDeleter(Variant* p_pointer, const v8::Local<v8::Object> p_object, v8::BackingStore::DeleterCallback callback, void* deleter_data)
         {
             v8::Isolate* isolate = p_object->GetIsolate();
             p_object->Set(isolate->GetCurrentContext(), 0,
-                // in this way, the scavenger could gc it efficiently
-                v8::ArrayBuffer::New(isolate, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(Variant), callback, deleter_data))
-            ).Check();
+                          // in this way, the scavenger could gc it efficiently
+                          v8::ArrayBuffer::New(isolate, v8::ArrayBuffer::NewBackingStore(p_pointer, sizeof(Variant), callback, deleter_data)))
+                .Check();
         }
 
         static PackedByteArray to_packed_byte_array(v8::Isolate* isolate, const v8::Local<v8::ArrayBuffer>& array_buffer)
@@ -92,7 +92,7 @@ namespace jsb::impl
             return String();
         }
 
-        template<size_t N>
+        template <size_t N>
         jsb_force_inline static v8::Local<v8::String> new_string(v8::Isolate* isolate, const char (&literal)[N])
         {
             return v8::String::NewFromUtf8Literal(isolate, literal, v8::NewStringType::kNormal);
@@ -117,17 +117,29 @@ namespace jsb::impl
 
         static v8::MaybeLocal<v8::Value> parse_json(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const uint8_t* p_ptr, size_t p_len)
         {
-            jsb_check((size_t)(int) p_len == p_len);
+            jsb_check((size_t) (int) p_len == p_len);
             const v8::Local<v8::String> json_string = v8::String::NewFromUtf8(isolate, (const char*) p_ptr, v8::NewStringType::kNormal, (int) p_len).ToLocalChecked();
             return v8::JSON::Parse(context, json_string);
         }
 
         jsb_force_inline static bool to_int64(const v8::Local<v8::Value> p_val, int64_t& r_val)
         {
-            if (p_val->IsInt32()) { r_val = p_val.As<v8::Int32>()->Value(); return true; }
-            if (p_val->IsNumber()) { r_val = (int64_t) p_val.As<v8::Number>()->Value(); return true; }
+            if (p_val->IsInt32())
+            {
+                r_val = p_val.As<v8::Int32>()->Value();
+                return true;
+            }
+            if (p_val->IsNumber())
+            {
+                r_val = (int64_t) p_val.As<v8::Number>()->Value();
+                return true;
+            }
 #if JSB_WITH_BIGINT
-            if (p_val->IsBigInt()) { r_val = p_val.As<v8::BigInt>()->Int64Value(); return true; }
+            if (p_val->IsBigInt())
+            {
+                r_val = p_val.As<v8::BigInt>()->Int64Value();
+                return true;
+            }
 #endif
             return false;
         }
@@ -176,13 +188,13 @@ namespace jsb::impl
 #else
                 const int protocol_index = p_source_origin.find("://");
                 const String source_origin_path = protocol_index > -1 ? p_source_origin.substr(protocol_index + 1) : p_source_origin;
-#ifdef WINDOWS_ENABLED
+    #ifdef WINDOWS_ENABLED
                 const String filename = p_source_origin.find("res://") == 0
-                    ? p_source_origin.substr(6).replace("/", "\\")
-                    : p_source_origin.replace("/", "\\");
-#else
+                                            ? p_source_origin.substr(6).replace("/", "\\")
+                                            : p_source_origin.replace("/", "\\");
+    #else
                 const String filename = p_source_origin.find("res://") == 0 ? p_source_origin.substr(6) : p_source_origin;
-#endif
+    #endif
 #endif
 
                 String source_map_base_url = jsb::internal::Settings::get_debugger_source_map_base_url();
@@ -225,7 +237,7 @@ namespace jsb::impl
             return compile_function(context, p_source, p_source_len, p_filename);
         }
 
-        template<int N>
+        template <int N>
         jsb_force_inline static void throw_error(v8::Isolate* isolate, const char (&message)[N])
         {
             isolate->ThrowError(message);
@@ -255,7 +267,6 @@ namespace jsb::impl
 
         jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate) {}
     };
-}
+} // namespace jsb::impl
 
 #endif
-

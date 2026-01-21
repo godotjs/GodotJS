@@ -29,7 +29,6 @@ namespace jsb::internal
         {
             return VariantUtil::check_argc(is_vararg, p_argc, default_arguments.size(), argument_types.size());
         }
-
     };
 
     struct FUtilityMethodInfo : FMethodInfoBase
@@ -90,8 +89,6 @@ namespace jsb::internal
 
         // for godot properties which have an implicit (hidden) parameter for getter/setter calls
         Vector<FPropertyInfo2> properties2;
-
     };
-}
+} // namespace jsb::internal
 #endif
-

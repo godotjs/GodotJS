@@ -20,25 +20,25 @@
 #include "../jsb_project_preset.h"
 
 #ifdef TOOLS_ENABLED
-#if GODOT_4_5_OR_NEWER
-#include "editor/settings/editor_settings.h"
-#else
-#include "editor/editor_settings.h"
-#endif
+    #if GODOT_4_5_OR_NEWER
+        #include "editor/settings/editor_settings.h"
+    #else
+        #include "editor/editor_settings.h"
+    #endif
 #endif
 #include "main/performance.h"
 
-//TODO remove this
+// TODO remove this
 #include "../weaver/jsb_script.h"
 #include "modules/GodotJS/weaver/jsb_script_instance.h"
 #include "modules/GodotJS/weaver/jsb_script_language.h"
 
 #if !JSB_WITH_STATIC_BINDINGS
-#include "jsb_primitive_bindings_reflect.h"
-#define register_primitive_bindings(param) register_primitive_bindings_reflect(param)
+    #include "jsb_primitive_bindings_reflect.h"
+    #define register_primitive_bindings(param) register_primitive_bindings_reflect(param)
 #else
-#include "jsb_primitive_bindings_static.h"
-#define register_primitive_bindings(param) register_primitive_bindings_static(param)
+    #include "jsb_primitive_bindings_static.h"
+    #define register_primitive_bindings(param) register_primitive_bindings_static(param)
 #endif
 
 namespace jsb
@@ -51,7 +51,10 @@ namespace jsb
         kWrapperInstanceIndex,
         kWrapperFieldCount,
     };
-    namespace { const uint16_t kWrapperID = 1; }
+    namespace
+    {
+        const uint16_t kWrapperID = 1;
+    }
 #endif
 
     struct EnvironmentStore
@@ -62,7 +65,7 @@ namespace jsb
             lock_.lock();
             for (void* ptr : all_runtimes_)
             {
-                //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
+                // TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
                 Environment* env = (Environment*) ptr;
                 rval.push_back(env->shared_from_this());
             }
@@ -77,7 +80,7 @@ namespace jsb
             lock_.lock();
             if (all_runtimes_.has(p_runtime))
             {
-                //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
+                // TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
                 Environment* env = (Environment*) p_runtime;
                 rval = env->shared_from_this();
             }
@@ -92,7 +95,7 @@ namespace jsb
             lock_.lock();
             for (void* ptr : all_runtimes_)
             {
-                //TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
+                // TODO check if it's not removed from `all_runtimes_` but being destructed already (consider remove it from the list immediately on destructor called)
                 Environment* env = (Environment*) ptr;
                 if (env->thread_id_ != Thread::UNASSIGNED_ID && env->is_caller_thread())
                 {
@@ -154,11 +157,12 @@ namespace jsb
 
     struct InstanceBindingCallbacks
     {
-        jsb_force_inline operator const GDExtensionInstanceBindingCallbacks* () const { return &callbacks_; }
+        jsb_force_inline operator const GDExtensionInstanceBindingCallbacks*() const { return &callbacks_; }
 
         InstanceBindingCallbacks()
-            : callbacks_ { create_callback, free_callback, reference_callback }
-        {}
+            : callbacks_{create_callback, free_callback, reference_callback}
+        {
+        }
 
     private:
         static void* create_callback(void* p_token, void* p_instance)
@@ -191,11 +195,11 @@ namespace jsb
             if (const std::shared_ptr<Environment> env = EnvironmentStore::get_shared().access(p_token))
             {
                 if (env->verify_object(p_binding) && env->add_async_call(
-                    p_reference ? Environment::AsyncCall::TYPE_REF : Environment::AsyncCall::TYPE_DEREF,
-                    p_binding))
+                                                         p_reference ? Environment::AsyncCall::TYPE_REF : Environment::AsyncCall::TYPE_DEREF,
+                                                         p_binding))
                 {
-                    //NOTE Always return false to avoid `delete` in godot unreference() call,
-                    //     object_gc_callback would eventually delete the RefCounted Object.
+                    // NOTE Always return false to avoid `delete` in godot unreference() call,
+                    //      object_gc_callback would eventually delete the RefCounted Object.
                     return false;
                 }
             }
@@ -205,7 +209,10 @@ namespace jsb
         GDExtensionInstanceBindingCallbacks callbacks_;
     };
 
-    namespace { InstanceBindingCallbacks gd_instance_binding_callbacks = {}; }
+    namespace
+    {
+        InstanceBindingCallbacks gd_instance_binding_callbacks = {};
+    }
 
     namespace
     {
@@ -222,8 +229,7 @@ namespace jsb
 
         void OnPostGCCallback(v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags)
         {
-            JSB_LOG(VeryVerbose, "v8 gc time %dms type:%d flags:%d",
-                OS::get_singleton() ? OS::get_singleton()->get_ticks_msec() - gc_ticks : -1, type, flags);
+            JSB_LOG(VeryVerbose, "v8 gc time %dms type:%d flags:%d", OS::get_singleton() ? OS::get_singleton()->get_ticks_msec() - gc_ticks : -1, type, flags);
         }
 #endif
 
@@ -240,11 +246,10 @@ namespace jsb
             const String str = impl::Helper::to_string_without_side_effect(isolate, message.GetValue());
             JSB_LOG(Error, "unhandled promise rejection: %s", str);
         }
-    }
+    } // namespace
 
     Environment::Environment(const CreateParams& p_params)
-        : thread_id_(p_params.thread_id)
-        , object_db_(p_params.initial_object_slots)
+        : thread_id_(p_params.thread_id), object_db_(p_params.initial_object_slots)
     {
         JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
         impl::GlobalInitialize::init();
@@ -253,14 +258,16 @@ namespace jsb
 #if JSB_V8_CPPGC
         // old version:
         cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(),
-            v8::CppHeapCreateParams({}, v8::WrapperDescriptor(kWrapperTypeIndex, kWrapperInstanceIndex, kWrapperID)));
+                                        v8::CppHeapCreateParams({}, v8::WrapperDescriptor(kWrapperTypeIndex, kWrapperInstanceIndex, kWrapperID)));
         // new version:
         // cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(), v8::CppHeapCreateParams({}));
         create_params.cpp_heap = cpp_heap_.get();
 #endif
 
-        if (p_params.type == Type::Worker) flags_ |= EF_Worker;
-        else if (p_params.type == Type::Shadow) flags_ |= EF_Shadow;
+        if (p_params.type == Type::Worker)
+            flags_ |= EF_Worker;
+        else if (p_params.type == Type::Shadow)
+            flags_ |= EF_Shadow;
 
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
@@ -386,7 +393,7 @@ namespace jsb
 
 #if JSB_WITH_DEBUGGER
             debugger_ready_future_ = debugger_ready_promise_.get_future();
-            //TODO call `start_debugger` at different stages for Editor/Game Runtimes.
+            // TODO call `start_debugger` at different stages for Editor/Game Runtimes.
 #endif
 
             start_debugger(p_params.debugger_port);
@@ -396,10 +403,11 @@ namespace jsb
     // no JS code should be executed in the destructor.
     Environment::~Environment()
     {
-        //TODO not always safe
+        // TODO not always safe
         if ((flags_ & EF_PreDispose) == 0)
         {
-            JSB_LOG(Warning, "Environment is not disposed before destructing it %s", (uintptr_t) id());;
+            JSB_LOG(Warning, "Environment is not disposed before destructing it %s", (uintptr_t) id());
+            ;
             check_internal_state();
             dispose();
         }
@@ -442,26 +450,27 @@ namespace jsb
     void Environment::init()
     {
         jsb::DefaultModuleResolver& resolver = this->add_module_resolver<jsb::DefaultModuleResolver>()
-            .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
-            .add_search_path("res://") // use the root directory as custom lib path by default
-            .add_search_path("res://node_modules") // so far, it's the only supported path for node_modules in GodotJS
-        ;
+                                                   .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
+                                                   .add_search_path("res://")                                        // use the root directory as custom lib path by default
+                                                   .add_search_path("res://node_modules")                            // so far, it's the only supported path for node_modules in GodotJS
+            ;
 
         // load internal scripts (jsb.core, jsb.editor.main, jsb.editor.codegen)
         static constexpr char kRuntimeBundleFile[] = "jsb.runtime.bundle.js";
         jsb_ensuref(AMDModuleLoader::load_source(this, GodotJSProjectPreset::get_source_rt(kRuntimeBundleFile)) == OK,
-            "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kRuntimeBundleFile);
+                    "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources",
+                    kRuntimeBundleFile);
         static constexpr char kEditorBundleFile[] = "jsb.editor.bundle.js";
 #ifdef TOOLS_ENABLED
         jsb_ensuref(AMDModuleLoader::load_source(this, GodotJSProjectPreset::get_source_ed(kEditorBundleFile)) == OK,
-            "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources", kEditorBundleFile);
+                    "the embedded '%s' not found, run 'scons' again to refresh all *.gen.cpp sources",
+                    kEditorBundleFile);
 #else
         // Users may consume editor APIs in codegen functions. However, we want to permit regular ES6 import syntax.
         // We provide a dummy module that can be imported (but not used) in runtime-only builds.
         static constexpr char kDummyModule[] = u8"(function(define){define('jsb.editor.codegen',[],function(){return{}})})";
         AMDModuleLoader::load_source(this, kDummyModule, sizeof(kDummyModule) - 1, kEditorBundleFile);
 #endif
-
     }
 
     void Environment::dispose()
@@ -477,8 +486,8 @@ namespace jsb
             v8::Local<v8::Context> context = context_.Get(get_isolate());
 
             function_refs_.clear();
-            while (!function_bank_.is_empty()) function_bank_.remove_last();
-            // function_bank_.clear();
+            while (!function_bank_.is_empty())
+                function_bank_.remove_last();
 
 #if JSB_WITH_DEBUGGER
             debugger_.on_context_destroyed(context);
@@ -525,8 +534,8 @@ namespace jsb
             v8::Isolate::Scope isolate_scope(isolate_);
             v8::HandleScope handle_scope(isolate_);
 
-            //TODO be able to handle the uncaught exceptions in env (instead of being swallowed in the timer invocation).
-            //     we need to forward it to onerror (if the current env is the master of a worker)
+            // TODO be able to handle the uncaught exceptions in env (instead of being swallowed in the timer invocation).
+            //      we need to forward it to onerror (if the current env is the master of a worker)
             if (timer_manager_.invoke_timers(isolate_))
             {
                 notify_microtasks_run();
@@ -593,25 +602,35 @@ namespace jsb
     {
         switch (p_type)
         {
-        case AsyncCall::TYPE_REF:       reference_object(p_binding, true); break;
-        case AsyncCall::TYPE_DEREF:     reference_object(p_binding, false); break;
-        case AsyncCall::TYPE_GC_FREE:   free_object(p_binding, FinalizationType::Default); break;
-        case AsyncCall::TYPE_TRANSFER_:
-            {
-                //TODO need a better way to control lifetime of TransferData?
-                TransferData* transfer_data = (TransferData*) p_binding;
-                {
-                    v8::Isolate::Scope isolate_scope(isolate_);
-                    v8::HandleScope handle_scope(isolate_);
-                    const v8::Local<v8::Context> context = context_.Get(isolate_);
-                    const v8::Context::Scope context_scope(context);
-                    _on_worker_transfer(context, transfer_data);
-                }
-                memdelete(transfer_data);
-            }
+        case AsyncCall::TYPE_REF:
+            reference_object(p_binding, true);
             break;
-        case AsyncCall::TYPE_GC_REQUEST: _on_gc_request(); break;
-        default: jsb_checkf(false, "unknown AsyncCall: %d", p_type); break;
+        case AsyncCall::TYPE_DEREF:
+            reference_object(p_binding, false);
+            break;
+        case AsyncCall::TYPE_GC_FREE:
+            free_object(p_binding, FinalizationType::Default);
+            break;
+        case AsyncCall::TYPE_TRANSFER_:
+        {
+            // TODO need a better way to control lifetime of TransferData?
+            TransferData* transfer_data = (TransferData*) p_binding;
+            {
+                v8::Isolate::Scope isolate_scope(isolate_);
+                v8::HandleScope handle_scope(isolate_);
+                const v8::Local<v8::Context> context = context_.Get(isolate_);
+                const v8::Context::Scope context_scope(context);
+                _on_worker_transfer(context, transfer_data);
+            }
+            memdelete(transfer_data);
+        }
+        break;
+        case AsyncCall::TYPE_GC_REQUEST:
+            _on_gc_request();
+            break;
+        default:
+            jsb_checkf(false, "unknown AsyncCall: %d", p_type);
+            break;
         }
     }
 
@@ -637,7 +656,7 @@ namespace jsb
             return;
         }
 
-        //TODO 0. HOW TO HANDLE COMPLICATED SITUATIONS? SUCH AS NESTED OBJECTS?
+        // TODO 0. HOW TO HANDLE COMPLICATED SITUATIONS? SUCH AS NESTED OBJECTS?
         jsb_nop();
 
         transfer_in(p_context, *p_data);
@@ -676,7 +695,7 @@ namespace jsb
 
     void _invoke(Environment* p_env, const v8::Local<v8::Context>& p_context, const v8::Local<v8::Function>& p_callback, const Message* p_message)
     {
-        v8::Isolate *isolate = p_env->get_isolate();
+        v8::Isolate* isolate = p_env->get_isolate();
 
 #if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
         v8::Local<v8::Value> value;
@@ -689,13 +708,13 @@ namespace jsb
                 p_env->transfer_in(p_context, transfer);
             }
 
-#if JSB_WITH_V8
+    #if JSB_WITH_V8
             Serialization::VariantDeserializerDelegate delegate(p_env, p_message->get_transfers());
             v8::ValueDeserializer deserializer(isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size(), &delegate);
             delegate.SetSerializer(&deserializer);
-#else
+    #else
             v8::ValueDeserializer deserializer(isolate, p_message->get_buffer().ptr(), p_message->get_buffer().size());
-#endif
+    #endif
 
             bool ok;
             if (!deserializer.ReadHeader(p_context).To(&ok) || !ok)
@@ -713,8 +732,8 @@ namespace jsb
 
         const impl::TryCatch try_catch(isolate);
         const v8::MaybeLocal<v8::Value> rval = p_message
-            ? p_callback->Call(p_context, v8::Undefined(isolate), 1, &value)
-            : p_callback->Call(p_context, v8::Undefined(isolate), 0, nullptr);
+                                                   ? p_callback->Call(p_context, v8::Undefined(isolate), 1, &value)
+                                                   : p_callback->Call(p_context, v8::Undefined(isolate), 0, nullptr);
         jsb_unused(rval);
         if (try_catch.has_caught())
         {
@@ -846,8 +865,8 @@ namespace jsb
         jsb_check(p_object->InternalFieldCount() == IF_ObjectFieldCount);
         jsb_check((uintptr_t) p_type % 2 == 0); // fake 2-byte alignment
 
-        static int indices[]    = { IF_Pointer, IF_ClassType };
-        void* internal_fields[] = { p_pointer,  (void*)(uintptr_t) p_type };
+        static int indices[] = {IF_Pointer, IF_ClassType};
+        void* internal_fields[] = {p_pointer, (void*) (uintptr_t) p_type};
         p_object->SetAlignedPointerInInternalFields(IF_ObjectFieldCount, indices, internal_fields);
 
         handle->class_id = p_class_id;
@@ -866,9 +885,7 @@ namespace jsb
             jsb_check(p_external_rc > 0);
             handle->ref_count_ = p_external_rc;
         }
-        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%d id:%d",
-            (String) native_classes_.get_value(p_class_id).name, p_class_id,
-            (uintptr_t) p_pointer, object_id);
+        JSB_LOG(VeryVerbose, "bind object class:%s(%d) addr:%d id:%d", (String) native_classes_.get_value(p_class_id).name, p_class_id, (uintptr_t) p_pointer, object_id);
         return object_id;
     }
 
@@ -962,14 +979,14 @@ namespace jsb
 
         // TODO: Look into if we ought to be calling obj->free_instance_binding(this)
 
-        //TODO do not clear the internal field if calling from JS GC
-        // if (p_finalize != FinalizationType::None)
-        // {
-        //     //NOTE if we clear the internal field here,
-        //     //     only null check is required when reading this value later
-        //     //     (like the usage in '_godot_object_method')
-        //     clear_internal_field(isolate_, obj_ref);
-        // }
+        // TODO do not clear the internal field if calling from JS GC
+        //  if (p_finalize != FinalizationType::None)
+        //  {
+        //      //NOTE if we clear the internal field here,
+        //      //     only null check is required when reading this value later
+        //      //     (like the usage in '_godot_object_method')
+        //      clear_internal_field(isolate_, obj_ref);
+        //  }
 
         object_handle = nullptr;
         object_db_.remove_object(p_pointer);
@@ -980,11 +997,9 @@ namespace jsb
             const NativeClassInfo& class_info = native_classes_.get_value(class_id);
             const bool is_persistent = persistent_objects_.erase(p_pointer);
 
-            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%d",
-                (String) class_info.name, class_id,
-                (uintptr_t) p_pointer);
+            JSB_LOG(VeryVerbose, "free_object class:%s(%d) addr:%d", (String) class_info.name, class_id, (uintptr_t) p_pointer);
 
-            //NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
+            // NOTE Godot will call Object::_predelete to post a notification NOTIFICATION_PREDELETE which finally call `ScriptInstance::callp`
             class_info.finalizer(this, p_pointer, is_persistent ? FinalizationType::None : p_finalize);
         }
         else
@@ -1089,7 +1104,7 @@ namespace jsb
             jsb_checkf(!resolved_module, "module loader does not support reloading");
             JavaScriptModule& module = module_cache_.insert(isolate, context, p_module_id, false, false);
 
-            //NOTE the loader should throw error if failed
+            // NOTE the loader should throw error if failed
             if (!loader->load(this, module))
             {
                 return nullptr;
@@ -1158,8 +1173,8 @@ namespace jsb
                 module.source_info = source_info;
                 module.exports.Reset(isolate, exports_obj);
 
-                //NOTE the resolver should throw error if failed
-                //NOTE module.filename should be set in `resolve.load`
+                // NOTE the resolver should throw error if failed
+                // NOTE module.filename should be set in `resolve.load`
                 if (!resolver->load(this, source_info.source_filepath, module))
                 {
                     return nullptr;
@@ -1222,7 +1237,7 @@ namespace jsb
         {
             JSB_LOG(Verbose, "crossbinding on previously bound object %d (addr:%d), rebind it to script class %d", object_id, (uintptr_t) p_this, p_class_id);
 
-            //TODO may not work in this way
+            // TODO may not work in this way
             _rebind(isolate, context, p_this, p_class_id);
             return object_id;
         }
@@ -1265,10 +1280,9 @@ namespace jsb
         v8::Local<v8::Function> reflect_construct = reflect->Get(context, jsb_name(this, construct)).ToLocalChecked().As<v8::Function>();
 
         v8::Local<v8::Value> reflect_args[] = {
-                class_obj,
-                arguments,
-                new_target
-        };
+            class_obj,
+            arguments,
+            new_target};
 
         v8::MaybeLocal<v8::Value> constructed_value = reflect_construct->Call(context, reflect, 3, reflect_args);
 
@@ -1289,9 +1303,9 @@ namespace jsb
         return this->try_get_object_id(p_this);
     }
 
-    void Environment::rebind(Object *p_this, ScriptClassID p_class_id)
+    void Environment::rebind(Object* p_this, ScriptClassID p_class_id)
     {
-        //TODO a dirty but approaching solution for hot-reloading
+        // TODO a dirty but approaching solution for hot-reloading
         this->check_internal_state();
         v8::Isolate* isolate = get_isolate();
         v8::HandleScope handle_scope(isolate);
@@ -1301,9 +1315,9 @@ namespace jsb
         _rebind(isolate, context, p_this, p_class_id);
     }
 
-    void Environment::_rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object *p_this, ScriptClassID p_class_id)
+    void Environment::_rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id)
     {
-        //TODO a dirty but approaching solution for hot-reloading
+        // TODO a dirty but approaching solution for hot-reloading
         v8::Local<v8::Object> instance;
         if (!this->try_get_object(p_this, instance))
         {
@@ -1337,7 +1351,7 @@ namespace jsb
         const v8::Local<v8::Value> post_bind_val = typeloader_exports.As<v8::Object>()->Get(context, jsb_name(this, godot_postbind)).ToLocalChecked();
         jsb_check(!post_bind_val.IsEmpty() && post_bind_val->IsFunction());
         const v8::Local<v8::Function> post_bind = post_bind_val.As<v8::Function>();
-        v8::Local<v8::Value> argv[] = { this->get_string_value(p_class_name), p_class };
+        v8::Local<v8::Value> argv[] = {this->get_string_value(p_class_name), p_class};
         v8::MaybeLocal<v8::Value> rval = post_bind->Call(context, v8::Undefined(isolate_), std::size(argv), argv);
         jsb_unused(rval);
         jsb_check(rval.ToLocalChecked()->IsUndefined());
@@ -1450,12 +1464,14 @@ namespace jsb
 
         // bind and cache the class immediately
         {
-            const v8::Local<v8::Function> class_ = class_register->register_func(ClassRegister {
-                this,
-                p_type_name,
-                this->isolate_,
-                this->context_.Get(this->isolate_),
-            }, &class_register->id)->clazz.Get(this->isolate_);
+            const v8::Local<v8::Function> class_ = class_register->register_func(ClassRegister{
+                                                                                     this,
+                                                                                     p_type_name,
+                                                                                     this->isolate_,
+                                                                                     this->context_.Get(this->isolate_),
+                                                                                 },
+                                                                                 &class_register->id)
+                                                       ->clazz.Get(this->isolate_);
             jsb_check(class_register->id);
             JSB_LOG(VeryVerbose, "register class %s (%d)", (String) p_type_name, class_register->id);
             if (r_class_id) *r_class_id = class_register->id;
@@ -1498,7 +1514,7 @@ namespace jsb
     {
         if (_execution_deferred)
         {
-            deferred_class_post_binds_.push_back({ p_class_name, p_class });
+            deferred_class_post_binds_.push_back({p_class_name, p_class});
             return;
         }
 
@@ -1544,9 +1560,9 @@ namespace jsb
         return false;
     }
 
-    bool Environment::validate_script(const String &p_path)
+    bool Environment::validate_script(const String& p_path)
     {
-        //TODO try to compile?
+        // TODO try to compile?
         return true;
     }
 
@@ -1588,7 +1604,8 @@ namespace jsb
             if (!TypeConvert::gd_var_to_js(isolate, context, *p_args[index], argv[index]))
             {
                 // revert constructed values if error occurred
-                while (index >= 0) argv[index--].~LocalValue();
+                while (index >= 0)
+                    argv[index--].~LocalValue();
                 r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
                 return {};
             }
@@ -1617,7 +1634,7 @@ namespace jsb
         Variant rvar;
         if (!TypeConvert::js_to_gd_var(isolate, context, rval_checked, rvar))
         {
-            //TODO if a function returns a Promise for godot script callbacks (such as _ready), it's safe to return as nothing without error?
+            // TODO if a function returns a Promise for godot script callbacks (such as _ready), it's safe to return as nothing without error?
             if (!rval_checked->IsPromise())
             {
                 JSB_LOG(Error, "failed to translate returned value");
@@ -1720,7 +1737,7 @@ namespace jsb
         }
 
         check_internal_state();
-        p_class_info.flags = (ScriptClassFlags::Type) (p_class_info.flags | ScriptClassFlags::_Evaluated);
+        p_class_info.flags = (ScriptClassFlags::Type)(p_class_info.flags | ScriptClassFlags::_Evaluated);
 
         v8::Isolate* isolate = get_isolate();
         v8::Isolate::Scope isolate_scope(isolate);
@@ -1735,9 +1752,7 @@ namespace jsb
 
             if (try_catch_run.has_caught())
             {
-                JSB_LOG(Error, "something wrong when constructing '%s'\n%s",
-                    p_class_info.js_class_name,
-                    BridgeHelper::get_exception(try_catch_run));
+                JSB_LOG(Error, "something wrong when constructing '%s'\n%s", p_class_info.js_class_name, BridgeHelper::get_exception(try_catch_run));
                 return;
             }
 
@@ -1758,8 +1773,7 @@ namespace jsb
 
                 // try read default value from CDO.
                 // pretend nothing's wrong if failed by constructing a default value in-place
-                if (!class_default_object->Get(context, get_string_value(prop_kv.key)).ToLocal(&value)
-                    || !TypeConvert::js_to_gd_var(isolate, context, value, prop_info.type, prop_kv.value.default_value))
+                if (!class_default_object->Get(context, get_string_value(prop_kv.key)).ToLocal(&value) || !TypeConvert::js_to_gd_var(isolate, context, value, prop_info.type, prop_kv.value.default_value))
                 {
                     JSB_LOG(Warning, "failed to get/translate default value of '%s' from CDO", prop_kv.key);
                     ::jsb::internal::VariantUtil::construct_variant(prop_kv.value.default_value, prop_info.type);
@@ -1804,7 +1818,7 @@ namespace jsb
         {
             const v8::Local<v8::Array> collection = val_test.As<v8::Array>();
             const uint32_t len = collection->Length();
-            const Node* node = (Node*)(Object*) unpacked;
+            const Node* node = (Node*) (Object*) unpacked;
 
             for (uint32_t index = 0; index < len; ++index)
             {
@@ -1831,31 +1845,26 @@ namespace jsb
                 }
                 else if (element_value->IsFunction())
                 {
-                    v8::Local<v8::Value> argv[] = { self };
+                    v8::Local<v8::Value> argv[] = {self};
                     const impl::TryCatch try_catch_run(isolate);
                     v8::MaybeLocal<v8::Value> result = element_value.As<v8::Function>()->Call(context, self, std::size(argv), argv);
                     if (try_catch_run.has_caught())
                     {
-                        JSB_LOG(Warning, "something wrong when evaluating onready '%s'\n%s",
-                            impl::Helper::to_string(isolate, element_name),
-                            BridgeHelper::get_exception(try_catch_run));
+                        JSB_LOG(Warning, "something wrong when evaluating onready '%s'\n%s", impl::Helper::to_string(isolate, element_name), BridgeHelper::get_exception(try_catch_run));
                         return;
                     }
 
                     v8::Maybe<bool> assignment = result.IsEmpty()
-                        ? self->Set(context, element_name, v8::Local<v8::Value>(v8::Undefined(isolate)))
-                        : self->Set(context, element_name, result.ToLocalChecked());
+                                                     ? self->Set(context, element_name, v8::Local<v8::Value>(v8::Undefined(isolate)))
+                                                     : self->Set(context, element_name, result.ToLocalChecked());
                     if (try_catch_run.has_caught())
                     {
-                        JSB_LOG(Warning, "something wrong assigning onready result to '%s'\n%s",
-                            impl::Helper::to_string(isolate, element_name),
-                            BridgeHelper::get_exception(try_catch_run));
+                        JSB_LOG(Warning, "something wrong assigning onready result to '%s'\n%s", impl::Helper::to_string(isolate, element_name), BridgeHelper::get_exception(try_catch_run));
                         return;
                     }
                     if (assignment.IsNothing())
                     {
-                        JSB_LOG(Warning, "failed to assign onready result to '%s'\n%s",
-                            impl::Helper::to_string(isolate, element_name));
+                        JSB_LOG(Warning, "failed to assign onready result to '%s'\n%s", impl::Helper::to_string(isolate, element_name));
                         return;
                     }
                 }
@@ -2035,7 +2044,7 @@ namespace jsb
 
                 if (instance->is_ref_counted())
                 {
-                    RefCounted *reference = static_cast<RefCounted *>(instance);
+                    RefCounted* reference = static_cast<RefCounted*>(instance);
 
                     if (reference->unreference())
                     {
@@ -2050,7 +2059,7 @@ namespace jsb
 
             if (!p_data.script_path.is_empty())
             {
-                ScriptInstance *script_instance = instance->get_script_instance();
+                ScriptInstance* script_instance = instance->get_script_instance();
 
                 if (script_instance)
                 {
@@ -2112,4 +2121,4 @@ namespace jsb
         return *async_module_manager_;
     }
 
-}
+} // namespace jsb

@@ -8,7 +8,7 @@
 
 namespace jsb
 {
-    template<typename T>
+    template <typename T>
     static bool try_convert_array(v8::Isolate* isolate, const v8::Local<v8::Context>& context, v8::Local<v8::Value> p_val, Variant& r_packed)
     {
         if constexpr (GetTypeInfo<T>::METADATA == GodotTypeInfo::METADATA_INT_IS_UINT8)
@@ -29,7 +29,7 @@ namespace jsb
         const v8::Local<v8::Array> array = p_val.As<v8::Array>();
         const uint32_t len = array->Length();
         Vector<T> packed;
-        packed.resize((int)len);
+        packed.resize((int) len);
         for (uint32_t index = 0; index < len; ++index)
         {
             v8::Local<v8::Value> element;
@@ -41,7 +41,7 @@ namespace jsb
             else
             {
                 // be cautious here, we silently omit conversion failures
-                packed.write[index] = T {};
+                packed.write[index] = T{};
                 JSB_LOG(Warning, "failed to convert array element %d (strictly, as %s), it'll be left as the default value", index, Variant::get_type_name(GetTypeInfo<T>::VARIANT_TYPE));
             }
         }
@@ -63,7 +63,7 @@ namespace jsb
         const v8::Local<v8::Array> array = p_val.As<v8::Array>();
         const uint32_t len = array->Length();
         Array packed;
-        packed.resize((int)len);
+        packed.resize((int) len);
         for (uint32_t index = 0; index < len; ++index)
         {
             v8::Local<v8::Value> element;
@@ -180,28 +180,28 @@ namespace jsb
             }
             break;
         case Variant::OBJECT:
+        {
+            if (!p_jval->IsObject())
             {
-                if (!p_jval->IsObject())
+                // NOTE we return true because object is usually nullable in most situations
+                if (p_jval->IsNullOrUndefined())
                 {
-                    //NOTE we return true because object is usually nullable in most situations
-                    if (p_jval->IsNullOrUndefined())
-                    {
-                        r_cvar = (Object*) nullptr;
-                        return true;
-                    }
-                    break;
+                    r_cvar = (Object*) nullptr;
+                    return true;
                 }
-                const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-
-                if (!TypeConvert::is_object(self))
-                {
-                    break;
-                }
-
-                void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                r_cvar = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
-                return true;
+                break;
             }
+            const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+
+            if (!TypeConvert::is_object(self))
+            {
+                break;
+            }
+
+            void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+            r_cvar = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
+            return true;
+        }
         case Variant::BOOL:
             // strict?
             if (p_jval->IsBoolean())
@@ -230,7 +230,7 @@ namespace jsb
                 r_cvar = Environment::wrap(isolate)->get_string_name(p_jval.As<v8::String>());
                 return true;
             }
-            goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         case Variant::NODE_PATH:
             if (p_jval->IsString())
             {
@@ -243,17 +243,37 @@ namespace jsb
                 r_cvar = NodePath(impl::Helper::to_string(isolate, p_jval));
                 return true;
             }
-            goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_BYTE_ARRAY:    if (try_convert_array<uint8_t>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_INT32_ARRAY:   if (try_convert_array<int32_t>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_INT64_ARRAY:   if (try_convert_array<int64_t>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_FLOAT32_ARRAY: if (try_convert_array<float>(isolate, context, p_jval, r_cvar))   return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_FLOAT64_ARRAY: if (try_convert_array<double>(isolate, context, p_jval, r_cvar))  return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_STRING_ARRAY:  if (try_convert_array<String>(isolate, context, p_jval, r_cvar))  return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_VECTOR2_ARRAY: if (try_convert_array<Vector2>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_VECTOR3_ARRAY: if (try_convert_array<Vector3>(isolate, context, p_jval, r_cvar)) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::PACKED_COLOR_ARRAY:   if (try_convert_array<Color>(isolate, context, p_jval, r_cvar))   return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-        case Variant::ARRAY:                if (try_convert_array_any(isolate, context, p_jval, r_cvar))      return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_BYTE_ARRAY:
+            if (try_convert_array<uint8_t>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_INT32_ARRAY:
+            if (try_convert_array<int32_t>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_INT64_ARRAY:
+            if (try_convert_array<int64_t>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_FLOAT32_ARRAY:
+            if (try_convert_array<float>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_FLOAT64_ARRAY:
+            if (try_convert_array<double>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_STRING_ARRAY:
+            if (try_convert_array<String>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_VECTOR2_ARRAY:
+            if (try_convert_array<Vector2>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_VECTOR3_ARRAY:
+            if (try_convert_array<Vector3>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::PACKED_COLOR_ARRAY:
+            if (try_convert_array<Color>(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+        case Variant::ARRAY:
+            if (try_convert_array_any(isolate, context, p_jval, r_cvar)) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         // math types
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
@@ -277,27 +297,28 @@ namespace jsb
         case Variant::CALLABLE:
         case Variant::SIGNAL:
         case Variant::DICTIONARY:
+        {
+        FALLBACK_TO_VARIANT:
+            if (!p_jval->IsObject())
             {
-                FALLBACK_TO_VARIANT:
-                if (!p_jval->IsObject())
-                {
-                    //TODO should auto convert a null/undefined value to a default (variant) counterpart?
-                    break;
-                }
-                const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-                if (!is_variant(self))
-                {
-                    break;
-                }
-
-                void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                r_cvar = *(Variant*) pointer;
-                return true;
+                // TODO should auto convert a null/undefined value to a default (variant) counterpart?
+                break;
             }
+            const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
+            if (!is_variant(self))
+            {
+                break;
+            }
+
+            void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+            r_cvar = *(Variant*) pointer;
+            return true;
+        }
         case Variant::NIL:
-            //NOTE (instead of prompting a nil value) the type NIL usually means a Variant parameter accepted by a godot method
+            // NOTE (instead of prompting a nil value) the type NIL usually means a Variant parameter accepted by a godot method
             return js_to_gd_var(isolate, context, p_jval, r_cvar);
-        default: return false;
+        default:
+            return false;
         }
 
         JSB_LOG(Warning, "Failed to convert JS variable to Variant. Expected: %s. Found: %s", Variant::get_type_name(p_type), js_debug_typeof(isolate, p_jval));
@@ -309,44 +330,46 @@ namespace jsb
         switch (p_type)
         {
         case Variant::FLOAT:
-            {
-                r_jval = v8::Number::New(isolate, p_cvar);
-                return true;
-            }
+        {
+            r_jval = v8::Number::New(isolate, p_cvar);
+            return true;
+        }
         case Variant::INT:
-            {
-                r_jval = impl::Helper::new_integer(isolate, p_cvar);
-                return true;
-            }
+        {
+            r_jval = impl::Helper::new_integer(isolate, p_cvar);
+            return true;
+        }
         case Variant::OBJECT:
+        {
+            Object* gd_obj = (Object*) p_cvar;
+            if (unlikely(!gd_obj))
             {
-                Object* gd_obj = (Object*) p_cvar;
-                if (unlikely(!gd_obj))
-                {
-                    r_jval = v8::Null(isolate);
-                    return true;
-                }
-                if (v8::Local<v8::Object> obj;
-                    gd_obj_to_js(isolate, context, gd_obj, obj))
-                {
-                    r_jval = obj;
-                    return true;
-                }
-                return false;
+                r_jval = v8::Null(isolate);
+                return true;
             }
-        case Variant::BOOL: r_jval = v8::Boolean::New(isolate, p_cvar); return true;
+            if (v8::Local<v8::Object> obj;
+                gd_obj_to_js(isolate, context, gd_obj, obj))
+            {
+                r_jval = obj;
+                return true;
+            }
+            return false;
+        }
+        case Variant::BOOL:
+            r_jval = v8::Boolean::New(isolate, p_cvar);
+            return true;
         case Variant::STRING:
-            {
-                const String str = p_cvar;
-                r_jval = impl::Helper::new_string(isolate, str);
-                return true;
-            }
+        {
+            const String str = p_cvar;
+            r_jval = impl::Helper::new_string(isolate, str);
+            return true;
+        }
         case Variant::STRING_NAME:
-            {
-                const StringName name = p_cvar;
-                r_jval = Environment::wrap(isolate)->get_string_value(name);
-                return true;
-            }
+        {
+            const StringName name = p_cvar;
+            r_jval = Environment::wrap(isolate)->get_string_value(name);
+            return true;
+        }
         // math types
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
@@ -383,24 +406,25 @@ namespace jsb
         case Variant::PACKED_VECTOR2_ARRAY:
         case Variant::PACKED_VECTOR3_ARRAY:
         case Variant::PACKED_COLOR_ARRAY:
+        {
+            // nil var is considered as acceptable here (in the case of set_script_property_value called from godot scene state restoring)
+            jsb_checkf(p_cvar.get_type() == Variant::NIL || Variant::can_convert(p_cvar.get_type(), p_type),
+                       "variant type can't convert to %s from %s",
+                       Variant::get_type_name(p_type),
+                       Variant::get_type_name(p_cvar.get_type()));
+            Environment* env = Environment::wrap(isolate);
+            NativeClassID class_id;
+            if (const NativeClassInfoPtr class_info = env->expose_godot_primitive_class(p_type, &class_id))
             {
-                // nil var is considered as acceptable here (in the case of set_script_property_value called from godot scene state restoring)
-                jsb_checkf(p_cvar.get_type() == Variant::NIL || Variant::can_convert(p_cvar.get_type(), p_type),
-                    "variant type can't convert to %s from %s",
-                    Variant::get_type_name(p_type), Variant::get_type_name(p_cvar.get_type()));
-                Environment* env = Environment::wrap(isolate);
-                NativeClassID class_id;
-                if (const NativeClassInfoPtr class_info = env->expose_godot_primitive_class(p_type, &class_id))
-                {
-                    jsb_check(class_id && class_info->type == NativeClassType::GodotPrimitive);
-                    r_jval = class_info->clazz.NewInstance(context);
-                    jsb_check(TypeConvert::is_variant(r_jval.As<v8::Object>()));
+                jsb_check(class_id && class_info->type == NativeClassType::GodotPrimitive);
+                r_jval = class_info->clazz.NewInstance(context);
+                jsb_check(TypeConvert::is_variant(r_jval.As<v8::Object>()));
 
-                    env->bind_valuetype(env->alloc_variant(p_cvar), r_jval.As<v8::Object>());
-                    return true;
-                }
-                return false;
+                env->bind_valuetype(env->alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                return true;
             }
+            return false;
+        }
         case Variant::NIL:
             if (const Variant::Type var_type = p_cvar.get_type(); var_type != Variant::NIL)
             {
@@ -409,10 +433,10 @@ namespace jsb
             r_jval = v8::Null(isolate);
             return true;
         default:
-            {
-                JSB_LOG(Error, "unhandled type %s", Variant::get_type_name(p_type));
-                return false;
-            }
+        {
+            JSB_LOG(Error, "unhandled type %s", Variant::get_type_name(p_type));
+            return false;
+        }
         }
     }
 
@@ -508,10 +532,10 @@ namespace jsb
             r_cvar = impl::Helper::to_packed_byte_array(isolate, p_jval.As<v8::ArrayBuffer>());
             return true;
         }
-        //TODO
-        // if (p_jval->IsFunction())
-        // {
-        // }
+        // TODO
+        //  if (p_jval->IsFunction())
+        //  {
+        //  }
 
         if (p_jval->IsObject())
         {
@@ -534,18 +558,23 @@ namespace jsb
 
             switch (self->InternalFieldCount())
             {
-            case IF_VariantFieldCount: { r_cvar = *(Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer); return true; }
+            case IF_VariantFieldCount:
+            {
+                r_cvar = *(Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+                return true;
+            }
             case IF_ObjectFieldCount:
+            {
+                if ((NativeClassType::Type)(uintptr_t) self->GetAlignedPointerFromInternalField(IF_ClassType) != NativeClassType::GodotObject)
                 {
-                    if ((NativeClassType::Type)(uintptr_t) self->GetAlignedPointerFromInternalField(IF_ClassType) != NativeClassType::GodotObject)
-                    {
-                        return false;
-                    }
-                    void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
-                    r_cvar = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
-                    return true;
+                    return false;
                 }
-            default: return false;
+                void* pointer = self->GetAlignedPointerFromInternalField(IF_Pointer);
+                r_cvar = Environment::wrap(isolate)->verify_object(pointer) ? (Object*) pointer : nullptr;
+                return true;
+            }
+            default:
+                return false;
             }
         }
 #if JSB_WITH_BIGINT
@@ -563,19 +592,25 @@ namespace jsb
     {
         switch (p_type)
         {
-        case Variant::BOOL: { return p_val->IsBoolean(); }
+        case Variant::BOOL:
+        {
+            return p_val->IsBoolean();
+        }
         case Variant::FLOAT: // return p_val->IsNumber();
         case Variant::INT:
-            {
-                //TODO find a better way to check integer type?
-                return p_val->IsNumber()
+        {
+            // TODO find a better way to check integer type?
+            return p_val->IsNumber()
 #if JSB_WITH_BIGINT
-                    || p_val->IsBigInt()
+                   || p_val->IsBigInt()
 #endif
                 ;
-            }
+        }
         case Variant::STRING:
-        case Variant::STRING_NAME: { return p_val->IsString(); }
+        case Variant::STRING_NAME:
+        {
+            return p_val->IsString();
+        }
         case Variant::NODE_PATH:
             if (p_val->IsString())
             {
@@ -583,14 +618,14 @@ namespace jsb
             }
             goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
         case Variant::OBJECT:
-            {
-                if (!p_val->IsObject()) return false;
-                const v8::Local<v8::Object> self = p_val.As<v8::Object>();
-                if (!TypeConvert::is_object(self)) return false;
+        {
+            if (!p_val->IsObject()) return false;
+            const v8::Local<v8::Object> self = p_val.As<v8::Object>();
+            if (!TypeConvert::is_object(self)) return false;
 
-                //NOTE dead object is now treated as null, so we don't need to check it here anymore
-                return true;
-            }
+            // NOTE dead object is now treated as null, so we don't need to check it here anymore
+            return true;
+        }
 
         case Variant::ARRAY:
         // typed arrays
@@ -604,8 +639,9 @@ namespace jsb
         case Variant::PACKED_VECTOR3_ARRAY:
         case Variant::PACKED_COLOR_ARRAY:
 #if JSB_IMPLICIT_PACKED_ARRAY_CONVERSION
-            //TODO is loose conversion check for JS primitive array as Godot array a bad idea?
-            if (p_val->IsArray()) return true; goto FALLBACK_TO_VARIANT;  // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
+            // TODO is loose conversion check for JS primitive array as Godot array a bad idea?
+            if (p_val->IsArray()) return true;
+            goto FALLBACK_TO_VARIANT; // NOLINT(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
 #endif
         case Variant::VECTOR2:
         case Variant::VECTOR2I:
@@ -629,26 +665,27 @@ namespace jsb
         case Variant::CALLABLE:
         case Variant::SIGNAL:
         case Variant::DICTIONARY:
+        {
+        FALLBACK_TO_VARIANT:
+            if (!p_val->IsObject())
             {
-                FALLBACK_TO_VARIANT:
-                if (!p_val->IsObject())
-                {
-                    //NOTE a null/undefined value is not considered convertible!
-                    return false;
-                }
-                const v8::Local<v8::Object> self = p_val.As<v8::Object>();
-                if (!TypeConvert::is_variant(self))
-                {
-                    return false;
-                }
-                const Variant* target = (const Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
-                if (!target)
-                {
-                    return Variant::can_convert_strict(Variant::NIL, p_type);
-                }
-                return Variant::can_convert_strict(target->get_type(), p_type);
+                // NOTE a null/undefined value is not considered convertible!
+                return false;
             }
-        default: return false;
+            const v8::Local<v8::Object> self = p_val.As<v8::Object>();
+            if (!TypeConvert::is_variant(self))
+            {
+                return false;
+            }
+            const Variant* target = (const Variant*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+            if (!target)
+            {
+                return Variant::can_convert_strict(Variant::NIL, p_type);
+            }
+            return Variant::can_convert_strict(target->get_type(), p_type);
+        }
+        default:
+            return false;
         }
     }
 
@@ -677,8 +714,7 @@ namespace jsb
 
         // return false if strict type check fails
         const v8::Local<v8::Object> self = p_jval.As<v8::Object>();
-        if (!TypeConvert::is_object(self)
-            || (NativeClassType::Type)(uintptr_t) self->GetAlignedPointerFromInternalField(IF_ClassType) != NativeClassType::GodotObject)
+        if (!TypeConvert::is_object(self) || (NativeClassType::Type)(uintptr_t) self->GetAlignedPointerFromInternalField(IF_ClassType) != NativeClassType::GodotObject)
         {
             return false;
         }
@@ -689,4 +725,4 @@ namespace jsb
         return true;
     }
 
-}
+} // namespace jsb

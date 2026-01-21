@@ -11,7 +11,8 @@ namespace v8
     {
     public:
         Data() = default;
-        Data(Isolate* isolate, jsb::impl::StackPosition stack_pos): isolate_(isolate), stack_pos_(stack_pos) {}
+        Data(Isolate* isolate, jsb::impl::StackPosition stack_pos)
+            : isolate_(isolate), stack_pos_(stack_pos) {}
 
         Isolate* isolate_ = nullptr;
         jsb::impl::StackPosition stack_pos_ = 0;
@@ -45,5 +46,5 @@ namespace v8
     private:
         bool strict_eq(const Data& other) const;
     };
-}
+} // namespace v8
 #endif

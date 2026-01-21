@@ -11,8 +11,8 @@ namespace jsb::impl
 
         // strong reference.
         // the counterpart of exposed C++ class.
-        //NOTE template_.GetFunction() returns the `constructor`,
-        //NOTE `constructor == info.NewTarget()` only if directly creating a class instance
+        // NOTE template_.GetFunction() returns the `constructor`,
+        // NOTE `constructor == info.NewTarget()` only if directly creating a class instance
         v8::Global<v8::FunctionTemplate> template_;
 
     public:
@@ -35,7 +35,7 @@ namespace jsb::impl
             return template_.Get(isolate)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked();
         }
 
-        //NOTE NewInstance should not trigger the underlying native constructor of this class
+        // NOTE NewInstance should not trigger the underlying native constructor of this class
         jsb_force_inline v8::Local<v8::Object> NewInstance(const v8::Local<v8::Context> context) const
         {
             return template_.Get(context->GetIsolate())->InstanceTemplate()->NewInstance(context).ToLocalChecked();
@@ -46,7 +46,6 @@ namespace jsb::impl
         {
             template_.Reset(isolate, p_template);
         }
-
     };
-}
+} // namespace jsb::impl
 #endif

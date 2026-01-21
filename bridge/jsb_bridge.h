@@ -4,5 +4,3 @@
 #include "jsb_environment.h"
 
 #endif
-
-

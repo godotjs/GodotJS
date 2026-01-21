@@ -51,17 +51,27 @@ namespace jsb::internal
             return rval;
         }
 
-        jsb_force_inline Variant* alloc() { increment(); return paged_allocator_.alloc(); }
+        jsb_force_inline Variant* alloc()
+        {
+            increment();
+            return paged_allocator_.alloc();
+        }
 
-        //NOTE safe to call from other threads only if p_var is not reference-based type
-        jsb_force_inline void free(Variant* p_var) { decrement(); paged_allocator_.free(p_var); }
+        // NOTE safe to call from other threads only if p_var is not reference-based type
+        jsb_force_inline void free(Variant* p_var)
+        {
+            decrement();
+            paged_allocator_.free(p_var);
+        }
 
         // gc thread
         void free_safe(Variant* p_var)
         {
             spin_lock_.lock();
-            if (use_front_) front_.push_back(p_var);
-            else back_.push_back(p_var);
+            if (use_front_)
+                front_.push_back(p_var);
+            else
+                back_.push_back(p_var);
             spin_lock_.unlock();
         }
 
@@ -92,6 +102,6 @@ namespace jsb::internal
         jsb_force_inline void decrement() {}
 #endif
     };
-}
+} // namespace jsb::internal
 
 #endif

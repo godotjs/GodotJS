@@ -10,7 +10,8 @@ namespace v8
     class ReturnValue
     {
     public:
-        ReturnValue(const Data& data) : data_(data) {}
+        ReturnValue(const Data& data)
+            : data_(data) {}
 
         explicit operator JSValue() const
         {
@@ -53,7 +54,7 @@ namespace v8
     {
     public:
         FunctionCallbackInfo(Isolate* isolate, int len, bool is_constructor)
-        : isolate_(isolate), len_(len), stack_pos_(isolate->stack_pos_), is_constructor_(is_constructor)
+            : isolate_(isolate), len_(len), stack_pos_(isolate->stack_pos_), is_constructor_(is_constructor)
         {
         }
 
@@ -104,7 +105,8 @@ namespace v8
     class PropertyCallbackInfo
     {
     public:
-        PropertyCallbackInfo(Isolate* isolate, uint16_t stack_pos) : isolate_(isolate), stack_pos_(stack_pos) {}
+        PropertyCallbackInfo(Isolate* isolate, uint16_t stack_pos)
+            : isolate_(isolate), stack_pos_(stack_pos) {}
         Isolate* GetIsolate() const { return isolate_; }
         ReturnValue<T> GetReturnValue() const
         {
@@ -115,5 +117,5 @@ namespace v8
         Isolate* isolate_;
         uint16_t stack_pos_;
     };
-}
+} // namespace v8
 #endif

@@ -18,11 +18,13 @@ namespace v8
     public:
         MaybeLocal<Value> Call(
             Local<Context> context,
-            Local<Value> recv, int argc,
+            Local<Value> recv,
+            int argc,
             Local<Value> argv[]);
 
         static MaybeLocal<Function> New(
-            Local<Context> context, FunctionCallback callback,
+            Local<Context> context,
+            FunctionCallback callback,
             Local<Value> data = Local<Value>(),
             int length = 0);
 
@@ -32,5 +34,5 @@ namespace v8
         static JSValueRef _function_call(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception);
     };
 
-}
+} // namespace v8
 #endif

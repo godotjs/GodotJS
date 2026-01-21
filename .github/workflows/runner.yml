@@ -19,6 +19,10 @@ jobs:
     name: 🌳 Set Environment
     uses: ./.github/workflows/misc_environment.yml
 
+  lint:
+    name: 🫷 Lint
+    uses: ./.github/workflows/misc_lint.yml
+
   changesets:
     if: github.event_name != 'release' && github.event_name != 'pull_request'
     permissions:
@@ -29,7 +33,7 @@ jobs:
 
   engine-version-build:
     name: ⚙️ Build Godot Version with GodotJS
-    needs: [environment]
+    needs: [environment, lint]
     strategy:
       fail-fast: false
       matrix:

@@ -11,5 +11,5 @@ namespace jsb::impl
         static void init();
     };
 
-}
+} // namespace jsb::impl
 #endif

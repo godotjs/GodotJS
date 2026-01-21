@@ -15,7 +15,7 @@ GodotJSREPL::GodotJSREPL()
 #else
     sn_backlog_flush_ = _scs_create("_backlog_flush");
 #endif
-    //TODO list all created realm instances in REPL, interact with the currently selected one.
+    // TODO list all created realm instances in REPL, interact with the currently selected one.
 
     input_submitting_ = false;
     VBoxContainer* vbox = memnew(VBoxContainer);
@@ -112,7 +112,6 @@ GodotJSREPL::GodotJSREPL()
     candidate_list_->set_disable_visibility_clip(true);
     candidate_list_->set_size(Size2(600, 160));
     output_container->add_child(candidate_list_);
-
 }
 
 GodotJSREPL::~GodotJSREPL()
@@ -129,19 +128,24 @@ void GodotJSREPL::_notification(int p_what)
     switch (p_what)
     {
     case NOTIFICATION_APPLICATION_FOCUS_IN:
-        {
-            check_install();
-            check_tsc();
-        } break;
-    case NOTIFICATION_ENTER_TREE: {
-            _update_theme();
-            check_install();
-            // _load_state();
-    } break;
-    case NOTIFICATION_THEME_CHANGED: {
-            _update_theme();
-            // _rebuild_log();
-    } break;
+    {
+        check_install();
+        check_tsc();
+    }
+    break;
+    case NOTIFICATION_ENTER_TREE:
+    {
+        _update_theme();
+        check_install();
+        // _load_state();
+    }
+    break;
+    case NOTIFICATION_THEME_CHANGED:
+    {
+        _update_theme();
+        // _rebuild_log();
+    }
+    break;
     }
 }
 
@@ -225,11 +229,11 @@ static bool is_auto_complete_allowed(const String& p_text)
 #endif
 }
 
-void GodotJSREPL::_input_changed(const String &p_text)
+void GodotJSREPL::_input_changed(const String& p_text)
 {
     // if (input_submitting_) return;
 
-    //TODO we haven't implemented the js function invocation from outside of Realm, just temporarily call as source code eval
+    // TODO we haven't implemented the js function invocation from outside of Realm, just temporarily call as source code eval
     const PackedStringArray results =
         is_auto_complete_allowed(p_text)
             ? (PackedStringArray) eval_source(jsb_format("require('jsb.editor.main').auto_complete('%s')", encode_string(p_text))).to_variant()
@@ -325,17 +329,17 @@ jsb::JSValueMove GodotJSREPL::eval_source(const String& p_code)
     return lang->eval_source(p_code, err);
 }
 
-void GodotJSREPL::add_line(const String &p_line)
+void GodotJSREPL::add_line(const String& p_line)
 {
     output_box_->add_text(p_line);
     output_box_->add_newline();
 }
 
-void GodotJSREPL::add_string(const String &p_str)
+void GodotJSREPL::add_string(const String& p_str)
 {
     const Vector<String> lines = p_str.split("\n", true);
     // const int line_count = lines.size();
-    for (const String& line: lines)
+    for (const String& line : lines)
     {
         add_line(line);
     }
@@ -357,7 +361,7 @@ void GodotJSREPL::write(jsb::internal::ELogSeverity::Type p_severity, const Stri
     call_deferred(sn_backlog_flush_);
 }
 
-void GodotJSREPL::add_history(const String &p_text)
+void GodotJSREPL::add_history(const String& p_text)
 {
     int size = history_.size();
     if (size != 0)
@@ -385,8 +389,10 @@ void GodotJSREPL::_start_tsc_pressed()
 {
     if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
     {
-        if (editor_plugin->is_tsc_watching()) editor_plugin->kill_tsc();
-        else editor_plugin->start_tsc_watch();
+        if (editor_plugin->is_tsc_watching())
+            editor_plugin->kill_tsc();
+        else
+            editor_plugin->start_tsc_watch();
         check_tsc();
     }
 }
