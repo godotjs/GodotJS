@@ -29,6 +29,6 @@ namespace jsb
         }
 
         Object* object_ptr = object_id_.is_null() ? nullptr : jsb::compat::ObjectDB::get_instance(object_id_);
-        env->call_function(object_ptr, callback_id_, p_arguments, p_argcount, r_call_error);
+        r_return_value = env->call_function(object_ptr, callback_id_, p_arguments, p_argcount, r_call_error);
     }
 }
