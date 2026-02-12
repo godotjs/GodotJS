@@ -42,6 +42,13 @@ function proxy_wrap_value(value: any): any {
         return array_proxy(value);
     }
 
+    const constructor = value.constructor;
+
+    if (constructor != null && constructor === (globalThis as any)[constructor.name]) {
+		// JS built-in
+        return value;
+    }
+
     return is_basic_object(value) ? object_proxy(value) : instance_proxy(value);
 }
 
