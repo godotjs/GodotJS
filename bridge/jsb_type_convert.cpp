@@ -595,6 +595,10 @@ namespace jsb
         case Variant::ARRAY:
         // typed arrays
         case Variant::PACKED_BYTE_ARRAY:
+            if (p_val->IsArrayBuffer())
+            {
+	            return true;
+            }
         case Variant::PACKED_INT32_ARRAY:
         case Variant::PACKED_INT64_ARRAY:
         case Variant::PACKED_FLOAT32_ARRAY:
