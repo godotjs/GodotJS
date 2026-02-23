@@ -18,7 +18,6 @@ env:
   # 4.4
   SCONSFLAGS: >-
     debug_symbols=no
-    use_closure_compiler=yes
     strict_checks=yes
     deprecated=no
     lto=none
@@ -33,7 +32,6 @@ env:
     strict_checks=yes
     tests=no
     debug_symbols=no
-    use_closure_compiler=yes
     skip_js_runtime=yes
 
 jobs:
@@ -118,6 +116,7 @@ jobs:
         with:
           sconsflags: >-
             ${{ env.SCONSFLAGS }}
+            ${{ matrix.target == 'template_release' && 'use_closure_compiler=yes' || '' }}
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: web
           target: ${{ matrix.target }}
@@ -129,6 +128,7 @@ jobs:
         with:
           scons-flags: >-
             ${{ env.SCONS_FLAGS }}
+            ${{ matrix.target == 'template_release' && 'use_closure_compiler=yes' || '' }}
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
           platform: web
           target: ${{ matrix.target }}
