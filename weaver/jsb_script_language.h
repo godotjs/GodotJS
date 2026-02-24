@@ -198,9 +198,9 @@ public:
 #endif
 
     virtual bool is_using_templates() override { return true; }
-#ifndef DISABLE_DEPRECATED
+#if !GODOT_4_6_OR_NEWER && !defined(DISABLE_DEPRECATED)
     virtual bool has_named_classes() const override { return false; }
-#endif // DISABLE_DEPRECATED
+#endif
     virtual bool supports_builtin_mode() const override { return false; }
 
     virtual int find_function(const String& p_function, const String& p_code) const override { return -1; }

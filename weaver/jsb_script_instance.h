@@ -126,7 +126,11 @@ private:
     // object handle (the JS object binding id)
     jsb::NativeObjectID object_id_;
 
+#if GODOT_4_6_OR_NEWER
+    HashMap<Variant, Variant, HashMapHasherDefault, StringLikeVariantComparator> property_cache_;
+#else
     HashMap<Variant, Variant, VariantHasher, StringLikeVariantComparator> property_cache_;
+#endif
 
 private:
     jsb::ScriptClassInfoPtr get_script_class() const;
