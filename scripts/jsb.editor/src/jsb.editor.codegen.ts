@@ -3338,8 +3338,8 @@ export class TypeDB {
         }
         if (value.type == godot.Variant.Type.TYPE_DICTIONARY) {
             if (this.is_empty_default_value(value.value)) {
-				return `new ${type_name}()`;
-			}
+                return `new ${type_name}()`;
+            }
         }
         //NOTE hope all default value for Transform2D/Transform3D is IDENTITY
         if (value.type == godot.Variant.Type.TYPE_TRANSFORM2D || value.type == godot.Variant.Type.TYPE_TRANSFORM3D) {
@@ -3613,11 +3613,8 @@ export class TSDCodeGen {
             for (let enum_info of cls.enums) {
                 const enum_cg = class_ns_cg.enum_(enum_info.name);
                 for (let [name, value] of Object.entries(enum_info.literals)) {
-                    const constant = cls.constants!.find((v) => v.name == name);
                     enum_cg.element_(name, value);
-                    if (constant) {
-                        ignored_consts.add(name);
-                    }
+                    ignored_consts.add(name);
                 }
                 enum_cg.finish();
             }
@@ -3700,7 +3697,7 @@ export class TSDCodeGen {
             );
             if (cls.constants) {
                 for (let constant of cls.constants) {
-                    if (!ignored_consts.has(constant.name)) {
+                    if (!ignored_consts.has(constant.name) && !ignored_consts.has(names.get_enum_value(constant.name))) {
                         class_cg.constant_(constant);
                     }
                 }
