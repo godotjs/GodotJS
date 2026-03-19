@@ -34,11 +34,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: 4.5.1
-            version_mm: 4.5
-            version_ref: 4.5.1-stable
-          - version: 4.6dev
+          - version: 4.6.1
             version_mm: 4.6
+            version_ref: 4.6.1-stable
+          - version: 4.7dev
+            version_mm: 4.7
             version_ref: master
     uses: ./.github/workflows/build_engine_version.yml
     with:
@@ -55,8 +55,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: 4.5.1
-          - version: 4.6dev
+          - version: 4.6.1
+          - version: 4.7dev
     with:
       version: ${{ matrix.version }}
 
@@ -79,7 +79,7 @@ jobs:
     uses: ./.github/workflows/misc_release.yml
     secrets: inherit
     with:
-      versions: '4.5.1, 4.6'
+      versions: '4.6.1, 4.7'
 
   upload-assets:
     name: 📁 Upload Assets
@@ -93,7 +93,7 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - version: 4.5.1
-          - version: 4.6dev
+          - version: 4.6.1
+          - version: 4.7dev
     with:
       version: ${{ matrix.version }}
