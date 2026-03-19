@@ -46,14 +46,14 @@ jobs:
         target: ${{ inputs.release && fromJSON('["editor","template_release","template_debug"]') || fromJSON('["editor"]') }}
     steps:
       - name: Checkout Godot
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: godotengine/godot
           ref: ${{ inputs.version_ref }}
           submodules: recursive
 
       - name: Checkout GodotJS
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: ${{github.workspace}}/modules/GodotJS/
           lfs: true
