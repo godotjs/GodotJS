@@ -3,6 +3,10 @@
 #include "jsb_editor_plugin.h"
 #include "../compat/jsb_compat.h"
 
+#if GODOT_4_7_OR_NEWER
+#include "core/object/callable_mp.h"
+#endif
+
 void GodotJSREPL::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("_backlog_flush"), &GodotJSREPL::_backlog_flush);

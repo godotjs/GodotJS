@@ -3,6 +3,10 @@
 #include "jsb_repl.h"
 #include "jsb_statistics_viewer.h"
 
+#if GODOT_4_7_OR_NEWER
+#include "core/object/callable_mp.h"
+#endif
+
 namespace
 {
     static constexpr int kTabREPL = 0;

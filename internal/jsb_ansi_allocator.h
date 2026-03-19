@@ -4,6 +4,10 @@
 #include "../compat/jsb_compat.h"
 #include "jsb_macros.h"
 
+#if GODOT_4_7_OR_NEWER
+#define next_power_of_2 Math::next_power_of_2
+#endif
+
 namespace jsb::internal
 {
     struct AnsiAllocator
