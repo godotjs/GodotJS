@@ -2,6 +2,10 @@
 #include "jsb_docked_panel.h"
 #include "jsb_export_plugin.h"
 
+#if GODOT_4_7_OR_NEWER
+#include "core/object/callable_mp.h"
+#endif
+
 #define JSB_TYPE_ROOT "typings"
 
 enum

@@ -2,6 +2,10 @@
 #include "jsb_script_language.h"
 #include "../internal/jsb_internal.h"
 
+#if GODOT_4_7_OR_NEWER
+#include "core/object/callable_mp.h"
+#endif
+
 #define JSB_NEW_MONITOR(MonitorName) \
     monitor_names_.push_back(JSB_MODULE_NAME_STRING "/" # MonitorName);\
     jsb::compat::Performance::get_singleton()->add_custom_monitor(monitor_names_[monitor_names_.size() - 1], callable_mp(this, &GodotJSMonitor::get_value_## MonitorName), {})
