@@ -3255,6 +3255,28 @@ export class TypeDB {
         return `${replace_var_name(info.name)}${optional ? "?" : ""}: ${this.make_typename(info, true, true)}`;
     }
 
+    private is_empty_default_value(value: unknown): boolean {
+        if (value === null) {
+            return true;
+        }
+
+        if (Array.isArray(value)) {
+            return value.length == 0;
+        }
+
+        if (typeof value === "object") {
+            const maybe_is_empty = (value as { is_empty?: () => boolean }).is_empty;
+
+            if (typeof maybe_is_empty === "function") {
+                return maybe_is_empty.call(value);
+            }
+
+            return Object.keys(value).length == 0;
+        }
+
+        return false;
+    }
+
     make_literal_value(value: GodotJsb.editor.DefaultArgumentInfo) {
         // plain types
         const type_name = VariantTypeNames.get(value.type);
@@ -3270,11 +3292,10 @@ export class TypeDB {
             case godot.Variant.Type.TYPE_NODE_PATH:
                 return value.value == null ? "''" : `'${gd_to_string(value.value)}'`;
             case godot.Variant.Type.TYPE_ARRAY:
-                return value.value == null || value.value.is_empty() ? "[]" : `${gd_to_string(value.value)}`;
             case godot.Variant.Type.TYPE_OBJECT:
-                return value.value == null ? "undefined" : "<any> {}";
+                return null;
             case godot.Variant.Type.TYPE_NIL:
-                return "<any> {}";
+                return "{}";
             case godot.Variant.Type.TYPE_CALLABLE:
             case godot.Variant.Type.TYPE_RID:
                 return `new ${type_name}()`;
@@ -3311,31 +3332,38 @@ export class TypeDB {
             value.type >= godot.Variant.Type.TYPE_PACKED_BYTE_ARRAY &&
             value.type <= godot.Variant.Type.TYPE_PACKED_COLOR_ARRAY
         ) {
-            if (value.value == null || value.value.is_empty()) {
+            if (this.is_empty_default_value(value.value)) {
                 return "[]";
             }
         }
         if (value.type == godot.Variant.Type.TYPE_DICTIONARY) {
-            if (value.value == null || value.value.is_empty()) return `new ${type_name}()`;
+            if (this.is_empty_default_value(value.value)) {
+				return `new ${type_name}()`;
+			}
         }
         //NOTE hope all default value for Transform2D/Transform3D is IDENTITY
         if (value.type == godot.Variant.Type.TYPE_TRANSFORM2D || value.type == godot.Variant.Type.TYPE_TRANSFORM3D) {
             return `new ${type_name}()`;
         }
 
-        //TODO value sig for compound types
-        return `<any> {} /*compound.type from ${godot.Variant.Type[value.type]} (${value.value})*/`;
+        return null;
     }
 
     make_arg_default_value(method_info: GodotJsb.editor.MethodBind, index: number): string {
         const default_arguments = method_info.default_arguments || [];
         const def_index = index - (method_info.args_.length - default_arguments.length);
-        if (def_index < 0 || def_index >= default_arguments.length) return this.make_arg(method_info.args_[index]);
-        return `${this.make_arg(method_info.args_[index], true)} /* = ${this.make_literal_value(default_arguments[def_index])} */`;
+
+        if (def_index < 0 || def_index >= default_arguments.length) {
+            return this.make_arg(method_info.args_[index]);
+        }
+
+        const default_argument = default_arguments[def_index];
+        const arg_text = this.make_arg(method_info.args_[index], true);
+        const default_text = this.make_literal_value(default_argument);
+        return default_text ? `${arg_text} /* = ${default_text} */` : arg_text;
     }
 
     make_args(method_info: GodotJsb.editor.MethodBind): string {
-        //TODO consider default arguments
         const varargs = "...varargs: any[]";
         const is_vararg = !!(method_info.hint_flags & godot.MethodFlags.METHOD_FLAG_VARARG);
         if (method_info.args_.length == 0) {
