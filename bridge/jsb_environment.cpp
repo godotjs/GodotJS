@@ -889,7 +889,8 @@ namespace jsb
         {
             return nullptr;
         }
-        return p_obj->GetAlignedPointerFromInternalField(IF_Pointer);
+        void* pointer = p_obj->GetAlignedPointerFromInternalField(IF_Pointer);
+        return verify_object(pointer) ? pointer : nullptr;
     }
 
     bool Environment::reference_object(void* p_pointer, bool p_is_inc)
