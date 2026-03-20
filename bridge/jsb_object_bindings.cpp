@@ -1,6 +1,7 @@
 #include "jsb_object_bindings.h"
 #include "jsb_transpiler.h"
 #include "jsb_type_convert.h"
+#include "../internal/jsb_class_util.h"
 // TODO: Refactor. Violates isolation of bridge.
 #include "../weaver/jsb_script_instance.h"
 #include "../weaver/jsb_script_language.h"
@@ -14,9 +15,10 @@ namespace jsb
 
         jsb_check(p_class_info);
 
-        String class_name = internal::NamingUtil::get_class_name(p_class_info->name);
+        const StringName& internal_class_name = internal::ClassUtil::get_internal_class_name(*p_class_info);
+        String class_name = internal::NamingUtil::get_class_name(internal_class_name);
         const NativeClassID class_id = p_env->add_native_class(NativeClassType::GodotObject, class_name);
-        JSB_LOG(VeryVerbose, "expose godot type %s(%d) as %s", p_class_info->name, class_id, class_name);
+        JSB_LOG(VeryVerbose, "expose godot type %s(%d) as %s", internal_class_name, class_id, class_name);
 
         // construct type template
         {
@@ -24,7 +26,7 @@ namespace jsb
             impl::ClassBuilder class_builder = ObjectTemplate::create(p_env, class_id);
 
             //NOTE all singleton object will overwrite the class itself in 'godot' module, so we need make all things defined on PrototypeTemplate.
-            const bool is_singleton_class = Engine::get_singleton()->has_singleton(p_class_info->name);
+            const bool is_singleton_class = Engine::get_singleton()->has_singleton(internal_class_name);
             auto static_builder = is_singleton_class ? class_builder.Instance() : class_builder.Static();
 
 #if JSB_EXCLUDE_GETSET_METHODS
@@ -85,14 +87,14 @@ namespace jsb
                 }
             }
 
-             if (p_class_info->name == jsb_string_name(Object))
+             if (internal_class_name == jsb_string_name(Object))
              {
                  // class: special methods
                  class_builder.Instance().Method(jsb_literal(free), _godot_object_free);
              }
 
              // class: signals
-             for (const KeyValue<StringName, MethodInfo>& pair : p_class_info->signal_map)
+             for (auto& pair : internal::ClassUtil::get_class_signal_map(*p_class_info))
              {
                  v8::HandleScope handle_scope_for_signal(isolate);
                  String signal_name = internal::NamingUtil::get_member_name(pair.key);
@@ -103,23 +105,21 @@ namespace jsb
              HashSet<StringName> enum_consts;
 
              // class: enum (nested in class)
-             for (const KeyValue<StringName, ClassDB::ClassInfo::EnumInfo>& pair : p_class_info->enum_map)
-             {
+             internal::ClassUtil::for_class_enums(*p_class_info, [&](const StringName& enum_name, const internal::ClassEnumInfo& enum_info) {
                  v8::HandleScope handle_scope_for_enum(isolate);
-                 impl::ClassBuilder::EnumDeclaration enumeration = static_builder.Enum(internal::NamingUtil::get_enum_name(pair.key));
-                 for (const StringName& enum_value_name : pair.value.constants)
-                 {
-                     const String& js_enum_name = internal::NamingUtil::get_enum_value_name(enum_value_name);
+                 impl::ClassBuilder::EnumDeclaration enumeration = static_builder.Enum(internal::NamingUtil::get_enum_name(enum_name));
+
+                 const internal::ClassConstantMap& enum_map = internal::ClassUtil::get_class_enum_constants(*p_class_info, enum_name);
+                 internal::ClassUtil::for_enum_internal_names(enum_info, [&](const StringName& internal_name) {
+                     const String& js_enum_name = internal::NamingUtil::get_enum_value_name(internal_name);
                      jsb_not_implemented(js_enum_name.contains("."), "hierarchically nested definition is currently not supported");
-                     const auto& const_it = p_class_info->constant_map.find(enum_value_name);
-                     jsb_check(const_it);
-                     enumeration.Value(js_enum_name, const_it->value);
-                     enum_consts.insert(enum_value_name);
-                 }
-             }
+                     enumeration.Value(js_enum_name, enum_map[internal_name]);
+                     enum_consts.insert(internal_name);
+                 });
+             });
 
              // class: constants
-             for (const KeyValue<StringName, int64_t>& pair : p_class_info->constant_map)
+             for (const KeyValue<StringName, int64_t>& pair : internal::ClassUtil::get_class_constant_map(*p_class_info))
              {
                  if (enum_consts.has(pair.key)) continue;
                  const String& js_const_name = (String) internal::NamingUtil::get_constant_name(pair.key);
@@ -138,7 +138,7 @@ namespace jsb
                 // It's safe to expect that the base class is fully built,
                 // because single inheritance is used in Godot (which means a reflect_bind class will only be accessed until it's fully built).
                 class_builder.Inherit(super_class_info->clazz);
-                JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", p_class_info->name, class_id, p_class_info->inherits_ptr->name, super_class_id);
+                JSB_LOG(VeryVerbose, "%s (%d) extends %s (%d)", internal_class_name, class_id, internal::ClassUtil::get_class_super_type_internal_name(*p_class_info), super_class_id);
             }
 
             // preparation for return
@@ -147,8 +147,8 @@ namespace jsb
 
                 class_info->clazz = class_builder.Build();
                 jsb_check(!class_info->clazz.IsEmpty());
-                jsb_check(class_info->name == internal::NamingUtil::get_class_name(p_class_info->name));
-                JSB_LOG(VeryVerbose, "build class info %s (%d) exposed as %s, addr: %s", p_class_info->name, class_id, class_info->name, class_info.ptr());
+                jsb_check(class_info->name == internal::NamingUtil::get_class_name(internal_class_name));
+                JSB_LOG(VeryVerbose, "build class info %s (%d) exposed as %s, addr: %s", internal_class_name, class_id, class_info->name, class_info.ptr());
                 if (r_class_id) *r_class_id = class_id;
                 return class_info;
             }
