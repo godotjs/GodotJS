@@ -618,32 +618,32 @@ class jsbb_Engine {
             const obj = this._stack.GetValue(obj_sp);
             const key = this._stack.GetValue(key_sp);
 
-            if ((flags & jsbb_PropertyFlags.VALUE) !== 0) {
+            if ((flags & jsbb_PropertyFlags["VALUE"]) !== 0) {
                 // with value
                 // jsbb_console.log("define property value", obj, key, flags, value_sp);
-                if ((flags & jsbb_PropertyFlags.GET) !== 0 || (flags & jsbb_PropertyFlags.SET) !== 0) {
+                if ((flags & jsbb_PropertyFlags["GET"]) !== 0 || (flags & jsbb_PropertyFlags["SET"]) !== 0) {
                     jsbb_console.warn("do not define a property with value and get/set at the same time");
                 }
                 Object.defineProperty(obj, key, {
-                    configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
-                    enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
-                    writable: (flags & jsbb_PropertyFlags.WRITABLE) !== 0,
-                    value: this._stack.GetValue(value_sp)
+                    "configurable": (flags & jsbb_PropertyFlags["CONFIGURABLE"]) !== 0,
+                    "enumerable": (flags & jsbb_PropertyFlags["ENUMERABLE"]) !== 0,
+                    "writable": (flags & jsbb_PropertyFlags["WRITABLE"]) !== 0,
+                    "value": this._stack.GetValue(value_sp)
                 });
             } else {
                 // with get/set
                 // jsbb_console.log("define property getset", obj, key, flags, get_sp, set_sp);
-                if ((flags & jsbb_PropertyFlags.WRITABLE) !== 0) {
+                if ((flags & jsbb_PropertyFlags["WRITABLE"]) !== 0) {
                     jsbb_console.warn("can not define a getset property with writable flag");
                 }
                 if (this._stack.GetValue(get_sp) === undefined && this._stack.GetValue(set_sp) === undefined) {
                     jsbb_console.warn("can not define a getset property with getter and setter not defined both");
                 }
                 Object.defineProperty(obj, key, {
-                    configurable: (flags & jsbb_PropertyFlags.CONFIGURABLE) !== 0,
-                    enumerable: (flags & jsbb_PropertyFlags.ENUMERABLE) !== 0,
-                    get: (flags & jsbb_PropertyFlags.GET) !== 0 ? this._stack.GetValue(get_sp) : undefined,
-                    set: (flags & jsbb_PropertyFlags.SET) !== 0 ? this._stack.GetValue(set_sp) : undefined
+                    "configurable": (flags & jsbb_PropertyFlags["CONFIGURABLE"]) !== 0,
+                    "enumerable": (flags & jsbb_PropertyFlags["ENUMERABLE"]) !== 0,
+                    "get": (flags & jsbb_PropertyFlags["GET"]) !== 0 ? this._stack.GetValue(get_sp) : undefined,
+                    "set": (flags & jsbb_PropertyFlags["SET"]) !== 0 ? this._stack.GetValue(set_sp) : undefined
                 });
             }
             return 1;
@@ -659,7 +659,7 @@ class jsbb_Engine {
         const self = this;
 
         Object.defineProperty(obj, key, {
-            get: function () {
+            "get": function () {
                 self._stack.EnterScope();
 
                 // prepare: fixed initial call stack positions
@@ -685,16 +685,16 @@ class jsbb_Engine {
                 jsbb_console.log("evaluated lazy property", key, rval);
                 // overwrite 
                 Object.defineProperty(this, key, {
-                    value: rval,
-                    configurable: true,
-                    enumerable: true,
-                    writable: true
+                    "value": rval,
+                    "configurable": true,
+                    "enumerable": true,
+                    "writable": true
                 });
 
                 return rval;
             },
-            configurable: true,
-            enumerable: true
+            "configurable": true,
+            "enumerable": true
         });
         return 1;
     }
@@ -1344,4 +1344,3 @@ declare const UTF8ToString: Function;
 
 const jsbb_browser = (typeof globalThis === "object" && globalThis) || (typeof window === "object" && window) || (typeof global === "object" && global);
 (<any>jsbb_browser)["_jsbb_"] = _jsbb_;
-
