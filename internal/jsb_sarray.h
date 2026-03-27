@@ -48,7 +48,9 @@ namespace jsb::internal
         int _free_index = -1;
         int _first_index = -1;
         int _last_index = -1;
+#if JSB_WITH_CHECK
         int _address_locked = 0;
+#endif
         AllocatorType allocator;
 
         Slot* get_data() const
@@ -61,8 +63,18 @@ namespace jsb::internal
         {
             SArray* container_;
 
-            AddressScope(SArray* p_container) : container_(p_container) { container_->lock_address(); }
-            ~AddressScope() { if (container_) container_->unlock_address(); }
+            AddressScope(SArray* p_container) : container_(p_container)
+            {
+#if JSB_WITH_CHECK
+                container_->lock_address();
+#endif
+            }
+            ~AddressScope()
+            {
+#if JSB_WITH_CHECK
+                if (container_) container_->unlock_address();
+#endif
+            }
 
             AddressScope(const AddressScope&) = delete;
             AddressScope& operator=(const AddressScope&) = delete;
@@ -73,7 +85,9 @@ namespace jsb::internal
             {
                 if (this != &p_other)
                 {
+#if JSB_WITH_CHECK
                     if (container_) container_->unlock_address();
+#endif
                     container_ = p_other.container_;
                     p_other.container_ = nullptr;
                 }
@@ -93,33 +107,48 @@ namespace jsb::internal
             TScopedPointer(std::nullptr_t) : container_(nullptr), ptr_(nullptr) { }
             TScopedPointer(SArray* p_container, S* p_ptr) : container_(p_container), ptr_(p_ptr)
             {
+#if JSB_WITH_CHECK
                 if (container_)
                 {
                     container_->lock_address();
                 }
+#endif
             }
-            ~TScopedPointer() { if (container_) container_->unlock_address(); }
+            ~TScopedPointer()
+            {
+#if JSB_WITH_CHECK
+                if (container_) container_->unlock_address();
+#endif
+            }
 
             TScopedPointer(const TScopedPointer& p_other): container_(p_other.container_), ptr_(p_other.ptr_)
             {
+#if JSB_WITH_CHECK
                 container_->lock_address();
+#endif
             }
 
             TScopedPointer& operator=(const TScopedPointer& p_other)
             {
                 if (this != &p_other)
                 {
+#if JSB_WITH_CHECK
                     if (container_) container_->unlock_address();
+#endif
                     container_ = p_other.container_;
                     ptr_ = p_other.ptr_;
+#if JSB_WITH_CHECK
                     if (container_) container_->lock_address();
+#endif
                 }
                 return *this;
             }
 
             TScopedPointer& operator=(std::nullptr_t)
             {
+#if JSB_WITH_CHECK
                 if (container_) container_->unlock_address();
+#endif
                 container_ = nullptr;
                 ptr_ = nullptr;
                 return *this;
@@ -134,7 +163,9 @@ namespace jsb::internal
                 ptr_ = nullptr;
                 if (container_)
                 {
+#if JSB_WITH_CHECK
                     container_->unlock_address();
+#endif
                     container_ = nullptr;
                 }
                 return ptr;
@@ -153,7 +184,9 @@ namespace jsb::internal
             {
                 if (this != &p_other)
                 {
+#if JSB_WITH_CHECK
                     if (container_) container_->unlock_address();
+#endif
                     container_ = p_other.container_;
                     ptr_ = p_other.ptr_;
                     p_other.container_ = nullptr;
@@ -952,8 +985,10 @@ namespace jsb::internal
         }
 
     private:
+#if JSB_WITH_CHECK
         jsb_force_inline void lock_address() { ++_address_locked; }
         jsb_force_inline void unlock_address() { jsb_check(_address_locked > 0); --_address_locked; }
+#endif
 
 #if JSB_SARRAY_CONSISTENCY_CHECK
         bool is_consistent() const

@@ -960,6 +960,10 @@ namespace jsb
         // hold it in a local variable to avoid gc too early
         v8::Global<v8::Object> obj_ref = std::move(object_handle->ref_);
 
+        // erase from ObjectDB before clearing the ref to avoid exposing a transient state
+        // with an empty `ref_` in the ObjectDB, which can race with reference callbacks.
+        object_db_.remove_object(object_handle, p_pointer);
+
         // TODO: Look into if we ought to be calling obj->free_instance_binding(this)
 
         //TODO do not clear the internal field if calling from JS GC
@@ -971,8 +975,6 @@ namespace jsb
         //     clear_internal_field(isolate_, obj_ref);
         // }
 
-        object_handle = nullptr;
-        object_db_.remove_object(p_pointer);
         obj_ref.Reset();
 
         if (p_finalize != FinalizationType::None)

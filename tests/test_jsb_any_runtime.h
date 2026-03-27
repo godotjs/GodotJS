@@ -3,6 +3,7 @@
 
 #include "jsb_test_helpers.h"
 #include "../bridge/jsb_essentials.h"
+#include "../bridge/jsb_object_db.h"
 #include "../bridge/jsb_type_convert.h"
 
 #define JSB_TESTS_OPTION_ENABLED(OptionName) kOption_##OptionName
@@ -114,6 +115,34 @@ namespace jsb::tests
         CHECK(!t2100);
         CHECK(!tm.tick(1000));
         CHECK(ctx.counter == 12);
+    }
+
+    TEST_CASE("[jsb] ObjectDB remove while handle alive")
+    {
+        ObjectDB object_db(4);
+        int native_object = 0;
+        void* native_pointer = &native_object;
+
+        ObjectHandlePtr object_handle;
+        const NativeObjectID object_id = object_db.add_object(native_pointer, &object_handle);
+
+        REQUIRE(object_handle);
+#if JSB_DEBUG
+        object_handle->pointer = native_pointer;
+#endif
+        object_handle = nullptr;
+
+        CHECK(object_db.has_object(native_pointer));
+        CHECK(object_db.has_object(object_id));
+
+        object_handle = object_db.try_get_object(native_pointer);
+        REQUIRE(object_handle);
+
+        object_db.remove_object(object_handle, native_pointer);
+
+        CHECK(!object_handle);
+        CHECK(!object_db.has_object(native_pointer));
+        CHECK(!object_db.has_object(object_id));
     }
 
     TEST_CASE("[jsb] raw isolate essential tests")
@@ -511,4 +540,3 @@ file = undefined;
 }
 
 #endif
-
