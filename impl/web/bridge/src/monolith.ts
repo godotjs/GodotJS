@@ -1300,7 +1300,7 @@ class _jsbb_ {
 
     static is_object(val: any) {
         //NOTE IsObject() expects a class (constructor, a function) as an Object 
-        return typeof val === "object" || typeof val === "function";
+        return val !== null && (typeof val === "object" || typeof val === "function");
     }
 
     static free(ptr: Pointer): void {
