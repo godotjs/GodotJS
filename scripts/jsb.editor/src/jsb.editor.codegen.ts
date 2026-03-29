@@ -290,16 +290,16 @@ const TypeMutations: Record<string, TypeMutation> = {
     EditorUndoRedoManager: {
         property_overrides: {
             add_do_method: [
-                `${names.get_member("add_do_method")}<T extends GObject, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`,
+                `${names.get_member("add_do_method")}<T extends ${names.get_class("Object")}, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`,
             ],
             add_undo_method: [
-                `${names.get_member("add_undo_method")}<T extends GObject, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`,
+                `${names.get_member("add_undo_method")}<T extends ${names.get_class("Object")}, M extends GodotNames<T>>(object: T, method: M, ...args: ResolveGodotNameParameters<T, M>): void`,
             ],
             add_do_property: [
-                `${names.get_member("add_do_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
+                `${names.get_member("add_do_property")}<T extends ${names.get_class("Object")}, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
             ],
             add_undo_property: [
-                `${names.get_member("add_undo_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
+                `${names.get_member("add_undo_property")}<T extends ${names.get_class("Object")}, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
             ],
         },
     },
@@ -577,10 +577,10 @@ const TypeMutations: Record<string, TypeMutation> = {
     UndoRedo: {
         property_overrides: {
             add_do_property: [
-                `${names.get_member("add_do_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
+                `${names.get_member("add_do_property")}<T extends ${names.get_class("Object")}, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
             ],
             add_undo_property: [
-                `${names.get_member("add_undo_property")}<T extends GObject, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
+                `${names.get_member("add_undo_property")}<T extends ${names.get_class("Object")}, P extends GodotNames<T>>(object: T, property: P, value: ResolveGodotNameValue<T, P>): void`,
             ],
         },
     },
