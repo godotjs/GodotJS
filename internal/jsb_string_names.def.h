@@ -73,3 +73,11 @@ DEF(properties)
 DEF(resource)
 DEF(GodotJSScript)
 #endif
+
+// Godot Object virtual methods
+DEF(_set)
+DEF(_get)
+DEF(_get_property_list)
+DEF(_validate_property)
+DEF(_property_can_revert)
+DEF(_property_get_revert)
