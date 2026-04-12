@@ -2,7 +2,6 @@
   "name": "@godot-js/editor",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "packageManager": "pnpm@10.11.0+sha1.4048eeefd564ff1ab248fac3e2854d38245fe2f1",
   "scripts": {
     "build": "pnpm -r build",
