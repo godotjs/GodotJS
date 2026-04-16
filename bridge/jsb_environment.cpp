@@ -1104,7 +1104,9 @@ namespace jsb
 
         // try resolve the module id
         String normalized_id;
-        if (p_module_id.begins_with("./") || p_module_id.begins_with("../"))
+        const bool is_relative_module_id = p_module_id.begins_with("./") || p_module_id.begins_with("../");
+        const bool is_absolute_module_id = internal::PathUtil::is_absolute_path(p_module_id);
+        if (is_relative_module_id)
         {
             const String combined_id = internal::PathUtil::combine(internal::PathUtil::dirname(p_parent_id), p_module_id);
             if (internal::PathUtil::extract(combined_id, normalized_id) != OK || normalized_id.is_empty())
@@ -1120,7 +1122,54 @@ namespace jsb
 
         // init source module
         ModuleSourceInfo source_info;
-        if (IModuleResolver* resolver = this->find_module_resolver(normalized_id, source_info))
+        IModuleResolver* resolver = nullptr;
+
+        // Resolve bare specifiers against parent-relative node_modules chains first.
+        // This mirrors Node-like lookup and supports non-hoisted pnpm/yarn layouts.
+        if (!is_relative_module_id && !is_absolute_module_id && p_parent_id.begins_with("res://"))
+        {
+            auto get_parent_lookup_dir = [](const String& p_dir) -> String
+            {
+                if (p_dir == "res://")
+                {
+                    return String();
+                }
+                const String parent_dir = internal::PathUtil::dirname(p_dir);
+                if (parent_dir == "res:/")
+                {
+                    return String("res://");
+                }
+                return parent_dir;
+            };
+
+            for (String lookup_dir = internal::PathUtil::dirname(p_parent_id); !lookup_dir.is_empty(); lookup_dir = get_parent_lookup_dir(lookup_dir))
+            {
+                if (!lookup_dir.begins_with("res://"))
+                {
+                    break;
+                }
+
+                String candidate_id;
+                if (internal::PathUtil::extract(internal::PathUtil::combine(lookup_dir, "node_modules", normalized_id), candidate_id) != OK || candidate_id.is_empty())
+                {
+                    continue;
+                }
+
+                if ((resolver = this->find_module_resolver(candidate_id, source_info)))
+                {
+                    normalized_id = candidate_id;
+                    break;
+                }
+            }
+
+        }
+
+        if (!resolver)
+        {
+            resolver = this->find_module_resolver(normalized_id, source_info);
+        }
+
+        if (resolver)
         {
             const StringName module_id = source_info.source_filepath;
 
