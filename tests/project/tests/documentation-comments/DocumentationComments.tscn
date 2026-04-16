@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://b33p5actrbp6s"]
+
+[ext_resource type="Script" uid="uid://b13817mvpqwo5" path="res://tests/documentation-comments/documentation-comments.ts" id="1_j3med"]
+
+[node name="DocumentationComments" type="Node2D"]
+script = ExtResource("1_j3med")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+text = "DocumentationComments"
