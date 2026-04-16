@@ -295,6 +295,11 @@ namespace jsb
         // 3: module_id/index.js
         if (has_module_id_dir)
         {
+            if (check_package_file_path(p_module_id, String(), o_source_info))
+            {
+                return true;
+            }
+
             const String index_path = internal::PathUtil::combine(p_module_id, "index.js");
             if (FileAccess::exists(index_path))
             {
