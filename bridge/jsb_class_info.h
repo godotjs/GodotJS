@@ -241,6 +241,7 @@ namespace jsb
     };
 
     // Safe pointer of ScriptClassInfo
+    typedef internal::SArray<ScriptClassInfo, ScriptClassID> ScriptClassInfoArray;
     typedef internal::SArray<ScriptClassInfo, ScriptClassID>::Pointer ScriptClassInfoPtr;
     typedef internal::SArray<ScriptClassInfo, ScriptClassID>::ConstPointer ScriptClassInfoConstPtr;
 

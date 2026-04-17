@@ -1,5 +1,7 @@
 #include "jsb_editor_utility_funcs.h"
 #include "jsb_type_convert.h"
+#include "jsb_environment.h"
+#include "core/object/script_language.h"
 
 #if GODOT_4_6_OR_NEWER
 using ConstantHashMap = AHashMap<StringName, int64_t>;
@@ -346,7 +348,7 @@ namespace jsb
             set_field(isolate, context, signal_obj, "method_", method_obj);
         }
 
-        v8::Local<v8::Object> build_class_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& class_name)
+        v8::Local<v8::Object> build_class_info(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& class_name, const HashSet<StringName>* class_rpc_methods)
         {
             v8::Local<v8::Object> class_info_obj = v8::Object::New(isolate);
             const HashMap<StringName, ClassDB::ClassInfo>::Iterator class_it = ClassDB::classes.find(class_name);
@@ -417,6 +419,41 @@ namespace jsb
                     v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
                     build_method_info(isolate, context, method_bind, method_info_obj);
                     methods_obj->Set(context, index++, method_info_obj).Check();
+                }
+            }
+
+            // class: rpc methods
+            {
+                JSB_HANDLE_SCOPE(isolate);
+
+                v8::Local<v8::Array> rpc_methods_obj = v8::Array::New(isolate);
+                set_field(isolate, context, class_info_obj, "rpc_methods", rpc_methods_obj);
+
+                if (class_rpc_methods)
+                {
+                    int index = 0;
+
+                    for (const KeyValue<StringName, MethodBind*>& pair : class_info.method_map)
+                    {
+                        MethodBind const * const method_bind = pair.value;
+
+                        if (method_bind->is_static())
+                        {
+                            continue;
+                        }
+
+                        const StringName exposed_method_name = internal::NamingUtil::get_member_name(pair.key);
+
+                        if (!class_rpc_methods->has(pair.key) && !class_rpc_methods->has(exposed_method_name))
+                        {
+                            continue;
+                        }
+
+                        JSB_HANDLE_SCOPE(isolate);
+                        v8::Local<v8::Object> method_info_obj = v8::Object::New(isolate);
+                        build_method_info(isolate, context, method_bind, method_info_obj);
+                        rpc_methods_obj->Set(context, index++, method_info_obj).Check();
+                    }
                 }
             }
 
@@ -936,15 +973,33 @@ namespace jsb
 
         v8::HandleScope handle_scope(isolate);
         v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        Environment* environment = Environment::wrap(isolate);
 
         List<StringName> exposed_class_list = internal::NamingUtil::get_exposed_original_class_list();
+        HashMap<StringName, HashSet<StringName>> rpc_method_map;
+
+        for (auto& script_class_info : environment->get_script_classes())
+        {
+            if (script_class_info.rpc_config.is_empty())
+            {
+                continue;
+            }
+
+            HashSet<StringName>& methods = rpc_method_map[script_class_info.js_class_name];
+
+            for (const auto& pair : script_class_info.rpc_config)
+            {
+                methods.insert(pair.key);
+            }
+        }
+
         v8::Local<v8::Array> array = v8::Array::New(isolate, exposed_class_list.size());
         int index = 0;
 
-        for (auto it = exposed_class_list.begin(); it != exposed_class_list.end(); ++it)
+        for (auto& class_name : exposed_class_list)
         {
             JSB_HANDLE_SCOPE(isolate);
-            array->Set(context, index++, build_class_info(isolate, context, *it)).Check();
+            array->Set(context, index++, build_class_info(isolate, context, class_name, rpc_method_map.getptr(class_name))).Check();
         }
 
         info.GetReturnValue().Set(array);
@@ -1142,4 +1197,3 @@ namespace jsb
     }
 }
 #endif // endif JSB_WITH_EDITOR_UTILITY_FUNCS
-

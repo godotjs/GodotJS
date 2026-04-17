@@ -138,6 +138,35 @@ declare module "godot" {
               : never
           : never;
 
+    interface __EmptyRPCMap {}
+
+    interface GodotUserRPCEntries {}
+
+    type GodotNativeRPCMap<T> = "__godotRPCMap" extends keyof T ? T["__godotRPCMap"] : __EmptyRPCMap;
+    type NeverToEmptyRpcMap<Map> = [Map] extends [never] ? __EmptyRPCMap : Map;
+    type GodotUserRPCMap<T> = NeverToEmptyRpcMap<
+        {
+            [K in keyof GodotUserRPCEntries]: GodotUserRPCEntries[K] extends {
+                type: infer Type;
+                procedures: infer Procedures;
+            }
+                ? T extends Type
+                    ? Procedures
+                    : never
+                : never;
+        }[keyof GodotUserRPCEntries]
+    >;
+    type GodotRPCMap<T> = GodotNativeRPCMap<T> & GodotUserRPCMap<T>;
+    type GodotRPCNames<T> = keyof GodotRPCMap<T>;
+    type ResolveGodotRPCMapParameters<Map, Name> = Name extends keyof Map
+        ? Map[Name] extends {
+              bivarianceHack(...args: infer P extends GAny[]): void | GAny;
+          }["bivarianceHack"]
+            ? P
+            : never
+        : never;
+    type ResolveGodotRPCParameters<T, Name> = ResolveGodotRPCMapParameters<GodotRPCMap<T>, Name>;
+
     /**
      * Godot has many APIs that are a form of dynamic dispatch, i.e., they take the name of a function or property and
      * then operate on the value matching the name. TypeScript is powerful enough to allow us to type these APIs.
