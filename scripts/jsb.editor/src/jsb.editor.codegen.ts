@@ -826,12 +826,17 @@ const RemappedPrimitiveTypeNames: Partial<Record<Godot.Variant.Type, string>> = 
     [godot.Variant.Type.TYPE_STRING]: "string",
 };
 
+const BindableVariantTypes = (function (): Godot.Variant.Type[] {
+    const types: Godot.Variant.Type[] = [];
+    for (let variant_type = godot.Variant.Type.TYPE_NIL; variant_type < godot.Variant.Type.TYPE_MAX; ++variant_type) {
+        types.push(variant_type);
+    }
+    return types;
+})();
+
 const VariantTypeNames = (function (): Map<Godot.Variant.Type, string> {
     const variant_name_map = new Map<Godot.Variant.Type, string>();
-    for (const variant_type of Object.values(godot.Variant.Type)) {
-        if (typeof variant_type !== "number" || variant_type === godot.Variant.Type.TYPE_MAX) {
-            continue;
-        }
+    for (const variant_type of BindableVariantTypes) {
         const name = RemappedPrimitiveTypeNames[variant_type] ?? jsb.internal.names.get_variant_type(variant_type);
         variant_name_map.set(variant_type, name);
     }
@@ -855,10 +860,7 @@ const GlobalUtilityFuncs = [
 
 const VariantNames = (function (): Partial<Record<string, Godot.Variant.Type>> {
     const name_map: Partial<Record<string, Godot.Variant.Type>> = {};
-    for (const variant_type of Object.values(godot.Variant.Type)) {
-        if (typeof variant_type !== "number" || variant_type === godot.Variant.Type.TYPE_MAX) {
-            continue;
-        }
+    for (const variant_type of BindableVariantTypes) {
         name_map[godot.type_string(variant_type)] = variant_type; // Godot internal
         name_map[VariantTypeNames.get(variant_type)!] = variant_type; // GodotJS name
     }
@@ -3268,7 +3270,7 @@ export class TypeDB {
             const maybe_is_empty = (value as { is_empty?: () => boolean }).is_empty;
 
             if (typeof maybe_is_empty === "function") {
-                return maybe_is_empty.call(value);
+                return Reflect.apply(maybe_is_empty, value, []);
             }
 
             return Object.keys(value).length == 0;
@@ -3556,6 +3558,13 @@ export class TSDCodeGen {
     private emit_global(global_obj: GodotJsb.editor.GlobalConstantInfo) {
         const cg = this.split();
         const doc = this._types.find_doc("@GlobalScope");
+
+        if (typeof global_obj.value !== "undefined") {
+            DocCommentHelper.write(cg, doc?.constants[global_obj.name]?.description, true);
+            cg.line(`const ${name_string(global_obj.name)} = ${global_obj.value}`);
+            return;
+        }
+
         const ns = cg.enum_(global_obj.name);
         let separator_line = false;
         for (let name in global_obj.values) {
