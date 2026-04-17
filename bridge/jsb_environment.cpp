@@ -2135,6 +2135,13 @@ namespace jsb
         string_name_cache_.shrink();
         source_map_cache_.clear();
 
+        // `dispose()` explicitly destroys bound objects, and shutdown-time forced GC has caused
+        // fatal crashes while V8 is invoking weak callbacks. Skip forced collection in this state.
+        if (flags_ & EF_PreDispose)
+        {
+            return;
+        }
+
 #if JSB_EXPOSE_GC_FOR_TESTING
         isolate_->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
 #else

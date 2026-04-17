@@ -152,9 +152,15 @@ bool GodotJSEditorPlugin::delete_file(const String &p_file)
 
 String GodotJSEditorPlugin::mutate_types(const String& p_content)
 {
+    auto should_ignore_identifier = [](const String& p_identifier) -> bool
+    {
+		// Internal utility types are double underscore prefixed
+        return p_identifier.begins_with("__");
+    };
+
     // Regex obviously isn't the best tool for the job and this regex will, for example, match some generic parameter
     // names. However, for now, it does the job.
-    RegEx type_regex("(?m)(?:=>|[:|&<=,{]|\\s+(?:type|enum|extends)\\s+|\\s+(?:class|interface)(?:<[^>]+>)?\\s+)\\s*([A-Z]\\w+)(?:\\.([A-Z]\\w+))*");
+    RegEx type_regex("(?m)(?:=>|[:|&<=,{\\[]|\\b(?:type|enum|extends|keyof|infer|typeof|implements|as|is|in|satisfies)\\s+|\\s+(?:class|interface)(?:<[^>]+>)?\\s+)\\s*([A-Z]\\w+)(?:\\.([A-Z]\\w+))*");
     TypedArray<RegExMatch> type_matches = type_regex.search_all(p_content);
     String result = p_content;
     for (int match_index = type_matches.size() - 1; match_index >= 0; match_index--)
@@ -178,11 +184,20 @@ String GodotJSEditorPlugin::mutate_types(const String& p_content)
                 String component = components[i];
                 start = end - component.length();
                 identifier = result.substr(start, end - start);
+
+                if (should_ignore_identifier(identifier))
+                {
+                    end = start - 1;
+                    continue;
+                }
+
                 replacement = jsb::internal::NamingUtil::get_class_name(identifier);
+
                 if (replacement != identifier)
                 {
                     result = result.substr(0, start) + replacement + result.substr(end);
                 }
+
                 end = start - 1;
             }
         }
@@ -190,6 +205,12 @@ String GodotJSEditorPlugin::mutate_types(const String& p_content)
         start = match->get_start(1);
         end = match->get_end(1);
         identifier = result.substr(start, end - start);
+
+        if (should_ignore_identifier(identifier))
+        {
+            continue;
+        }
+
         replacement = jsb::internal::NamingUtil::get_class_name(identifier);
         if (replacement != identifier && identifier != "Array") // Godot Array is already GArray, Array is the JS type.
         {

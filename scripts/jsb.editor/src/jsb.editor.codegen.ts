@@ -7,6 +7,7 @@ import type {
     Node,
     PropertyInfo,
     Resource,
+    ResourceLoader,
     ResourceTypes,
     Script,
     Variant,
@@ -500,6 +501,12 @@ const TypeMutations: Record<string, TypeMutation> = {
             move_child: mutate_parameter_type(names.get_parameter("child_node"), "NodePathMapChild<Map>"),
             remove_child: mutate_parameter_type("node", "NodePathMapChild<Map>"),
             validate_property: mutate_parameter_type("property", "GDictionary<PropertyInfo>"),
+            rpc: [
+                `${names.get_member("rpc")}<Method extends ${names.get_class("GodotRPCNames")}<this>>(method: Method, ...varargs: ${names.get_class("ResolveGodotRPCParameters")}<this, Method>): Error`,
+            ],
+            rpc_id: [
+                `${names.get_member("rpc_id")}<Method extends ${names.get_class("GodotRPCNames")}<this>>(${names.get_parameter("peer_id")}: int64, method: Method, ...varargs: ${names.get_class("ResolveGodotRPCParameters")}<this, Method>): Error`,
+            ],
         },
     },
     // GObject:
@@ -3746,6 +3753,25 @@ export class TSDCodeGen {
                 }
             }
 
+            const rpc_interface_name = `__RPCMap${cls.name}`;
+            const rpc_interface_writer = cg.interface_(rpc_interface_name, undefined, cls.super && `__RPCMap${cls.super}`);
+            const rpc_methods = cls.rpc_methods ?? [];
+            for (const method_info of rpc_methods) {
+                rpc_interface_writer.property_(
+                    method_info.name,
+                    `(${this._types.make_args(method_info)}) => ${this._types.make_return(method_info)}`,
+                );
+            }
+
+            // Not really deprecated, but we don't want people using this.
+            cg.line("/** @deprecated Internal use. Does not exist at runtime. */");
+            rpc_interface_writer.finish();
+
+            const godot_rpc_map_writer = class_cg.property_("__godotRPCMap");
+            godot_rpc_map_writer.line(rpc_interface_name);
+            class_cg.line("/** @deprecated Internal use. Does not exist at runtime. */");
+            godot_rpc_map_writer.finish();
+
             const overrides_interface_name = `__NameMap${cls.name}`;
             const overrides_interface_writer = cg.interface_(
                 overrides_interface_name,
@@ -3882,12 +3908,22 @@ export class SceneTSDCodeGen {
 export class ResourceTSDCodeGen {
     private _out_dir: string;
     private _resource_paths: string[];
+    private _script_extensions: string[];
     private _types: TypeDB;
 
     constructor(out_dir: string, resource_paths: string[]) {
         this._out_dir = out_dir;
         this._resource_paths = resource_paths;
 
+        const recognized_extensions = godot.ResourceLoader.get_recognized_extensions_for_type("Script");
+        const length = recognized_extensions.size();
+        const script_extensions = new Array<string>(length);
+
+        for (let i = 0; i < length; i++) {
+            script_extensions[i] = recognized_extensions.get(i);
+        }
+
+        this._script_extensions = script_extensions;
         this._types = new TypeDB();
     }
 
@@ -3913,6 +3949,71 @@ export class ResourceTSDCodeGen {
         }
 
         return tasks.submit(false);
+    }
+
+    private get_script_rpc_info(resource_path: string): null | { class_name: string; methods: string[] } {
+        const extension = resource_path.slice(resource_path.lastIndexOf('.') + 1);
+
+        if (!this._script_extensions.includes(extension)) {
+            return null;
+        }
+
+        const resource_loader = godot.ResourceLoader;
+
+        let script: undefined | Script;
+
+        try {
+            script = resource_loader.load(resource_path) as Script;
+        } catch (e) {
+            console.warn(`Failed to generate RPC types for script: ${resource_path}`, e);
+            return null;
+        }
+
+        const class_name: string = script.get_global_name();
+        const rpc_config: null | GDictionary = script.get_rpc_config();
+
+        if (!class_name || !rpc_config) {
+            return null;
+        }
+
+        const methods: string[] = [...rpc_config.keys()].filter(name => name).sort();
+
+        if (methods.length === 0) {
+            return null;
+        }
+
+        return { class_name, methods };
+    }
+
+    private emit_script_rpc_types(module: ModuleWriter, resource_path: string) {
+        const script_rpc_info = this.get_script_rpc_info(resource_path);
+
+        if (!script_rpc_info) {
+            return;
+        }
+
+        module.add_import(script_rpc_info.class_name, resource_path);
+
+        const imported_class_name = module.get_imports()[resource_path]?.default ?? script_rpc_info.class_name;
+
+        const rpc_entries_interface = module.interface_(names.get_class("GodotUserRPCEntries"));
+        const entry_property = rpc_entries_interface.property_(resource_path);
+        const entry_writer = entry_property.object_();
+        entry_writer.property_("type", imported_class_name);
+
+        const rpc_map_property = entry_writer.property_("procedures");
+        const rpc_map_writer = rpc_map_property.object_();
+
+        for (const method_name of script_rpc_info.methods) {
+            rpc_map_writer.property_(method_name, `${imported_class_name}[${JSON.stringify(method_name)}]`);
+        }
+
+        rpc_map_writer.finish();
+        rpc_map_property.finish();
+
+        entry_writer.finish();
+        entry_property.finish();
+        rpc_entries_interface.finish();
     }
 
     private emit_resource_type(resource_path: string) {
@@ -3950,6 +4051,9 @@ export class ResourceTSDCodeGen {
                 type_descriptor.finish();
                 resource_property.finish();
                 resource_types_interface.finish();
+
+                this.emit_script_rpc_types(module, resource_path);
+
                 module.finish();
                 file_writer.finish();
             } finally {

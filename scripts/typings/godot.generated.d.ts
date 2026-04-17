@@ -8,7 +8,25 @@ declare module "godot" {
 
     class Node<Map extends Record<string, Node> = any> extends Object {}
     class Resource {}
-    class Script extends Resource {}
+    class Script extends Resource {
+        get_global_name(): StringName
+        get_rpc_config(): any
+    }
+
+    namespace ResourceLoader {
+        enum CacheMode {
+            CACHE_MODE_IGNORE = 0,
+            CACHE_MODE_REUSE = 1,
+            CACHE_MODE_REPLACE = 2,
+            CACHE_MODE_IGNORE_DEEP = 3,
+            CACHE_MODE_REPLACE_DEEP = 4,
+        }
+    }
+    class ResourceLoader extends Object {
+        static load(path: string, type_hint?: string, cache_mode?: ResourceLoader.CacheMode): Resource;
+        static get_recognized_extensions_for_type(type: string): PackedStringArray;
+    }
+
     interface ResourceTypes {}
 
     type GArrayCreateSource<T> =
@@ -62,7 +80,7 @@ declare module "godot" {
         push_back(value: GArrayElement<T>): void;
         pop_back(): GArrayElement<T>;
         has(value: GArrayElement<T>): boolean;
-        find(what: GArrayElement<T>, from: int64 = 0): int64;
+        find(what: GArrayElement<T>, from?: int64): int64;
     }
     type byte = number;
     type int32 = number;
@@ -151,6 +169,8 @@ declare module "godot" {
 
     class PackedStringArray {
         append(value: string): boolean;
+        get(index: int64): string;
+        size(): int64;
     }
 
     namespace FileAccess {

@@ -267,6 +267,7 @@ declare module "godot-jsb" {
             super: string;
 
             properties: Array<PropertySetGetInfo>;
+            rpc_methods?: Array<MethodBind>;
             virtual_methods: Array<MethodBind>;
             signals: Array<SignalInfo>;
             constants?: Array<ConstantInfo>;

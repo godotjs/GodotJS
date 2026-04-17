@@ -129,11 +129,11 @@ namespace jsb
 #if JSB_THREADING
         internal::DoubleBuffered<AsyncCall> async_calls_;
 #endif
-        
+
 #if JSB_V8_CPPGC
         std::unique_ptr<v8::CppHeap> cpp_heap_;
 #endif
-        
+
         // indirect lookup
         // only godot object classes are mapped
         HashMap<StringName, NativeClassID> godot_classes_index_;
@@ -150,7 +150,7 @@ namespace jsb
 
         //TODO all exported default classes inherit native godot class (directly or indirectly)
         // they're only collected on a module loaded
-        internal::SArray<ScriptClassInfo, ScriptClassID> script_classes_;
+        ScriptClassInfoArray script_classes_;
 
         StringNameCache string_name_cache_;
 
@@ -592,6 +592,7 @@ namespace jsb
         jsb_force_inline ScriptClassInfoPtr get_script_class(const ScriptClassID p_class_id) { return script_classes_.get_value_scoped(p_class_id); }
         jsb_force_inline ScriptClassInfoConstPtr get_script_class(const ScriptClassID p_class_id) const { return script_classes_.get_value_scoped(p_class_id); }
         jsb_force_inline ScriptClassInfoPtr find_script_class(const ScriptClassID p_class_id) { return script_classes_.is_valid_index(p_class_id) ? script_classes_.get_value_scoped(p_class_id) : nullptr; }
+        jsb_force_inline const ScriptClassInfoArray& get_script_classes() { return script_classes_; }
 
         void get_statistics(Statistics& r_stats) const;
 

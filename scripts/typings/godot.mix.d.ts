@@ -115,28 +115,49 @@ declare module "godot" {
     type ResolveGodotNameValue<T, Name> = Name extends keyof T
         ? T[Name]
         : "__godotNameMap" extends keyof T
-          ? Name extends keyof T["__godotNameMap"]
-              ? T["__godotNameMap"][Name] extends keyof T
-                  ? T[T["__godotNameMap"][Name]]
-                  : never
-              : never
-          : never;
+            ? Name extends keyof T["__godotNameMap"]
+                ? T["__godotNameMap"][Name] extends keyof T
+                    ? T[T["__godotNameMap"][Name]]
+                    : never
+                : never
+            : never;
     type ResolveGodotNameParameters<T, Name> = Name extends GodotDynamicDispatchName
         ? GAny[]
         : ResolveGodotName<T, Name> extends keyof T
-          ? T[ResolveGodotName<T, Name>] extends {
-                bivarianceHack(...args: infer P extends GAny[]): void | GAny;
-            }["bivarianceHack"]
-              ? P
-              : never
-          : never;
+            ? T[ResolveGodotName<T, Name>] extends {
+                    bivarianceHack(...args: infer P extends GAny[]): void | GAny;
+                }["bivarianceHack"]
+                    ? P
+                    : never
+            : never;
     type ResolveGodotReturnType<T, Name> = Name extends GodotDynamicDispatchName
         ? void | GAny
         : ResolveGodotName<T, Name> extends keyof T
-          ? T[ResolveGodotName<T, Name>] extends (...args: any[]) => infer R
-              ? R
-              : never
-          : never;
+            ? T[ResolveGodotName<T, Name>] extends (...args: any[]) => infer R
+                ? R
+                : never
+            : never;
+
+    interface GodotUserRPCEntries {}
+
+    type GodotNativeRPCMap<T> = "__godotRPCMap" extends keyof T ? T["__godotRPCMap"] : {};
+    type GodotUserRPCEntry = GodotUserRPCEntries[keyof GodotUserRPCEntries];
+    type GodotUserRPCType = GodotUserRPCEntry extends { type: infer Type } ? Type : never;
+    type GodotUserRPCMap<T> =[T] extends [GodotUserRPCType]
+        ? Extract<GodotUserRPCEntry, { type: T }> extends { procedures: infer Procedures; }
+            ? Procedures
+            : {}
+        : {};
+    type GodotRPCMap<T> = GodotNativeRPCMap<T> & GodotUserRPCMap<T>;
+    type GodotRPCNames<T> = keyof GodotRPCMap<T>;
+    type ResolveGodotRPCMapParameters<Map, Name> = Name extends keyof Map
+        ? Map[Name] extends {
+                bivarianceHack(...args: infer P extends GAny[]): void | GAny;
+            }["bivarianceHack"]
+            ? P
+            : never
+        : never;
+    type ResolveGodotRPCParameters<T, Name> = ResolveGodotRPCMapParameters<GodotRPCMap<T>, Name>;
 
     /**
      * Godot has many APIs that are a form of dynamic dispatch, i.e., they take the name of a function or property and
