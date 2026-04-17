@@ -299,7 +299,8 @@ declare module "godot-jsb" {
 
         interface GlobalConstantInfo {
             name: string;
-            values: { [name: string]: number /** int64_t */ };
+            values?: { [name: string]: number /** int64_t */ };
+            value?: number /** int64_t */;
         }
 
         interface ClassDoc {

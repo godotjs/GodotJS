@@ -963,6 +963,17 @@ namespace jsb
         for (int index = 0; index < num; ++index)
         {
             const StringName enum_name = CoreConstants::get_global_constant_enum(index);
+            if (enum_name.is_empty() || !CoreConstants::is_global_enum(enum_name))
+            {
+                JSB_HANDLE_SCOPE(isolate);
+                v8::Local<v8::Object> constant_obj = v8::Object::New(isolate);
+                const StringName constant_name = CoreConstants::get_global_constant_name(index);
+                const int64_t constant_value = CoreConstants::get_global_constant_value(index);
+                set_field(isolate, context, constant_obj, "name", internal::NamingUtil::get_enum_value_name(constant_name));
+                set_field(isolate, context, constant_obj, "value", constant_value);
+                array->Set(context, array_index++, constant_obj).Check();
+                continue;
+            }
             if (enum_packs.has(enum_name))
             {
                 continue;
