@@ -940,8 +940,13 @@ namespace jsb
         {
             if (object_handle->ref_count_ == 0)
             {
-                // becomes a strong reference
-                jsb_check(!object_handle->ref_.IsEmpty());
+                // A first-pass GC callback may already have reset `ref_` while second-pass free
+                // is still pending. Treat this as a stale/dead binding instead of crashing.
+                if (jsb_unlikely(object_handle->ref_.IsEmpty()))
+                {
+                    JSB_LOG(Warning, "UNEXPECTED inc reference on dead value %d", (uintptr_t) p_pointer);
+                    return false;
+                }
                 object_handle->ref_.ClearWeak();
             }
             ++object_handle->ref_count_;
@@ -949,7 +954,12 @@ namespace jsb
         }
 
         // removing references
-        jsb_checkf(!object_handle->ref_.IsEmpty(), "removing references on dead values");
+        if (jsb_unlikely(object_handle->ref_.IsEmpty()))
+        {
+            JSB_LOG(Warning, "UNEXPECTED dec reference on dead value %d", (uintptr_t) p_pointer);
+            return false;
+        }
+
         jsb_check(object_handle->ref_count_ > 0);
 
         --object_handle->ref_count_;

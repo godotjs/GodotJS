@@ -658,11 +658,40 @@ namespace jsb
          */
         void call_script_prelude(ScriptClassID p_script_class_id, NativeObjectID p_object_id);
 
-        // callback from v8 gc (not 100% guaranteed called)
+        // NOTE: First-pass weak callbacks are very restricted in V8. Do not do heavy work there.
         jsb_force_inline static void object_gc_callback(const v8::WeakCallbackInfo<void>& info)
         {
-            Environment* env = wrap(info.GetIsolate());
-            env->add_async_call(AsyncCall::TYPE_GC_FREE, info.GetParameter());
+            if (Environment* env = wrap(info.GetIsolate()))
+            {
+                // V8 requires clearing the weak handle in first-pass callbacks.
+                if (ObjectHandlePtr object_handle = env->object_db_.try_get_object(info.GetParameter()))
+                {
+                    object_handle->ref_.Reset();
+                }
+
+                if (!env->is_disposing())
+                {
+#if JSB_WITH_V8
+                    info.SetSecondPassCallback(&object_gc_callback_second_pass);
+#else
+                    object_gc_callback_second_pass(info);
+#endif
+                }
+            }
+        }
+
+        static void object_gc_callback_second_pass(const v8::WeakCallbackInfo<void>& info)
+        {
+            if (Environment* env = wrap(info.GetIsolate()))
+            {
+                // During shutdown we explicitly drain object_db_ in dispose(); skip GC callback work.
+                if (env->is_disposing())
+                {
+                    return;
+                }
+
+                env->add_async_call(AsyncCall::TYPE_GC_FREE, info.GetParameter());
+            }
         }
 
         // a forward method for non-v8 implementations
