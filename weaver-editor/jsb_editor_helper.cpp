@@ -110,16 +110,22 @@ StringName GodotJSEditorHelper::_get_exposed_node_class_name(const StringName& c
     return jsb::internal::NamingUtil::get_class_name(exposed_class_name);
 }
 
-Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& p_env, Node* p_node, const String& p_scene_resource_path)
+Dictionary GodotJSEditorHelper::_build_node_type_descriptor(const BitField<SceneDTSGenerateStrategic> p_strategic, jsb::JSEnvironment& p_env, Node* p_node, const Node* p_root_node, Dictionary& r_unique_name_nodes, const String& p_scene_resource_path)
 {
+    jsb_check(p_strategic != 0);
+
     Dictionary descriptor;
     Dictionary children;
     int child_count = p_node->get_child_count(true);
 
-    for (int i = 0; i < child_count; i++)
+    // If p_node is PackedScene, only editable instance's children should be collected.
+    if (p_node == p_root_node || p_node->get_scene_file_path().is_empty() || p_root_node->is_editable_instance(p_node))
     {
-        Node* child = p_node->get_child(i, true);
-        children[child->get_name()] = _build_node_type_descriptor(p_env, child);
+        for (int i = 0; i < child_count; i++)
+        {
+            Node* child = p_node->get_child(i, true);
+            children[child->get_name()] = _build_node_type_descriptor(p_strategic, p_env, child, p_root_node, r_unique_name_nodes);
+        }
     }
 
     ScriptInstance* script_instance = p_node->get_script_instance();
@@ -148,12 +154,15 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
             || GodotJSScriptLanguage::get_singleton()->is_global_class_generic(script->get_path())
             || script->get_global_name().is_empty())
         {
-            Dictionary object_literal;
-            object_literal[jsb_string_name(type)] = (int32_t) DescriptorType::ObjectLiteral;
-            object_literal[jsb_string_name(properties)] = children;
-
             Array generic_arguments;
-            generic_arguments.push_back(object_literal);
+
+            if (p_strategic.has_flag(SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE))
+            {
+                Dictionary object_literal;
+                object_literal[jsb_string_name(type)] = (int32_t) DescriptorType::ObjectLiteral;
+                object_literal[jsb_string_name(properties)] = children;
+                generic_arguments.push_back(object_literal);
+            }
 
             AnimationMixer *animation_mixer = Object::cast_to<AnimationMixer>(p_node);
 
@@ -253,6 +262,13 @@ Dictionary GodotJSEditorHelper::_build_node_type_descriptor(jsb::JSEnvironment& 
         }
     }
 
+    if (p_strategic.has_flag(SCENE_DTS_GENERATE_STRATEGIC_UNIQUE_NAME_NODE))
+    {
+        if (p_node->is_unique_name_in_owner())
+        {
+            r_unique_name_nodes["%" + p_node->get_name()] = descriptor;
+        }
+    }
     return descriptor;
 }
 
@@ -302,6 +318,9 @@ void GodotJSEditorHelper::_bind_methods()
     ClassDB::bind_static_method(jsb_typename(GodotJSEditorHelper), D_METHOD("show_toast", "text", "severity"), &GodotJSEditorHelper::show_toast);
     ClassDB::bind_static_method(jsb_typename(GodotJSEditorHelper), D_METHOD("get_resource_type_descriptor", "resource_path"), &GodotJSEditorHelper::get_resource_type_descriptor);
     ClassDB::bind_static_method(jsb_typename(GodotJSEditorHelper), D_METHOD("get_scene_nodes", "scene_path"), &GodotJSEditorHelper::get_scene_nodes);
+
+    BIND_BITFIELD_FLAG(SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE);
+    BIND_BITFIELD_FLAG(SCENE_DTS_GENERATE_STRATEGIC_UNIQUE_NAME_NODE);
 }
 
 Dictionary GodotJSEditorHelper::get_resource_type_descriptor(const String& p_path)
@@ -329,8 +348,16 @@ Dictionary GodotJSEditorHelper::get_resource_type_descriptor(const String& p_pat
 
         jsb::JSEnvironment env(instantiated_scene->get_scene_file_path(), true);
 
+        BitField<SceneDTSGenerateStrategic> strategic = jsb::internal::Settings::get_scene_dts_generate_strategic();
+        if (strategic == 0)
+        {
+            strategic.set_flag(SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE);
+            JSB_LOG(Warning, "Scene DTS generate strategic is undefine, use SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE (please configure it through project setting).");
+        }
+
         Array generic_arguments;
-        generic_arguments.push_back(_build_node_type_descriptor(env, instantiated_scene, p_path));
+        Dictionary unique_name_nodes;
+        generic_arguments.push_back(_build_node_type_descriptor(strategic, env, instantiated_scene, instantiated_scene, unique_name_nodes, p_path));
 
         descriptor[jsb_string_name(type)] = (int32_t) DescriptorType::Godot;
         descriptor[jsb_string_name(name)] = "PackedScene";
@@ -407,15 +434,28 @@ Dictionary GodotJSEditorHelper::get_scene_nodes(const String& p_path)
     v8::HandleScope handle_scope(isolate);
 
     Dictionary nodes;
+    Dictionary unique_name_nodes;
     int child_count = instantiated_scene->get_child_count(true);
 
+    BitField<SceneDTSGenerateStrategic> strategic = jsb::internal::Settings::get_scene_dts_generate_strategic();
+    if (strategic == 0)
+    {
+        strategic.set_flag(SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE);
+        JSB_LOG(Warning, "Scene DTS generate strategic is undefine, use SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE (please configure it through project setting).");
+    }
     for (int i = 0; i < child_count; i++)
     {
         Node* child = instantiated_scene->get_child(i, true);
-        nodes[child->get_name()] = _build_node_type_descriptor(env, child);
+        nodes[child->get_name()] = _build_node_type_descriptor(strategic, env, child, instantiated_scene, unique_name_nodes);
     }
 
     instantiated_scene->queue_free();
+
+    if (!strategic.has_flag(SCENE_DTS_GENERATE_STRATEGIC_ORIGIN_NAME_NODE))
+    {
+        nodes.clear();
+    }
+    nodes.merge(unique_name_nodes);
 
     return nodes;
 }
