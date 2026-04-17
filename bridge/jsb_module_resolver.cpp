@@ -573,6 +573,22 @@ namespace jsb
             const v8::MaybeLocal<v8::Value> func_maybe = impl::Helper::compile_function(context, (const char*) source.ptr(), (int) len, source_url);
             if (func_maybe.IsEmpty())
             {
+                static constexpr size_t kDiagnosticPrefixMaxBytes = 192;
+                const size_t diagnostic_prefix_len = std::min(len, kDiagnosticPrefixMaxBytes);
+                String diagnostic_prefix;
+                if (diagnostic_prefix_len > 0)
+                {
+                    PackedByteArray diagnostic_bytes;
+                    diagnostic_bytes.resize((int) diagnostic_prefix_len);
+                    memcpy(diagnostic_bytes.ptrw(), source.ptr(), diagnostic_prefix_len);
+                    diagnostic_prefix = String::utf8((const char*) diagnostic_bytes.ptr(), (int) diagnostic_prefix_len);
+                }
+                JSB_LOG(Warning,
+                    "module compile failed asset_path='%s' source_url='%s' source_len=%s prefix='%s'",
+                    p_asset_path,
+                    source_url,
+                    String::num_uint64((uint64_t) len),
+                    diagnostic_prefix);
                 //NOTE an exception should have been thrown in _compile_run if MaybeLocal is empty
                 return false;
             }

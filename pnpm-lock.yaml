@@ -14,6 +14,9 @@ importers:
 
   impl/web/bridge:
     devDependencies:
+      '@types/emscripten':
+        specifier: ^1.41.5
+        version: 1.41.5
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
@@ -28,15 +31,6 @@ importers:
         version: 5.9.2
 
   scripts/jsb.runtime:
-    devDependencies:
-      '@types/node':
-        specifier: ^20.11.30
-        version: 20.17.57
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-
-  scripts/jsb.static:
     devDependencies:
       '@types/node':
         specifier: ^20.11.30
@@ -142,6 +136,9 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@types/emscripten@1.41.5':
+    resolution: {integrity: sha512-cMQm7pxu6BxtHyqJ7mQZ2kXWV5SLmugybFdHCBbJ5eHzOo6VhBckEgAT3//rP5FwPHNPeEiq4SmQ5ucBwsOo4Q==}
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
@@ -665,6 +662,8 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  '@types/emscripten@1.41.5': {}
 
   '@types/node@12.20.55': {}
 

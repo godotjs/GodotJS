@@ -68,7 +68,7 @@ namespace v8
     Maybe<bool> Object::Set(Local<Context> context, uint32_t index, Local<Value> value)
     {
         const JSValue self = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_IsArray(isolate_->ctx(), self));
+        jsb_check(jsb::impl::QuickJS::IsArray(isolate_->ctx(), self));
         const int res = JS_SetPropertyUint32(isolate_->ctx(), self, index, JS_DupValue(isolate_->ctx(), (JSValue) value));
         if (res == -1)
         {
@@ -81,7 +81,7 @@ namespace v8
     MaybeLocal<Value> Object::Get(Local<Context> context, uint32_t index) const
     {
         const JSValue self = isolate_->stack_val(stack_pos_);
-        jsb_check(JS_IsArray(isolate_->ctx(), self));
+        jsb_check(jsb::impl::QuickJS::IsArray(isolate_->ctx(), self));
         const JSValue val = JS_GetPropertyUint32(isolate_->ctx(), self, index);
         if (JS_IsException(val))
         {
@@ -330,6 +330,7 @@ namespace v8
         int flags = 0;
         if ((filter & SKIP_STRINGS) == 0) flags |= JS_GPN_STRING_MASK;
         if ((filter & SKIP_SYMBOLS) == 0) flags |= JS_GPN_SYMBOL_MASK;
+        if ((filter & ONLY_ENUMERABLE) != 0) flags |= JS_GPN_ENUM_ONLY;
 
         // key_conversion is not available in quickjs.impl
         jsb_check(key_conversion == v8::KeyConversionMode::kNoNumbers);
@@ -374,7 +375,7 @@ namespace v8
         // so use an indirect array to hold all of them. 
         const JSValue holder = JS_NewArray(ctx);
         jsb_ensure(!JS_IsException(holder));
-        jsb_check(JS_IsArray(ctx, holder));
+        jsb_check(jsb::impl::QuickJS::IsArray(ctx, holder));
 
         // these references are consumed by SetProperty, no additional FreeValue is needed
         JS_SetPropertyUint32(ctx, holder, kHolderIndexResolve, resolvers[0]); // resolve
@@ -403,7 +404,7 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
         const JSValue holder = (JSValue) *this;
-        jsb_check(JS_IsArray(ctx, holder));
+        jsb_check(jsb::impl::QuickJS::IsArray(ctx, holder));
         jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
         
         const JSValue obj = JS_GetPropertyUint32(ctx, holder, kHolderIndexPromise);
@@ -415,7 +416,7 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
         const JSValue holder = (JSValue) *this;
-        jsb_check(JS_IsArray(ctx, holder));
+        jsb_check(jsb::impl::QuickJS::IsArray(ctx, holder));
         jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
 
         // unpack the resolve function 
@@ -439,7 +440,7 @@ namespace v8
     {
         JSContext* ctx = isolate_->ctx();
         const JSValue holder = (JSValue) *this;
-        jsb_check(JS_IsArray(ctx, holder));
+        jsb_check(jsb::impl::QuickJS::IsArray(ctx, holder));
         jsb_check(get_packed_array_length(ctx, holder) == kHolderIndexCount);
 
         // unpack the reject function 

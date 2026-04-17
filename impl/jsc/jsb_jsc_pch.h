@@ -17,6 +17,12 @@
 //NOTE the header file for WeakRef is private in webkit, we copy it here. hope it's a viable plan :)
 #include "JSWeakPrivate.h"
 
+// Apple headers define `nil` as a macro; this leaks into C++ code and can break
+// identifiers named `nil` in non-ObjC translation units.
+#ifdef nil
+#undef nil
+#endif
+
 #include <memory>
 #include <cstdint>
 

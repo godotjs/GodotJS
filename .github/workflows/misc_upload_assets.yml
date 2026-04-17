@@ -16,16 +16,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [ v8, qjs-ng ]
+        engine: [ v8, qjs-ng, jsc ]
         os: [ linux, macos, windows ]
-        target: [ template_release, template_debug, editor ]
-        include:
+        target: [ template_release, template_debug, editor, editor-app, template-app ]
+        exclude:
+          - os: linux
+            engine: jsc
+          - os: windows
+            engine: jsc
           - target: editor-app
-            os: macos
-            engine: v8
+            os: linux
           - target: template-app
-            os: macos
-            engine: v8
+            os: windows
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v6
@@ -46,9 +48,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [ v8, qjs-ng ]
+        engine: [ v8, qjs-ng, jsc ]
         os: [ android, ios ]
         target: [ template_release, template_debug ]
+        exclude:
+          - os: android
+            engine: jsc
     steps:
       - name: ⏬ Checkout repo
         uses: actions/checkout@v6

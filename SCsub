@@ -91,7 +91,7 @@ lws_prebuilt_libs = LibraryDescriptor("lws", \
 ])
 quickjs_src_descs = ThirdPartyDescriptor("quickjs", \
 [
-    ThirdPartyDetails("quickjs-ng", ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]),
+    ThirdPartyDetails("quickjs-ng", ["dtoa.c", "libregexp.c", "libunicode.c", "quickjs.c"]),
     ThirdPartyDetails("quickjs",    ["cutils.c", "libbf.c", "libregexp.c", "libunicode.c", "quickjs.c"]),
 ])
 
@@ -183,7 +183,7 @@ if quickjs_support is None and jsc_support is None and is_library_supported(v8_p
     if is_library_supported(lws_prebuilt_libs):
         download_dependency("lws", deps_lws_version, "lws")
 
-v8_support = validate_library_support(v8_prebuilt_libs) if quickjs_support is None else None
+v8_support = validate_library_support(v8_prebuilt_libs) if quickjs_support is None and jsc_support is None else None
 lws_support = validate_library_support(lws_prebuilt_libs) if v8_support is not None else None
 
 jsb_defines = [
@@ -202,7 +202,6 @@ jsb_defines = [
         "Use the host browser's javascript engine.",
         "Be aware that all script sources are evaluated in the host browser, which can be fully debugged with the browser's developer tools.",
         "It's recommended to obfuscate the script sources before deploying the project in a production environment.",
-        "NOTE: web.impl is experimental and may not work as expected.",
         "NOTE: Obfuscation may not work in the current version. It'll be improved in the future versions. Report an issue if it breaks.",
     ]),
     CompileDefines("JSB_WITH_JAVASCRIPTCORE", 1 if jsc_support is not None else 0, [
@@ -573,8 +572,6 @@ if quickjs_support is not None:
 
 if is_defined("JSB_WITH_WEB"):
     check(os.path.exists("impl/web/js"), "impl/web/js (GodotJS web bridge) has not been built")
-
-    print_warning("web.impl is experimental and may not work as expected")
 
     env_jsb.add_source_files(module_obj, "impl/web/*.cpp")
 

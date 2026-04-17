@@ -77,7 +77,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
     type.prototype[Symbol.iterator] = function* (this: Godot.GArray) {
         const get_indexed = Reflect.get(this, get_member("get_indexed"));
         for (let i = 0; i < this.size(); ++i) {
-            yield get_indexed.call(this, i);
+            yield Reflect.apply(get_indexed, this, [i]);
         }
     };
 
@@ -90,7 +90,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
             const target = this[ProxyTarget];
             let i = 0;
             for (const value of target) {
-                callback.call(thisArg ?? this, proxy_wrap(value), i++);
+                Reflect.apply(callback, thisArg ?? this, [proxy_wrap(value), i++]);
             }
         },
         includes: function (this: GArrayProxy<any>, value: any) {
@@ -110,7 +110,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
             const target = this[ProxyTarget];
             const push = Reflect.get(target, push_back_name);
             for (const value of values) {
-                push.call(target, proxy_unwrap(value));
+                Reflect.apply(push, target, [proxy_unwrap(value)]);
             }
             return target.size();
         },
@@ -220,7 +220,7 @@ require("godot.typeloader").on_type_loaded("GArray", function (type: any) {
     type.create = function (values: any[]) {
         const arr = new type();
         const proxy = arr.proxy();
-        proxy.push.apply(proxy, values.map(godot_wrap));
+        Reflect.apply(proxy.push, proxy, values.map(godot_wrap));
         return arr;
     };
 });
@@ -237,8 +237,8 @@ require("godot.typeloader").on_type_loaded("GDictionary", function (type: any) {
         const arr_get_indexed = keys[get_member("get_indexed")];
         const dict_get_keyed = this[get_member("get_keyed")];
         for (let i = 0; i < keys.size(); ++i) {
-            const key = arr_get_indexed.call(keys, i);
-            yield { key: key, value: dict_get_keyed.call(this, key) };
+            const key = Reflect.apply(arr_get_indexed, keys, [i]);
+            yield { key: key, value: Reflect.apply(dict_get_keyed, this, [key]) };
         }
     };
 
@@ -387,5 +387,3 @@ require("godot.typeloader").on_type_loaded("Signal", function (type: any) {
         },
     });
 })();
-
-console.debug("jsb.inject loaded successfully");

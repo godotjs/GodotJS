@@ -36,10 +36,11 @@ namespace v8
         return isolate;
     }
 
-    Isolate::Isolate() : 
-        ref_count_(1), disposed_(false), handle_scope_(nullptr), 
-        pending_delete_(nearest_shift(2048)), 
-        pending_finalize_(nearest_shift(2048)), 
+    Isolate::Isolate() :
+        ref_count_(1),
+        disposed_(false),
+        handle_scope_(nullptr),
+        pending_delete_(nearest_shift(2048U)),
         stack_pos_(0)
     {
         rt_ = JSContextGroupCreate();
@@ -88,6 +89,7 @@ function(key, value, getter, setter) {
             JSB_JSC_DEFINE_ATOM(enumerable);
 
             JSB_JSC_DEFINE_ATOM(Map);
+            JSB_JSC_DEFINE_ATOM(Set);
             JSB_JSC_DEFINE_ATOM(Promise);
             JSB_JSC_DEFINE_ATOM(ArrayBuffer);
 
@@ -137,6 +139,7 @@ function(key, value, getter, setter) {
         jsb_ensure(emplace_(jsb::impl::JavaScriptCore::MakeUTF8String<true>(ctx_, "")) == jsb::impl::StackPos::EmptyString);
         jsb_ensure(emplace_(jsb::impl::JavaScriptCore::MakeUTF8String<true>(ctx_, "Calling constructor as function is not allowed")) == jsb::impl::StackPos::ConstructorCallError);
         jsb_ensure(emplace_(_GetProperty(global, jsb::impl::JS_ATOM_Map)) == jsb::impl::StackPos::MapConstructor);
+        jsb_ensure(emplace_(_GetProperty(global, jsb::impl::JS_ATOM_Set)) == jsb::impl::StackPos::SetConstructor);
         jsb_ensure(emplace_(_GetProperty(global, jsb::impl::JS_ATOM_Promise)) == jsb::impl::StackPos::PromiseConstructor);
         jsb_ensure(emplace_(_GetProperty(global, jsb::impl::JS_ATOM_ArrayBuffer)) == jsb::impl::StackPos::ArrayBufferConstructor);
         jsb_ensure(emplace_(JSValueMakeUndefined(ctx_)) == jsb::impl::StackPos::Exception);
@@ -236,6 +239,20 @@ function(key, value, getter, setter) {
         return push_copy(val);
     }
 
+    uint16_t Isolate::push_set()
+    {
+        const JSObjectRef constructor = jsb::impl::JavaScriptCore::AsObject(ctx_, stack_[jsb::impl::StackPos::SetConstructor]);
+        JSValueRef error = nullptr;
+        const JSValueRef val = JSObjectCallAsConstructor(ctx_, constructor, 0, nullptr, &error);
+        jsb_check(val);
+        if (jsb_unlikely(error))
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, error);
+            return jsb::impl::StackPos::Undefined;
+        }
+        return push_copy(val);
+    }
+
     void Isolate::PerformMicrotaskCheckpoint()
     {
         while (pending_delete_.data_left())
@@ -245,14 +262,32 @@ function(key, value, getter, setter) {
             JSValueUnprotect(ctx_, value);
             captured_values_.remove_at(id);
         }
-        while (pending_finalize_.data_left())
+
+        Vector<jsb::impl::InternalData*> finalize_batch;
+
         {
-            jsb::impl::InternalData* data = pending_finalize_.read();
+            MutexLock lock(pending_finalize_mutex_);
+            finalize_batch = pending_finalize_;
+            pending_finalize_.clear();
+        }
+
+        int finalize_batch_size = finalize_batch.size();
+
+        for (int i = 0; i < finalize_batch_size; ++i)
+        {
+            jsb::impl::InternalData* data = finalize_batch[i];
+
+            if (!data)
+            {
+                continue;
+            }
+
             if (const WeakCallbackInfo<void>::Callback callback = (WeakCallbackInfo<void>::Callback) data->weak.callback)
             {
                 const WeakCallbackInfo<void> info(this, data->weak.parameter, data->internal_fields);
                 callback(info);
             }
+
             memdelete(data);
         }
     }
@@ -281,6 +316,12 @@ function(key, value, getter, setter) {
     bool Isolate::_IsMap(JSValueRef val) const
     {
         const JSObjectRef obj = JSValueToObject(ctx_, stack_[jsb::impl::StackPos::MapConstructor], nullptr);
+        return obj && JSValueIsInstanceOfConstructor(ctx_, val, obj, nullptr);
+    }
+
+    bool Isolate::_IsSet(JSValueRef val) const
+    {
+        const JSObjectRef obj = JSValueToObject(ctx_, stack_[jsb::impl::StackPos::SetConstructor], nullptr);
         return obj && JSValueIsInstanceOfConstructor(ctx_, val, obj, nullptr);
     }
 
@@ -350,10 +391,10 @@ function(key, value, getter, setter) {
         jsb_check(!setter || JSObjectIsFunction(ctx_, setter));
 
         const JSObjectRef call = bridge_calls_[jsb::impl::JSBridgeCall::DefineProperty];
-        const JSValueRef args[4] = { 
-            key, 
-            stack_[jsb::impl::StackPos::Undefined], 
-            getter ? getter : stack_[jsb::impl::StackPos::Undefined], 
+        const JSValueRef args[4] = {
+            key,
+            stack_[jsb::impl::StackPos::Undefined],
+            getter ? getter : stack_[jsb::impl::StackPos::Undefined],
             setter ? setter : stack_[jsb::impl::StackPos::Undefined]
         };
         JSValueRef error = nullptr;
@@ -447,9 +488,10 @@ function(key, value, getter, setter) {
             v8::Isolate* isolate = (v8::Isolate*) data->isolate;
             JSB_JSC_LOG(VeryVerbose, "remove internal data JSObject:%s id:%s", (uintptr_t) obj, (uintptr_t) data);
 
-            //TODO improve: always handle it in environment
-            const ::Error error = isolate->pending_finalize_.write(data);
-            jsb_check(error == ::OK);
+            {
+                MutexLock lock(isolate->pending_finalize_mutex_);
+                isolate->pending_finalize_.push_back(data);
+            }
         }
     }
 
@@ -464,12 +506,27 @@ function(key, value, getter, setter) {
     bool Isolate::_hasInstance_callback(JSContextRef ctx, JSObjectRef constructor, JSValueRef possibleInstance, JSValueRef* exception)
     {
         Isolate* isolate = (Isolate*) jsb::impl::JavaScriptCore::GetContextOpaque(ctx);
-        const JSObjectRef po1 = jsb::impl::JavaScriptCore::AsObject(ctx, JSObjectGetPrototype(ctx, (JSObjectRef) possibleInstance));
-        const JSValueRef po2 = isolate->_GetProperty(constructor, jsb::impl::JS_ATOM_prototype);
-        jsb_check(po1 && po2);
-        const JSObjectRef call = isolate->bridge_calls_[jsb::impl::JSBridgeCall::InstanceOf];
-        const JSValueRef rval = JSObjectCallAsFunction(ctx, call, po1, 1, &po2, exception);
-        return rval && JSValueToBoolean(ctx, rval);
+        if (!possibleInstance || !JSValueIsObject(ctx, possibleInstance))
+        {
+            return false;
+        }
+
+        const JSValueRef constructor_prototype = isolate->_GetProperty(constructor, jsb::impl::JS_ATOM_prototype);
+        if (!constructor_prototype || !JSValueIsObject(ctx, constructor_prototype))
+        {
+            return false;
+        }
+
+        JSValueRef current = JSObjectGetPrototype(ctx, (JSObjectRef) possibleInstance);
+        while (current && JSValueIsObject(ctx, current))
+        {
+            if (JSValueIsStrictEqual(ctx, current, constructor_prototype))
+            {
+                return true;
+            }
+            current = JSObjectGetPrototype(ctx, (JSObjectRef) current);
+        }
+        return false;
     }
 
     JSObjectRef Isolate::_NewObjectProtoClass(JSValueRef prototype, void* data)

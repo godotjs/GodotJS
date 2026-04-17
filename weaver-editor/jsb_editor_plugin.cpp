@@ -51,7 +51,7 @@ void GodotJSEditorPlugin::_notification(int p_what)
     case NOTIFICATION_READY:
         singleton_ = this;
         // stupid self watching, but there is no other way which work both in module and gdextension
-    	// EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
+        // EditorPlugin::notify_scene_saved() is not virtual, and not exposed to gdextension :(
         connect("scene_saved", callable_mp(this, &GodotJSEditorPlugin::_on_scene_saved));
         connect("resource_saved", callable_mp(this, &GodotJSEditorPlugin::_on_resource_saved));
         EditorFileSystem::get_singleton()->connect("resources_reimported", callable_mp(this, &GodotJSEditorPlugin::_generate_imported_resource_dts));
@@ -107,7 +107,7 @@ GodotJSEditorPlugin::GodotJSEditorPlugin()
     // VSCode treats the directory containing the jsconfig.json file as the root of a javascript project, and reads type declarations from d.ts.
     add_install_file({ "godot.minimal.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
     add_install_file({ "godot.mix.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
-#if !JSB_WITH_WEB && !JSB_WITH_JAVASCRIPTCORE
+#if !JSB_WITH_WEB
     add_install_file({ "godot.worker.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
 #endif
     add_install_file({ "jsb.editor.bundle.d.ts", "res://" JSB_TYPE_ROOT, jsb::weaver::CH_TYPESCRIPT | jsb::weaver::CH_D_TS });
@@ -154,7 +154,7 @@ String GodotJSEditorPlugin::mutate_types(const String& p_content)
 {
     auto should_ignore_identifier = [](const String& p_identifier) -> bool
     {
-		// Internal utility types are double underscore prefixed
+        // Internal utility types are double underscore prefixed
         return p_identifier.begins_with("__");
     };
 

@@ -58,6 +58,33 @@ namespace jsb::impl
             return JS_IsNull(value) || JS_IsUndefined(value);
         }
 
+        static bool IsArray(JSContext* ctx, JSValueConst value)
+        {
+#if JSB_PREFER_QUICKJS_NG
+            return JS_IsArray(value);
+#else
+            return JS_IsArray(ctx, value);
+#endif
+        }
+
+        static bool IsBigInt(JSContext* ctx, JSValueConst value)
+        {
+#if JSB_PREFER_QUICKJS_NG
+            return JS_IsBigInt(value);
+#else
+            return JS_IsBigInt(ctx, value);
+#endif
+        }
+
+        static bool IsError(JSContext* ctx, JSValueConst value)
+        {
+#if JSB_PREFER_QUICKJS_NG
+            return JS_IsError(value);
+#else
+            return JS_IsError(ctx, value);
+#endif
+        }
+
         static String GetString(JSContext* ctx, JSValueConst value)
         {
             size_t len;

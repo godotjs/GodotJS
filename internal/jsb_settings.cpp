@@ -24,6 +24,7 @@ namespace jsb::internal
 
     // use unnecessary first category layer (runtime and editor) to make the second layer shown as sections in project settings
 
+    static constexpr char kRtBridgeLoggingEnabled[] = JSB_MODULE_NAME_STRING "/runtime/bridge_logging_enabled";
     static constexpr char kRtDebuggerPort[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/debugger_port";
     static constexpr char kRtDebuggerSourceMapBaseUrl[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/source_map_base_url";
     static constexpr char kRtDebuggerWaitForDebugger[] =     JSB_MODULE_NAME_STRING "/runtime/debugger/wait_for_debugger";
@@ -37,6 +38,7 @@ namespace jsb::internal
     static constexpr char kRtPackagingIncludeFiles[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_files";
     static constexpr char kRtPackagingIncludeDirectories[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_directories";
     static constexpr char kRtPackagingReferencedNodeModules[] = JSB_MODULE_NAME_STRING "/editor/packaging/referenced_node_modules";
+
 
 #ifdef TOOLS_ENABLED
     bool init_editor_settings()
@@ -124,6 +126,7 @@ namespace jsb::internal
             }
 
             _GLOBAL_DEF(kRtPackagingReferencedNodeModules, true, false);
+            _GLOBAL_DEF(kRtBridgeLoggingEnabled, false, false);
         }
     }
 
@@ -200,6 +203,12 @@ namespace jsb::internal
     {
         init_settings();
         return GLOBAL_GET(kRtPackagingReferencedNodeModules);
+    }
+
+    bool Settings::is_bridge_logging_enabled()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtBridgeLoggingEnabled);
     }
 
     uint16_t Settings::get_debugger_port()

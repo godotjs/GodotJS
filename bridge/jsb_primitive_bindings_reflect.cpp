@@ -541,7 +541,8 @@ namespace jsb
         {
             v8::Isolate* isolate = info.GetIsolate();
             const v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[info.Data().As<v8::Int32>()->Value()];
+            const int method_index = info.Data().As<v8::Int32>()->Value();
+            const internal::FBuiltinMethodInfo& method_info = GetVariantInfoCollection(Environment::wrap(context)).methods[method_index];
             Variant* self = TypeConvert::is_variant(info.This())
                 ? (Variant*) info.This()->GetAlignedPointerFromInternalField(IF_Pointer)
                 : nullptr;
@@ -1062,4 +1063,3 @@ namespace jsb
 }
 
 #endif
-

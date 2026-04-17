@@ -27,6 +27,28 @@ namespace jsb
             info.GetReturnValue().Set(impl::Helper::to_array_buffer(isolate, var));
         }
 
+        String _describe_export_name(
+            v8::Isolate* isolate,
+            const v8::Local<v8::Context>& context,
+            Environment* environment,
+            const v8::Local<v8::Object>& object)
+        {
+            v8::Local<v8::Value> name_value;
+            if (!object->Get(context, jsb_name(environment, name)).ToLocal(&name_value))
+            {
+                return String("<name:get-failed>");
+            }
+
+            if (name_value->IsString())
+            {
+                return impl::Helper::to_string(isolate, name_value);
+            }
+
+            // Keep this coercion-safe: do not call generic JS value->string conversion
+            // on arbitrary objects. js_debug_typeof provides structural categorization.
+            return jsb_format("<%s>", TypeConvert::js_debug_typeof(isolate, name_value));
+        }
+
         // construct a callable object
         // [js] function callable(fn: Function): godot.Callable;
         // [js] function callable(thiz: godot.Object, fn: Function): godot.Callable;
@@ -387,8 +409,8 @@ namespace jsb
 
             collection->Set(context, index, details).Check();
             JSB_LOG(VeryVerbose, "script %s define property(export) %s",
-                impl::Helper::to_string_opt(isolate, target->Get(context, jsb_name(environment, name))),
-                impl::Helper::to_string_opt(isolate, details->Get(context, jsb_name(environment, name))));
+                _describe_export_name(isolate, context, environment, target),
+                _describe_export_name(isolate, context, environment, details));
         }
 
         // TODO: Cache for our cache functions?:

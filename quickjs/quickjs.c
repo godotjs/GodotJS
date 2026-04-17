@@ -12085,6 +12085,16 @@ int JS_IsMap(JSValueConst val)
         return FALSE;
     }
 }
+int JS_IsSet(JSValueConst val)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
+        p = JS_VALUE_GET_OBJ(val);
+        return p->class_id == JS_CLASS_SET;
+    } else {
+        return FALSE;
+    }
+}
 int JS_IsPromise(JSValueConst val)
 {
     JSObject *p;

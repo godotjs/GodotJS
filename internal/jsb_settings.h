@@ -9,6 +9,7 @@ namespace jsb::internal
     class Settings
     {
     public:
+        static bool is_bridge_logging_enabled();
         static uint16_t get_debugger_port();
         static String get_debugger_source_map_base_url();
         static bool get_wait_for_debugger();

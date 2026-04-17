@@ -43,7 +43,11 @@ namespace jsb::impl
         uint32_t data = 0;
     };
 
-    enum { kMaxStackSize = 1024 };
+    // QuickJS local handles are tracked in a fixed isolate stack.
+    // Worker message extraction keeps visited object handles alive across
+    // whole-payload traversal for cycle/identity preservation, so large
+    // snapshot payloads can legitimately exceed 1024 locals.
+    enum { kMaxStackSize = 32768 };
 
     namespace StackPos
     {
@@ -57,6 +61,7 @@ namespace jsb::impl
             EmptyString,
             SymbolClass,
             MapClass,
+            SetClass,
             Exception,
 
             Num,
@@ -104,11 +109,18 @@ namespace jsb::impl
 
 namespace v8
 {
+#if JSB_PREFER_QUICKJS_NG
+    using PromiseRejectionHandled = bool;
+#else
+    using PromiseRejectionHandled = JS_BOOL;
+#endif
+
     template<typename T> class Global;
     template<typename T> class Local;
     template<typename T> class FunctionCallbackInfo;
     class Context;
     class Value;
+    class String;
 
     class Isolate
     {
@@ -203,9 +215,10 @@ namespace v8
             stack_[to] = stack_[from];
         }
 
-        // due to the missing QuickJS API for NewSymbol/NewMap
+        // due to the missing QuickJS API for NewSymbol/NewMap/NewSet
         uint16_t push_symbol();
         uint16_t push_map();
+        uint16_t push_set();
 
         // no copy on value
         uint16_t push_steal(const JSValue value)
@@ -329,6 +342,38 @@ namespace v8
             return true;
         }
 
+        Local<Value> ThrowException(Local<Value> exception)
+        {
+            if (exception.IsEmpty())
+            {
+                return Local<Value>(Data(this, jsb::impl::StackPos::Undefined));
+            }
+            set_stack_steal(jsb::impl::StackPos::Exception, JS_DupValue(ctx_, (JSValue) exception));
+            JS_Throw(ctx_, JS_DupValue(ctx_, (JSValue) exception));
+            return exception;
+        }
+
+        template <int N>
+        Local<Value> ThrowError(const char (&message)[N])
+        {
+            const JSValue message_val = JS_NewStringLen(ctx_, message, N - 1);
+            return ThrowError(Local<String>(Data(this, push_steal(message_val))));
+        }
+
+        Local<Value> ThrowError(Local<String> message)
+        {
+            JSValue error = JS_NewError(ctx_);
+            if (JS_IsException(error))
+            {
+                jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx_);
+                return Local<Value>(Data(this, jsb::impl::StackPos::Undefined));
+            }
+            jsb_ensure(JS_SetProperty(ctx_, error, jsb::impl::JS_ATOM_message, JS_DupValue(ctx_, (JSValue) message)) >= 0);
+            set_stack_steal(jsb::impl::StackPos::Exception, JS_DupValue(ctx_, error));
+            JS_Throw(ctx_, error);
+            return Local<Value>(Data(this, jsb::impl::StackPos::Exception));
+        }
+
     private:
         Isolate();
 
@@ -382,7 +427,7 @@ namespace v8
         }
 
         static void _finalizer(JSRuntime* rt, JSValue val);
-        static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void* user_data);
+        static void _promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, PromiseRejectionHandled is_handled, void* user_data);
         static int _interrupt_callback(JSRuntime* rt, void* data) { return ((Isolate*) data)->interrupted_.is_set(); }
 
         jsb::impl::ClassID class_id_;

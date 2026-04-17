@@ -133,7 +133,7 @@ function object_proxy<T extends object>(obj: T, remap_properties?: boolean): T {
 
 const key_only_handler = {
     apply: function (target, this_arg, args) {
-        return target.apply(this_arg?.[ProxyTarget] ?? this_arg, args);
+        return Reflect.apply(target, this_arg?.[ProxyTarget] ?? this_arg, args);
     },
     get(target, p, _receiver) {
         if (p === ProxyTarget) {
@@ -228,6 +228,12 @@ const class_handler = {
             return proto && class_proxy(proto);
         }
 
+        // Preserve native JS class/function stringification behavior.
+        // Mapping to Godot `to_string` here can bind an invalid receiver.
+        if (p === "toString") {
+            return Reflect.get(target, p);
+        }
+
         if (p[0]?.toUpperCase() !== p[0]) {
             return proxy_wrap_value(Reflect.get(target, get_member(p)));
         }
@@ -247,7 +253,7 @@ function class_proxy<T extends object>(target_class: T): T {
 const function_handler = {
     ...class_handler,
     apply: function (target, this_arg, args) {
-        return proxy_wrap_value(target.apply(this_arg?.[ProxyTarget] ?? this_arg, args.map(proxy_wrap_value)));
+        return proxy_wrap_value(Reflect.apply(target, this_arg?.[ProxyTarget] ?? this_arg, args.map(proxy_wrap_value)));
     },
 } satisfies ProxyHandler<any>;
 

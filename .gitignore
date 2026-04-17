@@ -32,10 +32,14 @@ __MACOSX
 .vscode
 
 # IntelliJ IDEA project files
-/.idea/
+.idea/
 
 # Node modules
-/node_modules/
+node_modules/
 
 # pnpm store
 .pnpm-store
+
+# test artifacts
+/tests/bin/
+/tests/project/typings/

@@ -5,6 +5,8 @@
   "packageManager": "pnpm@10.11.0+sha1.4048eeefd564ff1ab248fac3e2854d38245fe2f1",
   "scripts": {
     "build": "pnpm -r build",
+    "test": "node scripts/test/run-runtime-matrix.js",
+    "test:skip-builds": "node scripts/test/run-runtime-matrix.js --skip-builds",
     "changeset": "changeset",
     "ci:should-publish": "node scripts/release/should-publish.js",
     "ci:publish": "node scripts/release/publish.js",

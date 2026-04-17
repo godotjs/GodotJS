@@ -1,9 +1,26 @@
 #include "jsb_jsc_data.h"
 #include "jsb_jsc_isolate.h"
 #include "jsb_jsc_ext.h"
+#include <cmath>
+#include <limits>
 
 namespace v8
 {
+    static bool is_strict_integer_in_range(const JSContextRef ctx, const JSValueRef value, const double min, const double max)
+    {
+        JSValueRef error = nullptr;
+        const double number = JSValueToNumber(ctx, value, &error);
+        if (error != nullptr)
+        {
+            return false;
+        }
+        if (!std::isfinite(number) || std::trunc(number) != number)
+        {
+            return false;
+        }
+        return number >= min && number <= max;
+    }
+
     int Data::GetIdentityHash() const
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);
@@ -71,6 +88,12 @@ namespace v8
         return isolate_->_IsMap(val);
     }
 
+    bool Data::IsSet() const
+    {
+        const JSValueRef val = isolate_->stack_val(stack_pos_);
+        return isolate_->_IsSet(val);
+    }
+
     bool Data::IsSymbol() const
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);
@@ -93,17 +116,29 @@ namespace v8
     bool Data::IsInt32() const
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);
-
-        //TODO JSC, not strict int32 check
-        return JSValueIsNumber(isolate_->ctx(), val);
+        if (!JSValueIsNumber(isolate_->ctx(), val))
+        {
+            return false;
+        }
+        return is_strict_integer_in_range(
+            isolate_->ctx(),
+            val,
+            (double) std::numeric_limits<int32_t>::min(),
+            (double) std::numeric_limits<int32_t>::max());
     }
 
     bool Data::IsUint32() const
     {
         const JSValueRef val = isolate_->stack_val(stack_pos_);
-
-        //TODO JSC, not strict int32 check
-        return JSValueIsNumber(isolate_->ctx(), val);
+        if (!JSValueIsNumber(isolate_->ctx(), val))
+        {
+            return false;
+        }
+        return is_strict_integer_in_range(
+            isolate_->ctx(),
+            val,
+            0.0,
+            (double) std::numeric_limits<uint32_t>::max());
     }
 
     bool Data::IsNumber() const

@@ -47,10 +47,10 @@ jobs:
       version_ref: ${{ matrix.version_ref }}
       release: ${{ github.event_name == 'release' }}
 
-  test-project:
-    name: 🔬 Test project
+  runtime-matrix:
+    name: 🧪 Runtime matrix
     needs: [engine-version-build]
-    uses: ./.github/workflows/test_project.yml
+    uses: ./.github/workflows/test_runtime_matrix.yml
     strategy:
       fail-fast: false
       matrix:
@@ -62,7 +62,7 @@ jobs:
 
   builds-done:
     name: 🏁 Builds Done
-    needs: [test-project]
+    needs: [runtime-matrix]
     runs-on: ubuntu-latest
     steps:
       - name: 🏁 Check if all builds are done

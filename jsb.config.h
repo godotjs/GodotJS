@@ -120,8 +120,14 @@
 // [EXPERIMENTAL] DONT CHANGE IT, AND NEED CLANG TOOLSET IF USING MSVC
 #if !defined(_MSC_VER) || defined(__clang__)
 #   define JSB_V8_CPPGC 0 // 1
-#else 
+#else
 #   define JSB_V8_CPPGC 0
+#endif
+
+#ifdef IOS_ENABLED
+#   define JSB_V8_JITLESS 1
+#else
+#   define JSB_V8_JITLESS 0
 #endif
 
 #define JSB_SHADOW_ENVIRONMENT_AS_PARSER 1
@@ -129,7 +135,7 @@
 
 // size limitation for string name cache.
 // all least recently used item will be removed if the cache size exceeds this value.
-// 0 or negative values means unlimited cache size. 
+// 0 or negative values means unlimited cache size.
 #define JSB_STRING_NAME_CACHE_SIZE 512
 
 // slots for object/script/class info is reallocated on heap (as a whole block of memory)

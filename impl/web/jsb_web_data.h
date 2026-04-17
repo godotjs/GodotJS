@@ -33,6 +33,7 @@ namespace v8
         bool IsPromise() const;
         bool IsArray() const;
         bool IsMap() const;
+        bool IsSet() const;
         bool IsString() const;
         bool IsSymbol() const;
         bool IsInt32() const;

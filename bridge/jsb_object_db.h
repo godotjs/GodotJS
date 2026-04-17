@@ -232,7 +232,24 @@ namespace jsb
         NativeObjectID add_object(void* p_pointer, ObjectHandlePtr* o_handle)
         {
             JSB_OBJECT_DB_STATEMENT(lock_.write_lock());
-            jsb_checkf(!objects_index_.has(p_pointer), "duplicated bindings");
+            if (const NativeObjectID* existing_object_id_ptr = objects_index_.getptr(p_pointer))
+            {
+                const NativeObjectID existing_object_id = *existing_object_id_ptr;
+                ObjectHandle& existing_handle = objects_.get_value(existing_object_id);
+
+                if (existing_handle.ref_.IsEmpty())
+                {
+                    objects_.remove_at_checked(existing_object_id);
+                    objects_index_.erase(p_pointer);
+                }
+                else
+                {
+                    if (o_handle) *o_handle = JSB_OBJECT_DB_HANDLE(ObjectHandlePtr, objects_.get_value_scoped(existing_object_id));
+                    else JSB_OBJECT_DB_STATEMENT(lock_.write_unlock());
+                    return existing_object_id;
+                }
+            }
+
             const NativeObjectID object_id = objects_.add({});
             objects_index_.insert(p_pointer, object_id);
 

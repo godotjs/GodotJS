@@ -7,6 +7,16 @@
 
 namespace jsb
 {
+    static Variant::Type sanitize_return_type(const Variant::Type p_metadata_type, const Variant& p_return_value)
+    {
+        const int type_index = static_cast<int>(p_metadata_type);
+        if (type_index >= static_cast<int>(Variant::NIL) && type_index < static_cast<int>(Variant::VARIANT_MAX))
+        {
+            return p_metadata_type;
+        }
+        return p_return_value.get_type();
+    }
+
     NativeClassInfoPtr ObjectReflectBindingUtil::reflect_bind(Environment* p_env, const ClassDB::ClassInfo* p_class_info, NativeClassID* r_class_id)
     {
         v8::Isolate* isolate = p_env->get_isolate();
@@ -405,7 +415,7 @@ namespace jsb
             return;
         }
         v8::Local<v8::Value> jrval;
-        const Variant::Type return_type = method_bind->get_argument_type(-1);
+        const Variant::Type return_type = sanitize_return_type(method_bind->get_argument_type(-1), crval);
         jsb_check(return_type == method_bind->get_return_info().type);
         if (TypeConvert::gd_var_to_js(isolate, context, crval, return_type, jrval))
         {
@@ -458,7 +468,7 @@ namespace jsb
             return;
         }
         v8::Local<v8::Value> jrval;
-        const Variant::Type return_type = property_info.getter_func->get_argument_type(-1);
+        const Variant::Type return_type = sanitize_return_type(property_info.getter_func->get_argument_type(-1), crval);
         jsb_check(return_type == property_info.getter_func->get_return_info().type);
         if (TypeConvert::gd_var_to_js(isolate, context, crval, return_type, jrval))
         {

@@ -44,6 +44,11 @@ namespace v8
         return jsbi_IsMap(isolate_->rt(), stack_pos_);
     }
 
+    bool Data::IsSet() const
+    {
+        return jsbi_IsSet(isolate_->rt(), stack_pos_);
+    }
+
     bool Data::IsSymbol() const
     {
         return jsbi_IsSymbol(isolate_->rt(), stack_pos_);

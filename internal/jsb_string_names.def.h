@@ -19,10 +19,12 @@ DEF(main)
 DEF(cache)
 DEF(children)
 DEF(type)
+DEF(data)
 DEF(evaluator)
 DEF(_notification)
 DEF(Reflect)
 DEF(construct)
+DEF(__jsb_type)
 
 // class names
 DEF(Object)
@@ -54,6 +56,7 @@ DEF(default)
 
 // worker
 DEF(JSWorker)
+DEF(JSWorkerParent)
 DEF(ontransfer)
 DEF(onmessage)
 DEF(onready)

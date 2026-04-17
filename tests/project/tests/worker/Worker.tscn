@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/worker/test-worker.ts" id="1_6g5s2"]
+
+[node name="Worker" type="Node2D"]
+script = ExtResource("1_6g5s2")

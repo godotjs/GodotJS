@@ -124,6 +124,7 @@ namespace v8
         jsb_ensure(emplace_(details::verified(JS_NewStringLen(ctx_, "", 0))) == jsb::impl::StackPos::EmptyString);
         jsb_ensure(emplace_(details::verified(JS_GetProperty(ctx_, global, jsb::impl::JS_ATOM_Symbol))) == jsb::impl::StackPos::SymbolClass);
         jsb_ensure(emplace_(details::verified(JS_GetProperty(ctx_, global, jsb::impl::JS_ATOM_Map))) == jsb::impl::StackPos::MapClass);
+        jsb_ensure(emplace_(details::verified(JS_GetProperty(ctx_, global, jsb::impl::JS_ATOM_Set))) == jsb::impl::StackPos::SetClass);
         jsb_ensure(emplace_(JS_NULL) == jsb::impl::StackPos::Exception);
         jsb_check(stack_pos_ == jsb::impl::StackPos::Num);
 
@@ -202,6 +203,13 @@ namespace v8
         return push_steal(details::verified(val));
     }
 
+    uint16_t Isolate::push_set()
+    {
+        const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::SetClass]), JS_UNDEFINED, 0, nullptr);
+        jsb_check(JS_IsSet(val));
+        return push_steal(details::verified(val));
+    }
+
     uint16_t Isolate::push_symbol()
     {
         const JSValue val = JS_CallConstructor2(ctx_, details::verified(stack_[jsb::impl::StackPos::SymbolClass]), JS_UNDEFINED, 0, nullptr);
@@ -262,9 +270,9 @@ namespace v8
         return Local<Context>(Data(this, 0));
     }
 
-    void Isolate::_promise_rejection_tracker(JSContext* ctx, JSValue promise, JSValue reason, int is_handled, void* user_data)
+    void Isolate::_promise_rejection_tracker(JSContext* ctx, JSValue promise, JSValue reason, PromiseRejectionHandled is_handled, void* user_data)
     {
-        if (is_handled != 1)
+        if (!is_handled)
         {
             Isolate* isolate = (Isolate*) user_data;
             if (!isolate->promise_reject_) return;

@@ -22,6 +22,12 @@ namespace jsb
 
         uint32_t ref_count_;
 
+        // True when a non-refcounted Godot Object is explicitly JS-owned
+        // (constructed from JS via native class constructor path).
+        // Engine-owned non-refcounted objects (for example sub-objects returned
+        // from APIs) must stay false so GC finalization only unbinds them.
+        bool js_owned_non_ref_ = false;
+
 #if JSB_DEBUG
         // The raw pointer to the native object.
         // It must be a unique pointer which implies that different objects have different addresses.

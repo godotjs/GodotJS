@@ -12,6 +12,13 @@ namespace jsb::impl
                 (uintptr_t) value, (uintptr_t) data,
                 (uintptr_t) parameter, (uintptr_t) callback,
                 (uintptr_t) data->weak.parameter, (uintptr_t) data->weak.callback);
+            if (callback && data->weak.callback)
+            {
+                if (data->weak.callback == callback && data->weak.parameter == parameter)
+                {
+                    return;
+                }
+            }
             jsb_checkf(!callback || !data->weak.callback, "overriding an existing value is not allowed");
             data->weak.parameter = (void*) parameter;
             data->weak.callback = (void*) callback;

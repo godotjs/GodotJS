@@ -124,7 +124,9 @@ namespace jsb
 
         ArrayBufferAllocator allocator_;
 
+#if !JSB_WITH_WEB
         internal::DoubleBuffered<Message> inbox_;
+#endif
 
 #if JSB_THREADING
         internal::DoubleBuffered<AsyncCall> async_calls_;
@@ -324,7 +326,8 @@ namespace jsb
 
         void prepare_transfer_out(NativeObjectID p_worker_handle_id, int transfer_index, const Variant& p_variant, TransferData& r_transfer_data);
         void finalize_transfer_out(const TransferData& p_data);
-        void transfer_in(const v8::Local<v8::Context>& p_context, const TransferData& p_data);
+        void transfer_in_bind(const v8::Local<v8::Context>& p_context, const TransferData& p_data);
+        void transfer_in_apply_state(const TransferData& p_data);
 
         // [EXPERIMENTAL] transfer object between environments.
         // call this method of the source environment in the source environment thread.
@@ -408,6 +411,7 @@ namespace jsb
 
         // whether it's called from the same thread as the environment spawned
         jsb_force_inline bool is_caller_thread() const { return thread_id_ == Thread::UNASSIGNED_ID || Thread::get_caller_id() == thread_id_; }
+        jsb_force_inline Thread::ID get_thread_id() const { return thread_id_; }
 
         // ensure it's called from the same thread as the environment spawned
         jsb_force_inline void check_internal_state() const
@@ -435,12 +439,12 @@ namespace jsb
 
         jsb_force_inline v8::Local<v8::Symbol> get_symbol(Symbols::Type p_type) const { return symbols_[p_type].Get(isolate_); }
 
-        NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object);
+        NativeObjectID bind_godot_object(NativeClassID p_class_id, Object* p_pointer, const v8::Local<v8::Object>& p_object, bool p_js_owned_non_ref = false);
 
         // [low level binding] bind a C++ `p_pointer` with a JS `p_object`
         // p_type is redundant (could retrieve from class registry with p_class_id), but it's faster to pass it directly
         // p_pointer must be 2-byte aligned (v8 requirement)
-        NativeObjectID bind_pointer(NativeClassID p_class_id, NativeClassType::Type p_type, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc);
+        NativeObjectID bind_pointer(NativeClassID p_class_id, NativeClassType::Type p_type, void* p_pointer, const v8::Local<v8::Object>& p_object, int p_external_rc, bool p_js_owned_non_ref = false);
 
         // An optimized binder for Variant. All variant values are not registered in `env`, and completely managed by JS.
         // The real `p_class_id` of `p_pointer` is unnecessary as an input parameter since `Variant` is used as the underlying type for any `TStruct` (primitive type).
@@ -460,8 +464,12 @@ namespace jsb
         {
             if (const ObjectHandleConstPtr ptr = object_db_.try_get_object(p_key))
             {
+                if (jsb_unlikely(ptr->ref_.IsEmpty()))
+                {
+                    return false;
+                }
                 r_unwrap = ptr->ref_.Get(isolate_);
-                return true;
+                return !r_unwrap.IsEmpty();
             }
             return false;
         }
@@ -501,12 +509,14 @@ namespace jsb
 
         void update(uint64_t p_delta_msecs);
 
-        // [thread safe] it's OK to call this method before the evn inited.
+#if !JSB_WITH_WEB
+        // [thread safe] it's OK to call this method before the env is initialized.
         void post_message(Message&& p_message)
         {
             JSB_LOG(VeryVerbose, "inbox message %d: %d", p_message.get_id(), p_message.get_buffer().size());
             inbox_.add(std::move(p_message));
         }
+#endif
 
         class IModuleLoader* find_module_loader(const StringName& p_module_id) const
         {
@@ -630,7 +640,9 @@ namespace jsb
         bool add_async_call(AsyncCall::Type p_type, void* p_binding);
 
         void _on_worker_transfer(const v8::Local<v8::Context>& p_context, const struct TransferData* p_data);
+#if !JSB_WITH_WEB
         void _on_worker_message(const v8::Local<v8::Context>& p_context, const Message& p_message);
+#endif
 
         void _rebind(v8::Isolate* isolate, const v8::Local<v8::Context> context, Object* p_this, ScriptClassID p_class_id);
 
@@ -693,8 +705,7 @@ namespace jsb
         void free_object(void* p_pointer, FinalizationType p_finalize);
     };
 
-// TODO: Support other runtimes.
-#if JSB_WITH_V8
+#if !JSB_WITH_WEB
     namespace Serialization
     {
         enum class SerializationTag : uint8_t
@@ -745,7 +756,11 @@ namespace jsb
                 jsb_checkf(p_isolate == isolate, "GodotObjectTransferDelegate called from the wrong isolate");
 
                 Variant variant;
-                TypeConvert::js_to_gd_var(p_isolate, context, p_object.As<v8::Value>(), variant);
+                if (!TypeConvert::js_to_gd_var(p_isolate, context, p_object.As<v8::Value>(), variant))
+                {
+                    // Not a Godot binding host object; let runtime serializer handle it normally.
+                    return v8::Just(false);
+                }
 
                 const TransferData* transfer_data = transfers.getptr(variant);
 
@@ -758,7 +773,7 @@ namespace jsb
 
                     if (!cloned)
                     {
-                        ThrowDataCloneError(v8::String::NewFromUtf8(p_isolate, "A Godot Object was passed that was not in the transfer list.", v8::NewStringType::kNormal).ToLocalChecked());
+                        ThrowDataCloneError(impl::Helper::new_string_ascii(p_isolate, "A Godot Object was passed that was not in the transfer list."));
                         return v8::Nothing<bool>();
                     }
 
@@ -805,26 +820,41 @@ namespace jsb
 
                 if (!deserializer_->ReadRawBytes(sizeof(uint8_t), reinterpret_cast<const void**>(&bytes)))
                 {
+                    JSB_LOG(Error, "delegate ReadHostObject failed to read tag byte");
                     return v8::MaybeLocal<v8::Object>();
                 }
 
                 if (bytes[0] != (uint8_t)SerializationTag::kGodotVariantTransfer)
                 {
+                    JSB_LOG(Error, "delegate ReadHostObject unexpected tag: %d", bytes[0]);
                     return v8::MaybeLocal<v8::Object>();
                 }
 
                 uint32_t transfer_id = 0;
                 if (!deserializer_->ReadUint32(&transfer_id))
                 {
+                    JSB_LOG(Error, "delegate ReadHostObject failed to read transfer id");
                     return v8::MaybeLocal<v8::Object>();
                 }
 
-                jsb_check(transfer_id < (uint32_t)transferred_.size());
+                if (transfer_id >= (uint32_t)transferred_.size())
+                {
+                    JSB_LOG(Error, "delegate ReadHostObject transfer id out of range: %d >= %d", transfer_id, transferred_.size());
+                    return v8::MaybeLocal<v8::Object>();
+                }
 
                 v8::Local<v8::Value> js_value;
+                const Variant& variant = transferred_[transfer_id].variant;
 
-                if (!TypeConvert::gd_var_to_js(to_env_->get_isolate(), to_env_->get_context(), transferred_[transfer_id].variant, js_value))
+                if (!TypeConvert::gd_var_to_js(to_env_->get_isolate(), to_env_->get_context(), variant, js_value))
                 {
+                    JSB_LOG(Error, "delegate ReadHostObject failed gd_var_to_js for variant=%s transfer=%d", Variant::get_type_name(variant.get_type()), transfer_id);
+                    return v8::MaybeLocal<v8::Object>();
+                }
+
+                if (js_value.IsEmpty() || !js_value->IsObject())
+                {
+                    JSB_LOG(Error, "delegate ReadHostObject produced non-object for variant=%s transfer=%d", Variant::get_type_name(variant.get_type()), transfer_id);
                     return v8::MaybeLocal<v8::Object>();
                 }
 
@@ -833,6 +863,7 @@ namespace jsb
         };
     }
 #endif
+
 }
 
 #endif
