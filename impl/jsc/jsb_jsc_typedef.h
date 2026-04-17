@@ -35,6 +35,7 @@ namespace jsb::impl
 
         // for quick access
         JS_ATOM_Map,
+        JS_ATOM_Set,
         JS_ATOM_Promise,
         JS_ATOM_ArrayBuffer,
 
@@ -114,4 +115,3 @@ namespace v8
 }
 
 #endif
-

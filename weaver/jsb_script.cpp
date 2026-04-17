@@ -85,7 +85,13 @@ StringName GodotJSScript::get_instance_base_type() const
 
 ScriptInstance* GodotJSScript::instance_and_native_object_create(const v8::Local<v8::Object>& p_this, bool p_is_temp_allowed)
 {
-    jsb_check(is_valid());
+    ensure_module_loaded();
+    if (jsb_unlikely(!loaded_ || !_is_valid()))
+    {
+        JSB_LOG(Error, "cannot instantiate native object for invalid script: %s", get_path());
+        return nullptr;
+    }
+    jsb_check(_is_valid());
     jsb_check(loaded_);
 
     Object* owner = ClassDB::instantiate(script_class_info_.native_class_name);
@@ -99,7 +105,13 @@ ScriptInstance* GodotJSScript::instance_and_native_object_create(const v8::Local
 
 ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner, bool p_is_temp_allowed)
 {
-    jsb_check(is_valid());
+    ensure_module_loaded();
+    if (jsb_unlikely(!loaded_ || !_is_valid()))
+    {
+        JSB_LOG(Error, "cannot create script instance from invalid script: %s", get_path());
+        return nullptr;
+    }
+    jsb_check(_is_valid());
     jsb_check(loaded_);
 
     jsb::JSEnvironment env(get_path(), p_is_temp_allowed);
@@ -132,7 +144,7 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
             MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
             instances_.erase(p_owner);
         }
-        JSB_LOG(Error, "Error constructing a GodotJSScriptInstance");
+        JSB_LOG(Error, "Error constructing a GodotJSScriptInstance for %s (%s)", script_class_info_.js_class_name, script_class_info_.module_id);
         return nullptr;
     }
 
@@ -141,7 +153,13 @@ ScriptInstance* GodotJSScript::instance_create(const v8::Local<v8::Object>& p_th
 
 ScriptInstance* GodotJSScript::instance_construct(Object* p_this, bool p_is_temp_allowed, const Variant** p_args, int p_argcount)
 {
-    jsb_check(is_valid());
+    ensure_module_loaded();
+    if (jsb_unlikely(!loaded_ || !_is_valid()))
+    {
+        JSB_LOG(Error, "cannot construct script instance from invalid script: %s", get_path());
+        return nullptr;
+    }
+    jsb_check(_is_valid());
     jsb_check(loaded_);
     JSB_LOG(Verbose, "create instance %d of %s(%s)", (uintptr_t) p_this, script_class_info_.native_class_name, script_class_info_.module_id);
 
@@ -196,7 +214,7 @@ ScriptInstance* GodotJSScript::instance_construct(Object* p_this, bool p_is_temp
             MutexLock lock(GodotJSScriptLanguage::get_singleton()->mutex_);
             instances_.erase(p_this);
         }
-        JSB_LOG(Error, "Error constructing a GodotJSScriptInstance");
+        JSB_LOG(Error, "Error constructing a GodotJSScriptInstance for %s (%s)", script_class_info_.js_class_name, script_class_info_.module_id);
         return nullptr;
     }
 

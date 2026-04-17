@@ -96,6 +96,12 @@ namespace v8
         int32_t Value() const;
     };
 
+    class Exception
+    {
+    public:
+        static Local<Value> Error(Local<String> message);
+    };
+
     Local<Primitive> Undefined(Isolate* isolate);
     Local<Primitive> Null(Isolate* isolate);
 }

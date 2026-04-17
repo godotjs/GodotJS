@@ -174,4 +174,19 @@ namespace v8
         return Local<String>(Data(isolate, stack_pos));
     }
 
+    Local<Value> Exception::Error(Local<String> message)
+    {
+        Isolate* isolate = message->isolate_;
+        jsb_check(isolate);
+        JSContext* ctx = isolate->ctx();
+        JSValue error = JS_NewError(ctx);
+        if (JS_IsException(error))
+        {
+            jsb::impl::QuickJS::MarkExceptionAsTrivial(ctx);
+            return Local<Value>(Data(isolate, jsb::impl::StackPos::Undefined));
+        }
+        jsb_ensure(JS_SetProperty(ctx, error, jsb::impl::JS_ATOM_message, JS_DupValue(ctx, (JSValue) message)) >= 0);
+        return Local<Value>(Data(isolate, isolate->push_steal(error)));
+    }
+
 }

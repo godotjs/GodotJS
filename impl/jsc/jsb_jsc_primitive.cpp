@@ -149,4 +149,19 @@ namespace v8
         return Local<String>(Data(isolate, stack_pos));
     }
 
+    Local<Value> Exception::Error(Local<String> message)
+    {
+        Isolate* isolate = message->isolate_;
+        jsb_check(isolate);
+        JSValueRef trivial_error = nullptr;
+        const JSValueRef msg = (JSValueRef) message;
+        const JSValueRef error = JSObjectMakeError(isolate->ctx(), 1, &msg, &trivial_error);
+        if (trivial_error)
+        {
+            jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(isolate->ctx(), trivial_error);
+            return Local<Value>(Data(isolate, jsb::impl::StackPos::Undefined));
+        }
+        return Local<Value>(Data(isolate, isolate->push_copy(error)));
+    }
+
 }

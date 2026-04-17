@@ -3,13 +3,24 @@ const GodotJSBrowserInterface = {
     // $GodotJSBrowserInterface__deps: ['$GodotRuntime'],
     // $GodotJSBrowserInterface: {},
 
-    "jsbi_init": function (gc_callback, unhandled_rejection, call_function, call_accessor, generate_internal_data) {
-        console.log("calling jsbi_init");
-        return _jsbb_.init({ gc_callback, unhandled_rejection, call_function, call_accessor, generate_internal_data });
+    "jsbi_init": function (gc_callback, unhandled_rejection, call_function, call_accessor, generate_internal_data, on_worker_message, on_worker_message_from_pthread, worker_get_or_add_native_transfer, debug_build, bridge_logging) {
+        return _jsbb_.init({
+            gc_callback,
+            unhandled_rejection,
+            call_function,
+            call_accessor,
+            generate_internal_data,
+            on_worker_message,
+            on_worker_message_from_pthread,
+            worker_get_or_add_native_transfer,
+            debug_build,
+            bridge_logging
+        });
     },
 
     "jsbi_NewEngine": function (opaque) { return _jsbb_.NewEngine(opaque); },
     "jsbi_FreeEngine": function (engine_id) { _jsbb_.FreeEngine(engine_id); },
+    "jsbi_FlushPendingWorkerMessages": function () { _jsbb_.FlushPendingWorkerMessages(); },
     "jsbi_log": function (str_ptr) { _jsbb_.log(str_ptr); },
     "jsbi_error": function (str_ptr) { _jsbb_.error(str_ptr); },
     "jsbi_free": function (ptr) { _jsbb_.free(ptr); },
@@ -21,6 +32,7 @@ const GodotJSBrowserInterface = {
     "jsbi_Call": function (engine_id, this_sp, func_sp, argc, argv) { return _jsbb_.GetEngine(engine_id).Call(this_sp, func_sp, argc, argv); },
     "jsbi_CallAsConstructor": function (engine_id, func_sp, argc, argv) { return _jsbb_.GetEngine(engine_id).CallAsConstructor(func_sp, argc, argv); },
     "jsbi_ParseJSON": function (engine_id, data, len) { return _jsbb_.GetEngine(engine_id).ParseJSON(data, len); },
+    "jsbi_JSONStringify": function (engine_id, value_sp) { return _jsbb_.GetEngine(engine_id).JSONStringify(value_sp); },
     "jsbi_ThrowError": function (engine_id, message_ptr) { return _jsbb_.GetEngine(engine_id).ThrowError(message_ptr); },
     "jsbi_HasError": function (engine_id) { return _jsbb_.GetEngine(engine_id).HasError(); },
 
@@ -140,6 +152,25 @@ const GodotJSBrowserInterface = {
     "jsbi_IsArray": function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) instanceof Array; },
     "jsbi_IsMap": function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) instanceof Map; },
     "jsbi_IsArrayBuffer": function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).stack.GetValue(stack_pos) instanceof ArrayBuffer; },
+
+    "jsbi_PostMessage": function (pthread_id, engine_id, data_sp, transfer_id, transfer_sp) { return _jsbb_.PostMessage(pthread_id, engine_id, data_sp, transfer_id, transfer_sp); },
+    "jsbi_RegisterWorkerOwner": function (pthread_id, engine_id, worker_owner_sp) { return _jsbb_.RegisterWorkerOwner(pthread_id, engine_id, worker_owner_sp); },
+
+    "jsbi_MapSize": function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).MapSize(stack_pos); },
+
+    "jsbi_MapAsArray": function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).MapAsArray(stack_pos); },
+
+    "jsbi_MapGetEntry": function (engine_id, map_sp, key_sp) { return _jsbb_.GetEngine(engine_id).MapGetEntry(map_sp, key_sp); },
+
+    "jsbi_MapSetEntry": function (engine_id, map_sp, key_sp, value_sp) { return _jsbb_.GetEngine(engine_id).MapSetEntry(map_sp, key_sp, value_sp); },
+
+    "jsbi_NewSet": function (engine_id) { return _jsbb_.GetEngine(engine_id).NewSet(); },
+
+    "jsbi_SetAsArray": function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).SetAsArray(stack_pos); },
+
+    "jsbi_SetAdd": function (engine_id, set_sp, value_sp) { return _jsbb_.GetEngine(engine_id).SetAdd(set_sp, value_sp); },
+
+    "jsbi_IsSet": function (engine_id, stack_pos) { return _jsbb_.GetEngine(engine_id).IsSet(stack_pos); },
 
 }
 

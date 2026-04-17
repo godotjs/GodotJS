@@ -57,7 +57,7 @@ namespace v8
     bool Data::IsArray() const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsArray(isolate_->ctx(), val);
+        return jsb::impl::QuickJS::IsArray(isolate_->ctx(), val);
     }
 
     bool Data::IsMap() const
@@ -66,6 +66,14 @@ namespace v8
 
         //NOTE quickjs source modified
         return JS_IsMap(val);
+    }
+
+    bool Data::IsSet() const
+    {
+        const JSValue val = isolate_->stack_val(stack_pos_);
+
+        //NOTE quickjs source modified
+        return JS_IsSet(val);
     }
 
     bool Data::IsSymbol() const
@@ -123,7 +131,7 @@ namespace v8
     bool Data::IsBigInt() const
     {
         const JSValue val = isolate_->stack_val(stack_pos_);
-        return JS_IsBigInt(isolate_->ctx(), val);
+        return jsb::impl::QuickJS::IsBigInt(isolate_->ctx(), val);
     }
 
     bool Data::IsArrayBuffer() const

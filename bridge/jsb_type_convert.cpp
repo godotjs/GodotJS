@@ -152,7 +152,7 @@ namespace jsb
         if (p_jval->IsObject())
 #endif
         {
-            v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(p_jval);
+            v8::Local<v8::Object> object = p_jval.As<v8::Object>();
             v8::MaybeLocal<v8::Value> maybe_target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
             v8::Local<v8::Value> target;
 
@@ -394,9 +394,9 @@ namespace jsb
                 {
                     jsb_check(class_id && class_info->type == NativeClassType::GodotPrimitive);
                     r_jval = class_info->clazz.NewInstance(context);
-                    jsb_check(TypeConvert::is_variant(r_jval.As<v8::Object>()));
-
-                    env->bind_valuetype(env->alloc_variant(p_cvar), r_jval.As<v8::Object>());
+                    const v8::Local<v8::Object> instance = r_jval.As<v8::Object>();
+                    jsb_check(TypeConvert::is_variant(instance));
+                    env->bind_valuetype(env->alloc_variant(p_cvar), instance);
                     return true;
                 }
                 return false;
@@ -669,7 +669,7 @@ namespace jsb
         if (p_jval->IsObject())
 #endif
         {
-            v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(p_jval);
+            v8::Local<v8::Object> object = p_jval.As<v8::Object>();
             v8::MaybeLocal<v8::Value> maybe_target = object->Get(context, Environment::wrap(isolate)->get_symbol(Symbols::ProxyTarget));
             v8::Local<v8::Value> target;
 

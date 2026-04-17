@@ -8,24 +8,29 @@ namespace jsb::impl
     {
 #if JSB_V8_CPPGC
         std::unique_ptr<cppgc::DefaultPlatform> platform = std::make_unique<cppgc::DefaultPlatform>();
-#else 
+#else
         std::unique_ptr<v8::Platform> platform = v8::platform::NewDefaultPlatform();
 #endif
 
         GlobalInitialize()
         {
 #if JSB_EXPOSE_GC_FOR_TESTING
-            constexpr char args[] = "--expose-gc";
-            v8::V8::SetFlagsFromString(args, std::size(args) - 1);
+            constexpr char exposeGcArgs[] = "--expose-gc";
+            v8::V8::SetFlagsFromString(exposeGcArgs, std::size(exposeGcArgs) - 1);
 #endif
-            
+
+#if JSB_V8_JITLESS
+        	constexpr char jitlessArgs[] = "--jitless";
+        	v8::V8::SetFlagsFromString(jitlessArgs, std::size(jitlessArgs) - 1);
+#endif
+
 #if JSB_V8_CPPGC
             v8::V8::InitializePlatform(platform->GetV8Platform());
             cppgc::InitializeProcess(platform->GetPageAllocator());
-#else 
+#else
             v8::V8::InitializePlatform(platform.get());
 #endif
-            
+
             v8::V8::Initialize();
         }
 

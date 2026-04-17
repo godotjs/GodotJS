@@ -13,6 +13,7 @@
 #include "jsb_jsc_function.h"
 #include "jsb_jsc_function_interop.h"
 #include "jsb_jsc_promise_reject.h"
+#include "jsb_jsc_serializer.h"
 
 #include "jsb_jsc_helper.h"
 

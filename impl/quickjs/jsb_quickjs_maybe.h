@@ -42,5 +42,17 @@ namespace v8
         bool has_value_ = false;
         T value_;
     };
+
+    template <class T>
+    inline Maybe<T> Just(const T& t)
+    {
+        return Maybe<T>(t);
+    }
+
+    template <class T>
+    inline Maybe<T> Nothing()
+    {
+        return Maybe<T>();
+    }
 }
 #endif

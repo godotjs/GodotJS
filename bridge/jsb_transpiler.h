@@ -309,9 +309,9 @@ namespace jsb
             // 1. Instantiating only the script class instance, which is to be bound to an existing Godot Object.
             // 2. Instantiating a new native Godot object along with the newly instantiated script class.
 
-            jsb_check(info.NewTarget()->IsFunction());
+            jsb_check(info.NewTarget()->IsObject());
             v8::Local<v8::Context> context = isolate->GetCurrentContext();
-            const v8::Local<v8::Function> new_target = info.NewTarget().As<v8::Function>();
+            const v8::Local<v8::Object> new_target = info.NewTarget().As<v8::Object>();
 
             const v8::Local<v8::Object> self = info.This();
 
@@ -321,20 +321,6 @@ namespace jsb
             {
                 JSB_LOG(Verbose, "binding to JS instance to existing native object. %s(%d)", class_name, class_id);
                 environment->bind_godot_object(class_id, (Object*) bind_object_value.As<v8::External>()->Value(), self);
-                return;
-            }
-
-            // 2a. directly instantiating a Godot native object (via its corresponding JavaScript wrapper class)
-            if (new_target->HasOwnProperty(context, jsb_symbol(environment, ClassId)).ToChecked())
-            // if (class_info->clazz.NewTarget(isolate) == new_target)
-            {
-                internal::StringNames& names = internal::StringNames::get_singleton();
-                const StringName original_name = names.get_original_name(class_name);
-                Object* gd_object = ClassDB::instantiate(original_name);
-
-                // IS IT A TRUTH that ref_count==1 after creation_func??
-                jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
-                environment->bind_godot_object(class_id, gd_object, self);
                 return;
             }
 
@@ -351,6 +337,22 @@ namespace jsb
                 return;
             }
 
+            const bool has_own_class_id = new_target->HasOwnProperty(context, jsb_symbol(environment, ClassId)).ToChecked();
+
+            // 2a. directly instantiating a Godot native object (via its corresponding JavaScript wrapper class)
+            if (has_own_class_id)
+            // if (class_info->clazz.NewTarget(isolate) == new_target)
+            {
+                internal::StringNames& names = internal::StringNames::get_singleton();
+                const StringName original_name = names.get_original_name(class_name);
+                Object* gd_object = ClassDB::instantiate(original_name);
+
+                // IS IT A TRUTH that ref_count==1 after creation_func??
+                jsb_check(!gd_object->is_ref_counted() || !((RefCounted*) gd_object)->is_referenced());
+                environment->bind_godot_object(class_id, gd_object, self, true);
+                return;
+            }
+
             impl::Helper::throw_error(isolate, jsb_format(
                 "unexpected 'new.target', you may be instantiating a script class which is not exported as default. class: %s [native: %s (%d)]",
                 impl::Helper::to_string_opt(isolate, new_target->Get(context, jsb_name(environment, name))),
@@ -360,12 +362,15 @@ namespace jsb
         static void finalizer(Environment* runtime, void* pointer, FinalizationType p_finalize)
         {
             Object* self = (Object*) pointer;
+            jsb_unused(runtime);
             if (self->is_ref_counted())
             {
+                RefCounted* ref_counted = (RefCounted*) self;
                 // ** because godot does not support removing object_bindings from Object **
                 // this `unreference` call will loop back to `InstanceBindingCallbacks::reference_callback`
                 // make sure the pointer has already been removed from the object_db_
-                if (((RefCounted*) self)->unreference())
+                const bool should_delete = ref_counted->unreference();
+                if (should_delete)
                 {
                     JSB_LOG(VeryVerbose, "delete gd ref_counted object %d p_finalize %d", (uintptr_t) self, p_finalize);
                     memdelete(self);

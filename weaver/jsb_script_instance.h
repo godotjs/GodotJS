@@ -135,8 +135,9 @@ private:
 private:
     jsb::ScriptClassInfoPtr get_script_class() const;
 
-public:
-    virtual bool is_shadow() const override { return false; }
+    public:
+        virtual bool is_shadow() const override { return false; }
+        Thread::ID get_env_thread_id() const { return env_ ? env_->get_thread_id() : Thread::UNASSIGNED_ID; }
 
     // for Environment lifecycle control (avoid object leaks), detach all JS object bindings
     // void _detach();
@@ -164,8 +165,8 @@ public:
     virtual const Variant get_rpc_config() const override;
 #pragma endregion
 
-private:
-    GodotJSScriptInstance() {}
-};
+    private:
+        GodotJSScriptInstance() {}
+    };
 
 #endif

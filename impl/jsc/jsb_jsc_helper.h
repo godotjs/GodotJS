@@ -1,4 +1,4 @@
-﻿#ifndef GODOTJS_JSC_HELPER_H
+#ifndef GODOTJS_JSC_HELPER_H
 #define GODOTJS_JSC_HELPER_H
 #include "jsb_jsc_catch.h"
 #include "jsb_jsc_pch.h"
@@ -65,8 +65,12 @@ namespace jsb::impl
 
         static v8::Local<v8::Function> new_noop_constructor(v8::Isolate* isolate, const v8::Local<v8::Context>& _context)
         {
-            JSObjectRef empty_constructor = JSObjectMakeConstructor(isolate->ctx(), NULL, NULL);
-            return v8::Local<v8::Function>(v8::Data(isolate, isolate->push_copy(empty_constructor)));
+            JSValueRef exception = nullptr;
+            const JSStringRef source = JSStringCreateWithUTF8CString("(function(){})");
+            const JSValueRef function_val = JSEvaluateScript(isolate->ctx(), source, nullptr, nullptr, 1, &exception);
+            JSStringRelease(source);
+            jsb_checkf(!exception && function_val && JSValueIsObject(isolate->ctx(), function_val), "failed to create noop constructor");
+            return v8::Local<v8::Function>(v8::Data(isolate, isolate->push_copy(function_val)));
         }
 
         template<size_t N>
@@ -98,17 +102,16 @@ namespace jsb::impl
         {
             jsb_check((size_t)(int) p_len == p_len);
             jsb_check(p_ptr[p_len] == '\0');
-            const JSStringRef str_ref = JSStringCreateWithUTF8CString(p_ptr);
-            const JSValueRef val_ref = JSValueMakeString(isolate->ctx(), str_ref);
+            const JSStringRef str_ref = JSStringCreateWithUTF8CString(reinterpret_cast<const char*>(p_ptr));
+            const JSValueRef rval = JSValueMakeFromJSONString(isolate->ctx(), str_ref);
             JSStringRelease(str_ref);
-            const JSValueRef rval = JSValueMakeFromJSONString(isolate->ctx(), val_ref);
             if (rval == nullptr)
             {
                 throw_error(isolate, "JSON parse error");
                 return v8::MaybeLocal<v8::Value>();
             }
             const uint16_t stack_pos = isolate->push_copy(rval);
-            return v8::Local<v8::String>(v8::Data(isolate, stack_pos));
+            return v8::Local<v8::Value>(v8::Data(isolate, stack_pos));
         }
 
         // with side effects (may trigger value evaluation).
@@ -217,7 +220,8 @@ namespace jsb::impl
 
         jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate)
         {
-            JSB_JSC_LOG(Error, "set_as_interruptible is not supported by JSC");
+        	// Unfortunately, JSC does not expose APIs for interruptible execution. There is
+        	// JSContextGroupSetExecutionTimeLimit, but it's a private API.
         }
     };
 }

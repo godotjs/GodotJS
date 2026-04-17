@@ -174,13 +174,19 @@ namespace jsb
     void _clear_timer(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         v8::Isolate* isolate = info.GetIsolate();
-        if (!info[0]->IsInt32())
+        if (info.Length() < 1)
         {
             return;
         }
 
-        const int32_t handle = info[0].As<v8::Int32>()->Value();
-        Environment::wrap(isolate)->get_timer_manager().clear_timer((internal::TimerHandle) handle);
+        const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+        double handle_number = 0;
+        if (!info[0]->NumberValue(context).To(&handle_number))
+        {
+            return;
+        }
+
+        Environment::wrap(isolate)->get_timer_manager().clear_timer((internal::TimerHandle) ((int64_t) handle_number));
     }
 
     void _time(const v8::FunctionCallbackInfo<v8::Value>& info)
@@ -253,12 +259,22 @@ namespace jsb
 
         // essential timer support
         {
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setInterval"), JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Interval>, {})).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setTimeout"), JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Timeout>, {})).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "setImmediate"), JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Immediate>, {})).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "clearInterval"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "clearTimeout"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
-            self->Set(context, impl::Helper::new_string_ascii(isolate, "clearImmediate"), JSB_NEW_FUNCTION(context, _clear_timer, {})).Check();
+            auto bind_timer_if_missing = [&](const char* name, const v8::Local<v8::Function>& function) {
+                const v8::Local<v8::String> key = impl::Helper::new_string_ascii(isolate, name);
+                bool has_existing = false;
+                if (self->HasOwnProperty(context, key).To(&has_existing) && has_existing)
+                {
+                    return;
+                }
+                self->Set(context, key, function).Check();
+            };
+
+            bind_timer_if_missing("setInterval", JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Interval>, {}));
+            bind_timer_if_missing("setTimeout", JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Timeout>, {}));
+            bind_timer_if_missing("setImmediate", JSB_NEW_FUNCTION(context, _set_timer<InternalTimerType::Immediate>, {}));
+            bind_timer_if_missing("clearInterval", JSB_NEW_FUNCTION(context, _clear_timer, {}));
+            bind_timer_if_missing("clearTimeout", JSB_NEW_FUNCTION(context, _clear_timer, {}));
+            bind_timer_if_missing("clearImmediate", JSB_NEW_FUNCTION(context, _clear_timer, {}));
         }
     }
 #endif

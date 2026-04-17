@@ -1,4 +1,4 @@
-﻿#include "jsb_class_info.h"
+#include "jsb_class_info.h"
 #include "jsb_object_bindings.h"
 #include "jsb_type_convert.h"
 
@@ -54,13 +54,19 @@ namespace jsb
 #endif
 
     //NOTE ensure the address of p_class_info being locked during this procedure
-    void _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, const ScriptClassInfoPtr& p_class_info, const v8::Local<v8::Object>& class_obj)
+    bool _parse_script_class_iterate(const v8::Local<v8::Context>& p_context, const ScriptClassInfoPtr& p_class_info, const v8::Local<v8::Object>& class_obj)
     {
         v8::Isolate* isolate = p_context->GetIsolate();
         Environment* environment = Environment::wrap(isolate);
 
         //TODO collect methods/signals/properties
-        const v8::Local<v8::Object> prototype = class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Value> prototype_val;
+        if (!class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocal(&prototype_val) || !prototype_val->IsObject())
+        {
+            JSB_LOG(Warning, "(script-parser) class prototype is missing or invalid");
+            return false;
+        }
+        const v8::Local<v8::Object> prototype = prototype_val.As<v8::Object>();
 
         jsb_check(prototype->IsObject());
         // reset CDO of the legacy JS class
@@ -70,7 +76,17 @@ namespace jsb
         p_class_info->native_class_name = environment->get_native_class(p_class_info->native_class_id)->name;
         jsb_check(internal::VariantUtil::is_valid_name(p_class_info->native_class_name));
         p_class_info->js_class.Reset(isolate, class_obj);
-        p_class_info->js_class_name = environment->get_string_name(class_obj->Get(p_context, jsb_name(environment, name)).ToLocalChecked().As<v8::String>());
+        {
+            v8::Local<v8::Value> class_name_val;
+            if (class_obj->Get(p_context, jsb_name(environment, name)).ToLocal(&class_name_val) && class_name_val->IsString())
+            {
+                p_class_info->js_class_name = environment->get_string_name(class_name_val.As<v8::String>());
+            }
+            else
+            {
+                p_class_info->js_class_name = StringName();
+            }
+        }
         p_class_info->methods.clear();
         p_class_info->signals.clear();
         p_class_info->properties.clear();
@@ -101,12 +117,24 @@ namespace jsb
         {
             // const v8::Local<v8::Array> property_names = prototype->GetPropertyNames(p_context, v8::KeyCollectionMode::kOwnOnly, v8::PropertyFilter::ALL_PROPERTIES, v8::IndexFilter::kSkipIndices, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
             constexpr v8::PropertyFilter property_filter = v8::PropertyFilter::SKIP_SYMBOLS;
-            const v8::Local<v8::Array> property_names = prototype->GetOwnPropertyNames(p_context, property_filter, v8::KeyConversionMode::kNoNumbers).ToLocalChecked();
+            v8::MaybeLocal<v8::Array> maybe_property_names = prototype->GetOwnPropertyNames(p_context, property_filter, v8::KeyConversionMode::kNoNumbers);
+            if (maybe_property_names.IsEmpty())
+            {
+                JSB_LOG(Warning, "(script-parser) failed to enumerate class properties");
+                return false;
+            }
+            const v8::Local<v8::Array> property_names = maybe_property_names.ToLocalChecked();
 
             const uint32_t len = property_names->Length();
             for (uint32_t index = 0; index < len; ++index)
             {
-                const v8::Local<v8::Name> prop_name = property_names->Get(p_context, index).ToLocalChecked().As<v8::Name>();
+                v8::HandleScope loop_scope(isolate);
+                v8::Local<v8::Value> prop_name_val;
+                if (!property_names->Get(p_context, index).ToLocal(&prop_name_val) || !prop_name_val->IsString())
+                {
+                    continue;
+                }
+                const v8::Local<v8::Name> prop_name = prop_name_val.As<v8::Name>();
                 const String name_s = impl::Helper::to_string(isolate, prop_name);
                 if (name_s.is_empty() || name_s == "constructor") continue;
 
@@ -187,8 +215,12 @@ namespace jsb
                 const uint32_t len = collection->Length();
                 for (uint32_t index = 0; index < len; ++index)
                 {
-                    v8::Local<v8::Value> signal_name_js = collection->Get(p_context, index).ToLocalChecked();
-                    jsb_check(signal_name_js->IsString());
+                    v8::HandleScope loop_scope(isolate);
+                    v8::Local<v8::Value> signal_name_js;
+                    if (!collection->Get(p_context, index).ToLocal(&signal_name_js) || !signal_name_js->IsString())
+                    {
+                        continue;
+                    }
                     const StringName signal_name = environment->get_string_name_cache().get_string_name(isolate, signal_name_js.As<v8::String>());
                     p_class_info->signals.insert(signal_name, {});
 
@@ -212,16 +244,42 @@ namespace jsb
                 const uint32_t len = collection->Length();
                 for (uint32_t index = 0; index < len; ++index)
                 {
-                    v8::Local<v8::Value> element = collection->Get(p_context, index).ToLocalChecked();
+                    v8::HandleScope loop_scope(isolate);
+                    v8::Local<v8::Value> element;
+                    if (!collection->Get(p_context, index).ToLocal(&element))
+                    {
+                        continue;
+                    }
                     const v8::Local<v8::Context>& context = p_context;
-                    jsb_check(element->IsObject());
+                    if (!element->IsObject())
+                    {
+                        continue;
+                    }
                     v8::Local<v8::Object> obj = element.As<v8::Object>();
                     ScriptPropertyInfo property_info;
-                    v8::Local<v8::Value> prop_name = obj->Get(context, jsb_name(environment, name)).ToLocalChecked();
+                    v8::Local<v8::Value> prop_name;
+                    if (!obj->Get(context, jsb_name(environment, name)).ToLocal(&prop_name))
+                    {
+                        continue;
+                    }
                     property_info.name = impl::Helper::to_string(isolate, prop_name); // string
-                    property_info.type = (Variant::Type) obj->Get(context, jsb_name(environment, type)).ToLocalChecked()->Int32Value(context).ToChecked(); // int
+                    v8::Local<v8::Value> type_val;
+                    if (!obj->Get(context, jsb_name(environment, type)).ToLocal(&type_val))
+                    {
+                        continue;
+                    }
+                    int32_t type_int = 0;
+                    if (!type_val->Int32Value(context).To(&type_int))
+                    {
+                        continue;
+                    }
+                    property_info.type = (Variant::Type) type_int; // int
                     property_info.hint = BridgeHelper::to_enum<PropertyHint>(context, obj->Get(context, jsb_name(environment, hint)), PROPERTY_HINT_NONE);
-                    property_info.hint_string = impl::Helper::to_string(isolate, obj->Get(context, jsb_name(environment, hint_string)).ToLocalChecked());
+                    v8::Local<v8::Value> hint_string_val;
+                    if (obj->Get(context, jsb_name(environment, hint_string)).ToLocal(&hint_string_val))
+                    {
+                        property_info.hint_string = impl::Helper::to_string(isolate, hint_string_val);
+                    }
                     property_info.usage = BridgeHelper::to_enum<PropertyUsageFlags>(context, obj->Get(context, jsb_name(environment, usage)), PROPERTY_USAGE_DEFAULT) | PROPERTY_USAGE_SCRIPT_VARIABLE;
 
                     v8::Local<v8::Value> cache;
@@ -242,6 +300,7 @@ namespace jsb
                 }
             }
         }
+        return true;
     }
 
     void ScriptClassInfo::instantiate(Environment* p_env, const StringName& p_module_id, const v8::Local<v8::Object>& p_self)
@@ -316,16 +375,39 @@ namespace jsb
         }
 
         // trick: save godot class id for convenience of getting it in JS class constructor
-        class_obj->Set(p_context, jsb_symbol(environment, ClassModuleId), environment->get_string_value(p_module.id)).Check();
+        if (!class_obj->Set(p_context, jsb_symbol(environment, ClassModuleId), environment->get_string_value(p_module.id)).FromMaybe(false))
+        {
+            JSB_LOG(Warning, "(script-parser) failed to set class module id for %s", p_module.source_info.source_filepath);
+            return false;
+        }
 
-        const v8::Local<v8::Object> dt_base_obj =
-            class_obj
-            ->Get(p_context, jsb_name(environment, prototype)).ToLocalChecked().As<v8::Object>()
-            ->Get(p_context, jsb_name(environment, __proto__)).ToLocalChecked().As<v8::Object>() // the base class prototype
-            ->Get(p_context, jsb_name(environment, constructor)).ToLocalChecked().As<v8::Object>();
+        v8::Local<v8::Value> prototype_val;
+        if (!class_obj->Get(p_context, jsb_name(environment, prototype)).ToLocal(&prototype_val) || !prototype_val->IsObject())
+        {
+            JSB_LOG(Warning, "(script-parser) class prototype is missing for %s", p_module.source_info.source_filepath);
+            return false;
+        }
+        v8::Local<v8::Value> base_proto_val;
+        if (!prototype_val.As<v8::Object>()->Get(p_context, jsb_name(environment, __proto__)).ToLocal(&base_proto_val) || !base_proto_val->IsObject())
+        {
+            JSB_LOG(Warning, "(script-parser) base prototype is missing for %s", p_module.source_info.source_filepath);
+            return false;
+        }
+        v8::Local<v8::Value> dt_base_obj_val;
+        if (!base_proto_val.As<v8::Object>()->Get(p_context, jsb_name(environment, constructor)).ToLocal(&dt_base_obj_val) || !dt_base_obj_val->IsObject())
+        {
+            JSB_LOG(Warning, "(script-parser) base constructor is missing for %s", p_module.source_info.source_filepath);
+            return false;
+        }
+        const v8::Local<v8::Object> dt_base_obj = dt_base_obj_val.As<v8::Object>();
         jsb_check(class_obj != dt_base_obj);
 
-        const v8::Local<v8::Value> dt_base_tag = dt_base_obj->Get(p_context, jsb_symbol(environment, ClassModuleId)).ToLocalChecked();
+        v8::Local<v8::Value> dt_base_tag;
+        if (!dt_base_obj->Get(p_context, jsb_symbol(environment, ClassModuleId)).ToLocal(&dt_base_tag))
+        {
+            JSB_LOG(Warning, "(script-parser) failed to read base class module id for %s", p_module.source_info.source_filepath);
+            return false;
+        }
         existed_class_info->base_script_module_id = dt_base_tag->IsString() ? environment->get_string_name(dt_base_tag.As<v8::String>()) : StringName();
         JSB_LOG(Verbose, "%s script %d inherits script module %s native: %d",
             p_module.source_info.source_filepath, p_module.script_class_id, existed_class_info->base_script_module_id, *native_class_id);
@@ -334,8 +416,7 @@ namespace jsb
         jsb_check(existed_class_info->module_id == p_module.id);
         existed_class_info->native_class_id = native_class_id;
 
-        _parse_script_class_iterate(p_context, existed_class_info, class_obj);
-        return true;
+        return _parse_script_class_iterate(p_context, existed_class_info, class_obj);
     }
 
 }

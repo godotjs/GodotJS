@@ -52,11 +52,17 @@ JSBROWSER_API void jsbi_init(
     jsb::impl::FunctionPointer unhandled_rejection,
     jsb::impl::FunctionPointer call_function,
     jsb::impl::FunctionPointer call_accessor,
-    jsb::impl::FunctionPointer generate_internal_data);
+    jsb::impl::FunctionPointer generate_internal_data,
+    jsb::impl::FunctionPointer on_worker_message,
+    jsb::impl::FunctionPointer on_worker_message_from_pthread,
+    jsb::impl::FunctionPointer worker_get_or_add_native_transfer,
+    bool debug_build,
+    bool bridge_logging);
 
 // engine
 JSBROWSER_API jsb::impl::JSRuntime jsbi_NewEngine(void* opaque);
 JSBROWSER_API void jsbi_FreeEngine(jsb::impl::JSRuntime engine_id);
+JSBROWSER_API void jsbi_FlushPendingWorkerMessages();
 JSBROWSER_API void jsbi_log(const char* ptr);
 JSBROWSER_API void jsbi_error(const char* ptr);
 JSBROWSER_API void jsbi_free(void* ptr);
@@ -68,6 +74,7 @@ JSBROWSER_API jsb::impl::StackPosition jsbi_Eval(jsb::impl::JSRuntime engine_id,
 JSBROWSER_API jsb::impl::StackPosition jsbi_Call(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition this_sp, jsb::impl::StackPosition func_sp, int argc, jsb::impl::StackPosition* argv);
 JSBROWSER_API jsb::impl::StackPosition jsbi_CallAsConstructor(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition func_sp, int argc, jsb::impl::StackPosition* argv);
 JSBROWSER_API jsb::impl::StackPosition jsbi_ParseJSON(jsb::impl::JSRuntime engine_id, const char* data, int len);
+JSBROWSER_API jsb::impl::StackPosition jsbi_JSONStringify(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition value_sp);
 JSBROWSER_API void jsbi_ThrowError(jsb::impl::JSRuntime engine_id, const char* message);
 JSBROWSER_API bool jsbi_HasError(jsb::impl::JSRuntime engine_id);
 
@@ -161,6 +168,18 @@ JSBROWSER_API bool  jsbi_IsUint32(jsb::impl::JSRuntime engine_id, jsb::impl::Sta
 JSBROWSER_API bool  jsbi_IsPromise(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API bool  jsbi_IsArray(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API bool  jsbi_IsMap(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API bool  jsbi_IsSet(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
 JSBROWSER_API bool  jsbi_IsArrayBuffer(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+
+JSBROWSER_API size_t jsbi_MapSize(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API jsb::impl::StackPosition jsbi_MapAsArray(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API jsb::impl::StackPosition jsbi_MapGetEntry(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition map_sp, jsb::impl::StackPosition key_sp);
+JSBROWSER_API jsb::impl::ResultValue jsbi_MapSetEntry(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition map_sp, jsb::impl::StackPosition key_sp, jsb::impl::StackPosition value_sp);
+JSBROWSER_API jsb::impl::StackPosition jsbi_NewSet(jsb::impl::JSRuntime engine_id);
+JSBROWSER_API jsb::impl::StackPosition jsbi_SetAsArray(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition stack_pos);
+JSBROWSER_API jsb::impl::ResultValue jsbi_SetAdd(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition set_sp, jsb::impl::StackPosition value_sp);
+
+JSBROWSER_API int jsbi_PostMessage(uintptr_t pthread_id, jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition data_sp, uint32_t native_message_id, jsb::impl::StackPosition transfer_sp);
+JSBROWSER_API bool jsbi_RegisterWorkerOwner(uintptr_t pthread_id, jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition worker_owner_sp);
 
 #endif

@@ -122,6 +122,96 @@ namespace jsb::impl
             return this_val;
         }
 
+        template<uint8_t InternalFieldCount>
+        static JSValueRef _allocator_call(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
+        {
+            v8::Isolate* isolate = (v8::Isolate*) jsb::impl::JavaScriptCore::GetContextOpaque(ctx);
+            v8::HandleScope handle_scope(isolate);
+            jsb_unused(thisObject);
+
+            const CFunctionPayload& function_payload = *(CFunctionPayload*) JSObjectGetPrivate(function);
+            const JSValueRef captured_payload = isolate->_get_captured_value(function_payload.captured_value_id);
+            if (!captured_payload || !isolate->_IsExternal(captured_payload))
+            {
+                isolate->throw_error("bad constructor payload");
+                if (isolate->_HasError())
+                {
+                    *exception = isolate->_GetError();
+                }
+                return nullptr;
+            }
+
+            const CConstructorPayload* constructor_data = (CConstructorPayload*) JSObjectGetPrivate((JSObjectRef) captured_payload);
+            if (!constructor_data)
+            {
+                isolate->throw_error("bad constructor payload");
+                if (isolate->_HasError())
+                {
+                    *exception = isolate->_GetError();
+                }
+                return nullptr;
+            }
+
+            if (argumentCount == 0 || !JSValueIsObject(ctx, arguments[0]))
+            {
+                isolate->throw_error("bad constructor call");
+                if (isolate->_HasError())
+                {
+                    *exception = isolate->_GetError();
+                }
+                return nullptr;
+            }
+
+            const JSObjectRef effective_new_target = (JSObjectRef) arguments[0];
+            const JSValueRef proto = isolate->_GetProperty(effective_new_target, JS_ATOM_prototype);
+            if (!proto || !JSValueIsObject(ctx, proto))
+            {
+                isolate->throw_error("bad constructor target");
+                if (isolate->_HasError())
+                {
+                    *exception = isolate->_GetError();
+                }
+                return nullptr;
+            }
+
+            const JSObjectRef this_val = _NewObject(isolate, proto, InternalFieldCount);
+            jsb_check(this_val);
+
+            const int callback_arg_count = (int) argumentCount - 1;
+            v8::FunctionCallbackInfo<v8::Value> info(isolate, callback_arg_count, true);
+
+            static_assert(jsb::impl::FunctionStackBase::ReturnValue == 0);
+            const uint16_t stack_check1 = isolate->push_undefined();
+            jsb_unused(stack_check1);
+
+            static_assert(jsb::impl::FunctionStackBase::This == 1);
+            const uint16_t stack_this = isolate->push_copy(this_val);
+            jsb_unused(stack_this);
+
+            static_assert(jsb::impl::FunctionStackBase::Data == 2);
+            isolate->push_copy(JSValueMakeNumber(ctx, constructor_data->class_payload));
+
+            static_assert(jsb::impl::FunctionStackBase::NewTarget == 3);
+            const uint16_t stack_check2 = isolate->push_copy(effective_new_target);
+            jsb_unused(stack_check2);
+            jsb_check(stack_check2 - stack_check1 == FunctionStackBase::Num - 1);
+            static_assert(jsb::impl::FunctionStackBase::Num == 4);
+
+            for (size_t i = 1; i < argumentCount; ++i)
+            {
+                isolate->push_copy(arguments[i]);
+            }
+
+            constructor_data->callback(info);
+            if (isolate->_HasError())
+            {
+                *exception = isolate->_GetError();
+                return nullptr;
+            }
+
+            return this_val;
+        }
+
     };
 }
 #endif

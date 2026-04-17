@@ -36,6 +36,29 @@ function guess_type_name(type: unknown) {
     return type;
 }
 
+function resolve_variant_type(enum_name: string): Godot.Variant.Type {
+    const direct = Reflect.get(Variant.Type, enum_name);
+    if (typeof direct === "number") {
+        return direct as Godot.Variant.Type;
+    }
+    const remapped_name = jsb.internal.names.get_enum_value(enum_name);
+    const remapped = Reflect.get(Variant.Type, remapped_name);
+    if (typeof remapped === "number") {
+        return remapped as Godot.Variant.Type;
+    }
+    throw new Error(`Unknown Variant.Type enum value: ${enum_name}`);
+}
+
+const VariantTypeObject = resolve_variant_type("TYPE_OBJECT");
+
+function invoke_with_this<TArgs extends unknown[], TReturn>(
+    fn: (...args: TArgs) => TReturn,
+    this_arg: unknown,
+    ...args: TArgs
+): TReturn {
+    return Function.prototype.call.call(fn, this_arg, ...args) as TReturn;
+}
+
 interface EnumPlaceholder {
     target: Record<string, string | number>;
 }
@@ -210,12 +233,12 @@ function get_hint_string(clazz: any): string {
         const prototype = clazz.prototype;
 
         if (prototype instanceof Resource) {
-            return `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_RESOURCE_TYPE}:${clazz.name}`;
+            return `${VariantTypeObject}/${PropertyHint.PROPERTY_HINT_RESOURCE_TYPE}:${clazz.name}`;
         } else if (
             prototype instanceof Node ||
             ((clazz as any)[ProxyTarget] ?? clazz) === ((Node as any)[ProxyTarget] ?? Node)
         ) {
-            return `${Variant.Type.TYPE_OBJECT}/${PropertyHint.PROPERTY_HINT_NODE_TYPE}:${clazz.name}`;
+            return `${VariantTypeObject}/${PropertyHint.PROPERTY_HINT_NODE_TYPE}:${clazz.name}`;
         } else if (typeof prototype !== "undefined") {
             // other than Resource and Node, only primitive types and enum types are supported in gdscript
             //TODO but we barely know anything about the enum types and int/float/StringName/... in JS
@@ -259,7 +282,7 @@ function get_hint_string(clazz: any): string {
 
 /** @deprecated Use createClassBinder() instead. */
 export function export_object(clazz: GObjectConstructor) {
-    return export_(Variant.Type.TYPE_OBJECT, { class_: clazz });
+    return export_(VariantTypeObject, { class_: clazz });
 }
 
 /** @deprecated Use createClassBinder() instead. */
@@ -302,7 +325,7 @@ export function export_(
             try {
                 //TODO more general and unified way to handle all types
 
-                if (type === Variant.Type.TYPE_OBJECT) {
+                if (type === VariantTypeObject) {
                     const clazz = details.class_;
                     if (typeof clazz === "function") {
                         const prototype = clazz.prototype;
@@ -750,7 +773,7 @@ export function createClassBinder(): ClassBinder {
             try {
                 //TODO more general and unified way to handle all types
 
-                if (type === Variant.Type.TYPE_OBJECT) {
+                if (type === VariantTypeObject) {
                     const clazz = options.class;
                     if (typeof clazz === "function") {
                         const prototype = clazz.prototype;
@@ -916,7 +939,7 @@ export function createClassBinder(): ClassBinder {
                 object<Constructor extends GObjectConstructor>(
                     clazz: Constructor,
                 ): ClassMemberDecorator<ClassValueMemberDecoratorContext<unknown, null | InstanceType<Constructor>>> {
-                    return bind_export(Variant.Type.TYPE_OBJECT, { class: clazz });
+                    return bind_export(VariantTypeObject, { class: clazz });
                 },
                 enum(enum_type: Record<string, string | number>): ClassMemberDecorator {
                     return bind_export(Variant.Type.TYPE_INT, {
@@ -985,7 +1008,7 @@ export function createClassBinder(): ClassBinder {
                                 return {
                                     set: function (this: Godot.Object, value: unknown) {
                                         set_value.call(this, value);
-                                        update_cached_value.call(this, value);
+                                        invoke_with_this(update_cached_value, this, value);
                                     },
                                 } satisfies ClassMemberDecoratorReturn<ClassAccessorDecoratorContext> as any;
                             }
@@ -994,7 +1017,7 @@ export function createClassBinder(): ClassBinder {
                                     (
                                         target as ClassMemberDecoratorTarget<ClassSetterDecoratorContext<Godot.Object>>
                                     ).call(this, value);
-                                    update_cached_value.call(this);
+                                    invoke_with_this(update_cached_value, this);
                                 };
                             }
 
@@ -1047,7 +1070,7 @@ export function createClassBinder(): ClassBinder {
                         context.addInitializer(function (this: Godot.Object) {
                             context.access.set(
                                 this,
-                                proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)).call(this),
+                                invoke_with_this(proxy.proxy_unwrap_value(jsb.internal.create_script_signal_getter(name)), this),
                             );
                         });
                         return undefined as any;

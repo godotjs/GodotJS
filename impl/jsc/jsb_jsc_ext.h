@@ -75,7 +75,9 @@ namespace jsb::impl
                     const size_t len = JSStringGetUTF8CString(str, buf, cap);
                     JSStringRelease(str);
                     jsb_check(len > 0 && (size_t)(int) len == len);
-                    return String(buf, (int) (len - 1));
+                    const String parsed = String::utf8(buf, (int) (len - 1));
+                    memfree(buf);
+                    return parsed;
                 }
             }
             return String();

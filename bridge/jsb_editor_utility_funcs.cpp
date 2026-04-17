@@ -1,6 +1,7 @@
 #include "jsb_editor_utility_funcs.h"
 #include "jsb_type_convert.h"
 #include "jsb_environment.h"
+#include "../internal/jsb_class_util.h"
 #include "core/object/script_language.h"
 
 #if GODOT_4_6_OR_NEWER

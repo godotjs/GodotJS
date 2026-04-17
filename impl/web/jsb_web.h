@@ -20,5 +20,4 @@
 #include "jsb_web_class.h"
 #include "jsb_web_class_builder.h"
 #include "jsb_web_global_init.h"
-
 #endif

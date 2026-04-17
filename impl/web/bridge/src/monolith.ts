@@ -1,17 +1,5 @@
-
-type ObjectID = number;
-type ObjectType = number;
-
 // -1 for return value to indicate an error thrown in jsbb_Engine internally (not JS throw)
 type ResultValue = number;
-
-interface ObjectHidden {
-    pointer: any;
-    type: number;
-}
-
-type ObjectFinalizerData = { id: ObjectID, hidden: ObjectHidden };
-type ObjectFinalizer = (id: ObjectID) => void;
 
 type IntPtr = number;
 
@@ -33,6 +21,15 @@ interface InteropProtocol {
     call_accessor(opaque: IntPtr, fn: any, key_sp: number, rval_sp: number): void;
 
     generate_internal_data(opaque: IntPtr, internal_field_count: number): IntPtr;
+
+    on_worker_message(data_sp: StackPosition, transfer_id: number): void;
+    on_worker_message_from_pthread(sender_pthread_id: number, data_sp: StackPosition, transfer_id: number): void;
+    worker_get_or_add_native_transfer(pthread_id: number, engine_opaque: IntPtr, transfer_id: number, value_sp: StackPosition): number;
+}
+
+type InitOptions = Record<keyof InteropProtocol, number> & {
+    bridge_logging: boolean;
+    debug_build: boolean;
 };
 
 enum jsbb_PropertyFlags {
@@ -68,8 +65,26 @@ interface jsbb_HandleEntry {
 // starts from zero
 type StackPosition = number;
 
-// a recommended stack size cap (not a limitation)
-const jsbb_kMaxStackSize = 1024;
+type JSWorkerOnMessage = (this: JSWorkerLike, data: unknown) => void;
+
+type JSWorkerLike = { onmessage: JSWorkerOnMessage };
+type GodotWorkerModule = { JSWorkerParent: JSWorkerLike };
+type GodotWorkerGlobal = { require?: (module_name: "godot.worker") => GodotWorkerModule };
+
+let JSWorkerParent: null | undefined | JSWorkerLike = ENVIRONMENT_IS_PTHREAD ? undefined : null;
+
+function getJSWorkerParent(): null | JSWorkerLike {
+    if (typeof JSWorkerParent !== "undefined") {
+        return JSWorkerParent;
+    }
+
+    const require = (globalThis as GodotWorkerGlobal).require;
+    JSWorkerParent = require?.("godot.worker").JSWorkerParent ?? null;
+    return JSWorkerParent;
+}
+
+// A recommended warning threshold (not a hard limit).
+const jsbb_kMaxStackSize = 4096;
 
 const jsbb_StackPos = {
     Undefined: 0,
@@ -89,6 +104,61 @@ const jsbb_PropertyFilter = {
     SKIP_SYMBOLS: 16
 };
 
+interface jsbb_TransferMarker {
+    __jsb_type: "transfer";
+    data: number;
+}
+
+interface jsbb_TransferEncodeContext {
+    native_transfers_used: boolean;
+    transfer_index_by_object: Map<object, number>;
+    seen: WeakMap<object, unknown>;
+}
+
+const jsbb_TransferType = "transfer";
+
+const enum jsbb_WorkerTransferErrorCode {
+    ObjectNotInTransferList = -1,
+    EnvMissing = -2,
+    IsolateMissing = -3,
+    NonObjectValue = -4,
+    VariantConversionFailed = -5,
+    VariantCloneFailed = -6,
+    TransferAppendFailed = -7,
+}
+
+const enum jsbb_PostMessageResult {
+    Failed = -1,
+    Success = 0,
+    NativeTransfersUnused = 1,
+}
+
+function jsbb_create_transfer_marker(transfer_index: number): jsbb_TransferMarker {
+    return {
+        __jsb_type: jsbb_TransferType,
+        data: transfer_index >>> 0,
+    };
+}
+
+function jsbb_is_transfer_marker(value: unknown): value is jsbb_TransferMarker {
+    if (typeof value !== "object" || value === null) {
+        return false;
+    }
+
+    const candidate = value as Partial<jsbb_TransferMarker>;
+
+    if (candidate.__jsb_type !== jsbb_TransferType) {
+        return false;
+    }
+
+    const transfer_index = Number(candidate.data);
+    return Number.isInteger(transfer_index) && transfer_index >= 0;
+}
+
+function jsbb_is_worker_message(value: unknown): value is WorkerMessage {
+    return typeof value === "object" && (value as null | Partial<WorkerMessage>)?.__jsbMessage || false;
+}
+
 function jsbb_IsTraceable(o: any): boolean {
     const type = typeof o;
     return !(o !== null && type !== "function" && type !== "object");
@@ -107,10 +177,13 @@ const jsbb_console = {
     },
     error: function (...args: any[]) {
         console.error("[jsbb]", ...args);
-    }, 
+    },
+    debug: function (...args: any[]) {
+        console.log("[jsbb]", ...args);
+    },
     trace: function (...args: any[]) {
-        console.trace("[jsbb]", ...args);
-    }
+        console.log("[jsbb]", ...args);
+    },
 }
 
 // opaque for UniversalBridgeClass
@@ -212,7 +285,7 @@ class jsbb_Handles {
         }
 
         //TODO gc finalizer is run after the object dead, it's impossible to get a valid internal_data in gc_callback
-        jsbb_console.warn("obsolete handle", handle_id);
+        jsbb_console.trace("obsolete handle", handle_id);
         delete this._handles[handle_id];
         --this._count;
         return false;
@@ -271,14 +344,14 @@ class jsbb_Registry {
         const self = this;
         this.engine_opaque = engine_opaque;
         this.watcher = new FinalizationRegistry(function (internal_data) {
-            jsbb_console.log("gc.dealloc", internal_data);
+            jsbb_console.trace("gc.dealloc", internal_data);
             --self._count;
             _jsbb_.interop.gc_callback(self.engine_opaque, internal_data);
         });
     }
 
     Add(obj: any, internal_data: Pointer): void {
-        jsbb_console.log("gc.alloc", internal_data);
+        jsbb_console.trace("gc.alloc", internal_data);
 
         // opaque saved in obj[opaque.symbol] for GetOpaque(), it's never changed.
         obj[jsbb_opaque] = internal_data;
@@ -314,6 +387,8 @@ class jsbb_Engine {
 
     get handles() { return this._handles; }
 
+    get opaque() { return this._opaque; }
+
     /** If calling from C++ side, use `_throw(err)` to raise an error instead of `throw`. */
     private _throw(value: any) {
         const last = this._stack.GetValue(jsbb_StackPos.Error);
@@ -333,7 +408,7 @@ class jsbb_Engine {
     }
 
     constructor(engine_id: EngineID, opaque: Pointer) {
-        jsbb_console.log("new engine", engine_id, opaque);
+        jsbb_console.trace("new engine", engine_id, opaque);
         this._id = engine_id;
         this._opaque = opaque;
         // this._global = {};
@@ -377,16 +452,22 @@ class jsbb_Engine {
 
     SetHostPromiseRejectionTracker(cb: FunctionPointer, data: Pointer) {
         const self = this;
-        window.addEventListener("unhandledrejection", function (ev: PromiseRejectionEvent) {
+        globalThis.addEventListener("unhandledrejection", function (event: Event) {
+            if (!self._stack) {
+                return;
+            }
+
+            const ev = event as PromiseRejectionEvent;
             jsbb_console.warn("unhandled_rejection", ev.promise, ev.reason);
-            self._stack.EnterScope();
+            const stack = self._stack;
+            stack.EnterScope();
             try {
-                _jsbb_.interop.unhandled_rejection(self._opaque, cb, self._stack.Push(ev.promise), self._stack.Push(ev.reason));
+                _jsbb_.interop.unhandled_rejection(self._opaque, cb, stack.Push(ev.promise), stack.Push(ev.reason));
             } catch (err) {
                 // rejection handler must do not throw error
                 jsbb_console.error("unexpected error", err);
             }
-            self._stack.ExitScope();
+            stack.ExitScope();
         })
     }
 
@@ -416,7 +497,7 @@ class jsbb_Engine {
         if (typeof val === "bigint") return jsbb_Engine.GetStringHash(val.toString());
         // if (typeof val === "function")
         // if (typeof val === "object")
-        // if (typeof val === "symbol") 
+        // if (typeof val === "symbol")
 
         // internal data index as hash since it's never changed
         if (typeof val[jsbb_opaque] !== "undefined") return val[jsbb_opaque] | 0;
@@ -476,7 +557,7 @@ class jsbb_Engine {
         return 0;
     }
 
-    /** 
+    /**
      * get a native copy of a javascript string (convert if not a string) .
      * @param o_size [output] size of the returned buffer
      * @returns pointer the the buffer (HEAP)
@@ -496,7 +577,7 @@ class jsbb_Engine {
         const size = len + 1;
         const buf = _jsbb_.wasmop._malloc(size);
         _jsbb_.wasmop.stringToUTF8(str, buf, size);
-        // jsbb_console.log("alloc.CString", str, buf, size);
+        jsbb_console.trace("alloc.CString", str, buf, size);
         return buf;
     }
 
@@ -557,7 +638,7 @@ class jsbb_Engine {
 
     GetOpaque(stack_pos: StackPosition): Pointer {
         let obj = this._stack.GetValue(stack_pos);
-        if (typeof obj !== "object") {
+        if (obj === null || typeof obj !== "object") {
             return 0;
         }
         const opaque = obj[jsbb_opaque];
@@ -605,6 +686,74 @@ class jsbb_Engine {
         return this._stack.Push(new Map());
     }
 
+    MapSize(stack_pos: StackPosition): number {
+        const val = this._stack.GetValue(stack_pos);
+        return (val instanceof Map || val instanceof Set) ? val.size : 0;
+    }
+
+    MapAsArray(stack_pos: StackPosition): StackPosition {
+        const map = this._stack.GetValue(stack_pos);
+        if (!(map instanceof Map)) {
+            return this._stack.Push([]);
+        }
+        const result: Array<any> = [];
+        map.forEach(function (value, key) {
+            result.push(key, value);
+        });
+        return this._stack.Push(result);
+    }
+
+    MapGetEntry(map_sp: StackPosition, key_sp: StackPosition): StackPosition {
+        const map = this._stack.GetValue(map_sp);
+        if (!(map instanceof Map)) {
+            return -1;
+        }
+        const key = this._stack.GetValue(key_sp);
+        const value = map.get(key);
+        return this._stack.Push(value);
+    }
+
+    MapSetEntry(map_sp: StackPosition, key_sp: StackPosition, value_sp: StackPosition): ResultValue {
+        const map = this._stack.GetValue(map_sp);
+        if (!(map instanceof Map)) {
+            return -1;
+        }
+        const key = this._stack.GetValue(key_sp);
+        const value = this._stack.GetValue(value_sp);
+        map.set(key, value);
+        return 0;
+    }
+
+    NewSet(): StackPosition {
+        return this._stack.Push(new Set());
+    }
+
+    SetAsArray(stack_pos: StackPosition): StackPosition {
+        const set = this._stack.GetValue(stack_pos);
+        if (!(set instanceof Set)) {
+            return this._stack.Push([]);
+        }
+        const result: Array<any> = [];
+        set.forEach(function (value) {
+            result.push(value);
+        });
+        return this._stack.Push(result);
+    }
+
+    SetAdd(set_sp: StackPosition, value_sp: StackPosition): ResultValue {
+        const set = this._stack.GetValue(set_sp);
+        if (!(set instanceof Set)) {
+            return -1;
+        }
+        const value = this._stack.GetValue(value_sp);
+        set.add(value);
+        return 0;
+    }
+
+    IsSet(stack_pos: StackPosition): boolean {
+        return this._stack.GetValue(stack_pos) instanceof Set;
+    }
+
     NewArray(): StackPosition {
         return this._stack.Push([]);
     }
@@ -620,7 +769,7 @@ class jsbb_Engine {
 
             if ((flags & jsbb_PropertyFlags["VALUE"]) !== 0) {
                 // with value
-                // jsbb_console.log("define property value", obj, key, flags, value_sp);
+                jsbb_console.trace("define property value", obj, key, flags, value_sp);
                 if ((flags & jsbb_PropertyFlags["GET"]) !== 0 || (flags & jsbb_PropertyFlags["SET"]) !== 0) {
                     jsbb_console.warn("do not define a property with value and get/set at the same time");
                 }
@@ -632,7 +781,7 @@ class jsbb_Engine {
                 });
             } else {
                 // with get/set
-                // jsbb_console.log("define property getset", obj, key, flags, get_sp, set_sp);
+                jsbb_console.trace("define property getset", obj, key, flags, get_sp, set_sp);
                 if ((flags & jsbb_PropertyFlags["WRITABLE"]) !== 0) {
                     jsbb_console.warn("can not define a getset property with writable flag");
                 }
@@ -671,7 +820,7 @@ class jsbb_Engine {
                     self.rethrow_native_error();
                 } catch (err) {
                     jsbb_console.error("DefineLazyProperty: unexpected error", err);
-                    // cleanup 
+                    // cleanup
                     self._stack.ExitScope();
                     // in javascript execution context
                     throw err;
@@ -682,8 +831,8 @@ class jsbb_Engine {
                 // cleanup
                 self._stack.ExitScope();
 
-                jsbb_console.log("evaluated lazy property", key, rval);
-                // overwrite 
+                jsbb_console.trace("evaluated lazy property", key, rval);
+                // overwrite
                 Object.defineProperty(this, key, {
                     "value": rval,
                     "configurable": true,
@@ -779,6 +928,9 @@ class jsbb_Engine {
         if (typeof val === "undefined") {
             return jsbb_StackPos.Undefined;
         }
+        if (val === null) {
+            return jsbb_StackPos.Null;
+        }
         return this._stack.Push(val);
     }
 
@@ -790,13 +942,15 @@ class jsbb_Engine {
             return jsbb_StackPos.Error;
         }
 
-
         try {
             const val = obj instanceof Map ? obj.get(key) : obj[key];
 
             // saving stack space
             if (typeof val === "undefined") {
                 return jsbb_StackPos.Undefined;
+            }
+            if (val === null) {
+                return jsbb_StackPos.Null;
             }
             return this._stack.Push(val);
         } catch (err) {
@@ -812,13 +966,15 @@ class jsbb_Engine {
             return jsbb_StackPos.Error;
         }
 
-
         try {
             const val = obj[index];
 
             // saving stack space
             if (typeof val === "undefined") {
                 return jsbb_StackPos.Undefined;
+            }
+            if (val === null) {
+                return jsbb_StackPos.Null;
             }
             return this._stack.Push(val);
         } catch (err) {
@@ -842,7 +998,7 @@ class jsbb_Engine {
                 this._throw(new Error("source is null"));
                 return jsbb_StackPos.Error;
             }
-            // jsbb_console.log("compile function source:", source);
+            jsbb_console.trace("compile function source:", source);
             rval = eval(source);
         } catch (err) {
             if (err instanceof EvalError && typeof document !== "undefined") {
@@ -879,12 +1035,12 @@ class jsbb_Engine {
             return jsbb_StackPos.Error;
         }
 
-        // jsbb_console.log("function source is compiled sucessfully");
+        jsbb_console.trace("function source is compiled successfully");
         return this._stack.Push(rval);
     }
 
     /**
-     * eval source code. 
+     * eval source code.
      * not supported if CSP is enabled.
      */
     Eval(filename_ptr: CString, source_ptr: CString): StackPosition {
@@ -913,7 +1069,7 @@ class jsbb_Engine {
     }
 
     Call(this_sp: StackPosition, func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
-        // jsbb_console.log(`Call this_sp:${this_sp} func_sp:${func_sp}, argc:${argc}, argv:${argv}`);
+        jsbb_console.trace("Call", "this_sp", this_sp, "func_sp", func_sp, "argc", argc, "argv", argv);
 
         const thiz = this._stack.GetValue(this_sp);
         const func: Function = this._stack.GetValue(func_sp);
@@ -929,10 +1085,10 @@ class jsbb_Engine {
                 for (let i = 0; i < argc; ++i) {
                     const arg_sp = _jsbb_.i32[(argv >> 2) + i];
                     args[i] = this._stack.GetValue(arg_sp);
-                    // jsbb_console.log(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
+                    // jsbb_console.trace(`arg:${i} sp:${arg_sp} arg:${typeof args[i]}`);
                 }
             }
-            // jsbb_console.log("[Call]", thiz, args);
+            jsbb_console.trace("[Call]", thiz, args);
             const rval = func.apply(thiz, args);
             if (rval === undefined) {
                 return jsbb_StackPos.Undefined;
@@ -945,7 +1101,7 @@ class jsbb_Engine {
     }
 
     CallAsConstructor(func_sp: StackPosition, argc: number, argv: IntPtr): StackPosition {
-        // jsbb_console.log("CallAsConstructor", func_sp, argc, argv);
+        jsbb_console.trace("CallAsConstructor", func_sp, argc, argv);
 
         const func = this._stack.GetValue(func_sp);
         if (typeof func !== "function") {
@@ -981,7 +1137,19 @@ class jsbb_Engine {
             return jsbb_StackPos.Error;
         }
         try {
-            return this._stack.Push(JSON.parse(str));
+            const parsed = JSON.parse(str);
+            return this._stack.Push(parsed);
+        } catch (err) {
+            this._throw(err);
+            return jsbb_StackPos.Error;
+        }
+    }
+
+    JSONStringify(value_sp: StackPosition): StackPosition {
+        try {
+            const value = this._stack.GetValue(value_sp);
+            const json = JSON.stringify(value);
+            return this._stack.Push(json);
         } catch (err) {
             this._throw(err);
             return jsbb_StackPos.Error;
@@ -1030,8 +1198,8 @@ class jsbb_Engine {
         }
     }
 
-    /** 
-     * Rethrow the last error thrown in native context to javascript execution context. 
+    /**
+     * Rethrow the last error thrown in native context to javascript execution context.
      * WILL NEVER RETURN IF ERROR THROWN.
      */
     private rethrow_native_error(): void {
@@ -1047,48 +1215,52 @@ class jsbb_Engine {
 
     // [stack-based]
     // cb: C++ Function Pointer
-    // return: stack position of the wrapper function 
+    // return: stack position of the wrapper function
     NewCFunction(cb: FunctionPointer, data_pos: StackPosition, func_name_ptr: CString): StackPosition {
         const self = this;
         const data = this._stack.GetValue(data_pos);
         const func_name = func_name_ptr == 0 ? "(CFunction)" : _jsbb_.wasmop.UTF8ToString(func_name_ptr);
-        // jsbb_console.log("NewCFunction", func_name, cb, data);
+        jsbb_console.trace("NewCFunction", func_name, cb, data);
 
-        return this._stack.Push(function () {
-            self._stack.EnterScope();
+        return this._stack.Push(function (this: any) {
+            if (!self._stack) {
+                return undefined;
+            }
+
+            const stack = self._stack;
+            stack.EnterScope();
 
             // prepare: fixed initial call stack positions
-            const stack_base = self._stack.Push(undefined);  // 0 return value (placeholder)
-            //@ts-ignore
-            self._stack.Push(this);      // 1 this (not an error, it's intentionally to be the original this)
-            self._stack.Push(data);      // 2 data
-            self._stack.Push(undefined); // 3 new.target
+            const stack_base = stack.Push(undefined);  // 0 return value (placeholder)
+            stack.Push(this);      // 1 this (not an error, it's intentionally to be the original this)
+            stack.Push(data);      // 2 data
+            stack.Push(undefined); // 3 new.target
 
             // prepare: arguments
             const argc = arguments.length;
             for (let i = 0; i < argc; ++i) {
-                self._stack.Push(arguments[i]);
-                // jsbb_console.log(`call_function.arg[${i}] = ${arguments[i]}`);
+                stack.Push(arguments[i]);
+                jsbb_console.trace("call_function.arg", i, arguments[i]);
             }
 
             try {
-                // jsbb_console.log("call_function.pre", func_name, self._opaque, cb, stack_base, argc);
+                jsbb_console.trace("call_function.pre", func_name, self._opaque, cb, stack_base, argc);
                 _jsbb_.interop.call_function(self._opaque, cb, false, stack_base, argc);
                 self.rethrow_native_error();
-                // jsbb_console.log("call_function.post", func_name);
+                jsbb_console.trace("call_function.post", func_name);
             } catch (err) {
                 jsbb_console.error("NewCFunction.call_function error:", func_name, typeof err, err);
-                // cleanup 
-                self._stack.ExitScope();
+                // cleanup
+                stack.ExitScope();
                 // in javascript execution context
                 throw err;
             }
 
-            const rval = self._stack.GetValue(stack_base);
-            // jsbb_console.log("call_function.return", rval);
+            const rval = stack.GetValue(stack_base);
+            jsbb_console.trace("call_function.return", rval);
 
             // cleanup
-            self._stack.ExitScope();
+            stack.ExitScope();
             return rval;
         });
     }
@@ -1105,10 +1277,10 @@ class jsbb_Engine {
         const self = this;
         const data = this._stack.GetValue(data_sp);
         const class_name = class_name_ptr == 0 ? "(CClass)" : _jsbb_.wasmop.UTF8ToString(class_name_ptr);
-        // jsbb_console.log("NewClass", class_name, cb, data);
+        jsbb_console.trace("NewClass", class_name, cb, data);
 
-        const ctor = function () {
-            // jsbb_console.log("new class", class_name);
+        const ctor = function (this: any) {
+            jsbb_console.trace("new class", class_name);
             self._stack.EnterScope();
 
             const target = new.target;
@@ -1116,7 +1288,6 @@ class jsbb_Engine {
 
             // prepare: fixed initial call stack positions
             const rval_pos = self._stack.Push(undefined);  // 0 return value (placeholder)
-            //@ts-ignore
             self._stack.Push(this);                        // 1 this (not an error, it's intentionally to be the original this)
             self._stack.Push(data);                        // 2 data
             self._stack.Push(target);                      // 3 new.target
@@ -1129,23 +1300,22 @@ class jsbb_Engine {
 
             // register the instance with unique internal data
             const internal_data = _jsbb_.interop.generate_internal_data(self._opaque, internal_field_count);
-            //@ts-ignore
             self._registry.Add(this, internal_data);
 
             try {
-                jsbb_console.log("new class dispatch", class_name, cb, is_construct_call, rval_pos, argc, internal_data);
+                jsbb_console.trace("new class dispatch", class_name, cb, is_construct_call, rval_pos, argc, internal_data);
                 _jsbb_.interop.call_function(self._opaque, cb, is_construct_call, rval_pos, argc);
                 self.rethrow_native_error();
             } catch (err) {
                 jsbb_console.error("NewClass.call_function error:", class_name, err);
-                // cleanup 
+                // cleanup
                 self._stack.ExitScope();
                 // in javascript execution context
                 throw err;
             }
 
             const rval = self._stack.GetValue(rval_pos);
-            // jsbb_console.log("NewClass.return", rval);
+            jsbb_console.trace("NewClass.return", rval);
 
             // cleanup
             self._stack.ExitScope();
@@ -1160,7 +1330,8 @@ class jsbb_Engine {
         try {
             const proto = this._stack.GetValue(proto_sp);
             const thiz = {};
-            const internal_field_count = proto.constructor[jsbb_internal_field_count];
+            const ctor = proto?.constructor;
+            const internal_field_count = ctor?.[jsbb_internal_field_count];
             Object.setPrototypeOf(thiz, proto);
             // register the instance with unique internal data
             const internal_data = _jsbb_.interop.generate_internal_data(this._opaque, internal_field_count);
@@ -1198,7 +1369,7 @@ class jsbb_Engine {
             proto.__proto__ = parent;
             proto.constructor.__proto__ = parent;
 
-            // should be equivalent to the above 
+            // should be equivalent to the above
             // Object.setPrototypeOf(proto, parent);
             // Object.setPrototypeOf(proto.constructor, parent);
             return 1;
@@ -1215,6 +1386,12 @@ class _jsbb_ {
     static wasmop: WasmProtocol;
     static engine: jsbb_Engine | undefined;
     private static _i64: BigInt64Array;
+    private static _pending_worker_messages: Array<QueuedWorkerMessage> = [];
+    private static _worker_owner_cache_by_pthread = new Map<number, JSWorkerLike>();
+
+    static queue_worker_message(message: QueuedWorkerMessage): void {
+        this._pending_worker_messages.push(message);
+    }
 
     static get u8(): Uint8Array {
         if (wasmMemory.buffer != HEAP8.buffer) {
@@ -1238,8 +1415,17 @@ class _jsbb_ {
         return this._i64;
     }
 
-    static init(interop: any) {
-        jsbb_console.log("init jsbb");
+    static init(interop: InitOptions) {
+        if (!interop.debug_build) {
+            jsbb_console.debug = function() {};
+        }
+
+        if (!interop.bridge_logging) {
+            jsbb_console.trace = function() {};
+        }
+
+        jsbb_console.debug("Initialized GodotJS bridge");
+
         if (typeof interop === "undefined") {
             jsbb_console.error("invalid interop");
         }
@@ -1253,17 +1439,19 @@ class _jsbb_ {
                 call_function: GodotRuntime.get_func(interop.call_function),
                 call_accessor: GodotRuntime.get_func(interop.call_accessor),
                 generate_internal_data: GodotRuntime.get_func(interop.generate_internal_data),
+                on_worker_message: GodotRuntime.get_func(interop.on_worker_message),
+                on_worker_message_from_pthread: GodotRuntime.get_func(interop.on_worker_message_from_pthread),
+                worker_get_or_add_native_transfer: GodotRuntime.get_func(interop.worker_get_or_add_native_transfer),
             };
-            //@ts-ignore
             this.wasmop = { UTF8ToString, stringToUTF8, lengthBytesUTF8, _malloc, _free };
-            for (let key in this.interop) {
-                //@ts-ignore
-                jsbb_console.log("define jsbi.interop", key, typeof this.interop[key]);
+            for (const key of Object.keys(this.interop) as Array<keyof InteropProtocol>) {
+                jsbb_console.trace("define jsbi.interop", key, typeof this.interop[key]);
             }
-            for (let key in this.wasmop) {
-                //@ts-ignore
-                jsbb_console.log("define jsbi.wasmop", key, typeof this.wasmop[key]);
+            for (const key of Object.keys(this.wasmop) as Array<keyof WasmProtocol>) {
+                jsbb_console.trace("define jsbi.wasmop", key, typeof this.wasmop[key]);
             }
+            this.install_pthread_worker_listener_hook();
+            this.flush_pending_worker_messages();
         } catch (err) {
             jsbb_console.error("unexpected error:", err);
         }
@@ -1278,6 +1466,7 @@ class _jsbb_ {
         // currectly, engine_id is hardcoded.
         // only one single engine is supported to new simultaneously
         this.engine = new jsbb_Engine(0, opaque);
+        this.flush_pending_worker_messages();
         return 0;
     }
 
@@ -1298,8 +1487,8 @@ class _jsbb_ {
         return this.engine;
     }
 
-    static is_object(val: any) {
-        //NOTE IsObject() expects a class (constructor, a function) as an Object 
+    static is_object(val: unknown): val is object {
+        //NOTE IsObject() expects a class (constructor, a function) as an Object
         return val !== null && (typeof val === "object" || typeof val === "function");
     }
 
@@ -1308,7 +1497,7 @@ class _jsbb_ {
     }
 
     static debugbreak(): void{
-        jsbb_console.trace("debugbreak");
+        jsbb_console.debug("debugbreak");
     }
 
     static log(ptr: CString): void {
@@ -1329,18 +1518,635 @@ class _jsbb_ {
         }
     }
 
+    private static is_godot_binding_object(value: unknown): value is (Record<PropertyKey, unknown> & { [jsbb_opaque]: number }) {
+        return typeof value === "object" && value !== null && typeof (value as Record<PropertyKey, unknown>)[jsbb_opaque] === "number";
+    }
+
+    private static is_plain_object(value: object): value is Record<string, unknown> {
+        const proto = Object.getPrototypeOf(value);
+        return proto === Object.prototype || proto === null;
+    }
+
+    private static get_or_add_native_transfer_index(
+        engine: jsbb_Engine,
+        engine_opaque: IntPtr,
+        pthread_id: number,
+        transfer_id: number,
+        context: jsbb_TransferEncodeContext,
+        value: object
+    ): number {
+        const existing_index = context.transfer_index_by_object.get(value);
+
+        if (typeof existing_index === "number") {
+            return existing_index;
+        }
+
+        const value_sp = engine.stack.Push(value);
+        const native_index = this.interop.worker_get_or_add_native_transfer(pthread_id, engine_opaque, transfer_id, value_sp);
+
+        if (!Number.isInteger(native_index) || native_index < 0) {
+            const object_record = value as Record<PropertyKey, unknown>;
+            const constructor_value = object_record.constructor;
+            const constructor_name = typeof constructor_value === "function" ? constructor_value.name : "unknown";
+            const opaque = object_record[jsbb_opaque];
+            const descriptor = `ctor=${constructor_name} tag=${Object.prototype.toString.call(value)} opaque=${String(opaque)} engine_token=${String(engine_opaque)}`;
+
+            if (native_index === jsbb_WorkerTransferErrorCode.ObjectNotInTransferList) {
+                throw new Error(`A Godot Object was passed that was not in the transfer list. (${descriptor})`);
+            }
+
+            if (native_index === jsbb_WorkerTransferErrorCode.VariantConversionFailed) {
+                throw new Error(`Failed to convert JS value to Variant for worker transfer. (${descriptor})`);
+            }
+
+            if (native_index === jsbb_WorkerTransferErrorCode.VariantCloneFailed) {
+                throw new Error(`Failed to clone Godot Variant for worker transfer. (${descriptor})`);
+            }
+
+            if (
+                native_index === jsbb_WorkerTransferErrorCode.EnvMissing
+                || native_index === jsbb_WorkerTransferErrorCode.IsolateMissing
+                || native_index === jsbb_WorkerTransferErrorCode.NonObjectValue
+                || native_index === jsbb_WorkerTransferErrorCode.TransferAppendFailed
+            ) {
+                throw new Error(`Native worker transfer helper failed (code=${String(native_index)}; ${descriptor})`);
+            }
+
+            throw new Error(`Failed to append Godot binding to native worker transfer list (code=${String(native_index)}; ${descriptor}).`);
+        }
+
+        context.transfer_index_by_object.set(value, native_index >>> 0);
+        return native_index >>> 0;
+    }
+
+    private static try_get_or_add_native_transfer_index(
+        engine: jsbb_Engine,
+        engine_opaque: IntPtr,
+        pthread_id: number,
+        transfer_id: number,
+        context: jsbb_TransferEncodeContext,
+        value: object
+    ): number | undefined {
+        const existing_index = context.transfer_index_by_object.get(value);
+
+        if (typeof existing_index === "number") {
+            return existing_index;
+        }
+
+        const value_sp = engine.stack.Push(value);
+        const native_index = this.interop.worker_get_or_add_native_transfer(pthread_id, engine_opaque, transfer_id, value_sp);
+
+        if (Number.isInteger(native_index) && native_index >= 0) {
+            const index = native_index >>> 0;
+            context.transfer_index_by_object.set(value, index);
+            return index;
+        }
+
+        if (native_index === jsbb_WorkerTransferErrorCode.VariantConversionFailed) {
+            return undefined;
+        }
+
+        const object_record = value as Record<PropertyKey, unknown>;
+        const constructor_value = object_record.constructor;
+        const constructor_name = typeof constructor_value === "function" ? constructor_value.name : "unknown";
+        const opaque = object_record[jsbb_opaque];
+        const descriptor = `ctor=${constructor_name} tag=${Object.prototype.toString.call(value)} opaque=${String(opaque)} engine_token=${String(engine_opaque)}`;
+
+        if (native_index === jsbb_WorkerTransferErrorCode.ObjectNotInTransferList) {
+            throw new Error(`A Godot Object was passed that was not in the transfer list. (${descriptor})`);
+        }
+
+        if (native_index === jsbb_WorkerTransferErrorCode.VariantCloneFailed) {
+            throw new Error(`Failed to clone Godot Variant for worker transfer. (${descriptor})`);
+        }
+
+        if (
+            native_index === jsbb_WorkerTransferErrorCode.EnvMissing
+            || native_index === jsbb_WorkerTransferErrorCode.IsolateMissing
+            || native_index === jsbb_WorkerTransferErrorCode.NonObjectValue
+            || native_index === jsbb_WorkerTransferErrorCode.TransferAppendFailed
+        ) {
+            throw new Error(`Native worker transfer helper failed (code=${String(native_index)}; ${descriptor})`);
+        }
+
+        throw new Error(`Failed to append value to native worker transfer list (code=${String(native_index)}; ${descriptor}).`);
+    }
+
+    private static create_transfer_encode_context(): jsbb_TransferEncodeContext {
+        return {
+            native_transfers_used: false,
+            transfer_index_by_object: new Map<object, number>(),
+            seen: new WeakMap<object, unknown>(),
+        };
+    }
+
+    private static seed_native_transfer_index_map(
+        engine: jsbb_Engine,
+        engine_opaque: IntPtr,
+        pthread_id: number,
+        transfer_id: number,
+        context: jsbb_TransferEncodeContext,
+        transfer_list: unknown
+    ): void {
+        if (transfer_list === null || transfer_list === undefined || typeof transfer_list !== "object") {
+            return;
+        }
+
+        // Native transfer queues are already built from Godot-side containers (e.g. GArray).
+        // Iterating those containers in JS can materialize proxy wrappers that fail round-trip
+        // conversion back to Variant in this pre-seeding path. Resolve indices lazily from
+        // rewritten message bindings instead.
+        if (this.is_godot_binding_object(transfer_list)) {
+            return;
+        }
+
+        if (Array.isArray(transfer_list)) {
+            for (const item of transfer_list) {
+                if (this.is_godot_binding_object(item)) {
+                    this.get_or_add_native_transfer_index(engine, engine_opaque, pthread_id, transfer_id, context, item);
+                }
+            }
+            return;
+        }
+
+        const iterable = (transfer_list as { [Symbol.iterator]?: unknown })[Symbol.iterator];
+
+        if (typeof iterable === "function") {
+            for (const item of transfer_list as Iterable<unknown>) {
+                if (this.is_godot_binding_object(item)) {
+                    this.get_or_add_native_transfer_index(engine, engine_opaque, pthread_id, transfer_id, context, item);
+                }
+            }
+        }
+    }
+
+    private static extract_message_variants(
+        engine: jsbb_Engine,
+        engine_opaque: IntPtr,
+        pthread_id: number,
+        transfer_id: number,
+        context: jsbb_TransferEncodeContext,
+        value: unknown,
+    ): unknown {
+        if (!this.is_object(value)) {
+            return value;
+        }
+
+        if (jsbb_is_transfer_marker(value)) {
+            context.native_transfers_used = true;
+            context.seen.set(value, value);
+            return value;
+        }
+
+        const seen_value = context.seen.get(value);
+
+        if (seen_value !== undefined) {
+            return seen_value;
+        }
+
+        if (value instanceof ArrayBuffer
+            || ArrayBuffer.isView(value)
+            || value instanceof Date
+            || value instanceof RegExp
+        ) {
+            context.seen.set(value, value);
+            return value;
+        }
+
+        if (!Array.isArray(value) && !(value instanceof Map) && !(value instanceof Set) && !this.is_plain_object(value)) {
+            const transfer_index = this.try_get_or_add_native_transfer_index(engine, engine_opaque, pthread_id, transfer_id, context, value);
+
+            if (typeof transfer_index === "number") {
+                context.native_transfers_used = true;
+                const marker = jsbb_create_transfer_marker(transfer_index);
+                context.seen.set(value, marker);
+                return marker;
+            }
+        }
+
+        if (this.is_godot_binding_object(value)) {
+            const transfer_index = this.get_or_add_native_transfer_index(engine, engine_opaque, pthread_id, transfer_id, context, value);
+            context.native_transfers_used = true;
+            const marker = jsbb_create_transfer_marker(transfer_index);
+            context.seen.set(value, marker);
+            return marker;
+        }
+
+        context.seen.set(value, value);
+
+        if (Array.isArray(value)) {
+            let rewritten_array: Array<unknown> | null = null;
+
+            for (let i = 0; i < value.length; i++) {
+                const original = value[i];
+                const rewritten = this.extract_message_variants(engine, engine_opaque, pthread_id, transfer_id, context, original);
+
+                if (rewritten !== original && rewritten_array === null) {
+                    rewritten_array = value.slice();
+                    context.seen.set(value, rewritten_array);
+                }
+
+                if (rewritten_array !== null) {
+                    rewritten_array[i] = rewritten;
+                }
+            }
+
+            if (rewritten_array === null) {
+                return value;
+            }
+
+            return rewritten_array;
+        }
+
+        if (value instanceof Map) {
+            let rewritten_map: Map<unknown, unknown> | null = null;
+            let map_entry_index = 0;
+
+            for (const [key, map_value] of value.entries()) {
+                const rewritten_key = this.extract_message_variants(engine, engine_opaque, pthread_id, transfer_id, context, key);
+                const rewritten_value = this.extract_message_variants(engine, engine_opaque, pthread_id, transfer_id, context, map_value);
+
+                if (rewritten_key !== key || rewritten_value !== map_value) {
+                    if (rewritten_map === null) {
+                        rewritten_map = new Map<unknown, unknown>();
+                        let copied = 0;
+
+                        for (const [prefix_key, prefix_value] of value.entries()) {
+                            if (copied++ >= map_entry_index) {
+                                break;
+                            }
+
+                            rewritten_map.set(prefix_key, prefix_value);
+                        }
+
+                        context.seen.set(value, rewritten_map);
+                    }
+
+                    rewritten_map.set(rewritten_key, rewritten_value);
+                } else if (rewritten_map !== null) {
+                    rewritten_map.set(key, map_value);
+                }
+
+                map_entry_index++;
+            }
+
+            if (rewritten_map === null) {
+                return value;
+            }
+
+            return rewritten_map;
+        }
+
+        if (value instanceof Set) {
+            let rewritten_set: Set<unknown> | null = null;
+            let set_entry_index = 0;
+
+            for (const original_value of value) {
+                const rewritten_value = this.extract_message_variants(engine, engine_opaque, pthread_id, transfer_id, context, original_value);
+
+                if (rewritten_value !== original_value) {
+                    if (rewritten_set === null) {
+                        rewritten_set = new Set<unknown>();
+                        let copied = 0;
+
+                        for (const prefix_value of value) {
+                            if (copied++ >= set_entry_index) {
+                                break;
+                            }
+
+                            rewritten_set.add(prefix_value);
+                        }
+
+                        context.seen.set(value, rewritten_set);
+                    }
+
+                    rewritten_set.add(rewritten_value);
+                }
+
+                set_entry_index++;
+            }
+
+            if (rewritten_set === null) {
+                return value;
+            }
+
+            return rewritten_set;
+        }
+
+        if (!this.is_plain_object(value)) {
+            return value;
+        }
+
+        let rewritten_object: Record<string, unknown> | null = null;
+        const keys = Object.keys(value);
+
+        for (const key of keys) {
+            const original = value[key];
+            const rewritten = this.extract_message_variants(engine, engine_opaque, pthread_id, transfer_id, context, original);
+
+            if (rewritten !== original && rewritten_object === null) {
+                rewritten_object = { ...value };
+                context.seen.set(value, rewritten_object);
+            }
+
+            if (rewritten_object !== null) {
+                rewritten_object[key] = rewritten;
+            }
+        }
+
+        if (rewritten_object === null) {
+            context.seen.set(value, value);
+            return value;
+        }
+
+        return rewritten_object;
+    }
+
+    static post_message_to_worker(pthread_id: number, data: unknown, transfer_id?: number): boolean {
+        try {
+            const worker = PThread?.pthreads[pthread_id];
+
+            if (!worker) {
+                return false;
+            }
+
+            const payload: WorkerMessage = {
+                __jsbMessage: true,
+                data,
+            };
+
+            if (typeof transfer_id === "number") {
+                payload.transfer_id = transfer_id;
+            }
+
+            worker.postMessage(payload);
+
+            return true;
+        } catch (err) {
+            jsbb_console.error("post_message_to_worker failed:", err);
+            return false;
+        }
+    }
+
+    private static install_pthread_worker_listener_hook(): void {
+        if (ENVIRONMENT_IS_PTHREAD || !PThread) {
+            return;
+        }
+
+        const original_get_new_worker = PThread.getNewWorker;
+
+        if (original_get_new_worker.__jsb_wrapped) {
+            return;
+        }
+
+        const wrapped_get_new_worker: typeof original_get_new_worker = (() => {
+            const worker = original_get_new_worker.call(PThread);
+
+            if (worker) {
+				// Install our own message listener (in addition to what Emscripten puts in place)
+				worker.addEventListener("message", (event: MessageEvent) => {
+					if (event.data?.__jsbMessage !== true) {
+						return;
+					}
+
+					const sender_pthread_id = typeof event.data.sender_pthread_id === "number"
+						? event.data.sender_pthread_id
+						: undefined;
+
+					this.queue_worker_message({
+						data: event.data.data,
+						transfer_id: event.data.transfer_id,
+						sender_pthread_id,
+					});
+
+					event.stopImmediatePropagation();
+				});
+            }
+
+            return worker;
+        });
+        wrapped_get_new_worker.__jsb_wrapped = true;
+
+        PThread.getNewWorker = wrapped_get_new_worker;
+    }
+
+    private static dispatch_direct_worker_message(data: unknown, sender_pthread_id?: number): void {
+        if (ENVIRONMENT_IS_PTHREAD) {
+            const worker_parent = getJSWorkerParent();
+
+            if (!worker_parent) {
+                return;
+            }
+
+            worker_parent.onmessage.call(worker_parent, data);
+            return;
+        }
+
+        if (typeof sender_pthread_id === "number") {
+            const worker_owner = this._worker_owner_cache_by_pthread.get(sender_pthread_id);
+
+            if (!worker_owner) {
+                throw new Error(`JSWorker owner was not registered for pthread id ${String(sender_pthread_id)}`);
+            }
+
+            worker_owner.onmessage.call(worker_owner, data);
+        }
+    }
+
+    static RegisterWorkerOwner(pthread_id: number, _engine_opaque: IntPtr, worker_owner_sp: StackPosition): boolean {
+        const engine = this.engine;
+        if (!engine) {
+            return false;
+        }
+
+        if (worker_owner_sp < jsbb_StackPos._Num) {
+            return false;
+        }
+
+        const worker_owner = engine.stack.GetValue(worker_owner_sp) as JSWorkerLike;
+        if (typeof worker_owner?.onmessage !== "function") {
+            return false;
+        }
+        this._worker_owner_cache_by_pthread.set(pthread_id, worker_owner);
+        return true;
+    }
+
+    static PostMessage(
+        pthread_id: number,
+        engine_opaque: IntPtr,
+        data_sp: StackPosition,
+        transfer_id: number,
+        native_transfers_stack_position: StackPosition): number {
+        const engine = this.engine;
+
+        if (!engine) {
+            return jsbb_PostMessageResult.Failed;
+        }
+
+        engine.stack.EnterScope();
+
+        try {
+            const transfer_context = this.create_transfer_encode_context();
+            const transfer_list = native_transfers_stack_position >= jsbb_StackPos._Num ? engine.stack.GetValue(native_transfers_stack_position) : undefined;
+
+            this.seed_native_transfer_index_map(engine, engine_opaque, pthread_id, transfer_id, transfer_context, transfer_list);
+
+            const message = engine.stack.GetValue(data_sp);
+
+            const rewritten = this.extract_message_variants(
+                engine,
+                engine_opaque,
+                pthread_id,
+                transfer_id,
+                transfer_context,
+                message
+            );
+            const outbound_transfer_id = transfer_context.native_transfers_used ? transfer_id : undefined;
+
+            if (ENVIRONMENT_IS_PTHREAD) {
+                const payload: WorkerMessage = {
+                    __jsbMessage: true,
+                    data: rewritten,
+                    sender_pthread_id: pthread_id,
+                };
+                if (typeof outbound_transfer_id === "number") {
+                    payload.transfer_id = outbound_transfer_id;
+                }
+                postMessage(payload);
+
+                return typeof outbound_transfer_id === "number"
+                    ? jsbb_PostMessageResult.Success
+                    : jsbb_PostMessageResult.NativeTransfersUnused;
+                }
+
+            if (!this.post_message_to_worker(pthread_id, rewritten, outbound_transfer_id)) {
+                return jsbb_PostMessageResult.Failed;
+            }
+
+            return typeof outbound_transfer_id === "number"
+                ? jsbb_PostMessageResult.Success
+                : jsbb_PostMessageResult.NativeTransfersUnused;
+        } finally {
+            engine.stack.ExitScope();
+        }
+    }
+
+    private static flush_pending_worker_messages(): void {
+        if (this._pending_worker_messages.length === 0 || !this.engine || !this.interop) {
+            return;
+        }
+
+        const queue = this._pending_worker_messages.splice(0, this._pending_worker_messages.length);
+
+        for (const queued of queue) {
+            this.handle_message(queued);
+        }
+    }
+
+    static FlushPendingWorkerMessages(): void {
+        this.flush_pending_worker_messages();
+    }
+
+    static handle_message(message: QueuedWorkerMessage): void {
+        const { data, transfer_id, sender_pthread_id } = message;
+
+        if (!this.engine || !this.interop) {
+            this._pending_worker_messages.push(message);
+            return;
+        }
+
+        if (typeof transfer_id !== "number") {
+            this.dispatch_direct_worker_message(data, sender_pthread_id);
+            return;
+        }
+
+        this.engine.stack.EnterScope();
+
+        try {
+            const data_sp = this.engine.stack.Push(data);
+
+            if (typeof sender_pthread_id === "number") {
+                this.interop.on_worker_message_from_pthread(sender_pthread_id, data_sp, transfer_id);
+            } else {
+                this.interop.on_worker_message(data_sp, transfer_id);
+            }
+        } finally {
+            this.engine.stack.ExitScope();
+        }
+    }
+}
+
+// Sent via postMessage to/from a Worker.
+interface WorkerMessage {
+    __jsbMessage: true;
+    /**
+     * Worker messages are split into two parts. This is the browser-compatible component of the message that can safely
+     * be delivered by a browser's postMessage. Any Godot variants that may have been present are replaced by markers
+     * and delivered via a WASM-side message side-channel.
+     */
+    data: unknown;
+    /**
+     * Corresponding WASM-side message where Godot variants can be restored from.
+     */
+    transfer_id?: number;
+    sender_pthread_id?: number;
+}
+
+interface QueuedWorkerMessage {
+    data: unknown;
+    transfer_id?: number;
+    sender_pthread_id?: number;
+}
+
+interface GodotRuntime {
+    get_func(ptr: number): (...args: any[]) => any;
+}
+
+type PThreadPointer = number;
+
+// https://github.com/emscripten-core/emscripten/blob/bee9a1c2bc39cd33ff2f2b6b4642951eb473dcea/src/lib/libpthread.js#L93
+interface EmscriptenPThreadWorker extends Worker {
+    pthread_ptr?: PThreadPointer;
+}
+
+interface EmscriptenPThread {
+	getNewWorker: (() => Worker) & { __jsb_wrapped?: true };
+    pthreads: Record<PThreadPointer, EmscriptenPThreadWorker>;
 }
 
 // all symbols from godot generated wasm glue code
-declare const Module: any;
 declare const updateMemoryViews: Function;
-declare const GodotRuntime: any;
+declare const GodotRuntime: GodotRuntime;
 declare const wasmMemory: WebAssembly.Memory;
 declare const HEAP8: Int8Array;
 declare const HEAPU8: Uint8Array;
 declare const HEAP32: Int32Array;
 declare const global: any;
-declare const UTF8ToString: Function;
+declare const require: undefined | ((module_name: string) => any);
+declare const _malloc: EmscriptenModule['_malloc'];
+declare const _free: EmscriptenModule['_free'];
+declare const PThread: undefined | EmscriptenPThread;
+declare const ENVIRONMENT_IS_PTHREAD: undefined | boolean;
+
+if (ENVIRONMENT_IS_PTHREAD && typeof globalThis.addEventListener === "function") {
+    globalThis.addEventListener('message', (e: MessageEvent) => {
+        if (!jsbb_is_worker_message(e.data)) {
+            return;
+        }
+
+        const sender_pthread_id = typeof e.data.sender_pthread_id === "number"
+            ? e.data.sender_pthread_id
+            : undefined;
+
+        _jsbb_.queue_worker_message({
+            data: e.data.data,
+            transfer_id: e.data.transfer_id,
+            sender_pthread_id,
+        });
+
+        e.stopImmediatePropagation();
+    }, true);
+}
 
 const jsbb_browser = (typeof globalThis === "object" && globalThis) || (typeof window === "object" && window) || (typeof global === "object" && global);
 (<any>jsbb_browser)["_jsbb_"] = _jsbb_;

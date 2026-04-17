@@ -1,0 +1,114 @@
+name: 🧪 Runtime Matrix
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  runtime-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [host-v8, host-qjs, host-jsc, web-browser, web-qjs]
+    runs-on: ${{ matrix.runtime == 'host-jsc' && 'macos-latest' || 'ubuntu-22.04' }}
+    name: Runtime (${{ matrix.runtime }})
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v6
+
+      - name: 🛠️ pnpm and build
+        uses: ./.github/actions/pnpm-build
+
+      - name: ⏬ Download host-v8 artifact
+        if: matrix.runtime == 'host-v8' || matrix.runtime == 'web-browser' || matrix.runtime == 'web-qjs'
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-editor-${{ inputs.version }}-v8
+          path: runtime-artifacts/host-v8
+
+      - name: ⏬ Download host-qjs artifact
+        if: matrix.runtime == 'host-qjs'
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-editor-${{ inputs.version }}-qjs-ng
+          path: runtime-artifacts/host-qjs
+
+      - name: ⏬ Download host-jsc artifact
+        if: matrix.runtime == 'host-jsc'
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-editor-${{ inputs.version }}-jsc
+          path: runtime-artifacts/host-jsc
+
+      - name: ⏬ Download web-browser template artifact
+        if: matrix.runtime == 'web-browser'
+        uses: actions/download-artifact@v4
+        with:
+          name: web-template_debug-${{ inputs.version }}-browser
+          path: runtime-artifacts/web-browser
+
+      - name: ⏬ Download web-qjs template artifact
+        if: matrix.runtime == 'web-qjs'
+        uses: actions/download-artifact@v4
+        with:
+          name: web-template_debug-${{ inputs.version }}-qjs-ng
+          path: runtime-artifacts/web-qjs
+
+      - name: 📦 Stage runtime assets for run-runtime-matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail_missing() {
+            echo "::error::missing required runtime artifact for $1 (version ${{ inputs.version }})"
+            exit 1
+          }
+
+          pick_one() {
+            local dir="$1"
+            local name_pattern="$2"
+            local value
+            value="$(find "$dir" -type f -name "$name_pattern" 2>/dev/null | head -n1 || true)"
+            if [ -z "$value" ]; then
+              return 1
+            fi
+            echo "$value"
+          }
+
+          mkdir -p tests/bin
+          case "${{ matrix.runtime }}" in
+            host-v8)
+              src="$(pick_one runtime-artifacts/host-v8 'godot.linuxbsd.editor.*')" || fail_missing "host-v8 binary"
+              cp "$src" tests/bin/godot-host-v8
+              chmod +x tests/bin/godot-host-v8
+              ;;
+            host-qjs)
+              src="$(pick_one runtime-artifacts/host-qjs 'godot.linuxbsd.editor.*')" || fail_missing "host-qjs binary"
+              cp "$src" tests/bin/godot-host-qjs
+              chmod +x tests/bin/godot-host-qjs
+              ;;
+            host-jsc)
+              src="$(pick_one runtime-artifacts/host-jsc 'godot.macos.editor.*')" || fail_missing "host-jsc binary"
+              cp "$src" tests/bin/godot-host-jsc
+              chmod +x tests/bin/godot-host-jsc
+              ;;
+            web-browser)
+              host_src="$(pick_one runtime-artifacts/host-v8 'godot.linuxbsd.editor.*')" || fail_missing "web-browser host-v8 binary"
+              web_src="$(pick_one runtime-artifacts/web-browser '*.zip')" || fail_missing "web-browser template zip"
+              cp "$host_src" tests/bin/godot-host-v8
+              cp "$web_src" tests/bin/godot-web-browser-template_debug.zip
+              chmod +x tests/bin/godot-host-v8
+              ;;
+            web-qjs)
+              host_src="$(pick_one runtime-artifacts/host-v8 'godot.linuxbsd.editor.*')" || fail_missing "web-qjs host-v8 binary"
+              web_src="$(pick_one runtime-artifacts/web-qjs '*.zip')" || fail_missing "web-qjs template zip"
+              cp "$host_src" tests/bin/godot-host-v8
+              cp "$web_src" tests/bin/godot-web-qjs-template_debug.zip
+              chmod +x tests/bin/godot-host-v8
+              ;;
+          esac
+
+      - name: ▶️ Run selected runtime
+        run: |
+          pnpm test -- --runtimes ${{ matrix.runtime }} --skip-builds

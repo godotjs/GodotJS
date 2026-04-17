@@ -38,7 +38,15 @@ namespace v8
     void* Object::GetAlignedPointerFromInternalField(int slot) const
     {
         const jsb::impl::InternalDataID index = (jsb::impl::InternalDataID)(uintptr_t) jsbi_GetOpaque(isolate_->rt(), stack_pos_);
+        if (!index)
+        {
+            return nullptr;
+        }
         const jsb::impl::InternalDataPtr data = isolate_->get_internal_data(index);
+        if (!data)
+        {
+            return nullptr;
+        }
         return data->internal_fields[slot];
     }
 

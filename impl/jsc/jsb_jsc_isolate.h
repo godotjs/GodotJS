@@ -6,6 +6,8 @@
 #include "jsb_jsc_handle_scope.h"
 #include "jsb_jsc_array_buffer.h"
 #include "jsb_jsc_promise_reject.h"
+#include "core/os/mutex.h"
+#include "core/templates/vector.h"
 
 namespace jsb::impl
 {
@@ -63,7 +65,7 @@ namespace jsb::impl
         uint32_t class_payload;
     };
 
-    enum { kMaxStackSize = 1024 };
+    enum { kMaxStackSize = 4096 };
 
     namespace StackPos
     {
@@ -78,6 +80,7 @@ namespace jsb::impl
             ConstructorCallError,
 
             MapConstructor,
+            SetConstructor,
             PromiseConstructor,
             ArrayBufferConstructor,
             Exception,
@@ -108,6 +111,7 @@ namespace v8
     template<typename T> class FunctionCallbackInfo;
     class Context;
     class Value;
+    class String;
 
     class Isolate
     {
@@ -155,6 +159,7 @@ namespace v8
 
         bool _IsPromise(JSValueRef val) const;
         bool _IsMap(JSValueRef val) const;
+        bool _IsSet(JSValueRef val) const;
         bool _IsExternal(JSValueRef val) const;
         bool _IsArrayBuffer(JSValueRef val) const;
         JSValueRef _GetProperty(JSObjectRef obj, JSAtom atom);
@@ -176,6 +181,36 @@ namespace v8
         // return nullptr if exception is thrown (saved in stack)
         JSValueRef _CallAsConstructor(JSObjectRef func_obj, int argc, JSValueRef* arguments);
         void _ThrowError(JSValueRef error);
+        Local<Value> ThrowException(Local<Value> exception)
+        {
+            if (exception.IsEmpty())
+            {
+                return Local<Value>(Data(this, jsb::impl::StackPos::Undefined));
+            }
+            _ThrowError((JSValueRef) exception);
+            return exception;
+        }
+        template <int N>
+        Local<Value> ThrowError(const char (&message)[N])
+        {
+            const JSStringRef str = JSStringCreateWithUTF8CString(message);
+            const JSValueRef value = JSValueMakeString(ctx_, str);
+            JSStringRelease(str);
+            return ThrowError(Local<String>(Data(this, push_copy(value))));
+        }
+        Local<Value> ThrowError(Local<String> message)
+        {
+            JSValueRef trivial_error = nullptr;
+            const JSValueRef msg = (JSValueRef) message;
+            const JSValueRef created_error = JSObjectMakeError(ctx_, 1, &msg, &trivial_error);
+            if (trivial_error)
+            {
+                jsb::impl::JavaScriptCore::MarkExceptionAsTrivial(ctx_, trivial_error);
+                return Local<Value>(Data(this, jsb::impl::StackPos::Undefined));
+            }
+            _ThrowError(created_error);
+            return Local<Value>(Data(this, jsb::impl::StackPos::Exception));
+        }
 
         // will also remove the error value from stack
         JSValueRef _GetError();
@@ -222,6 +257,7 @@ namespace v8
 
         // due to the missing API to new Map
         uint16_t push_map();
+        uint16_t push_set();
 
         uint16_t push_undefined()
         {
@@ -309,7 +345,8 @@ namespace v8
 
         jsb::internal::SArray<JSValueRef, jsb::impl::CapturedValueID> captured_values_;
         RingBuffer<jsb::impl::CapturedValueID> pending_delete_;
-        RingBuffer<jsb::impl::InternalData*> pending_finalize_; //TODO improve
+        Mutex pending_finalize_mutex_;
+        Vector<jsb::impl::InternalData*> pending_finalize_;
 
         uint16_t stack_pos_;
         JSValueRef stack_[jsb::impl::kMaxStackSize];

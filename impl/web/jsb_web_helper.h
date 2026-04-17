@@ -230,8 +230,7 @@ namespace jsb::impl
 
         jsb_force_inline static void free(uint8_t* data)
         {
-            JSB_LOG(Warning, "SHOULD NOT BE CALLED");
-            memfree(data);
+            ::free(data);
         }
 
         jsb_force_inline static void set_as_interruptible(v8::Isolate* isolate)
@@ -242,5 +241,3 @@ namespace jsb::impl
 }
 
 #endif
-
-
