@@ -96,24 +96,20 @@ jobs:
         run: |
           if sh misc/scripts/install_vulkan_sdk_macos.sh; then
             echo "VULKAN_ENABLED=yes" >> "$GITHUB_OUTPUT"
+            latest_sdk="$(ls -dt "$HOME"/VulkanSDK/* 2>/dev/null | head -n1 || true)"
+            echo "VULKAN_SDK_PATH=$latest_sdk" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::macOS: Vulkan SDK installation failed, building without Vulkan support."
             echo "VULKAN_ENABLED=no" >> "$GITHUB_OUTPUT"
+            echo "VULKAN_SDK_PATH=" >> "$GITHUB_OUTPUT"
           fi
         continue-on-error: true
 
       - name: Download scripts/out
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
-
-      - name: Download tests/project
-        if: ${{ !inputs.release && matrix.target == 'editor' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: tests-project
-          path: ${{github.workspace}}/modules/GodotJS/tests/project/.godot/GodotJS
 
       - name: Compilation (x86_64)
         uses: ./.github/actions/godot-build
@@ -162,6 +158,28 @@ jobs:
           strip bin/godot.*
           chmod +x bin/godot.*
 
+      - name: Setup pnpm
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Build tests/project
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        shell: bash
+        env:
+          VULKAN_SDK_PATH: ${{ steps.vulkan-sdk.outputs.VULKAN_SDK_PATH }}
+        run: |
+          set -euo pipefail
+          pnpm -C "${{ github.workspace }}/modules/GodotJS/tests/project" install --ignore-workspace
+          GODOT="${{ github.workspace }}/bin/godot.macos.editor.universal" pnpm -C "${{ github.workspace }}/modules/GodotJS/tests/project" build
+
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
         with:
@@ -193,7 +211,7 @@ jobs:
           submodules: recursive
 
       - name: ⏬ Download editor
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: macos-editor-${{inputs.version}}-${{ matrix.engine }}
           path: macos-editor-${{inputs.version}}-${{ matrix.engine }}
@@ -207,20 +225,20 @@ jobs:
           chmod +x editor-app/Godot.app/Contents/MacOS/Godot
 
       - name: ⏫ Upload editor app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-editor-app-${{inputs.version}}-${{ matrix.engine }}
           path: editor-app
 
       - name: ⏬ Download template-release
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         if: ${{ inputs.release }}
         with:
           name: macos-template_release-${{inputs.version}}-${{ matrix.engine }}
           path: macos-template_release-${{inputs.version}}-${{ matrix.engine }}
 
       - name: ⏬ Download template-debug
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         if: ${{ inputs.release }}
         with:
           name: macos-template_debug-${{inputs.version}}-${{ matrix.engine }}
@@ -238,7 +256,7 @@ jobs:
 
       - name: ⏫ Upload template app
         if: ${{ inputs.release }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-template-app-${{inputs.version}}-${{ matrix.engine }}
           path: template-app

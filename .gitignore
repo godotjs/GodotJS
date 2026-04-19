@@ -42,4 +42,6 @@ node_modules/
 
 # test artifacts
 /tests/bin/
+/tests/project/gen/
 /tests/project/typings/
+

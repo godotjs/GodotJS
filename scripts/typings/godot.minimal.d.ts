@@ -332,6 +332,14 @@ declare module "godot-jsb" {
 
         function delete_file(filepath: string): void;
 
+        function install_project_files(force?: boolean): Promise<void>;
+
+        function install_static_types(): Promise<void>;
+
+        function generate_types(skip_static_types?: boolean): Promise<void>;
+
+        function cleanup_invalid_files(): Promise<void>;
+
         const VERSION_DOCS_URL: string;
     }
 }

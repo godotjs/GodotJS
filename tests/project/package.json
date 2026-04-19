@@ -2,15 +2,15 @@
     "name": "@godot-js/tests",
     "private": true,
     "scripts": {
-        "build": "tsc"
+        "gen:types": "node ./scripts/gen-godotjs-types.mts",
+        "build": "pnpm gen:types && tsc"
     },
     "devDependencies": {
         "@types/papaparse": "^5.5.1",
-        "@types/node": "^20.11.30",
-        "typescript": "^5.9.2"
+        "@types/node": "^24.12.2",
+        "typescript": "^6.0.3"
     },
     "dependencies": {
-        "xlsx": "^0.18.5",
         "papaparse": "^5.5.3"
     }
 }

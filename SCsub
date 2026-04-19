@@ -467,10 +467,9 @@ check("regex" in env.module_list, "Currently, the 'regex' module is required for
 
 # Build JS files before generating
 if not env["skip_js_runtime"]:
-    pnpm_resolved = shutil.which("pnpm")
-    pnpm_command = [pnpm_resolved] if env["tests"] else [pnpm_resolved, "--filter=!./tests/project"]
-    print(subprocess.run([*pnpm_command, "install"], check=True))
-    print(subprocess.run([*pnpm_command, "build"], check=True))
+    pnpm_command = shutil.which("pnpm")
+    print(subprocess.run([pnpm_command, "install"], check=True))
+    print(subprocess.run([pnpm_command, "build"], check=True))
 
 if v8_support is not None:
     # it seems godot always links MT_StaticRelease even if env["dev_build"]

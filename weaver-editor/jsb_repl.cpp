@@ -47,25 +47,25 @@ GodotJSREPL::GodotJSREPL()
         gc_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_gc_pressed));
     }
     {
-        dts_button_ = memnew(Button);
-        tool_bar_box->add_child(dts_button_);
-        dts_button_->set_theme_type_variation("FlatButton");
-        dts_button_->set_focus_mode(FOCUS_NONE);
-        dts_button_->set_tooltip_text(TTR("Generate godot.d.ts files"));
-        dts_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_generate_dts_pressed));
+        generate_types_button_ = memnew(Button);
+        tool_bar_box->add_child(generate_types_button_);
+        generate_types_button_->set_theme_type_variation("FlatButton");
+        generate_types_button_->set_focus_mode(FOCUS_NONE);
+        generate_types_button_->set_tooltip_text(TTR("Generate types"));
+        generate_types_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_generate_types_pressed));
     }
     {
-        preset_button_ = memnew(Button);
-        tool_bar_box->add_child(preset_button_);
-        preset_button_->set_theme_type_variation("FlatButton");
-        preset_button_->set_focus_mode(FOCUS_NONE);
-        preset_button_->set_tooltip_text(TTR("Install GodotJS preset files"));
-        preset_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_install_preset_pressed));
+        install_project_files_button_ = memnew(Button);
+        tool_bar_box->add_child(install_project_files_button_);
+        install_project_files_button_->set_theme_type_variation("FlatButton");
+        install_project_files_button_->set_focus_mode(FOCUS_NONE);
+        install_project_files_button_->set_tooltip_text(TTR("Install GodotJS project files"));
+        install_project_files_button_->connect("pressed", callable_mp(this, &GodotJSREPL::_install_project_files_pressed));
     }
     {
-        preset_hint_label_ = memnew(Label);
-        tool_bar_box->add_child(preset_hint_label_);
-        preset_hint_label_->set_text(TTR("Suggest re-installing GodotJS preset files."));
+        install_project_files_hint_label_ = memnew(Label);
+        tool_bar_box->add_child(install_project_files_hint_label_);
+        install_project_files_hint_label_->set_text(TTR("Suggest re-installing GodotJS project files."));
     }
 #if JSB_USE_TYPESCRIPT
     {
@@ -153,11 +153,11 @@ void GodotJSREPL::_update_theme()
 {
     jsb::ButtonCompat::set_icon(gc_button_, get_editor_theme_icon("CollapseTree"));
     jsb::ButtonCompat::set_icon(clear_button_, get_editor_theme_icon("Clear"));
-    if (dts_button_)
+    if (generate_types_button_)
     {
-        jsb::ButtonCompat::set_icon(dts_button_, get_editor_theme_icon("BoxMesh"));
+        jsb::ButtonCompat::set_icon(generate_types_button_, get_editor_theme_icon("BoxMesh"));
     }
-    jsb::ButtonCompat::set_icon(preset_button_, get_editor_theme_icon("Window"));
+    jsb::ButtonCompat::set_icon(install_project_files_button_, get_editor_theme_icon("Window"));
     check_tsc();
 }
 
@@ -184,10 +184,10 @@ void GodotJSREPL::check_install()
         GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton();
         if (!editor_plugin) break;
         if (!editor_plugin->verify_ts_project()) break;
-        preset_hint_label_->set_visible(false);
+        install_project_files_hint_label_->set_visible(false);
         return;
     } while (false);
-    preset_hint_label_->set_visible(true);
+    install_project_files_hint_label_->set_visible(true);
 }
 
 void GodotJSREPL::_gc_pressed()
@@ -201,17 +201,14 @@ void GodotJSREPL::_clear_pressed()
     output_box_->clear();
 }
 
-void GodotJSREPL::_install_preset_pressed()
+void GodotJSREPL::_install_project_files_pressed()
 {
-    if (GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton())
-    {
-        editor_plugin->try_install_ts_project();
-    }
+    GodotJSEditorPlugin::try_install_project_files();
 }
 
-void GodotJSREPL::_generate_dts_pressed()
+void GodotJSREPL::_generate_types_pressed()
 {
-    GodotJSEditorPlugin::generate_godot_dts();
+    GodotJSEditorPlugin::generate_types();
 }
 
 String GodotJSREPL::encode_string(const String& p_text)

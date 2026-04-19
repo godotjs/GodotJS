@@ -3,6 +3,9 @@
 #include "jsb_environment.h"
 #include "../internal/jsb_class_util.h"
 #include "core/object/script_language.h"
+#if JSB_WITH_EDITOR_UTILITY_FUNCS
+#include "modules/GodotJS/weaver-editor/jsb_editor_plugin.h"
+#endif
 
 #if GODOT_4_6_OR_NEWER
 using ConstantHashMap = AHashMap<StringName, int64_t>;
@@ -1170,6 +1173,165 @@ namespace jsb
         internal::PathUtil::delete_file(impl::Helper::to_string(isolate, info[0]));
     }
 
+    static void _install_project_files(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton();
+
+        if (editor_plugin == nullptr)
+        {
+            jsb_throw(isolate, "editor plugin unavailable");
+            return;
+        }
+
+        v8::HandleScope handle_scope(isolate);
+
+        auto context = isolate->GetCurrentContext();
+        auto result = v8::Promise::Resolver::New(context);
+
+        if (result.IsEmpty())
+        {
+            jsb_throw(isolate, "Failed to setup promise");
+            return;
+        }
+
+        auto resolver = result.ToLocalChecked();
+
+        bool force = info.Length() >= 0 && info[0]->IsBoolean() && info[0].As<v8::Boolean>()->Value();
+        editor_plugin->try_install_project_files([&](auto success)
+        {
+            if (success)
+            {
+                resolver->Resolve(context, v8::Undefined(isolate));
+            }
+            else
+            {
+                resolver->Reject(context, impl::Helper::new_string_ascii(isolate, "Failed to install project files"));
+            }
+        }, force);
+
+        info.GetReturnValue().Set(resolver->GetPromise());
+    }
+
+    static void _install_static_types(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton();
+
+        if (editor_plugin == nullptr)
+        {
+            jsb_throw(isolate, "editor plugin unavailable");
+            return;
+        }
+
+        v8::HandleScope handle_scope(isolate);
+
+        auto context = isolate->GetCurrentContext();
+        auto result = v8::Promise::Resolver::New(context);
+
+        if (result.IsEmpty())
+        {
+            jsb_throw(isolate, "Failed to setup promise");
+            return;
+        }
+
+        auto resolver = result.ToLocalChecked();
+        editor_plugin->install_static_types([&](auto success)
+        {
+            if (success)
+            {
+                resolver->Resolve(context, v8::Undefined(isolate));
+            }
+            else
+            {
+                resolver->Reject(context, impl::Helper::new_string_ascii(isolate, "Failed to install static types"));
+            }
+        });
+
+        info.GetReturnValue().Set(resolver->GetPromise());
+    }
+
+    static void _generate_types(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+
+        GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton();
+
+        if (editor_plugin == nullptr)
+        {
+            jsb_throw(isolate, "editor plugin unavailable");
+            return;
+        }
+
+        v8::HandleScope handle_scope(isolate);
+
+        auto context = isolate->GetCurrentContext();
+        auto result = v8::Promise::Resolver::New(context);
+
+        if (result.IsEmpty())
+        {
+            jsb_throw(isolate, "Failed to setup promise");
+            return;
+        }
+
+        auto resolver = result.ToLocalChecked();
+
+        bool skip_static_types = info.Length() >= 0 && info[0]->IsBoolean() && info[0].As<v8::Boolean>()->Value();
+        editor_plugin->generate_types([&](auto success)
+        {
+            if (success)
+            {
+                resolver->Resolve(context, v8::Undefined(isolate));
+            }
+            else
+            {
+                resolver->Reject(context, impl::Helper::new_string_ascii(isolate, "Failed to generate types"));
+            }
+        }, skip_static_types);
+
+        info.GetReturnValue().Set(resolver->GetPromise());
+    }
+
+    static void _cleanup_invalid_files(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+
+        GodotJSEditorPlugin* editor_plugin = GodotJSEditorPlugin::get_singleton();
+
+        if (editor_plugin == nullptr)
+        {
+            jsb_throw(isolate, "editor plugin unavailable");
+            return;
+        }
+
+        v8::HandleScope handle_scope(isolate);
+
+        auto context = isolate->GetCurrentContext();
+        auto result = v8::Promise::Resolver::New(context);
+
+        if (result.IsEmpty())
+        {
+            jsb_throw(isolate, "Failed to setup promise");
+            return;
+        }
+
+        auto resolver = result.ToLocalChecked();
+
+        editor_plugin->cleanup_invalid_files([&](auto success)
+        {
+            if (success)
+            {
+                resolver->Resolve(context, v8::Undefined(isolate));
+            }
+            else
+            {
+                resolver->Reject(context, impl::Helper::new_string_ascii(isolate, "Failed to cleanup invalid files"));
+            }
+        });
+
+        info.GetReturnValue().Set(resolver->GetPromise());
+    }
+
     void EditorUtilityFuncs::expose(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Object> jsb_obj)
     {
         v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
@@ -1183,6 +1345,10 @@ namespace jsb
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_primitive_types"), JSB_NEW_FUNCTION(context, _get_primitive_types, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_input_actions"), JSB_NEW_FUNCTION(context, _get_input_actions, {})).Check();
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "delete_file"), JSB_NEW_FUNCTION(context, _delete_file, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "install_project_files"), JSB_NEW_FUNCTION(context, _install_project_files, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "install_static_types"), JSB_NEW_FUNCTION(context, _install_static_types, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "generate_types"), JSB_NEW_FUNCTION(context, _generate_types, {})).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "cleanup_invalid_files"), JSB_NEW_FUNCTION(context, _cleanup_invalid_files, {})).Check();
 #ifdef GODOT_VERSION_DOCS_URL // 4.5+ or GDExtension
         editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_DOCS_URL"), impl::Helper::new_string(isolate, GODOT_VERSION_DOCS_URL)).Check();
 #else
@@ -1193,8 +1359,33 @@ namespace jsb
 #else
 namespace jsb
 {
+    namespace
+    {
+        static void _editor_only(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            jsb_throw(info.GetIsolate(), "jsb.editor methods are only available in editor builds");
+        }
+    }
+
     void EditorUtilityFuncs::expose(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Object> jsb_obj)
     {
+        v8::Local<v8::Object> editor_obj = v8::Object::New(isolate);
+        v8::Local<v8::Function> editor_only = JSB_NEW_FUNCTION(context, _editor_only, {});
+
+        jsb_obj->Set(context, impl::Helper::new_string_ascii(isolate, "editor"), editor_obj).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_class_doc"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_classes"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_global_constants"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_singletons"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_utility_functions"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_primitive_types"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "get_input_actions"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "delete_file"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "install_project_files"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "install_static_types"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "generate_types"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "cleanup_invalid_files"), editor_only).Check();
+        editor_obj->Set(context, impl::Helper::new_string_ascii(isolate, "VERSION_DOCS_URL"), impl::Helper::new_string_ascii(isolate, "")).Check();
     }
 }
 #endif // endif JSB_WITH_EDITOR_UTILITY_FUNCS

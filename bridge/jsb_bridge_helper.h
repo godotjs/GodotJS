@@ -1,6 +1,7 @@
 #ifndef GODOTJS_BRIDGE_HELPER_H
 #define GODOTJS_BRIDGE_HELPER_H
 #include "jsb_bridge_pch.h"
+#include "jsb_type_convert.h"
 
 namespace jsb
 {
@@ -49,6 +50,33 @@ namespace jsb
 
         // Get stacktrace info from exception
         static String get_stacktrace(const impl::TryCatch& p_catch, internal::SourcePosition& r_position);
+
+        template<typename T>
+        struct TVariantArray
+        {
+            static v8::Local<v8::Array> from_vector(v8::Isolate* p_isolate, const v8::Local<v8::Context>& p_context, Variant::Type p_type, const Vector<T>& vector)
+            {
+                typename Vector<T>::Size size = vector.size();
+                v8::Local<v8::Array> array = v8::Array::New(p_isolate);
+
+                for (typename Vector<T>::Size index = 0; index < size; ++index)
+                {
+                    const auto& variant = vector[index];
+
+                    v8::Local<v8::Value> value;
+
+                    if (!TypeConvert::gd_var_to_js(p_isolate, p_context, variant, p_type, value))
+                    {
+                        jsb_throw(p_isolate, "Failed to convert vector element");
+                        return v8::Local<v8::Array>();
+                    }
+
+                    array->Set(p_context, index, value);
+                }
+
+                return array;
+            }
+        };
     };
 }
 #endif

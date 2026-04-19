@@ -1,48 +1,48 @@
 import { spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { createServer } from "node:http";
+import { createServer, Server as HttpServer } from "node:http";
 import { createServer as createNetServer } from "node:net";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __filename: string = fileURLToPath(import.meta.url);
+const __dirname: string = dirname(__filename);
 
-const moduleRoot = resolve(__dirname, "../..");
-const godotRoot = resolve(moduleRoot, "../..");
-const projectPath = join(moduleRoot, "tests/project");
-const testsBinDir = join(moduleRoot, "tests/bin");
-const godotBinDir = join(godotRoot, "bin");
-const testSentinel = "GODOTJS_TEST_PROJECT_COMPLETED";
-const testFailureSentinelPrefix = "GODOTJS_TEST_PROJECT_FAILED:";
-const hostFailurePatterns = [
-    /\[jsb\]\[Error\]\s+exception thrown in function:/i,
+const moduleRoot: string = resolve(__dirname, "../..");
+const godotRoot: string = resolve(moduleRoot, "../..");
+const projectPath: string = join(moduleRoot, "tests/project");
+const testsBinDir: string = join(moduleRoot, "tests/bin");
+const godotBinDir: string = join(godotRoot, "bin");
+const testSentinel: string = "GODOTJS_TEST_PROJECT_COMPLETED";
+const testFailureSentinelPrefix: string = "GODOTJS_TEST_PROJECT_FAILED:";
+const hostFailurePatterns: RegExp[] = [
+    /\[jsb]\[Error]\s+exception thrown in function:/i,
     /^Uncaught\s+Error:/im,
 ];
 
-const hostPlatform = process.platform;
-const hostArch = process.arch === "arm64" ? "arm64" : "x86_64";
+const hostPlatform: string = process.platform;
+const hostArch: string = process.arch === "arm64" ? "arm64" : "x86_64";
 
-const isWindows = hostPlatform === "win32";
-const isLinux = hostPlatform === "linux";
-const isMac = hostPlatform === "darwin";
+const isWindows: boolean = hostPlatform === "win32";
+const isLinux: boolean = hostPlatform === "linux";
+const isMac: boolean = hostPlatform === "darwin";
 
-const hostSconsPlatform = isMac ? "macos" : isLinux ? "linuxbsd" : isWindows ? "windows" : null;
+const hostSconsPlatform: string | null = isMac ? "macos" : isLinux ? "linuxbsd" : isWindows ? "windows" : null;
 
 if (!hostSconsPlatform) {
     throw new Error(`Unsupported host platform: ${hostPlatform}`);
 }
 
-const hostVulkanArgs = [];
+const hostVulkanArgs: string[] = [];
 
 if (process.env.VULKAN_SDK_PATH) {
-	const vulkanSdkPath = process.env.VULKAN_SDK_PATH;
+    const vulkanSdkPath = process.env.VULKAN_SDK_PATH;
 
-	if (!existsSync(vulkanSdkPath)) {
-		throw new Error(`specified VULKAN_SDK_PATH does not exist: ${vulkanSdkPath}`);
-	}
+    if (!existsSync(vulkanSdkPath)) {
+        throw new Error(`specified VULKAN_SDK_PATH does not exist: ${vulkanSdkPath}`);
+    }
 
-	hostVulkanArgs.push(`vulkan_sdk_path=${vulkanSdkPath}`);
+    hostVulkanArgs.push(`vulkan_sdk_path=${vulkanSdkPath}`);
 }
 
 const webBootstrapFailurePatterns = [
@@ -50,14 +50,31 @@ const webBootstrapFailurePatterns = [
     /WebGL2 - Check web browser configuration and hardware support/i,
 ];
 
-const runtimeAliasMap = new Map([
+const runtimeAliasMap = new Map<string, string[]>([
     ["all", ["host-v8", "host-qjs", "host-jsc", "web-browser", "web-qjs"]],
     ["host", ["host-v8", "host-qjs", "host-jsc"]],
     ["web", ["web-browser", "web-qjs"]],
 ]);
-const selectableRuntimeNames = new Set(runtimeAliasMap.get("all"));
+const selectableRuntimeNames = new Set<string>(runtimeAliasMap.get("all"));
 
-function readCliArgValue(flagName) {
+interface RunCommandOptions {
+    cwd?: string;
+    env?: NodeJS.ProcessEnv;
+}
+
+interface StaticServer {
+    server: HttpServer;
+    port: number;
+    close: () => Promise<void>;
+}
+
+interface TestResult {
+    runtime: string;
+    status: "PASS" | "FAIL";
+    error?: string;
+}
+
+function readCliArgValue(flagName: string) {
     const inlinePrefix = `${flagName}=`;
 
     for (let i = 0; i < process.argv.length; i++) {
@@ -73,7 +90,7 @@ function readCliArgValue(flagName) {
             return "";
         }
 
-        if (token.startsWith(inlinePrefix)) {
+        if (token?.startsWith(inlinePrefix)) {
             return token.slice(inlinePrefix.length);
         }
     }
@@ -97,11 +114,11 @@ function parseRuntimeFilterArg() {
         throw new Error("--runtimes was provided but no runtime names were supplied");
     }
 
-    const expanded = new Set();
+    const expanded = new Set<string>();
 
     for (const token of requested) {
         if (runtimeAliasMap.has(token)) {
-            for (const aliasTarget of runtimeAliasMap.get(token)) {
+            for (const aliasTarget of runtimeAliasMap.get(token)!) {
                 expanded.add(aliasTarget);
             }
             continue;
@@ -117,13 +134,13 @@ function parseRuntimeFilterArg() {
     return expanded;
 }
 
-function collectFailureSentinelLines(output) {
+function collectFailureSentinelLines(output: string) {
     return output
         .split(/\r?\n/)
         .filter((line) => line.includes(testFailureSentinelPrefix));
 }
 
-function runCommand(label, command, args, options = {}) {
+function runCommand(label: string, command: string, args: string[], options: RunCommandOptions = {}) {
     const commandLine = [command, ...args].join(" ");
 
     console.log(`\n[run] ${label}`);
@@ -144,7 +161,9 @@ function runCommand(label, command, args, options = {}) {
     }
 
     if (result.status !== 0) {
-        throw new Error(`${label} failed with exit code ${String(result.status)}`);
+        throw new Error(`${label} failed with exit code ${String(result.status)}`, {
+            cause: combinedOutput,
+        });
     }
 
     return combinedOutput;
@@ -158,16 +177,16 @@ function listBinFiles() {
     return readdirSync(godotBinDir).map((name) => join(godotBinDir, name));
 }
 
-function findNewestFile(predicate) {
+function findNewestFile(predicate: (filePath: string) => boolean) {
     const files = listBinFiles();
-	let newest = null;
+    let newest: null | { filePath: string; mtimeMs: number } = null;
 
     for (const filePath of files) {
         if (!predicate(filePath)) {
             continue;
         }
 
-		const mtimeMs = statSync(filePath).mtimeMs;
+        const mtimeMs = statSync(filePath).mtimeMs;
 
         if (newest === null || mtimeMs > newest.mtimeMs) {
             newest = { filePath, mtimeMs };
@@ -177,10 +196,10 @@ function findNewestFile(predicate) {
     return newest?.filePath ?? null;
 }
 
-function hostBinaryPredicate(filePath) {
+function hostBinaryPredicate(filePath: string) {
     const name = basename(filePath);
 
-	if (isMac) {
+    if (isMac) {
         return /^godot\.macos\.editor/.test(name) && !name.endsWith(".app");
     }
 
@@ -191,16 +210,16 @@ function hostBinaryPredicate(filePath) {
     return /^godot\.windows\.editor/.test(name) && name.endsWith(".exe");
 }
 
-function expectedWebTemplateNameForRuntime(runtimeName) {
+function expectedWebTemplateNameForRuntime(runtimeName: string) {
     const suffix = runtimeName === "qjs" ? "web-qjs" : "web-browser";
     return `godot.web.template_debug.wasm32.dlink.${suffix}.zip`;
 }
 
-function ensureDir(path) {
+function ensureDir(path: string) {
     mkdirSync(path, { recursive: true });
 }
 
-function copyArtifact(sourcePath, targetName) {
+function copyArtifact(sourcePath: string, targetName: string) {
     ensureDir(testsBinDir);
     const targetPath = join(testsBinDir, targetName);
     copyFileSync(sourcePath, targetPath);
@@ -212,7 +231,7 @@ function detectBrowserExecutable() {
         return process.env.GODOTJS_TEST_BROWSER;
     }
 
-    const candidates = [];
+    const candidates: string[] = [];
 
     if (isMac) {
         candidates.push(
@@ -249,8 +268,8 @@ function detectBrowserExecutable() {
     return null;
 }
 
-function runHostProject(label, binaryPath) {
-    runCommand(`${label} generate-types`, binaryPath, ["-s", "generate-types.js", "--headless", "--path", projectPath], {
+function runHostProject(label: string, binaryPath: string) {
+    runCommand(`${label} generate-types`, binaryPath, ["--headless", "--editor", "--generate-types", "--path", projectPath], {
         cwd: projectPath,
     });
 
@@ -279,7 +298,7 @@ function runHostProject(label, binaryPath) {
     }
 }
 
-function generateWebExportPreset(templatePath, exportPath) {
+function generateWebExportPreset(templatePath: string, exportPath: string) {
     const presetPath = join(projectPath, "export_presets.cfg");
     const previous = existsSync(presetPath) ? readFileSync(presetPath, "utf-8") : null;
     const normalizedTemplate = templatePath.replaceAll("\\", "/");
@@ -335,7 +354,7 @@ threads/emscripten_pool_size=8
     };
 }
 
-function startStaticServer(rootPath) {
+function startStaticServer(rootPath: string): Promise<StaticServer> {
     const server = createServer((req, res) => {
         const urlPath = req.url?.split("?")[0] ?? "/";
         const relPath = urlPath === "/" ? "/index.html" : urlPath;
@@ -354,15 +373,15 @@ function startStaticServer(rootPath) {
         res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-		if (filePath.endsWith(".html")) {
-			res.setHeader("Content-Type", "text/html");
-		} else if (filePath.endsWith(".js")) {
-			res.setHeader("Content-Type", "application/javascript");
-		} else if (filePath.endsWith(".wasm")) {
-			res.setHeader("Content-Type", "application/wasm");
-		} else if (filePath.endsWith(".pck")) {
-			res.setHeader("Content-Type", "application/octet-stream");
-		}
+        if (filePath.endsWith(".html")) {
+            res.setHeader("Content-Type", "text/html");
+        } else if (filePath.endsWith(".js")) {
+            res.setHeader("Content-Type", "application/javascript");
+        } else if (filePath.endsWith(".wasm")) {
+            res.setHeader("Content-Type", "application/wasm");
+        } else if (filePath.endsWith(".pck")) {
+            res.setHeader("Content-Type", "application/octet-stream");
+        }
 
         res.writeHead(200);
         res.end(body);
@@ -372,7 +391,7 @@ function startStaticServer(rootPath) {
         server.listen(0, "127.0.0.1", () => {
             const address = server.address();
 
-			if (!address || typeof address === "string") {
+            if (!address || typeof address === "string") {
                 throw new Error("failed to start static server");
             }
 
@@ -388,7 +407,7 @@ function startStaticServer(rootPath) {
     });
 }
 
-function parseDebugPortOverride(rawValue) {
+function parseDebugPortOverride(rawValue: string | undefined) {
     if (typeof rawValue !== "string" || rawValue.trim().length === 0) {
         return null;
     }
@@ -401,7 +420,7 @@ function parseDebugPortOverride(rawValue) {
     return parsed;
 }
 
-function findAvailableTcpPort() {
+function findAvailableTcpPort(): Promise<number> {
     return new Promise((resolve, reject) => {
         const server = createNetServer();
 
@@ -429,7 +448,7 @@ function findAvailableTcpPort() {
     });
 }
 
-async function resolveDebugPort() {
+async function resolveDebugPort(): Promise<number> {
     const overridePort = parseDebugPortOverride(process.env.GODOTJS_TEST_DEBUG_PORT);
     if (overridePort !== null) {
         return overridePort;
@@ -438,7 +457,7 @@ async function resolveDebugPort() {
     return await findAvailableTcpPort();
 }
 
-async function waitForDebuggerEndpoint(port, timeoutMs) {
+async function waitForDebuggerEndpoint(port: number, timeoutMs: number): Promise<boolean> {
     const startedAt = Date.now();
 
     while (Date.now() - startedAt < timeoutMs) {
@@ -446,8 +465,8 @@ async function waitForDebuggerEndpoint(port, timeoutMs) {
             const response = await fetch(`http://127.0.0.1:${String(port)}/json/version`);
 
             if (response.ok) {
-				return true;
-			}
+                return true;
+            }
         } catch {
             // keep polling until timeout
         }
@@ -458,7 +477,7 @@ async function waitForDebuggerEndpoint(port, timeoutMs) {
     return false;
 }
 
-async function openDebuggerTarget(port, url) {
+async function openDebuggerTarget(port: number, url: string): Promise<any> {
     const endpoint = `http://127.0.0.1:${String(port)}/json/new?${encodeURIComponent(url)}`;
     const response = await fetch(endpoint, { method: "PUT" }).catch(async () => fetch(endpoint));
 
@@ -485,11 +504,11 @@ async function openDebuggerTarget(port, url) {
     return pageTarget;
 }
 
-async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName) {
+async function runWebProject(label: string, hostV8BinaryPath: string, templatePath: string, runtimeName: string): Promise<void> {
     const exportDir = join(testsBinDir, `${runtimeName}-export`);
 
     rmSync(exportDir, { recursive: true, force: true });
-	ensureDir(exportDir);
+    ensureDir(exportDir);
 
     const exportPath = join(exportDir, "index.html");
     const restorePreset = generateWebExportPreset(templatePath, exportPath);
@@ -541,7 +560,7 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
             throw new Error(`${label}: debugger target missing websocket URL`);
         }
 
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
             const ws = new WebSocket(wsUrl);
 
             const sentinelTimeout = setTimeout(() => {
@@ -549,14 +568,14 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
                 reject(new Error(`${label}: timed out waiting for sentinel log`));
             }, 120000);
 
-            const pending = new Map();
+            const pending = new Map<number, string>();
             let nextId = 1;
-            const consoleTail = [];
-            const workerSessions = new Set();
+            const consoleTail: string[] = [];
+            const workerSessions = new Set<string>();
             let settled = false;
-            let failureSentinelLine = null;
+            let failureSentinelLine: string | null = null;
 
-            function pushConsoleLine(line) {
+            function pushConsoleLine(line: string) {
                 if (line.length === 0) {
                     return;
                 }
@@ -566,7 +585,7 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
                 }
             }
 
-            function rejectWithTail(message) {
+            function rejectWithTail(message: string) {
                 if (settled) {
                     return;
                 }
@@ -590,10 +609,10 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
                 resolve();
             }
 
-            function send(method, params = {}, sessionId = undefined) {
+            function send(method: string, params: Record<string, any> = {}, sessionId?: string) {
                 const id = nextId++;
                 pending.set(id, method);
-                const message = { id, method, params };
+                const message: Record<string, any> = { id, method, params };
                 if (typeof sessionId === "string" && sessionId.length > 0) {
                     message.sessionId = sessionId;
                 }
@@ -612,8 +631,9 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
                 });
             };
 
-            ws.onmessage = (event) => {
-                const message = JSON.parse(String(event.data));
+            ws.onmessage = (event: MessageEvent) => {
+                // Using 'any' since standard DOM types don't cover Chrome DevTools Protocol structures
+                const message: any = JSON.parse(String(event.data));
 
                 if (message.id) {
                     pending.delete(message.id);
@@ -653,8 +673,6 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
                             ? exceptionText
                             : "unknown exception";
 
-                    // Non-fatal audio worklet warning in headless web runs.
-                    // It can surface from either main or worker debugger sessions.
                     if (rendered.includes("Unable to load a worklet's module")) {
                         pushConsoleLine(`${sourcePrefix}${rendered}`);
                         return;
@@ -662,16 +680,16 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
 
                     rejectWithTail(`${label}: ${sourcePrefix}browser runtime exception thrown: ${rendered}`);
                 } else if (message.method === "Runtime.consoleAPICalled") {
-                    const parts = [];
+                    const parts: string[] = [];
 
                     for (const arg of message.params.args ?? []) {
                         if (typeof arg.value === "string") {
-							parts.push(arg.value);
-						} else if (typeof arg.value === "number") {
-							parts.push(String(arg.value));
-						} else if (typeof arg.description === "string") {
-							parts.push(arg.description);
-						}
+                            parts.push(arg.value);
+                        } else if (typeof arg.value === "number") {
+                            parts.push(String(arg.value));
+                        } else if (typeof arg.description === "string") {
+                            parts.push(arg.description);
+                        }
                     }
 
                     const line = `${sourcePrefix}${parts.join(" ")}`;
@@ -713,22 +731,22 @@ async function runWebProject(label, hostV8BinaryPath, templatePath, runtimeName)
 const skipBuilds = process.argv.includes("--skip-builds");
 const selectedRuntimeFilter = parseRuntimeFilterArg();
 
-function isRuntimeSelected(runtimeName) {
+function isRuntimeSelected(runtimeName: string) {
     return selectedRuntimeFilter === null || selectedRuntimeFilter.has(runtimeName);
 }
 
-function buildHostRuntime(runtimeName) {
-	if (skipBuilds) {
-		const prefix = `godot-host-${runtimeName}`;
-		const files = existsSync(testsBinDir) ? readdirSync(testsBinDir) : [];
-		const match = files.find((name) => name === prefix || name.startsWith(`${prefix}.`));
+function buildHostRuntime(runtimeName: string) {
+    if (skipBuilds) {
+        const prefix = `godot-host-${runtimeName}`;
+        const files = existsSync(testsBinDir) ? readdirSync(testsBinDir) : [];
+        const match = files.find((name) => name === prefix || name.startsWith(`${prefix}.`));
 
-		if (!match) {
-			throw new Error(`failed to locate copied ${runtimeName} host binary`);
-		}
+        if (!match) {
+            throw new Error(`failed to locate copied ${runtimeName} host binary`);
+        }
 
-		return join(testsBinDir, match);
-	}
+        return join(testsBinDir, match);
+    }
 
     const args = [
         `platform=${hostSconsPlatform}`,
@@ -740,50 +758,63 @@ function buildHostRuntime(runtimeName) {
         ...hostVulkanArgs,
     ];
 
-	if (runtimeName === "qjs") {
+    if (runtimeName === "qjs") {
         args.push("use_quickjs_ng=yes");
     } else if (runtimeName === "jsc") {
-		args.push("use_jsc=yes");
+        args.push("use_jsc=yes");
     }
 
-	runCommand(`build host ${runtimeName}`, "scons", args, { cwd: godotRoot });
+    try {
+        runCommand(`build host ${runtimeName}`, "scons", args, {cwd: godotRoot});
+    } catch (e) {
+        if (e
+            && typeof e === 'object'
+            && 'cause' in e
+            && typeof e.cause === 'string'
+            && e.cause.includes('directory not found')
+            && e.cause.includes('vulkan_sdk_path')) {
+            throw new Error(`VULKAN_SDK_PATH environment variable must be specified`);
+        } else {
+            throw e;
+        }
+    }
 
-	const binaryPath = findNewestFile(hostBinaryPredicate);
+    const binaryPath = findNewestFile(hostBinaryPredicate);
 
     if (!binaryPath) {
         throw new Error(`build host ${runtimeName}: failed to locate built host binary`);
     }
 
-	const targetName = `godot-host-${runtimeName}${extname(binaryPath)}`;
+    const targetName = `godot-host-${runtimeName}${extname(binaryPath)}`;
 
     return copyArtifact(binaryPath, targetName);
 }
 
-function buildWebRuntime(runtimeName) {
-	const targetName = `godot-web-${runtimeName}-template_debug.zip`;
+function buildWebRuntime(runtimeName: string) {
+    const targetName = `godot-web-${runtimeName}-template_debug.zip`;
     const webBuildSuffix = runtimeName === "qjs" ? "web-qjs" : "web-browser";
-	const expectedTemplatePath = join(godotBinDir, expectedWebTemplateNameForRuntime(runtimeName));
+    const expectedTemplatePath = join(godotBinDir, expectedWebTemplateNameForRuntime(runtimeName));
 
-	if (skipBuilds) {
-		const targetPath = join(testsBinDir, targetName);
+    if (skipBuilds) {
+        const targetPath = join(testsBinDir, targetName);
 
-		if (!existsSync(targetPath)) {
-			throw new Error(`failed to locate copied ${runtimeName} web template`);
-		}
+        if (!existsSync(targetPath)) {
+            throw new Error(`failed to locate copied ${runtimeName} web template`);
+        }
 
-		return targetPath;
-	}
+        return targetPath;
+    }
 
-	    const args = [
-	        "platform=web",
-	        "target=template_debug",
-	        "dlink_enabled=yes",
-	        "debug_symbols=yes",
-	        "threads=yes",
-	        "optimize=debug",
-            `extra_suffix=${webBuildSuffix}`,
-	        ...hostVulkanArgs,
-	    ];
+    const args = [
+        "platform=web",
+        "target=template_debug",
+        "dlink_enabled=yes",
+        "debug_symbols=yes",
+        "threads=yes",
+        "optimize=debug",
+        `extra_suffix=${webBuildSuffix}`,
+        ...hostVulkanArgs,
+    ];
 
     if (runtimeName === "qjs") {
         args.push("use_quickjs_ng=yes");
@@ -798,9 +829,9 @@ function buildWebRuntime(runtimeName) {
     return copyArtifact(expectedTemplatePath, targetName);
 }
 
-async function main() {
+async function main(): Promise<void> {
     ensureDir(testsBinDir);
-    const results = [];
+    const results: TestResult[] = [];
 
     const needsWebBrowser = isRuntimeSelected("web-browser");
     const needsWebQjs = isRuntimeSelected("web-qjs");
@@ -814,7 +845,7 @@ async function main() {
         throw new Error("host-jsc runtime is only available on macOS");
     }
 
-	runCommand("build tests/project TS", "pnpm", ["-C", projectPath, "build"], { cwd: moduleRoot });
+    runCommand("build tests/project TS", "pnpm", ["-C", projectPath, "build"], { cwd: moduleRoot });
 
     const hostV8Binary = needsHostV8 ? buildHostRuntime("v8") : null;
     const hostQjsBinary = needsHostQjs ? buildHostRuntime("qjs") : null;
@@ -822,41 +853,43 @@ async function main() {
     const webBrowserTemplate = needsWebBrowser ? buildWebRuntime("browser") : null;
     const webQjsTemplate = needsWebQjs ? buildWebRuntime("qjs") : null;
 
-	const hostRuns = [
+    const hostRuns = [
         ...(isRuntimeSelected("host-v8") && hostV8Binary ? [{ runtime: "host-v8", binary: hostV8Binary }] : []),
         ...(isRuntimeSelected("host-qjs") && hostQjsBinary ? [{ runtime: "host-qjs", binary: hostQjsBinary }] : []),
-	];
+    ];
 
-	if (isRuntimeSelected("host-jsc") && hostJscBinary) {
-		hostRuns.push({ runtime: "host-jsc", binary: hostJscBinary });
-	}
+    if (isRuntimeSelected("host-jsc") && hostJscBinary) {
+        hostRuns.push({ runtime: "host-jsc", binary: hostJscBinary });
+    }
 
-	for (const run of hostRuns) {
-		try {
-			runHostProject(run.runtime, run.binary);
-			results.push({ runtime: run.runtime, status: "PASS" });
-		} catch (error) {
-			results.push({ runtime: run.runtime, status: "FAIL", error: String(error) });
-		}
-	}
+    for (const run of hostRuns) {
+        try {
+            runHostProject(run.runtime, run.binary);
+            results.push({ runtime: run.runtime, status: "PASS" });
+        } catch (error) {
+            results.push({ runtime: run.runtime, status: "FAIL", error: String(error) });
+        }
+    }
 
-	const webRuns = [
+    const webRuns = [
         ...(isRuntimeSelected("web-browser") && webBrowserTemplate ? [{ runtime: "web-browser", template: webBrowserTemplate }] : []),
         ...(isRuntimeSelected("web-qjs") && webQjsTemplate ? [{ runtime: "web-qjs", template: webQjsTemplate }] : []),
-	];
+    ];
 
-	for (const run of webRuns) {
-			try {
-                if (!hostV8Binary) {
-                    throw new Error("web runtime execution requires host-v8 binary");
-                }
-				await runWebProject(run.runtime, hostV8Binary, run.template, run.runtime);
+    for (const run of webRuns) {
+        try {
+            if (!hostV8Binary) {
+                results.push({ runtime: run.runtime, status: "FAIL", error: "web runtime execution requires host-v8 binary" });
+                return;
+            }
 
-			results.push({ runtime: run.runtime, status: "PASS" });
-		} catch (error) {
-			results.push({ runtime: run.runtime, status: "FAIL", error: String(error) });
-		}
-	}
+            await runWebProject(run.runtime, hostV8Binary, run.template, run.runtime);
+
+            results.push({ runtime: run.runtime, status: "PASS" });
+        } catch (error) {
+            results.push({ runtime: run.runtime, status: "FAIL", error: String(error) });
+        }
+    }
 
     console.log("\n=== GodotJS Runtime Test Matrix Summary ===");
 

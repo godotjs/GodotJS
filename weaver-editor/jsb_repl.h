@@ -18,9 +18,9 @@ private:
 
     Button* clear_button_;
     Button* gc_button_;
-    Button* dts_button_ = nullptr;
-    Button* preset_button_;
-    Label* preset_hint_label_;
+    Button* generate_types_button_ = nullptr;
+    Button* install_project_files_button_;
+    Label* install_project_files_hint_label_;
     Button* start_tsc_button_ = nullptr;
 
     ItemList* candidate_list_;
@@ -45,8 +45,8 @@ protected:
     void _input_focus_exit();
     void _clear_pressed();
     void _gc_pressed();
-    void _generate_dts_pressed();
-    void _install_preset_pressed();
+    void _generate_types_pressed();
+    void _install_project_files_pressed();
     void _start_tsc_pressed();
     void _notification(int p_what);
     void _show_candidates(const Vector<String>& p_items);
