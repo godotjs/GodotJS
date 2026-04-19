@@ -78,8 +78,16 @@ function getJSWorkerParent(): null | JSWorkerLike {
         return JSWorkerParent;
     }
 
-    const require = (globalThis as GodotWorkerGlobal).require;
-    JSWorkerParent = require?.("godot.worker").JSWorkerParent ?? null;
+    const require = (globalThis as GodotWorkerGlobal)["require"];
+    const module = typeof require === "function" ? require("godot.worker") : undefined;
+    const worker_parent_candidate = module?.["JSWorkerParent"];
+
+    if (worker_parent_candidate && typeof worker_parent_candidate.onmessage === "function") {
+        JSWorkerParent = worker_parent_candidate;
+    } else {
+        JSWorkerParent = null;
+    }
+
     return JSWorkerParent;
 }
 
@@ -109,6 +117,12 @@ interface jsbb_TransferMarker {
     data: number;
 }
 
+interface jsbb_PromiseResolver {
+    promise: Promise<unknown>;
+    resolve: (value: unknown) => void;
+    reject: (reason?: unknown) => void;
+}
+
 interface jsbb_TransferEncodeContext {
     native_transfers_used: boolean;
     transfer_index_by_object: Map<object, number>;
@@ -134,10 +148,11 @@ const enum jsbb_PostMessageResult {
 }
 
 function jsbb_create_transfer_marker(transfer_index: number): jsbb_TransferMarker {
-    return {
-        __jsb_type: jsbb_TransferType,
-        data: transfer_index >>> 0,
+    const marker: jsbb_TransferMarker = {
+        "__jsb_type": jsbb_TransferType,
+        "data": transfer_index >>> 0,
     };
+    return marker;
 }
 
 function jsbb_is_transfer_marker(value: unknown): value is jsbb_TransferMarker {
@@ -147,16 +162,16 @@ function jsbb_is_transfer_marker(value: unknown): value is jsbb_TransferMarker {
 
     const candidate = value as Partial<jsbb_TransferMarker>;
 
-    if (candidate.__jsb_type !== jsbb_TransferType) {
+    if (candidate["__jsb_type"] !== jsbb_TransferType) {
         return false;
     }
 
-    const transfer_index = Number(candidate.data);
+    const transfer_index = Number(candidate["data"]);
     return Number.isInteger(transfer_index) && transfer_index >= 0;
 }
 
 function jsbb_is_worker_message(value: unknown): value is WorkerMessage {
-    return typeof value === "object" && (value as null | Partial<WorkerMessage>)?.__jsbMessage || false;
+    return typeof value === "object" && (value as null | Partial<WorkerMessage>)?.["__jsbMessage"] || false;
 }
 
 function jsbb_IsTraceable(o: any): boolean {
@@ -1348,6 +1363,44 @@ class jsbb_Engine {
         return this._stack.Push({});
     }
 
+    PromiseResolverNew(): StackPosition {
+        let resolve: (value: unknown) => void = () => {};
+        let reject: (reason?: unknown) => void = () => {};
+        const promise = new Promise<unknown>((r, j) => {
+            resolve = r;
+            reject = j;
+        });
+        const resolver: jsbb_PromiseResolver = { promise, resolve, reject };
+        return this._stack.Push(resolver);
+    }
+
+    PromiseResolverGetPromise(resolver_sp: StackPosition): StackPosition {
+        const resolver = this._stack.GetValue(resolver_sp) as jsbb_PromiseResolver;
+        return this._stack.Push(resolver.promise);
+    }
+
+    PromiseResolverResolve(resolver_sp: StackPosition, value_sp: StackPosition): ResultValue {
+        try {
+            const resolver = this._stack.GetValue(resolver_sp) as jsbb_PromiseResolver;
+            resolver.resolve(this._stack.GetValue(value_sp));
+            return 1;
+        } catch (err) {
+            this._throw_trivial(err);
+            return -1;
+        }
+    }
+
+    PromiseResolverReject(resolver_sp: StackPosition, value_sp: StackPosition): ResultValue {
+        try {
+            const resolver = this._stack.GetValue(resolver_sp) as jsbb_PromiseResolver;
+            resolver.reject(this._stack.GetValue(value_sp));
+            return 1;
+        } catch (err) {
+            this._throw_trivial(err);
+            return -1;
+        }
+    }
+
     SetConstructor(func_sp: StackPosition, proto_sp: StackPosition): ResultValue {
         try {
             const p = this._stack.GetValue(proto_sp);
@@ -1871,12 +1924,12 @@ class _jsbb_ {
             }
 
             const payload: WorkerMessage = {
-                __jsbMessage: true,
-                data,
+                "__jsbMessage": true,
+                "data": data,
             };
 
             if (typeof transfer_id === "number") {
-                payload.transfer_id = transfer_id;
+                payload["transfer_id"] = transfer_id;
             }
 
             worker.postMessage(payload);
@@ -1905,17 +1958,17 @@ class _jsbb_ {
             if (worker) {
 				// Install our own message listener (in addition to what Emscripten puts in place)
 				worker.addEventListener("message", (event: MessageEvent) => {
-					if (event.data?.__jsbMessage !== true) {
+					if (event.data?.["__jsbMessage"] !== true) {
 						return;
 					}
 
-					const sender_pthread_id = typeof event.data.sender_pthread_id === "number"
-						? event.data.sender_pthread_id
+					const sender_pthread_id = typeof event.data["sender_pthread_id"] === "number"
+						? event.data["sender_pthread_id"]
 						: undefined;
 
 					this.queue_worker_message({
-						data: event.data.data,
-						transfer_id: event.data.transfer_id,
+						data: event.data["data"],
+						transfer_id: event.data["transfer_id"],
 						sender_pthread_id,
 					});
 
@@ -2001,16 +2054,20 @@ class _jsbb_ {
                 transfer_context,
                 message
             );
-            const outbound_transfer_id = transfer_context.native_transfers_used ? transfer_id : undefined;
+
+            const is_ready_sentinel_transfer_id = ENVIRONMENT_IS_PTHREAD && transfer_id === 0;
+            const outbound_transfer_id = (transfer_context.native_transfers_used || is_ready_sentinel_transfer_id)
+                ? transfer_id
+                : undefined;
 
             if (ENVIRONMENT_IS_PTHREAD) {
                 const payload: WorkerMessage = {
-                    __jsbMessage: true,
-                    data: rewritten,
-                    sender_pthread_id: pthread_id,
+                    "__jsbMessage": true,
+                    "data": rewritten,
+                    "sender_pthread_id": pthread_id,
                 };
                 if (typeof outbound_transfer_id === "number") {
-                    payload.transfer_id = outbound_transfer_id;
+                    payload["transfer_id"] = outbound_transfer_id;
                 }
                 postMessage(payload);
 
@@ -2134,13 +2191,13 @@ if (ENVIRONMENT_IS_PTHREAD && typeof globalThis.addEventListener === "function")
             return;
         }
 
-        const sender_pthread_id = typeof e.data.sender_pthread_id === "number"
-            ? e.data.sender_pthread_id
+        const sender_pthread_id = typeof e.data["sender_pthread_id"] === "number"
+            ? e.data["sender_pthread_id"]
             : undefined;
 
         _jsbb_.queue_worker_message({
-            data: e.data.data,
-            transfer_id: e.data.transfer_id,
+            data: e.data["data"],
+            transfer_id: e.data["transfer_id"],
             sender_pthread_id,
         });
 

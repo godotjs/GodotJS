@@ -6,11 +6,15 @@
 declare module "godot" {
     import { TypeDescriptor } from "jsb.editor.codegen";
 
+    class DisplayServer extends Object {
+        static get_name(): string;
+    }
+
     class Node<Map extends Record<string, Node> = any> extends Object {}
     class Resource {}
     class Script extends Resource {
-        get_global_name(): StringName
-        get_rpc_config(): any
+        get_global_name(): StringName;
+        get_rpc_config(): GDictionary<Record<string, unknown>>;
     }
 
     namespace ResourceLoader {

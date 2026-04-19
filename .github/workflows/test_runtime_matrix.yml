@@ -18,40 +18,45 @@ jobs:
       - name: ⏬ Checkout repository
         uses: actions/checkout@v6
 
-      - name: 🛠️ pnpm and build
-        uses: ./.github/actions/pnpm-build
+      - name: 🛠️ pnpm install
+        uses: ./.github/actions/pnpm-install
+
+      - name: 🛠️ pnpm build
+        run: |
+          pnpm build
+        shell: bash
 
       - name: ⏬ Download host-v8 artifact
         if: matrix.runtime == 'host-v8' || matrix.runtime == 'web-browser' || matrix.runtime == 'web-qjs'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-editor-${{ inputs.version }}-v8
           path: runtime-artifacts/host-v8
 
       - name: ⏬ Download host-qjs artifact
         if: matrix.runtime == 'host-qjs'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-editor-${{ inputs.version }}-qjs-ng
           path: runtime-artifacts/host-qjs
 
       - name: ⏬ Download host-jsc artifact
         if: matrix.runtime == 'host-jsc'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: macos-editor-${{ inputs.version }}-jsc
           path: runtime-artifacts/host-jsc
 
       - name: ⏬ Download web-browser template artifact
         if: matrix.runtime == 'web-browser'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: web-template_debug-${{ inputs.version }}-browser
           path: runtime-artifacts/web-browser
 
       - name: ⏬ Download web-qjs template artifact
         if: matrix.runtime == 'web-qjs'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: web-template_debug-${{ inputs.version }}-qjs-ng
           path: runtime-artifacts/web-qjs
@@ -109,6 +114,19 @@ jobs:
               ;;
           esac
 
-      - name: ▶️ Run selected runtime
+      - name: 🛠️ Install tests/project dependencies
+        shell: bash
         run: |
-          pnpm test -- --runtimes ${{ matrix.runtime }} --skip-builds
+          set -euo pipefail
+          pnpm -C tests/project install --ignore-workspace
+
+      - name: ▶️ Run selected runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ matrix.runtime }}" in
+            host-v8|web-browser|web-qjs) GODOT_BIN="${GITHUB_WORKSPACE}/tests/bin/godot-host-v8" ;;
+            host-qjs) GODOT_BIN="${GITHUB_WORKSPACE}/tests/bin/godot-host-qjs" ;;
+            host-jsc) GODOT_BIN="${GITHUB_WORKSPACE}/tests/bin/godot-host-jsc" ;;
+          esac
+          GODOT="$GODOT_BIN" pnpm test -- --runtimes ${{ matrix.runtime }} --skip-builds

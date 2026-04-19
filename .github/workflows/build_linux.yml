@@ -78,17 +78,10 @@ jobs:
         continue-on-error: true
 
       - name: Download scripts/out
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
-
-      - name: Download tests/project
-        if: ${{ !inputs.release && matrix.target == 'editor' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: tests-project
-          path: ${{github.workspace}}/modules/GodotJS/tests/project/.godot/GodotJS
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
@@ -128,6 +121,26 @@ jobs:
             ${{ matrix.engine == 'qjs-ng' && 'use_quickjs_ng=yes' || '' }}
             ${{ !inputs.release && matrix.target == 'editor' && 'tests=yes' || '' }}
           platform: linuxbsd
+
+      - name: Setup pnpm
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Build tests/project
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm -C "${{ github.workspace }}/modules/GodotJS/tests/project" install --ignore-workspace
+          GODOT="${{ github.workspace }}/bin/godot.linuxbsd.editor.x86_64" pnpm -C "${{ github.workspace }}/modules/GodotJS/tests/project" build
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save

@@ -3,6 +3,8 @@
 
 #include "jsb_editor_pch.h"
 
+#include <functional>
+
 namespace jsb::weaver
 {
     enum ECategoryHint : uint16_t
@@ -40,6 +42,7 @@ class InstallGodotJSPresetConfirmationDialog : public ConfirmationDialog
 
 public:
     Vector<jsb::weaver::InstallFileInfo> pending_installs_;
+    std::function<void(bool)> pending_installs_callback_;
 };
 
 // essential editor utilities for GodotJS, such as menu entries in the editor (Install Presets, Generate d.ts)
@@ -56,6 +59,9 @@ private:
     void _on_scene_saved(const String& p_path);
     void _on_resource_saved(const Ref<Resource>& p_resource);
     void _generate_imported_resource_dts(const Vector<String>& p_resources);
+    void _generate_types_from_cmdline();
+
+	static void _on_generate_completed(const v8::FunctionCallbackInfo<v8::Value>& info);
 
 protected:
     static void _bind_methods();
@@ -75,8 +81,8 @@ protected:
     static bool delete_file(const String& p_file);
     static void get_all_scenes(EditorFileSystemDirectory* p_dir, Vector<String>& r_list);
     static void get_all_resources(EditorFileSystemDirectory* p_dir, Vector<String>& r_list);
-    static void generate_scene_nodes_types(const Vector<String>& p_paths);
-    static void generate_resource_types(const Vector<String>& p_paths);
+    static void generate_scene_nodes_types(std::function<void(bool)> complete, const Vector<String>& p_paths);
+    static void generate_resource_types(std::function<void(bool)> complete, const Vector<String>& p_paths);
 
 public:
     GodotJSEditorPlugin();
@@ -87,21 +93,23 @@ public:
     void kill_tsc();
 
     void remove_obsolete_files();
-    void try_install_ts_project();
     bool verify_ts_project() const;
     void _ignore_node_modules();
-    void cleanup_invalid_files();
 
     // not really a singleton, but always get from `EditorNode` which assumed unique
     static GodotJSEditorPlugin* get_singleton();
 
-    static void generate_godot_dts();
+    static void generate_types(std::function<void(bool)> complete = {}, bool skip_static_types = false);
+    static void try_install_project_files(std::function<void(bool)> complete = {}, bool force = false);
+    static void cleanup_invalid_files(std::function<void(bool)> complete = {});
+    static void install_static_types(std::function<void(bool)> complete = {});
+
     static void generate_all_scene_nodes_types();
     static void generate_all_resource_types();
     static void ignore_node_modules();
     static void collect_invalid_files(Vector<String>& r_invalid_files);
     static void collect_invalid_files(const String& p_path, Vector<String>& r_invalid_files);
-    static void install_ts_project(const Vector<jsb::weaver::InstallFileInfo>& p_files);
+    static void install_project_files(std::function<void(bool)> complete, const Vector<jsb::weaver::InstallFileInfo>& p_files);
     static bool is_preset_source_valid(const String& p_filename) { return get_preset_source(p_filename).is_valid(); }
     static jsb::internal::PresetSource get_preset_source(const String& p_filename);
 

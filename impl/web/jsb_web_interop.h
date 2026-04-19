@@ -99,6 +99,7 @@ JSBROWSER_API jsb::impl::StackPosition jsbi_NewUint32(jsb::impl::JSRuntime engin
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewNumber(jsb::impl::JSRuntime engine_id, double val);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewBigInt64(jsb::impl::JSRuntime engine_id, int64_t* val_ptr);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewObject(jsb::impl::JSRuntime engine_id);
+JSBROWSER_API jsb::impl::StackPosition jsbi_NewPromiseResolver(jsb::impl::JSRuntime engine_id);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewClass(jsb::impl::JSRuntime engine_id, jsb::impl::FunctionPointer cb_ptr, jsb::impl::StackPosition data_sp, int field_count, const char* class_name_ptr);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewInstance(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition proto_sp);
 JSBROWSER_API jsb::impl::StackPosition jsbi_NewString(jsb::impl::JSRuntime engine_id, const char* str, int len);
@@ -109,6 +110,9 @@ JSBROWSER_API jsb::impl::ResultValue jsbi_SetProperty(jsb::impl::JSRuntime engin
 JSBROWSER_API jsb::impl::ResultValue jsbi_DefineProperty(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj_sp, jsb::impl::StackPosition key_sp, jsb::impl::StackPosition value_sp, jsb::impl::StackPosition get_sp, jsb::impl::StackPosition set_sp, /*jsb::impl::PropertyFlags*/ int flags);
 JSBROWSER_API jsb::impl::ResultValue jsbi_DefineLazyProperty(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj_sp, jsb::impl::StackPosition key_sp, jsb::impl::FunctionPointer cb);
 JSBROWSER_API jsb::impl::ResultValue jsbi_SetPropertyUint32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj, uint32_t index, jsb::impl::StackPosition value);
+JSBROWSER_API jsb::impl::StackPosition jsbi_PromiseResolverGetPromise(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition resolver_sp);
+JSBROWSER_API jsb::impl::ResultValue jsbi_PromiseResolverResolve(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition resolver_sp, jsb::impl::StackPosition value_sp);
+JSBROWSER_API jsb::impl::ResultValue jsbi_PromiseResolverReject(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition resolver_sp, jsb::impl::StackPosition value_sp);
 JSBROWSER_API jsb::impl::StackPosition jsbi_GetPropertyAtomID(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj_sp, int atom_id);
 JSBROWSER_API jsb::impl::StackPosition jsbi_GetProperty(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj_sp, jsb::impl::StackPosition key_sp);
 JSBROWSER_API jsb::impl::StackPosition jsbi_GetPropertyUint32(jsb::impl::JSRuntime engine_id, jsb::impl::StackPosition obj_sp, uint32_t index);

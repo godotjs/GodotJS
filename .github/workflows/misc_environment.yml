@@ -10,25 +10,23 @@ jobs:
       - name: ⏬ Checkout repository
         uses: actions/checkout@v6
 
-      - name: 🛠️ pnpm and build
-        uses: ./.github/actions/pnpm-build
+      - name: 🛠️ pnpm install
+        uses: ./.github/actions/pnpm-install
+
+      - name: 🛠️ pnpm build
+        run: |
+          pnpm build
+        shell: bash
 
       - name: ⬆️ Upload scripts/out
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: scripts-out
           path: ${{github.workspace}}/scripts/out
           retention-days: 10
 
-      - name: ⬆️ Upload tests/project
-        uses: actions/upload-artifact@v4
-        with:
-          name: tests-project
-          path: ${{github.workspace}}/tests/project/.godot/GodotJS
-          retention-days: 10
-
       - name: ⬆️ Upload impl/web/js
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: impl-web-js
           path: ${{github.workspace}}/impl/web/js

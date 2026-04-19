@@ -66,17 +66,10 @@ jobs:
         continue-on-error: true
 
       - name: Download scripts/out
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scripts-out
           path: ${{github.workspace}}/modules/GodotJS/scripts/out
-
-      - name: Download tests/project
-        if: ${{ !inputs.release && matrix.target == 'editor' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: tests-project
-          path: ${{github.workspace}}/modules/GodotJS/tests/project/.godot/GodotJS
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
@@ -150,6 +143,26 @@ jobs:
       - name: Prepare artifact
         run: |
           Remove-Item bin/* -Include *.exp,*.lib,*.pdb -Force
+
+      - name: Setup pnpm
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Build tests/project
+        if: ${{ !inputs.release && matrix.target == 'editor' }}
+        shell: pwsh
+        run: |
+          $env:GODOT = "${{ github.workspace }}/bin/godot.windows.editor.x86_64.exe"
+          pnpm -C "${{ github.workspace }}/modules/GodotJS/tests/project" install --ignore-workspace
+          pnpm -C "${{ github.workspace }}/modules/GodotJS/tests/project" build
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact

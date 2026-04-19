@@ -7,7 +7,6 @@ import type {
     Node,
     PropertyInfo,
     Resource,
-    ResourceLoader,
     ResourceTypes,
     Script,
     Variant,
@@ -754,7 +753,7 @@ class CodegenTasks {
         this.tasks.push({ name: name, execute: func });
     }
 
-    async submit(withToast: boolean = true) {
+    async submit() {
         const EditorProgress = godot.GodotJSEditorProgress;
         const progress = new EditorProgress();
         let force_wait = 24;
@@ -779,12 +778,21 @@ class CodegenTasks {
             }
 
             progress.finish();
-            if (withToast) {
-                toast(`${this._name} generated successfully`);
+
+            const message = `${this._name} generated successfully`;
+
+            if (godot.DisplayServer.get_name() === "headless") {
+                console.log(message);
+            } else {
+                toast(message);
             }
         } catch (e) {
             console.error(`CodegenTask ${this._name} error:`, e);
-            toast(`${this._name} failed!`);
+
+            if (godot.DisplayServer.get_name() !== "headless") {
+                toast(`${this._name} failed!`);
+            }
+
             progress.finish();
         }
     }
@@ -3410,9 +3418,9 @@ export class TSDCodeGen {
     private _types: TypeDB;
     private _use_project_settings: boolean;
 
-    constructor(outDir: string, use_project_settings: boolean) {
+    constructor(out_dir: string, use_project_settings: boolean) {
         this._split_index = 0;
-        this._out_dir = outDir;
+        this._out_dir = out_dir;
         this._use_project_settings = use_project_settings;
         this._types = new TypeDB();
     }
@@ -3433,7 +3441,6 @@ export class TSDCodeGen {
             this._splitter.close();
         }
         const filename = this.make_path(this._split_index++);
-        console.log("new writer", filename);
         this._splitter = new FileSplitter(this._types, filename);
         return this._splitter;
     }
@@ -3468,10 +3475,14 @@ export class TSDCodeGen {
         return typeof name === "string" && typeof this._types.classes[name] !== "undefined";
     }
 
-    async emit(showToast: boolean = true) {
+    async emit(skip_static_types = false) {
         await frame_step();
 
         const tasks = new CodegenTasks("Generating godot.d.ts");
+
+        if (!skip_static_types) {
+            tasks.add_task("Static Types", () => jsb.editor.install_static_types());
+        }
 
         // aliases
         tasks.add_task("Aliases", () => this.emit_aliases());
@@ -3552,7 +3563,7 @@ export class TSDCodeGen {
             this.cleanup();
         });
 
-        return tasks.submit(showToast);
+        return tasks.submit();
     }
 
     private emit_utility(utility_func: GodotJsb.editor.MethodBind) {
@@ -3581,6 +3592,10 @@ export class TSDCodeGen {
         }
         ns.finish();
     }
+
+	private emit_static_dts() {
+
+	}
 
     private emit_aliases() {
         const cg = this.split();
@@ -3843,7 +3858,7 @@ export class SceneTSDCodeGen {
             tasks.add_task(`Generating scene node types: ${scene_path}`, () => this.emit_scene_node_types(scene_path));
         }
 
-        return tasks.submit(false);
+        return tasks.submit();
     }
 
     private emit_children_node_types(writer: ScopeWriter, children: GReadProxyValueWrap<NodeTypeDescriptorPathMap>) {
@@ -3948,7 +3963,7 @@ export class ResourceTSDCodeGen {
             tasks.add_task(`Generating resource type: ${resource_path}`, () => this.emit_resource_type(resource_path));
         }
 
-        return tasks.submit(false);
+        return tasks.submit();
     }
 
     private get_script_rpc_info(resource_path: string): null | { class_name: string; methods: string[] } {
@@ -3960,23 +3975,22 @@ export class ResourceTSDCodeGen {
 
         const resource_loader = godot.ResourceLoader;
 
-        let script: undefined | Script;
+        let script: unknown;
 
         try {
-            script = resource_loader.load(resource_path) as Script;
+            script = resource_loader.load(resource_path);
         } catch (e) {
             console.warn(`Failed to generate RPC types for script: ${resource_path}`, e);
             return null;
         }
 
-        const class_name: string = script.get_global_name();
-        const rpc_config: null | GDictionary = script.get_rpc_config();
-
-        if (!class_name || !rpc_config) {
+        if (!(script instanceof godot.Script)) {
             return null;
         }
 
-        const methods: string[] = [...rpc_config.keys()].filter(name => name).sort();
+        const class_name = script.get_global_name();
+        const rpc_config = script.get_rpc_config();
+        const methods = [...rpc_config.keys()].filter(name => name).sort();
 
         if (methods.length === 0) {
             return null;

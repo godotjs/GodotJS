@@ -1,4 +1,5 @@
 #include "jsb_web_object.h"
+#include "jsb_web_context.h"
 #include "jsb_web_isolate.h"
 #include "jsb_web_function_interop.h"
 #include "jsb_web_template.h"
@@ -218,6 +219,47 @@ namespace v8
             return MaybeLocal<Array>();
         }
         return MaybeLocal<Array>(Data(isolate_, rval));
+    }
+
+    MaybeLocal<Promise::Resolver> Promise::Resolver::New(Local<Context> context)
+    {
+        Isolate* isolate = context->GetIsolate();
+        const jsb::impl::StackPosition rval = jsbi_NewPromiseResolver(isolate->rt());
+        if (rval == jsb::impl::StackBase::Error)
+        {
+            return MaybeLocal<Promise::Resolver>();
+        }
+        return MaybeLocal<Promise::Resolver>(Data(isolate, rval));
+    }
+
+    Local<Promise> Promise::Resolver::GetPromise()
+    {
+        const jsb::impl::StackPosition rval = jsbi_PromiseResolverGetPromise(isolate_->rt(), stack_pos_);
+        if (rval == jsb::impl::StackBase::Error)
+        {
+            return Local<Promise>();
+        }
+        return Local<Promise>(Data(isolate_, rval));
+    }
+
+    Maybe<bool> Promise::Resolver::Resolve(Local<Context> context, Local<Value> value)
+    {
+        const jsb::impl::ResultValue rval = jsbi_PromiseResolverResolve(isolate_->rt(), stack_pos_, value->stack_pos_);
+        if (rval == -1)
+        {
+            return Maybe<bool>();
+        }
+        return Maybe<bool>(true);
+    }
+
+    Maybe<bool> Promise::Resolver::Reject(Local<Context> context, Local<Value> value)
+    {
+        const jsb::impl::ResultValue rval = jsbi_PromiseResolverReject(isolate_->rt(), stack_pos_, value->stack_pos_);
+        if (rval == -1)
+        {
+            return Maybe<bool>();
+        }
+        return Maybe<bool>(true);
     }
 
 }
