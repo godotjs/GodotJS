@@ -330,7 +330,8 @@ Error GodotJSEditorPlugin::apply_file(const jsb::weaver::InstallFileInfo &p_file
     }
     Error err;
     size_t size;
-    const char* data = get_preset_source(p_file.source_name).get_data(size);
+    jsb::internal::PresetSource preset = get_preset_source(p_file.source_name);
+    const char* data = preset.get_data(size);
     ERR_FAIL_COND_V_MSG(size == 0 || data == nullptr, ERR_FILE_NOT_FOUND, "bad data");
     err = DirAccess::make_dir_recursive_absolute(p_file.target_dir);
     ERR_FAIL_COND_V_MSG(err != OK, err, "failed to make dir");
@@ -396,7 +397,8 @@ bool GodotJSEditorPlugin::verify_file(const jsb::weaver::InstallFileInfo& p_file
     }
 
     size_t size;
-    const char* data = get_preset_source(p_file.source_name).get_data(size);
+    jsb::internal::PresetSource preset = get_preset_source(p_file.source_name);
+    const char* data = preset.get_data(size);
     if (size == 0 || data == nullptr) return false;
     const String target_name = jsb::internal::PathUtil::combine(p_file.target_dir, p_file.source_name);
     if (!FileAccess::exists(target_name)) return false;
