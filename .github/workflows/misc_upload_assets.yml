@@ -27,6 +27,10 @@ jobs:
           - target: editor-app
             os: linux
           - target: template-app
+            os: linux
+          - target: editor-app
+            os: windows
+          - target: template-app
             os: windows
     steps:
       - name: ⏬ Checkout repo
