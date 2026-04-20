@@ -1,7 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer, Server as HttpServer } from "node:http";
-import { createServer as createNetServer } from "node:net";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -407,101 +406,175 @@ function startStaticServer(rootPath: string): Promise<StaticServer> {
     });
 }
 
-function parseDebugPortOverride(rawValue: string | undefined) {
-    if (typeof rawValue !== "string" || rawValue.trim().length === 0) {
-        return null;
-    }
-
-    const parsed = Number(rawValue);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
-        throw new Error(`invalid GODOTJS_TEST_DEBUG_PORT value: ${rawValue}`);
-    }
-
-    return parsed;
+interface CdpPipeMessage {
+    id?: number;
+    method?: string;
+    params?: Record<string, any>;
+    result?: Record<string, any>;
+    error?: { message?: string };
+    sessionId?: string;
 }
 
-function findAvailableTcpPort(): Promise<number> {
-    return new Promise((resolve, reject) => {
-        const server = createNetServer();
+class CdpPipeClient {
+    private readonly browser: ReturnType<typeof spawn>;
+    private readonly requestTimeoutMs: number;
+    private readonly pipeRead: NodeJS.ReadableStream;
+    private readonly pipeWrite: NodeJS.WritableStream;
+    private readonly pending = new Map<number, {
+        resolve: (value: Record<string, any>) => void;
+        reject: (error: Error) => void;
+        timeout: NodeJS.Timeout;
+        method: string;
+    }>();
+    private readonly eventListeners = new Set<(message: CdpPipeMessage) => void>();
+    private nextId = 1;
+    private closed = false;
+    private buffered = Buffer.alloc(0);
+    private closeError: Error | null = null;
 
-        server.once("error", (error) => {
-            reject(error);
+    constructor(
+        browser: ReturnType<typeof spawn>,
+        pipeRead: NodeJS.ReadableStream,
+        pipeWrite: NodeJS.WritableStream,
+        requestTimeoutMs = 15000,
+    ) {
+        this.browser = browser;
+        this.pipeRead = pipeRead;
+        this.pipeWrite = pipeWrite;
+        this.requestTimeoutMs = requestTimeoutMs;
+        pipeRead.on("data", (chunk: Buffer | string) => {
+            this.consume(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
         });
 
-        server.listen(0, "127.0.0.1", () => {
-            const address = server.address();
+        pipeRead.on("error", (error: Error) => {
+            this.failAll(new Error(`cdp pipe read error: ${error.message}`));
+        });
 
-            if (!address || typeof address === "string") {
-                server.close(() => reject(new Error("failed to allocate an ephemeral debug port")));
+        pipeWrite.on("error", (error: Error) => {
+            this.failAll(new Error(`cdp pipe write error: ${error.message}`));
+        });
+
+        browser.on("exit", (code: number | null, signal: NodeJS.Signals | null) => {
+            const detail = code !== null
+                ? `code ${String(code)}`
+                : `signal ${String(signal ?? "unknown")}`;
+            this.failAll(new Error(`browser process exited (${detail})`));
+        });
+    }
+
+    onEvent(listener: (message: CdpPipeMessage) => void) {
+        this.eventListeners.add(listener);
+        return () => {
+            this.eventListeners.delete(listener);
+        };
+    }
+
+    async send(method: string, params: Record<string, any> = {}, sessionId?: string): Promise<Record<string, any>> {
+        if (this.closed) {
+            throw this.closeError ?? new Error(`cdp connection is closed (method: ${method})`);
+        }
+
+        const id = this.nextId++;
+        const message: CdpPipeMessage = { id, method, params };
+        if (typeof sessionId === "string" && sessionId.length > 0) {
+            message.sessionId = sessionId;
+        }
+        const payload = `${JSON.stringify(message)}\0`;
+
+        return await new Promise<Record<string, any>>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                this.pending.delete(id);
+                reject(new Error(`cdp request timed out for method: ${method}`));
+            }, this.requestTimeoutMs);
+
+            this.pending.set(id, { resolve, reject, timeout, method });
+
+            this.pipeWrite.write(payload, (error?: Error | null) => {
+                if (!error) {
+                    return;
+                }
+
+                const pending = this.pending.get(id);
+                if (!pending) {
+                    return;
+                }
+
+                clearTimeout(pending.timeout);
+                this.pending.delete(id);
+                pending.reject(new Error(`failed to write cdp request (${method}): ${error.message}`));
+            });
+        });
+    }
+
+    close() {
+        if (this.closed) {
+            return;
+        }
+        this.closed = true;
+        this.pipeWrite.end();
+        this.failAll(new Error("cdp connection closed"));
+    }
+
+    private consume(chunk: Buffer) {
+        this.buffered = Buffer.concat([this.buffered, chunk]);
+
+        while (true) {
+            const delimiterIndex = this.buffered.indexOf(0);
+            if (delimiterIndex === -1) {
                 return;
             }
 
-            const { port } = address;
-            server.close((closeError) => {
-                if (closeError) {
-                    reject(closeError);
-                    return;
-                }
-                resolve(port);
-            });
-        });
-    });
-}
+            const frame = this.buffered.subarray(0, delimiterIndex);
+            this.buffered = this.buffered.subarray(delimiterIndex + 1);
 
-async function resolveDebugPort(): Promise<number> {
-    const overridePort = parseDebugPortOverride(process.env.GODOTJS_TEST_DEBUG_PORT);
-    if (overridePort !== null) {
-        return overridePort;
+            if (frame.length === 0) {
+                continue;
+            }
+
+            let message: CdpPipeMessage;
+            try {
+                message = JSON.parse(frame.toString("utf-8")) as CdpPipeMessage;
+            } catch (error) {
+                const rendered = error instanceof Error ? error.message : String(error);
+                this.failAll(new Error(`failed to parse cdp pipe frame: ${rendered}`));
+                return;
+            }
+
+            if (typeof message.id === "number") {
+                const pending = this.pending.get(message.id);
+                if (!pending) {
+                    continue;
+                }
+
+                clearTimeout(pending.timeout);
+                this.pending.delete(message.id);
+
+                if (message.error) {
+                    pending.reject(new Error(`cdp method failed (${pending.method}): ${message.error.message ?? "unknown error"}`));
+                } else {
+                    pending.resolve(message.result ?? {});
+                }
+                continue;
+            }
+
+            for (const listener of this.eventListeners) {
+                listener(message);
+            }
+        }
     }
 
-    return await findAvailableTcpPort();
-}
-
-async function waitForDebuggerEndpoint(port: number, timeoutMs: number): Promise<boolean> {
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < timeoutMs) {
-        try {
-            const response = await fetch(`http://127.0.0.1:${String(port)}/json/version`);
-
-            if (response.ok) {
-                return true;
-            }
-        } catch {
-            // keep polling until timeout
+    private failAll(error: Error) {
+        if (this.closeError) {
+            return;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        this.closeError = error;
+        for (const pending of this.pending.values()) {
+            clearTimeout(pending.timeout);
+            pending.reject(error);
+        }
+        this.pending.clear();
     }
-
-    return false;
-}
-
-async function openDebuggerTarget(port: number, url: string): Promise<any> {
-    const endpoint = `http://127.0.0.1:${String(port)}/json/new?${encodeURIComponent(url)}`;
-    const response = await fetch(endpoint, { method: "PUT" }).catch(async () => fetch(endpoint));
-
-    if (response.ok) {
-        return await response.json();
-    }
-
-    // Chrome occasionally rejects /json/new in headless mode. Fall back to reusing
-    // an existing page target and navigate it explicitly after attaching.
-    const listResponse = await fetch(`http://127.0.0.1:${String(port)}/json/list`);
-    if (!listResponse.ok) {
-        throw new Error(`failed to open debugger target: HTTP ${String(response.status)} (fallback /json/list failed with HTTP ${String(listResponse.status)})`);
-    }
-
-    const targets = await listResponse.json();
-    const pageTarget = Array.isArray(targets)
-        ? targets.find((target) => target?.type === "page" && typeof target?.webSocketDebuggerUrl === "string")
-        : null;
-
-    if (!pageTarget) {
-        throw new Error(`failed to open debugger target: HTTP ${String(response.status)} (no usable page target found)`);
-    }
-
-    return pageTarget;
 }
 
 async function runWebProject(label: string, hostV8BinaryPath: string, templatePath: string, runtimeName: string): Promise<void> {
@@ -527,7 +600,6 @@ async function runWebProject(label: string, hostV8BinaryPath: string, templatePa
         throw new Error(`${label}: no Chrome/Chromium browser found. Set GODOTJS_TEST_BROWSER to an executable path.`);
     }
 
-    const debugPort = await resolveDebugPort();
     const browser = spawn(browserExe, [
         "--headless=new",
         "--enable-webgl",
@@ -537,121 +609,80 @@ async function runWebProject(label: string, hostV8BinaryPath: string, templatePa
         "--disable-gpu-sandbox",
         "--no-first-run",
         "--no-default-browser-check",
-        `--remote-debugging-port=${String(debugPort)}`,
+        "--remote-debugging-pipe",
         "about:blank",
     ], {
-        stdio: "ignore",
+        stdio: ["ignore", "pipe", "pipe", "pipe", "pipe"],
     });
 
     const staticServer = await startStaticServer(exportDir);
+    const cdpWrite = browser.stdio[3];
+    const cdpRead = browser.stdio[4];
+
+    if (!cdpWrite || typeof (cdpWrite as { write?: unknown }).write !== "function") {
+        throw new Error(`${label}: browser process missing writable CDP pipe fd 3`);
+    }
+
+    if (!cdpRead || typeof (cdpRead as { on?: unknown }).on !== "function") {
+        throw new Error(`${label}: browser process missing readable CDP pipe fd 4`);
+    }
+
+    const cdp = new CdpPipeClient(
+        browser,
+        cdpRead as NodeJS.ReadableStream,
+        cdpWrite as NodeJS.WritableStream,
+    );
+    const browserErrorTail: string[] = [];
+
+    browser.stderr?.setEncoding("utf-8");
+    browser.stderr?.on("data", (chunk: string | Buffer) => {
+        const text = typeof chunk === "string" ? chunk : chunk.toString("utf-8");
+        for (const line of text.split(/\r?\n/)) {
+            const trimmed = line.trim();
+            if (!trimmed) {
+                continue;
+            }
+            browserErrorTail.push(trimmed);
+            if (browserErrorTail.length > 80) {
+                browserErrorTail.shift();
+            }
+        }
+    });
 
     try {
-        const debuggerReady = await waitForDebuggerEndpoint(debugPort, 15000);
-
-        if (!debuggerReady) {
-            throw new Error(`${label}: browser debugger endpoint did not start`);
-        }
-
         const targetUrl = `http://127.0.0.1:${String(staticServer.port)}/index.html`;
-        const target = await openDebuggerTarget(debugPort, targetUrl);
-        const wsUrl = target.webSocketDebuggerUrl;
-
-        if (!wsUrl) {
-            throw new Error(`${label}: debugger target missing websocket URL`);
-        }
 
         await new Promise<void>((resolve, reject) => {
-            const ws = new WebSocket(wsUrl);
-
             const sentinelTimeout = setTimeout(() => {
-                ws.close();
                 reject(new Error(`${label}: timed out waiting for sentinel log`));
             }, 120000);
 
-            const pending = new Map<number, string>();
-            let nextId = 1;
             const consoleTail: string[] = [];
             const workerSessions = new Set<string>();
             let settled = false;
             let failureSentinelLine: string | null = null;
-
-            function pushConsoleLine(line: string) {
-                if (line.length === 0) {
-                    return;
-                }
-                consoleTail.push(line);
-                if (consoleTail.length > 80) {
-                    consoleTail.shift();
-                }
-            }
-
-            function rejectWithTail(message: string) {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                clearTimeout(sentinelTimeout);
-                ws.close();
-
-                const tail = consoleTail.length > 0
-                    ? `\nConsole tail:\n${consoleTail.slice(-200).join("\n")}`
-                    : "";
-                reject(new Error(`${message}${tail}`));
-            }
-
-            function resolveDone() {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                clearTimeout(sentinelTimeout);
-                ws.close();
-                resolve();
-            }
-
-            function send(method: string, params: Record<string, any> = {}, sessionId?: string) {
-                const id = nextId++;
-                pending.set(id, method);
-                const message: Record<string, any> = { id, method, params };
-                if (typeof sessionId === "string" && sessionId.length > 0) {
-                    message.sessionId = sessionId;
-                }
-                ws.send(JSON.stringify(message));
-            }
-
-            ws.onopen = () => {
-                send("Runtime.enable");
-                send("Page.enable");
-                send("Log.enable");
-                send("Page.navigate", { url: targetUrl });
-                send("Target.setAutoAttach", {
-                    autoAttach: true,
-                    waitForDebuggerOnStart: false,
-                    flatten: true,
-                });
-            };
-
-            ws.onmessage = (event: MessageEvent) => {
-                // Using 'any' since standard DOM types don't cover Chrome DevTools Protocol structures
-                const message: any = JSON.parse(String(event.data));
-
-                if (message.id) {
-                    pending.delete(message.id);
+            const detachEventListener = cdp.onEvent((message: CdpPipeMessage) => {
+                const method = message.method;
+                if (typeof method !== "string") {
                     return;
                 }
 
-                if (message.method === "Target.attachedToTarget") {
+                if (method === "Target.attachedToTarget") {
                     const sessionId = message.params?.sessionId;
                     const targetType = message.params?.targetInfo?.type;
                     if (typeof sessionId === "string" && targetType === "worker") {
                         workerSessions.add(sessionId);
-                        send("Runtime.enable", {}, sessionId);
-                        send("Log.enable", {}, sessionId);
+                        cdp.send("Runtime.enable", {}, sessionId).catch((error) => {
+                            rejectWithTail(`${label}: failed to enable worker runtime domain: ${String(error)}`);
+                        });
+                        cdp.send("Log.enable", {}, sessionId).catch((error) => {
+                            rejectWithTail(`${label}: failed to enable worker log domain: ${String(error)}`);
+                        });
                     }
                     return;
                 }
 
-                if (message.method === "Target.detachedFromTarget") {
+                if (method === "Target.detachedFromTarget") {
                     const sessionId = message.params?.sessionId;
                     if (typeof sessionId === "string") {
                         workerSessions.delete(sessionId);
@@ -663,8 +694,8 @@ async function runWebProject(label: string, hostV8BinaryPath: string, templatePa
                     ? "[worker] "
                     : "";
 
-                if (message.method === "Runtime.exceptionThrown") {
-                    const details = message.params.exceptionDetails ?? {};
+                if (method === "Runtime.exceptionThrown") {
+                    const details = message.params?.exceptionDetails ?? {};
                     const exceptionDescription = details.exception?.description;
                     const exceptionText = details.text;
                     const rendered = typeof exceptionDescription === "string"
@@ -679,10 +710,13 @@ async function runWebProject(label: string, hostV8BinaryPath: string, templatePa
                     }
 
                     rejectWithTail(`${label}: ${sourcePrefix}browser runtime exception thrown: ${rendered}`);
-                } else if (message.method === "Runtime.consoleAPICalled") {
+                    return;
+                }
+
+                if (method === "Runtime.consoleAPICalled") {
                     const parts: string[] = [];
 
-                    for (const arg of message.params.args ?? []) {
+                    for (const arg of message.params?.args ?? []) {
                         if (typeof arg.value === "string") {
                             parts.push(arg.value);
                         } else if (typeof arg.value === "number") {
@@ -716,11 +750,94 @@ async function runWebProject(label: string, hostV8BinaryPath: string, templatePa
                         resolveDone();
                     }
                 }
-            };
+            });
 
-            ws.onerror = () => {
-                rejectWithTail(`${label}: websocket debugger error`);
-            };
+            function pushConsoleLine(line: string) {
+                if (line.length === 0) {
+                    return;
+                }
+                consoleTail.push(line);
+                if (consoleTail.length > 80) {
+                    consoleTail.shift();
+                }
+            }
+
+            function rejectWithTail(message: string) {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(sentinelTimeout);
+                cdp.close();
+
+                const tail = consoleTail.length > 0
+                    ? `\nConsole tail:\n${consoleTail.slice(-200).join("\n")}`
+                    : "";
+                const browserTail = browserErrorTail.length > 0
+                    ? `\nBrowser stderr tail:\n${browserErrorTail.slice(-200).join("\n")}`
+                    : "";
+                reject(new Error(`${message}${tail}${browserTail}`));
+            }
+
+            function resolveDone() {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(sentinelTimeout);
+                cdp.close();
+                resolve();
+            }
+
+            (async () => {
+                try {
+                    await cdp.send("Browser.getVersion");
+                    await cdp.send("Target.setAutoAttach", {
+                        autoAttach: true,
+                        waitForDebuggerOnStart: false,
+                        flatten: true,
+                    });
+
+                    const created = await cdp.send("Target.createTarget", { url: targetUrl });
+                    const targetId = created.targetId;
+
+                    if (typeof targetId !== "string" || targetId.length === 0) {
+                        rejectWithTail(`${label}: failed to create page target via cdp pipe`);
+                        return;
+                    }
+
+                    const attached = await cdp.send("Target.attachToTarget", { targetId, flatten: true });
+                    const mainSessionId = attached.sessionId;
+
+                    if (typeof mainSessionId !== "string" || mainSessionId.length === 0) {
+                        rejectWithTail(`${label}: failed to attach to page target via cdp pipe`);
+                        return;
+                    }
+
+                    await cdp.send("Runtime.enable", {}, mainSessionId);
+                    await cdp.send("Page.enable", {}, mainSessionId);
+                    await cdp.send("Log.enable", {}, mainSessionId);
+                } catch (error) {
+                    const rendered = error instanceof Error ? error.message : String(error);
+                    rejectWithTail(`${label}: failed to initialize browser debugger pipe: ${rendered}`);
+                }
+            })();
+
+            browser.once("error", (error) => {
+                detachEventListener();
+                rejectWithTail(`${label}: browser process error: ${error.message}`);
+            });
+
+            browser.once("exit", (code, signal) => {
+                if (settled) {
+                    return;
+                }
+                detachEventListener();
+                const detail = code !== null
+                    ? `code ${String(code)}`
+                    : `signal ${String(signal ?? "unknown")}`;
+                rejectWithTail(`${label}: browser process exited before sentinel (${detail})`);
+            });
         });
     } finally {
         await staticServer.close();
