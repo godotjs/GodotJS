@@ -7,7 +7,7 @@ namespace jsb
 {
     namespace
     {
-        // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood 
+        // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood
         PackedStringArray get_dynamic_search_paths()
         {
 #ifdef TOOLS_ENABLED
@@ -18,7 +18,7 @@ namespace jsb
 #endif
         }
     }
-    
+
     bool IModuleResolver::load_as_json(Environment* p_env, JavaScriptModule& p_module, const String& p_asset_path, const Vector<uint8_t>& p_bytes, size_t p_len)
     {
         v8::Isolate* isolate = p_env->get_isolate();
@@ -399,7 +399,12 @@ namespace jsb
 
         if (package_exports.is_empty())
         {
-            // No exports mapping, fall back to absolute resolution
+            if (p_module_id.is_empty())
+            {
+                // Avoid infinite recursion for package root lookups: callers already attempt directory index fallback.
+                return false;
+            }
+
             return this->check_absolute_file_path(internal::PathUtil::combine(p_package_path, p_module_id), o_source_info);
         }
 
@@ -526,7 +531,7 @@ namespace jsb
         internal::FileAccessSourceReader reader(p_asset_path);
         return load(p_env, p_asset_path, reader, p_module);
     }
-    
+
     bool DefaultModuleResolver::load(Environment* p_env, const String& p_asset_path, const internal::ISourceReader& p_reader, JavaScriptModule& p_module)
     {
         if (p_reader.is_null() || p_reader.get_length() == 0)
