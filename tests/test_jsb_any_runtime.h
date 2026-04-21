@@ -504,7 +504,7 @@ console.assert(!gd.is_instance_valid(inst));
 
     TEST_CASE("[jsb] RefCounted objects")
     {
-        WeakRef* weak_ref = memnew(WeakRef);
+        Ref<WeakRef> weak_ref = memnew(WeakRef);
         {
             GodotJSScriptLanguageIniter initer;
 
@@ -535,7 +535,6 @@ file = undefined;
         }
         // There is no strong reference anymore, therefore the FileAccess object should have been deleted by JS GC.
         CHECK(weak_ref->get_ref().is_null());
-        memdelete(weak_ref);
     }
 }
 

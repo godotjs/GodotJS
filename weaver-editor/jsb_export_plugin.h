@@ -19,7 +19,7 @@ public:
     virtual String get_name() const override;
     virtual bool supports_platform(const Ref<EditorExportPlatform>& p_export_platform) const override;
 
-    static const HashSet<String> get_ignored_paths() { return ignored_paths_; }
+    static const HashSet<String>& get_ignored_paths() { return ignored_paths_; }
 
 protected:
     virtual void _export_begin(const HashSet<String>& p_features, bool p_debug, const String& p_path, int p_flags) override;
