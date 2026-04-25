@@ -652,7 +652,7 @@ namespace jsb
             v8::HandleScope handle_scope(isolate);
             v8::Isolate::Scope isolate_scope(isolate);
             const WorkerID worker_id = (WorkerID) info.Data().As<v8::Uint32>()->Value();
-            Worker::terminate(worker_id);
+            Worker::request_termination(worker_id);
         }
 
         // worker -> master (run in worker env)
@@ -1068,7 +1068,7 @@ namespace jsb
         return (bool) o_worker_impl;
     }
 
-    bool Worker::terminate(WorkerID p_id)
+    bool Worker::request_termination(WorkerID p_id)
     {
         bool res = false;
         lock_.lock();
@@ -1080,6 +1080,41 @@ namespace jsb
         }
         lock_.unlock();
         return res;
+    }
+
+    bool Worker::terminate(WorkerID p_id)
+    {
+        WorkerImplPtr impl;
+        lock_.lock();
+        const bool found = worker_list_.try_get_value(p_id, impl);
+        if (found)
+        {
+            impl->finish();
+        }
+        lock_.unlock();
+
+        if (!found)
+        {
+            return false;
+        }
+
+        const Thread::ID thread_id = impl->get_thread_id();
+        jsb_check(thread_id != Thread::get_caller_id());
+        impl->join();
+
+        lock_.lock();
+        const WorkerID* mapped_id = workers_.getptr(thread_id);
+        if (mapped_id && *mapped_id == p_id)
+        {
+            workers_.erase(thread_id);
+        }
+        if (worker_list_.is_valid_index(p_id))
+        {
+            worker_list_.remove_at(p_id);
+        }
+        lock_.unlock();
+
+        return true;
     }
 
     void Worker::finish()
@@ -1309,10 +1344,14 @@ namespace jsb
             jsb_throw(isolate, "bad this");
             return;
         }
-        const Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
+        Worker* worker = (Worker*) self->GetAlignedPointerFromInternalField(IF_Pointer);
         if (!Worker::terminate(worker->id_))
         {
             JSB_WORKER_LOG(Warning, "can not terminate a dead worker");
+        }
+        else
+        {
+            worker->id_ = {};
         }
     }
 

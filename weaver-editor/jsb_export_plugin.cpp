@@ -72,7 +72,9 @@ void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<Strin
         {
             get_script_resources(path, r_list, p_is_node_module);
         }
-        else if (ResourceLoader::get_resource_type(path) == jsb_typename(GodotJSScript) && !get_ignored_paths().has(path))
+        else if (!get_ignored_paths().has(path)
+            && (ResourceLoader::get_resource_type(path) == jsb_typename(GodotJSScript)
+                || (p_is_node_module && filename == "package.json")))
         {
             r_list.push_back(path);
         }
