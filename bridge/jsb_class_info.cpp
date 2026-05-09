@@ -99,7 +99,7 @@ namespace jsb
 #ifdef TOOLS_ENABLED
         // class doc
         v8::Local<v8::Map> doc_map;
-        if (v8::Local<v8::Value> val; prototype->Get(p_context, jsb_symbol(environment, MemberDocMap)).ToLocal(&val) && val->IsMap())
+        if (v8::Local<v8::Value> val; prototype->HasOwnProperty(p_context, jsb_symbol(environment, MemberDocMap)).ToChecked() && prototype->Get(p_context, jsb_symbol(environment, MemberDocMap)).ToLocal(&val) && val->IsMap())
         {
             doc_map = val.As<v8::Map>();
         }
@@ -209,7 +209,7 @@ namespace jsb
         // signals (@signal_)
         {
             v8::Local<v8::Value> val_test;
-            if (prototype->Get(p_context, jsb_symbol(environment, ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
+            if (prototype->HasOwnProperty(p_context, jsb_symbol(environment, ClassSignals)).ToChecked() && prototype->Get(p_context, jsb_symbol(environment, ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
@@ -238,7 +238,7 @@ namespace jsb
         // detect all exported properties (which annotated with @export_)
         {
             v8::Local<v8::Value> val_test;
-            if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
+            if (prototype->HasOwnProperty(p_context, jsb_symbol(environment, ClassProperties)).ToChecked() && prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
             {
                 const v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();

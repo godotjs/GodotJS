@@ -376,7 +376,20 @@ ScriptLanguage* GodotJSScript::get_language() const
 
 bool GodotJSScript::has_script_signal(const StringName& p_signal) const
 {
-    return is_valid() ? script_class_info_.signals.has(p_signal) : false;
+    if (is_valid())
+    {
+        if(script_class_info_.signals.has(p_signal))
+        {
+            return true;
+        }
+
+        if (base.is_valid())
+        {
+            return base->has_script_signal(p_signal);
+        }
+    }
+
+    return false;
 }
 
 void GodotJSScript::get_script_signal_list(List<MethodInfo>* r_signals) const
