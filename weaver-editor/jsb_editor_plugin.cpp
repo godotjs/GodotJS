@@ -856,9 +856,11 @@ try {
 
     std::shared_ptr<jsb::Environment> environment = lang->get_environment();
     v8::Isolate* isolate = environment->get_isolate();
+    v8::Isolate::Scope isolate_scope(isolate);
 
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Context> context = environment->get_context();
+    v8::Context::Scope context_scope(context);
 
     v8::MaybeLocal<v8::Value> func_maybe = jsb::impl::Helper::compile_function(
         context, code, ::std::size(code) - 1, "generate_resource_type");
@@ -930,9 +932,11 @@ try {
 
     std::shared_ptr<jsb::Environment> environment = lang->get_environment();
     v8::Isolate* isolate = environment->get_isolate();
+    v8::Isolate::Scope isolate_scope(isolate);
 
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Context> context = environment->get_context();
+    v8::Context::Scope context_scope(context);
 
     v8::MaybeLocal<v8::Value> func_maybe = jsb::impl::Helper::compile_function(
         context, code, ::std::size(code) - 1, "generate_resource_type");
