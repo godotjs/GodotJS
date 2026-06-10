@@ -255,22 +255,34 @@ namespace jsb
         , object_db_(p_params.initial_object_slots)
     {
         JSB_BENCHMARK_SCOPE(JSEnvironment, Construct);
-        impl::GlobalInitialize::init();
-        v8::Isolate::CreateParams create_params;
-        create_params.array_buffer_allocator = &allocator_;
+
+        // Serialize V8 platform init + isolate creation across threads. The editor's
+        // resource loader constructs shadow Environments on worker threads (see
+        // GodotJSScriptLanguage::create_shadow_environment), concurrently with the main
+        // Environment and with each other. Unsynchronized v8::Isolate::New races V8's
+        // first-time lazy global initialization and crashes (SIGSEGV deep in
+        // v8::base::LazyInstanceImpl<Mutex>::InitInstance) on optimized builds.
+        static Mutex isolate_creation_mutex;
+        {
+            MutexLock isolate_creation_lock(isolate_creation_mutex);
+
+            impl::GlobalInitialize::init();
+            v8::Isolate::CreateParams create_params;
+            create_params.array_buffer_allocator = &allocator_;
 #if JSB_V8_CPPGC
-        // old version:
-        cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(),
-            v8::CppHeapCreateParams({}, v8::WrapperDescriptor(kWrapperTypeIndex, kWrapperInstanceIndex, kWrapperID)));
-        // new version:
-        // cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(), v8::CppHeapCreateParams({}));
-        create_params.cpp_heap = cpp_heap_.get();
+            // old version:
+            cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(),
+                v8::CppHeapCreateParams({}, v8::WrapperDescriptor(kWrapperTypeIndex, kWrapperInstanceIndex, kWrapperID)));
+            // new version:
+            // cpp_heap_ = v8::CppHeap::Create(impl::GlobalInitialize::get_platform(), v8::CppHeapCreateParams({}));
+            create_params.cpp_heap = cpp_heap_.get();
 #endif
 
-        if (p_params.type == Type::Worker) flags_ |= EF_Worker;
-        else if (p_params.type == Type::Shadow) flags_ |= EF_Shadow;
+            if (p_params.type == Type::Worker) flags_ |= EF_Worker;
+            else if (p_params.type == Type::Shadow) flags_ |= EF_Shadow;
 
-        isolate_ = v8::Isolate::New(create_params);
+            isolate_ = v8::Isolate::New(create_params);
+        }
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
 #if JSB_PRINT_GC_TIME
