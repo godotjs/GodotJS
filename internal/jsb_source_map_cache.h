@@ -12,6 +12,11 @@ namespace jsb::internal
         // try to translate the source positions in stacktrace
         String process_source_position(const String& p_stacktrace, SourcePosition* r_position = nullptr);
 
+        // populate the cache directly with the source map JSON for `p_filename`,
+        // used by the .ts loader to wire SWC's inline sourcemap into V8 stack remap.
+        // overwrites any previously cached entry for `p_filename`.
+        void feed(const String& p_filename, const String& p_json);
+
         void invalidate(const String& p_filename);
 
         void clear();

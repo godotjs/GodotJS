@@ -120,8 +120,23 @@ fn make_error(msg: &[u8]) -> *mut TranspileResult {
     }))
 }
 
+struct SmConfig;
+
+impl swc_core::common::source_map::SourceMapGenConfig for SmConfig {
+    fn file_name_to_source(&self, f: &swc_core::common::FileName) -> String {
+        f.to_string()
+    }
+
+    // The default impl excludes FileName::Custom from inlining; we want it on
+    // so the data URL is fully self-contained — DevTools and stack traces can
+    // resolve `.ts` source without a separate HTTP fetch.
+    fn inline_sources_content(&self, _f: &swc_core::common::FileName) -> bool {
+        true
+    }
+}
+
 fn transpile(source: &str, filename: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
-    use swc_core::common::{sync::Lrc, FileName, Globals, Mark, SourceMap, GLOBALS};
+    use swc_core::common::{sync::Lrc, BytePos, FileName, Globals, LineCol, Mark, SourceMap, GLOBALS};
     use swc_core::ecma::ast::{EsVersion, Pass};
     use swc_core::ecma::codegen::{text_writer::JsWriter, Config, Emitter};
     use swc_core::ecma::parser::{lexer::Lexer, Parser, StringInput, Syntax, TsSyntax};
@@ -158,61 +173,81 @@ fn transpile(source: &str, filename: &str) -> Result<(Vec<u8>, Vec<u8>), String>
         .map_err(|e| format!("parse error: {e:?}"))?;
 
     let globals = Globals::new();
-    let buf = GLOBALS.set(&globals, || -> Result<Vec<u8>, String> {
-        // common_js (and other passes) reach into HELPERS — a separate scoped
-        // TLS for the `_define`/`_object_spread`/etc. helper-injection table.
-        // Without it, the lazy_require path inside <Cjs as VisitMut> panics.
-        HELPERS.set(&Helpers::new(false), || -> Result<Vec<u8>, String> {
-            let unresolved_mark = Mark::new();
-            let top_level_mark = Mark::new();
+    let (buf, src_map_buf) = GLOBALS.set(
+        &globals,
+        || -> Result<(Vec<u8>, Vec<(BytePos, LineCol)>), String> {
+            // common_js (and other passes) reach into HELPERS — a separate scoped
+            // TLS for the `_define`/`_object_spread`/etc. helper-injection table.
+            // Without it, the lazy_require path inside <Cjs as VisitMut> panics.
+            HELPERS.set(
+                &Helpers::new(false),
+                || -> Result<(Vec<u8>, Vec<(BytePos, LineCol)>), String> {
+                    let unresolved_mark = Mark::new();
+                    let top_level_mark = Mark::new();
 
-            let mut passes = (
-                resolver(unresolved_mark, top_level_mark, true),
-                // Strip TS-only syntax (type annotations, declare, generics) first,
-                // then lower TC39 decorators + `accessor` fields against plain JS.
-                strip(unresolved_mark, top_level_mark),
-                decorator_2022_03(),
-                common_js(
-                    ModResolver::default(),
-                    unresolved_mark,
-                    Default::default(),
-                    Default::default(),
-                ),
-                // Inline definitions for _interop_require_default etc. that
-                // common_js emits. Without this, the generated CJS references
-                // helpers that the engine has no way to resolve at runtime.
-                inject_helpers(unresolved_mark),
-                // Disambiguates same-named identifiers by syntax context — the
-                // decorator pass mints private `_dec` / `_init_*` placeholders
-                // that collide without renaming, collapsing every decorator to
-                // the last-assigned value.
-                hygiene(),
-                // Wraps low-precedence sub-expressions in parens so codegen is
-                // syntactically correct — without it, common_js's `(0, foo.bar)()`
-                // indirect-eval pattern emits as `0, foo.bar()` which parses as
-                // two `const` declarators when the result is assigned to a const.
-                fixer(None),
-            );
-            passes.process(&mut program);
+                    let mut passes = (
+                        resolver(unresolved_mark, top_level_mark, true),
+                        // Strip TS-only syntax (type annotations, declare, generics) first,
+                        // then lower TC39 decorators + `accessor` fields against plain JS.
+                        strip(unresolved_mark, top_level_mark),
+                        decorator_2022_03(),
+                        common_js(
+                            ModResolver::default(),
+                            unresolved_mark,
+                            Default::default(),
+                            Default::default(),
+                        ),
+                        // Inline definitions for _interop_require_default etc. that
+                        // common_js emits. Without this, the generated CJS references
+                        // helpers that the engine has no way to resolve at runtime.
+                        inject_helpers(unresolved_mark),
+                        // Disambiguates same-named identifiers by syntax context — the
+                        // decorator pass mints private `_dec` / `_init_*` placeholders
+                        // that collide without renaming, collapsing every decorator to
+                        // the last-assigned value.
+                        hygiene(),
+                        // Wraps low-precedence sub-expressions in parens so codegen is
+                        // syntactically correct — without it, common_js's `(0, foo.bar)()`
+                        // indirect-eval pattern emits as `0, foo.bar()` which parses as
+                        // two `const` declarators when the result is assigned to a const.
+                        fixer(None),
+                    );
+                    passes.process(&mut program);
 
-            // Emitter must run inside GLOBALS — emit_program walks AST nodes
-            // whose SyntaxContext lookups touch the thread-local globals.
-            let mut buf = Vec::new();
-            {
-                let writer = JsWriter::new(cm.clone(), "\n", &mut buf, None);
-                let mut emitter = Emitter {
-                    cfg: Config::default(),
-                    cm: cm.clone(),
-                    comments: None,
-                    wr: writer,
-                };
-                emitter
-                    .emit_program(&program)
-                    .map_err(|e| format!("emit error: {e:?}"))?;
-            }
-            Ok(buf)
-        })
-    })?;
+                    // Emitter must run inside GLOBALS — emit_program walks AST nodes
+                    // whose SyntaxContext lookups touch the thread-local globals.
+                    let mut buf = Vec::new();
+                    let mut src_map_buf: Vec<(BytePos, LineCol)> = Vec::new();
+                    {
+                        let writer = JsWriter::new(
+                            cm.clone(),
+                            "\n",
+                            &mut buf,
+                            Some(&mut src_map_buf),
+                        );
+                        let mut emitter = Emitter {
+                            cfg: Config::default(),
+                            cm: cm.clone(),
+                            comments: None,
+                            wr: writer,
+                        };
+                        emitter
+                            .emit_program(&program)
+                            .map_err(|e| format!("emit error: {e:?}"))?;
+                    }
+                    Ok((buf, src_map_buf))
+                },
+            )
+        },
+    )?;
 
-    Ok((buf, Vec::new()))
+    // Build the sourcemap and encode as a `data:` URL. Returned alongside the
+    // emitted JS; the bridge embeds it into the wrapped source as a
+    // `//# sourceMappingURL=…` comment so V8 picks it up for stack traces.
+    let sm = cm.build_source_map(&src_map_buf, None, SmConfig);
+    let data_url = sm
+        .to_data_url()
+        .map_err(|e| format!("sourcemap encode error: {e:?}"))?;
+
+    Ok((buf, data_url.into_bytes()))
 }

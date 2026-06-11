@@ -29,11 +29,14 @@ typedef struct GodotJSTranspileResult {
 // expected to be null-terminated). `opts` is reserved (pass 0).
 //
 // On success, `code`/`code_len` hold the emitted JS and `error` is null.
-// On failure, `error`/`error_len` hold a UTF-8 message and `code` is null.
+// `sourcemap`/`sourcemap_len` hold the `data:application/json;…;base64,<…>`
+// URL of an inline source map (suitable for embedding directly after
+// `//# sourceMappingURL=`); both are zero when sourcemap generation is
+// skipped or empty. On failure, `error`/`error_len` hold a UTF-8 message
+// and `code` is null.
 //
 // The returned pointer is always non-null and must be freed via
-// godotjs_free_transpile_result(). Sourcemap fields are presently always
-// (null, 0) — sourcemap emission is planned for M2.
+// godotjs_free_transpile_result().
 GodotJSTranspileResult* godotjs_transpile_ts(
     const uint8_t* source, size_t source_len,
     const uint8_t* filename, size_t filename_len,

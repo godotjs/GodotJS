@@ -53,6 +53,11 @@ int main(int argc, char** argv) {
         rc = 1;
     } else if (r->code) {
         std::fwrite(r->code, 1, r->code_len, stdout);
+        if (r->sourcemap) {
+            std::fprintf(stderr, "[sourcemap %zu bytes] ", r->sourcemap_len);
+            std::fwrite(r->sourcemap, 1, r->sourcemap_len, stderr);
+            std::fputc('\n', stderr);
+        }
     }
 
     godotjs_free_transpile_result(r);
