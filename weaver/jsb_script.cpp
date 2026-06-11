@@ -609,6 +609,26 @@ void GodotJSScript::load_module_immediately()
     JSB_LOG(Debug, "a stub script loaded which does not contain a GodotJS class %s", path);
 }
 
+void GodotJSScript::force_reload_for_scan()
+{
+    JSB_LOG(Verbose, "[reload] force_reload_for_scan %s loaded=%d valid=%d", get_path(), (int)loaded_, (int)_is_valid());
+    // No live module yet — nothing to rebind. Next access will trigger
+    // ensure_module_loaded() and pick up whatever the env scan loaded.
+    if (!loaded_) return;
+    if (!_is_valid()) return;
+
+    // Drop loaded_ so load_module_immediately re-runs the rebind loop. The
+    // env scan already re-executed any dirty sources, so this is mostly a
+    // prototype refresh against the env's freshly-evaluated module object.
+    loaded_ = false;
+    load_module_immediately();
+
+    // Tell anyone watching the script that exports / methods may have changed
+    // (editor inspector, scene tree, doc tools).
+    emit_changed();
+    update_exports();
+}
+
 PlaceHolderScriptInstance* GodotJSScript::placeholder_instance_create(Object* p_this)
 {
 #ifdef TOOLS_ENABLED

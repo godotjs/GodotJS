@@ -414,20 +414,50 @@ String GodotJSScriptLanguage::get_type() const
 
 void GodotJSScriptLanguage::scan_external_changes()
 {
-    environment_->scan_external_changes();
+    const Vector<StringName> reloaded = environment_->scan_external_changes();
 
-#ifdef TOOLS_ENABLED
-    // fix scripts with no .js counterpart found (only missing scripts)
+    // Build a set of reloaded module ids so we can narrow the rebind set to
+    // only the scripts whose module (or one of its transitive dependencies)
+    // actually changed. env's scan body already cascaded dirty marks through
+    // the children graph (see jsb_environment.cpp), so any script that needs
+    // a fresh prototype is in this set.
+    HashSet<StringName> reloaded_set;
+    for (const StringName& id : reloaded) reloaded_set.insert(id);
+
+    // Snapshot script_list_ into Refs under the lock, then iterate the snapshot
+    // instead of the live list. mutex_ is a recursive Mutex (Godot's Mutex wraps
+    // std::recursive_mutex), so re-entering it from the rebind path is not a
+    // self-deadlock. The hazard is iterator invalidation / use-after-free:
+    // force_reload_for_scan -> set_script(Ref<Script>()) can drop the last ref
+    // to a GodotJSScript, and ~GodotJSScript calls script_list_.remove_from_list()
+    // under this same recursive lock, mutating script_list_ mid-iteration. Holding
+    // a Ref per element keeps each script alive across the loop and decouples our
+    // traversal from concurrent list mutation; the language owns this list.
+    Vector<Ref<GodotJSScript>> snapshot;
     {
         MutexLock lock(mutex_);
         const SelfList<GodotJSScript>* elem = script_list_.first();
         while (elem)
         {
-            elem->self()->load_module_if_missing();
+            snapshot.push_back(Ref<GodotJSScript>(elem->self()));
             elem = elem->next();
         }
     }
+
+    for (const Ref<GodotJSScript>& script : snapshot)
+    {
+#ifdef TOOLS_ENABLED
+        // editor-only safety net (runs every scan, as before): a script whose
+        // .js counterpart was missing at load gets re-attached once it appears
+        script->load_module_if_missing();
 #endif
+        if (reloaded_set.has(script->get_module_id()))
+        {
+            // Inspector refresh: force_reload_for_scan emits the standard
+            // Script::changed signal which the editor inspector listens to.
+            script->force_reload_for_scan();
+        }
+    }
 }
 
 void GodotJSScriptLanguage::thread_enter()

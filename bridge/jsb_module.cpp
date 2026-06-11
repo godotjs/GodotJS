@@ -46,6 +46,21 @@ namespace jsb
 #endif
     }
 
+    void JavaScriptModule::force_mark_as_reloading()
+    {
+#if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
+        // Bypass the mtime/md5 gate — used by transitive invalidation when a
+        // dependency reloaded but our own source bytes didn't change. Bumping
+        // time_modified to the current disk mtime keeps the cache coherent
+        // with the next mark_as_reloading() probe.
+        if (is_reloadable())
+        {
+            time_modified = FileAccess::get_modified_time(source_info.source_filepath);
+        }
+        reload_requested = true;
+#endif
+    }
+
     JavaScriptModule& JavaScriptModuleCache::insert(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const StringName& p_name, bool p_main_candidate, bool p_init_loaded)
     {
         jsb_checkf(!((String) p_name).is_empty(), "empty module name is not allowed");

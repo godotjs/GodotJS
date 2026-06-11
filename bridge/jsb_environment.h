@@ -399,9 +399,11 @@ namespace jsb
         JavaScriptModule* _load_module(const String& p_parent_id, const String& p_module_id);
 
         // manually scan changes of modules,
-        // will reload IMMEDIATELY
-        // (modules not attached with GodotJS script are not automatically reloaded by resource manager)
-        void scan_external_changes();
+        // will reload IMMEDIATELY and return the list of module ids whose
+        // sources changed on disk and were re-executed. Script-bearing modules
+        // are included; callers can use the list to rebind live GodotJSScript
+        // instances.
+        Vector<StringName> scan_external_changes();
 
         // request to reload a module,
         // will reload until next load.
