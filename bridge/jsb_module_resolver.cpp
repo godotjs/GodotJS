@@ -236,18 +236,32 @@ namespace jsb
             return true;
         }
 
-#if JSB_WITH_TYPESCRIPT_TRANSPILER
-        // try .ts (source-of-truth — probed after .js so an existing emitted
-        // artefact still wins; only with the embedded transpiler, which loads
-        // it in-process). Without the transpiler this probe is compiled out so
-        // resolution is identical to a build that never knew about .ts.
+        // try .ts (probed after .js so an existing emitted artefact still wins)
         const String ts_path = internal::PathUtil::extends_with(p_module_id, "." JSB_TYPESCRIPT_EXT);
         if (FileAccess::exists(ts_path))
         {
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+            // embedded transpiler: load the .ts source in-process
             o_path = ts_path;
             return true;
-        }
+#else
+            // No embedded transpiler: an extension-less import resolving to a .ts
+            // can't be loaded at runtime. Prefer the pre-transpiled .js sibling
+            // produced by the export plugin; if it's missing fall through to the
+            // .ts so load() still surfaces the helpful no-transpiler guard error.
+            if (ts_path.begins_with("res://"))
+            {
+                const String compiled_path = internal::PathUtil::convert_typescript_path(ts_path);
+                if (FileAccess::exists(compiled_path))
+                {
+                    o_path = compiled_path;
+                    return true;
+                }
+            }
+            o_path = ts_path;
+            return true;
 #endif
+        }
 
         // try .cjs
         const String cjs_path = internal::PathUtil::extends_with(p_module_id, "." JSB_COMMONJS_EXT);
@@ -409,6 +423,24 @@ namespace jsb
         // 1: module_id (we do not check it strictly here, but usually, it should already have a valid extension)
         if (p_module_id.contains(".") && FileAccess::exists(p_module_id))
         {
+#if !JSB_WITH_TYPESCRIPT_TRANSPILER
+            // No embedded transpiler (web/mobile export templates): a .ts cannot be
+            // compiled at runtime. The export plugin pre-transpiles and packs the
+            // .js at convert_typescript_path(); prefer it when present so we never
+            // hand a raw .ts to load() (which would throw the no-transpiler guard).
+            // The raw .ts is still packed (it's the referenced Script resource), so
+            // a naive existence check above would otherwise resolve to it.
+            if (p_module_id.begins_with("res://") && p_module_id.ends_with("." JSB_TYPESCRIPT_EXT))
+            {
+                const String compiled_path = internal::PathUtil::convert_typescript_path(p_module_id);
+                if (FileAccess::exists(compiled_path))
+                {
+                    o_source_info.source_filepath = compiled_path;
+                    o_source_info.package_filepath = String();
+                    return true;
+                }
+            }
+#endif
             o_source_info.source_filepath = p_module_id;
             o_source_info.package_filepath = String();
             return true;
@@ -579,6 +611,24 @@ namespace jsb
             {
                 return true;
             }
+#if !JSB_WITH_TYPESCRIPT_TRANSPILER
+            // No embedded transpiler: an absolute `.ts` path may not exist on disk
+            // in an exported pack when the export plugin pre-transpiled and packed
+            // the converted `.js` instead. Try the converted path before declaring
+            // failure so autoloads / direct .ts references still resolve to the
+            // pre-transpiled output. (Guarded on res:// because convert_typescript_path
+            // only accepts res:// paths.)
+            if (p_module_id.begins_with("res://") && p_module_id.ends_with("." JSB_TYPESCRIPT_EXT))
+            {
+                const String compiled_path = internal::PathUtil::convert_typescript_path(p_module_id);
+                if (FileAccess::exists(compiled_path))
+                {
+                    r_source_info.source_filepath = compiled_path;
+                    r_source_info.package_filepath = String();
+                    return true;
+                }
+            }
+#endif
             r_source_info = {};
             JSB_LOG(Warning, "failed to check out module (absolute) %s", p_module_id);
             return false;

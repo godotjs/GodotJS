@@ -38,6 +38,11 @@ namespace jsb::internal
     static constexpr char kRtPackagingIncludeFiles[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_files";
     static constexpr char kRtPackagingIncludeDirectories[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_directories";
     static constexpr char kRtPackagingReferencedNodeModules[] = JSB_MODULE_NAME_STRING "/editor/packaging/referenced_node_modules";
+    // When true, pack `.ts` source raw and let the runtime SWC transpile pass
+    // run on every load. When false (default), the export plugin pre-transpiles
+    // each `.ts` and ships the resulting `.js` — same end-result module, no
+    // per-launch transpile cost.
+    static constexpr char kRtPackagingIncludeTypescriptSource[] = JSB_MODULE_NAME_STRING "/editor/packaging/include_typescript_source";
 
 
 #ifdef TOOLS_ENABLED
@@ -126,6 +131,7 @@ namespace jsb::internal
             }
 
             _GLOBAL_DEF(kRtPackagingReferencedNodeModules, true, false);
+            _GLOBAL_DEF(kRtPackagingIncludeTypescriptSource, false, false);
             _GLOBAL_DEF(kRtBridgeLoggingEnabled, false, false);
         }
     }
@@ -203,6 +209,12 @@ namespace jsb::internal
     {
         init_settings();
         return GLOBAL_GET(kRtPackagingReferencedNodeModules);
+    }
+
+    bool Settings::is_packaging_include_typescript_source()
+    {
+        init_settings();
+        return GLOBAL_GET(kRtPackagingIncludeTypescriptSource);
     }
 
     bool Settings::is_bridge_logging_enabled()

@@ -34,6 +34,9 @@ private:
     bool export_module_files(const jsb::JavaScriptModule& p_module, bool p_remap);
     bool export_raw_file(const String& p_path, bool p_remap);
     void export_raw_files(const PackedStringArray& p_paths, bool p_permit_typescript);
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+    bool export_transpiled_typescript(const String& p_ts_path, const String& p_js_path, bool p_remap);
+#endif
     void get_script_resources(const String &p_dir, Vector<String> &r_list, bool p_is_node_module = false);
 
     HashSet<String> exported_paths_;
