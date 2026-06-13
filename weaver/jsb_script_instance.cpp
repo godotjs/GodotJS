@@ -1,5 +1,7 @@
 #include "jsb_script_instance.h"
+#include "jsb_script.h"
 #include "jsb_script_language.h"
+#include "modules/gdscript/gdscript_rpc_callable.h"
 
 GodotJSScriptInstanceBase::ScriptCallProfilingScope::ScriptCallProfilingScope(const ScriptProfilingInfo& p_info, const StringName& p_method)
             : info_(p_info), method_(p_method)
@@ -56,10 +58,31 @@ void GodotJSScriptInstance::cache_property(const StringName& name, const Variant
 
 bool GodotJSScriptInstance::set(const StringName& p_name, const Variant& p_value)
 {
-    if (const auto& it = script_->script_class_info_.properties.find(p_name); it)
+    GodotJSScript* sptr = script_.ptr();
+    while (sptr)
     {
-        return env_->set_script_property_value(object_id_, it->value, p_value);
+        if (const auto& it = sptr->script_class_info_.properties.find(p_name); it)
+        {
+            return env_->set_script_property_value(object_id_, it->value, p_value);
+        }
+
+        // TODO: Static variable?
+
+        if (const auto& it = sptr->script_class_info_.methods.find(jsb_string_name(_set)); it)
+        {
+            Variant name = p_name;
+            const Variant *args[2] = { &name, &p_value };
+
+            Callable::CallError err;
+            Variant ret = env_->call_script_method(class_id_, object_id_, jsb_string_name(_set), (const Variant **)args, 2, err);
+            if (err.error == Callable::CallError::CALL_OK && ret.get_type() == Variant::BOOL && ret.operator bool()) {
+                return true;
+            }
+        }
+
+        sptr = sptr->base.ptr();
     }
+
     return false;
 }
 
@@ -73,9 +96,55 @@ bool GodotJSScriptInstance::get(const StringName& p_name, Variant& r_ret) const
         return true;
     }
 
-    if (const auto& it = script_->script_class_info_.properties.find(p_name); it)
+    GodotJSScript* sptr = script_.ptr();
+    while (sptr)
     {
-        return env_->get_script_property_value(object_id_, it->value, r_ret);
+        if (const auto& it = sptr->script_class_info_.properties.find(p_name); it)
+        {
+            return env_->get_script_property_value(object_id_, it->value, r_ret);
+        }
+
+        // TODO: constant?
+        // TODO: static variable?
+        // TODO: Inner class?
+
+        if (const auto& it = sptr->script_class_info_.signals.find(p_name); it)
+        {
+            r_ret =  Signal(owner_, p_name);
+            return true;
+        }
+
+        if (const auto& it = sptr->script_class_info_.methods.find(p_name); it)
+        {
+            if (sptr->script_class_info_.rpc_config.has(p_name)) {
+                r_ret = Callable(memnew(GDScriptRPCCallable(owner_, p_name)));
+                return true;
+            } else {
+                if (!it->value.is_static())
+                {
+                    r_ret = Callable(owner_, p_name);
+                    return true;
+                } else {
+                    // TODO: Warp static method to Callable
+                }
+            }
+        }
+
+        if (const auto& it = sptr->script_class_info_.methods.find(jsb_string_name(_get)); it)
+        {
+            Variant name = p_name;
+            const Variant *args[1] = { &name };
+
+            Callable::CallError err;
+            Variant ret = env_->call_script_method(class_id_, object_id_, jsb_string_name(_get), (const Variant **)args, 1, err);
+            if (err.error == Callable::CallError::CALL_OK && ret.get_type() != Variant::NIL)
+            {
+                r_ret = ret;
+                return true;
+            }
+        }
+
+        sptr = sptr->base.ptr();
     }
 
     return false;
@@ -83,7 +152,54 @@ bool GodotJSScriptInstance::get(const StringName& p_name, Variant& r_ret) const
 
 void GodotJSScriptInstance::get_property_list(List<PropertyInfo>* p_properties) const
 {
-    script_->get_script_property_list(p_properties);
+    GodotJSScript* sptr = script_.ptr();
+    HashSet<String> properties;
+
+    while (sptr)
+    {
+        if (const auto& it = sptr->script_class_info_.methods.find(jsb_string_name(_get_property_list)); it)
+        {
+            Callable::CallError err;
+            Variant ret = env_->call_script_method(class_id_, object_id_, jsb_string_name(_get_property_list), nullptr, 0, err);
+            if (err.error == Callable::CallError::CALL_OK && ret.get_type() != Variant::NIL)
+            {
+                ERR_FAIL_COND_MSG(ret.get_type() != Variant::ARRAY, "Wrong type for _get_property_list, must be an array of dictionaries.");
+
+                Array arr = ret;
+                for (int i = 0; i < arr.size(); i++)
+                {
+                    Dictionary d = arr[i];
+                    ERR_CONTINUE(!d.has("name"));
+                    ERR_CONTINUE(!d.has("type"));
+
+                    PropertyInfo pinfo = PropertyInfo::from_dict(d);
+
+                    ERR_CONTINUE(pinfo.name.is_empty() && (pinfo.usage & PROPERTY_USAGE_STORAGE));
+                    ERR_CONTINUE(pinfo.type < 0 || pinfo.type >= Variant::VARIANT_MAX);
+
+                    ERR_CONTINUE_MSG(properties.has(pinfo.name), vformat("Duplicate property \"%s\" in script: %s", pinfo.name, script_->get_path()));
+
+                    p_properties->push_back(pinfo);
+                    properties.insert(pinfo.name);
+                }
+            }
+        }
+
+#ifdef TOOLS_ENABLED
+        p_properties->push_back(sptr->get_class_category());
+#endif
+        for (const auto& it : sptr->script_class_info_.properties)
+        {
+            ERR_CONTINUE_MSG(properties.has(it.value.name), vformat("Duplicate property \"%s\" in script: %s", it.value.name, script_->get_path()));
+            p_properties->push_back((PropertyInfo) it.value);
+        }
+
+        sptr = sptr->base.ptr();
+    }
+
+    for (PropertyInfo &prop : *p_properties) {
+        validate_property(prop);
+    }
 }
 
 const Variant GodotJSScriptInstance::get_rpc_config() const
@@ -93,31 +209,88 @@ const Variant GodotJSScriptInstance::get_rpc_config() const
 
 Variant::Type GodotJSScriptInstance::get_property_type(const StringName& p_name, bool* r_is_valid) const
 {
-    const jsb::ScriptClassInfoPtr class_info = get_script_class();
-    if (const HashMap<StringName, jsb::ScriptPropertyInfo>::ConstIterator it = class_info->properties.find(p_name))
-    {
-        if (r_is_valid) *r_is_valid = true;
-        return it->value.type;
+    GodotJSScript* sptr = script_.ptr();
+    while (sptr) {
+        if (const HashMap<StringName, jsb::ScriptPropertyInfo>::ConstIterator it = sptr->script_class_info_.properties.find(p_name))
+        {
+            if (r_is_valid) *r_is_valid = true;
+            return it->value.type;
+        }
+
+        sptr = sptr->base.ptr();
     }
+
     if (r_is_valid) *r_is_valid = false;
     return Variant::NIL;
 }
 
 void GodotJSScriptInstance::validate_property(PropertyInfo& p_property) const
 {
-    //TODO
+    GodotJSScript* sptr = script_.ptr();
+    while(sptr)
+    {
+        if (const auto& it = sptr->script_class_info_.methods.find(jsb_string_name(_validate_property)); it)
+        {
+            Variant property = (Dictionary)p_property;
+            const Variant *args[1] = { &property };
+
+            Callable::CallError err;
+            Variant ret = env_->call_script_method(class_id_, object_id_, jsb_string_name(_validate_property), (const Variant **)args, 1, err);
+            if (err.error == Callable::CallError::CALL_OK && ret.get_type() != Variant::NIL)
+            {
+                p_property =  PropertyInfo::from_dict(property);
+            }
+        }
+
+        sptr = sptr->base.ptr();
+    }
 }
 
 bool GodotJSScriptInstance::property_can_revert(const StringName& p_name) const
 {
-    //TODO
-    return false;
+    GodotJSScript* sptr = script_.ptr();
+    while(sptr)
+    {
+        if (const auto& it = sptr->script_class_info_.methods.find(jsb_string_name(_property_can_revert)); it)
+        {
+            Variant name = p_name;
+            const Variant *args[1] = { &name };
+
+            Callable::CallError err;
+            Variant ret = env_->call_script_method(class_id_, object_id_, jsb_string_name(_property_can_revert), args, 1, err);
+            if (err.error == Callable::CallError::CALL_OK && ret.get_type() == Variant::BOOL && ret.operator bool()) {
+                return true;
+            }
+        }
+
+        sptr = sptr->base.ptr();
+    }
+
+	return false;
 }
 
 bool GodotJSScriptInstance::property_get_revert(const StringName& p_name, Variant& r_ret) const
 {
-    //TODO
-    return false;
+    GodotJSScript* sptr = script_.ptr();
+    while(sptr)
+    {
+        if (const auto& it = sptr->script_class_info_.methods.find(jsb_string_name(_property_get_revert)); it)
+        {
+            Variant name = p_name;
+            const Variant *args[1] = { &name };
+
+            Callable::CallError err;
+            Variant ret = env_->call_script_method(class_id_, object_id_, jsb_string_name(_property_get_revert), args, 1, err);
+            if (err.error == Callable::CallError::CALL_OK && ret.get_type() == Variant::BOOL && ret.operator bool()) {
+                r_ret = ret;
+                return true;
+            }
+        }
+
+        sptr = sptr->base.ptr();
+    }
+
+	return false;
 }
 
 void GodotJSScriptInstance::get_method_list(List<MethodInfo>* p_list) const
