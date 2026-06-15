@@ -1604,7 +1604,7 @@ namespace jsb
             return nullptr;
         }
 
-        String class_name = internal::NamingUtil::get_class_name(p_class_info->name);
+        String class_name = internal::NamingUtil::get_class_name(internal::ClassUtil::get_internal_class_name(*p_class_info));
 
         if (const NativeClassID* it = godot_classes_index_.getptr(class_name))
         {
