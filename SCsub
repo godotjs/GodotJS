@@ -465,6 +465,79 @@ module_obj = []
 print(f"godot engine: {version_info['major']}.{version_info['minor']}")
 check("regex" in env.module_list, "Currently, the 'regex' module is required for using GodotJS. Please rebuild the engine with it enabled.")
 
+# --- transpiler-ffi: SWC-based TypeScript transpiler (Rust staticlib) ----------
+# Compiles the crate under transpiler-ffi/ and exposes the FFI header to all
+# GodotJS C++ sources. Owns the `godotjs_transpile_ts()` entry point used by
+# the runtime loader to turn .ts source into CommonJS at load time.
+def rust_target_triple_for(platform, arch):
+    return {
+        ("macos",   "arm64"):  "aarch64-apple-darwin",
+        ("macos",   "x86_64"): "x86_64-apple-darwin",
+        ("linux",   "x86_64"): "x86_64-unknown-linux-gnu",
+        ("linux",   "arm64"):  "aarch64-unknown-linux-gnu",
+        ("windows", "x86_64"): "x86_64-pc-windows-msvc",
+        ("windows", "arm64"):  "aarch64-pc-windows-msvc",
+    }.get((platform, arch))
+
+def build_transpiler_ffi():
+    triple = rust_target_triple_for(jsb_platform, jsb_arch)
+    check(triple is not None,
+          f"transpiler-ffi: no Rust target triple mapped for {jsb_platform}/{jsb_arch}")
+
+    cargo = shutil.which("cargo")
+    check(cargo is not None,
+          "transpiler-ffi: 'cargo' not found on PATH — install the Rust toolchain (rustup.rs)")
+
+    manifest = "transpiler-ffi/Cargo.toml"
+    print_info(f"transpiler-ffi: cargo build --release --target {triple}")
+    rc = subprocess.run(
+        [cargo, "build", "--release", "--manifest-path", manifest, "--target", triple],
+        check=False,
+    )
+    check(rc.returncode == 0,
+          f"transpiler-ffi: cargo build failed (exit {rc.returncode})")
+
+    lib_name = "godotjs_transpiler_ffi.lib" if jsb_platform == "windows" else "libgodotjs_transpiler_ffi.a"
+    lib_path = f"transpiler-ffi/target/{triple}/release/{lib_name}"
+    check(os.path.exists(lib_path),
+          f"transpiler-ffi: expected staticlib at {lib_path} after cargo build")
+    return lib_path
+
+# transpiler-ffi is opt-in (scons use_typescript_transpiler=yes) and only builds
+# for native desktop targets that have a Rust target triple mapped (macos/linux/
+# windows). With the flag off (the default) no Rust toolchain is needed and the
+# build is unchanged. web/android/ios have no triple here: they ship
+# pre-transpiled .js (export-time pre-transpile) and use their own JS engine, so
+# they skip the staticlib and compile out the runtime .ts load path via the
+# JSB_WITH_TYPESCRIPT_TRANSPILER define below.
+want_transpiler = env["use_typescript_transpiler"]
+has_transpiler = want_transpiler and rust_target_triple_for(jsb_platform, jsb_arch) is not None
+if want_transpiler and not has_transpiler:
+    print_warning(f"transpiler-ffi: no Rust target triple mapped for {jsb_platform}/{jsb_arch}; building without the TypeScript transpiler (use export-time pre-transpiled .js)")
+env_jsb.Append(CPPDEFINES=[("JSB_WITH_TYPESCRIPT_TRANSPILER", 1 if has_transpiler else 0)])
+if has_transpiler:
+    transpiler_ffi_lib = build_transpiler_ffi()
+    env_jsb.Append(CPPPATH=[f"#modules/{module_name}/transpiler-ffi/include"])
+    env.Append(LIBS=[File(transpiler_ffi_lib)])
+
+    # Rust staticlibs may pull in platform frameworks/libs that Godot doesn't
+    # already link. SWC's tree is mostly pure Rust; these cover the OS-specific
+    # system bits its transitive deps reach for. Refine if the linker complains.
+    #
+    # The --allow-multiple-definition / /FORCE:MULTIPLE flags below cover a
+    # specific clash: our staticlib and Godot's prebuilt accesskit staticlib both
+    # bundle rust_eh_personality (and a few other libstd symbols) from rustc's
+    # libstd, compiled against different rustc versions. GNU ld and MSVC link.exe
+    # error on the duplicate; macOS ld64 silently picks one. The clash is benign
+    # — both copies are ABI-compatible personality routines.
+    if jsb_platform == "macos":
+        env.Append(LINKFLAGS=["-framework", "CoreFoundation", "-framework", "Security"])
+    elif jsb_platform == "linux":
+        env.Append(LINKFLAGS=["-Wl,--allow-multiple-definition"])
+    elif jsb_platform == "windows":
+        env.Append(LINKFLAGS=["userenv.lib", "ntdll.lib", "bcrypt.lib", "/FORCE:MULTIPLE"])
+# -------------------------------------------------------------------------------
+
 # Build JS files before generating
 if not env["skip_js_runtime"]:
     pnpm_command = shutil.which("pnpm")

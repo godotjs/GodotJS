@@ -1,0 +1,33 @@
+[package]
+name = "godotjs_transpiler_ffi"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+swc_core = { version = "37", features = [
+    "common",
+    "common_sourcemap",
+    "ecma_ast",
+    "ecma_parser",
+    "ecma_parser_typescript",
+    "ecma_codegen",
+    "ecma_visit",
+    "ecma_transforms",
+    "ecma_transforms_typescript",
+    "ecma_transforms_module",
+    # Legacy/TC39 decorators live here, not in ecma_transforms_typescript.
+    "ecma_transforms_proposal",
+    # Inline _interop_require_default etc. into the file rather than emitting
+    # `import { _ } from "@swc/helpers/_/..."` — the engine has no @swc/helpers
+    # at runtime and can't follow ESM-style imports anyway (the wrapper around
+    # transpiled output is CommonJS).
+    "ecma_helpers_inline",
+] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

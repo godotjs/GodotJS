@@ -248,6 +248,51 @@ namespace jsb
             const String str = impl::Helper::to_string_without_side_effect(isolate, message.GetValue());
             JSB_LOG(Error, "unhandled promise rejection: %s", str);
         }
+
+#if JSB_WITH_V8
+        // Called by V8 the first time `error.stack` is read. V8 12.4 in this build
+        // doesn't auto-apply source maps to the runtime Error.stack string (DevTools
+        // is fine because it uses the sourcemap separately). We build the default
+        // V8 stack format ourselves via each CallSite's `toString`, then pass the
+        // result through SourceMapCache which rewrites .ts/.js positions back to
+        // the original source thanks to the inline sourcemap fed in at transpile
+        // time. If anything goes wrong, return empty so V8 falls back to its
+        // built-in (raw) formatter.
+        v8::MaybeLocal<v8::Value> PrepareStackTraceCallback_(v8::Local<v8::Context> context,
+                                                              v8::Local<v8::Value> error,
+                                                              v8::Local<v8::Array> sites)
+        {
+            v8::Isolate* isolate = context->GetIsolate();
+            Environment* env = Environment::wrap(isolate);
+
+            String stack = impl::Helper::to_string_without_side_effect(isolate, error);
+
+            const v8::Local<v8::String> to_string_key = impl::Helper::new_string_ascii(isolate, "toString");
+            const uint32_t count = sites->Length();
+            for (uint32_t i = 0; i < count; ++i)
+            {
+                v8::Local<v8::Value> site_val;
+                if (!sites->Get(context, i).ToLocal(&site_val) || !site_val->IsObject()) continue;
+                const v8::Local<v8::Object> site = site_val.As<v8::Object>();
+
+                v8::Local<v8::Value> to_string_val;
+                if (!site->Get(context, to_string_key).ToLocal(&to_string_val) || !to_string_val->IsFunction()) continue;
+                const v8::Local<v8::Function> to_string_fn = to_string_val.As<v8::Function>();
+
+                v8::Local<v8::Value> frame_val;
+                if (!to_string_fn->Call(context, site, 0, nullptr).ToLocal(&frame_val)) continue;
+
+                stack += "\n    at " + impl::Helper::to_string(isolate, frame_val);
+            }
+
+            if (env)
+            {
+                stack = env->get_source_map_cache().process_source_position(stack);
+            }
+
+            return impl::Helper::new_string(isolate, stack).As<v8::Value>();
+        }
+#endif
     }
 
     Environment::Environment(const CreateParams& p_params)
@@ -273,6 +318,9 @@ namespace jsb
         isolate_ = v8::Isolate::New(create_params);
         isolate_->SetData(kIsolateEmbedderData, this);
         isolate_->SetPromiseRejectCallback(PromiseRejectCallback_);
+#if JSB_WITH_V8
+        isolate_->SetPrepareStackTraceCallback(PrepareStackTraceCallback_);
+#endif
 #if JSB_PRINT_GC_TIME
         isolate_->AddGCPrologueCallback(&OnPreGCCallback);
         isolate_->AddGCEpilogueCallback(&OnPostGCCallback);
