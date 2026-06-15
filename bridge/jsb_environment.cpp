@@ -1176,11 +1176,15 @@ namespace jsb
 
         // init source module
         ModuleSourceInfo source_info;
-        IModuleResolver* resolver = nullptr;
+        IModuleResolver* resolver = this->find_module_resolver(normalized_id, source_info);
 
-        // Resolve bare specifiers against parent-relative node_modules chains first.
-        // This mirrors Node-like lookup and supports non-hoisted pnpm/yarn layouts.
-        if (!is_relative_module_id && !is_absolute_module_id && p_parent_id.begins_with("res://"))
+        // Fall back to parent-relative node_modules chains for bare specifiers
+        // when search paths missed. Mirrors Node-like lookup and supports
+        // non-hoisted pnpm/yarn layouts. Search paths win first so curated
+        // pre-bundled deps in `.godot/GodotJS/<dep>.js` (which Bun processed
+        // to drop `process.env.NODE_ENV` etc.) take precedence over the raw
+        // CJS in `node_modules/<dep>/dist/...` reached via Bun's symlink chain.
+        if (!resolver && !is_relative_module_id && !is_absolute_module_id && p_parent_id.begins_with("res://"))
         {
             auto get_parent_lookup_dir = [](const String& p_dir) -> String
             {
@@ -1215,12 +1219,6 @@ namespace jsb
                     break;
                 }
             }
-
-        }
-
-        if (!resolver)
-        {
-            resolver = this->find_module_resolver(normalized_id, source_info);
         }
 
         if (resolver)
