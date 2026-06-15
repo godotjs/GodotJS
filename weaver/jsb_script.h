@@ -62,6 +62,14 @@ public:
     Error load_source_code(const String &p_path);
     void load_module_if_missing();
 
+    // Called by GodotJSScriptLanguage::scan_external_changes() when env detected
+    // any module reload. Re-fetches the module from env (which holds the new
+    // exports), updates script_class_info_, and rebinds live instances via the
+    // existing load_module_immediately() rebind loop. Emits Script::changed so
+    // the editor inspector + scene tree pick up new exported properties without
+    // a manual click-off/click-on.
+    void force_reload_for_scan();
+
     // Creates a ScriptInstance (for an existing Godot native object) and associates the ScriptInstance with an existing JS object (instance of the script's JS class).
     ScriptInstance* instance_create(const v8::Local<v8::Object>& p_this, Object* p_owner, bool p_is_temp_allowed);
 

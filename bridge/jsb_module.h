@@ -58,6 +58,11 @@ namespace jsb
         bool mark_as_reloading();
         void mark_as_reloaded();
 
+        // Force reload even when mtime/md5 haven't changed (transitive
+        // invalidation cascades dependent modules). Safe to call any time;
+        // matches mark_as_reloaded()'s reset semantics for hash/time fields.
+        void force_mark_as_reloading();
+
     };
 
     struct JavaScriptModuleCache

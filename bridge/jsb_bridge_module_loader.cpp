@@ -3,6 +3,7 @@
 #include "jsb_editor_utility_funcs.h"
 #include "jsb_callable.h"
 #include "jsb_object_bindings.h"
+#include "../weaver/jsb_script_language.h"
 
 namespace jsb
 {
@@ -480,6 +481,28 @@ namespace jsb
             }
         }
 
+        // function scan_external_changes(): void
+        // Re-scan loaded modules, reloading any whose mtime + hash drifted since last load.
+        // Mirrors the editor's app-focus-driven scan so headless tests (and other non-editor
+        // callers) can drive a reload without an EditorFileSystem.
+        void _scan_external_changes(const v8::FunctionCallbackInfo<v8::Value>& info)
+        {
+            Environment* env = Environment::wrap(info.GetIsolate());
+            jsb_check(env);
+            // Prefer the language wrapper so script-bearing modules get their
+            // live instances rebound after the env reload. Fall back to env
+            // alone if the language singleton isn't initialised (unusual,
+            // headless-jsb-only builds).
+            if (GodotJSScriptLanguage* lang = GodotJSScriptLanguage::get_singleton())
+            {
+                lang->scan_external_changes();
+            }
+            else
+            {
+                (void) env->scan_external_changes();
+            }
+        }
+
         void _add_module(const v8::FunctionCallbackInfo<v8::Value>& info)
         {
             v8::Isolate* isolate = info.GetIsolate();
@@ -596,6 +619,7 @@ namespace jsb
 
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "find_module"), JSB_NEW_FUNCTION(context, _find_module, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_module"), JSB_NEW_FUNCTION(context, _add_module, {})).Check();
+                internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "scan_external_changes"), JSB_NEW_FUNCTION(context, _scan_external_changes, {})).Check();
 
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_signal"), JSB_NEW_FUNCTION(context, _add_script_signal, {})).Check();
                 internal_obj->Set(context, impl::Helper::new_string_ascii(isolate, "add_script_property"), JSB_NEW_FUNCTION(context, _add_script_property, {})).Check();
