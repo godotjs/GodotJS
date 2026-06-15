@@ -115,7 +115,10 @@ namespace jsb
 
         static bool try_get_worker(WorkerID p_id, WorkerImplPtr& o_worker_impl);
 
-        // terminate a worker
+        // request worker termination without joining/removing it
+        static bool request_termination(WorkerID p_id);
+
+        // terminate a worker from an external thread and remove it from the registry
         static bool terminate(WorkerID p_id);
 
         static bool parse_transfer_list(

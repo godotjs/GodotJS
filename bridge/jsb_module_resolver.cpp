@@ -447,7 +447,7 @@ namespace jsb
                 return true;
             }
             r_source_info = {};
-            JSB_LOG(Warning, "failed to check out module (absolute) %s", p_module_id);
+            JSB_LOG(Verbose, "module candidate not found (absolute probe): %s", p_module_id);
             return false;
         }
 
@@ -511,7 +511,7 @@ namespace jsb
             return true;
         }
 
-        JSB_LOG(Verbose, "failed to check out module (search_path: %s) %s", p_search_path, p_module_id);
+        JSB_LOG(Verbose, "module candidate not found (search_path: %s) %s", p_search_path, p_module_id);
         return false;
     }
 

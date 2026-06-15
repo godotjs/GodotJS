@@ -209,7 +209,9 @@ namespace jsb
         // signals (@signal_)
         {
             v8::Local<v8::Value> val_test;
-            if (prototype->Get(p_context, jsb_symbol(environment, ClassSignals)).ToLocal(&val_test) && val_test->IsArray())
+            const v8::Local<v8::Symbol> class_signals_symbol = jsb_symbol(environment, ClassSignals);
+            if (prototype->HasOwnProperty(p_context, class_signals_symbol).ToChecked()
+                && prototype->Get(p_context, class_signals_symbol).ToLocal(&val_test) && val_test->IsArray())
             {
                 v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();
@@ -238,7 +240,9 @@ namespace jsb
         // detect all exported properties (which annotated with @export_)
         {
             v8::Local<v8::Value> val_test;
-            if (prototype->Get(p_context, jsb_symbol(environment, ClassProperties)).ToLocal(&val_test) && val_test->IsArray())
+            const v8::Local<v8::Symbol> class_properties_symbol = jsb_symbol(environment, ClassProperties);
+            if (prototype->HasOwnProperty(p_context, class_properties_symbol).ToChecked()
+                && prototype->Get(p_context, class_properties_symbol).ToLocal(&val_test) && val_test->IsArray())
             {
                 const v8::Local<v8::Array> collection = val_test.As<v8::Array>();
                 const uint32_t len = collection->Length();

@@ -2,6 +2,9 @@
 #include "jsb_docked_panel.h"
 #include "jsb_export_plugin.h"
 
+#include "core/string/char_utils.h"
+#include "core/templates/hash_map.h"
+
 #if GODOT_4_7_OR_NEWER
 #include "core/object/callable_mp.h"
 #endif
@@ -183,6 +186,15 @@ String GodotJSEditorPlugin::mutate_types(const String& p_content)
         // Internal utility types are double underscore prefixed
         return p_identifier.begins_with("__");
     };
+    auto should_ignore_function_identifier = [&](const String& p_identifier) -> bool
+    {
+        if (should_ignore_identifier(p_identifier))
+        {
+            return true;
+        }
+
+        return !p_identifier.is_empty() && is_ascii_upper_case(p_identifier[0]);
+    };
 
     // Regex obviously isn't the best tool for the job and this regex will, for example, match some generic parameter
     // names. However, for now, it does the job.
@@ -247,6 +259,7 @@ String GodotJSEditorPlugin::mutate_types(const String& p_content)
     RegEx function_regex("(?m)\\b(?!(?:if|for|while|switch|catch|return|new|super|this)\\b)([a-zA-Z_]\\w*)\\s*(?:<[^>]+>)?\\s*\\(");
     RegEx parameter_regex("(?m)\\b([a-zA-Z_]\\w*)\\s*(?:\\?|)\\s*:");
     TypedArray<RegExMatch> func_matches = function_regex.search_all(result);
+    HashMap<String, String> function_replacements;
     for (int match_index = func_matches.size() - 1; match_index >= 0; match_index--)
     {
         Ref<RegExMatch> func_match = func_matches[match_index];
@@ -297,13 +310,36 @@ String GodotJSEditorPlugin::mutate_types(const String& p_content)
             }
         }
 
-        if (!should_ignore_identifier(func_identifier))
+        if (!should_ignore_function_identifier(func_identifier))
         {
             String func_replacement = jsb::internal::NamingUtil::get_member_name(func_identifier);
             if (func_replacement != func_identifier)
             {
+                function_replacements.insert(func_identifier, func_replacement);
                 result = result.substr(0, func_name_start) + func_replacement + result.substr(func_name_end);
             }
+        }
+    }
+
+    RegEx typeof_value_regex("(?m)\\btypeof\\s+([a-zA-Z_]\\w*)");
+    TypedArray<RegExMatch> typeof_value_matches = typeof_value_regex.search_all(result);
+    for (int match_index = typeof_value_matches.size() - 1; match_index >= 0; match_index--)
+    {
+        Ref<RegExMatch> match = typeof_value_matches[match_index];
+
+        const int start = match->get_start(1);
+        const int end = match->get_end(1);
+        const String identifier = result.substr(start, end - start);
+
+        if (should_ignore_function_identifier(identifier) || !function_replacements.has(identifier))
+        {
+            continue;
+        }
+
+        const String replacement = function_replacements[identifier];
+        if (replacement != identifier)
+        {
+            result = result.substr(0, start) + replacement + result.substr(end);
         }
     }
 
