@@ -15,6 +15,7 @@ def get_opts(platform):
     return [
         BoolVariable("skip_js_runtime", "Skip building GodotJS JavaScript runtime files", False),
         BoolVariable("use_typescript", "Build with typescript support (enabled by default)", True),
+        BoolVariable("use_typescript_transpiler", "Embed the SWC TypeScript transpiler to load .ts directly (requires the Rust toolchain; desktop platforms only)", False),
         BoolVariable("use_jsc", "Prefer to use JavaScriptCore (only for macos and ios)", False),
         BoolVariable("use_quickjs", "Prefer to use QuickJS rather than the default VM on the current platform", False),
         BoolVariable("use_quickjs_ng", "Prefer to use QuickJS-NG rather than the default VM on the current platform", False),

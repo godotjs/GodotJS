@@ -519,7 +519,15 @@ void GodotJSScript::load_module_immediately()
     if (loaded_) return;
     JSB_BENCHMARK_SCOPE(GodotJSScript, load_module);
 
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+    // Embedded transpiler present: load the .ts source directly; the module
+    // resolver invokes SWC in-process.
+    const String path = get_path();
+#else
+    // No embedded transpiler (the default build): keep loading the tsc-emitted
+    // .js at the converted path, exactly as before this stack.
     const String path = jsb::internal::PathUtil::convert_typescript_path(get_path());
+#endif
     jsb::JSEnvironment env(get_path(), true);
 
     loaded_ = true;

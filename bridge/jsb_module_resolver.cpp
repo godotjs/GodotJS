@@ -3,8 +3,71 @@
 
 #include "../internal/jsb_path_util.h"
 
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+extern "C" {
+#include "godotjs_transpiler.h"
+}
+#endif
+
 namespace jsb
 {
+    namespace
+    {
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+        // Transpile a TypeScript source into the same `(function(exports,require,module,__filename,__dirname){ ... \n})`
+        // wrapper that `read_all_bytes_with_shebang` produces for `.js` sources.
+        bool transpile_typescript_to_wrapped_source(const String& p_asset_path,
+                                                    const internal::ISourceReader& p_reader,
+                                                    Vector<uint8_t>& o_wrapped,
+                                                    String& r_error)
+        {
+            static constexpr char header[] = "(function(exports,require,module,__filename,__dirname){";
+            static constexpr char footer[] = "\n})";
+
+            const uint64_t raw_len = p_reader.get_length();
+            Vector<uint8_t> raw;
+            raw.resize((int) raw_len);
+            if (raw_len > 0 && p_reader.get_buffer(raw.ptrw(), raw_len) != raw_len)
+            {
+                r_error = "failed to read typescript source";
+                return false;
+            }
+
+            const CharString filename_utf8 = p_asset_path.utf8();
+            GodotJSTranspileResult* result = godotjs_transpile_ts(
+                raw.ptr(), (size_t) raw_len,
+                (const uint8_t*) filename_utf8.get_data(), (size_t) filename_utf8.length(),
+                0
+            );
+
+            if (!result)
+            {
+                r_error = "godotjs_transpile_ts returned null";
+                return false;
+            }
+
+            if (result->error)
+            {
+                r_error = String::utf8((const char*) result->error, (int) result->error_len);
+                godotjs_free_transpile_result(result);
+                return false;
+            }
+
+            const size_t code_len = result->code_len;
+            o_wrapped.resize((int) (code_len + ::std::size(header) + ::std::size(footer) - 2 + 1));
+            memcpy(o_wrapped.ptrw(), header, ::std::size(header) - 1);
+            if (code_len > 0)
+            {
+                memcpy(o_wrapped.ptrw() + ::std::size(header) - 1, result->code, code_len);
+            }
+            memcpy(o_wrapped.ptrw() + ::std::size(header) - 1 + code_len, footer, ::std::size(footer));
+
+            godotjs_free_transpile_result(result);
+            return true;
+        }
+#endif
+    }
+
     namespace
     {
         // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood
@@ -115,6 +178,19 @@ namespace jsb
             o_path = js_path;
             return true;
         }
+
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+        // try .ts (source-of-truth — probed after .js so an existing emitted
+        // artefact still wins; only with the embedded transpiler, which loads
+        // it in-process). Without the transpiler this probe is compiled out so
+        // resolution is identical to a build that never knew about .ts.
+        const String ts_path = internal::PathUtil::extends_with(p_module_id, "." JSB_TYPESCRIPT_EXT);
+        if (FileAccess::exists(ts_path))
+        {
+            o_path = ts_path;
+            return true;
+        }
+#endif
 
         // try .cjs
         const String cjs_path = internal::PathUtil::extends_with(p_module_id, "." JSB_COMMONJS_EXT);
@@ -556,8 +632,9 @@ namespace jsb
             return load_as_json(p_env, p_module, p_asset_path, source, len);
         }
 
+        const bool is_typescript = p_asset_path.ends_with("." JSB_TYPESCRIPT_EXT);
 #if JSB_DEBUG
-        if (!internal::PathUtil::is_recognized_javascript_extension(p_asset_path))
+        if (!is_typescript && !internal::PathUtil::is_recognized_javascript_extension(p_asset_path))
         {
             JSB_LOG(Warning, "%s is suspiciously not JS", p_asset_path);
         }
@@ -571,7 +648,27 @@ namespace jsb
 
             const String source_url = p_reader.get_source_url();
             Vector<uint8_t> source;
-            const size_t len = read_all_bytes_with_shebang(p_reader, source);
+            size_t len;
+            if (is_typescript)
+            {
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+                String transpile_error;
+                if (!transpile_typescript_to_wrapped_source(p_asset_path, p_reader, source, transpile_error))
+                {
+                    JSB_LOG(Error, "ts transpile failed for %s: %s", p_asset_path, transpile_error);
+                    impl::Helper::throw_error(isolate, jsb_format("ts transpile failed for %s: %s", p_asset_path, transpile_error));
+                    return false;
+                }
+                len = source.size() - 1; // exclude trailing zero
+#else
+                impl::Helper::throw_error(isolate, jsb_format("cannot load .ts at runtime on this platform (no embedded transpiler); pre-transpile to .js at export time: %s", p_asset_path));
+                return false;
+#endif
+            }
+            else
+            {
+                len = read_all_bytes_with_shebang(p_reader, source);
+            }
             jsb_check((size_t)(int)len == len);
 
             // source evaluator (the module protocol)
