@@ -10,7 +10,7 @@ namespace jsb::internal
     bool SourceMapCache::match(const String& p_line, MatchResult& r_result)
     {
 #if JSB_WITH_QUICKJS
-        if (source_map_match1_.is_null()) source_map_match1_ = RegEx::create_from_string(R"(\s+at\s(.+)\s\((.+\.js):(\d+)\))"); // e.g. at xxx (file.js:1)
+        if (source_map_match1_.is_null()) source_map_match1_ = RegEx::create_from_string(R"(\s+at\s(.+)\s\((.+\.(?:js|ts|tsx|mjs|cjs)):(\d+)\))"); // e.g. at xxx (file.js:1) or (file.ts:1)
         const Ref<RegEx>& regex = source_map_match1_;
         const Ref<RegExMatch> match = regex->search(p_line);
         if (!match.is_valid()) return false;
@@ -22,8 +22,8 @@ namespace jsb::internal
         r_result.col = 0;
         return true;
 #else
-        if (source_map_match1_.is_null()) source_map_match1_ = RegEx::create_from_string(R"(\s+at\s(.+)\s\((.+\.js):(\d+):(\d+)\))"); // e.g. at xxx (file.js:1:2)
-        if (source_map_match2_.is_null()) source_map_match2_ = RegEx::create_from_string(R"(\s+at\s(.+\.js):(\d+):(\d+))"); // e.g. at file.js:1:2
+        if (source_map_match1_.is_null()) source_map_match1_ = RegEx::create_from_string(R"(\s+at\s(.+)\s\((.+\.(?:js|ts|tsx|mjs|cjs)):(\d+):(\d+)\))"); // e.g. at xxx (file.js:1:2) or (file.ts:1:2)
+        if (source_map_match2_.is_null()) source_map_match2_ = RegEx::create_from_string(R"(\s+at\s(.+\.(?:js|ts|tsx|mjs|cjs)):(\d+):(\d+))"); // e.g. at file.js:1:2 or file.ts:1:2
         const Ref<RegEx>& regex = p_line.contains("(") && p_line.contains(")")
             ? source_map_match1_
             : source_map_match2_;
@@ -56,7 +56,15 @@ namespace jsb::internal
             if (!map->find(result.line, result.col, position)) continue;
             const String& source = map->get_source(position.index);
             const String& source_root = map->get_source_root();
-            const String original_path = PathUtil::to_platform_specific_path(PathUtil::combine("res://", source_root, source));
+            // SWC's inline sourcemap stores `sources` already as the absolute
+            // V8-visible path, so combining with "res://" + source_root would
+            // produce `res:///Users/...`. Only fall back to the legacy
+            // "res:// + source_root + source" layout when the source is a bare
+            // relative path (the shape tsc-emitted .map files used).
+            const bool source_is_addressable = source.begins_with("res://") || PathUtil::is_absolute_path(source);
+            const String original_path = source_is_addressable
+                ? PathUtil::to_platform_specific_path(source)
+                : PathUtil::to_platform_specific_path(PathUtil::combine("res://", source_root, source));
 
             if (result.function.is_empty()) st_line = jsb_format("    at %s:%d:%d", original_path, position.line, position.column);
             else st_line = jsb_format("    at %s (%s:%d:%d)", result.function, original_path, position.line, position.column);
@@ -92,6 +100,13 @@ namespace jsb::internal
         }
     }
 
+    void SourceMapCache::feed(const String& p_filename, const String& p_json)
+    {
+        if (p_json.is_empty()) return;
+        cached_source_maps_[p_filename] = {};
+        cached_source_maps_[p_filename].parse(p_json);
+    }
+
     void SourceMapCache::clear()
     {
         source_map_match1_.unref();
@@ -119,7 +134,8 @@ namespace jsb::internal
         return &map;
     }
 #else
-    String SourceMapCache::process_source_position(const String& p_stacktrace) { return p_stacktrace; }
+    String SourceMapCache::process_source_position(const String& p_stacktrace, SourcePosition* r_position) { return p_stacktrace; }
+    void SourceMapCache::feed(const String& p_filename, const String& p_json) {}
     void SourceMapCache::invalidate(const String& p_filename) {}
 #endif
 }

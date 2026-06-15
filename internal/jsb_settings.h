@@ -48,6 +48,13 @@ namespace jsb::internal
 
         static bool is_packaging_referenced_node_modules();
 
+        /**
+         * When true, the export plugin packs `.ts` sources raw and the runtime
+         * SWC transpiler runs on every load. When false (default), the export
+         * plugin pre-transpiles each `.ts` and ships the resulting `.js`.
+         */
+        static bool is_packaging_include_typescript_source();
+
 #ifdef TOOLS_ENABLED
         // [EDITOR ONLY]
         static bool editor_settings_available();

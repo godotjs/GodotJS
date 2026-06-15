@@ -1028,11 +1028,10 @@ void GodotJSEditorPlugin::start_tsc_watch()
         JSB_LOG(Error, "tsc is already running, please stop it before starting a new one.");
         return;
     }
-    if (!FileAccess::exists("res://node_modules/typescript/bin/tsc"))
-    {
-        JSB_LOG(Error, "typescript not installed propertly, please run 'npm i' to install all essential npm packages at first.");
-        return;
-    }
+    // typescript is no longer required for a working project — the runtime
+    // loads `.ts` directly via the embedded SWC transpiler. The watcher button
+    // remains an optional convenience for IDE-style type checking; if tsc
+    // isn't installed the Process::create call below surfaces a clear error.
 
     List<String> args;
     args.push_back("./node_modules/typescript/bin/tsc");

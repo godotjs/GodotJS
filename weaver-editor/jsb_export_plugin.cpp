@@ -1,6 +1,14 @@
 ﻿#include "jsb_export_plugin.h"
 
 #include "../weaver/jsb_script.h"
+#include "../internal/jsb_path_util.h"
+#include "../internal/jsb_settings.h"
+
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+extern "C" {
+#include "../transpiler-ffi/include/godotjs_transpiler.h"
+}
+#endif
 
 #define JSB_EXPORTER_LOG(Severity, Format, ...) JSB_LOG_IMPL(JSExporter, Severity, Format, ##__VA_ARGS__)
 
@@ -39,11 +47,101 @@ void GodotJSExportPlugin::export_raw_files(const PackedStringArray &p_paths, boo
         }
         else if (p_permit_typescript)
         {
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+            if (jsb::internal::Settings::is_packaging_include_typescript_source())
+            {
+                // pack the `.ts` raw; the runtime SWC transpiler will handle it on load
+                export_raw_file(file_path, true);
+            }
+            else
+            {
+                // pre-transpile and pack the resulting `.js` at the converted path
+                const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(file_path);
+                export_transpiled_typescript(file_path, compiled_script_path, true);
+            }
+#else
+            // no embedded transpiler in this build: pack the tsc-emitted `.js`
             const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(file_path);
             export_raw_file(compiled_script_path, true);
+#endif
         }
     }
 }
+
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+// Transpile a `.ts` source via the embedded SWC FFI and add the emitted JS
+// (with an inline `//# sourceMappingURL=data:…` trailer) to the export pack
+// at `p_js_path`. The runtime's `.js` load path adds the IIFE wrapper at load
+// time, so we leave the body raw — same shape `tsc` used to produce on disk.
+bool GodotJSExportPlugin::export_transpiled_typescript(const String& p_ts_path, const String& p_js_path, bool p_remap)
+{
+    if (exported_paths_.has(p_js_path))
+    {
+        return true;
+    }
+
+    Error err;
+    const Vector<uint8_t> ts_bytes = FileAccess::get_file_as_bytes(p_ts_path, &err);
+    if (err != OK)
+    {
+        JSB_EXPORTER_LOG(Error, "can't read .ts source: %s", p_ts_path);
+        return false;
+    }
+
+    const CharString filename_utf8 = p_ts_path.utf8();
+    GodotJSTranspileResult* result = godotjs_transpile_ts(
+        ts_bytes.ptr(), (size_t) ts_bytes.size(),
+        (const uint8_t*) filename_utf8.get_data(), (size_t) filename_utf8.length(),
+        0
+    );
+
+    if (!result)
+    {
+        JSB_EXPORTER_LOG(Error, "godotjs_transpile_ts returned null for %s", p_ts_path);
+        return false;
+    }
+
+    if (result->error)
+    {
+        JSB_EXPORTER_LOG(Error, "transpile failed for %s: %s",
+            p_ts_path,
+            String::utf8((const char*) result->error, (int) result->error_len));
+        godotjs_free_transpile_result(result);
+        return false;
+    }
+
+    static constexpr char sm_prefix[] = "\n//# sourceMappingURL=";
+    static constexpr size_t sm_prefix_len = ::std::size(sm_prefix) - 1;
+
+    const size_t code_len = result->code_len;
+    const size_t sm_len = result->sourcemap ? result->sourcemap_len : 0;
+    const size_t total_len = code_len + (sm_len > 0 ? sm_prefix_len + sm_len + 1 : 0);
+
+    Vector<uint8_t> out;
+    out.resize((int) total_len);
+    size_t offset = 0;
+    if (code_len > 0)
+    {
+        memcpy(out.ptrw() + offset, result->code, code_len);
+        offset += code_len;
+    }
+    if (sm_len > 0)
+    {
+        memcpy(out.ptrw() + offset, sm_prefix, sm_prefix_len);
+        offset += sm_prefix_len;
+        memcpy(out.ptrw() + offset, result->sourcemap, sm_len);
+        offset += sm_len;
+        out.ptrw()[offset] = '\n';
+    }
+
+    godotjs_free_transpile_result(result);
+
+    exported_paths_.insert(p_js_path);
+    add_file(p_js_path, out, p_remap);
+    JSB_EXPORTER_LOG(Verbose, "include transpiled: %s => %s", p_ts_path, p_js_path);
+    return true;
+}
+#endif
 
 void GodotJSExportPlugin::get_script_resources(const String &p_dir, Vector<String> &r_list, bool p_is_node_module)
 {
@@ -123,15 +221,56 @@ bool GodotJSExportPlugin::export_raw_file(const String& p_path, bool p_remap)
 
 bool GodotJSExportPlugin::export_module_files(const jsb::JavaScriptModule& p_module, bool p_remap)
 {
-    if (!export_raw_file(p_module.source_info.source_filepath, p_remap))
+    const String& source_path = p_module.source_info.source_filepath;
+    const bool is_typescript = source_path.ends_with("." JSB_TYPESCRIPT_EXT);
+
+    if (is_typescript)
     {
-        JSB_EXPORTER_LOG(Error, "can't read JS source from %s, please ensure that 'tsc' has being executed properly.", p_module.source_info.source_filepath);
-        return false;
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+        if (jsb::internal::Settings::is_packaging_include_typescript_source())
+        {
+            // pack the `.ts` raw; the runtime SWC transpiler will handle it on load
+            if (!export_raw_file(source_path, p_remap))
+            {
+                JSB_EXPORTER_LOG(Error, "can't read .ts source from %s", source_path);
+                return false;
+            }
+        }
+        else
+        {
+            // pre-transpile and pack the resulting `.js` at the converted path
+            const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(source_path);
+            if (!export_transpiled_typescript(source_path, compiled_script_path, p_remap))
+            {
+                JSB_EXPORTER_LOG(Error, "can't pre-transpile .ts source from %s", source_path);
+                return false;
+            }
+        }
+#else
+        // no embedded transpiler in this build: pack the tsc-emitted `.js`
+        const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(source_path);
+        if (!export_raw_file(compiled_script_path, p_remap))
+        {
+            JSB_EXPORTER_LOG(Error, "can't read compiled JS from %s, please ensure that 'tsc' has being executed properly.", compiled_script_path);
+            return false;
+        }
+#endif
+    }
+    else
+    {
+        if (!export_raw_file(source_path, p_remap))
+        {
+            JSB_EXPORTER_LOG(Error, "can't read JS source from %s", source_path);
+            return false;
+        }
     }
 
-    if (jsb::internal::Settings::is_packaging_with_source_map())
+    if (jsb::internal::Settings::is_packaging_with_source_map() && !is_typescript)
     {
-        const String source_map_path = p_module.source_info.source_filepath + ".map";
+        // Tsc-emitted `.js` carries an external `.map`; pack it alongside.
+        // SWC pre-transpile path inlines the sourcemap into the emitted `.js`
+        // as a `data:` URL, so there is no separate `.map` file to ship.
+        const String source_map_path = source_path + ".map";
         if (!export_raw_file(source_map_path, false))
         {
             JSB_EXPORTER_LOG(Verbose, "can't read the sourcemap from %s, please ensure that 'tsc' has being executed properly.", source_map_path);
@@ -235,11 +374,16 @@ void GodotJSExportPlugin::_export_file(const String& p_path, const String& p_typ
 
     if (p_path.ends_with("." JSB_TYPESCRIPT_EXT))
     {
-        const String compiled_script_path = jsb::internal::PathUtil::convert_typescript_path(p_path);
-        export_compiled_script(compiled_script_path, true);
-
-        // always skip the typescript source from packing
-        JSB_EXPORTER_LOG(Verbose, "export source: %s => %s", p_path, compiled_script_path);
+        // Drive `env_->load` against the `.ts` path directly so the runtime
+        // SWC transpiler (M2) runs and `export_module_files` can decide
+        // whether to ship raw `.ts` or pre-transpiled `.js` per setting.
+        export_compiled_script(p_path, true);
+        // `export_module_files` already packed the right representation for
+        // this `.ts` (transpiled JS at the converted path, or raw TS when the
+        // setting is on) — tell Godot's default export to skip it so the pack
+        // doesn't end up with both representations.
+        skip();
+        JSB_EXPORTER_LOG(Verbose, "export source: %s", p_path);
     }
     else
     {

@@ -190,7 +190,12 @@ namespace jsb::impl
                 v8::Local<v8::Value> filename_value = v8::String::NewFromUtf8(isolate, filename.utf8().ptr(), v8::NewStringType::kNormal, filename.length()).ToLocalChecked();
                 v8::Local<v8::Value> source_map_url_value;
 
-                if (source_map_base_url.length() > 0)
+                // For `.ts` sources the embedded SWC transpiler already emits
+                // an inline `//# sourceMappingURL=data:…` URL inside the wrapped
+                // source; setting ScriptOrigin's source_map_url here would shadow
+                // it with the debugger's HTTP `.map` URL (which doesn't exist).
+                const bool prefer_inline_source_map = p_source_origin.ends_with(".ts");
+                if (source_map_base_url.length() > 0 && !prefer_inline_source_map)
                 {
                     String source_map_url = source_map_base_url + (source_map_base_url.ends_with("/") ? filename : '/' + filename) + ".map";
                     source_map_url_value = v8::String::NewFromUtf8(isolate, source_map_url.utf8().ptr(), v8::NewStringType::kNormal, source_map_url.length()).ToLocalChecked();

@@ -2,9 +2,129 @@
 #include "jsb_environment.h"
 
 #include "../internal/jsb_path_util.h"
+#include "core/crypto/crypto_core.h"
+
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+extern "C" {
+#include "godotjs_transpiler.h"
+}
+#endif
 
 namespace jsb
 {
+    namespace
+    {
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+        // Transpile a TypeScript source into the same `(function(exports,require,module,__filename,__dirname){ ... \n})`
+        // wrapper that `read_all_bytes_with_shebang` produces for `.js` sources.
+        // When SWC produced a sourcemap, the `//# sourceMappingURL=<data-url>`
+        // comment is inserted on its own line just before the closing `})`.
+        // Keeping the comment INSIDE the wrapper (not before it) preserves the
+        // body's line numbering relative to wrapped positions, so V8's stack
+        // frames map cleanly through the sourcemap for everything past line 0.
+        // The decoded sourcemap is also fed into Environment::source_map_cache_
+        // so the V8 PrepareStackTrace callback can remap runtime Error.stack
+        // frames back to .ts positions (V8 12.4 doesn't auto-apply source maps
+        // to Error.stack, only DevTools).
+        bool transpile_typescript_to_wrapped_source(Environment* p_env,
+                                                    const String& p_source_url,
+                                                    const internal::ISourceReader& p_reader,
+                                                    Vector<uint8_t>& o_wrapped,
+                                                    String& r_error)
+        {
+            static constexpr char header[] = "(function(exports,require,module,__filename,__dirname){";
+            static constexpr char footer[] = "\n})";
+            static constexpr char sourcemap_prefix[] = "\n//# sourceMappingURL=";
+
+            const uint64_t raw_len = p_reader.get_length();
+            Vector<uint8_t> raw;
+            raw.resize((int) raw_len);
+            if (raw_len > 0 && p_reader.get_buffer(raw.ptrw(), raw_len) != raw_len)
+            {
+                r_error = "failed to read typescript source";
+                return false;
+            }
+
+            // SWC's `sources` entry becomes the path SourceMapCache exposes when
+            // remapping stacks. Use the same string V8 will report in frames so
+            // a single key lookup hits in the cache (otherwise the bridge would
+            // pass `res://…` while V8 reports the absolute file path).
+            const CharString filename_utf8 = p_source_url.utf8();
+            GodotJSTranspileResult* result = godotjs_transpile_ts(
+                raw.ptr(), (size_t) raw_len,
+                (const uint8_t*) filename_utf8.get_data(), (size_t) filename_utf8.length(),
+                0
+            );
+
+            if (!result)
+            {
+                r_error = "godotjs_transpile_ts returned null";
+                return false;
+            }
+
+            if (result->error)
+            {
+                r_error = String::utf8((const char*) result->error, (int) result->error_len);
+                godotjs_free_transpile_result(result);
+                return false;
+            }
+
+            const size_t header_size = ::std::size(header) - 1;
+            const size_t code_len = result->code_len;
+            const size_t sm_len = result->sourcemap ? result->sourcemap_len : 0;
+            const size_t sm_prefix_size = sm_len > 0 ? ::std::size(sourcemap_prefix) - 1 : 0;
+
+            o_wrapped.resize((int) (header_size + code_len + sm_prefix_size + sm_len + ::std::size(footer)));
+            size_t offset = 0;
+            memcpy(o_wrapped.ptrw() + offset, header, header_size);
+            offset += header_size;
+            if (code_len > 0)
+            {
+                memcpy(o_wrapped.ptrw() + offset, result->code, code_len);
+                offset += code_len;
+            }
+            if (sm_len > 0)
+            {
+                memcpy(o_wrapped.ptrw() + offset, sourcemap_prefix, sm_prefix_size);
+                offset += sm_prefix_size;
+                memcpy(o_wrapped.ptrw() + offset, result->sourcemap, sm_len);
+                offset += sm_len;
+            }
+            memcpy(o_wrapped.ptrw() + offset, footer, ::std::size(footer)); // includes trailing zero
+
+            // Pull the base64 payload out of `data:application/json;…;base64,<b64>`
+            // and feed the decoded JSON into the source map cache so runtime stack
+            // remap can find it by the same key V8 will report.
+            if (p_env && sm_len > 0)
+            {
+                const uint8_t* url = result->sourcemap;
+                size_t url_len = result->sourcemap_len;
+                const uint8_t* comma = (const uint8_t*) memchr(url, ',', url_len);
+                if (comma)
+                {
+                    const size_t b64_off = (comma - url) + 1;
+                    if (url_len > b64_off)
+                    {
+                        const uint8_t* b64_ptr = url + b64_off;
+                        const size_t b64_len = url_len - b64_off;
+                        Vector<uint8_t> json_buf;
+                        json_buf.resize((int) (b64_len * 3 / 4 + 4));
+                        size_t out_len = 0;
+                        if (CryptoCore::b64_decode(json_buf.ptrw(), (size_t) json_buf.size(), &out_len, b64_ptr, b64_len) == OK && out_len > 0)
+                        {
+                            const String json = String::utf8((const char*) json_buf.ptr(), (int) out_len);
+                            p_env->get_source_map_cache().feed(p_source_url, json);
+                        }
+                    }
+                }
+            }
+
+            godotjs_free_transpile_result(result);
+            return true;
+        }
+#endif
+    }
+
     namespace
     {
         // the cost of copy return is acceptable since Vector copy constructor is by-reference under the hood
@@ -114,6 +234,33 @@ namespace jsb
         {
             o_path = js_path;
             return true;
+        }
+
+        // try .ts (probed after .js so an existing emitted artefact still wins)
+        const String ts_path = internal::PathUtil::extends_with(p_module_id, "." JSB_TYPESCRIPT_EXT);
+        if (FileAccess::exists(ts_path))
+        {
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+            // embedded transpiler: load the .ts source in-process
+            o_path = ts_path;
+            return true;
+#else
+            // No embedded transpiler: an extension-less import resolving to a .ts
+            // can't be loaded at runtime. Prefer the pre-transpiled .js sibling
+            // produced by the export plugin; if it's missing fall through to the
+            // .ts so load() still surfaces the helpful no-transpiler guard error.
+            if (ts_path.begins_with("res://"))
+            {
+                const String compiled_path = internal::PathUtil::convert_typescript_path(ts_path);
+                if (FileAccess::exists(compiled_path))
+                {
+                    o_path = compiled_path;
+                    return true;
+                }
+            }
+            o_path = ts_path;
+            return true;
+#endif
         }
 
         // try .cjs
@@ -276,6 +423,24 @@ namespace jsb
         // 1: module_id (we do not check it strictly here, but usually, it should already have a valid extension)
         if (p_module_id.contains(".") && FileAccess::exists(p_module_id))
         {
+#if !JSB_WITH_TYPESCRIPT_TRANSPILER
+            // No embedded transpiler (web/mobile export templates): a .ts cannot be
+            // compiled at runtime. The export plugin pre-transpiles and packs the
+            // .js at convert_typescript_path(); prefer it when present so we never
+            // hand a raw .ts to load() (which would throw the no-transpiler guard).
+            // The raw .ts is still packed (it's the referenced Script resource), so
+            // a naive existence check above would otherwise resolve to it.
+            if (p_module_id.begins_with("res://") && p_module_id.ends_with("." JSB_TYPESCRIPT_EXT))
+            {
+                const String compiled_path = internal::PathUtil::convert_typescript_path(p_module_id);
+                if (FileAccess::exists(compiled_path))
+                {
+                    o_source_info.source_filepath = compiled_path;
+                    o_source_info.package_filepath = String();
+                    return true;
+                }
+            }
+#endif
             o_source_info.source_filepath = p_module_id;
             o_source_info.package_filepath = String();
             return true;
@@ -446,6 +611,24 @@ namespace jsb
             {
                 return true;
             }
+#if !JSB_WITH_TYPESCRIPT_TRANSPILER
+            // No embedded transpiler: an absolute `.ts` path may not exist on disk
+            // in an exported pack when the export plugin pre-transpiled and packed
+            // the converted `.js` instead. Try the converted path before declaring
+            // failure so autoloads / direct .ts references still resolve to the
+            // pre-transpiled output. (Guarded on res:// because convert_typescript_path
+            // only accepts res:// paths.)
+            if (p_module_id.begins_with("res://") && p_module_id.ends_with("." JSB_TYPESCRIPT_EXT))
+            {
+                const String compiled_path = internal::PathUtil::convert_typescript_path(p_module_id);
+                if (FileAccess::exists(compiled_path))
+                {
+                    r_source_info.source_filepath = compiled_path;
+                    r_source_info.package_filepath = String();
+                    return true;
+                }
+            }
+#endif
             r_source_info = {};
             JSB_LOG(Warning, "failed to check out module (absolute) %s", p_module_id);
             return false;
@@ -556,8 +739,9 @@ namespace jsb
             return load_as_json(p_env, p_module, p_asset_path, source, len);
         }
 
+        const bool is_typescript = p_asset_path.ends_with("." JSB_TYPESCRIPT_EXT);
 #if JSB_DEBUG
-        if (!internal::PathUtil::is_recognized_javascript_extension(p_asset_path))
+        if (!is_typescript && !internal::PathUtil::is_recognized_javascript_extension(p_asset_path))
         {
             JSB_LOG(Warning, "%s is suspiciously not JS", p_asset_path);
         }
@@ -571,7 +755,27 @@ namespace jsb
 
             const String source_url = p_reader.get_source_url();
             Vector<uint8_t> source;
-            const size_t len = read_all_bytes_with_shebang(p_reader, source);
+            size_t len;
+            if (is_typescript)
+            {
+#if JSB_WITH_TYPESCRIPT_TRANSPILER
+                String transpile_error;
+                if (!transpile_typescript_to_wrapped_source(p_env, source_url, p_reader, source, transpile_error))
+                {
+                    JSB_LOG(Error, "ts transpile failed for %s: %s", p_asset_path, transpile_error);
+                    impl::Helper::throw_error(isolate, jsb_format("ts transpile failed for %s: %s", p_asset_path, transpile_error));
+                    return false;
+                }
+                len = source.size() - 1; // exclude trailing zero
+#else
+                impl::Helper::throw_error(isolate, jsb_format("cannot load .ts at runtime on this platform (no embedded transpiler); pre-transpile to .js at export time: %s", p_asset_path));
+                return false;
+#endif
+            }
+            else
+            {
+                len = read_all_bytes_with_shebang(p_reader, source);
+            }
             jsb_check((size_t)(int)len == len);
 
             // source evaluator (the module protocol)
