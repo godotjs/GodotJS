@@ -40,6 +40,12 @@ namespace jsb
         // the default class exported in this JS module
         ScriptClassID script_class_id;
 
+#if JSB_NATIVE_ESM && JSB_WITH_V8
+        // populated by NativeESMModuleResolver after `v8::ScriptCompiler::CompileModule`.
+        // empty when this module came in via the CJS path.
+        v8::Global<v8::Module> esm_module;
+#endif
+
 #if JSB_SUPPORT_RELOAD && defined(TOOLS_ENABLED)
         bool reload_requested = false;
         uint64_t time_modified = 0;

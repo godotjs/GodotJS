@@ -12,6 +12,7 @@
 #include "jsb_worker.h"
 #include "jsb_essentials.h"
 #include "jsb_amd_module_loader.h"
+#include "jsb_native_esm_resolver.h"
 #include "jsb_thread_safe_for_nodes_scope.h"
 
 #include "../internal/jsb_path_util.h"
@@ -447,6 +448,15 @@ namespace jsb
 
     void Environment::init()
     {
+#if JSB_NATIVE_ESM && JSB_WITH_V8
+        // registered FIRST so `.mjs` files are claimed by the native ESM path before the CJS default takes over.
+        this->add_module_resolver<jsb::NativeESMModuleResolver>()
+            .add_search_path(jsb::internal::Settings::get_jsb_out_res_path())
+            .add_search_path("res://")
+            .add_search_path("res://node_modules")
+        ;
+#endif
+
         jsb::DefaultModuleResolver& resolver = this->add_module_resolver<jsb::DefaultModuleResolver>()
             .add_search_path(jsb::internal::Settings::get_jsb_out_res_path()) // default path of js source (results of compiled ts, at '.godot/GodotJS' by default)
             .add_search_path("res://") // use the root directory as custom lib path by default
