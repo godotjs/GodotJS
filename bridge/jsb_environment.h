@@ -165,6 +165,13 @@ namespace jsb
         HashMap<StringName, class IModuleLoader*> module_loaders_;
         Vector<IModuleResolver*> module_resolvers_;
 
+#if JSB_NATIVE_ESM && JSB_WITH_V8
+        // back-lookup from `v8::Module::ScriptId()` to the owning `JavaScriptModule.id`.
+        // populated by NativeESMModuleResolver before `InstantiateModule` so the static
+        // `ResolveModuleCallback` can resolve relative specifiers against the referrer's path.
+        HashMap<int, StringName> esm_script_id_to_module_id_;
+#endif
+
 #if JSB_WITH_ESSENTIALS
         JSTimerTags<uint64_t> timer_tags_;
         internal::TTimerManager<JavaScriptTimerAction> timer_manager_;
@@ -562,6 +569,19 @@ namespace jsb
             module_resolvers_.append(resolver);
             return *resolver;
         }
+
+#if JSB_NATIVE_ESM && JSB_WITH_V8
+        jsb_force_inline void register_esm_module_script_id(int p_script_id, const StringName& p_module_id)
+        {
+            esm_script_id_to_module_id_.insert(p_script_id, p_module_id);
+        }
+
+        jsb_force_inline StringName find_esm_module_id_by_script_id(int p_script_id) const
+        {
+            const HashMap<int, StringName>::ConstIterator it = esm_script_id_to_module_id_.find(p_script_id);
+            return it != esm_script_id_to_module_id_.end() ? it->value : StringName();
+        }
+#endif
 
         /**
          * \brief

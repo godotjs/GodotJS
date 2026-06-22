@@ -218,6 +218,11 @@ jsb_defines = [
         "`devtools` does not respond to the upgrade request with a `sec-websocket-protocol` header which does not apply the handshake requirements of `WSLPeer`",
         "and the connection will break immediately by `devtools` if `selected_protocol` is assigned manually in `WSLPeer`",
     ]),
+    CompileDefines("JSB_NATIVE_ESM", 1 if env["jsb_native_esm"] else 0, [
+        "Enable the additive native ESM resolver shell (.mjs only).",
+        "When enabled, `.mjs` modules are compiled via `v8::ScriptCompiler::CompileModule`; all other extensions stay on the CJS path.",
+        "V8 only. Default off. See `bridge/jsb_native_esm_resolver.{h,cpp}`.",
+    ]),
 ]
 
 def is_defined(name, value = 1):
